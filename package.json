@@ -28,7 +28,7 @@
     "@endge/core": "1.2.5",
     "@endge/nova": "workspace:*",
     "@endge/raph": "^3.0.1",
-    "@endge/utils": "0.24.1",
+    "@endge/utils": "0.24.2",
     "@endge/vue": "0.23.2",
     "@formatjs/intl-durationformat": "^0.7.6",
     "@lucide/lab": "^0.1.2",
