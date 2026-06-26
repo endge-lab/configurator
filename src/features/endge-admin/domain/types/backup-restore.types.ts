@@ -1,0 +1,51 @@
+import type { DomainDocumentType } from '@endge/core'
+
+export type BackupRestoreEntityKind =
+  | 'settings'
+  | 'project'
+  | 'type'
+  | 'query'
+  | 'component'
+  | 'scenario'
+  | 'action'
+  | 'parameter'
+  | 'filter'
+  | 'converter'
+  | 'integration'
+  | 'environment'
+  | 'tenant'
+  | 'behavior-binding'
+  | 'presentation-binding'
+  | 'policy'
+  | 'style'
+  | 'vocabs'
+  | 'view'
+  | 'page-template'
+  | 'page'
+  | 'navigation'
+
+export interface BackupRestoreEntityItem {
+  key: string
+  documentType: DomainDocumentType
+  entityKind: BackupRestoreEntityKind
+  sectionTitle: string
+  title: string
+  identity: string
+  importedId: string | number | null
+  existsInCurrentDomain: boolean
+  currentId: string | number | null
+}
+
+export interface BackupRestoreParsedFile {
+  fileName: string
+  source: 'bundle' | 'plain'
+  plainDomain: Record<string, unknown>
+  importedDomain: unknown
+  items: BackupRestoreEntityItem[]
+}
+
+export interface BackupRestoreImportResult {
+  importedCount: number
+  replacedCount: number
+  createdCount: number
+}

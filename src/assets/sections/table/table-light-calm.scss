@@ -1,0 +1,164 @@
+.v-theme--light_calm {
+  .endge-table {
+
+    /**
+     * Зум
+     */
+    &.zoom-50 {
+      revogr-header .rgHeaderCell {
+        font-size: .6rem;
+      }
+
+      .rgCell div {
+        font-size: .6rem;
+      }
+
+      .rgCell.selected-cell {
+        height: 98% !important;
+      }
+    }
+
+    &.zoom-75 {
+      revogr-header .rgHeaderCell {
+        font-size: .65rem;
+      }
+
+      .rgCell div {
+        font-size: .65rem;
+      }
+    }
+
+    &.zoom-100 {
+      revogr-header .rgHeaderCell {
+        font-size: .75rem;
+      }
+
+      .rgCell div {
+        font-size: .75rem;
+      }
+    }
+
+    &.zoom-125 {
+      revogr-header .rgHeaderCell {
+        font-size: .8rem;
+      }
+
+      .rgCell div {
+        font-size: .8rem;
+      }
+    }
+
+    &.zoom-150 {
+      revogr-header .rgHeaderCell {
+        font-size: 1.0rem;
+      }
+
+      .rgCell div {
+        font-size: 1.0rem;
+      }
+    }
+
+    .header-rgRow {
+      background: #38B !important;
+      color: white;
+    }
+
+    .rgHeaderCell {
+      border-right: 1px solid #888;
+      border-top: 1px solid #888;
+    }
+
+    .rgHeaderCell:hover {
+      background: #6399bf !important;
+    }
+
+    .rgHeaderCell > i {
+      position: absolute;
+      left: 0px;
+      bottom: 8px;
+    }
+
+    .rgHeaderCell > span {
+      position: absolute;
+      right: 0px;
+      top: -8px;
+    }
+
+    /**
+     * Иконки фильтра (закомментированные варианты)
+     */
+    .rgHeaderCell .rv-filter {
+      background: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Ctitle%3EFiltered%3C/title%3E%3Cpath d='M3 4h10L9 9v3l-2 1V9L3 4z' fill='none' stroke='%23FF9830' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+      width: 22px;
+      height: 22px;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: transparent;
+      font-size: 0;
+      line-height: 0;
+      text-indent: 100%;
+      overflow: hidden;
+      border-radius: 4px;
+
+      &::before,
+      &::after,
+      > * {
+        display: none !important;
+      }
+    }
+
+    /**
+     * Иконки сортировки
+     * https://tabler.io/icons/icon/sort-descending
+     */
+    revogr-header .rgHeaderCell i.desc:after {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF8C42' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 6l9 0'/%3E%3Cpath d='M4 12l7 0'/%3E%3Cpath d='M4 18l7 0'/%3E%3Cpath d='M15 15l3 3l3 -3'/%3E%3Cpath d='M18 6l0 12'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+      margin-left: 0px;
+      vertical-align: middle;
+    }
+
+    revogr-header .rgHeaderCell i.asc:after {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF8C42' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 6l7 0'/%3E%3Cpath d='M4 12l7 0'/%3E%3Cpath d='M4 18l9 0'/%3E%3Cpath d='M15 9l3 -3l3 3'/%3E%3Cpath d='M18 6l0 12'/%3E%3C/svg%3E") no-repeat center;
+      background-size: contain;
+      margin-left: 0px;
+      vertical-align: middle;
+    }
+
+    /**
+     * Полосатость строк
+     */
+    .rgRow:nth-of-type(even) {
+      background-color: #CCC;
+    }
+
+    .rgRow:nth-of-type(odd) {
+      background-color: #E0E0E0;
+    }
+
+    .rgRow.selected-row {
+      background-color: greenyellow !important;
+    }
+
+    .rgRow.multi-selected-row {
+      background-color: palevioletred !important;
+    }
+
+    .rgCell.selected-cell {
+      outline: 1px solid limegreen;
+      height: 98% !important;
+      z-index: 1000;
+      background-color: greenyellow !important;
+    }
+  }
+}

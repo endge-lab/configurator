@@ -1,0 +1,3862 @@
+{
+  "domain": {
+    "projects": [],
+    "types": [
+      {
+        "id": "Any",
+        "identity": "Any",
+        "name": "Any",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "Any",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "Boolean",
+        "identity": "Boolean",
+        "name": "Boolean",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "Boolean",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "ConnectionAttributeDTO",
+        "identity": "ConnectionAttributeDTO",
+        "name": "ConnectionAttributeDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "connectionId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "text",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "integer",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "dateTime",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "bool",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "meta",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "processed",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionAttributesParams",
+        "identity": "ConnectionAttributesParams",
+        "name": "ConnectionAttributesParams",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "connectionIds",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "names",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "empty",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "defaults",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "since",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionCalculationProgramDTO",
+        "identity": "ConnectionCalculationProgramDTO",
+        "name": "ConnectionCalculationProgramDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "ID",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "template",
+            "type": "ConnectionRouteElementDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionColorDTO",
+        "identity": "ConnectionColorDTO",
+        "name": "ConnectionColorDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "color",
+            "type": "ConnexColor",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "actual",
+            "type": "ConnectionGroupDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "checkIn",
+            "type": "ConnectionGroupDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "booked",
+            "type": "ConnectionGroupDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionGroupDTO",
+        "identity": "ConnectionGroupDTO",
+        "name": "ConnectionGroupDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "business",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comfort",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "economy",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "complex",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "total",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "empty",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionLegAggregateDTO",
+        "identity": "ConnectionLegAggregateDTO",
+        "name": "ConnectionLegAggregateDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "redPax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "yellowPax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "greenPax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "grayPax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "bluePax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "orangePax",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "redBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "yellowBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "greenBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "grayBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "blueBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "orangeBagItems",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "redBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "yellowBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "greenBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "grayBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "blueBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "orangeBagWeight",
+            "type": "ConnectionColorDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionListDTO",
+        "identity": "ConnectionListDTO",
+        "name": "ConnectionListDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "connectionId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "items",
+            "type": "ConnectionAttributeDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionParams",
+        "identity": "ConnectionParams",
+        "name": "ConnectionParams",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "filter",
+            "type": "FieldCondition",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "order",
+            "type": "OrderField",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timeZone",
+            "type": "TimeZone",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionRouteDTO",
+        "identity": "ConnectionRouteDTO",
+        "name": "ConnectionRouteDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "totalDuration",
+            "type": "Duration",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "calculationProgram",
+            "type": "ConnectionCalculationProgramDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionRouteElementDTO",
+        "identity": "ConnectionRouteElementDTO",
+        "name": "ConnectionRouteElementDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "order",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "startPoint",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "endPoint",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "distance",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "averageSpeed",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "duration",
+            "type": "Duration",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "walkingConfigurationId",
+            "type": "ID",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ConnectionTimeDTO",
+        "identity": "ConnectionTimeDTO",
+        "name": "ConnectionTimeDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "ConnexIssueType",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "estimated",
+            "type": "Duration",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "needed",
+            "type": "Duration",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "routeRaw",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "rebooked",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "color",
+            "type": "ConnexColor",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "route",
+            "type": "ConnectionRouteDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "DateTime",
+        "identity": "DateTime",
+        "name": "DateTime",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "DateTime",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "DelayDTO",
+        "identity": "DelayDTO",
+        "name": "DelayDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "segment",
+            "type": "DelaySegment",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "duration",
+            "type": "Duration",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "delayReasonCodeId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "iataCode",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "serviceCode",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "isResponsible",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "DelaysParams",
+        "identity": "DelaysParams",
+        "name": "DelaysParams",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legs",
+            "type": "LegDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "FieldCondition",
+        "identity": "FieldCondition",
+        "name": "FieldCondition",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "linkType",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "attributeA",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "attributeB",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "valuePath",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "valueType",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "operator",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "list",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "value",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "and",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "compareOperation",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "valueUnit",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "andUnit",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "conditions",
+            "type": "FieldCondition",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "containsStation",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "GHLegsDTO",
+        "identity": "GHLegsDTO",
+        "name": "GHLegsDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "arrivalLeg",
+            "type": "LegDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "departureLeg",
+            "type": "LegDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "glued",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "GroundHandlingCodeInput",
+        "identity": "GroundHandlingCodeInput",
+        "name": "GroundHandlingCodeInput",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "code",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "points",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "GroundHandlingParams",
+        "identity": "GroundHandlingParams",
+        "name": "GroundHandlingParams",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legs",
+            "type": "LegDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "codes",
+            "type": "GroundHandlingCodeInput",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ID",
+        "identity": "ID",
+        "name": "ID",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "ID",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "ItemDTO",
+        "identity": "ItemDTO",
+        "name": "ItemDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "target",
+            "type": "OperationDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "actual",
+            "type": "OperationDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "code",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "LegAttributeDTO",
+        "identity": "LegAttributeDTO",
+        "name": "LegAttributeDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "text",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "integer",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "dateTime",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "bool",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "meta",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "processed",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "LegAttributesParams",
+        "identity": "LegAttributesParams",
+        "name": "LegAttributesParams",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legIds",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "names",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "empty",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "defaults",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "since",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "LegAttributesParams1",
+        "identity": "LegAttributesParams1",
+        "name": "LegAttributesParams1",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "filter",
+            "type": "FieldCondition",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "order",
+            "type": "OrderField",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timeZone",
+            "type": "TimeZone",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ListDTO",
+        "identity": "ListDTO",
+        "name": "ListDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "items",
+            "type": "ItemDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "ListDTO1",
+        "identity": "ListDTO1",
+        "name": "ListDTO1",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "items",
+            "type": "LegAttributeDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "Null",
+        "identity": "Null",
+        "name": "Null",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "Null",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "Number",
+        "identity": "Number",
+        "name": "Number",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "Number",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "OperationDTO",
+        "identity": "OperationDTO",
+        "name": "OperationDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "order",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "code",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "points",
+            "type": "PointDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "OrderField",
+        "identity": "OrderField",
+        "name": "OrderField",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "operator",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "path",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "attribute",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "value",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerBaggageDTO",
+        "identity": "PassengerBaggageDTO",
+        "name": "PassengerBaggageDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "count",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "weight",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "tags",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerBookingDTO",
+        "identity": "PassengerBookingDTO",
+        "name": "PassengerBookingDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "pnr",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "paxClass",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "serviceClass",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "status",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerDTO",
+        "identity": "PassengerDTO",
+        "name": "PassengerDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "spiForPax",
+            "type": "SpiRecordDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "booking",
+            "type": "PassengerBookingDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "paxName",
+            "type": "PassengerNameDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "seats",
+            "type": "PassengerSeatsDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "baggage",
+            "type": "PassengerBaggageDTO",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "rebookingId",
+            "type": "ID",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "currentLegId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "nextLegId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "previousLegId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerNameDTO",
+        "identity": "PassengerNameDTO",
+        "name": "PassengerNameDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "names",
+            "type": "PassengerNameStructDTO",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerNameStructDTO",
+        "identity": "PassengerNameStructDTO",
+        "name": "PassengerNameStructDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "name",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "surname",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "nameRu",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "surnameRu",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PassengerSeatsDTO",
+        "identity": "PassengerSeatsDTO",
+        "name": "PassengerSeatsDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "count",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "numbers",
+            "type": "String",
+            "isArray": true,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "PointDTO",
+        "identity": "PointDTO",
+        "name": "PointDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "order",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "code",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "value",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "RefAction",
+        "identity": "RefAction",
+        "name": "RefAction",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "actions",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefBinding",
+        "identity": "RefBinding",
+        "name": "RefBinding",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "behavior-bindings",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefComponent",
+        "identity": "RefComponent",
+        "name": "RefComponent",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "components",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefConverter",
+        "identity": "RefConverter",
+        "name": "RefConverter",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "converters",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefEnvironment",
+        "identity": "RefEnvironment",
+        "name": "RefEnvironment",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "environments",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefFilter",
+        "identity": "RefFilter",
+        "name": "RefFilter",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "filters",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefFolder",
+        "identity": "RefFolder",
+        "name": "RefFolder",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "folders",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefIntegration",
+        "identity": "RefIntegration",
+        "name": "RefIntegration",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "integrations",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefNavigation",
+        "identity": "RefNavigation",
+        "name": "RefNavigation",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "navigations",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefPage",
+        "identity": "RefPage",
+        "name": "RefPage",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "pages",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefPageTemplate",
+        "identity": "RefPageTemplate",
+        "name": "RefPageTemplate",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "page-templates",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefParameter",
+        "identity": "RefParameter",
+        "name": "RefParameter",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "parameters",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefPolicy",
+        "identity": "RefPolicy",
+        "name": "RefPolicy",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "policies",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefPresentationBinding",
+        "identity": "RefPresentationBinding",
+        "name": "RefPresentationBinding",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "presentation-bindings",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefProject",
+        "identity": "RefProject",
+        "name": "RefProject",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "projects",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefQuery",
+        "identity": "RefQuery",
+        "name": "RefQuery",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "queries",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefScenario",
+        "identity": "RefScenario",
+        "name": "RefScenario",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "scenarios",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefSettings",
+        "identity": "RefSettings",
+        "name": "RefSettings",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "settings",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefStyle",
+        "identity": "RefStyle",
+        "name": "RefStyle",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "styles",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefTenant",
+        "identity": "RefTenant",
+        "name": "RefTenant",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "tenants",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefType",
+        "identity": "RefType",
+        "name": "RefType",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "types",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefView",
+        "identity": "RefView",
+        "name": "RefView",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "views",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "RefVocab",
+        "identity": "RefVocab",
+        "name": "RefVocab",
+        "description": null,
+        "folderId": 36,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "target": "vocabs",
+          "storage": "id",
+          "primitiveKind": "reference"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "SpiRecordDTO",
+        "identity": "SpiRecordDTO",
+        "name": "SpiRecordDTO",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "legId",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "station",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "source",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "timestamp",
+            "type": "Instant",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "comment",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "priority",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "fresh",
+            "type": "Boolean",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "count",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      },
+      {
+        "id": "String",
+        "identity": "String",
+        "name": "String",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "String",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "Time",
+        "identity": "Time",
+        "name": "Time",
+        "description": null,
+        "folderId": 35,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {
+          "runtimeType": "Time",
+          "primitiveKind": "scalar"
+        },
+        "isPrimitive": true,
+        "fields": []
+      },
+      {
+        "id": "TimeZone",
+        "identity": "TimeZone",
+        "name": "TimeZone",
+        "description": null,
+        "folderId": 5,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "isPrimitive": false,
+        "fields": [
+          {
+            "name": "ID",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "rawOffset",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "iD",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "displayName",
+            "type": "String",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          },
+          {
+            "name": "dSTSavings",
+            "type": "Number",
+            "isArray": false,
+            "optional": false,
+            "params": []
+          }
+        ]
+      }
+    ],
+    "queries": [],
+    "components": [],
+    "scenarios": [],
+    "actions": [
+      {
+        "id": 5,
+        "identity": "console-log",
+        "displayName": "Вывод в консоль",
+        "name": "Вывод в консоль",
+        "description": "Системное действие для вывода входной строки в консоль.",
+        "folderId": 37,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "definition": {
+          "version": 1,
+          "entrypoint": "flow-entry",
+          "nodes": [
+            {
+              "id": "step-1",
+              "title": "Console Log",
+              "blockId": "core.runtime-action",
+              "kind": "runtimeAction",
+              "params": {},
+              "meta": {
+                "stepKind": "runtime",
+                "runtimeId": "console-log"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-flow-entry-step-1",
+              "sourceNodeId": "flow-entry",
+              "sourcePortId": "out",
+              "targetNodeId": "step-1",
+              "targetPortId": "in",
+              "label": "dependsOn"
+            }
+          ]
+        },
+        "input": {
+          "name": "input",
+          "type": "String",
+          "isArray": false,
+          "optional": false,
+          "params": []
+        },
+        "output": null
+      },
+      {
+        "id": 7,
+        "identity": "init-base-vocabs",
+        "displayName": "Init - Базовые справочники",
+        "name": "Init - Базовые справочники",
+        "description": null,
+        "folderId": 4,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "definition": {
+          "version": 1,
+          "entrypoint": "flow-entry",
+          "nodes": [
+            {
+              "id": "step-1",
+              "title": "ДЕЙСТВИЕ",
+              "blockId": "core.action",
+              "kind": "action",
+              "params": {
+                "input": [
+                  "2",
+                  "1",
+                  "4",
+                  "3"
+                ]
+              },
+              "meta": {
+                "actionId": 6,
+                "stepKind": "behavior-binding",
+                "runtimeId": null
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-flow-entry-out-step-1-in",
+              "sourceNodeId": "flow-entry",
+              "sourcePortId": "out",
+              "targetNodeId": "step-1",
+              "targetPortId": "in",
+              "label": "dependsOn"
+            }
+          ]
+        },
+        "input": null,
+        "output": null
+      },
+      {
+        "id": 6,
+        "identity": "load-vocabs",
+        "displayName": "Загрузка справочников",
+        "name": "Загрузка справочников",
+        "description": "Системное действие для загрузки массива справочников через EndgeVocabs.loadById.",
+        "folderId": 38,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "definition": {
+          "version": 1,
+          "entrypoint": "flow-entry",
+          "nodes": [
+            {
+              "id": "step-1",
+              "title": "Загрузка справочников",
+              "blockId": "core.runtime-action",
+              "kind": "runtimeAction",
+              "params": {},
+              "meta": {
+                "stepKind": "runtime",
+                "runtimeId": "load-vocabs"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-flow-entry-step-1",
+              "sourceNodeId": "flow-entry",
+              "sourcePortId": "out",
+              "targetNodeId": "step-1",
+              "targetPortId": "in",
+              "label": "dependsOn"
+            }
+          ]
+        },
+        "input": {
+          "name": "input",
+          "type": "RefVocab",
+          "isArray": true,
+          "optional": false,
+          "params": []
+        },
+        "output": null
+      }
+    ],
+    "converters": [
+      {
+        "id": 55,
+        "identity": "date-to-date-string",
+        "name": "Date в YYYY-MM-DD",
+        "description": "Форматирует Date в строку только даты \"YYYY-MM-DD\".",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 52,
+        "identity": "date-to-iso-string",
+        "name": "Date в ISO-строка",
+        "description": "Сериализация Date в ISO-строку (дата и время).",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 53,
+        "identity": "date-to-iso-z",
+        "name": "Date в ISO (Z)",
+        "description": "Date или строка даты в ISO-строку с окончанием Z (UTC). На бэке: lib/date-to-iso-z.",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 56,
+        "identity": "date-to-time-string",
+        "name": "Date в HH:mm:ss",
+        "description": "Берёт время из Date и форматирует в строку \"HH:mm:ss\".",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 61,
+        "identity": "default-if-empty",
+        "name": "Значение по умолчанию",
+        "description": "Если null/undefined/\"\" — вернуть параметр defaultValue. Пример: пусто в \"-\".",
+        "folderId": 19,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 50,
+        "identity": "iso-string-to-date",
+        "name": "ISO-строка в Date",
+        "description": "Парсинг ISO-даты/даты-времени в объект Date. Пример: \"2025-02-22T12:00:00Z\" в Date.",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 58,
+        "identity": "iso-string-to-time-string",
+        "name": "ISO-строка в HH:mm:ss",
+        "description": "Парсит ISO-дату и возвращает время в формате \"HH:mm:ss\".",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 67,
+        "identity": "json-parse",
+        "name": "JSON-строка в объект",
+        "description": "Парсинг JSON. Пример: '{\"a\":1}' в объект { a: 1 }.",
+        "folderId": 22,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 68,
+        "identity": "json-stringify",
+        "name": "Объект в JSON-строка",
+        "description": "Сериализация в JSON. Параметр: pretty — с отступами (true/false).",
+        "folderId": 22,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 66,
+        "identity": "number-to-string",
+        "name": "Число в строка",
+        "description": "Приведение числа к строке. Параметр: decimals — знаков после запятой.",
+        "folderId": 21,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 64,
+        "identity": "split",
+        "name": "Split (по запятой)",
+        "description": "Разбивает строку по запятой, trim каждого элемента. Пример: \"a, b , c\" в [\"a\",\"b\",\"c\"].",
+        "folderId": 20,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 62,
+        "identity": "string-to-boolean",
+        "name": "Строка в булево",
+        "description": "\"true\", \"1\" в true; иначе false. Параметр: trueValues — массив строк для true.",
+        "folderId": 19,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 54,
+        "identity": "string-to-date",
+        "name": "Строка в Date",
+        "description": "Парсинг строки в Date: поддержка \"YYYY-MM-DD\", \"HH:mm(:ss)\", ISO и др. Пример: \"2025-02-22\", \"10:30:00\".",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 65,
+        "identity": "string-to-number",
+        "name": "Строка в число",
+        "description": "parseFloat. Пример: \"42.5\" в 42.5. Параметр: decimals — округление.",
+        "folderId": 21,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 60,
+        "identity": "string-trim",
+        "name": "Trim строки",
+        "description": "Удаление пробелов по краям. Пример: \"  текст  \" в \"текст\".",
+        "folderId": 19,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 51,
+        "identity": "timestamp-to-date",
+        "name": "Timestamp (мс) в Date",
+        "description": "Миллисекунды с эпохи в Date. Пример: 1708603200000 в Date.",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 57,
+        "identity": "time-string-to-date",
+        "name": "HH:mm:ss в Date (сегодня)",
+        "description": "Строка времени \"HH:mm\" или \"HH:mm:ss\" в Date с текущей датой.",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 63,
+        "identity": "to-array",
+        "name": "В массив",
+        "description": "Массив возвращает как есть; одно значение оборачивает в массив из одного элемента. Пример: \"a\" в [\"a\"].",
+        "folderId": 20,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 59,
+        "identity": "weekdays-range",
+        "name": "Дни недели (строка в массив)",
+        "description": "Строка вида 1,2,3-5 (дни 1–7, диапазон через дефис) в массив из 7 boolean. Пример: \"1,3-5\" в [true,false,true,true,true,false,false].",
+        "folderId": 18,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      }
+    ],
+    "integrations": [],
+    "views": [],
+    "folders": [
+      {
+        "id": 37,
+        "identity": "actions-debug",
+        "displayName": "Отладка",
+        "name": "Отладка",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "actions",
+        "parent": 4
+      },
+      {
+        "id": 38,
+        "identity": "actions-vocabs",
+        "displayName": "Справочники",
+        "name": "Справочники",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "actions",
+        "parent": 4
+      },
+      {
+        "id": 20,
+        "identity": "converters-arrays",
+        "displayName": "Массивы",
+        "name": "Массивы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 18,
+        "identity": "converters-date",
+        "displayName": "Дата и время",
+        "name": "Дата и время",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 22,
+        "identity": "converters-json",
+        "displayName": "JSON",
+        "name": "JSON",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 21,
+        "identity": "converters-numbers",
+        "displayName": "Числа",
+        "name": "Числа",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 23,
+        "identity": "converters-other",
+        "displayName": "Прочее",
+        "name": "Прочее",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 19,
+        "identity": "converters-strings",
+        "displayName": "Строки",
+        "name": "Строки",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": 6
+      },
+      {
+        "id": 24,
+        "identity": "folder-7e4ix",
+        "displayName": "Расписание",
+        "name": "Расписание",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "queries",
+        "parent": 2
+      },
+      {
+        "id": 16,
+        "identity": "folder-BQWn3",
+        "displayName": "Колонка",
+        "name": "Колонка",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": 1
+      },
+      {
+        "id": 17,
+        "identity": "folder-FOW0q",
+        "displayName": "Таблицы",
+        "name": "Таблицы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": 1
+      },
+      {
+        "id": 15,
+        "identity": "folder-GGKB8",
+        "displayName": "Базовые",
+        "name": "Базовые",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": 1
+      },
+      {
+        "id": 46,
+        "identity": "folder-J4Bjz",
+        "displayName": "Новая папка",
+        "name": "Новая папка",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "views",
+        "parent": 29
+      },
+      {
+        "id": 33,
+        "identity": "folder-ozMk0",
+        "displayName": "Новая папка",
+        "name": "Новая папка",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": 1
+      },
+      {
+        "id": 45,
+        "identity": "folder-Q2xt3",
+        "displayName": "Новая папка",
+        "name": "Новая папка",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "scenarios",
+        "parent": 3
+      },
+      {
+        "id": 44,
+        "identity": "folder-rXr9c",
+        "displayName": "Хаб",
+        "name": "Хаб",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "queries",
+        "parent": 2
+      },
+      {
+        "id": 14,
+        "identity": "folder-uJak4",
+        "displayName": "Адаптеры",
+        "name": "Адаптеры",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": 1
+      },
+      {
+        "id": 8,
+        "identity": "no-folder",
+        "displayName": "Без папки",
+        "name": "Без папки",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "system",
+        "parent": null
+      },
+      {
+        "id": 4,
+        "identity": "root-actions",
+        "displayName": "Действия",
+        "name": "Действия",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "actions",
+        "parent": null
+      },
+      {
+        "id": 41,
+        "identity": "root-bindings",
+        "displayName": "Биндинги",
+        "name": "Биндинги",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "behavior-bindings",
+        "parent": null
+      },
+      {
+        "id": 1,
+        "identity": "root-components",
+        "displayName": "Компоненты",
+        "name": "Компоненты",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "components",
+        "parent": null
+      },
+      {
+        "id": 6,
+        "identity": "root-converters",
+        "displayName": "Конвертеры",
+        "name": "Конвертеры",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "converters",
+        "parent": null
+      },
+      {
+        "id": 25,
+        "identity": "root-environments",
+        "displayName": "Окружения",
+        "name": "Окружения",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "environments",
+        "parent": null
+      },
+      {
+        "id": 11,
+        "identity": "root-filters",
+        "displayName": "Фильтры",
+        "name": "Фильтры",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "filters",
+        "parent": null
+      },
+      {
+        "id": 43,
+        "identity": "root-i18n-bundles",
+        "displayName": "Словари переводов",
+        "name": "Словари переводов",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "i18n-bundles",
+        "parent": null
+      },
+      {
+        "id": 13,
+        "identity": "root-integrations",
+        "displayName": "Интеграции",
+        "name": "Интеграции",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "integrations",
+        "parent": null
+      },
+      {
+        "id": 32,
+        "identity": "root-navigations",
+        "displayName": "Навигации",
+        "name": "Навигации",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "navigations",
+        "parent": null
+      },
+      {
+        "id": 31,
+        "identity": "root-pages",
+        "displayName": "Страницы",
+        "name": "Страницы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "pages",
+        "parent": null
+      },
+      {
+        "id": 30,
+        "identity": "root-page-templates",
+        "displayName": "Шаблоны страниц",
+        "name": "Шаблоны страниц",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "page-templates",
+        "parent": null
+      },
+      {
+        "id": 7,
+        "identity": "root-parameters",
+        "displayName": "Параметры",
+        "name": "Параметры",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "parameters",
+        "parent": null
+      },
+      {
+        "id": 26,
+        "identity": "root-policies",
+        "displayName": "Политики",
+        "name": "Политики",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "policies",
+        "parent": null
+      },
+      {
+        "id": 42,
+        "identity": "root-presentation-bindings",
+        "displayName": "Презентационные биндинги",
+        "name": "Презентационные биндинги",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "presentation-bindings",
+        "parent": null
+      },
+      {
+        "id": 39,
+        "identity": "root-projects",
+        "displayName": "Проекты",
+        "name": "Проекты",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "projects",
+        "parent": null
+      },
+      {
+        "id": 2,
+        "identity": "root-queries",
+        "displayName": "Запросы",
+        "name": "Запросы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "queries",
+        "parent": null
+      },
+      {
+        "id": 3,
+        "identity": "root-scenarios",
+        "displayName": "Сценарии",
+        "name": "Сценарии",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "scenarios",
+        "parent": null
+      },
+      {
+        "id": 27,
+        "identity": "root-styles",
+        "displayName": "Стили",
+        "name": "Стили",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "styles",
+        "parent": null
+      },
+      {
+        "id": 40,
+        "identity": "root-tenants",
+        "displayName": "Тенанты",
+        "name": "Тенанты",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "tenants",
+        "parent": null
+      },
+      {
+        "id": 5,
+        "identity": "root-types",
+        "displayName": "Типы",
+        "name": "Типы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "types",
+        "parent": null
+      },
+      {
+        "id": 12,
+        "identity": "root-views",
+        "displayName": "Виды",
+        "name": "Виды",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "views",
+        "parent": null
+      },
+      {
+        "id": 34,
+        "identity": "root-vocabs",
+        "displayName": "Словари",
+        "name": "Словари",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "vocabs",
+        "parent": null
+      },
+      {
+        "id": 9,
+        "identity": "soft-deleted",
+        "displayName": "Мягкое удаление",
+        "name": "Мягкое удаление",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "system",
+        "parent": null
+      },
+      {
+        "id": 35,
+        "identity": "types-primitives",
+        "displayName": "Примитивы",
+        "name": "Примитивы",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "types",
+        "parent": 5
+      },
+      {
+        "id": 36,
+        "identity": "types-references",
+        "displayName": "Ссылки на сущности",
+        "name": "Ссылки на сущности",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {},
+        "entityType": "types",
+        "parent": 5
+      }
+    ],
+    "settings": [
+      {
+        "id": 1,
+        "identity": "general",
+        "displayName": "Общие настройки",
+        "name": "Общие настройки",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "vars": [
+          {
+            "id": "6926ecaf7c47b002738f7438",
+            "name": "TABLE_ROW_HEIGHT",
+            "defaultValue": "40",
+            "secret": "pure",
+            "currentValue": "40"
+          },
+          {
+            "id": "6926ecce7c47b002738f743a",
+            "name": "ENDPOINT_AUTH",
+            "defaultValue": "",
+            "secret": "pure",
+            "currentValue": ""
+          }
+        ],
+        "vocabs": [],
+        "updates": [],
+        "customSections": []
+      }
+    ],
+    "parameters": [],
+    "filters": [],
+    "environments": [
+      {
+        "id": 1,
+        "identity": "dev",
+        "displayName": "Development",
+        "name": "Development",
+        "description": null,
+        "folderId": 25,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      },
+      {
+        "id": 2,
+        "identity": "prod",
+        "displayName": "Production",
+        "name": "Production",
+        "description": null,
+        "folderId": 25,
+        "project": null,
+        "isSystem": true,
+        "inherited": false,
+        "meta": {}
+      }
+    ],
+    "tenants": [],
+    "behaviorBindings": [],
+    "presentationBindings": [],
+    "policies": [],
+    "styles": [
+      {
+        "id": 1,
+        "identity": "default",
+        "name": "Общие",
+        "folderId": 27,
+        "project": null,
+        "styles": {},
+        "meta": {},
+        "inherited": false,
+        "isSystem": true
+      }
+    ],
+    "vocabs": [],
+    "i18nBundles": [
+      {
+        "id": 1,
+        "identity": "base",
+        "name": "Базовый словарь",
+        "displayName": "Базовый словарь",
+        "description": "Базовый словарь переводов с локалями ru и en. Создаётся при сиде.",
+        "locales": {
+          "en": {
+            "common": {
+              "save": "Save",
+              "close": "Close",
+              "cancel": "Cancel"
+            }
+          },
+          "ru": {
+            "common": {
+              "save": "Сохранить",
+              "close": "Закрыть",
+              "cancel": "Отмена"
+            }
+          }
+        },
+        "folderId": 43,
+        "active": true
+      }
+    ],
+    "pageTemplates": [],
+    "pages": [],
+    "navigations": []
+  },
+  "version": "1.0.0"
+}

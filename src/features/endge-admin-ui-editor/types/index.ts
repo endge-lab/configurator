@@ -1,0 +1,145 @@
+import type {
+  UIAstDocument,
+  UIAstNodeBase,
+  UIAstNodeLayout,
+  UIPrimitiveKind,
+} from '@endge/core'
+
+export type UIEditorBreakpoint = 'desktop' | 'tablet' | 'mobile'
+export type UIEditorCanvasMode = 'editor' | 'preview'
+
+export type UIEditorNodeKind = UIPrimitiveKind
+
+export interface UIEditorPageProps {
+  title: string
+  gap: number
+  padding: number
+  rowHeight: number
+}
+
+export interface UIEditorFlexProps {
+  direction: 'row' | 'column'
+  gap: number
+  padding: number
+}
+
+export interface UIEditorGridProps {
+  columns: number
+  gap: number
+  padding: number
+  minHeight: number
+}
+
+export interface UIEditorBoxProps {
+  title: string
+  padding: number
+}
+
+export interface UIEditorCustomComponentProps {
+  title: string
+  rendererRef: string
+}
+
+export interface UIEditorTextProps {
+  text: string
+}
+
+export interface UIEditorButtonProps {
+  label: string
+}
+
+export interface UIEditorNodePropsMap {
+  'page': UIEditorPageProps
+  'flex': UIEditorFlexProps
+  'grid': UIEditorGridProps
+  'box': UIEditorBoxProps
+  'custom-component': UIEditorCustomComponentProps
+  'text': UIEditorTextProps
+  'button': UIEditorButtonProps
+}
+
+export type UIEditorNodeLayout = UIAstNodeLayout
+
+export interface UIEditorNodeBase<TKind extends UIEditorNodeKind> extends UIAstNodeBase<TKind, UIEditorNodePropsMap[TKind]> {}
+
+export type UIEditorNode<TKind extends UIEditorNodeKind = UIEditorNodeKind> = {
+  [K in UIEditorNodeKind]: UIEditorNodeBase<K>
+}[TKind]
+
+export interface UIEditorTreeNode {
+  id: string
+  kind: UIEditorNodeKind
+  definitionRef: string
+  configRef?: string | null
+  assetRef?: string | null
+  name: string
+  props: UIEditorNodePropsMap[UIEditorNodeKind]
+  layout?: UIEditorNodeLayout
+  children: UIEditorTreeNode[]
+}
+
+export type UIEditorDocument = UIAstDocument<UIEditorNode>
+
+export interface UIEditorBreakpointConfig {
+  id: UIEditorBreakpoint
+  label: string
+  width: number
+  description: string
+}
+
+export interface UIEditorPaletteItem {
+  definitionRef: string
+  kind: Exclude<UIEditorNodeKind, 'page'>
+  label: string
+  description: string
+  accentClass: string
+  configKind?: string | null
+}
+
+export interface UIEditorDragPayload {
+  source: 'palette' | 'node'
+  paletteSource?: 'definition' | 'preset' | 'jsx'
+  definitionRef?: string
+  kind?: Exclude<UIEditorNodeKind, 'page'>
+  nodeId?: string
+  label?: string
+  itemId?: string
+  sourceLabel?: string
+  configRef?: string
+  assetRef?: string
+  layoutPatch?: Partial<UIEditorNodeLayout>
+  propsPatch?: Record<string, unknown>
+}
+
+export interface UIEditorLibraryItem extends UIEditorPaletteItem {
+  id: string
+  source: 'definition' | 'preset' | 'jsx'
+  folder: string
+  section: 'definitions' | 'components'
+  keywords?: string[]
+  configRef?: string | null
+  assetRef?: string | null
+  layoutPatch?: Partial<UIEditorNodeLayout>
+  propsPatch?: Record<string, unknown>
+  sourceLabel?: string
+}
+
+export interface UIEditorLibraryGroup {
+  id: string
+  title: string
+  description: string
+  items: UIEditorLibraryItem[]
+}
+
+export interface UIEditorLibraryTreeItem {
+  id: string
+  name: string
+  path: string
+  depth: number
+  type: 'folder' | 'file'
+  docType?: string
+  fileId?: string
+  itemKind?: Exclude<UIEditorNodeKind, 'page'>
+  isRoot?: boolean
+  isSystem?: boolean
+}

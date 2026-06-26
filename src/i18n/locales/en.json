@@ -1,0 +1,187 @@
+{
+  "grid": {
+    "widget": {
+      "close": "Close",
+      "floating": "Window",
+      "minimize": "Minimize",
+      "minimized": "minimized",
+      "moveTo": "Position",
+      "pinBottom": "Pin bottom",
+      "pinLeft": "Pin left",
+      "pinRight": "Pin right",
+      "popup": "Browser window"
+    }
+  },
+  "home": {
+    "deleteMe": {
+      "features": {
+        "appSwitcher": {
+          "description": "Configurable app switcher dropdown powered by environment variable with support for groups, icons, and external links.",
+          "title": "App Switcher"
+        },
+        "branding": {
+          "description": "Dynamic branding system with customizable colors, logos, and themes.",
+          "title": "Custom Branding"
+        },
+        "errors": {
+          "description": "Catch errors with a beautiful error page.",
+          "title": "Global Error Handling"
+        },
+        "eslint": {
+          "description": "Strict industry-standard ESLint configuration for maintaining code quality and style.",
+          "title": "ESLint (Antfu Config)"
+        },
+        "formatters": {
+          "description": "Built-in formatters for duration and relative time display.",
+          "title": "Time Formatters"
+        },
+        "grid": {
+          "description": "Draggable widget grid layout with resizable panels, floating windows, and browser popouts.",
+          "title": "Grid Layout"
+        },
+        "header": {
+          "description": "Slot header based on Teleport with breadcrumb navigation.",
+          "title": "Header & Breadcrumbs"
+        },
+        "i18n": {
+          "description": "Full i18n support with vue-i18n for building multilingual applications.",
+          "title": "I18n"
+        },
+        "icons": {
+          "description": "Icon library with thousands of customizable icons.",
+          "title": "Lucide"
+        },
+        "layouts": {
+          "description": "Flexible layout system with router integration for different page structures.",
+          "title": "Dynamic Layouts"
+        },
+        "questions": {
+          "description": "Promise-based dialog system for user confirmations and choices with AlertDialog.",
+          "title": "Promise confirmations"
+        },
+        "shadcn": {
+          "description": "Beautiful, accessible UI components built with Radix Vue and styled with Tailwind CSS.",
+          "title": "shadcn-vue Components"
+        },
+        "subtitle": "Built with modern tools and best practices for rapid development",
+        "tailwind": {
+          "description": "Latest version of Tailwind CSS with modern features and improved performance.",
+          "title": "Tailwind CSS v4"
+        },
+        "theme": {
+          "description": "Theme switching with system preference detection.",
+          "title": "Light/Dark Theme"
+        },
+        "title": "Everything You Need",
+        "toasts": {
+          "description": "Beautiful toast notifications powered by Sonner.",
+          "title": "Toasts"
+        },
+        "viewDemo": "View Demo"
+      },
+      "hero": {
+        "badge": "PANORAMA",
+        "description": "Template for all PANORAMA modules with modern tooling, flexible UI components, and built-in best practices.",
+        "gitlab": "Go to repository",
+        "title": "Starter Template"
+      }
+    }
+  },
+  "nav": {
+    "apps": {
+      "empty": "No apps configured",
+      "title": "Apps"
+    },
+    "breadcrumbs": {
+      "close": "Close",
+      "navigateTo": "Navigate to",
+      "selectPage": "Select a page to navigate to.",
+      "toggleMenu": "Toggle menu"
+    },
+    "error": {
+      "component": "Component",
+      "errorLocation": "Error location",
+      "errorMessage": "Error message",
+      "notFound": {
+        "subtitle": "The page you are looking for does not exist.",
+        "title": "Page not found"
+      },
+      "reload": "Reload page",
+      "subtitle": "We're sorry, but an unexpected error has occurred. Please try again later.",
+      "technicalInfo": "Technical information",
+      "title": "Oops, something went wrong"
+    },
+    "main": {
+      "deleteMe": {
+        "demo": {
+          "dataTable": {
+            "tanstackTable": "Tanstack Table",
+            "title": "Data table"
+          },
+          "errors": "Errors",
+          "formatters": {
+            "duration": "Duration",
+            "relativeTime": "Relative Time",
+            "title": "Formatters"
+          },
+          "layouts": {
+            "header": "Header",
+            "grid": "Grid",
+            "main": "Main",
+            "title": "Layouts"
+          },
+          "appSwitcher": "App Switcher",
+          "questions": "Questions",
+          "title": "Demo",
+          "toast": "Toasts"
+        },
+        "docs": {
+          "lucide": "Lucide",
+          "shadcnVue": "shadcn-vue",
+          "tailwind": "Tailwind CSS",
+          "title": "Docs"
+        },
+        "gitlab": "GitLab"
+      },
+      "home": "Home"
+    },
+    "user": {
+      "dateFormat": {
+        "changed": "Dates will use selected format after page reload",
+        "human": "28 June 2000 12:34",
+        "robot": "28.06.2000 12:34",
+        "title": "Date format"
+      },
+      "deleteMe": {
+        "exampleOption": "Button"
+      },
+      "guest": "Guest",
+      "locale": "Language",
+      "logout": "Log out",
+      "theme": {
+        "dark": "Dark",
+        "light": "Light",
+        "lightCalm": "Light calm",
+        "title": "Theme"
+      }
+    }
+  },
+  "ui": {
+    "breadcrumb": {
+      "srMore": "More"
+    },
+    "dialog": {
+      "srClose": "Close"
+    },
+    "sheet": {
+      "srClose": "Close"
+    },
+    "sidebar": {
+      "sheet": {
+        "srDescription": "Displays the mobile sidebar.",
+        "srTitle": "Sidebar"
+      },
+      "srToggle": "Toggle sidebar"
+    }
+  }
+}

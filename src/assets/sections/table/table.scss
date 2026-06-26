@@ -1,0 +1,479 @@
+table {
+  border-collapse: collapse;
+}
+
+.no-data {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.endge-table.small-header th span {
+  font-size: 0.8rem;
+}
+
+.endge-table div[type="tr"]:hover div[type="td"]:not(.static):not([variant]),
+.endge-table div[type="tr"]:hover div[type="td"]:not(.static)[variant=""],
+.endge-table div[type="tr"]:hover > div[type="td"]:not([variant]),
+.endge-table div[type="tr"]:hover > div[type="td"][variant=""],
+.static:hover {
+  color: #6e6b7b !important;
+  background-color: #f6f6f9 !important;
+}
+
+.endge-table div[type="tr"]:hover div[type="td"] .col-color {
+  color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+}
+
+/* GRAY cell */
+div[variant='secondary'], div[variant='gray'],
+.with-variant-color[variant='secondary'], .with-variant-color[variant='gray'] {
+  background-color: #dcdddf !important;
+}
+
+.input-disabled.secondary {
+  background-color: gray !important;
+  color: black !important;
+}
+
+div[variant='secondary']:hover, div[variant='gray']:hover {
+  background-color: #cfd0d3 !important;
+}
+
+// GREEN Cell
+div[variant='success'], div[variant='green'],
+.with-variant-color[variant='success'], .with-variant-color[variant='green'] {
+  background-color: #c3efd7 !important;
+}
+
+.input-disabled.success {
+  background-color: green !important;
+  color: black !important;
+}
+
+div[variant='success']:hover, div[variant='green']:hover {
+  background-color: #afeaca !important;
+}
+
+/* RED cell */
+div[variant='danger'], div[variant='red'],
+.with-variant-color[variant='danger'], .with-variant-color[variant='red'] {
+  background-color: #f9cfcf !important;
+}
+
+.input-disabled.danger {
+  background-color: red !important;
+  color: black !important;
+}
+
+div[variant='danger']:hover, div[variant='red']:hover {
+  background-color: #f6b8b8 !important;
+}
+
+/* YELLOW cell */
+div[variant='warning'], div[variant='yellow'],
+.with-variant-color[variant='warning'], .with-variant-color[variant='yellow'] {
+  background-color: #ffffa4 !important;
+  color: black !important;
+}
+
+div[variant='warning']:hover, div[variant='yellow']:hover {
+  background-color: #e1e17c !important;
+  color: black !important;
+}
+
+.col-color {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-items: center;
+  align-items: center;
+}
+
+.col-blue {
+  background-color: #b8f2f9;
+
+  &:hover {
+    background-color: #a0eef7;
+  }
+}
+
+.col-orange {
+  background-color: #ffe4ca;
+
+  &:hover {
+    background-color: #ffd7b1;
+  }
+}
+
+.endge-table .center-cell {
+  display: flex;
+  align-content: center;
+  justify-content: center;
+}
+
+.direction-tabs-wrapper {
+  position: absolute;
+  left: 0;
+  top: 108px;
+  z-index: 100;
+  background: white;
+  border: 1px solid #acacac;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0px 10px 10px 00px;
+  overflow: hidden;
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  & > div {
+    &.active {
+      background: #228BBC;
+      color: white
+    }
+
+    padding: 30px 8px;
+    writing-mode: vertical-rl
+  }
+}
+
+.direction-tabs-wrapper {
+  border-left: 0;
+}
+
+th:has(span.column_id),
+td:has(span.row_id) {
+  display: none !important;
+}
+
+.time-field, .attr-edit {
+  min-width: 110px;
+}
+
+.gh-time-table,
+.gh-time-table > .v-table__wrapper > table, {
+  height: 100%;
+}
+
+/* Отключаем отображение информации разработчиков Revogr */
+revo-grid[theme=compact] {
+  font-family: Roboto, sans-serif, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+revo-grid[theme=compact] revogr-header .rgHeaderCell {
+  padding: 0 1px;
+  text-overflow: ellipsis;
+}
+
+revo-grid[theme=compact] revogr-header .header-rgRow {
+  height: 38px;
+}
+
+revogr-attribution {
+  display: none !important;
+}
+
+.endge-table {
+  // хедеры
+  .header-content {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .header-rgRow {
+    background: rgba(183, 198, 213, 1) !important;
+  }
+
+  /* Стили заголовков */
+  revogr-header .rgHeaderCell {
+    border-bottom: 0;
+    border-left: 0;
+    font-size: .7rem;
+    padding: 0;
+  }
+
+  /* Полосатость строк */
+  .rgRow:nth-of-type(even) {
+    background-color: rgba(236, 237, 237);
+    /* background-color: #CCC; */
+  }
+
+  .rgRow:nth-of-type(odd) {
+    background-color: rgb(250, 250, 250);
+    /* background-color: #E0E0E0; */
+  }
+
+  & .v-table {
+    background: transparent !important;
+  }
+
+  .rgCell {
+    padding: 0 !important;
+    border-bottom: 1px solid #888;
+    border-right: 1px solid #888;
+  }
+
+  .rgHeaderCell {
+    border-bottom: 1px solid #888;
+    border-right: 1px solid #888;
+  }
+
+  .rgHeaderCell > i {
+    position: absolute;
+    left: 0px;
+    bottom: 8px;
+  }
+
+  .rgHeaderCell > span {
+    position: absolute;
+    right: 0px;
+    top: -8px;
+  }
+
+  .rgHeaderCell .rv-filter {
+    background: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Ctitle%3EFiltered%3C/title%3E%3Cpath d='M3 4h10L9 9v3l-2 1V9L3 4z' fill='none' stroke='%23FF5722' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+    background-size: contain;
+    width: 22px;
+    height: 22px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: transparent; /* скрываем текст/иконки */
+    font-size: 0;
+    line-height: 0;
+    text-indent: 100%;
+    overflow: hidden;
+    border-radius: 4px;
+
+    &::before,
+    &::after,
+    > * {
+      display: none !important;
+    }
+  }
+
+/* иконка закрепления колонки */
+.rgHeaderCell .tabler-pinned-icon-inject {
+  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJpY29uIGljb24tdGFibGVyIGljb25zLXRhYmxlci1vdXRsaW5lIGljb24tdGFibGVyLXBpbm5lZCI+PHBhdGggc3Ryb2tlPSJub25lIiBkPSJNMCAwaDI0djI0SDB6IiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTkgNHY2bC0yIDR2MmgxMHYtMmwtMiAtNHYtNiIgLz48cGF0aCBkPSJNMTIgMTZsMCA1IiAvPjxwYXRoIGQ9Ik04IDRsOCAwIiAvPjwvc3ZnPg==") no-repeat center;
+  background-size: contain;
+  width: 12px;
+  height: 12px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  text-indent: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  z-index: 1;
+
+  &::before,
+  &::after,
+  > * {
+    display: none !important;
+  }
+}
+
+/* сдвигаем иконку закрепления если иконка сортировки присутствует на заголовек колонки */
+.rgHeaderCell:has(i.asc) .tabler-pinned-icon-inject,
+.rgHeaderCell:has(i.desc) .tabler-pinned-icon-inject {
+  left: 18px !important;
+}
+
+
+/* https://tabler.io/icons/icon/sort-descending */
+
+revogr-header .rgHeaderCell i.desc:after {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ff0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 6l9 0'/%3E%3Cpath d='M4 12l7 0'/%3E%3Cpath d='M4 18l7 0'/%3E%3Cpath d='M15 15l3 3l3 -3'/%3E%3Cpath d='M18 6l0 12'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+  margin-left: 0px;
+  vertical-align: middle;
+}
+
+revogr-header .rgHeaderCell i.asc:after {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ff0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 6l7 0'/%3E%3Cpath d='M4 12l7 0'/%3E%3Cpath d='M4 18l9 0'/%3E%3Cpath d='M15 9l3 -3l3 3'/%3E%3Cpath d='M18 6l0 12'/%3E%3C/svg%3E") no-repeat center;
+  background-size: contain;
+  margin-left: 0px;
+  vertical-align: middle;
+}
+
+
+.border-t {
+  border-block-start-width: 1px !important;
+  border-block-start-style: solid !important;
+  border-block-start-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+}
+
+.border-r {
+  border-inline-end-width: 1px !important;
+  border-inline-end-style: solid !important;
+  border-inline-end-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+}
+
+.border-l {
+  border-inline-start-width: 1px !important;
+  border-inline-start-style: solid !important;
+  border-inline-start-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+}
+
+.border-e {
+  border-block-start-width: 1px !important;
+  border-block-start-style: solid !important;
+  border-block-start-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+}
+
+/* Текст в ячейках */
+.rgCell div {
+  color: #333;
+  font-size: .8rem;
+}
+
+/* Выделенная строка/ячейка */
+.rgRow.selected-row {
+  background-color: rgb(190, 214, 236) !important;
+}
+
+.rgRow.multi-selected-row {
+  background-color: palevioletred !important;
+}
+
+.rgCell.selected-cell {
+  outline: 1px solid blue;
+  height: 98% !important;
+  z-index: 1000;
+  background-color: rgb(137, 189, 232) !important;
+}
+
+.rgCell div {
+  padding: 0 !important;
+}
+
+/* Зум */
+&.zoom-50 {
+  revogr-header .rgHeaderCell {
+    font-size: .55rem;
+  }
+
+  .rgCell div {
+    font-size: .55rem;
+  }
+
+  .rgCell.selected-cell {
+    height: 98% !important;
+  }
+}
+
+&.zoom-75 {
+  revogr-header .rgHeaderCell {
+    font-size: .6rem;
+  }
+
+  .rgCell div {
+    font-size: .6rem;
+  }
+}
+
+&.zoom-100 {
+  revogr-header .rgHeaderCell {
+    font-size: .8rem;
+  }
+
+  .rgCell div {
+    font-size: .8rem;
+  }
+}
+
+&.zoom-125 {
+  revogr-header .rgHeaderCell {
+    font-size: .9rem;
+  }
+
+  .rgCell div {
+    font-size: .9rem;
+  }
+}
+
+&.zoom-150 {
+  revogr-header .rgHeaderCell {
+    font-size: 1.1rem;
+  }
+
+  .rgCell div {
+    font-size: 1.1rem;
+  }
+}
+
+/* Закрепленные строки */
+revogr-overlay-selection[type='rowPinStart']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-color: gray;
+  z-index: 10;
+  pointer-events: none;
+}
+}
+
+/* Скрываем выделение в таблице (классическое от RevoGrid) */
+.selection-border-range, revogr-focus {
+display: none !important;
+opacity: 0 !important;
+}
+
+.select-css {
+background-color: rgb(var(--v-theme-surface));
+background-image: none;
+color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));
+border-color: rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.select-css:focus {
+color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));
+}
+
+revogr-filter-panel input[type='text'] {
+color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity)) !important;
+background-color: rgb(var(--v-theme-surface-light)) !important;
+}
+
+.revo-dropdown-list .dropdown-inner {
+color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity)) !important;
+background-color: rgb(var(--v-theme-surface)) !important;
+}
+
+.h-33 {
+height: 33% !important;
+line-height: 100% !important;
+}
+
+.h-66 {
+height: 66% !important;
+line-height: 100% !important;
+}
+
+.yellow-important {
+background: #ffeb3b;
+}
+
+.purple-priority {
+background: #ffeb3b;
+border: 2px solid purple;
+}

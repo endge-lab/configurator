@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $namespace
+  labels:
+    name: $namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $CI_PROJECT_TITLE-deploy
+  namespace: $namespace
+  annotations:
+    repo: $CI_PROJECT_URL
+  labels:
+    app: $CI_PROJECT_TITLE-app
+    component: $CI_PROJECT_TITLE-deploy
+    version: $VERSION_LABEL
+    app.kubernetes.io/name: $CI_PROJECT_TITLE
+    app.kubernetes.io/instance: $BUILD_MODE
+    app.kubernetes.io/version: $VERSION_LABEL
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: $CI_PROJECT_TITLE-app
+  template:
+    metadata:
+      annotations:
+        repo: $CI_PROJECT_URL
+      labels:
+        app: $CI_PROJECT_TITLE-app
+        component: $CI_PROJECT_TITLE-deploy
+        version: $VERSION_LABEL
+        app.kubernetes.io/name: $CI_PROJECT_TITLE
+        app.kubernetes.io/instance: $BUILD_MODE
+        app.kubernetes.io/version: $VERSION_LABEL
+    spec:
+      nodeSelector:
+        module: configurator
+      tolerations:
+        - key: module
+          operator: Equal
+          value: configurator
+          effect: NoSchedule
+      containers:
+        - name: $CI_PROJECT_TITLE
+          image: $DOCKER_REGISTRY/$IMAGE_NAME
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: $CI_PROJECT_TITLE-svc
+  namespace: $namespace
+  annotations:
+    repo: $CI_PROJECT_URL
+  labels:
+    app: $CI_PROJECT_TITLE-app
+    component: $CI_PROJECT_TITLE-deploy
+    version: $VERSION_LABEL
+    app.kubernetes.io/name: $CI_PROJECT_TITLE
+    app.kubernetes.io/instance: $BUILD_MODE
+    app.kubernetes.io/version: $VERSION_LABEL
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    component: $CI_PROJECT_TITLE-deploy
