@@ -409,9 +409,9 @@ async function save(): Promise<void> {
       </div>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-3 xl:overflow-hidden">
-      <div class="grid min-h-full gap-3 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)] xl:overflow-hidden">
-        <Card class="flex min-h-[420px] overflow-hidden py-0 xl:h-full xl:min-h-0 xl:max-h-full">
+    <div class="min-h-0 flex-1 overflow-y-auto p-3">
+      <div class="grid min-h-full items-start gap-3 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)]">
+        <Card class="flex min-h-0 overflow-visible py-0">
           <div class="flex h-full min-h-0 flex-col">
             <div class="border-b px-4 py-3">
               <div class="flex items-center gap-2 text-sm font-semibold">
@@ -450,7 +450,7 @@ async function save(): Promise<void> {
               </div>
             </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div class="min-h-0 flex-1">
               <div class="space-y-2 p-4">
                 <NavigationEditorTreeNode
                   v-for="node in editor.tree"
@@ -489,7 +489,7 @@ async function save(): Promise<void> {
           </div>
         </Card>
 
-        <Card class="flex min-h-[420px] overflow-hidden py-0 xl:h-full xl:min-h-0 xl:max-h-full">
+        <Card class="flex min-h-0 overflow-visible py-0">
           <div class="flex h-full min-h-0 flex-col">
             <div class="border-b px-4 py-3">
               <div class="flex items-center gap-2 text-sm font-semibold">
@@ -501,7 +501,7 @@ async function save(): Promise<void> {
               </div>
             </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div class="min-h-0 flex-1">
               <div v-if="selectedNode" class="space-y-4 p-4">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-sm font-semibold">
