@@ -1,0 +1,10 @@
+- generic [active]:
+  - generic:
+    - paragraph [ref=e3]: Идет загрузка приложения...
+    - region "Notifications alt+T":
+      - list
+  - generic [ref=e4]:
+    - generic "Toggle devtools panel" [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+    - generic "Toggle Component Inspector" [ref=e11] [cursor=pointer]:
+      - img [ref=e12]

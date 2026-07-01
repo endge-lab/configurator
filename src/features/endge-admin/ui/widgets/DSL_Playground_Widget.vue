@@ -35,8 +35,17 @@ const DSL_DEMO_OPTIONS: { id: string; label: string; jsx: string }[] = [
   { id: 'styles', label: 'Стили (p, b, r)', jsx: '<Box p="2" b="1 #ddd" r="8">\n  <Text>Отступы, рамка, скругление</Text>\n</Box>' },
 ]
 
+function createPreviewModel(): RComponentDSL {
+  const model = new RComponentDSL()
+  model.id = 'dsl-playground'
+  model.name = 'dsl-playground'
+  model.type = ComponentType.DSL
+  return model
+}
+
 const version = ref(0)
-const previewModel = ref<RComponentDSL>(new RComponentDSL())
+const previewModel = ref<RComponentDSL>(createPreviewModel())
+const isPreviewReady = ref(false)
 const jsxScript = useLocalStorage('dsl-playground-jsx', '<Text>Hello World</Text>')
 const selectedDemoId = ref<string>('')
 const splitRatio = useLocalStorage('dsl-playground-split', SPLIT_DEFAULT)
@@ -72,9 +81,6 @@ function onMouseUp(): void {
 
 onMounted(() => {
   Endge.script.declareJSX()
-  previewModel.value.id = 'dsl-playground'
-  previewModel.value.name = 'dsl-playground'
-  previewModel.value.type = ComponentType.DSL
   compilePreview()
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
@@ -88,6 +94,7 @@ function compilePreview(): void {
   try {
     previewModel.value.jsxScript = jsxScript.value
     previewModel.value.compile()
+    isPreviewReady.value = true
     version.value++
   }
   catch {
@@ -173,6 +180,7 @@ async function insertDemo(): Promise<void> {
             <Label class="font-semibold mb-2">Превью</Label>
             <ScrollArea class="flex-1 border rounded-md min-h-0">
               <ComponentRenderer
+                v-if="isPreviewReady"
                 :key="version"
                 class="p-4 min-h-full"
                 :model="previewModel"

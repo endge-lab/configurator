@@ -1,0 +1,13 @@
+diff --git a/dist/core.js b/dist/core.js
+index 8f22f962f32e0738a1c6eb1cdff2b27182e93206..5115a5de60a884e6efd472673d1a50fd439c50c9 100644
+--- a/dist/core.js
++++ b/dist/core.js
+@@ -84708,7 +84708,7 @@ function GT(n) {
+ function ZB(n) {
+   const r = GT(n);
+   return r ? {
+-    type: r.renderType === "component" ? RenderComponentType.Component : RenderComponentType.Functional,
++    type: r.renderType === "component" ? tm.Component : tm.Functional,
+     component: r.component
+   } : null;
+ }

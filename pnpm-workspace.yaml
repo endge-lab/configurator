@@ -1,2 +1,5 @@
 packages:
   - 'packages/@endge-nova'
+
+patchedDependencies:
+  '@endge/core@1.2.5': patches/@endge__core@1.2.5.patch
