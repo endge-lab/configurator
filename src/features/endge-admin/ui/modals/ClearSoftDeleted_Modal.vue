@@ -19,6 +19,8 @@ import { getSoftDeletedItems as getSoftDeletedFromTree } from '@/features/endge-
 import { EndgeAdmin } from '@/features/endge-admin/model/core/endge-admin.ts'
 import { useDomainStore } from '@endge/vue'
 
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
 interface SoftDeletedItem {
   id: string
   name: string
@@ -81,6 +83,7 @@ async function clearAll(): Promise<void> {
     const supportedDocTypes = new Set<DomainDocumentType>([
       ComponentType.Table,
       ComponentType.DSL,
+      COMPONENT_SFC_TYPE,
       QueryType.REST,
       QueryType.GraphQL,
       QueryType.Custom,
@@ -96,6 +99,7 @@ async function clearAll(): Promise<void> {
       const type = item.type!
       await Endge.schema.deleteDocumentHard(item.id, type)
       if (type === ComponentType.Table || type === ComponentType.DSL) Endge.domain.removeComponent(item.id)
+      else if (type === COMPONENT_SFC_TYPE) (Endge.domain as any).removeComponentSFC?.(item.id)
       else if (type === ScriptType.ScenarioSetup) Endge.domain.removeScenario(item.id)
       else if (type === QueryType.REST || type === QueryType.GraphQL || type === QueryType.Custom) Endge.domain.removeQuery(item.id)
       else if (type === ParameterType.DefaultParameter) Endge.domain.removeParameter(item.id)
@@ -111,15 +115,15 @@ async function clearAll(): Promise<void> {
         const toDelete: { id: string; type: DomainDocumentType }[] = []
         if (view.filterId) {
           const f = Endge.domain.getFilter(view.filterId)
-          if (f && isInheritedOnlyFromView(f, viewId)) toDelete.push({ id: view.filterId, type: FilterType.DefaultFilter as DomainDocumentType })
+          if (f && isInheritedOnlyFromView(f, viewId)) toDelete.push({ id: String(view.filterId), type: FilterType.DefaultFilter as DomainDocumentType })
         }
         if (view.queryId) {
           const q = Endge.domain.getQuery(view.queryId)
-          if (q && isInheritedOnlyFromView(q, viewId)) toDelete.push({ id: view.queryId, type: q.type })
+          if (q && isInheritedOnlyFromView(q, viewId)) toDelete.push({ id: String(view.queryId), type: q.type })
         }
         if (view.componentId) {
           const c = Endge.domain.getComponent(view.componentId)
-          if (c && isInheritedOnlyFromView(c, viewId)) toDelete.push({ id: view.componentId, type: c.type as DomainDocumentType })
+          if (c && isInheritedOnlyFromView(c, viewId)) toDelete.push({ id: String(view.componentId), type: c.type as DomainDocumentType })
         }
         for (const { id, type } of toDelete) {
           await Endge.schema.deleteDocumentHard(id, type)

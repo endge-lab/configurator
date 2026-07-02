@@ -14,6 +14,8 @@ import {
   duplicateComponent,
 } from '@endge/core'
 
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
 /**
  * Возвращает сущность домена по id и типу документа.
  */
@@ -23,6 +25,8 @@ export function getEntityByDocType(
   docType: DomainDocumentType,
 ): unknown {
   switch (docType) {
+    case COMPONENT_SFC_TYPE:
+      return (domain as any).getComponentSFC?.(id)
     case ComponentType.DSL:
     case ComponentType.Table:
       return domain.getComponent(id)

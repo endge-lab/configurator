@@ -9,6 +9,7 @@ import { showWidget } from '@/components/layouts/grid'
 import type { EndgeAdminTabs } from '@/features/endge-admin/model/core/endge-admin-tabs.ts'
 import CustomInspector from '@/features/endge-admin/ui/section/inspectors/Custom_Inspector.vue'
 import DslInspector from '@/features/endge-admin/ui/section/inspectors/DSL_Inspector.vue'
+import ComponentSFCInspector from '@/features/endge-admin/ui/section/inspectors/ComponentSFC_Inspector.vue'
 import ActionInspector from '@/features/endge-admin/ui/section/inspectors/Action_Inspector.vue'
 import ConverterInspector from '@/features/endge-admin/ui/section/inspectors/Converter_Inspector.vue'
 import IntegrationInspector from '@/features/endge-admin/ui/section/inspectors/Integration_Inspector.vue'
@@ -34,6 +35,7 @@ import SettingsInspector from '@/features/endge-admin/ui/section/inspectors/Sett
 import UIEditorDemoInspector from '@/features/endge-admin-ui-editor/UI/UIEditorDemoInspector.vue'
 
 const INSPECTOR_WIDGET_ID = 'inspector'
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 export type InspectorView = { component: Component; props: Record<string, unknown> }
 
@@ -84,6 +86,7 @@ export class EndgeAdminInspector {
   private _registry = new Map<DomainDocumentType | string, Component>([
     [ComponentType.DSL, markRaw(DslInspector)],
     [ComponentType.Table, markRaw(TableInspector)],
+    [COMPONENT_SFC_TYPE, markRaw(ComponentSFCInspector)],
     [ScriptType.ScenarioSetup, markRaw(ScenarioInspector)],
     [QueryType.GraphQL, markRaw(GraphQlInspector)],
     [QueryType.REST, markRaw(RestInspector)],

@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { EndgeAdmin } from '@/features/endge-admin/model/core/endge-admin.ts'
 import { useDomainStore } from '@endge/vue'
 
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
 interface DocTypeOption {
   type: DomainDocumentType
   label: string
@@ -25,6 +27,7 @@ interface DocTypeOption {
 const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: ComponentType.DSL, label: 'DSL', section: DomainSectionType.Component },
   { type: ComponentType.Table, label: 'Table', section: DomainSectionType.Component },
+  { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
   { type: QueryType.GraphQL, label: 'GraphQL', section: DomainSectionType.Query },
   { type: QueryType.REST, label: 'REST', section: DomainSectionType.Query },
   { type: ScriptType.ScenarioSetup, label: 'Сценарий', section: DomainSectionType.Scenario },
@@ -236,6 +239,16 @@ function buildPayloadTemplate(): Record<string, unknown> {
       schema: {},
       inputFields: [],
       columns: [],
+    }
+  }
+
+  if (activeType.value === COMPONENT_SFC_TYPE) {
+    return {
+      ...base,
+      source: '<script setup lang="ts">\\n</' + 'script>\\n\\n<template>\\n  <Text>SFC</Text>\\n</template>\\n',
+      supportedTargets: ['dom', 'canvas'],
+      modelVersion: 1,
+      meta: {},
     }
   }
 

@@ -20,6 +20,7 @@ import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
 import { runBusy } from '@/features/endge-admin/model/core/endge-admin-busy.ts'
 import { isAdminTabStorageDisabled } from '@/features/endge-admin/model/core/endge-admin-debug-flags.ts'
 import { RComponentDSLEditor } from '@/features/endge-admin/domain/entities/RComponentDSLEditor.ts'
+import { RComponentSFCEditor } from '@/features/endge-admin/domain/entities/RComponentSFCEditor.ts'
 import { RComponentTableEditor } from '@/features/endge-admin/domain/entities/RComponentTableEditor.ts'
 import { RActionEditor } from '@/features/endge-admin/domain/entities/RActionEditor.ts'
 import { RConverterEditor } from '@/features/endge-admin/domain/entities/RConverterEditor.ts'
@@ -48,6 +49,7 @@ import { getPresentationBindingEditorState } from '@/features/endge-admin/model/
 import MarkdownViewer from '@/features/endge-admin/ui/components/MarkdownViewer.vue'
 import TabContentWrapper from '@/features/endge-admin/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-admin/ui/section/document/entity/ComponentDSL_Editor.vue'
+import ComponentSFC_Editor from '@/features/endge-admin/ui/section/document/entity/ComponentSFC_Editor.vue'
 import ComponentTable_Editor from '@/features/endge-admin/ui/section/document/entity/ComponentTable_Editor.vue'
 import Action_Editor from '@/features/endge-admin/ui/section/document/entity/Action_Editor.vue'
 import FiltersPanel_Editor from '@/features/endge-admin/ui/section/document/entity/FiltersPanel_Editor.vue'
@@ -84,6 +86,8 @@ import Architecture_Tab from '@/features/endge-admin/ui/section/architecture/Arc
 import Domain_Analysis_Tab from '@/features/endge-admin/ui/section/domain-analysis/Domain_Analysis_Tab.vue'
 import Runtime_Debug_Tab from '@/features/endge-admin/ui/section/runtime-debug/Runtime_Debug_Tab.vue'
 import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/UI/UIEditorDemo_Singleton.vue'
+
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = 'endge-document-editor' as const
 const VIEW_ID_SETTINGS = 'endge-settings-editor' as const
@@ -520,6 +524,10 @@ export class EndgeAdminTabs {
     const key = String(docType)
     if (key === String(ComponentType.Table) || key === String(ComponentType.DSL))
       return Endge.domain.getComponent(id)?.name ?? id
+    if (key === String(COMPONENT_SFC_TYPE)) {
+      const component = (Endge.domain as any).getComponentSFC?.(id)
+      return component?.displayName ?? component?.name ?? id
+    }
     if (key === String(QueryType.GraphQL) || key === String(QueryType.REST) || key === String(QueryType.Custom))
       return Endge.domain.getQuery(id)?.displayName ?? Endge.domain.getQuery(id)?.name ?? id
     if (key === String(ScriptType.ScenarioSetup))
@@ -573,6 +581,8 @@ export class EndgeAdminTabs {
       return 'ti ti-table text-green-500 text-xl'
     if (key === String(ComponentType.DSL))
       return 'ti ti-file-type-jsx text-purple-500 text-xl'
+    if (key === String(COMPONENT_SFC_TYPE))
+      return 'ti ti-file-type-tsx text-cyan-500 text-xl'
     if (key === String(QueryType.GraphQL))
       return 'ti ti-brand-graphql text-indigo-500 text-xl'
     if (key === String(QueryType.REST))
@@ -789,6 +799,7 @@ export class EndgeAdminTabs {
   private readonly _docResolvers: Map<string, DocResolver> = new Map([
     [String(ComponentType.Table), (documentId) => this._resolveComponentTable(documentId)],
     [String(ComponentType.DSL), (documentId) => this._resolveComponentDSL(documentId)],
+    [String(COMPONENT_SFC_TYPE), (documentId) => this._resolveComponentSFC(documentId)],
     [String(QueryType.REST), (documentId) => this._resolveQuery(documentId, QueryType.REST)],
     [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId, QueryType.GraphQL)],
     [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId, QueryType.Custom)],
@@ -849,6 +860,23 @@ export class EndgeAdminTabs {
         if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
           (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(component)
       },
+    }
+  }
+
+  private _resolveComponentSFC(documentId: string): EditorSession | null {
+    const component = (Endge.domain as any).getComponentSFC?.(documentId) ?? null
+    if (!component)
+      return null
+    const editor = new RComponentSFCEditor()
+    editor.fillFromSource(component)
+    return {
+      view: {
+        component: markRaw(ComponentSFC_Editor),
+        props: { tabContext: { editor } },
+      },
+      editor,
+      model: component,
+      syncBeforeSave: () => editor.updateSource(component),
     }
   }
 

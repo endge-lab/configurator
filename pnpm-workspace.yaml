@@ -1,5 +1,7 @@
 packages:
   - 'packages/@endge-nova'
-
-patchedDependencies:
-  '@endge/core@1.2.5': patches/@endge__core@1.2.5.patch
+  - '../../packages/@endge-codegen'
+  - '../../packages/@endge-core'
+  - '../../packages/@endge-raph'
+  - '../../packages/@endge-utils'
+  - '../../packages/@endge-vue'

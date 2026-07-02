@@ -24,6 +24,8 @@ import { randomString } from '@endge/utils'
 
 import { SOFT_DELETED_IDENTITY } from './domain-tree'
 
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
 /** Элемент payload при перетаскивании сущности. */
 export interface DragPayloadItem {
   id: string
@@ -103,6 +105,7 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
 const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   ComponentType.Table,
   ComponentType.DSL,
+  COMPONENT_SFC_TYPE,
   QueryType.REST,
   QueryType.GraphQL,
   QueryType.Custom,
@@ -705,7 +708,10 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   const identity = String(entity.identity ?? id)
 
   if (sectionType === DomainSectionType.Component) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeComponentById?.(x), x => Endge.domain.removeComponent(x))
+    if (entity.type === COMPONENT_SFC_TYPE)
+      byId(entityId, identity, (x: any) => (Endge.domain as any).removeComponentSFCById?.(x), x => (Endge.domain as any).removeComponentSFC?.(x))
+    else
+      byId(entityId, identity, (x: any) => Endge.domain.removeComponentById?.(x), x => Endge.domain.removeComponent(x))
   }
   else if (sectionType === DomainSectionType.Scenario) {
     byId(entityId, identity, (x: any) => Endge.domain.removeScenarioById?.(x), x => Endge.domain.removeScenario(x))
@@ -784,7 +790,7 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
   const numId = toNumericId(id)
 
   if (sectionType === DomainSectionType.Component)
-    return Endge.domain.getComponent(id)
+    return Endge.domain.getComponent(id) ?? (Endge.domain as any).getComponentSFC?.(id)
   if (sectionType === DomainSectionType.Query)
     return (numId != null ? Endge.domain.getQueryById(numId) : null) ?? Endge.domain.getQuery(id)
   if (sectionType === DomainSectionType.Scenario)

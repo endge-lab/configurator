@@ -10,7 +10,7 @@ import { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const props = defineProps<{
-  options: SmartTabsOptions
+  options?: SmartTabsOptions
   api?: SmartTabsApi
   getIconClass?: (tab: SmartTabRef) => string | null
 }>()
@@ -19,7 +19,11 @@ const dragOverIndex = ref<number | null>(null)
 const tabsStripRef = ref<HTMLElement | null>(null)
 const contextMenu = ref<{ tabId: string; x: number; y: number } | null>(null)
 
-const tabsApi = props.api ?? useSmartTabs(props.options)
+if (!props.api && !props.options) {
+  throw new Error('[SmartTabsHost] options are required when api is not provided')
+}
+
+const tabsApi = props.api ?? useSmartTabs(props.options!)
 const tabIconComponentCache = new Map<string, Component>()
 
 console.log('[SmartTabsHost] Инициализация', {

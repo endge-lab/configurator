@@ -79,6 +79,8 @@ import {
   withoutDeletedAndInherited,
 } from '@/features/endge-admin/model/domain/domain-tree'
 
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
 const tabs = EndgeAdmin.tabs
 
 type MenuAction
@@ -381,7 +383,7 @@ const ROOT_TO_SECTION = computed(() => {
   return {
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
     'root-queries': { section: DomainSectionType.Query, items: () => withoutDeletedAndInherited(domainStore.queries, softId) },
-    'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited(domainStore.components, softId) },
+    'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-scenarios': { section: DomainSectionType.Scenario, items: () => withoutDeleted(domainStore.scenarios, softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
     'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeletedAndInherited(domainStore.filters, softId) },
@@ -450,6 +452,7 @@ const SECTION_FOLDER_PRESENTATION = computed(() => {
 const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   ComponentType.DSL,
   ComponentType.Table,
+  COMPONENT_SFC_TYPE,
   QueryType.GraphQL,
   QueryType.REST,
   ScriptType.ScenarioSetup,

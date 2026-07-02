@@ -112,6 +112,7 @@ export function getFolderParent(f: { parent?: string | number | null, parentId?:
 export interface DomainStoreForTree {
   folders?: any[]
   components?: any[]
+  componentSFCs?: any[]
   queries?: any[]
   scenarios?: any[]
   actions?: any[]
@@ -180,6 +181,7 @@ export function getSoftDeletedItems(
     }
   }
   add(store.components, DomainSectionType.Component)
+  add(store.componentSFCs, DomainSectionType.Component)
   add(store.queries, DomainSectionType.Query)
   add(store.scenarios, DomainSectionType.Scenario)
   add(store.actions, DomainSectionType.Action)
