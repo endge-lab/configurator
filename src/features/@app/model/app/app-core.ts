@@ -8,6 +8,10 @@ import domainJson from '@/mock/endge-domain.json'
 export class AppCore {
   private static _isInitialized = false
 
+  /**
+   * Одноразово запускает прикладное ядро конфигуратора.
+   * Подключает Vue-плагин Endge и передает boot-контекст в централизованный `Endge.boot()`.
+   */
   public static async init(): Promise<void> {
     if (this.isInitialized)
       return
@@ -20,6 +24,10 @@ export class AppCore {
     this._isInitialized = true
   }
 
+  /**
+   * Сбрасывает состояние Endge и локальный флаг запуска приложения.
+   * Используется для полного повторного boot без пересоздания `AppCore`.
+   */
   public static async reset(): Promise<void> {
     if (!this.isInitialized)
       return
@@ -28,6 +36,10 @@ export class AppCore {
     this._isInitialized = false
   }
 
+  /**
+   * Собирает boot-контекст из env-переменных и mock-домена.
+   * Payload включается только при явном `VITE_STORAGE_PROVIDER=payload`.
+   */
   private static _createBootContext(): EndgeBootContext {
     const rawProvider = String(import.meta.env.VITE_STORAGE_PROVIDER || 'plain').trim().toLowerCase()
     const dataProvider: EndgeDataProvider = rawProvider === 'payload' ? 'payload' : 'plain'
@@ -48,6 +60,9 @@ export class AppCore {
     }
   }
 
+  /**
+   * Показывает, был ли уже выполнен успешный boot текущего приложения.
+   */
   public static get isInitialized(): boolean {
     return this._isInitialized
   }
