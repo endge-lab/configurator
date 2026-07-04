@@ -157,8 +157,8 @@ function flatten(nodes: TreeNode[], depth: number = 0): FlatRow[] {
 const flatRows = computed<FlatRow[]>(() => flatten(treeNodes.value))
 
 // -------------------- actions --------------------
-function loadCurrentJournal(): void {
-  Endge.domain.compile()
+async function loadCurrentJournal(): Promise<void> {
+  await Endge.build()
   applyCurrentJournal()
 }
 

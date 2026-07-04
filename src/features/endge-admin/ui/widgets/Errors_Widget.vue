@@ -39,8 +39,7 @@ async function runProjectAnalysis(): Promise<void> {
   try {
     await new Promise<void>((resolve) => {
       setTimeout(() => {
-        Endge.domain.compile()
-        resolve()
+        void Endge.build().finally(resolve)
       }, 100)
     })
   }
@@ -67,7 +66,7 @@ function formatNodeMessage(n: LogNode): string {
     case 'event':
       return n.msg || n.name || 'event'
     default:
-      return n.name ?? n.kind
+      return 'log'
   }
 }
 </script>

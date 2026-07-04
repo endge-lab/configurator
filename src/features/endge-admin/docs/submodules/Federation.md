@@ -1,40 +1,44 @@
 # Федерации и модули
 
-`Endge` и `AppCore` работают как статические федерации.
+`Endge` работает как статическая федерация модулей. `AppCore` остается отдельной прикладной точкой запуска и не является федерацией.
 
 Федерация:
 - наследуется от `EndgeFederation`
 - существует в единственном экземпляре через `globalThis`
 - используется только статически, без `new`
-- хранит модули в порядке регистрации
-- вызывает lifecycle в том же порядке, без топологической сортировки
+- хранит модули в итоговом порядке после `before/after`
+- вызывает lifecycle в итоговом порядке модулей
 
 ## Pipeline федерации
 
 Порядок вызовов:
 1. `setup()`
-2. `loadFromStorage()`
-3. `init()`
-4. `reset()`
+2. `load()`
+3. `build()`
+4. `start()`
+5. `reset()`
 
-`setup()` выполняется один раз перед первым `init()`.  
-`init()` запускает рабочую инициализацию модулей.  
+`setup()` подготавливает зависимости и конфигурацию модулей.  
+`load()` загружает или восстанавливает входные данные модулей.  
+`build()` строит производные runtime-структуры из загруженных данных.  
+`start()` запускает runtime-инфраструктуру модуля.  
 `reset()` сбрасывает runtime-состояние федерации и модулей.
 
 ## Допустимые методы федерации
 
 Основные публичные статические методы федерации:
-- `registerModule(key, module)` - регистрирует модуль
-- `setup()` - вызывает `setup()` у всех модулей
-- `init()` - инициализирует федерацию
+- `use(plugin)` - добавляет plugin до конфигурации федерации
+- `defineModule(descriptor)` - декларирует модуль во время конфигурации
+- `getModule(key)` - возвращает зарегистрированный модуль
+- `tryGetModule(key)` - возвращает модуль или `null`
+- `hasModule(key)` - проверяет наличие модуля
+- `setup(ctx)` - вызывает `setup(ctx)` у всех модулей
+- `load(ctx)` - вызывает `load(ctx)` у всех модулей
+- `build(ctx)` - вызывает `build(ctx)` у всех модулей
+- `start(ctx)` - вызывает `start(ctx)` у всех модулей
 - `reset()` - вызывает `reset()` у всех модулей
 - `saveToStorage()` - собирает `serialize()` по всем модулям
 - `loadFromStorage()` - вызывает `deserialize(payload)` по всем модулям
-
-Внутренне федерация также использует:
-- `initModules()`
-- `resetModules()`
-- `runInitialization()`
 
 ## EndgeModule
 
@@ -45,7 +49,9 @@
 
 Допустимые методы модуля:
 - `setup()` - подготовка зависимостей и runtime-структур
-- `init()` - основная инициализация после гидрации
+- `load()` - загрузка входных данных
+- `build()` - построение производных структур
+- `start()` - запуск runtime-инфраструктуры
 - `reset()` - сброс runtime-состояния
 - `serialize()` - вернуть snapshot для сохранения
 - `deserialize(payload)` - восстановить состояние из snapshot
@@ -67,26 +73,11 @@
 ## Пример
 
 ```ts
-class AppCore extends EndgeFederation {
-  protected static override readonly federationId = 'app-core'
-  protected static override readonly storageKey = 'app:settings'
+class ProductFederation extends EndgeFederation {
+  protected static override readonly federationId = 'product'
 
   protected static override configureFederation(): void {
-    this.registerModule('domain', new AppDomain())
-  }
-}
-
-class AppDomain extends EndgeModule {
-  public reset(): void {
-    this.notify()
-  }
-
-  public serialize(): unknown {
-    return {}
-  }
-
-  public deserialize(payload: unknown): void {
-    void payload
+    this.defineModule({ key: 'settings', module: new ProductSettings() })
   }
 }
 ```

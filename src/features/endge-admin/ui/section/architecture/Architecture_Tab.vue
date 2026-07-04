@@ -57,16 +57,15 @@ const federationMetaByNodeId: Record<string, DiagramMeta> = {
     kind: 'federation',
   },
   'f-appcore': {
-    title: 'Федерация APPCORE',
-    description: 'Прикладная федерация orchestration-уровня: инициализирует Endge, EndgeVue и bootstrap-пайплайн продукта.',
+    title: 'APPCORE',
+    description: 'Прикладная точка запуска: создает boot context, инициализирует Endge и подключает EndgeVue.',
     docId: 'submodules-app-core',
     kind: 'federation',
   },
 }
 
 const endgeModules: ModuleSpec[] = [
-  { title: 'app', description: 'Контекст приложения и текущего проекта.', docId: 'submodules-app' },
-  { title: 'bootstrap', description: 'Запуск шагов инициализации с зависимостями.', docId: 'submodules-bootstrap' },
+  { title: 'context', description: 'Текущий проект, среда и локаль.', docId: 'submodules-context' },
   { title: 'diagnostics', description: 'Системная диагностика, мониторинг и structured records.', docId: 'submodules-diagnostics' },
   { title: 'debug', description: 'Трассировка операций и диагностика.', docId: 'submodules-debug' },
   { title: 'testing', description: 'Тестовый режим и тестовые опции.', docId: 'submodules-testing' },
@@ -108,12 +107,8 @@ const endgeVueModules: ModuleSpec[] = [
 ]
 
 const appCoreModules: ModuleSpec[] = [
-  { title: 'module: domain', description: 'AppDomain как модуль AppCore.', docId: 'submodules-app-core-domain' },
-  { title: 'bootstrap: domain', description: 'Загрузка plain/payload-домена.', docId: 'submodules-app-core-bootstrap' },
-  { title: 'bootstrap: compile', description: 'Компиляция домена для админки и preview.', docId: 'submodules-app-core-bootstrap' },
-  { title: 'integration: Endge.init', description: 'Инициализация ядра Endge.', docId: 'submodules-app-core-integration' },
-  { title: 'integration: EndgeVue.init', description: 'Подключение слоя EndgeVue.', docId: 'submodules-app-core-integration' },
-  { title: 'integration: Endge.runtime.init', description: 'Запуск runtime-подсистемы.', docId: 'submodules-app-core-integration' },
+  { title: 'boot: Endge', description: 'Запуск ядра через Endge.boot(ctx).', docId: 'submodules-app-core-bootstrap' },
+  { title: 'plugin: EndgeVue', description: 'Подключение слоя EndgeVue через Endge.use.', docId: 'submodules-app-core-integration' },
 ]
 
 function createModuleNodes(
@@ -164,7 +159,7 @@ const federationLayouts: FederationLayout[] = [
   },
   {
     frameId: 'frame-appcore',
-    frameTitle: 'Федерация APPCORE',
+    frameTitle: 'APPCORE',
     federationId: 'f-appcore',
     frameY: 2060,
     frameHeight: 500,
@@ -199,7 +194,7 @@ const federationNodes: Node[] = [
     position: { x: 72, y: 1510 },
     targetPosition: Position.Top,
     sourcePosition: Position.Bottom,
-    data: { title: 'Федерация ENDGE VUE', subtitle: 'Реальные регистрации из EndgeVue.init()' },
+    data: { title: 'ENDGE VUE PLUGIN', subtitle: 'EndgeVueModule перед runtime' },
   },
   {
     id: 'f-appcore',
@@ -207,7 +202,7 @@ const federationNodes: Node[] = [
     position: { x: 72, y: 2170 },
     targetPosition: Position.Top,
     sourcePosition: Position.Right,
-    data: { title: 'Федерация APPCORE', subtitle: 'Модуль + bootstrap/integration orchestration' },
+    data: { title: 'APPCORE', subtitle: 'Boot/integration orchestration' },
   },
 ]
 
@@ -252,16 +247,9 @@ const edges = ref<Edge[]>([
   {
     id: 'cross-endge-runtime-to-appcore-runtime',
     source: 'eng-10',
-    target: 'appcore-6',
+    target: 'appcore-4',
     markerEnd: MarkerType.ArrowClosed,
     label: 'runtime',
-  },
-  {
-    id: 'cross-endge-bootstrap-to-appcore-bootstrap',
-    source: 'eng-1',
-    target: 'appcore-1',
-    markerEnd: MarkerType.ArrowClosed,
-    label: 'bootstrap',
   },
   {
     id: 'cross-endge-domain-to-appcore-domain',

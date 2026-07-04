@@ -54,8 +54,8 @@ function buildBundle(): EndgeAdminBridgeBundle {
     version: BRIDGE_VERSION,
     exportedAt: new Date().toISOString(),
     sourceUrl: window.location.href,
-    projectId: Endge.app.getCurrentProject(),
-    environment: Endge.app.getCurrentEnvironment(),
+    projectId: Endge.context.getCurrentProject(),
+    environment: Endge.context.getCurrentEnvironment(),
     domain: Endge.domain.toPlain(),
   }
 }
@@ -66,8 +66,8 @@ function buildPingPayload() {
     version: BRIDGE_VERSION,
     url: window.location.href,
     title: document.title,
-    projectId: Endge.app.getCurrentProject(),
-    environment: Endge.app.getCurrentEnvironment(),
+    projectId: Endge.context.getCurrentProject(),
+    environment: Endge.context.getCurrentEnvironment(),
   }
 }
 

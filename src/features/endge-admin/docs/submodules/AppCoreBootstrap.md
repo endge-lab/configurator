@@ -1,11 +1,11 @@
-# AppCore bootstrap
+# AppCore boot
 
-`AppCore` регистрирует шаги bootstrap через `Endge.bootstrap.registerSteps(...)`.
+`AppCore` запускает конфигуратор через единый `Endge.boot(ctx)`.
 
 Основные шаги:
-1. инициализация `Endge`;
-2. подключение `EndgeVue`;
-3. запуск `Endge.runtime`;
-4. загрузка plain/payload-домена и `Endge.domain.compile()`.
+1. создание `EndgeBootContext`;
+2. запуск `Endge.boot(ctx)`;
+3. подключение `EndgeVue`.
 
-Такой pipeline позволяет инициализировать только нужный уровень готовности.
+Внутри `Endge.boot(ctx)` фазы ядра выполняются централизованно:
+`setup -> load -> build -> start`.

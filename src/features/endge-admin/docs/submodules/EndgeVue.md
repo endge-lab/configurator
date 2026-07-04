@@ -1,9 +1,11 @@
-# Federation EndgeVue
+# EndgeVue plugin
 
-`EndgeVue` - интеграционный слой между ядром `Endge` и Vue-приложением.
+`EndgeVuePlugin` - интеграционный plugin между ядром `Endge` и Vue-приложением.
 
-В `EndgeVue.init()` выполняются регистрации:
-- рендеров в `Endge.render` (например, `Table`, `DSL`);
+Plugin регистрирует `EndgeVueModule` перед модулем `runtime`.
+
+В `EndgeVueModule` выполняются регистрации:
+- рендеров в `Endge.uiRegistry` (например, `Table`, `DSL`);
 - JSX-компонентов (`Layout`, `Flex`, `Box`, `Component`, `Text`, `DateTime`, `Icon`);
 - фазы `watch` в `Raph` для синхронизации реактивных `ref` с путями графа.
 

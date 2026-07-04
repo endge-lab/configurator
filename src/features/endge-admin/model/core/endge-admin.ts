@@ -62,7 +62,7 @@ export class EndgeAdmin extends EndgeModuleController {
     })
     host.init()
     if (!runtimeDebuggerDisabled) {
-      Endge.runtimeDebugger.start()
+      Endge.runtimeDebugger.startListening()
       startDiagnosticsChannelListener()
     }
   }
