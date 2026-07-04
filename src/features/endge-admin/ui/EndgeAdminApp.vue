@@ -41,6 +41,10 @@ function openDSLPlayground(): void {
   tabs.openDSLPlayground()
 }
 
+function openSFCPlayground(): void {
+  tabs.openSFCPlayground()
+}
+
 function openNovaSandboxSingleton(): void {
   tabs.openNovaSandboxSingleton()
 }
@@ -132,6 +136,9 @@ function openArchitecture(): void {
             <DropdownMenuSubContent>
               <DropdownMenuItem @click="openDSLPlayground">
                 DSL
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="openSFCPlayground">
+                SFC
               </DropdownMenuItem>
               <DropdownMenuItem @click="openNovaSandboxSingleton">
                 NOVA

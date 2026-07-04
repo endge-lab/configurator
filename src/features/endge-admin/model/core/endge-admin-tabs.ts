@@ -80,6 +80,7 @@ import ActionPlaygrounds_Singleton from '@/features/endge-admin/ui/section/docum
 import TableBenchmark_Singleton from '@/features/endge-admin/ui/section/document/singleton/TableBenchmark_Singleton.vue'
 import BackupRestore_Singleton from '@/features/endge-admin/ui/section/document/singleton/BackupRestore_Singleton.vue'
 import DSL_Playground_Widget from '@/features/endge-admin/ui/widgets/DSL_Playground_Widget.vue'
+import SFC_Playground_Widget from '@/features/endge-admin/ui/widgets/SFC_Playground_Widget.vue'
 import DemonstrationTab_View from '@/features/endge-admin/ui/section/demonstration/DemonstrationTab_View.vue'
 import Pulse_Tab from '@/features/endge-admin/ui/section/pulse/Pulse_Tab.vue'
 import Architecture_Tab from '@/features/endge-admin/ui/section/architecture/Architecture_Tab.vue'
@@ -94,6 +95,7 @@ const VIEW_ID_SETTINGS = 'endge-settings-editor' as const
 const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_VIEW_GENERATOR = 'endge-view-generator' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
+const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_NOVA_SANDBOX = 'endge-nova-sandbox' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
 const VIEW_ID_TABLE_BENCHMARK = 'endge-table-benchmark' as const
@@ -375,6 +377,20 @@ export class EndgeAdminTabs {
     this.openTab(tabRef)
   }
 
+  /** Открыть SFC Playground в единственном экземпляре (при повторном вызове - активация вкладки). */
+  public openSFCPlayground(): void {
+    const tabRef: SmartTabRef = {
+      id: 'sfc-playground',
+      label: 'SFC Playground',
+      viewId: VIEW_ID_SFC_PLAYGROUND,
+      payload: {},
+      closable: true,
+      singleton: true,
+      meta: { icon: 'ti ti-code-dots text-emerald-500 text-xl' },
+    }
+    this.openTab(tabRef)
+  }
+
   /** Открыть вкладку «Singleton» с Nova-песочницей в единственном экземпляре. */
   public openNovaSandboxSingleton(): void {
     const tabRef: SmartTabRef = {
@@ -646,6 +662,10 @@ export class EndgeAdminTabs {
     }))
     registerSmartTabView(VIEW_ID_DSL_PLAYGROUND, (): SmartTabViewResolved => ({
       component: markRaw(DSL_Playground_Widget),
+      props: {},
+    }))
+    registerSmartTabView(VIEW_ID_SFC_PLAYGROUND, (): SmartTabViewResolved => ({
+      component: markRaw(SFC_Playground_Widget),
       props: {},
     }))
     registerSmartTabView(VIEW_ID_NOVA_SANDBOX, (): SmartTabViewResolved => ({

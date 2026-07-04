@@ -990,6 +990,7 @@ export async function executeDuplicateDocument(
 const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "view-generator": () => EndgeAdmin.tabs.openViewGenerator(),
   "dsl-playground": () => EndgeAdmin.tabs.openDSLPlayground(),
+  "sfc-playground": () => EndgeAdmin.tabs.openSFCPlayground(),
   "nova-sandbox": () => EndgeAdmin.tabs.openNovaSandboxSingleton(),
   "action-playgrounds": () => EndgeAdmin.tabs.openActionPlaygroundsSingleton(),
   "table-benchmark": () => EndgeAdmin.tabs.openTableBenchmarkSingleton(),
@@ -1066,7 +1067,8 @@ export function parseFrontendRequestFromMessage(
   const m = text.match(FRONTEND_REQUEST_BLOCK_REG);
   if (!m) return null;
   try {
-    const raw = m[1].trim();
+    const raw = (m[1] ?? "").trim();
+    if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     return normalizeFrontendRequest(parsed);
   } catch {

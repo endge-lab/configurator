@@ -12,20 +12,6 @@ import ScriptEditor from "@/features/endge-admin/ui/components/ScriptEditor.vue"
 const tabs = EndgeAdmin.tabs;
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
 const tab = ref("template");
-const variantsText = computed({
-  get() {
-    return JSON.stringify(editor.value?.sourceParts?.variants ?? [], null, 2);
-  },
-  set(value: string) {
-    try {
-      const parsed = JSON.parse(value || "[]");
-      if (Array.isArray(parsed) && editor.value?.sourceParts)
-        editor.value.sourceParts.variants = parsed;
-    } catch {
-      // Пользователь может временно вводить невалидный JSON; сохранять будем только валидный массив.
-    }
-  },
-});
 
 async function save(): Promise<void> {
   editor.value?.syncSourceFromParts?.();
@@ -75,7 +61,6 @@ async function save(): Promise<void> {
           <TabsTrigger value="template"> Template </TabsTrigger>
           <TabsTrigger value="script"> Script </TabsTrigger>
           <TabsTrigger value="style"> Style </TabsTrigger>
-          <TabsTrigger value="variants"> Variants </TabsTrigger>
           <TabsTrigger value="preview"> Preview </TabsTrigger>
         </TabsList>
 
@@ -99,14 +84,6 @@ async function save(): Promise<void> {
           <ScriptEditor
             v-model="editor.sourceParts.style.content"
             language="css"
-            min-height="420px"
-            show-toolbar
-          />
-        </TabsContent>
-        <TabsContent value="variants" class="min-h-0 flex-1">
-          <ScriptEditor
-            v-model="variantsText"
-            language="json"
             min-height="420px"
             show-toolbar
           />

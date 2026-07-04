@@ -1,16 +1,9 @@
-interface RComponentSFCSourceParts {
-  script: { content: string }
-  template: { content: string }
-  style: { content: string, scoped: boolean }
-  variants: Array<{
-    name: string
-    when: string
-    priority: number
-    target: 'dom' | 'canvas' | 'any'
-    template: string
-    style?: string
-  }>
-}
+import {
+  cloneSFCSourceParts,
+  parseSFCSourceParts,
+  serializeSFCSourceParts,
+  type RComponentSFCSource_Parts,
+} from '@endge/core'
 
 /**
  * Редакторская модель SFC-компонента.
@@ -43,7 +36,7 @@ export class RComponentSFCEditor {
 
   source = ''
 
-  sourceParts: RComponentSFCSourceParts = parseSFCSourceParts('')
+  sourceParts: RComponentSFCSource_Parts = parseSFCSourceParts('')
 
   /** Заполняет редактор из persisted SFC-модели. */
   fillFromSource(source: any): void {
@@ -98,72 +91,4 @@ function normalizeTargets(raw: unknown): Array<'dom' | 'canvas'> {
 
   const targets = raw.filter((target): target is 'dom' | 'canvas' => target === 'dom' || target === 'canvas')
   return targets.length ? Array.from(new Set(targets)) : ['dom', 'canvas']
-}
-
-/** Создает пустую форму sourceParts для редактора. */
-function createEmptySFCSourceParts(): RComponentSFCSourceParts {
-  return {
-    script: { content: '' },
-    template: { content: '' },
-    style: { content: '', scoped: true },
-    variants: [],
-  }
-}
-
-/** Копирует вкладки source, чтобы Vue-editor не делил ссылку с parser result. */
-function cloneSFCSourceParts(parts: RComponentSFCSourceParts): RComponentSFCSourceParts {
-  return {
-    script: { content: parts.script.content },
-    template: { content: parts.template.content },
-    style: { content: parts.style.content, scoped: parts.style.scoped },
-    variants: parts.variants.map(variant => ({ ...variant })),
-  }
-}
-
-/** Простой parser v1 для вкладок SFC-редактора. */
-function parseSFCSourceParts(source: string): RComponentSFCSourceParts {
-  const parts = createEmptySFCSourceParts()
-  parts.script.content = extractBlock(source, 'script') ?? ''
-  parts.template.content = extractBlock(source, 'template') ?? ''
-  const style = extractBlockWithAttrs(source, 'style')
-  parts.style.content = style?.content ?? ''
-  parts.style.scoped = Boolean(style?.attrs.includes('scoped'))
-  return parts
-}
-
-/** Собирает вкладки редактора обратно в canonical SFC-source. */
-function serializeSFCSourceParts(parts: RComponentSFCSourceParts): string {
-  const styleScoped = parts.style.scoped ? ' scoped' : ''
-  const chunks = [
-    '<script setup lang="ts">',
-    parts.script.content.trim(),
-    '</' + 'script>',
-    '',
-    '<template>',
-    parts.template.content.trim(),
-    '</template>',
-  ]
-
-  if (parts.style.content.trim()) {
-    chunks.push('', `<style lang="endgecss"${styleScoped}>`, parts.style.content.trim(), '</style>')
-  }
-
-  return `${chunks.join('\n')}\n`
-}
-
-/** Вытаскивает содержимое первого тега. */
-function extractBlock(source: string, tag: string): string | null {
-  return extractBlockWithAttrs(source, tag)?.content ?? null
-}
-
-/** Вытаскивает содержимое первого тега вместе с атрибутами. */
-function extractBlockWithAttrs(source: string, tag: string): { attrs: string, content: string } | null {
-  const pattern = new RegExp(`<${tag}([^>]*)>([\\s\\S]*?)<\\/${tag}>`, 'i')
-  const match = source.match(pattern)
-  if (!match) return null
-
-  return {
-    attrs: match[1] ?? '',
-    content: (match[2] ?? '').trim(),
-  }
 }
