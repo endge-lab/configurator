@@ -1,36 +1,35 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Save } from 'lucide-vue-next'
+import { computed, ref } from "vue";
+import { Save } from "lucide-vue-next";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { EndgeAdmin } from '@/features/endge-admin/model/core/endge-admin.ts'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EndgeAdmin } from "@/features/endge-admin/model/core/endge-admin.ts";
+import ScriptEditor from "@/features/endge-admin/ui/components/ScriptEditor.vue";
 
-const tabs = EndgeAdmin.tabs
-const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-const tab = ref('template')
+const tabs = EndgeAdmin.tabs;
+const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
+const tab = ref("template");
 const variantsText = computed({
   get() {
-    return JSON.stringify(editor.value?.sourceParts?.variants ?? [], null, 2)
+    return JSON.stringify(editor.value?.sourceParts?.variants ?? [], null, 2);
   },
   set(value: string) {
     try {
-      const parsed = JSON.parse(value || '[]')
+      const parsed = JSON.parse(value || "[]");
       if (Array.isArray(parsed) && editor.value?.sourceParts)
-        editor.value.sourceParts.variants = parsed
-    }
-    catch {
+        editor.value.sourceParts.variants = parsed;
+    } catch {
       // Пользователь может временно вводить невалидный JSON; сохранять будем только валидный массив.
     }
   },
-})
+});
 
 async function save(): Promise<void> {
-  editor.value?.syncSourceFromParts?.()
-  await EndgeAdmin.tabs.save()
+  editor.value?.syncSourceFromParts?.();
+  await EndgeAdmin.tabs.save();
 }
 </script>
 
@@ -41,7 +40,9 @@ async function save(): Promise<void> {
   <div v-else class="w-full h-full">
     <div class="p-5 flex flex-col gap-5 h-full min-h-0">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <div class="size-10 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
+        <div
+          class="size-10 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0"
+        >
           <i class="ti ti-file-type-tsx text-cyan-500 text-2xl" />
         </div>
         <div class="min-w-0 flex-1">
@@ -71,42 +72,51 @@ async function save(): Promise<void> {
 
       <Tabs v-model="tab" class="min-h-0 flex-1 flex flex-col">
         <TabsList class="w-fit shrink-0">
-          <TabsTrigger value="template">
-            Template
-          </TabsTrigger>
-          <TabsTrigger value="script">
-            Script
-          </TabsTrigger>
-          <TabsTrigger value="style">
-            Style
-          </TabsTrigger>
-          <TabsTrigger value="variants">
-            Variants
-          </TabsTrigger>
-          <TabsTrigger value="preview">
-            Preview
-          </TabsTrigger>
+          <TabsTrigger value="template"> Template </TabsTrigger>
+          <TabsTrigger value="script"> Script </TabsTrigger>
+          <TabsTrigger value="style"> Style </TabsTrigger>
+          <TabsTrigger value="variants"> Variants </TabsTrigger>
+          <TabsTrigger value="preview"> Preview </TabsTrigger>
         </TabsList>
 
         <TabsContent value="template" class="min-h-0 flex-1">
-          <Textarea v-model="editor.sourceParts.template.content" class="h-full min-h-[420px] font-mono text-sm" />
+          <ScriptEditor
+            v-model="editor.sourceParts.template.content"
+            language="html"
+            min-height="420px"
+            show-toolbar
+          />
         </TabsContent>
         <TabsContent value="script" class="min-h-0 flex-1">
-          <Textarea v-model="editor.sourceParts.script.content" class="h-full min-h-[420px] font-mono text-sm" />
+          <ScriptEditor
+            v-model="editor.sourceParts.script.content"
+            language="typescript"
+            min-height="420px"
+            show-toolbar
+          />
         </TabsContent>
         <TabsContent value="style" class="min-h-0 flex-1">
-          <Textarea v-model="editor.sourceParts.style.content" class="h-full min-h-[420px] font-mono text-sm" />
+          <ScriptEditor
+            v-model="editor.sourceParts.style.content"
+            language="css"
+            min-height="420px"
+            show-toolbar
+          />
         </TabsContent>
         <TabsContent value="variants" class="min-h-0 flex-1">
-          <Textarea
+          <ScriptEditor
             v-model="variantsText"
-            class="h-full min-h-[420px] font-mono text-sm"
+            language="json"
+            min-height="420px"
+            show-toolbar
           />
         </TabsContent>
         <TabsContent value="preview" class="min-h-0 flex-1">
-          <Textarea
+          <ScriptEditor
             v-model="editor.source"
-            class="h-full min-h-[420px] font-mono text-sm"
+            language="html"
+            min-height="420px"
+            show-toolbar
             @blur="editor.parseSource()"
           />
         </TabsContent>

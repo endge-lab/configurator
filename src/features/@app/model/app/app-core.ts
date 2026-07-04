@@ -50,7 +50,6 @@ export class AppCore extends EndgeFederation {
 
         if (!this.isFrameworkInitialized) {
           EndgeVue.init()
-          Endge.runtime.init()
           this.isFrameworkInitialized = true
         }
 

@@ -10,12 +10,12 @@ export const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/admin',
-    redirect: to => ({
-      path: '/',
-      query: to.query,
-      hash: to.hash,
-    }),
+    path: '/test',
+    name: 'test',
+    component: () => import('@/pages/Test.vue'),
+    meta: {
+      layout: 'empty',
+    },
   },
   {
     path: '/:pathMatch(.*)*',
