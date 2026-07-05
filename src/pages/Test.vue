@@ -3,7 +3,7 @@
 import {Endge} from "@endge/core";
 
 console.log('TEST')
-console.log(Endge.domain)
+console.log(Endge.program)
 
 </script>
 

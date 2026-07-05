@@ -5,10 +5,10 @@ import 'reflect-metadata'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
-import { captureAppRenderFailure } from '@/features/@app/model/app/app-render-guard.ts'
+import { captureAppRenderFailure } from '@/features/endge-configurator/model/app-render-guard.ts'
 import { i18n } from '@/i18n'
 import { branding } from '@/lib/branding.ts'
-import { installEndgeChromeBridge } from '@/features/endge-admin/tools/chrome-bridge'
+import { installEndgeChromeBridge } from '@/features/endge-ide/tools/chrome-bridge'
 
 // В dev приложение само отдаёт домен в Vite-плагин для кодогенерации в src/gen
 if (import.meta.env.DEV) {

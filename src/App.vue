@@ -9,9 +9,9 @@ import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { appRenderGuardState, captureAppRenderFailure, resetAppRenderGuard } from '@/features/@app/model/app/app-render-guard.ts'
-import ErrorView from '@/features/@app/ui/pages/common/Error.vue'
-import { isAdminPlainMode } from '@/features/endge-admin/model/core/endge-admin-debug-flags.ts'
+import { appRenderGuardState, captureAppRenderFailure, resetAppRenderGuard } from '@/features/endge-configurator/model/app-render-guard.ts'
+import ErrorView from '@/features/endge-configurator/ui/pages/common/Error.vue'
+import { isIDEPlainMode } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 
 const route = useRoute()
 const error = ref<Error | null>(null)
@@ -22,7 +22,7 @@ const fatalRenderGuard = appRenderGuardState
 
 const currentLayout = computed(() => {
   if (fatalRenderGuard.value) { return Empty }
-  if (isAdminPlainMode()) { return Empty }
+  if (isIDEPlainMode()) { return Empty }
   const layout = (route.meta.layout || 'empty') as keyof typeof layouts
   return layouts[layout] ?? Empty
 })

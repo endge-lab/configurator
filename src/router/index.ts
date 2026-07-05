@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import { AppCore } from '@/features/@app/model/app/app-core.ts'
+import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator.ts'
 import { routes } from '@/router/routes.ts'
 
 const router = createRouter({
@@ -9,7 +9,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async () => {
-  await AppCore.init()
+  await EndgeConfigurator.init()
 
   return true
 })

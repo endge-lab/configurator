@@ -9,7 +9,7 @@ import GridHeader from '@/components/layouts/grid/GridHeader.vue'
 import { cleanupWidgetChannel, closeNonDetachablePopups, endWidgetDrag, getAreaSize, getLayoutState, getWidgetsByPosition, initWidgetChannel, moveWidget, setAreaSize } from '@/components/layouts/grid/layout.ts'
 import WidgetArea from '@/components/layouts/grid/WidgetArea.vue'
 import WidgetPanel from '@/components/layouts/grid/WidgetPanel.vue'
-import UIEditorDemoTopbar from '@/features/endge-admin-ui-editor/UI/UIEditorDemoTopbar.vue'
+import UIEditorDemoTopbar from '@/features/endge-admin-ui-editor/ui/UIEditorDemoTopbar.vue'
 
 // Initialize widget channel for popup communication
 initWidgetChannel()

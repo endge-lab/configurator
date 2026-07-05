@@ -1,10 +1,10 @@
 import { Endge } from '@endge/core'
 
-import UIEditorNodeRendererButton from '@/features/endge-admin-ui-editor/UI/renderers/UIEditorNodeRendererButton.vue'
-import UIEditorNodeRendererContainer from '@/features/endge-admin-ui-editor/UI/renderers/UIEditorNodeRendererContainer.vue'
-import UIEditorNodeRendererHost from '@/features/endge-admin-ui-editor/UI/renderers/UIEditorNodeRendererHost.vue'
-import UIEditorNodeRendererText from '@/features/endge-admin-ui-editor/UI/renderers/UIEditorNodeRendererText.vue'
-import UIEditorNodeRendererTextRuntime from '@/features/endge-admin-ui-editor/UI/renderers/UIEditorNodeRendererTextRuntime.vue'
+import UIEditorNodeRendererButton from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererButton.vue'
+import UIEditorNodeRendererContainer from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererContainer.vue'
+import UIEditorNodeRendererHost from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererHost.vue'
+import UIEditorNodeRendererText from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererText.vue'
+import UIEditorNodeRendererTextRuntime from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererTextRuntime.vue'
 
 let isRegistered = false
 

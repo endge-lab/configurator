@@ -4,7 +4,7 @@
 
 /* Endge */
 @import "./endge.scss";
-@import "../features/endge-admin/assets/endge-flow-editor.css";
+@import "../features/endge-ide/assets/endge-flow-editor.css";
 
 /* Table */
 @import "./sections/table/table.scss";

@@ -4,7 +4,7 @@ import { useCurrentSectionTitle } from '@/components/layouts/main/navigation'
 import Navigation from '@/components/layouts/main/Navigation.vue'
 import NavUser from '@/components/layouts/main/NavUser.vue'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import Time_Button from '@/features/@app/ui/common/buttons/Time_Button.vue'
+import Time_Button from '@/features/endge-configurator/ui/common/buttons/Time_Button.vue'
 
 const sectionTitle = useCurrentSectionTitle()
 

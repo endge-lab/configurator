@@ -30,7 +30,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import Zoom_Button from '@/features/@app/ui/common/buttons/Zoom_Button.vue'
+import Zoom_Button from '@/features/endge-configurator/ui/common/buttons/Zoom_Button.vue'
 import { availableLocales } from '@/i18n'
 
 const props = defineProps<{

@@ -4,7 +4,7 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'configurator',
-    component: () => import('@/features/endge-admin/ui/EndgeAdminApp.vue'),
+    component: () => import('@/features/endge-ide/ui/EndgeAdminApp.vue'),
     meta: {
       layout: 'grid',
     },
