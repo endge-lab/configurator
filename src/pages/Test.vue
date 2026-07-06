@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
-import type { ComponentSFCRuntimeHost, RComponentDiagnostic } from '@endge/core'
+import type { ComponentSFCRuntimeHost, ProgramDiagnostic } from '@endge/core'
 
 const SFC_IDENTITY = 'test-sfc'
 
@@ -10,7 +10,7 @@ const errorMessage = ref<string | null>(null)
 const isExecuting = ref(false)
 
 const runtimeSnapshot = computed(() => runtime.value?.snapshot() ?? null)
-const diagnostics = computed<RComponentDiagnostic[]>(() => runtime.value?.diagnostics ?? [])
+const diagnostics = computed<ProgramDiagnostic[]>(() => runtime.value?.getDiagnostics() ?? [])
 
 async function executeSFC(): Promise<void> {
   errorMessage.value = null
