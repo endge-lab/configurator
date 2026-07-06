@@ -3,11 +3,12 @@ import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { SFC_RuntimeRenderer } from '@endge/vue'
-import type { ComponentSFCRuntimeHost } from '@endge/core'
+import type { ComponentSFCRuntimeHost, EndgeBootContext } from '@endge/core'
 import type { SFCVueRuntimeInputSource } from '@endge/vue'
 
-const SFC_IDENTITY = 'test-sfc'
-const RAPH_FLIGHT_PATH = 'test.sfc.flight'
+const SFC_IDENTITY = 'test-sfc-table'
+const RAPH_FLIGHTS_PATH = 'test.sfc.flights'
+const MANUAL_BOOT_CONTEXT = {} as EndgeBootContext
 
 const runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
 const isExecuting = ref(false)
@@ -17,8 +18,8 @@ const raphSnapshot = shallowRef<Record<string, unknown>>({})
 const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
   kind: 'raph',
   bindings: {
-    flight: {
-      path: RAPH_FLIGHT_PATH,
+    flights: {
+      path: RAPH_FLIGHTS_PATH,
       wildcardDynamic: true,
     },
   },
@@ -30,7 +31,7 @@ async function executeSFC(): Promise<void> {
 
   try {
     destroyRuntime()
-    await Endge.build()
+    prepareManualSFCExecution()
 
     const component = Endge.domain.getComponentSFC(SFC_IDENTITY)
     if (!component) {
@@ -70,11 +71,17 @@ function destroyRuntime(): void {
 }
 
 function incrementCounter(): void {
-  const flight = normalizeFlight(Raph.get(RAPH_FLIGHT_PATH))
-  const nextCounter = Number(flight.counter ?? 0) + 1
+  const flights = normalizeFlights(Raph.get(RAPH_FLIGHTS_PATH))
+  const firstFlight = flights[0] ?? {}
+  const nextCounter = Number(firstFlight.counter ?? 0) + 1
 
-  Raph.set(`${RAPH_FLIGHT_PATH}.counter`, nextCounter)
+  Raph.set(`${RAPH_FLIGHTS_PATH}[0].counter`, nextCounter)
   refreshRaphSnapshot()
+}
+
+function prepareManualSFCExecution(): void {
+  Endge.compiler.build(MANUAL_BOOT_CONTEXT)
+  Endge.runtime.start()
 }
 
 function resetRuntimeRenderState(): void {
@@ -83,25 +90,40 @@ function resetRuntimeRenderState(): void {
 
 function seedRaphInput(host: ComponentSFCRuntimeHost): void {
   const previewProps = host.getPreviewProps() ?? {}
-  const flight = normalizeFlight(previewProps.flight)
+  const flights = normalizeFlights(previewProps.flights)
 
-  Raph.set(RAPH_FLIGHT_PATH, {
-    ...flight,
-    counter: Number(flight.counter ?? 0),
-  })
+  Raph.set(RAPH_FLIGHTS_PATH, flights.length > 0
+    ? flights
+    : [
+        {
+          id: 'SU1402',
+          number: 'SU 1402',
+          status: 'Boarding',
+          statusTone: 'success',
+          std: '2026-07-05T13:45:00Z',
+          route: 'SVO -> LED',
+          counter: 0,
+        },
+      ])
   refreshRaphSnapshot()
 }
 
 function refreshRaphSnapshot(): void {
   raphSnapshot.value = {
-    flight: cloneValue(Raph.get(RAPH_FLIGHT_PATH)),
+    flights: cloneValue(Raph.get(RAPH_FLIGHTS_PATH)),
   }
 }
 
-function normalizeFlight(raw: unknown): Record<string, unknown> {
-  return raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? { ...(raw as Record<string, unknown>) }
-    : {}
+function normalizeFlights(raw: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(raw))
+    return []
+
+  return raw
+    .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+    .map(item => ({
+      ...(item as Record<string, unknown>),
+      counter: Number((item as Record<string, unknown>).counter ?? 0),
+    }))
 }
 
 function cloneValue(value: unknown): unknown {
@@ -130,7 +152,7 @@ onBeforeUnmount(() => {
         :disabled="isExecuting"
         @click="executeSFC"
       >
-        {{ isExecuting ? 'Executing...' : 'Execute test-sfc' }}
+        {{ isExecuting ? 'Executing...' : 'Execute test-sfc-table' }}
       </button>
 
       <button
