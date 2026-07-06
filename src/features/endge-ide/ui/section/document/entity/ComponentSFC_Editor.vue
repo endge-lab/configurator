@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { Save } from "lucide-vue-next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 
 const tabs = EndgeIDE.tabs;
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
-const tab = ref("template");
 
 async function save(): Promise<void> {
-  editor.value?.syncSourceFromParts?.();
   await EndgeIDE.tabs.save();
 }
 </script>
@@ -56,48 +53,17 @@ async function save(): Promise<void> {
         </div>
       </div>
 
-      <Tabs v-model="tab" class="min-h-0 flex-1 flex flex-col">
-        <TabsList class="w-fit shrink-0">
-          <TabsTrigger value="template"> Template </TabsTrigger>
-          <TabsTrigger value="script"> Script </TabsTrigger>
-          <TabsTrigger value="style"> Style </TabsTrigger>
-          <TabsTrigger value="preview"> Preview </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="template" class="min-h-0 flex-1">
-          <ScriptEditor
-            v-model="editor.sourceParts.template.content"
-            language="html"
-            min-height="420px"
-            show-toolbar
-          />
-        </TabsContent>
-        <TabsContent value="script" class="min-h-0 flex-1">
-          <ScriptEditor
-            v-model="editor.sourceParts.script.content"
-            language="typescript"
-            min-height="420px"
-            show-toolbar
-          />
-        </TabsContent>
-        <TabsContent value="style" class="min-h-0 flex-1">
-          <ScriptEditor
-            v-model="editor.sourceParts.style.content"
-            language="css"
-            min-height="420px"
-            show-toolbar
-          />
-        </TabsContent>
-        <TabsContent value="preview" class="min-h-0 flex-1">
-          <ScriptEditor
-            v-model="editor.source"
-            language="html"
-            min-height="420px"
-            show-toolbar
-            @blur="editor.parseSource()"
-          />
-        </TabsContent>
-      </Tabs>
+      <div class="min-h-0 flex-1 flex flex-col">
+        <Label class="font-semibold mb-2">Source</Label>
+        <ScriptEditor
+          v-model="editor.source"
+          language="html"
+          class="min-h-0 flex-1"
+          min-height="420px"
+          show-toolbar
+          @blur="editor.parseSource()"
+        />
+      </div>
     </div>
   </div>
 </template>

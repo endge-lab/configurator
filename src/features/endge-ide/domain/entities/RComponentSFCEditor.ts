@@ -1,15 +1,13 @@
 import {
-  cloneSFCSourceParts,
   parseSFCSourceParts,
-  serializeSFCSourceParts,
   type RComponentSFCSource_Parts,
 } from '@endge/core'
 
 /**
  * Редакторская модель SFC-компонента.
  *
- * Source остается единственным persisted-полем, а вкладки являются удобным
- * представлением для UI и пересобираются обратно перед сохранением.
+ * Source остается единственным persisted и authoring-полем. `sourceParts`
+ * хранится только как derived-состояние для diagnostics/debug UI.
  */
 export class RComponentSFCEditor {
   id!: number
@@ -57,7 +55,7 @@ export class RComponentSFCEditor {
 
   /** Переносит редакторское состояние обратно в persisted SFC-модель. */
   updateSource(source: any): void {
-    this.source = serializeSFCSourceParts(this.sourceParts)
+    this.parseSource()
     source.id = this.id
     source.identity = this.identity
     source.name = this.name
@@ -75,12 +73,6 @@ export class RComponentSFCEditor {
   /** Обновляет вкладки из полного source, если пользователь редактировал raw preview. */
   parseSource(): void {
     this.sourceParts = parseSFCSourceParts(this.source)
-  }
-
-  /** Обновляет полный source из вкладок без сохранения в доменную модель. */
-  syncSourceFromParts(): void {
-    this.sourceParts = cloneSFCSourceParts(this.sourceParts)
-    this.source = serializeSFCSourceParts(this.sourceParts)
   }
 }
 
