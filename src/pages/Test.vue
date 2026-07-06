@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
-import { SFC_Renderer } from '@endge/vue'
-import type { ComponentSFCRuntimeHost, RComponentSFC_IR } from '@endge/core'
+import { SFC_RuntimeRenderer } from '@endge/vue'
+import type { ComponentSFCRuntimeHost } from '@endge/core'
+import type { SFCVueRuntimeInputSource } from '@endge/vue'
 
 const SFC_IDENTITY = 'test-sfc'
 
 const runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
 const isExecuting = ref(false)
 const errorMessage = ref<string | null>(null)
-const renderVersion = ref(0)
-const renderProps = ref<Record<string, unknown>>({})
+const localProps = shallowRef<Record<string, unknown>>({})
 
-const ir = computed<RComponentSFC_IR | null>(() => runtime.value?.getIr() ?? null)
+const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
+  kind: 'local',
+  props: localProps.value,
+}))
 
 async function executeSFC(): Promise<void> {
   isExecuting.value = true
@@ -40,8 +43,7 @@ async function executeSFC(): Promise<void> {
     }
 
     runtime.value = host
-    renderProps.value = { ...(host.getPreviewProps() ?? {}) }
-    renderVersion.value++
+    localProps.value = { ...(host.getPreviewProps() ?? {}) }
   }
   catch (error) {
     resetRuntimeRenderState()
@@ -60,36 +62,7 @@ function destroyRuntime(): void {
 }
 
 function resetRuntimeRenderState(): void {
-  renderProps.value = {}
-  renderVersion.value++
-}
-
-function toggleCompact(): void {
-  renderProps.value = {
-    ...renderProps.value,
-    compact: !Boolean(renderProps.value.compact),
-  }
-  renderVersion.value++
-}
-
-function cycleStatus(): void {
-  const flight = isRecord(renderProps.value.flight)
-    ? renderProps.value.flight
-    : {}
-
-  renderProps.value = {
-    ...renderProps.value,
-    flight: {
-      ...flight,
-      status: flight.status === 'Boarding' ? 'Delayed' : 'Boarding',
-      statusTone: flight.status === 'Boarding' ? 'warning' : 'success',
-    },
-  }
-  renderVersion.value++
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
+  localProps.value = {}
 }
 
 onBeforeUnmount(() => {
@@ -124,45 +97,18 @@ onBeforeUnmount(() => {
     </p>
 
     <section v-if="runtime" class="flex flex-col gap-3 min-h-0">
-      <div class="flex items-center justify-between gap-3">
-        <div class="text-sm text-muted-foreground">
-          {{ runtime.runtimeType }} / {{ runtime.entityIdentity }}
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
-            type="button"
-            :disabled="!ir"
-            @click="cycleStatus"
-          >
-            Cycle status
-          </button>
-
-          <button
-            class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
-            type="button"
-            :disabled="!ir"
-            @click="toggleCompact"
-          >
-            Toggle compact
-          </button>
-        </div>
+      <div class="text-sm text-muted-foreground">
+        {{ runtime.runtimeType }} / {{ runtime.entityIdentity }}
       </div>
 
-      <div v-if="ir" class="border rounded p-4">
-        <SFC_Renderer
-          :ir="ir"
-          :props="renderProps"
-          :render-version="renderVersion"
+      <div class="border rounded p-4">
+        <SFC_RuntimeRenderer
+          :host="runtime"
+          :input="renderInput"
         />
       </div>
 
-      <p v-else class="text-sm text-muted-foreground">
-        Runtime executed, but compiled SFC IR is missing.
-      </p>
-
-      <pre class="text-xs overflow-auto border rounded p-3">{{ renderProps }}</pre>
+      <pre class="text-xs overflow-auto border rounded p-3">{{ localProps }}</pre>
     </section>
   </main>
 </template>
