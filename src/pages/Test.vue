@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
+import { Raph } from '@endge/raph'
 import { SFC_RuntimeRenderer } from '@endge/vue'
 import type { ComponentSFCRuntimeHost } from '@endge/core'
 import type { SFCVueRuntimeInputSource } from '@endge/vue'
 
 const SFC_IDENTITY = 'test-sfc'
+const RAPH_FLIGHT_PATH = 'test.sfc.flight'
 
 const runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
 const isExecuting = ref(false)
 const errorMessage = ref<string | null>(null)
-const localProps = shallowRef<Record<string, unknown>>({})
+const raphSnapshot = shallowRef<Record<string, unknown>>({})
 
 const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
-  kind: 'local',
-  props: localProps.value,
+  kind: 'raph',
+  bindings: {
+    flight: {
+      path: RAPH_FLIGHT_PATH,
+      wildcardDynamic: true,
+    },
+  },
 }))
 
 async function executeSFC(): Promise<void> {
@@ -35,6 +42,7 @@ async function executeSFC(): Promise<void> {
 
     const host = Endge.runtime.execute(component, {
       target: 'dom',
+      input: renderInput.value,
     }) as ComponentSFCRuntimeHost | null
 
     if (!host) {
@@ -42,8 +50,8 @@ async function executeSFC(): Promise<void> {
       return
     }
 
+    seedRaphInput(host)
     runtime.value = host
-    localProps.value = { ...(host.getPreviewProps() ?? {}) }
   }
   catch (error) {
     resetRuntimeRenderState()
@@ -61,8 +69,51 @@ function destroyRuntime(): void {
   resetRuntimeRenderState()
 }
 
+function incrementCounter(): void {
+  const flight = normalizeFlight(Raph.get(RAPH_FLIGHT_PATH))
+  const nextCounter = Number(flight.counter ?? 0) + 1
+
+  Raph.set(`${RAPH_FLIGHT_PATH}.counter`, nextCounter)
+  refreshRaphSnapshot()
+}
+
 function resetRuntimeRenderState(): void {
-  localProps.value = {}
+  raphSnapshot.value = {}
+}
+
+function seedRaphInput(host: ComponentSFCRuntimeHost): void {
+  const previewProps = host.getPreviewProps() ?? {}
+  const flight = normalizeFlight(previewProps.flight)
+
+  Raph.set(RAPH_FLIGHT_PATH, {
+    ...flight,
+    counter: Number(flight.counter ?? 0),
+  })
+  refreshRaphSnapshot()
+}
+
+function refreshRaphSnapshot(): void {
+  raphSnapshot.value = {
+    flight: cloneValue(Raph.get(RAPH_FLIGHT_PATH)),
+  }
+}
+
+function normalizeFlight(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? { ...(raw as Record<string, unknown>) }
+    : {}
+}
+
+function cloneValue(value: unknown): unknown {
+  if (value == null)
+    return value
+
+  try {
+    return JSON.parse(JSON.stringify(value))
+  }
+  catch {
+    return value
+  }
 }
 
 onBeforeUnmount(() => {
@@ -90,6 +141,15 @@ onBeforeUnmount(() => {
       >
         Destroy runtime
       </button>
+
+      <button
+        class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
+        type="button"
+        :disabled="!runtime"
+        @click="incrementCounter"
+      >
+        Increment counter
+      </button>
     </div>
 
     <p v-if="errorMessage" class="text-sm text-destructive">
@@ -108,7 +168,7 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <pre class="text-xs overflow-auto border rounded p-3">{{ localProps }}</pre>
+      <pre class="text-xs overflow-auto border rounded p-3">{{ raphSnapshot }}</pre>
     </section>
   </main>
 </template>

@@ -2785,6 +2785,26 @@
     ],
     "queries": [],
     "components": [],
+    "componentSFCs": [
+      {
+        "id": 1,
+        "identity": "test-sfc",
+        "name": "Test SFC",
+        "displayName": "Test SFC",
+        "description": null,
+        "folderId": null,
+        "project": null,
+        "isSystem": false,
+        "inherited": false,
+        "meta": {},
+        "kind": "component-sfc",
+        "type": "component-sfc",
+        "sourceKind": "component-sfc",
+        "modelVersion": 1,
+        "supportedTargets": ["dom"],
+        "source": "<script setup lang=\"ts\">\ndefineProps<{\n  flight: FlightLeg\n}>()\n\ndefinePreviewProps({\n  flight: {\n    number: 'SU 1402',\n    status: 'Boarding',\n    statusTone: 'success',\n    std: '2026-07-05T13:45:00Z',\n    route: 'SVO -> LED',\n    counter: 0,\n  },\n})\n</script>\n\n<template>\n<Flex col gap=\"2\" p=\"4\">\n  <Flex row gap=\"4\" align=\"center\">\n    <Text weight=\"600\">{{ flight.number }}</Text>\n    <Badge :tone=\"flight.statusTone\">{{ flight.status }}</Badge>\n  </Flex>\n\n  <Flex row gap=\"4\">\n    <DateTime :value=\"flight.std\" format=\"HH:mm\" />\n    <Text color=\"muted\">{{ flight.route }}</Text>\n  </Flex>\n\n  <Text>Counter: {{ flight.counter }}</Text>\n</Flex>\n</template>\n\n<style lang=\"endgecss\" scoped>\n\n</style>"
+      }
+    ],
     "scenarios": [],
     "actions": [
       {
