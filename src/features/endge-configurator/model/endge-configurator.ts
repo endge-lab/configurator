@@ -10,18 +10,16 @@ import domainJson from '@/mock/endge-domain.json'
  */
 export class EndgeConfigurator {
   private static _isInitialized = false
+  private static _isVuePluginInstallAttempted = false
 
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
    * Подключает Vue-плагин Endge и передает boot-контекст в централизованный `Endge.boot()`.
    */
   public static async init(): Promise<void> {
-    if (this.isInitialized)
-      return
-
     const ctx = this._createBootContext()
 
-    Endge.use(EndgeVuePlugin)
+    this._installVuePlugin()
     await Endge.boot(ctx)
 
     this._isInitialized = true
@@ -61,6 +59,30 @@ export class EndgeConfigurator {
           }
         : undefined,
     }
+  }
+
+  /**
+   * Регистрирует Vue-плагин до конфигурации federation.
+   * В HMR-сценарии federation host может быть уже configured в globalThis,
+   * поэтому повторную регистрацию считаем нефатальной и продолжаем boot.
+   */
+  private static _installVuePlugin(): void {
+    if (this._isVuePluginInstallAttempted)
+      return
+
+    this._isVuePluginInstallAttempted = true
+
+    try {
+      Endge.use(EndgeVuePlugin)
+    }
+    catch (error) {
+      if (!this._isPluginAlreadyLockedError(error))
+        throw error
+    }
+  }
+
+  private static _isPluginAlreadyLockedError(error: unknown): boolean {
+    return String(error).includes('plugins must be registered before federation configuration')
   }
 
   /**

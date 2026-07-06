@@ -1,43 +1,50 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
-import type { ComponentSFCRuntimeHost, ProgramDiagnostic } from '@endge/core'
+import { SFC_Renderer } from '@endge/vue'
+import type { ComponentSFCRuntimeHost, RComponentSFC_IR } from '@endge/core'
 
 const SFC_IDENTITY = 'test-sfc'
 
 const runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
-const errorMessage = ref<string | null>(null)
 const isExecuting = ref(false)
+const errorMessage = ref<string | null>(null)
+const renderVersion = ref(0)
+const renderProps = ref<Record<string, unknown>>({})
 
-const runtimeSnapshot = computed(() => runtime.value?.snapshot() ?? null)
-const diagnostics = computed<ProgramDiagnostic[]>(() => runtime.value?.getDiagnostics() ?? [])
+const ir = computed<RComponentSFC_IR | null>(() => runtime.value?.getIr() ?? null)
 
 async function executeSFC(): Promise<void> {
-  errorMessage.value = null
   isExecuting.value = true
+  errorMessage.value = null
 
   try {
-    if (runtime.value)
-      Endge.runtime.destroyRuntime(runtime.value.id)
-
+    destroyRuntime()
     await Endge.build()
 
     const component = Endge.domain.getComponentSFC(SFC_IDENTITY)
     if (!component) {
       runtime.value = null
+      resetRuntimeRenderState()
       errorMessage.value = `SFC component "${SFC_IDENTITY}" not found.`
       return
     }
 
-    runtime.value = Endge.runtime.execute(component, {
+    const host = Endge.runtime.execute(component, {
       target: 'dom',
     }) as ComponentSFCRuntimeHost | null
 
-    if (!runtime.value)
+    if (!host) {
       errorMessage.value = `SFC component "${SFC_IDENTITY}" was not executed.`
+      return
+    }
+
+    runtime.value = host
+    renderProps.value = { ...(host.getPreviewProps() ?? {}) }
+    renderVersion.value++
   }
   catch (error) {
-    runtime.value = null
+    resetRuntimeRenderState()
     errorMessage.value = error instanceof Error ? error.message : String(error)
   }
   finally {
@@ -46,11 +53,43 @@ async function executeSFC(): Promise<void> {
 }
 
 function destroyRuntime(): void {
-  if (!runtime.value)
-    return
-
-  Endge.runtime.destroyRuntime(runtime.value.id)
+  if (runtime.value)
+    Endge.runtime.destroyRuntime(runtime.value.id)
   runtime.value = null
+  resetRuntimeRenderState()
+}
+
+function resetRuntimeRenderState(): void {
+  renderProps.value = {}
+  renderVersion.value++
+}
+
+function toggleCompact(): void {
+  renderProps.value = {
+    ...renderProps.value,
+    compact: !Boolean(renderProps.value.compact),
+  }
+  renderVersion.value++
+}
+
+function cycleStatus(): void {
+  const flight = isRecord(renderProps.value.flight)
+    ? renderProps.value.flight
+    : {}
+
+  renderProps.value = {
+    ...renderProps.value,
+    flight: {
+      ...flight,
+      status: flight.status === 'Boarding' ? 'Delayed' : 'Boarding',
+      statusTone: flight.status === 'Boarding' ? 'warning' : 'success',
+    },
+  }
+  renderVersion.value++
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
 onBeforeUnmount(() => {
@@ -80,56 +119,50 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <p v-if="errorMessage" class="text-sm text-red-600">
+    <p v-if="errorMessage" class="text-sm text-destructive">
       {{ errorMessage }}
     </p>
 
-    <section v-if="runtime" class="flex flex-col gap-2">
-      <h2 class="text-base font-semibold">
-        Runtime
-      </h2>
+    <section v-if="runtime" class="flex flex-col gap-3 min-h-0">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-sm text-muted-foreground">
+          {{ runtime.runtimeType }} / {{ runtime.entityIdentity }}
+        </div>
 
-      <dl class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt class="text-muted-foreground">
-          id
-        </dt>
-        <dd>{{ runtime.id }}</dd>
+        <div class="flex items-center gap-2">
+          <button
+            class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
+            type="button"
+            :disabled="!ir"
+            @click="cycleStatus"
+          >
+            Cycle status
+          </button>
 
-        <dt class="text-muted-foreground">
-          type
-        </dt>
-        <dd>{{ runtime.runtimeType }}</dd>
+          <button
+            class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
+            type="button"
+            :disabled="!ir"
+            @click="toggleCompact"
+          >
+            Toggle compact
+          </button>
+        </div>
+      </div>
 
-        <dt class="text-muted-foreground">
-          status
-        </dt>
-        <dd>{{ runtime.status }}</dd>
+      <div v-if="ir" class="border rounded p-4">
+        <SFC_Renderer
+          :ir="ir"
+          :props="renderProps"
+          :render-version="renderVersion"
+        />
+      </div>
 
-        <dt class="text-muted-foreground">
-          entity
-        </dt>
-        <dd>{{ runtime.entityType }} / {{ runtime.entityIdentity }}</dd>
-      </dl>
-    </section>
+      <p v-else class="text-sm text-muted-foreground">
+        Runtime executed, but compiled SFC IR is missing.
+      </p>
 
-    <section v-if="diagnostics.length" class="flex flex-col gap-2">
-      <h2 class="text-base font-semibold">
-        Diagnostics
-      </h2>
-
-      <pre class="text-xs overflow-auto border rounded p-3">{{ diagnostics }}</pre>
-    </section>
-
-    <section v-if="runtimeSnapshot" class="flex flex-col gap-2 min-h-0">
-      <h2 class="text-base font-semibold">
-        Snapshot
-      </h2>
-
-      <pre class="text-xs overflow-auto border rounded p-3">{{ runtimeSnapshot }}</pre>
+      <pre class="text-xs overflow-auto border rounded p-3">{{ renderProps }}</pre>
     </section>
   </main>
 </template>
-
-<style scoped>
-
-</style>

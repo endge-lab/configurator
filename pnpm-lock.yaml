@@ -234,6 +234,9 @@ importers:
       '@vue/compiler-dom':
         specifier: ^3.5.24
         version: 3.5.38
+      '@vue/compiler-sfc':
+        specifier: ^3.5.24
+        version: 3.5.38
       axios:
         specifier: ^1.13.2
         version: 1.18.1
