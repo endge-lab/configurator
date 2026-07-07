@@ -31,6 +31,29 @@ const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
   },
 }))
 
+function mockQuery() {
+  const legs = [
+    {
+      id: 'leg1',
+      flightCarrier: "SU",
+      flightNumber: "522",
+    }
+  ]
+  const attrs = [
+    {
+      legId: 'leg1',
+      items: [
+        {
+          attrId: 'attr1',
+          value: '2025-12-23T00:00:00Z',
+        }
+      ]
+    }
+  ]
+  Raph.set('mockQuery.legs', legs)
+  Raph.set('mockQuery.attrs', attrs)
+}
+
 async function executeSFC(): Promise<void> {
   isExecuting.value = true
   errorMessage.value = null
