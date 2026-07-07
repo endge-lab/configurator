@@ -420,12 +420,11 @@ export function buildViewChildRefs(view: ViewWithRefs): FsFileNode[] {
   if (view.queryId) {
     const q = domain.getQuery(view.queryId)
     if (q) {
-      const docType = (q as any).type ?? QueryType.REST
       nodes.push({
         id: String(q.id),
         name: (q as any).displayName ?? (q as any).name ?? String(q.id),
         type: 'file',
-        docType: docType as DomainDocumentType,
+        docType: QueryType.REST as DomainDocumentType,
         sectionType: DomainSectionType.Query,
         isSystem: (q as { isSystem?: boolean, type?: string }).isSystem === true || (q as { type?: string }).type === 'system',
         isViewChild: true,

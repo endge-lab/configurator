@@ -1,147 +1,173 @@
-import { Endge, RField } from '@endge/core'
-import type { QueryType } from '@endge/core'
-import type { RQuery } from '@endge/core'
-import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
-import type { RQueryAuth } from '@endge/core'
-import type { RQueryFilterApplyMode } from '@endge/core'
-import { RQueryFilter } from '@endge/core'
-import { QueryType as QueryTypeValue } from '@endge/core'
-import { Expose, Type } from 'class-transformer'
+import type {
+  QuerySourceDocument,
+  QuerySourcePatchPath,
+  RQuery,
+} from '@endge/core'
 
-/**
- * Модель редактирования для сущности `RQuery`.
- * Используется как DTO между формой и доменной моделью.
- */
+import { Endge } from '@endge/core'
+
+/** Source-first editor model для `RQuery`. */
 export class RQueryEditor {
   id!: number
   identity!: string
   name!: string
-  endpoint!: string
-  type!: QueryType
-  query!: string
   source: string = ''
   sourceVersion: number = 1
-  subField!: string
-
-  auth: RQueryAuth = { mode: 'token' }
-
-  /** REST: HTTP-метод */
+  endpoint: string = ''
+  path: string = ''
   method: string = 'POST'
-  /** REST: заголовки */
-  headers: Record<string, string> = { Accept: 'application/json', 'Content-Type': 'application/json' }
-  /** REST: таймаут (мс) */
-  timeoutMs?: number
-  /** REST: тело как form-urlencoded */
-  sendAsFormUrlencoded: boolean = false
+  headersText: string = '{}'
+  authMode: 'token' | 'none' = 'token'
+  subField: string = 'items'
+  returnExpression: string = 'null'
+  mockEnabled: boolean = false
+  mockDataText: string = 'null'
+  diagnostics: unknown[] = []
 
-  @Expose()
-  filterMode: RQueryFilterApplyMode = 'merge'
-
-  @Expose()
-  @Type(() => RQueryFilter)
-  filters: RQueryFilter[] = []
-
-  returnField!: string
-  params: Map<string, RFieldEditor> = new Map()
-
-  mockData: string = ''
-  mockDataEnabled: boolean = false
-
-  /**
-   * Добавляет параметр в карту параметров.
-   */
-  addParam(name: string, param: RFieldEditor): void {
-    this.params.set(name, param)
-  }
-
-  /**
-   * Возвращает параметры запроса.
-   */
-  getParams(): Map<string, RFieldEditor> {
-    return this.params
-  }
-
-  /**
-   * Заполняет поля редактора на основе доменной сущности `RQuery`.
-   */
+  /** Заполняет editor только canonical source-полями. */
   fillFromSource(source: RQuery): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
     this.name = source.name
-    this.endpoint = source.endpoint
-    this.type = source.type
-    this.subField = source.subField
-    this.query = source.query
-    this.source = this.resolveSource(source)
+    this.source = String((source as { source?: string }).source ?? '')
     this.sourceVersion = Number((source as { sourceVersion?: number }).sourceVersion ?? 1) || 1
-    this.auth = source.auth ?? { mode: 'token' }
-    const raw = (source as { mockData?: unknown }).mockData
-    this.mockData = typeof raw === 'string' ? raw : (raw != null && typeof raw === 'object' ? JSON.stringify(raw, null, 2) : '')
-    this.mockDataEnabled = source.mockDataEnabled
-    this.returnField = source.returnField?.type ?? ''
-    this.filterMode = source.filterMode ?? 'merge'
-    this.filters = source.filters?.length ? [...source.filters] : []
-    const rest = source as { method?: string; headers?: Record<string, string>; timeoutMs?: number; sendAsFormUrlencoded?: boolean }
-    this.method = rest.method ?? 'POST'
-    this.headers = rest.headers && typeof rest.headers === 'object' ? { ...rest.headers } : { Accept: 'application/json', 'Content-Type': 'application/json' }
-    this.timeoutMs = rest.timeoutMs
-    this.sendAsFormUrlencoded = rest.sendAsFormUrlencoded ?? false
-
-    this.params = new Map()
-    for (const [key, field] of source.params.entries()) {
-      const editor = new RFieldEditor()
-      editor.fillFromSource(field)
-      this.params.set(key, editor)
-    }
+    this.refreshFieldsFromSource()
   }
 
-  /**
-   * Обновляет данные в доменной сущности `RQuery` из редактора.
-   */
+  /** Обновляет только source-поля, не трогая legacy payload fields. */
   updateSource(target: RQuery): void {
     target.id = this.id
     target.identity = this.identity
     target.name = this.name
-    target.endpoint = this.endpoint
-    target.type = this.type
-    target.query = this.query
+    target.displayName = this.name
     target.source = this.source
     target.sourceVersion = this.sourceVersion
-    target.auth = this.auth
-    target.mockData = this.mockData
-    target.subField = this.subField
-    target.mockDataEnabled = this.mockDataEnabled
-    target.returnField = new RField('returnField', this.returnField)
-    target.filterMode = this.filterMode
-    target.filters = this.filters?.length ? [...this.filters] : []
-    const rest = target as { method?: string; headers?: Record<string, string>; timeoutMs?: number; sendAsFormUrlencoded?: boolean }
-    rest.method = this.method
-    rest.headers = this.headers && typeof this.headers === 'object' ? { ...this.headers } : undefined
-    rest.timeoutMs = this.timeoutMs
-    rest.sendAsFormUrlencoded = this.sendAsFormUrlencoded
+  }
 
-    target.params = new Map()
-    for (const [key, paramEditor] of this.params.entries()) {
-      const param = new RField(paramEditor.name, paramEditor.type)
-      paramEditor.updateSource(param)
-      target.params.set(key, param)
+  /** Применяет ручное изменение source и синхронизирует UI-проекцию. */
+  applySourceText(source: string): void {
+    this.source = source
+    this.refreshFieldsFromSource()
+  }
+
+  /** Точечно патчит source после изменения UI-поля. */
+  patchSource(path: QuerySourcePatchPath, value: unknown, expression?: string): void {
+    const result = Endge.source.patch('query', this.source, {
+      path,
+      value,
+      expression,
+    })
+
+    this.source = result.source
+    this.diagnostics = result.diagnostics ?? []
+    this.refreshFieldsFromSource()
+  }
+
+  /** Обновляет UI-поля из canonical source document. */
+  refreshFieldsFromSource(): void {
+    const result = Endge.source.parse<QuerySourceDocument>('query', this.source)
+    this.diagnostics = result.diagnostics ?? []
+    if (!result.document)
+      return
+
+    this.applyDocumentProjection(result.document)
+  }
+
+  /** Патчит endpoint, сохраняя env(...) для var-token вида `{ENDPOINT}`. */
+  patchEndpoint(value: string): void {
+    this.patchSource('request.endpoint', value, endpointExpression(value))
+  }
+
+  /** Патчит headers из JSON-текста. */
+  patchHeadersText(value: string): void {
+    this.headersText = value
+    const parsed = parseEditorJson(value)
+    if (!parsed.ok)
+      return
+
+    this.patchSource('request.headers', parsed.value)
+  }
+
+  /** Патчит auth mode как минимальный auth object. */
+  patchAuthMode(value: 'token' | 'none'): void {
+    this.patchSource('request.auth', { mode: value })
+  }
+
+  /** Патчит response.return из raw DSL expression. */
+  patchReturnExpression(value: string): void {
+    this.returnExpression = value
+    const expression = value.trim() || 'null'
+    const result = Endge.source.patch('query', this.source, {
+      path: 'response.return',
+      value: null,
+      expression,
+    })
+
+    this.diagnostics = result.diagnostics ?? []
+    if (!result.ok)
+      return
+
+    this.source = result.source
+    this.refreshFieldsFromSource()
+  }
+
+  /** Патчит mock data из JSON-текста. */
+  patchMockDataText(value: string): void {
+    this.mockDataText = value
+    const parsed = parseEditorJson(value)
+    if (!parsed.ok)
+      return
+
+    this.patchSource('mock.data', parsed.value)
+  }
+
+  private applyDocumentProjection(document: QuerySourceDocument): void {
+    this.endpoint = document.request.endpoint
+    this.path = document.request.path
+    this.method = document.request.method
+    this.headersText = stringifyEditorJson(document.request.headers)
+    this.authMode = document.request.auth.mode === 'none' ? 'none' : 'token'
+    this.subField = document.response.subField
+    this.returnExpression = printFieldExpression(document.response.return)
+    this.mockEnabled = document.mock.enabled
+    this.mockDataText = stringifyEditorJson(document.mock.data)
+  }
+}
+
+function endpointExpression(value: string): string | undefined {
+  const match = value.trim().match(/^\{([^{}'"]+)\}$/)
+  return match ? `env('${escapeSingleQuoted(match[1])}')` : undefined
+}
+
+function printFieldExpression(field: QuerySourceDocument['response']['return']): string {
+  if (!field)
+    return 'null'
+
+  let out = `field('${escapeSingleQuoted(field.type)}')`
+  if (field.isArray)
+    out += '.array()'
+  if (field.optional)
+    out += '.optional()'
+
+  return out
+}
+
+function stringifyEditorJson(value: unknown): string {
+  return JSON.stringify(value ?? null, null, 2)
+}
+
+function parseEditorJson(value: string): { ok: true, value: unknown } | { ok: false } {
+  try {
+    return {
+      ok: true,
+      value: JSON.parse(value),
     }
   }
-
-  /**
-   * Возвращает сохраненный source или генерирует REST source из legacy-полей.
-   */
-  private resolveSource(source: RQuery): string {
-    const persisted = String((source as { source?: string }).source ?? '').trim()
-    if (persisted)
-      return persisted
-
-    if (source.type !== QueryTypeValue.REST)
-      return ''
-
-    const generated = Endge.source.generate('query', source)
-    return generated.ok && typeof generated.source === 'string'
-      ? generated.source
-      : ''
+  catch {
+    return { ok: false }
   }
+}
+
+function escapeSingleQuoted(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
 }

@@ -53,9 +53,7 @@ import ComponentSFC_Editor from '@/features/endge-ide/ui/section/document/entity
 import ComponentTable_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentTable_Editor.vue'
 import Action_Editor from '@/features/endge-ide/ui/section/document/entity/Action_Editor.vue'
 import FiltersPanel_Editor from '@/features/endge-ide/ui/section/document/entity/FiltersPanel_Editor.vue'
-import QueryCustom_Editor from '@/features/endge-ide/ui/section/document/entity/QueryCustom_Editor.vue'
-import QueryGraphQL_Editor from '@/features/endge-ide/ui/section/document/entity/QueryGraphQL_Editor.vue'
-import QueryRest_Editor from '@/features/endge-ide/ui/section/document/entity/QueryRest_Editor.vue'
+import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'
 import Scenario_Editor from '@/features/endge-ide/ui/section/document/entity/Scenario_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
@@ -106,6 +104,12 @@ const VIEW_ID_PULSE = 'endge-pulse' as const
 const VIEW_ID_ARCHITECTURE = 'endge-architecture' as const
 const VIEW_ID_DOMAIN_ANALYSIS = 'endge-domain-analysis' as const
 const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
+
+function isQueryDocumentType(value: string): boolean {
+  return value === String(QueryType.REST)
+    || value === String(QueryType.GraphQL)
+    || value === String(QueryType.Custom)
+}
 
 interface DocsTabPayload {
   docId?: string
@@ -545,7 +549,7 @@ export class EndgeIDETabs {
       const component = (Endge.domain as any).getComponentSFC?.(id)
       return component?.displayName ?? component?.name ?? id
     }
-    if (key === String(QueryType.GraphQL) || key === String(QueryType.REST) || key === String(QueryType.Custom))
+    if (isQueryDocumentType(key))
       return Endge.domain.getQuery(id)?.displayName ?? Endge.domain.getQuery(id)?.name ?? id
     if (key === String(ScriptType.ScenarioSetup))
       return Endge.domain.getScenario(id)?.name ?? id
@@ -600,12 +604,8 @@ export class EndgeIDETabs {
       return 'ti ti-file-type-jsx text-purple-500 text-xl'
     if (key === String(COMPONENT_SFC_TYPE))
       return 'ti ti-file-type-tsx text-cyan-500 text-xl'
-    if (key === String(QueryType.GraphQL))
-      return 'ti ti-brand-graphql text-indigo-500 text-xl'
-    if (key === String(QueryType.REST))
+    if (isQueryDocumentType(key))
       return 'ti ti-api text-orange-500 text-xl'
-    if (key === String(QueryType.Custom))
-      return 'ti ti-cpu text-pink-500 text-xl'
     if (key === String(ScriptType.ScenarioSetup))
       return 'ti ti-code text-teal-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))
@@ -821,9 +821,9 @@ export class EndgeIDETabs {
     [String(ComponentType.Table), (documentId) => this._resolveComponentTable(documentId)],
     [String(ComponentType.DSL), (documentId) => this._resolveComponentDSL(documentId)],
     [String(COMPONENT_SFC_TYPE), (documentId) => this._resolveComponentSFC(documentId)],
-    [String(QueryType.REST), (documentId) => this._resolveQuery(documentId, QueryType.REST)],
-    [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId, QueryType.GraphQL)],
-    [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId, QueryType.Custom)],
+    [String(QueryType.REST), (documentId) => this._resolveQuery(documentId)],
+    [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId)],
+    [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
     [String(ScriptType.ScenarioSetup), (documentId) => this._resolveScenario(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
@@ -936,20 +936,14 @@ export class EndgeIDETabs {
     }
   }
 
-  private _resolveQuery(documentId: string, kind: QueryType.REST | QueryType.GraphQL | QueryType.Custom): EditorSession | null {
+  private _resolveQuery(documentId: string): EditorSession | null {
     const query = Endge.domain.getQuery(documentId) as RQuery | null
     if (!query)
       return null
     const editor = new RQueryEditor()
     editor.fillFromSource(query)
-    const component: Component =
-      kind === QueryType.REST
-        ? markRaw(QueryRest_Editor)
-        : kind === QueryType.GraphQL
-          ? markRaw(QueryGraphQL_Editor)
-          : markRaw(QueryCustom_Editor)
     return {
-      view: { component, props: { tabContext: { editor } } },
+      view: { component: markRaw(Query_Editor), props: { tabContext: { editor } } },
       editor,
       model: query,
       syncBeforeSave: () => editor.updateSource(query),

@@ -2,12 +2,11 @@ import type { SmartTabRef } from '@/components/ui/smart-tabs/types.ts'
 import type { Component } from 'vue'
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, QueryType, ScriptType, FilterType, ParameterType } from '@endge/core'
+import { ComponentType, ScriptType, FilterType, ParameterType } from '@endge/core'
 import { markRaw } from 'vue'
 
 import { showWidget } from '@/components/layouts/grid'
 import type { EndgeIDETabs } from '@/features/endge-ide/model/core/endge-ide-tabs.ts'
-import CustomInspector from '@/features/endge-ide/ui/section/inspectors/Custom_Inspector.vue'
 import DslInspector from '@/features/endge-ide/ui/section/inspectors/DSL_Inspector.vue'
 import ComponentSFCInspector from '@/features/endge-ide/ui/section/inspectors/ComponentSFC_Inspector.vue'
 import ActionInspector from '@/features/endge-ide/ui/section/inspectors/Action_Inspector.vue'
@@ -22,8 +21,6 @@ import I18nBundlesInspector from '@/features/endge-ide/ui/section/inspectors/I18
 import ViewInspector from '@/features/endge-ide/ui/section/inspectors/View_Inspector.vue'
 import FilterInspector from '@/features/endge-ide/ui/section/inspectors/Filter_Inspector.vue'
 import ParameterInspector from '@/features/endge-ide/ui/section/inspectors/Parameter_Inspector.vue'
-import GraphQlInspector from '@/features/endge-ide/ui/section/inspectors/GraphQL_Inspector.vue'
-import RestInspector from '@/features/endge-ide/ui/section/inspectors/Rest_Inspector.vue'
 import ScenarioInspector from '@/features/endge-ide/ui/section/inspectors/Scenario_Inspector.vue'
 import TableInspector from '@/features/endge-ide/ui/section/inspectors/Table_Inspector.vue'
 import TypeInspector from '@/features/endge-ide/ui/section/inspectors/Type_Inspector.vue'
@@ -88,9 +85,6 @@ export class EndgeIDEInspector {
     [ComponentType.Table, markRaw(TableInspector)],
     [COMPONENT_SFC_TYPE, markRaw(ComponentSFCInspector)],
     [ScriptType.ScenarioSetup, markRaw(ScenarioInspector)],
-    [QueryType.GraphQL, markRaw(GraphQlInspector)],
-    [QueryType.REST, markRaw(RestInspector)],
-    [QueryType.Custom, markRaw(CustomInspector)],
     ['action', markRaw(ActionInspector)],
     ['primitive', markRaw(TypeInspector)],
     ['type', markRaw(TypeInspector)],

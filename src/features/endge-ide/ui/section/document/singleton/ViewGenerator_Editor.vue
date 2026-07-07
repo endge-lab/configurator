@@ -10,8 +10,7 @@ import {
   RComponentTableColumn_TypeCtor,
   RField,
   RFilter,
-  RQueryFilter,
-  RQueryRest,
+  RQuery,
   RView,
 } from '@endge/core'
 import { FlaskConical } from 'lucide-vue-next'
@@ -154,36 +153,27 @@ async function generate(): Promise<void> {
     createdFilter = filter
   }
 
-  // 2) Запрос (пустой, но с mockData)
-  let createdQuery: RQueryRest | null = null
+  // 2) Запрос (source-first, с mockData)
+  let createdQuery: RQuery | null = null
   if (genQuery.value) {
     const queryLabel = inheritNames ? 'Запрос (Gen)' : displayName
-    const q = new RQueryRest(queryLabel, new RField('returnField', 'Null'))
+    const q = new RQuery(queryLabel, new RField('returnField', 'Null'))
     q.id = getNextNumericId(Endge.domain.getQueries())
     q.identity = generateIdentity('query')
     q.name = queryLabel
+    q.displayName = queryLabel
     q.type = QueryType.REST
-    q.endpoint = 'mock://local'
-    q.query = ''
-    q.subField = 'items'
 
     const mockObj = buildMockObject(cleanRows)
     const items = Array.from({ length: 20 }, (_v, i) => ({
       ...mockObj,
-      // Простой стабильный id для mock-строк: 1, 2, 3, ...
       id: i + 1,
     }))
-    q.mockDataEnabled = true
-    q.mockData = JSON.stringify(items, null, 2)
-
-    if (createdFilter) {
-      q.filters = [
-        new RQueryFilter({
-          mode: 'reference',
-          filterId: createdFilter.identity,
-        }),
-      ]
-    }
+    q.sourceVersion = 1
+    q.source = createGeneratedQuerySource({
+      filterIdentity: createdFilter?.identity ?? null,
+      mockItems: items,
+    })
 
     q.inherited = genView.value && inheritEntities.value
     Endge.domain.addQuery(q)
@@ -285,6 +275,44 @@ async function generate(): Promise<void> {
     }
     toast.success('Генерация завершена')
   }
+}
+
+function createGeneratedQuerySource(input: { filterIdentity: string | null; mockItems: unknown[] }): string {
+  const filterItems = input.filterIdentity
+    ? `[
+      filter.reference(${JSON.stringify(input.filterIdentity)}),
+    ]`
+    : '[]'
+
+  return `defineQuery({
+  kind: 'rest',
+
+  request: {
+    endpoint: 'mock://local',
+    path: '',
+    method: 'GET',
+    headers: {},
+    auth: { mode: 'none' },
+  },
+
+  params: {},
+
+  filters: {
+    mode: 'merge',
+    items: ${filterItems},
+  },
+
+  response: {
+    subField: 'items',
+    return: field('Null'),
+  },
+
+  mock: {
+    enabled: true,
+    data: ${JSON.stringify(input.mockItems, null, 4)},
+  },
+})
+`
 }
 </script>
 

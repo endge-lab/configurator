@@ -8,6 +8,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { registerQuerySourceLanguage } from '@/features/endge-ide/tools/source-editor/register-query-source-language'
 
 const props = defineProps<{
@@ -191,16 +192,23 @@ onBeforeUnmount(() => {
         </span>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        class="gap-2"
-        @click="resetToDefaultSource"
-      >
-        <RotateCcw class="size-4" />
-        Сбросить
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="h-8 w-8 shrink-0"
+              aria-label="Сбросить source"
+              @click="resetToDefaultSource"
+            >
+              <RotateCcw class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Сбросить source</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
 
     <div ref="container" class="query-source-editor__monaco" />
@@ -242,8 +250,9 @@ onBeforeUnmount(() => {
 }
 
 .query-source-editor__monaco {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 280px;
+  height: 100%;
   width: 100%;
   border-top: 1px solid hsl(var(--border));
   background: #1e1e1e;

@@ -28,8 +28,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: ComponentType.DSL, label: 'DSL', section: DomainSectionType.Component },
   { type: ComponentType.Table, label: 'Table', section: DomainSectionType.Component },
   { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
-  { type: QueryType.GraphQL, label: 'GraphQL', section: DomainSectionType.Query },
-  { type: QueryType.REST, label: 'REST', section: DomainSectionType.Query },
+  { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
   { type: ScriptType.ScenarioSetup, label: 'Сценарий', section: DomainSectionType.Scenario },
   { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
@@ -252,28 +251,12 @@ function buildPayloadTemplate(): Record<string, unknown> {
     }
   }
 
-  if (
-    activeType.value === QueryType.REST
-    || activeType.value === QueryType.GraphQL
-    || activeType.value === QueryType.Custom
-  ) {
+  if (activeType.value === QueryType.REST) {
     return {
       ...base,
-      type: activeType.value,
-      subField: 'items',
-      params: [],
-      returnField: {
-        name: 'input',
-        type: 'null',
-        isArray: false,
-        optional: false,
-        params: [],
-      },
-      mockData: null,
-      mockDataEnabled: false,
-      auth: { mode: 'token' },
-      filterMode: 'merge',
-      filters: [],
+      type: QueryType.REST,
+      source: Endge.source.createDefault('query'),
+      sourceVersion: 1,
       meta: {},
       inherited: false,
     }
@@ -488,7 +471,7 @@ function onCancel(): void {
                   <Input
                     id="create-doc-name"
                     v-model="name"
-                    :placeholder="activeOption?.type === ComponentType.Table ? 'Новая таблица' : (activeOption?.type === QueryType.GraphQL || activeOption?.type === QueryType.REST) ? 'Новый запрос' : activeOption?.type === ScriptType.ScenarioSetup ? 'Новый сценарий' : 'Без названия'"
+                    :placeholder="activeOption?.type === ComponentType.Table ? 'Новая таблица' : activeOption?.type === QueryType.REST ? 'Новый запрос' : activeOption?.type === ScriptType.ScenarioSetup ? 'Новый сценарий' : 'Без названия'"
                   />
                 </div>
                 <div v-if="showFolderSelect" class="grid gap-2">

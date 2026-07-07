@@ -17,15 +17,16 @@ const view = computed(() => {
 </script>
 
 <template>
-  <template v-if="view">
+  <div v-if="view" class="flex h-full min-h-0 w-full flex-col overflow-hidden">
     <component
       :is="view.component"
       v-bind="view.props"
+      class="min-h-0 flex-1"
     />
-  </template>
+  </div>
   <div
     v-else
-    class="p-4 text-sm text-muted-foreground"
+    class="h-full p-4 text-sm text-muted-foreground"
   >
     Нет данных для вкладки
   </div>

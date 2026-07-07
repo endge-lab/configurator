@@ -453,7 +453,6 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   ComponentType.DSL,
   ComponentType.Table,
   COMPONENT_SFC_TYPE,
-  QueryType.GraphQL,
   QueryType.REST,
   ScriptType.ScenarioSetup,
   'action',

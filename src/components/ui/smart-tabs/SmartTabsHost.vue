@@ -342,18 +342,18 @@ watch(contextMenu, (v) => {
           v-for="tab in tabs"
           :key="tab.id"
           :value="tab.id"
-          class="h-full m-0"
+          class="m-0 flex h-full min-h-0 flex-col data-[state=inactive]:hidden"
         >
           <div
             v-if="activeId === tab.id"
-            class="h-full"
+            class="flex h-full min-h-0 flex-col"
           >
             <component
               :is="resolved.component"
               v-if="resolved"
               v-bind="resolved.props || {}"
               :key="`${tab.id}-${activeId}`"
-              class="h-full"
+              class="min-h-0 flex-1"
             />
             <div v-else class="p-4 text-sm text-muted-foreground">
               Загрузка редактора...
