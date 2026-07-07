@@ -4,6 +4,7 @@ import type {
   RAction,
   RComponentDSL,
   RComponentTable,
+  RDataView,
   RQuery,
   RScenario,
   RTenant,
@@ -24,6 +25,7 @@ import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RCompo
 import { RComponentTableEditor } from '@/features/endge-ide/domain/entities/RComponentTableEditor.ts'
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
+import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
 import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
 import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
@@ -54,6 +56,7 @@ import ComponentTable_Editor from '@/features/endge-ide/ui/section/document/enti
 import Action_Editor from '@/features/endge-ide/ui/section/document/entity/Action_Editor.vue'
 import FiltersPanel_Editor from '@/features/endge-ide/ui/section/document/entity/FiltersPanel_Editor.vue'
 import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'
+import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'
 import Scenario_Editor from '@/features/endge-ide/ui/section/document/entity/Scenario_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
@@ -551,6 +554,10 @@ export class EndgeIDETabs {
     }
     if (isQueryDocumentType(key))
       return Endge.domain.getQuery(id)?.displayName ?? Endge.domain.getQuery(id)?.name ?? id
+    if (key === 'data-view') {
+      const dataView = Endge.domain.getDataView(id)
+      return dataView?.displayName ?? dataView?.name ?? id
+    }
     if (key === String(ScriptType.ScenarioSetup))
       return Endge.domain.getScenario(id)?.name ?? id
     if (key === 'type' || key === 'primitive')
@@ -606,6 +613,8 @@ export class EndgeIDETabs {
       return 'ti ti-file-type-tsx text-cyan-500 text-xl'
     if (isQueryDocumentType(key))
       return 'ti ti-api text-orange-500 text-xl'
+    if (key === 'data-view')
+      return 'ti ti-braces text-cyan-500 text-xl'
     if (key === String(ScriptType.ScenarioSetup))
       return 'ti ti-code text-teal-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))
@@ -824,6 +833,7 @@ export class EndgeIDETabs {
     [String(QueryType.REST), (documentId) => this._resolveQuery(documentId)],
     [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId)],
     [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
+    ['data-view', (documentId) => this._resolveDataView(documentId)],
     [String(ScriptType.ScenarioSetup), (documentId) => this._resolveScenario(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
@@ -947,6 +957,20 @@ export class EndgeIDETabs {
       editor,
       model: query,
       syncBeforeSave: () => editor.updateSource(query),
+    }
+  }
+
+  private _resolveDataView(documentId: string): EditorSession | null {
+    const dataView = Endge.domain.getDataView(documentId) as RDataView | null
+    if (!dataView)
+      return null
+    const editor = new RDataViewEditor()
+    editor.fillFromSource(dataView)
+    return {
+      view: { component: markRaw(DataView_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: dataView,
+      syncBeforeSave: () => editor.updateSource(dataView),
     }
   }
 

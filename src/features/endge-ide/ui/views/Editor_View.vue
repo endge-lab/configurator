@@ -93,11 +93,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
-    <div class="min-h-0 flex-1">
+    <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <SmartTabsHost
         v-if="!hasNoTabs"
         :api="EndgeIDE.tabs"
         :get-icon-class="getIconClass"
+        class="min-h-0 flex-1"
       />
 
       <!-- Пустое состояние по центру (по вертикали и горизонтали), поверх контента вкладок -->

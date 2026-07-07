@@ -29,6 +29,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: ComponentType.Table, label: 'Table', section: DomainSectionType.Component },
   { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
   { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
+  { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
   { type: ScriptType.ScenarioSetup, label: 'Сценарий', section: DomainSectionType.Scenario },
   { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
@@ -47,6 +48,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
 const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Query]: 'root-queries',
+  [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Scenario]: 'root-scenarios',
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
@@ -73,6 +75,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
 const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Component]: 'components',
   [DomainSectionType.Query]: 'queries',
+  [DomainSectionType.DataView]: 'data-views',
   [DomainSectionType.Scenario]: 'scenarios',
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
@@ -130,6 +133,7 @@ const showFolderSelect = computed(() => {
   const s = activeOption.value.section
   return s === DomainSectionType.Component
     || s === DomainSectionType.Query
+    || s === DomainSectionType.DataView
     || s === DomainSectionType.Scenario
     || s === DomainSectionType.Action
     || s === DomainSectionType.Integration
@@ -256,6 +260,16 @@ function buildPayloadTemplate(): Record<string, unknown> {
       ...base,
       type: QueryType.REST,
       source: Endge.source.createDefault('query'),
+      sourceVersion: 1,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === 'data-view') {
+    return {
+      ...base,
+      source: Endge.source.createDefault('data-view'),
       sourceVersion: 1,
       meta: {},
       inherited: false,

@@ -34,6 +34,8 @@ export function getEntityByDocType(
     case QueryType.GraphQL:
     case QueryType.Custom:
       return domain.getQuery(id)
+    case 'data-view':
+      return (domain as any).getDataView?.(id)
     case ScriptType.ScenarioSetup:
       return domain.getScenario(id)
     case 'action':

@@ -24,6 +24,7 @@ import {
   Folder,
   FolderPlus,
   FormInput,
+  GitBranch,
   Layout,
   Languages,
   Link,
@@ -383,6 +384,7 @@ const ROOT_TO_SECTION = computed(() => {
   return {
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
     'root-queries': { section: DomainSectionType.Query, items: () => withoutDeletedAndInherited(domainStore.queries, softId) },
+    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeletedAndInherited((Endge.domain as any).getDataViews?.() ?? [], softId) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-scenarios': { section: DomainSectionType.Scenario, items: () => withoutDeleted(domainStore.scenarios, softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
@@ -402,7 +404,13 @@ const ROOT_TO_SECTION = computed(() => {
     'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs, softId) },
     'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles, softId) },
     'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects, softId) },
-    'soft-deleted': { section: DomainSectionType.Parameters, items: () => getSoftDeletedItems(domainStore as any, softId, (domainStore.folders as any[]) ?? []) },
+    'soft-deleted': {
+      section: DomainSectionType.Parameters,
+      items: () => getSoftDeletedItems({
+        ...(domainStore as any),
+        dataViews: (Endge.domain as any).getDataViews?.() ?? [],
+      }, softId, (domainStore.folders as any[]) ?? []),
+    },
   }
 })
 
@@ -415,6 +423,7 @@ const ROOT_BLOCKS = computed(() => getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.val
 const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-types': { icon: Type, colorClass: 'text-blue-500' },
   'root-queries': { icon: Network, colorClass: 'text-violet-500' },
+  'root-data-views': { icon: GitBranch, colorClass: 'text-cyan-500' },
   'root-components': { icon: Layout, colorClass: 'text-emerald-500' },
   'root-scenarios': { icon: PlayCircle, colorClass: 'text-orange-500' },
   'root-actions': { icon: Zap, colorClass: 'text-amber-500' },
@@ -454,6 +463,7 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   ComponentType.Table,
   COMPONENT_SFC_TYPE,
   QueryType.REST,
+  'data-view',
   ScriptType.ScenarioSetup,
   'action',
   'integration',

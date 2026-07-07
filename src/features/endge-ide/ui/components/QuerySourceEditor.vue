@@ -139,7 +139,10 @@ onMounted(() => {
     fontSize: 14,
     tabSize: 2,
     insertSpaces: true,
-    scrollBeyondLastLine: false,
+    scrollBeyondLastLine: true,
+    padding: {
+      bottom: 10,
+    },
     wordWrap: 'on',
     formatOnPaste: true,
     formatOnType: true,

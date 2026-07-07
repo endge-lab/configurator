@@ -114,6 +114,7 @@ export interface DomainStoreForTree {
   components?: any[]
   componentSFCs?: any[]
   queries?: any[]
+  dataViews?: any[]
   scenarios?: any[]
   actions?: any[]
   typesComplex?: any[]
@@ -183,6 +184,7 @@ export function getSoftDeletedItems(
   add(store.components, DomainSectionType.Component)
   add(store.componentSFCs, DomainSectionType.Component)
   add(store.queries, DomainSectionType.Query)
+  add(store.dataViews, DomainSectionType.DataView)
   add(store.scenarios, DomainSectionType.Scenario)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
@@ -242,6 +244,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-pages': 'Страницы',
   'root-navigations': 'Навигации',
   'root-settings': 'Настройки',
+  'root-data-views': 'Data Views',
   'root-vocabs': 'Словари',
   'root-i18n-bundles': 'Словари переводов',
   'root-projects': 'Проекты',
@@ -272,6 +275,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     rootIds: [
       'root-types',
       'root-queries',
+      'root-data-views',
       'root-components',
       'root-scenarios',
       'root-actions',
@@ -349,6 +353,8 @@ export function normalizeDocType(
     return ParameterType.DefaultParameter
   if (sectionType === DomainSectionType.Filters)
     return FilterType.DefaultFilter
+  if (sectionType === DomainSectionType.DataView)
+    return 'data-view' as DomainDocumentType
   if (sectionType === DomainSectionType.Action)
     return 'action'
   if (sectionType === DomainSectionType.Converter)
