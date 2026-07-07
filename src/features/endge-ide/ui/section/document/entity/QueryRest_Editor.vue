@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DomainDocumentType, RQueryAuth } from '@endge/core'
+import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 
 import { DomainSectionType, Endge, RQueryFilter } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
@@ -29,11 +30,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
+import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
-const editor = computed(() => tabs.documentEditorModel.value ?? null)
+const editor = computed<RQueryEditor | null>(() => tabs.documentEditorModel.value as RQueryEditor | null)
 const queryDocumentType = computed<DomainDocumentType | undefined>(() =>
   (editor.value as { type?: DomainDocumentType } | null)?.type,
 )
@@ -146,7 +148,27 @@ function moveFilter(index: number, delta: number): void {
   if (!list || index + delta < 0 || index + delta >= list.length)
     return
   const [item] = list.splice(index, 1)
+  if (!item)
+    return
   list.splice(index + delta, 0, item)
+}
+
+function setSendAsFormUrlencoded(value: boolean): void {
+  if (editor.value)
+    editor.value.sendAsFormUrlencoded = value
+}
+
+function setMockDataEnabled(value: boolean): void {
+  if (editor.value)
+    editor.value.mockDataEnabled = value
+}
+
+function setInlineFilterJson(filter: RQueryFilter, value: string | number): void {
+  filter.inlineJson = String(value)
+}
+
+function setFilterId(filter: RQueryFilter, value: unknown): void {
+  filter.filterId = value == null ? null : String(value)
 }
 
 const endpointInputRef = ref<HTMLInputElement | null>(null)
@@ -254,8 +276,8 @@ watch(tab, (t) => {
         </div>
       </div>
 
-      <Card class="flex-1 min-h-0">
-        <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
+      <Card class="flex flex-1 min-h-[calc(100vh-220px)] flex-col overflow-hidden">
+        <Tabs v-model="tab" class="flex flex-1 min-h-0 flex-col">
           <div class="border-b px-3 py-2">
             <TabsList class="flex flex-wrap gap-1">
               <TabsTrigger value="0">
@@ -269,6 +291,9 @@ watch(tab, (t) => {
               </TabsTrigger>
               <TabsTrigger value="debug">
                 Отладка
+              </TabsTrigger>
+              <TabsTrigger value="source">
+                Source
               </TabsTrigger>
               <TabsTrigger value="events">
                 События
@@ -420,7 +445,7 @@ watch(tab, (t) => {
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :model-value="!!editor.sendAsFormUrlencoded"
-                    @update:model-value="(v) => (editor.sendAsFormUrlencoded = !!v)"
+                    @update:model-value="(v) => setSendAsFormUrlencoded(!!v)"
                   />
                   <Label>Тело как application/x-www-form-urlencoded</Label>
                 </div>
@@ -497,10 +522,11 @@ watch(tab, (t) => {
                     <div v-if="f.mode === 'inline'" class="space-y-1">
                       <Label class="text-xs">JSON</Label>
                       <Textarea
-                        v-model="f.inlineJson"
+                        :model-value="f.inlineJson ?? ''"
                         :rows="4"
                         placeholder="{ &quot;key&quot;: &quot;value&quot; }"
                         class="font-mono text-sm"
+                        @update:model-value="(v) => setInlineFilterJson(f, v)"
                       />
                     </div>
 
@@ -508,9 +534,12 @@ watch(tab, (t) => {
                       <Label class="text-xs">Фильтр из коллекции</Label>
                       <DomainEntityDropTarget
                         :accept-section-types="[DomainSectionType.Filters]"
-                        @update:model-value="(v) => (f.filterId = v ?? null)"
+                        @update:model-value="(v) => setFilterId(f, v)"
                       >
-                        <Select v-model="f.filterId">
+                        <Select
+                          :model-value="f.filterId ?? undefined"
+                          @update:model-value="(v) => setFilterId(f, v)"
+                        >
                           <SelectTrigger class="w-full">
                             <SelectValue placeholder="Выбери фильтр…" />
                           </SelectTrigger>
@@ -610,12 +639,16 @@ watch(tab, (t) => {
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :model-value="!!editor.mockDataEnabled"
-                    @update:model-value="(v) => (editor.mockDataEnabled = !!v)"
+                    @update:model-value="(v) => setMockDataEnabled(!!v)"
                   />
                   <Label>Использовать Mock данные?</Label>
                 </div>
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="source" class="flex flex-1 h-full min-h-0 flex-col p-0 m-0 overflow-hidden">
+            <QuerySourceEditor v-model="editor.source" />
           </TabsContent>
 
           <TabsContent value="events" class="flex-1 min-h-0 p-0 m-0">

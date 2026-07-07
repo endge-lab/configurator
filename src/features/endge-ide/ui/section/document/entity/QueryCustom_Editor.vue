@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DomainDocumentType, RType } from '@endge/core'
+import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 import { useDomainStore } from '@endge/vue'
 import { Loader2, Save } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -15,10 +16,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
+import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
-const editor = computed(() => tabs.documentEditorModel.value ?? null)
+const editor = computed<RQueryEditor | null>(() => tabs.documentEditorModel.value as RQueryEditor | null)
 const queryDocumentType = computed<DomainDocumentType | undefined>(() =>
   (editor.value as { type?: DomainDocumentType } | null)?.type,
 )
@@ -48,6 +50,11 @@ const componentInputOptions = computed(() =>
 const componentTypeOptions = computed(() =>
   domainStore.queriesNames.map((x: string) => ({ name: x, code: x })),
 )
+
+function setMockDataEnabled(value: boolean): void {
+  if (editor.value)
+    editor.value.mockDataEnabled = value
+}
 </script>
 
 <template>
@@ -81,12 +88,13 @@ const componentTypeOptions = computed(() =>
         </TooltipProvider>
       </div>
 
-      <Card class="flex-1 min-h-0">
-        <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
+      <Card class="flex flex-1 min-h-[calc(100vh-220px)] flex-col overflow-hidden">
+        <Tabs v-model="tab" class="flex flex-1 min-h-0 flex-col">
           <div class="border-b px-3 py-2">
-            <TabsList class="grid grid-cols-3 w-full">
+            <TabsList class="grid grid-cols-4 w-full">
               <TabsTrigger value="0">Запрос</TabsTrigger>
               <TabsTrigger value="1">Отладка</TabsTrigger>
+              <TabsTrigger value="source">Source</TabsTrigger>
               <TabsTrigger value="events">События</TabsTrigger>
             </TabsList>
           </div>
@@ -114,12 +122,16 @@ const componentTypeOptions = computed(() =>
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :model-value="!!editor.mockDataEnabled"
-                    @update:model-value="(v) => (editor.mockDataEnabled = !!v)"
+                    @update:model-value="(v) => setMockDataEnabled(!!v)"
                   />
                   <Label class="font-semibold">Включить Mock-режим?</Label>
                 </div>
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="source" class="flex flex-1 h-full min-h-0 flex-col p-0 m-0 overflow-hidden">
+            <QuerySourceEditor v-model="editor.source" />
           </TabsContent>
 
           <TabsContent value="events" class="flex-1 min-h-0 p-0 m-0">
