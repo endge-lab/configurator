@@ -1,18 +1,53 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { Save } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { Loader2, Play, Save } from "lucide-vue-next";
+import { toast } from "vue-sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { showWidget } from "@/components/layouts/grid";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
+import { launchSFCPreview, sfcPreviewError } from "@/features/endge-ide/model/sfc-preview/sfc-preview-state";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 
 const tabs = EndgeIDE.tabs;
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
+const launchLoading = ref(false);
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save();
+}
+
+async function launchPreview(): Promise<void> {
+  const current = editor.value;
+  if (!current)
+    return;
+
+  launchLoading.value = true;
+  try {
+    current.parseSource?.();
+    await launchSFCPreview({
+      id: current.id,
+      identity: current.identity,
+      name: current.name,
+      displayName: current.displayName,
+      source: current.source,
+    });
+    sfcPreviewError.value = null;
+    showWidget("sfc-preview");
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    sfcPreviewError.value = message;
+    if (message === "Сначала определите превью props")
+      toast.warning("Сначала определите превью props");
+    else
+      toast.error("Не удалось запустить демонстрацию", { description: message });
+  }
+  finally {
+    launchLoading.value = false;
+  }
 }
 </script>
 
@@ -36,9 +71,23 @@ async function save(): Promise<void> {
             {{ editor.identity }}
           </div>
         </div>
-        <Button size="sm" class="gap-2" @click="save">
+        <Button
+          size="icon"
+          variant="outline"
+          aria-label="Сохранить"
+          @click="save"
+        >
           <Save class="size-4" />
-          Сохранить
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          aria-label="Запуск"
+          :disabled="launchLoading"
+          @click="launchPreview"
+        >
+          <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+          <Play v-else class="size-4" />
         </Button>
       </div>
 

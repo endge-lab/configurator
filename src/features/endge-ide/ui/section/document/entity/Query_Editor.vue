@@ -179,10 +179,18 @@ function patchAuthMode(event: Event): void {
       <Card class="flex h-full min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
         <div v-if="activeTab === 'ui'" class="h-full overflow-auto p-4">
           <div class="grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <section class="grid gap-4 lg:col-span-2 sm:grid-cols-[160px_minmax(0,1fr)]">
+            <section class="grid gap-4 lg:col-span-2 sm:grid-cols-[160px_220px_minmax(0,1fr)]">
               <div class="grid gap-2">
                 <Label>ID запроса</Label>
                 <Input :model-value="editor.id" readonly />
+              </div>
+
+              <div class="grid gap-2">
+                <Label>Identity</Label>
+                <Input
+                  v-model="editor.identity"
+                  placeholder="schedule"
+                />
               </div>
 
               <div class="grid gap-2">

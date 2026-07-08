@@ -11,6 +11,7 @@ import Help_Widget from '@/features/endge-ide/ui/widgets/Help_Widget.vue'
 import Inspector_Widget from '@/features/endge-ide/ui/widgets/Inspector_Widget.vue'
 import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
+import SFCPreview_Widget from '@/features/endge-ide/ui/widgets/SFCPreview_Widget.vue'
 import Settings_Widget from '@/features/endge-ide/ui/widgets/Settings_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
 import Testing_Widget from '@/features/endge-ide/ui/widgets/Testing_Widget.vue'
@@ -267,6 +268,24 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       minHeight: 400,
       maxHeight: 800,
       defaultWidth: 420,
+      defaultHeight: 560,
+    },
+  },
+  {
+    id: 'sfc-preview',
+    title: 'SFC preview',
+    icon: 'Play',
+    content: 'component',
+    defaultComponent: markRaw(SFCPreview_Widget),
+    singleton: true,
+    defaultPosition: 'floating',
+    allowedPositions: ['left', 'right', 'floating'],
+    floatingConstraints: {
+      minWidth: 420,
+      maxWidth: 1920,
+      minHeight: 260,
+      maxHeight: 1200,
+      defaultWidth: 980,
       defaultHeight: 560,
     },
   },

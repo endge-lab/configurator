@@ -1,5 +1,7 @@
 import type {
+  ProgramDiagnostic,
   QuerySourceDocument,
+  QuerySourceOutput,
   QuerySourcePatchPath,
   RQuery,
 } from '@endge/core'
@@ -65,12 +67,17 @@ export class RQueryEditor {
 
   /** Обновляет UI-поля из canonical source document. */
   refreshFieldsFromSource(): void {
-    const result = Endge.source.parse<QuerySourceDocument>('query', this.source)
-    this.diagnostics = result.diagnostics ?? []
-    if (!result.document)
-      return
+    try {
+      const result = Endge.source.parse<QuerySourceDocument>('query', this.source)
+      this.diagnostics = result.diagnostics ?? []
+      if (!result.document)
+        return
 
-    this.applyDocumentProjection(result.document)
+      this.applyDocumentProjection(result.document)
+    }
+    catch (error) {
+      this.diagnostics = [createEditorDiagnostic(error)]
+    }
   }
 
   /** Патчит endpoint, сохраняя env(...) для var-token вида `{ENDPOINT}`. */
@@ -122,15 +129,17 @@ export class RQueryEditor {
   }
 
   private applyDocumentProjection(document: QuerySourceDocument): void {
-    this.endpoint = document.request.endpoint
-    this.path = document.request.path
-    this.method = document.request.method
-    this.headersText = stringifyEditorJson(document.request.headers)
-    this.authMode = document.request.auth.mode === 'none' ? 'none' : 'token'
-    this.subField = document.response.subField
-    this.returnExpression = printFieldExpression(document.response.return)
-    this.mockEnabled = document.mock.enabled
-    this.mockDataText = stringifyEditorJson(document.mock.data)
+    const legacyResponse = readLegacyResponse(document)
+
+    this.endpoint = document.request?.endpoint ?? ''
+    this.path = document.request?.path ?? ''
+    this.method = document.request?.method ?? 'POST'
+    this.headersText = stringifyEditorJson(document.request?.headers ?? {})
+    this.authMode = document.request?.auth?.mode === 'none' ? 'none' : 'token'
+    this.subField = legacyResponse?.subField ?? readRawResponsePath(document.outputs)
+    this.returnExpression = printFieldExpression(legacyResponse?.return)
+    this.mockEnabled = document.mock?.enabled ?? false
+    this.mockDataText = stringifyEditorJson(document.mock?.data ?? null)
   }
 }
 
@@ -139,8 +148,24 @@ function endpointExpression(value: string): string | undefined {
   return match ? `env('${escapeSingleQuoted(match[1])}')` : undefined
 }
 
-function printFieldExpression(field: QuerySourceDocument['response']['return']): string {
-  if (!field)
+function readLegacyResponse(document: QuerySourceDocument): { subField?: string, return?: unknown } | null {
+  const response = (document as unknown as { response?: unknown }).response
+  return response && typeof response === 'object'
+    ? response as { subField?: string, return?: unknown }
+    : null
+}
+
+function readRawResponsePath(outputs: QuerySourceOutput[] | undefined): string {
+  const rawOutput = outputs?.find(output => output.key === 'raw' && output.source.type === 'response')
+  const responseOutput = rawOutput ?? outputs?.find(output => output.source.type === 'response')
+  if (!responseOutput || responseOutput.source.type !== 'response')
+    return ''
+
+  return responseOutput.source.path ?? ''
+}
+
+function printFieldExpression(field: unknown): string {
+  if (!isSourceField(field))
     return 'null'
 
   let out = `field('${escapeSingleQuoted(field.type)}')`
@@ -150,6 +175,10 @@ function printFieldExpression(field: QuerySourceDocument['response']['return']):
     out += '.optional()'
 
   return out
+}
+
+function isSourceField(value: unknown): value is { type: string, isArray?: boolean, optional?: boolean } {
+  return Boolean(value && typeof value === 'object' && typeof (value as { type?: unknown }).type === 'string')
 }
 
 function stringifyEditorJson(value: unknown): string {
@@ -170,4 +199,15 @@ function parseEditorJson(value: string): { ok: true, value: unknown } | { ok: fa
 
 function escapeSingleQuoted(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
+}
+
+function createEditorDiagnostic(error: unknown): ProgramDiagnostic {
+  return {
+    severity: 'error',
+    code: 'query-source-editor-projection-error',
+    message: error instanceof Error
+      ? error.message
+      : String(error),
+    sourcePath: 'source',
+  }
 }

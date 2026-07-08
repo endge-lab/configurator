@@ -92,6 +92,7 @@ export class EndgeIDEWidgets {
 
     // Виджет «Демонстрация» по умолчанию скрыт (minimized)
     hideWidget('demonstration')
+    hideWidget('sfc-preview')
 
     this._isInitialized = true
   }

@@ -8,11 +8,11 @@ const htmlContent = ref<string>('')
 
 const markdownFiles = import.meta.glob(
   [
-    '/src/features/@endge-vue/docs/**/*.md',
-    '/src/features/endge-admin/docs/**/*.md',
+    '/src/features/endge-ide/docs/**/*.md',
   ],
   {
-    as: 'raw',
+    query: '?raw',
+    import: 'default',
   },
 )
 
@@ -32,18 +32,16 @@ const md = new MarkdownIt({
 })
 
 async function loadMarkdown(): void {
-  // Пробуем найти файл в обеих директориях
-  const fileKey1 = `/src/features/@endge-vue/docs/${props.src}.md`
-  const fileKey2 = `/src/features/endge-admin/docs/${props.src}.md`
-  
-  const loader = markdownFiles[fileKey1] || markdownFiles[fileKey2]
+  const fileKey = `/src/features/endge-ide/docs/${props.src}.md`
+
+  const loader = markdownFiles[fileKey]
   if (loader) {
     const raw = await loader()
     htmlContent.value = md.render(raw)
   } else {
     htmlContent.value = `<p class="text-danger">Файл "${props.src}" не найден.</p>`
     console.error(
-      `[MarkdownViewer]: Файл "${props.src}" не найден в import.meta.glob. Пробовали: ${fileKey1}, ${fileKey2}`,
+      `[MarkdownViewer]: Файл "${props.src}" не найден в import.meta.glob. Пробовали: ${fileKey}`,
     )
   }
 }

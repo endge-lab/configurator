@@ -39,14 +39,7 @@ function updateMarkers(): void {
   if (!model)
     return
 
-  const validation = Endge.source.validate('query', model.getValue())
-  const diagnostics = validation.diagnostics as Array<{
-    severity?: string
-    message?: string
-    code?: string
-    start?: number
-    end?: number
-  }>
+  const diagnostics = readDiagnostics(model.getValue())
   diagnosticsCount.value = diagnostics.length
 
   monaco.editor.setModelMarkers(
@@ -54,6 +47,32 @@ function updateMarkers(): void {
     'endge-query-source',
     diagnostics.map(diagnostic => toEditorMarker(model, diagnostic)),
   )
+}
+
+function readDiagnostics(source: string): Array<{
+  severity?: string
+  message?: string
+  code?: string
+  start?: number
+  end?: number
+}> {
+  try {
+    const validation = Endge.source.validate('query', source)
+    return validation.diagnostics as Array<{
+      severity?: string
+      message?: string
+      code?: string
+      start?: number
+      end?: number
+    }>
+  }
+  catch (error) {
+    return [{
+      severity: 'error',
+      code: 'query-source-validation-error',
+      message: error instanceof Error ? error.message : String(error),
+    }]
+  }
 }
 
 /** Конвертирует compiler diagnostic offset в Monaco marker. */
