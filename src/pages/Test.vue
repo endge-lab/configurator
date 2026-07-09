@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { Endge } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { SFC_RuntimeRenderer } from '@endge/vue'
@@ -20,6 +20,45 @@ const isExecuting = ref(false)
 const errorMessage = ref<string | null>(null)
 const raphSnapshot = shallowRef<Record<string, unknown>>({})
 let runtimeDebugUnsubscribers: VoidFunction[] = []
+
+const TEST_FLIGHTS: Record<string, unknown>[] = [
+  {
+    id: 'SU1402',
+    number: 'SU 1402',
+    status: 'Boarding',
+    statusTone: 'success',
+    std: '2026-07-05T13:45:00Z',
+    route: 'SVO -> LED',
+    counter: 0,
+  },
+  {
+    id: 'DP209',
+    number: 'DP 209',
+    status: 'Delayed',
+    statusTone: 'warning',
+    std: '2026-07-05T11:10:00Z',
+    route: 'VKO -> AER',
+    counter: 0,
+  },
+  {
+    id: 'SU99',
+    number: 'SU 99',
+    status: 'Check-in',
+    statusTone: 'info',
+    std: '2026-07-05T09:25:00Z',
+    route: 'SVO -> KZN',
+    counter: 0,
+  },
+  {
+    id: 'FV3001',
+    number: 'FV 3001',
+    status: 'Closed',
+    statusTone: 'neutral',
+    std: '2026-07-05T16:40:00Z',
+    route: 'LED -> SVO',
+    counter: 0,
+  },
+]
 
 const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
   kind: 'raph',
@@ -84,7 +123,7 @@ async function executeSFC(): Promise<void> {
     }
 
     setupRuntimeDebugLogs(host)
-    seedRaphInput(host)
+    seedRaphInput()
     runtime.value = host
     logRuntimeSystemInfo(host, 'После execute и seed Raph input')
   }
@@ -131,25 +170,10 @@ function resetRuntimeRenderState(): void {
   raphSnapshot.value = {}
 }
 
-function seedRaphInput(host: ComponentSFCRuntimeHost): void {
-  const previewProps = host.getPreviewProps() ?? {}
-  const flights = normalizeFlights(previewProps.flights)
-
-  Raph.set(RAPH_FLIGHTS_PATH, flights.length > 0
-    ? flights
-    : [
-        {
-          id: 'SU1402',
-          number: 'SU 1402',
-          status: 'Boarding',
-          statusTone: 'success',
-          std: '2026-07-05T13:45:00Z',
-          route: 'SVO -> LED',
-          counter: 0,
-        },
-      ])
+function seedRaphInput(): void {
+  Raph.set(RAPH_FLIGHTS_PATH, normalizeFlights(TEST_FLIGHTS))
   refreshRaphSnapshot()
-  logRaphSnapshot('После seed preview props в Raph')
+  logRaphSnapshot('После seed test rows в Raph')
 }
 
 function refreshRaphSnapshot(): void {
@@ -434,6 +458,10 @@ function summarizeRaphNode(node: any): Record<string, unknown> {
 
 onBeforeUnmount(() => {
   destroyRuntime()
+})
+
+onMounted(() => {
+  void executeSFC()
 })
 </script>
 
