@@ -9,7 +9,9 @@
       "column": {
         "pinLeft": "Закрепить слева",
         "pinRight": "Закрепить справа",
-        "unpin": "Открепить"
+        "unpin": "Открепить",
+        "resetPin": "Сбросить закрепление",
+        "resetAllPins": "Сбросить все закрепления"
       },
       "sort": {
         "setColumnAsc": "Сортировать по возрастанию",
@@ -29,7 +31,9 @@
       "column": {
         "pinLeft": "Pin left",
         "pinRight": "Pin right",
-        "unpin": "Unpin"
+        "unpin": "Unpin",
+        "resetPin": "Reset pin",
+        "resetAllPins": "Reset all pins"
       },
       "sort": {
         "setColumnAsc": "Sort ascending",
