@@ -59,24 +59,40 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
   await applyPreviewOptions(artifact.payload.previewOptions)
 
   const runtimeInput = resolvePreviewInput(previewProps)
+  const runtimeId = resolvePreviewRuntimeId(input)
   sfcPreviewInput.value = runtimeInput
-  sfcPreviewRuntime.value = EndgeComponentSFCRuntimeHost.createRuntime({
-    id: `sfc-preview-${++runtimeCounter}`,
+  const runtime = EndgeComponentSFCRuntimeHost.createRuntime({
+    id: runtimeId,
     model,
     meta: {
       target: 'dom',
       input: runtimeInput,
+      persistence: 'local',
     },
     artifactReader: {
       getArtifact: () => artifact,
     },
   })
+  runtime.attachRuntimeState(Endge.context.createRuntimeStateController({
+    runtimeId: runtime.id,
+    persistence: 'local',
+  }))
+  sfcPreviewRuntime.value = runtime
 }
 
 export function destroySFCPreviewRuntime(): void {
+  const runtimeId = sfcPreviewRuntime.value?.id
   sfcPreviewRuntime.value?.destroy()
+  if (runtimeId)
+    Endge.context.destroyRuntimeStateController(runtimeId)
   sfcPreviewRuntime.value = null
   sfcPreviewInput.value = { kind: 'local', props: {} }
+}
+
+function resolvePreviewRuntimeId(input: SFCPreviewLaunchInput): string {
+  const source = input.identity ?? input.id ?? input.name ?? input.displayName ?? 'draft'
+  const normalized = String(source).trim() || 'draft'
+  return `component-sfc-preview:${normalized}`
 }
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
