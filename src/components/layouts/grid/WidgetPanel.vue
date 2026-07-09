@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getIconComponent } from '@/components/layouts/grid/icons.ts'
 import { endWidgetDrag, getLayoutState, getPopupInstances, getWidgetInstances, getWidgetOrder, moveWidget, reorderWidget, restorePopupInstance, startWidgetDrag, toggleWidget } from '@/components/layouts/grid/layout.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
 const props = defineProps<{
   position: 'left' | 'right'
@@ -78,6 +79,8 @@ const topWidgets = computed(() =>
   ),
 )
 
+const workspaceSettingsActive = computed(() => EndgeIDE.tabs.activeTabId.value === 'workspace-settings')
+
 const bottomWidgetsFiltered = computed(() =>
   sortByOrder(
     props.bottomWidgets.filter(w => getWidgetInstances(w.id).length > 0),
@@ -98,6 +101,10 @@ function isActive(widget: WidgetDefinition & WidgetDefinitionState): boolean {
 
 function handleWidgetClick(widget: WidgetDefinition & WidgetDefinitionState) {
   toggleWidget(widget.id)
+}
+
+function openWorkspaceSettings() {
+  EndgeIDE.tabs.openWorkspaceSettings()
 }
 
 function handlePopupWidgetClick(group: PopupWidgetGroup) {
@@ -184,29 +191,50 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
         class="absolute inset-0.5 rounded-lg border-2 border-dashed border-primary pointer-events-none"
       />
       <div class="flex flex-col items-center gap-0.5">
-        <Tooltip v-for="widget in topWidgets" :key="widget.id">
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-8 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground"
-              :class="{
-                'bg-muted-foreground/15 dark:bg-muted-foreground/25 text-card-foreground': isActive(widget),
-              }"
-              draggable="true"
-              @click="handleWidgetClick(widget)"
-              @dragstart="handleDragStart($event, widget)"
-              @dragend="handleDragEnd"
-              @dragover="handleIconDragOver"
-              @drop="handleIconDrop($event, widget)"
-            >
-              <component :is="getIconComponent(widget.icon)" class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent :side="position === 'left' ? 'right' : 'left'">
-            {{ widget.title }}
-          </TooltipContent>
-        </Tooltip>
+        <template v-for="(widget, index) in topWidgets" :key="widget.id">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground"
+                :class="{
+                  'bg-muted-foreground/15 dark:bg-muted-foreground/25 text-card-foreground': isActive(widget),
+                }"
+                draggable="true"
+                @click="handleWidgetClick(widget)"
+                @dragstart="handleDragStart($event, widget)"
+                @dragend="handleDragEnd"
+                @dragover="handleIconDragOver"
+                @drop="handleIconDrop($event, widget)"
+              >
+                <component :is="getIconComponent(widget.icon)" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent :side="position === 'left' ? 'right' : 'left'">
+              {{ widget.title }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip v-if="position === 'left' && index === 0">
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground"
+                :class="{
+                  'bg-muted-foreground/15 dark:bg-muted-foreground/25 text-card-foreground': workspaceSettingsActive,
+                }"
+                @click="openWorkspaceSettings"
+              >
+                <component :is="getIconComponent('Globe2')" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Рабочее пространство
+            </TooltipContent>
+          </Tooltip>
+        </template>
       </div>
     </div>
 

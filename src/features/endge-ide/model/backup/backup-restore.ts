@@ -156,6 +156,12 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
     add: (domain, doc) => domain.addVocabs(doc as never),
     removeByIdentity: (domain, identity) => domain.removeVocabsByIdentity(identity),
   },
+  'auth-profile': {
+    getAll: domain => domain.getAuthProfiles() as unknown as ImportDoc[],
+    get: (domain, idOrIdentity) => domain.getAuthProfile(idOrIdentity) as ImportDoc | null,
+    add: (domain, doc) => domain.addAuthProfile(doc as never),
+    removeByIdentity: (domain, identity) => domain.removeAuthProfileByIdentity(identity),
+  },
   view: {
     getAll: domain => domain.getViews() as unknown as ImportDoc[],
     get: (domain, idOrIdentity) => domain.getView(idOrIdentity) as ImportDoc | null,
@@ -189,6 +195,7 @@ const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
   { documentType: 'policy', entityKind: 'policy', sectionTitle: 'Политики', getAll: domain => ENTITY_ADAPTERS.policy.getAll(domain) },
   { documentType: 'style', entityKind: 'style', sectionTitle: 'Стили', getAll: domain => ENTITY_ADAPTERS.style.getAll(domain) },
   { documentType: 'vocabs', entityKind: 'vocabs', sectionTitle: 'Словари', getAll: domain => ENTITY_ADAPTERS.vocabs.getAll(domain) },
+  { documentType: 'auth-profile', entityKind: 'auth-profile', sectionTitle: 'Профили авторизации', getAll: domain => ENTITY_ADAPTERS['auth-profile'].getAll(domain) },
   { documentType: 'type', entityKind: 'type', sectionTitle: 'Типы', getAll: domain => ENTITY_ADAPTERS.type.getAll(domain) },
   { documentType: 'converter', entityKind: 'converter', sectionTitle: 'Конвертеры', getAll: domain => ENTITY_ADAPTERS.converter.getAll(domain) },
   { documentType: 'integration', entityKind: 'integration', sectionTitle: 'Интеграции', getAll: domain => ENTITY_ADAPTERS.integration.getAll(domain) },

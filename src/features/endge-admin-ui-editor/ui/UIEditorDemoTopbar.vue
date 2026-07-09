@@ -15,7 +15,7 @@ import {
   Waypoints,
 } from 'lucide-vue-next'
 import { Endge } from '@endge/core'
-import { computed } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 import {
   DropdownMenu,
@@ -30,8 +30,16 @@ const domainStore = useDomainStore()
 const projectsStore = useProjectsStore()
 const { current: currentLocale, setCurrent: setCurrentLocale } = useCurrentLocale()
 const { current: currentEnvironment } = useCurrentEnvironment()
+const workspaceVersion = ref(0)
+const offWorkspace = Endge.workspace.subscribe(() => {
+  workspaceVersion.value += 1
+})
+onScopeDispose(offWorkspace)
 
-const availableLocales = computed(() => Endge.workspace.locales)
+const availableLocales = computed(() => {
+  workspaceVersion.value
+  return Endge.workspace.locales
+})
 
 const activeProjectLabel = computed(() => {
   const project = projectsStore.activeProject
@@ -53,9 +61,15 @@ const activeEnvironmentLabel = computed(() => {
 })
 
 const activeLocaleLabel = computed(() => {
+  workspaceVersion.value
   const localeCode = Endge.workspace.normalizeLocale(currentLocale.value)
-  return Endge.workspace.getLocaleLabel(localeCode, 'shortLabel')
+  return getLocaleDisplayLabel(localeCode)
 })
+
+function getLocaleDisplayLabel(localeCode: string): string {
+  const locale = Endge.workspace.locales.find(item => item.code === localeCode)
+  return String(locale?.nativeLabel || locale?.label || locale?.shortLabel || localeCode)
+}
 
 function switchLocale(locale: string): void {
   setCurrentLocale(locale)
@@ -178,7 +192,7 @@ const rightItems = computed(() => [
               class="size-3.5"
               :class="Endge.workspace.normalizeLocale(currentLocale) === locale.code ? 'opacity-100' : 'opacity-0'"
             />
-            <span>{{ locale.nativeLabel }}</span>
+            <span>{{ getLocaleDisplayLabel(locale.code) }}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

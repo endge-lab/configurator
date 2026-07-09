@@ -17,6 +17,7 @@ import TenantInspector from '@/features/endge-ide/ui/section/inspectors/Tenant_I
 import PolicyInspector from '@/features/endge-ide/ui/section/inspectors/Policy_Inspector.vue'
 import StyleInspector from '@/features/endge-ide/ui/section/inspectors/Style_Inspector.vue'
 import VocabsInspector from '@/features/endge-ide/ui/section/inspectors/Vocabs_Inspector.vue'
+import AuthProfileInspector from '@/features/endge-ide/ui/section/inspectors/AuthProfile_Inspector.vue'
 import I18nBundlesInspector from '@/features/endge-ide/ui/section/inspectors/I18nBundles_Inspector.vue'
 import ViewInspector from '@/features/endge-ide/ui/section/inspectors/View_Inspector.vue'
 import FilterInspector from '@/features/endge-ide/ui/section/inspectors/Filter_Inspector.vue'
@@ -97,6 +98,7 @@ export class EndgeIDEInspector {
     ['policy', markRaw(PolicyInspector)],
     ['style', markRaw(StyleInspector)],
     ['vocabs', markRaw(VocabsInspector)],
+    ['auth-profile', markRaw(AuthProfileInspector)],
     ['i18n-bundles', markRaw(I18nBundlesInspector)],
     ['view', markRaw(ViewInspector)],
     ['page', markRaw(PageInspector)],

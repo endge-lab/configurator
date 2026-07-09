@@ -129,6 +129,7 @@ export interface DomainStoreForTree {
   pages?: any[]
   vocabs?: any[]
   i18nBundles?: any[]
+  authProfiles?: any[]
   projects?: any[]
 }
 
@@ -198,6 +199,7 @@ export function getSoftDeletedItems(
   add(store.pages, DomainSectionType.Page)
   add(store.vocabs, DomainSectionType.Vocabs)
   add(store.i18nBundles, DomainSectionType.I18nBundles)
+  add(store.authProfiles, DomainSectionType.AuthProfile)
   add(store.projects, DomainSectionType.Project)
   return out
 }
@@ -244,9 +246,10 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-pages': 'Страницы',
   'root-navigations': 'Навигации',
   'root-settings': 'Настройки',
-  'root-data-views': 'Data Views',
+  'root-data-views': 'Представления',
   'root-vocabs': 'Словари',
   'root-i18n-bundles': 'Словари переводов',
+  'root-auth-profiles': 'Аутентификация',
   'root-projects': 'Проекты',
   'soft-deleted': 'Удалённые',
 }
@@ -291,6 +294,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     rootIds: [
       'root-vocabs',
       'root-i18n-bundles',
+      'root-auth-profiles',
       'root-integrations',
       'root-policies',
       'root-settings',
@@ -383,6 +387,8 @@ export function normalizeDocType(
     return 'vocabs' as DomainDocumentType
   if (sectionType === DomainSectionType.I18nBundles)
     return 'i18n-bundles' as DomainDocumentType
+  if (sectionType === DomainSectionType.AuthProfile)
+    return 'auth-profile' as DomainDocumentType
   if (sectionType === DomainSectionType.Project)
     return 'project' as DomainDocumentType
   return raw
@@ -631,7 +637,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
     .map((sectionKey) => {
       const folder = rootFolders.find((f: any) => (f.identity ?? f.id) === sectionKey)
       if (folder)
-        return { root: folder, sectionKey }
+        return { root: { ...folder, name: rootLabels[sectionKey] ?? folder.name }, sectionKey }
       if (sectionMapRecord[sectionKey]) {
         return { root: { id: sectionKey, identity: sectionKey, name: rootLabels[sectionKey] ?? sectionKey }, sectionKey }
       }

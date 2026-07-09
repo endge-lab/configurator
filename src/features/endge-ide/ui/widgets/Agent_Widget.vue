@@ -72,6 +72,7 @@ const DOMAIN_SLICE_KEYS = [
   'pages',
   'settings',
   'i18n-bundles',
+  'auth-profiles',
 ] as const
 
 interface EntityRef {
@@ -140,6 +141,7 @@ const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'style': 'styles',
   'vocabs': 'vocabs',
   'i18n-bundles': 'i18n-bundles',
+  'auth-profile': 'auth-profiles',
   'page': 'pages',
   'page-template': 'page-templates',
   'navigation': 'navigations',
@@ -185,6 +187,7 @@ function getDocumentType(
     'policies': 'policy',
     'styles': 'style',
     'vocabs': 'vocabs',
+    'auth-profiles': 'auth-profile',
     'navigations': 'navigation',
     'page-templates': 'page-template',
     'pages': 'page',
@@ -263,6 +266,7 @@ const ITERATE_ENTITY_KEYS = [
   'styles',
   'vocabs',
   'i18nBundles',
+  'authProfiles',
   'pages',
   'pageTemplates',
   'navigations',
@@ -291,6 +295,7 @@ const SLICE_TO_CONTEXT_KEY: Record<string, string> = {
   'styles': 'styles',
   'vocabs': 'vocabs',
   'i18n-bundles': 'i18nBundles',
+  'auth-profiles': 'authProfiles',
   'pages': 'pages',
   'page-templates': 'pageTemplates',
   'navigations': 'navigations',

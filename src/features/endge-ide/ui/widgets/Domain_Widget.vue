@@ -25,6 +25,7 @@ import {
   FolderPlus,
   FormInput,
   GitBranch,
+  KeyRound,
   Layout,
   Languages,
   Link,
@@ -403,6 +404,7 @@ const ROOT_TO_SECTION = computed(() => {
     'root-settings': { section: DomainSectionType.Settings, items: () => domainStore.settings ?? [] },
     'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs, softId) },
     'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles, softId) },
+    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles, softId) },
     'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects, softId) },
     'soft-deleted': {
       section: DomainSectionType.Parameters,
@@ -442,6 +444,7 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-settings': { icon: Settings, colorClass: 'text-amber-500' },
   'root-vocabs': { icon: BookOpen, colorClass: 'text-teal-500' },
   'root-i18n-bundles': { icon: Languages, colorClass: 'text-amber-500' },
+  'root-auth-profiles': { icon: KeyRound, colorClass: 'text-sky-500' },
   'root-projects': { icon: Briefcase, colorClass: 'text-sky-500' },
   'soft-deleted': { icon: Trash2, colorClass: 'text-muted-foreground' },
 }
@@ -477,6 +480,7 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   'navigation',
   'vocabs',
   'i18n-bundles',
+  'auth-profile',
 ])
 
 const SYSTEM_TYPE_FOLDER_IDENTITIES = new Set([

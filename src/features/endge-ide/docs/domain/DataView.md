@@ -173,7 +173,7 @@ defineQuery({
     endpoint: '{ENDPOINT_AODB}',
     path: '/flights',
     method: 'GET',
-    auth: { mode: 'token' },
+    auth: { mode: 'inherit' },
   },
 
   outputs: {
@@ -210,7 +210,7 @@ defineQuery({
     endpoint: '{ENDPOINT_AODB}',
     path: '/flights',
     method: 'GET',
-    auth: { mode: 'token' },
+    auth: { mode: 'inherit' },
   },
 
   outputs: {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { RSettings_Editor } from '@/features/endge-ide/domain/entities/RSettings_Editor'
-import type { SettingsVarSchema } from '@endge/core'
+import type { AuthProfileAdapterId, RAuthProfile, SettingsVarSchema } from '@endge/core'
 
-import { Loader2, Plus, Trash2 } from 'lucide-vue-next'
+import { DocumentFactory, Endge } from '@endge/core'
+import { KeyRound, Loader2, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -100,6 +102,45 @@ function removeCollection(voc: { collections?: { name: string }[] }, colIdx: num
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
+
+async function createAuthProfileFromLegacySettings(): Promise<void> {
+  const auth = editor.value?.auth as any
+  if (!auth?.provider)
+    return
+
+  if (auth.provider !== 'keycloak_manual' && auth.provider !== 'keycloak_form') {
+    toast.error('Не удалось создать профиль авторизации', {
+      description: `Неподдерживаемый адаптер: ${String(auth.provider)}`,
+    })
+    return
+  }
+
+  const identity = 'legacy-settings-auth'
+  let profile = Endge.domain.getAuthProfile(identity) as RAuthProfile | null
+  if (!profile) {
+    profile = DocumentFactory.create('auth-profile', {
+      id: identity,
+      name: 'Legacy settings auth',
+      registerInDomain: true,
+    }) as RAuthProfile
+  }
+
+  profile.identity = identity
+  profile.name = 'Legacy settings auth'
+  profile.displayName = 'Legacy settings auth'
+  profile.description = 'Создано из settings.auth'
+  profile.adapterId = auth.provider as AuthProfileAdapterId
+  profile.config = { ...auth }
+  profile.credentialRefs = {}
+  profile.persist = 'localStorage'
+  profile.active = true
+
+  await EndgeIDE.runBusy(async () => {
+    await Endge.schema.saveDocument(identity, 'auth-profile', { model: profile })
+  })
+  EndgeIDE.tabs.openDocument(identity, 'auth-profile')
+  toast.success('Профиль авторизации создан')
+}
 </script>
 
 <template>
@@ -181,7 +222,13 @@ async function save(): Promise<void> {
           </TabsContent>
 
           <TabsContent value="auth" class="space-y-4 mt-4">
-            <Button size="sm" variant="outline" @click="ensureAuth">Включить авторизацию</Button>
+            <div class="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" @click="ensureAuth">Включить авторизацию</Button>
+              <Button v-if="editor.auth" size="sm" variant="outline" @click="createAuthProfileFromLegacySettings">
+                <KeyRound class="size-4 mr-1" />
+                Создать профиль из настроек
+              </Button>
+            </div>
             <template v-if="editor.auth">
               <div class="space-y-2">
                 <Label>Keycloak Base URL</Label>

@@ -99,6 +99,7 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Navigation]: 'root-navigations',
   [DomainSectionType.Vocabs]: 'root-vocabs',
   [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
+  [DomainSectionType.AuthProfile]: 'root-auth-profiles',
   [DomainSectionType.Settings]: 'root-settings',
   [DomainSectionType.Project]: 'root-projects',
 }
@@ -128,6 +129,7 @@ const SCHEMA_HARD_DELETE_TYPES = new Set<DomainDocumentType>([
   'style',
   'vocabs',
   'i18n-bundles',
+  'auth-profile',
   'project',
 ])
 
@@ -144,6 +146,7 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
   'navigation',
   'vocabs',
   'i18n-bundles',
+  'auth-profile',
 ])
 
 /**
@@ -772,6 +775,9 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   else if (sectionType === DomainSectionType.I18nBundles) {
     byId(entityId, identity, (x: any) => Endge.domain.removeI18nBundlesById?.(x), x => Endge.domain.removeI18nBundles(x))
   }
+  else if (sectionType === DomainSectionType.AuthProfile) {
+    byId(entityId, identity, (x: any) => Endge.domain.removeAuthProfileById?.(x), x => Endge.domain.removeAuthProfile(x))
+  }
   else if (sectionType === DomainSectionType.Project) {
     byId(entityId, identity, (x: any) => Endge.domain.removeProjectById?.(x), x => Endge.domain.removeProject(x))
   }
@@ -834,6 +840,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getVocabById(numId) : null) ?? Endge.domain.getVocab(id)
   if (sectionType === DomainSectionType.I18nBundles)
     return (numId != null ? Endge.domain.getI18nBundleById(numId) : null) ?? Endge.domain.getI18nBundle(id)
+  if (sectionType === DomainSectionType.AuthProfile)
+    return (numId != null ? Endge.domain.getAuthProfileById(numId) : null) ?? Endge.domain.getAuthProfile(id)
   return null
 }
 
@@ -887,6 +895,8 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Vocabs
   if (Endge.domain.getI18nBundles().some(hasInBranch))
     return DomainSectionType.I18nBundles
+  if (Endge.domain.getAuthProfiles().some(hasInBranch))
+    return DomainSectionType.AuthProfile
 
   return null
 }

@@ -19,6 +19,7 @@ export type BackupRestoreEntityKind =
   | 'policy'
   | 'style'
   | 'vocabs'
+  | 'auth-profile'
   | 'view'
   | 'page-template'
   | 'page'

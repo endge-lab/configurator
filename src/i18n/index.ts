@@ -1,6 +1,6 @@
 import type { I18nOptions } from 'vue-i18n'
 import { Endge } from '@endge/core'
-import { watch } from 'vue'
+import { shallowRef, watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { deepClone, deepMerge } from '@/lib/utils.ts'
 import { useBranding } from '../lib/branding'
@@ -10,12 +10,9 @@ import ru from './locales/ru.json'
 // Type-define 'en' as the master schema for the resource
 type MessageSchema = typeof en
 
-export type Locale = 'ru' | 'en'
+export type Locale = string
 
-export const availableLocales: { label: string, value: Locale }[] = Endge.workspace.locales.map(locale => ({
-  label: locale.nativeLabel,
-  value: locale.code as Locale,
-}))
+export const availableLocales = shallowRef(mapAvailableLocales())
 
 // Preload brand-specific locale overrides: /src/assets/branding/<brand>/locale/<locale>.json
 const brandLocaleFiles = import.meta.glob('/src/assets/branding/*/locale/*.json', {
@@ -37,17 +34,17 @@ for (const path in brandLocaleFiles) {
 
 const initialLocale = Endge.workspace.normalizeLocale(
   Endge.context.currentLocale ?? import.meta.env.VITE_DEFAULT_LOCALE,
-) as Locale
+) as string
 
-const i18nOptions: I18nOptions<{ message: MessageSchema }, Locale> = {
+const i18nOptions: I18nOptions = {
   legacy: false,
   locale: initialLocale,
-  fallbackLocale: Endge.workspace.fallbackLocale as Locale,
+  fallbackLocale: Endge.workspace.fallbackLocale,
   messages: { en, ru },
-  availableLocales: Endge.workspace.locales.map(locale => locale.code as Locale),
+  availableLocales: Endge.workspace.locales.map(locale => locale.code),
 }
 
-export const i18n = createI18n<false, typeof i18nOptions>(i18nOptions)
+export const i18n = createI18n(i18nOptions)
 
 watch(() => i18n.global.locale.value, (newLocale) => {
   Endge.context.setCurrentLocale(newLocale)
@@ -60,11 +57,11 @@ Endge.context.subscribe(() => {
 })
 
 // Reactively apply brand-specific overrides on top of base locales
-const baseMessages: Record<'en' | 'ru', MessageSchema> = { en, ru }
+const baseMessages: Record<string, MessageSchema> = { en, ru }
 function applyBrandLocales(brand: string) {
-  const locales = Endge.workspace.locales.map(locale => locale.code as Locale)
+  const locales = Endge.workspace.locales.map(locale => locale.code)
   for (const loc of locales) {
-    const base = deepClone(baseMessages[loc])
+    const base = deepClone(resolveBaseMessages(loc))
     const override = (brandLocaleMap[brand]?.[loc] ?? {}) as Partial<MessageSchema>
     const merged = deepMerge(base, override)
     i18n.global.setLocaleMessage(loc, merged as any)
@@ -73,3 +70,23 @@ function applyBrandLocales(brand: string) {
 
 const { branding } = useBranding()
 watch(branding, b => applyBrandLocales(b), { immediate: true })
+
+Endge.workspace.subscribe(() => {
+  availableLocales.value = mapAvailableLocales()
+  i18n.global.fallbackLocale.value = Endge.workspace.fallbackLocale
+  applyBrandLocales(branding.value)
+})
+
+function mapAvailableLocales(): { label: string, value: Locale }[] {
+  return Endge.workspace.locales.map(locale => ({
+    label: locale.nativeLabel || locale.label || locale.shortLabel || locale.code,
+    value: locale.code,
+  }))
+}
+
+function resolveBaseMessages(locale: string): MessageSchema {
+  return baseMessages[locale]
+    ?? baseMessages[Endge.workspace.fallbackLocale]
+    ?? baseMessages[Endge.workspace.defaultLocale]
+    ?? ru
+}

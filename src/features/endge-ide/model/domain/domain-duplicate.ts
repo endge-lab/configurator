@@ -60,6 +60,8 @@ export function getEntityByDocType(
       return domain.getNavigation(id)
     case 'vocabs':
       return domain.getVocab(id)
+    case 'auth-profile':
+      return domain.getAuthProfile(id)
     case 'i18n-bundles':
       return domain.getI18nBundle(id)
     case FilterType.DefaultFilter:

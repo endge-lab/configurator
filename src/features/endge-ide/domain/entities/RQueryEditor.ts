@@ -19,7 +19,8 @@ export class RQueryEditor {
   path: string = ''
   method: string = 'POST'
   headersText: string = '{}'
-  authMode: 'token' | 'none' = 'token'
+  authMode: 'inherit' | 'profile' | 'manual' | 'none' = 'inherit'
+  authProfileIdentity: string = ''
   subField: string = 'items'
   returnExpression: string = 'null'
   mockEnabled: boolean = false
@@ -96,8 +97,19 @@ export class RQueryEditor {
   }
 
   /** Патчит auth mode как минимальный auth object. */
-  patchAuthMode(value: 'token' | 'none'): void {
-    this.patchSource('request.auth', { mode: value })
+  patchAuthMode(value: 'inherit' | 'profile' | 'manual' | 'none'): void {
+    const next = value === 'profile'
+      ? { mode: value, authProfileIdentity: this.authProfileIdentity }
+      : { mode: value }
+    this.patchSource('request.auth', next)
+  }
+
+  patchAuthProfileIdentity(value: string): void {
+    this.authProfileIdentity = value
+    this.patchSource('request.auth', {
+      mode: 'profile',
+      authProfileIdentity: value,
+    })
   }
 
   /** Патчит response.return из raw DSL expression. */
@@ -135,12 +147,20 @@ export class RQueryEditor {
     this.path = document.request?.path ?? ''
     this.method = document.request?.method ?? 'POST'
     this.headersText = stringifyEditorJson(document.request?.headers ?? {})
-    this.authMode = document.request?.auth?.mode === 'none' ? 'none' : 'token'
+    this.authMode = normalizeAuthMode(document.request?.auth?.mode)
+    this.authProfileIdentity = String(document.request?.auth?.authProfileIdentity ?? '')
     this.subField = legacyResponse?.subField ?? readRawResponsePath(document.outputs)
     this.returnExpression = printFieldExpression(legacyResponse?.return)
     this.mockEnabled = document.mock?.enabled ?? false
     this.mockDataText = stringifyEditorJson(document.mock?.data ?? null)
   }
+}
+
+function normalizeAuthMode(value: unknown): 'inherit' | 'profile' | 'manual' | 'none' {
+  const mode = String(value ?? '').trim()
+  if (mode === 'none' || mode === 'profile' || mode === 'manual')
+    return mode
+  return 'inherit'
 }
 
 function endpointExpression(value: string): string | undefined {

@@ -2,7 +2,7 @@
 import { ChevronsUpDown } from 'lucide-vue-next'
 import { Endge } from '@endge/core'
 import { useCurrentLocale } from '@endge/vue'
-import { computed } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +13,26 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const { current, setCurrent } = useCurrentLocale()
-const availableLocales = computed(() => Endge.workspace.locales)
-const currentLabel = computed(() => {
-  const c = Endge.workspace.normalizeLocale(current.value)
-  return Endge.workspace.getLocaleLabel(c, 'nativeLabel')
+const workspaceVersion = ref(0)
+const offWorkspace = Endge.workspace.subscribe(() => {
+  workspaceVersion.value += 1
 })
+onScopeDispose(offWorkspace)
+
+const availableLocales = computed(() => {
+  workspaceVersion.value
+  return Endge.workspace.locales
+})
+const currentLabel = computed(() => {
+  workspaceVersion.value
+  const c = Endge.workspace.normalizeLocale(current.value)
+  return getLocaleDisplayLabel(c)
+})
+
+function getLocaleDisplayLabel(localeCode: string): string {
+  const locale = Endge.workspace.locales.find(item => item.code === localeCode)
+  return String(locale?.nativeLabel || locale?.label || locale?.shortLabel || localeCode)
+}
 </script>
 
 <template>
@@ -44,7 +59,7 @@ const currentLabel = computed(() => {
         :class="{ 'bg-accent': Endge.workspace.normalizeLocale(current) === loc.code }"
         @click="setCurrent(loc.code)"
       >
-        {{ loc.nativeLabel }}
+        {{ getLocaleDisplayLabel(loc.code) }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

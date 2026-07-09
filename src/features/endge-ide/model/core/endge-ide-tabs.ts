@@ -32,6 +32,7 @@ import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEdito
 import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
 import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
 import { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor.ts'
+import { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor.ts'
 import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
@@ -66,6 +67,7 @@ import Tenant_Editor from '@/features/endge-ide/ui/section/document/entity/Tenan
 import Policy_Editor from '@/features/endge-ide/ui/section/document/entity/Policy_Editor.vue'
 import Style_Editor from '@/features/endge-ide/ui/section/document/entity/Style_Editor.vue'
 import Vocabs_Editor from '@/features/endge-ide/ui/section/document/entity/Vocabs_Editor.vue'
+import AuthProfile_Editor from '@/features/endge-ide/ui/section/document/entity/AuthProfile_Editor.vue'
 import I18nBundles_Editor from '@/features/endge-ide/ui/section/document/entity/I18nBundles_Editor.vue'
 import View_Editor from '@/features/endge-ide/ui/section/document/entity/View_Editor.vue'
 import PageTemplate_Editor from '@/features/endge-ide/ui/section/document/entity/PageTemplate_Editor.vue'
@@ -74,6 +76,7 @@ import Navigation_Editor from '@/features/endge-ide/ui/section/document/entity/N
 import Project_Editor from '@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'
 import Filter_Editor from '@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'
 import Settings_Editor from '@/features/endge-ide/ui/section/document/singleton/Settings_Editor.vue'
+import Workspace_Editor from '@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'
 import Version_Editor from '@/features/endge-ide/ui/section/document/singleton/Version_Editor.vue'
 import ViewGenerator_Editor from '@/features/endge-ide/ui/section/document/singleton/ViewGenerator_Editor.vue'
 import NovaSandbox_Singleton from '@/features/endge-ide/ui/section/document/singleton/NovaSandbox_Singleton.vue'
@@ -93,6 +96,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = 'endge-document-editor' as const
 const VIEW_ID_SETTINGS = 'endge-settings-editor' as const
+const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_VIEW_GENERATOR = 'endge-view-generator' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
@@ -337,6 +341,21 @@ export class EndgeIDETabs {
       payload: { settingsId: identity, documentType: 'settings' } satisfies SettingsTabPayload,
       closable: true,
       meta: { icon: 'ti ti-settings text-xl' },
+    }
+    this.openTab(tabRef)
+  }
+
+  public openWorkspaceSettings(): void {
+    const workspace = Endge.workspace.current
+    const label = workspace.displayName || workspace.identity || 'Workspace'
+    const tabRef: SmartTabRef = {
+      id: 'workspace-settings',
+      label: `Workspace: ${label}`,
+      viewId: VIEW_ID_WORKSPACE_SETTINGS,
+      payload: {},
+      closable: true,
+      singleton: true,
+      meta: { icon: 'ti ti-world text-sky-500 text-xl' },
     }
     this.openTab(tabRef)
   }
@@ -588,6 +607,8 @@ export class EndgeIDETabs {
       return Endge.domain.getView(id)?.name ?? id
     if (key === 'vocabs')
       return Endge.domain.getVocab(id)?.displayName ?? Endge.domain.getVocab(id)?.name ?? id
+    if (key === 'auth-profile')
+      return Endge.domain.getAuthProfile(id)?.displayName ?? Endge.domain.getAuthProfile(id)?.name ?? id
     if (key === 'i18n-bundles')
       return Endge.domain.getI18nBundle(id)?.displayName ?? Endge.domain.getI18nBundle(id)?.name ?? id
     if (key === 'page-template')
@@ -643,6 +664,8 @@ export class EndgeIDETabs {
       return 'ti ti-eye text-indigo-500 text-2xl'
     if (key === 'vocabs')
       return 'ti ti-book text-teal-500 text-2xl'
+    if (key === 'auth-profile')
+      return 'ti ti-key text-sky-500 text-2xl'
     if (key === 'i18n-bundles')
       return 'ti ti-language text-amber-500 text-2xl'
     if (key === 'page-template')
@@ -665,6 +688,10 @@ export class EndgeIDETabs {
     })
     registerSmartTabView(VIEW_ID_DOCUMENT, wrap)
     registerSmartTabView(VIEW_ID_SETTINGS, wrap)
+    registerSmartTabView(VIEW_ID_WORKSPACE_SETTINGS, (): SmartTabViewResolved => ({
+      component: markRaw(Workspace_Editor),
+      props: {},
+    }))
     registerSmartTabView(VIEW_ID_VERSION, wrap)
     registerSmartTabView(VIEW_ID_VIEW_GENERATOR, (): SmartTabViewResolved => ({
       component: markRaw(ViewGenerator_Editor),
@@ -845,6 +872,7 @@ export class EndgeIDETabs {
     ['policy', (documentId) => this._resolvePolicy(documentId)],
     ['style', (documentId) => this._resolveStyle(documentId)],
     ['vocabs', (documentId) => this._resolveVocabs(documentId)],
+    ['auth-profile', (documentId) => this._resolveAuthProfile(documentId)],
     ['i18n-bundles', (documentId) => this._resolveI18nBundle(documentId)],
     ['view', (documentId) => this._resolveView(documentId)],
     ['page-template', (documentId) => this._resolvePageTemplate(documentId)],
@@ -1145,6 +1173,24 @@ export class EndgeIDETabs {
       editor,
       model: vocab,
       syncBeforeSave: () => editor.updateSource(vocab),
+    }
+  }
+
+  private _resolveAuthProfile(documentId: string): EditorSession | null {
+    const profile = Endge.domain.getAuthProfile(documentId)
+    if (!profile)
+      return null
+    const rawEditor = new RAuthProfileEditor()
+    rawEditor.fillFromSource(profile)
+    const editor = reactive(rawEditor as object) as RAuthProfileEditor
+    return {
+      view: {
+        component: markRaw(AuthProfile_Editor),
+        props: { tabContext: { editor } },
+      },
+      editor,
+      model: profile,
+      syncBeforeSave: () => editor.updateSource(profile),
     }
   }
 

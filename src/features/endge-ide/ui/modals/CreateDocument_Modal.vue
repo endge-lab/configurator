@@ -43,6 +43,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: 'navigation' as DomainDocumentType, label: 'Навигация', section: DomainSectionType.Navigation },
   { type: 'vocabs' as DomainDocumentType, label: 'Словарь', section: DomainSectionType.Vocabs },
   { type: 'i18n-bundles' as DomainDocumentType, label: 'Словарь переводов', section: DomainSectionType.I18nBundles },
+  { type: 'auth-profile' as DomainDocumentType, label: 'Профиль авторизации', section: DomainSectionType.AuthProfile },
 ]
 
 const ROOT_IDS: Record<DomainSectionType, string> = {
@@ -68,6 +69,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Settings]: 'root-settings',
   [DomainSectionType.Vocabs]: 'root-vocabs',
   [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
+  [DomainSectionType.AuthProfile]: 'root-auth-profiles',
   [DomainSectionType.Project]: 'root-projects',
 }
 
@@ -93,6 +95,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Navigation]: 'navigations',
   [DomainSectionType.Vocabs]: 'vocabs',
   [DomainSectionType.I18nBundles]: 'i18n-bundles',
+  [DomainSectionType.AuthProfile]: 'auth-profiles',
   [DomainSectionType.Project]: 'projects',
 }
 
@@ -147,6 +150,7 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.Navigation
     || s === DomainSectionType.Vocabs
     || s === DomainSectionType.I18nBundles
+    || s === DomainSectionType.AuthProfile
 })
 
 /** Папки только текущей секции (по entityType): корень + вложенные под этим root. */

@@ -4,6 +4,27 @@ import { DomainSectionType } from '@endge/core'
 import { buildDomainTree } from '@/features/endge-ide/model/domain/domain-tree'
 
 describe('buildDomainTree', () => {
+  it('uses configured labels for persisted root folders', () => {
+    const tree = buildDomainTree({
+      rootToSection: {
+        'root-data-views': {
+          section: DomainSectionType.DataView,
+          items: () => [],
+        },
+      },
+      rootOrder: ['root-data-views'],
+      rootLabels: {
+        'root-data-views': 'Представления',
+      },
+      allFolders: [
+        { id: 'root-data-views', identity: 'root-data-views', name: 'Data Views', parent: null },
+      ],
+      softDeletedFolderId: null,
+    })
+
+    expect(tree[0]?.name).toBe('Представления')
+  })
+
   it('stops traversing cyclic folder branches from malformed folder data', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 

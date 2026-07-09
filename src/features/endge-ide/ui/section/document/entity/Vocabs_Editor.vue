@@ -33,6 +33,17 @@ const modeModel = computed<'external_payload' | 'internal'>({
   },
 })
 
+const authModeModel = computed<'inherit' | 'profile' | 'manual' | 'none'>({
+  get: () => editor.value?.authMode ?? 'inherit',
+  set: (value) => {
+    if (!editor.value)
+      return
+    editor.value.authMode = value
+    if (value !== 'profile')
+      editor.value.authProfileIdentity = ''
+  },
+})
+
 const canLoadVocab = computed(() => editor.value?.mode === 'external_payload' && Number(editor.value?.id) > 0)
 const isVocabLoading = computed(() => vocabsRef.value.loading === true)
 
@@ -139,6 +150,27 @@ async function save(): Promise<void> {
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">Collection slug</Label>
               <Input v-model="editor!.collectionSlug" placeholder="airlines" />
+            </div>
+          </div>
+
+          <div v-if="editor?.mode === 'external_payload'" class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <Label class="text-xs text-muted-foreground">Авторизация</Label>
+              <Select v-model="authModeModel">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inherit">inherit</SelectItem>
+                  <SelectItem value="profile">profile</SelectItem>
+                  <SelectItem value="manual">manual</SelectItem>
+                  <SelectItem value="none">none</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div v-if="editor.authMode === 'profile'" class="space-y-1">
+              <Label class="text-xs text-muted-foreground">Auth profile identity</Label>
+              <Input v-model="editor.authProfileIdentity" placeholder="payload-cms-auth" />
             </div>
           </div>
         </Card>

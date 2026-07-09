@@ -84,6 +84,7 @@ const DUPLICATE_SUPPORTED_DOCUMENT_TYPES = new Set([
   "style",
   "vocabs",
   "i18n-bundles",
+  "auth-profile",
   "page",
   "page-template",
   "navigation",
