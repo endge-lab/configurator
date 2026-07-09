@@ -3,7 +3,7 @@ import type { RSettings_Editor } from '@/features/endge-ide/domain/entities/RSet
 import type { AuthProfileAdapterId, RAuthProfile, SettingsVarSchema } from '@endge/core'
 
 import { DocumentFactory, Endge } from '@endge/core'
-import { KeyRound, Loader2, Plus, Trash2 } from 'lucide-vue-next'
+import { KeyRound, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RSettings_Editor }
@@ -135,9 +136,7 @@ async function createAuthProfileFromLegacySettings(): Promise<void> {
   profile.persist = 'localStorage'
   profile.active = true
 
-  await EndgeIDE.runBusy(async () => {
-    await Endge.schema.saveDocument(identity, 'auth-profile', { model: profile })
-  })
+  await EndgeIDE.runBusy(Endge.schema.saveDocument(identity, 'auth-profile', { model: profile }))
   EndgeIDE.tabs.openDocument(identity, 'auth-profile')
   toast.success('Профиль авторизации создан')
 }
@@ -150,10 +149,7 @@ async function createAuthProfileFromLegacySettings(): Promise<void> {
   <div v-else class="flex flex-col h-full">
     <div class="border-b p-3 flex items-center justify-between shrink-0">
       <h2 class="text-lg font-semibold truncate">{{ editor.displayName || editor.identity }}</h2>
-      <Button size="sm" :disabled="EndgeIDE.busy.value" @click="save">
-        <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin mr-1" />
-        {{ EndgeIDE.busy.value ? 'Сохранение…' : 'Сохранить' }}
-      </Button>
+      <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
     </div>
     <ScrollArea class="flex-1">
       <div class="p-4">

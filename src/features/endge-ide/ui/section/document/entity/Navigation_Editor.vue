@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NavigationTreeNodeEditor, NavigationTreeNodeType, RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor'
 
-import { FolderTree, Link2, Loader2, Save } from 'lucide-vue-next'
+import { FolderTree, Link2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RNavigationEditor }
@@ -400,11 +401,7 @@ async function save(): Promise<void> {
         </div>
 
         <div class="flex items-center gap-2">
-          <Button :disabled="isBusy" @click="save">
-            <Loader2 v-if="isBusy" class="size-4 animate-spin" />
-            <Save v-else class="size-4" />
-            {{ isBusy ? 'Сохранение…' : 'Сохранить' }}
-          </Button>
+          <SaveDocumentButton :loading="isBusy" @click="save" />
         </div>
       </div>
     </div>

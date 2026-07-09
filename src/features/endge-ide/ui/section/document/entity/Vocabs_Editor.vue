@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RVocabsEditor }
@@ -103,10 +104,7 @@ async function save(): Promise<void> {
             <TooltipContent>Полная загрузка словаря</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Button size="sm" :disabled="EndgeIDE.busy.value" @click="save">
-          <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin mr-2" />
-          Сохранить
-        </Button>
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
       </div>
     </div>
 

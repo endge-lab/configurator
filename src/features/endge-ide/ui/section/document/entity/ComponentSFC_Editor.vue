@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Loader2, Play, Save } from "lucide-vue-next";
+import { Loader2, Play } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { showWidget } from "@/components/layouts/grid";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import { launchSFCPreview, sfcPreviewError } from "@/features/endge-ide/model/sfc-preview/sfc-preview-state";
+import SaveDocumentButton from "@/features/endge-ide/ui/components/SaveDocumentButton.vue";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 
 const tabs = EndgeIDE.tabs;
@@ -71,14 +72,7 @@ async function launchPreview(): Promise<void> {
             {{ editor.identity }}
           </div>
         </div>
-        <Button
-          size="icon"
-          variant="outline"
-          aria-label="Сохранить"
-          @click="save"
-        >
-          <Save class="size-4" />
-        </Button>
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
         <Button
           size="icon"
           variant="outline"

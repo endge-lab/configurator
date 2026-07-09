@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
 const props = defineProps<{
@@ -82,9 +83,7 @@ async function save(): Promise<void> {
         Шаблон страницы - {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
-        <Button size="sm" @click="save">
-          Сохранить
-        </Button>
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
       </div>
     </div>
 
@@ -222,4 +221,3 @@ async function save(): Promise<void> {
     </ScrollArea>
   </div>
 </template>
-

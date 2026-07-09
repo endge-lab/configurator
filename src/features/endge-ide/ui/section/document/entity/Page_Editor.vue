@@ -6,12 +6,12 @@ import { useDomainStore } from '@endge/vue'
 import { computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
 import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
 const props = defineProps<{
@@ -313,9 +313,7 @@ const previewAreaLabels = computed(() =>
         Страница - {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
-        <Button size="sm" @click="save">
-          Сохранить
-        </Button>
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
       </div>
     </div>
 

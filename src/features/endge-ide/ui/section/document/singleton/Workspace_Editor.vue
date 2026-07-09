@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import type { EndgeWorkspaceLocale } from '@endge/core'
+import type {
+  EndgeWorkspaceLocale,
+  EndgeWorkspaceSSEConfig,
+  EndgeWorkspaceVar,
+} from '@endge/core'
 
 import { Endge } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
-import { Check, Plus, Trash2 } from 'lucide-vue-next'
+import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref, watchEffect } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -20,8 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 type LocaleDirection = 'ltr' | 'rtl'
+type AuthProfileOption = {
+  identity: string
+  label: string
+  adapterId: string
+}
 
 const NO_AUTH_PROFILE = '__none__'
 
@@ -31,7 +42,10 @@ const defaultAuthProfileIdentity = ref(NO_AUTH_PROFILE)
 const defaultLocale = ref('')
 const fallbackLocale = ref('')
 const locales = ref<EndgeWorkspaceLocale[]>([])
-const activeTab = ref<'auth' | 'localization'>('auth')
+const activeTab = ref<'general' | 'auth' | 'localization'>('general')
+const sseEndpoint = ref('')
+const sseDraft = ref<EndgeWorkspaceSSEConfig | undefined>()
+const envVars = ref<EndgeWorkspaceVar[]>([])
 
 const offWorkspace = Endge.workspace.subscribe(() => {
   workspaceVersion.value += 1
@@ -43,7 +57,7 @@ const workspace = computed(() => {
   return Endge.workspace.current
 })
 
-const activeAuthProfiles = computed(() =>
+const activeAuthProfiles = computed<AuthProfileOption[]>(() =>
   (domainStore.authProfiles ?? [])
     .filter((profile: any) => profile?.deletedAt == null && profile?.active !== false)
     .map((profile: any) => ({
@@ -51,14 +65,14 @@ const activeAuthProfiles = computed(() =>
       label: String(profile.displayName ?? profile.name ?? profile.identity ?? profile.id ?? '').trim(),
       adapterId: String(profile.adapterId ?? '').trim(),
     }))
-    .filter(profile => profile.identity),
+    .filter((profile: AuthProfileOption) => profile.identity.length > 0),
 )
 
 const localeOptions = computed(() =>
   locales.value
     .map(locale => ({
       code: String(locale.code ?? '').trim(),
-      label: String(locale.nativeLabel || locale.label || locale.code || '').trim(),
+      label: String(locale.displayName || locale.shortLabel || locale.code || '').trim(),
     }))
     .filter(locale => locale.code),
 )
@@ -66,8 +80,12 @@ const localeOptions = computed(() =>
 watchEffect(() => {
   const current = workspace.value
   locales.value = current.locales.map(locale => ({ ...locale }))
+  envVars.value = current.vars.map(item => ({ ...item }))
+  sseDraft.value = current.sse ? { ...current.sse } : undefined
+  sseEndpoint.value = current.sse?.url ?? ''
   defaultLocale.value = current.defaultLocale
   fallbackLocale.value = current.fallbackLocale
+  defaultAuthProfileIdentity.value = current.defaultAuthProfileIdentity ?? NO_AUTH_PROFILE
 })
 
 function ensureLocaleSelection(): void {
@@ -93,8 +111,7 @@ function addLocale(): void {
   }
   locales.value.push({
     code,
-    label: '',
-    nativeLabel: '',
+    displayName: '',
     shortLabel: code.toUpperCase(),
     direction: 'ltr',
   })
@@ -104,6 +121,44 @@ function addLocale(): void {
 function removeLocale(index: number): void {
   locales.value.splice(index, 1)
   ensureLocaleSelection()
+}
+
+function addEnvVar(): void {
+  const used = new Set(envVars.value.map(item => item.name.trim()).filter(Boolean))
+  let index = envVars.value.length + 1
+  let name = `ENV_VAR_${index}`
+  while (used.has(name)) {
+    index += 1
+    name = `ENV_VAR_${index}`
+  }
+  envVars.value.push({
+    name,
+    defaultValue: '',
+  })
+}
+
+function removeEnvVar(index: number): void {
+  envVars.value.splice(index, 1)
+}
+
+function fillGeneralFromLegacySettings(): void {
+  const settings = (Endge.domain.getSetting('general') ?? Endge.domain.getSettings()[0] ?? null) as any
+  if (!settings) {
+    toast.error('Документ настроек не загружен')
+    return
+  }
+
+  envVars.value = Array.isArray(settings.vars)
+    ? normalizeEnvVars(settings.vars)
+    : []
+
+  const legacySse = normalizeLegacySSE(settings.sse ?? settings.sse_endpoint ?? settings.sseEndpoint)
+  sseDraft.value = legacySse
+  sseEndpoint.value = legacySse?.url ?? ''
+
+  toast.success('Данные из настроек перенесены в форму', {
+    description: 'Проверьте значения и сохраните рабочее пространство вручную.',
+  })
 }
 
 function updateDirection(locale: EndgeWorkspaceLocale, value: string): void {
@@ -118,16 +173,69 @@ function normalizeLocales(): EndgeWorkspaceLocale[] {
     if (!code || used.has(code))
       continue
     used.add(code)
-    const label = String(item.label ?? '').trim() || code
-    const nativeLabel = String(item.nativeLabel ?? '').trim() || label
+    const displayName = String(item.displayName ?? '').trim() || code
     const shortLabel = String(item.shortLabel ?? '').trim() || code.toUpperCase()
     const direction: LocaleDirection = item.direction === 'rtl' ? 'rtl' : 'ltr'
-    result.push({ code, label, nativeLabel, shortLabel, direction })
+    result.push({ code, displayName, shortLabel, direction })
   }
   return result
 }
 
-function applyWorkspaceSettings(): void {
+function normalizeEnvVars(input: unknown[]): EndgeWorkspaceVar[] {
+  const used = new Set<string>()
+  const result: EndgeWorkspaceVar[] = []
+  for (const raw of input) {
+    const source = raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? raw as Record<string, unknown>
+      : {}
+    const name = String(source.name ?? source.identity ?? source.key ?? '').trim()
+    if (!name || used.has(name))
+      continue
+    used.add(name)
+    result.push({
+      name,
+      defaultValue: String(source.defaultValue ?? source.currentValue ?? source.value ?? ''),
+    })
+  }
+  return result
+}
+
+function normalizeWorkspaceSSE(): EndgeWorkspaceSSEConfig | undefined {
+  const url = sseEndpoint.value.trim()
+  const draft = sseDraft.value
+  if (!url && !draft?.authProfileIdentity && !draft?.manualToken && (!draft?.authMode || draft.authMode === 'inherit'))
+    return undefined
+  return {
+    url,
+    authMode: draft?.authMode ?? 'inherit',
+    ...(draft?.authProfileIdentity ? { authProfileIdentity: draft.authProfileIdentity } : {}),
+    ...(draft?.manualToken ? { manualToken: draft.manualToken } : {}),
+  }
+}
+
+function normalizeLegacySSE(input: unknown): EndgeWorkspaceSSEConfig | undefined {
+  if (typeof input === 'string') {
+    const url = input.trim()
+    return url ? { url, authMode: 'inherit' } : undefined
+  }
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    return undefined
+  const source = input as Record<string, unknown>
+  const url = String(source.url ?? source.endpoint ?? '').trim()
+  const authMode = String(source.authMode ?? '').trim()
+  const authProfileIdentity = String(source.authProfileIdentity ?? '').trim()
+  const manualToken = String(source.manualToken ?? '').trim()
+  return {
+    url,
+    authMode: authMode === 'profile' || authMode === 'manual' || authMode === 'none'
+      ? authMode
+      : 'inherit',
+    ...(authProfileIdentity ? { authProfileIdentity } : {}),
+    ...(manualToken ? { manualToken } : {}),
+  }
+}
+
+async function saveWorkspaceSettings(): Promise<void> {
   const nextLocales = normalizeLocales()
   if (!nextLocales.length) {
     toast.error('Добавьте хотя бы одну локаль')
@@ -141,20 +249,38 @@ function applyWorkspaceSettings(): void {
     ? fallbackLocale.value
     : defaultCode
 
-  Endge.workspace.apply({
-    identity: workspace.value.identity,
-    displayName: workspace.value.displayName,
-    locales: nextLocales,
-    defaultLocale: defaultCode,
-    fallbackLocale: fallbackCode,
-  })
-  Endge.context.setCurrentLocale(defaultCode)
+  try {
+    await EndgeIDE.runBusy(
+      Endge.schema.saveDocument(workspace.value.identity, 'workspace', {
+        model: {
+          identity: workspace.value.identity,
+          displayName: workspace.value.displayName,
+          vars: normalizeEnvVars(envVars.value),
+          sse: normalizeWorkspaceSSE(),
+          locales: nextLocales,
+          defaultLocale: defaultCode,
+          fallbackLocale: fallbackCode,
+          defaultAuthProfileIdentity: defaultAuthProfileIdentity.value === NO_AUTH_PROFILE
+            ? null
+            : defaultAuthProfileIdentity.value,
+        },
+      }),
+    )
+    Endge.context.setCurrentLocale(defaultCode)
 
-  toast.success('Настройки рабочего пространства применены', {
-    description: defaultAuthProfileIdentity.value === NO_AUTH_PROFILE
-      ? 'Профиль авторизации по умолчанию пока не задан'
-      : `Профиль авторизации: ${defaultAuthProfileIdentity.value}`,
-  })
+    const selectedAuthProfile = defaultAuthProfileIdentity.value === NO_AUTH_PROFILE
+      ? ''
+      : defaultAuthProfileIdentity.value
+
+    toast.success('Рабочее пространство сохранено', selectedAuthProfile
+      ? { description: `Профиль авторизации: ${selectedAuthProfile}` }
+      : undefined)
+  }
+  catch (error: any) {
+    toast.error('Не удалось сохранить рабочее пространство', {
+      description: String(error?.message ?? error ?? 'Неизвестная ошибка'),
+    })
+  }
 }
 </script>
 
@@ -169,16 +295,21 @@ function applyWorkspaceSettings(): void {
           </h2>
         </div>
       </div>
-      <Button size="sm" class="gap-2" @click="applyWorkspaceSettings">
-        <Check class="size-4" />
-        Применить
-      </Button>
+      <SaveDocumentButton
+        :loading="EndgeIDE.busy.value"
+        tooltip="Сохранить рабочее пространство"
+        aria-label="Сохранить рабочее пространство"
+        @click="saveWorkspaceSettings"
+      />
     </div>
 
     <ScrollArea class="min-h-0 flex-1">
       <div class="p-4">
         <Tabs v-model="activeTab" class="w-full">
-          <TabsList class="grid w-full max-w-md grid-cols-2">
+          <TabsList class="grid w-full max-w-xl grid-cols-3">
+            <TabsTrigger value="general">
+              Общие
+            </TabsTrigger>
             <TabsTrigger value="auth">
               Авторизация
             </TabsTrigger>
@@ -186,6 +317,69 @@ function applyWorkspaceSettings(): void {
               Локализация
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="general" class="mt-4">
+            <Card class="rounded-md">
+              <CardHeader class="flex flex-row items-center justify-between gap-3 pb-3">
+                <CardTitle class="text-base">
+                  Общие
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  class="h-8"
+                  @click="fillGeneralFromLegacySettings"
+                >
+                  Заполнить из настроек
+                </Button>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <div class="space-y-2">
+                  <Label>SSE endpoint</Label>
+                  <Input
+                    v-model="sseEndpoint"
+                    class="h-8"
+                    placeholder="{ENDPOINT_AODB_SSE}"
+                    autocomplete="off"
+                  />
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <Label>Environment-переменные</Label>
+                    <Button size="sm" variant="outline" class="h-8 gap-2" @click="addEnvVar">
+                      <Plus class="size-4" />
+                      Добавить
+                    </Button>
+                  </div>
+
+                  <div class="overflow-hidden rounded-md border bg-background">
+                    <div class="grid grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)_2.25rem] gap-2 border-b bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground">
+                      <span>Переменная</span>
+                      <span>Default value</span>
+                      <span />
+                    </div>
+                    <div
+                      v-for="(item, index) in envVars"
+                      :key="`${item.name}-${index}`"
+                      class="grid grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)_2.25rem] gap-2 border-b px-3 py-2 last:border-b-0"
+                    >
+                      <Input v-model="item.name" class="h-8 font-mono text-xs" autocomplete="off" />
+                      <Input v-model="item.defaultValue" class="h-8 font-mono text-xs" autocomplete="off" />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        class="size-8"
+                        @click="removeEnvVar(index)"
+                      >
+                        <Trash2 class="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="auth" class="mt-4">
             <Card class="max-w-2xl rounded-md">
@@ -214,9 +408,6 @@ function applyWorkspaceSettings(): void {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div class="rounded-md border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground">
-                  Это поле пока не сохраняется в Payload workspace и нужно для проверки будущей модели.
                 </div>
               </CardContent>
             </Card>
@@ -278,9 +469,8 @@ function applyWorkspaceSettings(): void {
                   </div>
 
                   <div class="overflow-hidden rounded-md border bg-background">
-                    <div class="grid grid-cols-[0.8fr_1.2fr_1.2fr_0.7fr_0.7fr_2.25rem] gap-2 border-b bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground">
+                    <div class="grid grid-cols-[0.8fr_minmax(14rem,1.8fr)_0.7fr_0.7fr_2.25rem] gap-2 border-b bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground">
                       <span>Код</span>
-                      <span>Название</span>
                       <span>Отображение</span>
                       <span>Кратко</span>
                       <span>Направление</span>
@@ -289,11 +479,10 @@ function applyWorkspaceSettings(): void {
                     <div
                       v-for="(locale, index) in locales"
                       :key="`${locale.code}-${index}`"
-                      class="grid grid-cols-[0.8fr_1.2fr_1.2fr_0.7fr_0.7fr_2.25rem] gap-2 border-b px-3 py-2 last:border-b-0"
+                      class="grid grid-cols-[0.8fr_minmax(14rem,1.8fr)_0.7fr_0.7fr_2.25rem] gap-2 border-b px-3 py-2 last:border-b-0"
                     >
                       <Input v-model="locale.code" class="h-8" />
-                      <Input v-model="locale.label" class="h-8" />
-                      <Input v-model="locale.nativeLabel" class="h-8" />
+                      <Input v-model="locale.displayName" class="h-8" />
                       <Input v-model="locale.shortLabel" class="h-8" />
                       <Select
                         :model-value="locale.direction ?? 'ltr'"

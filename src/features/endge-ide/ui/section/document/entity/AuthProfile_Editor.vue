@@ -7,7 +7,7 @@ import type {
 } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { KeyRound, Loader2, Play, Save } from 'lucide-vue-next'
+import { KeyRound, Loader2, Play } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -24,6 +24,7 @@ import {
   getAuthProfileAdapterEditors,
 } from '@/features/endge-ide/model/auth-profile/auth-profile-adapter-ui-registry.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RAuthProfileEditor }
@@ -220,16 +221,7 @@ function normalizeErrorMessage(error: unknown): string {
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-2">
-        <Button
-          size="icon"
-          variant="outline"
-          aria-label="Сохранить"
-          :disabled="EndgeIDE.busy.value"
-          @click="save"
-        >
-          <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
-          <Save v-else class="size-4" />
-        </Button>
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
         <Button
           size="icon"
           variant="outline"

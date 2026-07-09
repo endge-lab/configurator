@@ -31,7 +31,7 @@ const currentLabel = computed(() => {
 
 function getLocaleDisplayLabel(localeCode: string): string {
   const locale = Endge.workspace.locales.find(item => item.code === localeCode)
-  return String(locale?.nativeLabel || locale?.label || locale?.shortLabel || localeCode)
+  return String(locale?.displayName || locale?.shortLabel || localeCode)
 }
 </script>
 

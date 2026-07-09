@@ -2,11 +2,10 @@
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 
 import { DomainSectionType } from '@endge/core'
-import { Briefcase, Loader2, Save } from 'lucide-vue-next'
+import { Briefcase } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useDomainStore } from '@endge/vue'
 
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -20,6 +19,7 @@ import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
 import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
@@ -114,11 +114,7 @@ async function save(): Promise<void> {
           id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
         </div>
       </div>
-      <Button variant="outline" size="sm" :disabled="isBusy" @click="save">
-        <Loader2 v-if="isBusy" class="size-4 animate-spin mr-1" />
-        <Save v-else class="size-4 mr-1" />
-        Сохранить
-      </Button>
+      <SaveDocumentButton :loading="isBusy" @click="save" />
     </div>
 
     <ScrollArea class="flex-1">

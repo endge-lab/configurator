@@ -350,7 +350,7 @@ export class EndgeIDETabs {
     const label = workspace.displayName || workspace.identity || 'Workspace'
     const tabRef: SmartTabRef = {
       id: 'workspace-settings',
-      label: `Workspace: ${label}`,
+      label: `Рабочее пространство: ${label}`,
       viewId: VIEW_ID_WORKSPACE_SETTINGS,
       payload: {},
       closable: true,

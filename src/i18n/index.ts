@@ -79,7 +79,7 @@ Endge.workspace.subscribe(() => {
 
 function mapAvailableLocales(): { label: string, value: Locale }[] {
   return Endge.workspace.locales.map(locale => ({
-    label: locale.nativeLabel || locale.label || locale.shortLabel || locale.code,
+    label: locale.displayName || locale.shortLabel || locale.code,
     value: locale.code,
   }))
 }
