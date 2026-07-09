@@ -14,6 +14,7 @@ import {
   Tag,
   Waypoints,
 } from 'lucide-vue-next'
+import { Endge } from '@endge/core'
 import { computed } from 'vue'
 
 import {
@@ -30,10 +31,7 @@ const projectsStore = useProjectsStore()
 const { current: currentLocale, setCurrent: setCurrentLocale } = useCurrentLocale()
 const { current: currentEnvironment } = useCurrentEnvironment()
 
-const AVAILABLE_LOCALES = [
-  { code: 'en', label: 'English', shortLabel: 'EN' },
-  { code: 'ru', label: 'Русский', shortLabel: 'RU' },
-]
+const availableLocales = computed(() => Endge.workspace.locales)
 
 const activeProjectLabel = computed(() => {
   const project = projectsStore.activeProject
@@ -55,8 +53,8 @@ const activeEnvironmentLabel = computed(() => {
 })
 
 const activeLocaleLabel = computed(() => {
-  const localeCode = String(currentLocale.value ?? 'en')
-  return AVAILABLE_LOCALES.find(item => item.code === localeCode)?.shortLabel ?? localeCode
+  const localeCode = Endge.workspace.normalizeLocale(currentLocale.value)
+  return Endge.workspace.getLocaleLabel(localeCode, 'shortLabel')
 })
 
 function switchLocale(locale: string): void {
@@ -170,17 +168,17 @@ const rightItems = computed(() => [
           :side-offset="6"
         >
           <DropdownMenuItem
-            v-for="locale in AVAILABLE_LOCALES"
+            v-for="locale in availableLocales"
             :key="locale.code"
             class="gap-2"
-            :class="{ 'bg-accent': (currentLocale ?? 'en') === locale.code }"
+            :class="{ 'bg-accent': Endge.workspace.normalizeLocale(currentLocale) === locale.code }"
             @click="switchLocale(locale.code)"
           >
             <Check
               class="size-3.5"
-              :class="(currentLocale ?? 'en') === locale.code ? 'opacity-100' : 'opacity-0'"
+              :class="Endge.workspace.normalizeLocale(currentLocale) === locale.code ? 'opacity-100' : 'opacity-0'"
             />
-            <span>{{ locale.label }}</span>
+            <span>{{ locale.nativeLabel }}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

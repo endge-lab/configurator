@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronsUpDown } from 'lucide-vue-next'
+import { Endge } from '@endge/core'
 import { useCurrentLocale } from '@endge/vue'
 import { computed } from 'vue'
 
@@ -11,15 +12,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const AVAILABLE_LOCALES = [
-  { code: 'en', label: 'English' },
-  { code: 'ru', label: 'Русский' },
-]
-
 const { current, setCurrent } = useCurrentLocale()
+const availableLocales = computed(() => Endge.workspace.locales)
 const currentLabel = computed(() => {
-  const c = current.value ?? 'en'
-  return AVAILABLE_LOCALES.find(x => x.code === c)?.label ?? c
+  const c = Endge.workspace.normalizeLocale(current.value)
+  return Endge.workspace.getLocaleLabel(c, 'nativeLabel')
 })
 </script>
 
@@ -42,12 +39,12 @@ const currentLabel = computed(() => {
       :side-offset="4"
     >
       <DropdownMenuItem
-        v-for="loc in AVAILABLE_LOCALES"
+        v-for="loc in availableLocales"
         :key="loc.code"
-        :class="{ 'bg-accent': (current ?? 'en') === loc.code }"
+        :class="{ 'bg-accent': Endge.workspace.normalizeLocale(current) === loc.code }"
         @click="setCurrent(loc.code)"
       >
-        {{ loc.label }}
+        {{ loc.nativeLabel }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

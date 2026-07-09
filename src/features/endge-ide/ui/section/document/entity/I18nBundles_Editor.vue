@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor'
 
+import { Endge } from '@endge/core'
 import { Braces, Code2, Loader2, Plus, RotateCcw, Save, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -23,14 +24,16 @@ const props = defineProps<{
 
 const editor = computed<RI18nBundleEditor | null>(() => props.tabContext?.editor ?? null)
 
+const workspaceLocaleCodes = computed(() => Endge.workspace.locales.map(locale => locale.code))
+
 const localeCodes = computed(() => {
   const loc = editor.value?.locales
-  if (!loc || typeof loc !== 'object') return ['ru', 'en']
+  if (!loc || typeof loc !== 'object') return workspaceLocaleCodes.value
   const keys = Object.keys(loc)
-  return keys.length ? keys : ['ru', 'en']
+  return keys.length ? keys : workspaceLocaleCodes.value
 })
 
-const currentLocale = ref<string>('ru')
+const currentLocale = ref<string>(Endge.workspace.defaultLocale)
 
 const activePanel = ref<'source' | 'ui'>('source')
 
@@ -203,7 +206,7 @@ watch(
   () => editor.value?.locales,
   () => {
     if (editor.value?.locales && !(currentLocale.value in editor.value.locales)) {
-      currentLocale.value = localeCodes.value[0] ?? 'ru'
+      currentLocale.value = localeCodes.value[0] ?? Endge.workspace.defaultLocale
     }
   },
   { immediate: true },

@@ -12,16 +12,10 @@ type MessageSchema = typeof en
 
 export type Locale = 'ru' | 'en'
 
-export const availableLocales: { label: string, value: Locale }[] = [
-  {
-    label: 'English',
-    value: 'en',
-  },
-  {
-    label: 'Русский',
-    value: 'ru',
-  },
-]
+export const availableLocales: { label: string, value: Locale }[] = Endge.workspace.locales.map(locale => ({
+  label: locale.nativeLabel,
+  value: locale.code as Locale,
+}))
 
 // Preload brand-specific locale overrides: /src/assets/branding/<brand>/locale/<locale>.json
 const brandLocaleFiles = import.meta.glob('/src/assets/branding/*/locale/*.json', {
@@ -41,14 +35,16 @@ for (const path in brandLocaleFiles) {
   brandLocaleMap[brand!]![locale!] = brandLocaleFiles[path]
 }
 
-const initialLocale = (Endge.context.currentLocale ?? import.meta.env.VITE_DEFAULT_LOCALE ?? 'en') as Locale
+const initialLocale = Endge.workspace.normalizeLocale(
+  Endge.context.currentLocale ?? import.meta.env.VITE_DEFAULT_LOCALE,
+) as Locale
 
 const i18nOptions: I18nOptions<{ message: MessageSchema }, Locale> = {
   legacy: false,
   locale: initialLocale,
-  fallbackLocale: 'en',
+  fallbackLocale: Endge.workspace.fallbackLocale as Locale,
   messages: { en, ru },
-  availableLocales: availableLocales.map(locale => locale.value),
+  availableLocales: Endge.workspace.locales.map(locale => locale.code as Locale),
 }
 
 export const i18n = createI18n<false, typeof i18nOptions>(i18nOptions)
@@ -58,7 +54,7 @@ watch(() => i18n.global.locale.value, (newLocale) => {
 })
 
 Endge.context.subscribe(() => {
-  const next = Endge.context.currentLocale as Locale
+  const next = Endge.workspace.normalizeLocale(Endge.context.currentLocale) as Locale
   if (i18n.global.locale.value !== next)
     i18n.global.locale.value = next
 })
@@ -66,7 +62,7 @@ Endge.context.subscribe(() => {
 // Reactively apply brand-specific overrides on top of base locales
 const baseMessages: Record<'en' | 'ru', MessageSchema> = { en, ru }
 function applyBrandLocales(brand: string) {
-  const locales = ['en', 'ru'] as const
+  const locales = Endge.workspace.locales.map(locale => locale.code as Locale)
   for (const loc of locales) {
     const base = deepClone(baseMessages[loc])
     const override = (brandLocaleMap[brand]?.[loc] ?? {}) as Partial<MessageSchema>
