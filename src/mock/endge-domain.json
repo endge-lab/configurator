@@ -3878,6 +3878,19 @@
               "save": "Save",
               "close": "Close",
               "cancel": "Cancel"
+            },
+            "table": {
+              "column": {
+                "pinLeft": "Pin left",
+                "pinRight": "Pin right",
+                "unpin": "Unpin"
+              },
+              "sort": {
+                "setColumnAsc": "Sort ascending",
+                "setColumnDesc": "Sort descending",
+                "clearColumn": "Clear column sort",
+                "clearAll": "Clear all sorting"
+              }
             }
           },
           "ru": {
@@ -3885,6 +3898,19 @@
               "save": "Сохранить",
               "close": "Закрыть",
               "cancel": "Отмена"
+            },
+            "table": {
+              "column": {
+                "pinLeft": "Закрепить слева",
+                "pinRight": "Закрепить справа",
+                "unpin": "Открепить"
+              },
+              "sort": {
+                "setColumnAsc": "Сортировать по возрастанию",
+                "setColumnDesc": "Сортировать по убыванию",
+                "clearColumn": "Сбросить сортировку колонки",
+                "clearAll": "Сбросить все сортировки"
+              }
             }
           }
         },

@@ -1,0 +1,42 @@
+{
+  "ru": {
+    "common": {
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "close": "Закрыть"
+    },
+    "table": {
+      "column": {
+        "pinLeft": "Закрепить слева",
+        "pinRight": "Закрепить справа",
+        "unpin": "Открепить"
+      },
+      "sort": {
+        "setColumnAsc": "Сортировать по возрастанию",
+        "setColumnDesc": "Сортировать по убыванию",
+        "clearColumn": "Сбросить сортировку колонки",
+        "clearAll": "Сбросить все сортировки"
+      }
+    }
+  },
+  "en": {
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close"
+    },
+    "table": {
+      "column": {
+        "pinLeft": "Pin left",
+        "pinRight": "Pin right",
+        "unpin": "Unpin"
+      },
+      "sort": {
+        "setColumnAsc": "Sort ascending",
+        "setColumnDesc": "Sort descending",
+        "clearColumn": "Clear column sort",
+        "clearAll": "Clear all sorting"
+      }
+    }
+  }
+}

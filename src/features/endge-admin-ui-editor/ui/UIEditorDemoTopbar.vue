@@ -2,6 +2,8 @@
 import {
   BellDot,
   Bug,
+  Check,
+  ChevronsUpDown,
   Circle,
   Clock3,
   FolderKanban,
@@ -14,17 +16,23 @@ import {
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useCurrentEnvironment, useCurrentLocale, useDomainStore } from '@endge/vue'
 import { useProjectsStore } from '@/features/endge-ide/store/projects'
 
 const domainStore = useDomainStore()
 const projectsStore = useProjectsStore()
-const { current: currentLocale } = useCurrentLocale()
+const { current: currentLocale, setCurrent: setCurrentLocale } = useCurrentLocale()
 const { current: currentEnvironment } = useCurrentEnvironment()
 
 const AVAILABLE_LOCALES = [
-  { code: 'en', label: 'English' },
-  { code: 'ru', label: 'Русский' },
+  { code: 'en', label: 'English', shortLabel: 'EN' },
+  { code: 'ru', label: 'Русский', shortLabel: 'RU' },
 ]
 
 const activeProjectLabel = computed(() => {
@@ -48,8 +56,12 @@ const activeEnvironmentLabel = computed(() => {
 
 const activeLocaleLabel = computed(() => {
   const localeCode = String(currentLocale.value ?? 'en')
-  return AVAILABLE_LOCALES.find(item => item.code === localeCode)?.label ?? localeCode
+  return AVAILABLE_LOCALES.find(item => item.code === localeCode)?.shortLabel ?? localeCode
 })
+
+function switchLocale(locale: string): void {
+  setCurrentLocale(locale)
+}
 
 const leftItems = computed(() => [
   {
@@ -77,13 +89,6 @@ const leftItems = computed(() => [
     id: 'version',
     label: 'Latest',
     icon: Tag,
-    iconClass: 'text-slate-500',
-    iconSizeClass: 'size-3.5',
-  },
-  {
-    id: 'locale',
-    label: activeLocaleLabel.value,
-    icon: Languages,
     iconClass: 'text-slate-500',
     iconSizeClass: 'size-3.5',
   },
@@ -146,6 +151,39 @@ const rightItems = computed(() => [
         <component :is="item.icon" class="shrink-0" :class="[item.iconSizeClass, item.iconClass]" />
         <span class="truncate">{{ item.label }}</span>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-slate-100/90"
+          >
+            <Languages class="size-3.5 text-slate-500" />
+            <span class="font-medium text-slate-600">{{ activeLocaleLabel }}</span>
+            <ChevronsUpDown class="size-3 text-slate-400" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-36"
+          align="start"
+          side="top"
+          :side-offset="6"
+        >
+          <DropdownMenuItem
+            v-for="locale in AVAILABLE_LOCALES"
+            :key="locale.code"
+            class="gap-2"
+            :class="{ 'bg-accent': (currentLocale ?? 'en') === locale.code }"
+            @click="switchLocale(locale.code)"
+          >
+            <Check
+              class="size-3.5"
+              :class="(currentLocale ?? 'en') === locale.code ? 'opacity-100' : 'opacity-0'"
+            />
+            <span>{{ locale.label }}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <div class="flex shrink-0 items-center gap-1">

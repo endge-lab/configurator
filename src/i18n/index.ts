@@ -1,4 +1,5 @@
 import type { I18nOptions } from 'vue-i18n'
+import { Endge } from '@endge/core'
 import { watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { deepClone, deepMerge } from '@/lib/utils.ts'
@@ -40,10 +41,7 @@ for (const path in brandLocaleFiles) {
   brandLocaleMap[brand!]![locale!] = brandLocaleFiles[path]
 }
 
-// Get locale from localStorage or fall back to env variable or 'en'
-const LOCALE_STORAGE_KEY = 'replaceme:locale'
-const storedLocale = localStorage.getItem(LOCALE_STORAGE_KEY)
-const initialLocale = storedLocale ?? import.meta.env.VITE_DEFAULT_LOCALE ?? 'en'
+const initialLocale = (Endge.context.currentLocale ?? import.meta.env.VITE_DEFAULT_LOCALE ?? 'en') as Locale
 
 const i18nOptions: I18nOptions<{ message: MessageSchema }, Locale> = {
   legacy: false,
@@ -55,9 +53,14 @@ const i18nOptions: I18nOptions<{ message: MessageSchema }, Locale> = {
 
 export const i18n = createI18n<false, typeof i18nOptions>(i18nOptions)
 
-// Watch for locale changes and persist to localStorage
 watch(() => i18n.global.locale.value, (newLocale) => {
-  localStorage.setItem(LOCALE_STORAGE_KEY, newLocale)
+  Endge.context.setCurrentLocale(newLocale)
+})
+
+Endge.context.subscribe(() => {
+  const next = Endge.context.currentLocale as Locale
+  if (i18n.global.locale.value !== next)
+    i18n.global.locale.value = next
 })
 
 // Reactively apply brand-specific overrides on top of base locales

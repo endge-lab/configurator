@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor'
 
-import { Endge } from '@endge/core'
-import { Loader2, Plus, Trash2 } from 'lucide-vue-next'
+import { Braces, Code2, Loader2, Plus, RotateCcw, Save, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -13,7 +13,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RI18nBundleEditor }
@@ -30,8 +32,15 @@ const localeCodes = computed(() => {
 
 const currentLocale = ref<string>('ru')
 
+const activePanel = ref<'source' | 'ui'>('source')
+
 /** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ→значение */
 const editMode = ref<'json' | 'table'>('table')
+
+const panelButtons = [
+  { value: 'source', icon: Code2, label: 'Source' },
+  { value: 'ui', icon: SlidersHorizontal, label: 'UI' },
+] as const
 
 /** Разворачивает вложенный объект в плоский список ключей в точечной нотации */
 function flattenObject(obj: Record<string, unknown>, prefix = ''): { key: string, value: string }[] {
@@ -91,6 +100,68 @@ function removeTableRow(index: number): void {
   tableRows.value = tableRows.value.filter((_, i) => i !== index)
 }
 
+function restoreDefaultLocales(): void {
+  const current = editor.value
+  if (!current)
+    return
+
+  if (activePanel.value === 'source') {
+    try {
+      current.applySourceText()
+    }
+    catch {
+      /* reset can recover an invalid source editor state */
+    }
+  }
+  else if (editMode.value === 'table') {
+    applyTableRowsToLocale()
+  }
+
+  current.locales = mergePlainObjects(
+    clonePlainObject(current.locales ?? {}),
+    clonePlainObject(defaultI18nLocales),
+  ) as Record<string, Record<string, unknown>>
+  current.syncSourceTextFromLocales()
+  syncTableRowsFromLocale()
+  toast.success('Системные переводы восстановлены')
+}
+
+function applySourceTextToLocales(): boolean {
+  const current = editor.value
+  if (!current)
+    return false
+
+  try {
+    current.applySourceText()
+    syncTableRowsFromLocale()
+    return true
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    toast.error('Некорректный JSON словаря', { description: message })
+    return false
+  }
+}
+
+function syncLocalesToSourceText(): void {
+  if (editMode.value === 'table')
+    applyTableRowsToLocale()
+  editor.value?.syncSourceTextFromLocales()
+}
+
+function switchPanel(panel: 'source' | 'ui'): void {
+  if (activePanel.value === panel)
+    return
+
+  if (activePanel.value === 'source' && !applySourceTextToLocales())
+    return
+
+  if (activePanel.value === 'ui' && panel === 'source')
+    syncLocalesToSourceText()
+
+  activePanel.value = panel
+}
+
 watch(
   [() => editor.value?.locales, currentLocale],
   () => syncTableRowsFromLocale(),
@@ -139,25 +210,104 @@ watch(
 )
 
 async function save(): Promise<void> {
-  if (editMode.value === 'table')
-    applyTableRowsToLocale()
+  if (activePanel.value === 'source') {
+    if (!applySourceTextToLocales())
+      return
+  }
+  else {
+    syncLocalesToSourceText()
+  }
+
   await EndgeIDE.tabs.save()
+}
+
+function clonePlainObject<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function mergePlainObjects(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
+  for (const [key, value] of Object.entries(source)) {
+    if (isPlainObject(value) && isPlainObject(target[key])) {
+      target[key] = mergePlainObjects(target[key] as Record<string, unknown>, value)
+      continue
+    }
+
+    target[key] = value
+  }
+
+  return target
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col min-h-0">
-    <div class="p-3 border-b flex items-center justify-between gap-3 shrink-0">
-      <div class="text-lg font-semibold truncate">
-        Словарь переводов — {{ editor?.displayName ?? '-' }}
+  <div class="flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div class="flex shrink-0 items-center gap-3 border-b p-3">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+        <Braces class="size-5 text-amber-600" />
       </div>
-      <Button size="sm" :disabled="EndgeIDE.busy.value" @click="save">
-        <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin mr-2" />
-        Сохранить
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-lg font-semibold">
+          {{ editor?.displayName ?? 'Словарь переводов' }}
+        </div>
+        <div class="truncate text-xs text-muted-foreground">
+          identity: {{ editor?.identity ?? '-' }}
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center rounded-md border bg-muted/40 p-0.5">
+        <Button
+          v-for="item in panelButtons"
+          :key="item.value"
+          type="button"
+          size="icon"
+          variant="ghost"
+          class="h-8 w-8"
+          :class="activePanel === item.value ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+          :aria-label="item.label"
+          :title="item.label"
+          @click="switchPanel(item.value)"
+        >
+          <component :is="item.icon" class="size-4" />
+        </Button>
+      </div>
+
+      <Button
+        size="icon"
+        variant="outline"
+        aria-label="Восстановить системные переводы"
+        title="Восстановить системные переводы"
+        @click="restoreDefaultLocales"
+      >
+        <RotateCcw class="size-4" />
+      </Button>
+
+      <Button size="icon" variant="outline" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="save">
+        <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+        <Save v-else class="size-4" />
       </Button>
     </div>
 
-    <ScrollArea class="flex-1 px-4 py-3">
+    <div v-if="activePanel === 'source'" class="flex min-h-0 flex-1 flex-col p-4">
+      <Card class="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+        <ScriptEditor
+          v-model="editor!.sourceText"
+          language="json"
+          class="min-h-0 flex-1"
+          min-height="100%"
+          show-toolbar
+          @blur="applySourceTextToLocales"
+        />
+      </Card>
+    </div>
+
+    <ScrollArea v-else class="flex-1 px-4 py-3">
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
           <div class="grid grid-cols-2 gap-4">
