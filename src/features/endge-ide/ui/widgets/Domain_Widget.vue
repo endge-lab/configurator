@@ -4,7 +4,7 @@ import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domai
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, DomainSectionType, Endge, QueryType, ScriptType } from '@endge/core'
+import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { useLocalStorage } from '@vueuse/core'
 import {
@@ -33,13 +33,11 @@ import {
   Network,
   Palette,
   Pencil,
-  PlayCircle,
   Plug,
   Plus,
   RotateCcw,
   Route,
   Save,
-  Settings,
   Shield,
   Trash2,
   Type,
@@ -387,7 +385,6 @@ const ROOT_TO_SECTION = computed(() => {
     'root-queries': { section: DomainSectionType.Query, items: () => withoutDeletedAndInherited(domainStore.queries, softId) },
     'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeletedAndInherited((Endge.domain as any).getDataViews?.() ?? [], softId) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
-    'root-scenarios': { section: DomainSectionType.Scenario, items: () => withoutDeleted(domainStore.scenarios, softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
     'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeletedAndInherited(domainStore.filters, softId) },
     'root-views': { section: DomainSectionType.View, items: () => withoutDeleted(domainStore.views, softId) },
@@ -401,7 +398,6 @@ const ROOT_TO_SECTION = computed(() => {
     'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates, softId) },
     'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages, softId) },
     'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations, softId) },
-    'root-settings': { section: DomainSectionType.Settings, items: () => domainStore.settings ?? [] },
     'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs, softId) },
     'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles, softId) },
     'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles, softId) },
@@ -427,7 +423,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-queries': { icon: Network, colorClass: 'text-violet-500' },
   'root-data-views': { icon: GitBranch, colorClass: 'text-cyan-500' },
   'root-components': { icon: Layout, colorClass: 'text-emerald-500' },
-  'root-scenarios': { icon: PlayCircle, colorClass: 'text-orange-500' },
   'root-actions': { icon: Zap, colorClass: 'text-amber-500' },
   'root-parameters': { icon: FormInput, colorClass: 'text-slate-500' },
   'root-converters': { icon: ArrowLeftRight, colorClass: 'text-cyan-500' },
@@ -441,7 +436,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-page-templates': { icon: Layout, colorClass: 'text-emerald-400' },
   'root-pages': { icon: Columns, colorClass: 'text-indigo-400' },
   'root-navigations': { icon: Route, colorClass: 'text-cyan-400' },
-  'root-settings': { icon: Settings, colorClass: 'text-amber-500' },
   'root-vocabs': { icon: BookOpen, colorClass: 'text-teal-500' },
   'root-i18n-bundles': { icon: Languages, colorClass: 'text-amber-500' },
   'root-auth-profiles': { icon: KeyRound, colorClass: 'text-sky-500' },
@@ -467,7 +461,6 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   COMPONENT_SFC_TYPE,
   QueryType.REST,
   'data-view',
-  ScriptType.ScenarioSetup,
   'action',
   'integration',
   'view',
@@ -644,10 +637,6 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   const targetId = node.isTableColumn && node.parentComponentId ? node.parentComponentId : node.id
   if (targetId == null || String(targetId).trim() === '') {
     toast.warning('Нет идентификатора документа')
-    return
-  }
-  if (node.sectionType === DomainSectionType.Settings) {
-    EndgeIDE.tabs.openSettingsProfile(String(targetId))
     return
   }
   if (node.sectionType === DomainSectionType.Project) {

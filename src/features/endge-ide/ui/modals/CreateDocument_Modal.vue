@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, DocumentFactory, DomainSectionType, Endge, QueryType, ScriptType } from '@endge/core'
+import { ComponentType, DocumentFactory, DomainSectionType, Endge, QueryType } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -30,7 +30,6 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
   { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
   { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
-  { type: ScriptType.ScenarioSetup, label: 'Сценарий', section: DomainSectionType.Scenario },
   { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
   { type: 'view' as DomainDocumentType, label: 'Вид', section: DomainSectionType.View },
@@ -50,7 +49,6 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
-  [DomainSectionType.Scenario]: 'root-scenarios',
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
@@ -66,7 +64,6 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.PageTemplate]: 'root-page-templates',
   [DomainSectionType.Page]: 'root-pages',
   [DomainSectionType.Navigation]: 'root-navigations',
-  [DomainSectionType.Settings]: 'root-settings',
   [DomainSectionType.Vocabs]: 'root-vocabs',
   [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
   [DomainSectionType.AuthProfile]: 'root-auth-profiles',
@@ -78,7 +75,6 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Component]: 'components',
   [DomainSectionType.Query]: 'queries',
   [DomainSectionType.DataView]: 'data-views',
-  [DomainSectionType.Scenario]: 'scenarios',
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
   [DomainSectionType.Converter]: 'converters',
@@ -131,13 +127,12 @@ const activeOption = computed<DocTypeOption>(() =>
   CREATABLE_DOC_TYPES.find(d => d.type === activeType.value) ?? CREATABLE_DOC_TYPES[0]!,
 )
 
-/** Показывать выбор папки только для сущностей (Component, Query, Scenario, Integration), не для типов. */
+/** Показывать выбор папки только для доменных сущностей, не для типов. */
 const showFolderSelect = computed(() => {
   const s = activeOption.value.section
   return s === DomainSectionType.Component
     || s === DomainSectionType.Query
     || s === DomainSectionType.DataView
-    || s === DomainSectionType.Scenario
     || s === DomainSectionType.Action
     || s === DomainSectionType.Integration
     || s === DomainSectionType.View
@@ -277,14 +272,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       sourceVersion: 1,
       meta: {},
       inherited: false,
-    }
-  }
-
-  if (activeType.value === ScriptType.ScenarioSetup) {
-    return {
-      ...base,
-      schema: {},
-      meta: {},
     }
   }
 
@@ -489,7 +476,7 @@ function onCancel(): void {
                   <Input
                     id="create-doc-name"
                     v-model="name"
-                    :placeholder="activeOption?.type === ComponentType.Table ? 'Новая таблица' : activeOption?.type === QueryType.REST ? 'Новый запрос' : activeOption?.type === ScriptType.ScenarioSetup ? 'Новый сценарий' : 'Без названия'"
+                    :placeholder="activeOption?.type === ComponentType.Table ? 'Новая таблица' : activeOption?.type === QueryType.REST ? 'Новый запрос' : 'Без названия'"
                   />
                 </div>
                 <div v-if="showFolderSelect" class="grid gap-2">

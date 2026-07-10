@@ -2,17 +2,16 @@ import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/componen
 import type {
   DomainDocumentType,
   RAction,
-  RComponentDSL,
-  RComponentTable,
-  RDataView,
-  RQuery,
-  RScenario,
-  RTenant,
-  RType,
-} from '@endge/core'
+	  RComponentDSL,
+	  RComponentTable,
+	  RDataView,
+	  RQuery,
+	  RTenant,
+	  RType,
+	} from '@endge/core'
 import type { Component } from 'vue'
 
-import { ComponentType, Endge, FilterType, ParameterType, QueryType, ScriptType } from '@endge/core'
+import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 import { defineComponent, h, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { showWidget } from '@/components/layouts/grid'
@@ -42,8 +41,6 @@ import { RViewEditor } from '@/features/endge-ide/domain/entities/RViewEditor.ts
 import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
 import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
-import { RSettings_Editor } from '@/features/endge-ide/domain/entities/RSettings_Editor.ts'
-import { RScenarioEditor } from '@/features/endge-ide/domain/entities/RScenarioEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
@@ -58,7 +55,6 @@ import Action_Editor from '@/features/endge-ide/ui/section/document/entity/Actio
 import FiltersPanel_Editor from '@/features/endge-ide/ui/section/document/entity/FiltersPanel_Editor.vue'
 import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'
 import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'
-import Scenario_Editor from '@/features/endge-ide/ui/section/document/entity/Scenario_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
 import Integration_Editor from '@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'
@@ -75,7 +71,6 @@ import Page_Editor from '@/features/endge-ide/ui/section/document/entity/Page_Ed
 import Navigation_Editor from '@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'
 import Project_Editor from '@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'
 import Filter_Editor from '@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'
-import Settings_Editor from '@/features/endge-ide/ui/section/document/singleton/Settings_Editor.vue'
 import Workspace_Editor from '@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'
 import Version_Editor from '@/features/endge-ide/ui/section/document/singleton/Version_Editor.vue'
 import ViewGenerator_Editor from '@/features/endge-ide/ui/section/document/singleton/ViewGenerator_Editor.vue'
@@ -95,7 +90,6 @@ import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditor
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = 'endge-document-editor' as const
-const VIEW_ID_SETTINGS = 'endge-settings-editor' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_VIEW_GENERATOR = 'endge-view-generator' as const
@@ -129,11 +123,6 @@ interface DocumentTabPayload {
   documentType: DomainDocumentType
 }
 
-interface SettingsTabPayload {
-  settingsId: string
-  documentType: 'settings'
-}
-
 interface VersionTabPayload {
   versionId: string
 }
@@ -144,7 +133,7 @@ interface RuntimeDebugTabPayload {
   title?: string
 }
 
-type SupportedViewId = typeof VIEW_ID_DOCUMENT | typeof VIEW_ID_SETTINGS | typeof VIEW_ID_VERSION
+type SupportedViewId = typeof VIEW_ID_DOCUMENT | typeof VIEW_ID_VERSION
 
 interface ResolvedView {
   component: Component
@@ -163,7 +152,7 @@ type DocResolver = (documentId: string) => EditorSession | null
 /**
  * Endge IDE Tabs
  *
- * Вкладки + резолв контента (document/settings/version/docs), кэш сессий,
+ * Вкладки + резолв контента (document/version/docs), кэш сессий,
  * текущий документ для инспектора, сохранение активной вкладки.
  */
 export class EndgeIDETabs {
@@ -252,8 +241,6 @@ export class EndgeIDETabs {
   public getViewForTab(tab: SmartTabRef): SmartTabViewResolved | null {
     this._syncContextForTab(tab)
     const viewId = tab.viewId as SupportedViewId
-    if (viewId === VIEW_ID_SETTINGS)
-      return this._resolveSettingsTab(tab)
     if (viewId === VIEW_ID_VERSION)
       return this._resolveVersionTab(tab)
     if (viewId === VIEW_ID_DOCUMENT)
@@ -271,15 +258,6 @@ export class EndgeIDETabs {
   private async _doSave(activeTab: SmartTabRef): Promise<void> {
     const viewId = activeTab.viewId as SupportedViewId
     try {
-      if (viewId === VIEW_ID_SETTINGS) {
-        const payload = this._getPayload<SettingsTabPayload>(activeTab.payload)
-        const settingsId = payload?.settingsId ?? 'general'
-        const session = this._sessionByTabId.get(activeTab.id)
-        session?.syncBeforeSave?.()
-        await Endge.schema.saveDocument(settingsId, 'settings')
-        toast.success('Сохранено', { description: settingsId })
-        return
-      }
       if (viewId === VIEW_ID_VERSION) {
         const payload = this._getPayload<VersionTabPayload>(activeTab.payload)
         const versionId = payload?.versionId
@@ -326,21 +304,6 @@ export class EndgeIDETabs {
       payload: { documentId, documentType: docType } satisfies DocumentTabPayload,
       closable: true,
       meta: { icon: this.getDocumentIcon(docType) },
-    }
-    this.openTab(tabRef)
-  }
-
-  public openSettingsProfile(idOrIdentity: string | number): void {
-    const settings = Endge.domain.getSetting(idOrIdentity)
-    const identity = settings?.identity ?? String(idOrIdentity)
-    const label = settings?.displayName ?? identity
-    const tabRef: SmartTabRef = {
-      id: `settings-${identity}`,
-      label: `Настройки: ${label}`,
-      viewId: VIEW_ID_SETTINGS,
-      payload: { settingsId: identity, documentType: 'settings' } satisfies SettingsTabPayload,
-      closable: true,
-      meta: { icon: 'ti ti-settings text-xl' },
     }
     this.openTab(tabRef)
   }
@@ -577,8 +540,6 @@ export class EndgeIDETabs {
       const dataView = Endge.domain.getDataView(id)
       return dataView?.displayName ?? dataView?.name ?? id
     }
-    if (key === String(ScriptType.ScenarioSetup))
-      return Endge.domain.getScenario(id)?.name ?? id
     if (key === 'type' || key === 'primitive')
       return Endge.domain.getType(id)?.name ?? id
     if (key === 'action') {
@@ -636,8 +597,6 @@ export class EndgeIDETabs {
       return 'ti ti-api text-orange-500 text-xl'
     if (key === 'data-view')
       return 'ti ti-braces text-cyan-500 text-xl'
-    if (key === String(ScriptType.ScenarioSetup))
-      return 'ti ti-code text-teal-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))
       return 'ti ti-form-input text-slate-500 text-xl'
     if (key === String(FilterType.DefaultFilter))
@@ -676,8 +635,6 @@ export class EndgeIDETabs {
       return 'ti ti-route text-cyan-500 text-2xl'
     if (key === 'project')
       return 'ti ti-briefcase text-sky-500 text-2xl'
-    if (key === 'settings')
-      return 'ti ti-settings text-amber-500 text-xl'
     return 'ti ti-file-alert text-xl text-red-500'
   }
 
@@ -687,7 +644,6 @@ export class EndgeIDETabs {
       props: { tab },
     })
     registerSmartTabView(VIEW_ID_DOCUMENT, wrap)
-    registerSmartTabView(VIEW_ID_SETTINGS, wrap)
     registerSmartTabView(VIEW_ID_WORKSPACE_SETTINGS, (): SmartTabViewResolved => ({
       component: markRaw(Workspace_Editor),
       props: {},
@@ -805,32 +761,6 @@ export class EndgeIDETabs {
     return session.view
   }
 
-  private _resolveSettingsTab(tab: SmartTabRef): SmartTabViewResolved | null {
-    const payload = this._getPayload<SettingsTabPayload>(tab.payload)
-    const settingsId = payload?.settingsId
-    if (!settingsId)
-      return null
-    const cached = this._sessionByTabId.get(tab.id)
-    if (cached) {
-      this._setCurrentFromSession(cached)
-      return cached.view
-    }
-    const settings = Endge.domain.getSetting(settingsId)
-    if (!settings)
-      return null
-    const editor = new RSettings_Editor()
-    editor.fillFromSource(settings)
-    const session: EditorSession = {
-      view: { component: markRaw(Settings_Editor), props: { tabContext: { editor } } },
-      editor,
-      model: editor,
-      syncBeforeSave: () => editor.updateSource(settings),
-    }
-    this._sessionByTabId.set(tab.id, session)
-    this._setCurrentFromSession(session)
-    return session.view
-  }
-
   private _resolveVersionTab(tab: SmartTabRef): SmartTabViewResolved | null {
     const payload = this._getPayload<VersionTabPayload>(tab.payload)
     const versionId = payload?.versionId
@@ -861,7 +791,6 @@ export class EndgeIDETabs {
     [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId)],
     [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
     ['data-view', (documentId) => this._resolveDataView(documentId)],
-    [String(ScriptType.ScenarioSetup), (documentId) => this._resolveScenario(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
     [String(FilterType.DefaultFilter), (documentId) => this._resolveFilter(documentId)],
@@ -999,26 +928,6 @@ export class EndgeIDETabs {
       editor,
       model: dataView,
       syncBeforeSave: () => editor.updateSource(dataView),
-    }
-  }
-
-  private _resolveScenario(documentId: string): EditorSession | null {
-    const scenario = Endge.domain.getScenario(documentId) as RScenario | null
-    if (!scenario)
-      return null
-    const editor = new RScenarioEditor()
-    editor.fillFromSource(scenario)
-    return {
-      view: {
-        component: markRaw(Scenario_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: scenario,
-      syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
-          (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(scenario)
-      },
     }
   }
 

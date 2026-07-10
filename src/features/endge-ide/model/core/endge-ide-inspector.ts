@@ -2,7 +2,7 @@ import type { SmartTabRef } from '@/components/ui/smart-tabs/types.ts'
 import type { Component } from 'vue'
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, ScriptType, FilterType, ParameterType } from '@endge/core'
+import { ComponentType, FilterType, ParameterType } from '@endge/core'
 import { markRaw } from 'vue'
 
 import { showWidget } from '@/components/layouts/grid'
@@ -22,14 +22,12 @@ import I18nBundlesInspector from '@/features/endge-ide/ui/section/inspectors/I18
 import ViewInspector from '@/features/endge-ide/ui/section/inspectors/View_Inspector.vue'
 import FilterInspector from '@/features/endge-ide/ui/section/inspectors/Filter_Inspector.vue'
 import ParameterInspector from '@/features/endge-ide/ui/section/inspectors/Parameter_Inspector.vue'
-import ScenarioInspector from '@/features/endge-ide/ui/section/inspectors/Scenario_Inspector.vue'
 import TableInspector from '@/features/endge-ide/ui/section/inspectors/Table_Inspector.vue'
 import TypeInspector from '@/features/endge-ide/ui/section/inspectors/Type_Inspector.vue'
 import PageInspector from '@/features/endge-ide/ui/section/inspectors/Page_Inspector.vue'
 import PageTemplateInspector from '@/features/endge-ide/ui/section/inspectors/PageTemplate_Inspector.vue'
 import NavigationInspector from '@/features/endge-ide/ui/section/inspectors/Navigation_Inspector.vue'
 import ProjectInspector from '@/features/endge-ide/ui/section/inspectors/Project_Inspector.vue'
-import SettingsInspector from '@/features/endge-ide/ui/section/inspectors/Settings_Inspector.vue'
 import UIEditorDemoInspector from '@/features/endge-admin-ui-editor/ui/UIEditorDemoInspector.vue'
 
 const INSPECTOR_WIDGET_ID = 'inspector'
@@ -85,7 +83,6 @@ export class EndgeIDEInspector {
     [ComponentType.DSL, markRaw(DslInspector)],
     [ComponentType.Table, markRaw(TableInspector)],
     [COMPONENT_SFC_TYPE, markRaw(ComponentSFCInspector)],
-    [ScriptType.ScenarioSetup, markRaw(ScenarioInspector)],
     ['action', markRaw(ActionInspector)],
     ['primitive', markRaw(TypeInspector)],
     ['type', markRaw(TypeInspector)],
@@ -105,7 +102,6 @@ export class EndgeIDEInspector {
     ['page-template', markRaw(PageTemplateInspector)],
     ['navigation', markRaw(NavigationInspector)],
     ['project', markRaw(ProjectInspector)],
-    ['settings', markRaw(SettingsInspector)],
   ])
 
   /** Регистратор singleton/view-based inspector views. */

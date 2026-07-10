@@ -63,14 +63,12 @@ const DOMAIN_SLICE_KEYS = [
   'tenants',
   'policies',
   'styles',
-  'scenarios',
   'parameters',
   'converters',
   'vocabs',
   'navigations',
   'page-templates',
   'pages',
-  'settings',
   'i18n-bundles',
   'auth-profiles',
 ] as const
@@ -130,7 +128,6 @@ const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'type': 'types',
   'primitive': 'types',
   'action': 'actions',
-  'scenario-setup': 'scenarios',
   'default-parameter': 'parameters',
   'default-filter': 'filters',
   'converter': 'converters',
@@ -146,7 +143,6 @@ const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'page-template': 'page-templates',
   'navigation': 'navigations',
   'project': 'projects',
-  'settings': 'settings',
 }
 
 /** Маппинг: ключ коллекции → documentType для open_document. Для components и queries берётся из сущности при наличии. */
@@ -177,7 +173,6 @@ function getDocumentType(
   const sliceToDoc: Record<string, string> = {
     'types': 'type',
     'actions': 'action',
-    'scenarios': 'scenario-setup',
     'parameters': 'default-parameter',
     'filters': 'default-filter',
     'converters': 'converter',
@@ -192,7 +187,6 @@ function getDocumentType(
     'page-templates': 'page-template',
     'pages': 'page',
     'projects': 'project',
-    'settings': 'settings',
     'folders': 'project',
   }
   return sliceToDoc[sliceKey] ?? sliceKey
@@ -255,7 +249,6 @@ const ITERATE_ENTITY_KEYS = [
   'components',
   'views',
   'actions',
-  'scenarios',
   'parameters',
   'filters',
   'converters',
@@ -270,7 +263,6 @@ const ITERATE_ENTITY_KEYS = [
   'pages',
   'pageTemplates',
   'navigations',
-  'settings',
   'behaviorBindings',
   'presentationBindings',
 ] as const
@@ -284,7 +276,6 @@ const SLICE_TO_CONTEXT_KEY: Record<string, string> = {
   'components': 'components',
   'views': 'views',
   'actions': 'actions',
-  'scenarios': 'scenarios',
   'parameters': 'parameters',
   'filters': 'filters',
   'converters': 'converters',
@@ -299,7 +290,6 @@ const SLICE_TO_CONTEXT_KEY: Record<string, string> = {
   'pages': 'pages',
   'page-templates': 'pageTemplates',
   'navigations': 'navigations',
-  'settings': 'settings',
 }
 
 interface ShortDescItem {

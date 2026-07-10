@@ -1,12 +1,10 @@
 import type { DomainDocumentType } from '@endge/core'
 
 export type BackupRestoreEntityKind =
-  | 'settings'
   | 'project'
   | 'type'
   | 'query'
   | 'component'
-  | 'scenario'
   | 'action'
   | 'parameter'
   | 'filter'

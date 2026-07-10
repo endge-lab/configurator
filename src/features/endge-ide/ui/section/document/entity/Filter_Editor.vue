@@ -58,21 +58,26 @@ const activeChecked = computed({
   },
 })
 
-/** Наборы словарей из settings.general.vocabs */
-const vocabSets = computed(() => {
-  const general = Endge.domain.getSetting('general') as { vocabs?: Array<{ identity: string; collections?: Array<{ name: string }> }> } | null
-  return Array.isArray(general?.vocabs) ? general.vocabs : []
-})
+/** Доменные документы справочников. */
+const vocabDocs = computed(() =>
+  Endge.domain.getVocabs()
+    .filter(vocab => vocab.active !== false && vocab.mode === 'external_payload')
+    .map(vocab => ({
+      identity: String(vocab.identity ?? '').trim(),
+      label: String(vocab.displayName ?? vocab.name ?? vocab.identity ?? '').trim(),
+      collectionSlug: String(vocab.collectionSlug ?? '').trim(),
+    }))
+    .filter(vocab => vocab.identity && vocab.collectionSlug),
+)
 
 const vocabIdentityOptions = computed(() =>
-  vocabSets.value.map(v => ({ value: v.identity, label: v.identity })),
+  vocabDocs.value.map(v => ({ value: v.identity, label: v.label || v.identity })),
 )
 
 function getVocabCollectionOptions(vocabIdentity: string | undefined) {
   if (!vocabIdentity) return []
-  const set = vocabSets.value.find(v => v.identity === vocabIdentity)
-  const cols = Array.isArray(set?.collections) ? set.collections : []
-  return cols.map(c => ({ value: c.name, label: c.name }))
+  const vocab = vocabDocs.value.find(v => v.identity === vocabIdentity)
+  return vocab ? [{ value: vocab.collectionSlug, label: vocab.collectionSlug }] : []
 }
 
 
@@ -211,12 +216,11 @@ function onModeChange(newMode: FilterFieldItemSchema['mode']): void {
 
 function onVocabIdentityChange(index: number, newIdentity: string): void {
   if (!editor.value || index < 0 || index >= editor.value.fields.length) return
-  const opts = getVocabCollectionOptions(newIdentity)
-  const firstCollection = opts[0]?.value ?? ''
+  const vocab = vocabDocs.value.find(v => v.identity === newIdentity)
   editor.value.fields[index] = {
     ...editor.value.fields[index],
     vocabIdentity: newIdentity,
-    vocabCollection: firstCollection,
+    vocabCollection: vocab?.collectionSlug ?? '',
   }
 }
 
@@ -482,7 +486,7 @@ async function save(): Promise<void> {
               <div class="text-sm font-medium text-muted-foreground">Словарь</div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
-                  <Label>Набор словарей</Label>
+                  <Label>Справочник</Label>
                   <Select
                     v-if="selectedIndex !== null"
                     :key="`vocab-identity-${selectedIndex}-${selectedField?.vocabIdentity ?? ''}`"
@@ -490,7 +494,7 @@ async function save(): Promise<void> {
                     @update:model-value="(v) => selectedIndex != null && onVocabIdentityChange(selectedIndex, String(v ?? ''))"
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Выберите набор" />
+                      <SelectValue placeholder="Выберите справочник" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem
@@ -504,7 +508,7 @@ async function save(): Promise<void> {
                   </Select>
                 </div>
                 <div class="space-y-2">
-                  <Label>Словарь</Label>
+                  <Label>Коллекция</Label>
                   <Select
                     v-if="selectedIndex !== null"
                     :key="`vocab-collection-${selectedIndex}-${selectedField?.vocabIdentity}-${selectedField?.vocabCollection ?? ''}`"

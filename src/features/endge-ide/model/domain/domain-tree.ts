@@ -115,7 +115,6 @@ export interface DomainStoreForTree {
   componentSFCs?: any[]
   queries?: any[]
   dataViews?: any[]
-  scenarios?: any[]
   actions?: any[]
   typesComplex?: any[]
   typesPrimitives?: any[]
@@ -186,7 +185,6 @@ export function getSoftDeletedItems(
   add(store.componentSFCs, DomainSectionType.Component)
   add(store.queries, DomainSectionType.Query)
   add(store.dataViews, DomainSectionType.DataView)
-  add(store.scenarios, DomainSectionType.Scenario)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
   add(store.parameters, DomainSectionType.Parameters)
@@ -245,7 +243,6 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-page-templates': 'Шаблоны страниц',
   'root-pages': 'Страницы',
   'root-navigations': 'Навигации',
-  'root-settings': 'Настройки',
   'root-data-views': 'Представления',
   'root-vocabs': 'Словари',
   'root-i18n-bundles': 'Словари переводов',
@@ -280,7 +277,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-queries',
       'root-data-views',
       'root-components',
-      'root-scenarios',
       'root-actions',
       'root-filters',
       'root-views',
@@ -297,7 +293,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-auth-profiles',
       'root-integrations',
       'root-policies',
-      'root-settings',
     ],
   },
   {
@@ -381,8 +376,6 @@ export function normalizeDocType(
     return 'page' as DomainDocumentType
   if (sectionType === DomainSectionType.Navigation)
     return 'navigation' as DomainDocumentType
-  if (sectionType === DomainSectionType.Settings)
-    return 'settings' as DomainDocumentType
   if (sectionType === DomainSectionType.Vocabs)
     return 'vocabs' as DomainDocumentType
   if (sectionType === DomainSectionType.I18nBundles)
@@ -590,7 +583,7 @@ function buildFolderNode(
       const isPrimitiveType
         = itemSectionType === DomainSectionType.Primitive
           || (itemSectionType === DomainSectionType.Type && (c as { isPrimitive?: boolean }).isPrimitive === true)
-      const useIdentityForId = itemSectionType === DomainSectionType.Settings || itemSectionType === DomainSectionType.Project
+      const useIdentityForId = itemSectionType === DomainSectionType.Project
       const id = useIdentityForId ? String((c as any).identity ?? c.id ?? '') : String(c.id ?? (c as any).identity ?? c.name ?? '')
       const name = (c as any).displayName ?? c.name ?? id
       const fileNode: FsFileNode = {

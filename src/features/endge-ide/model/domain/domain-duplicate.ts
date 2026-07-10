@@ -10,7 +10,6 @@ import {
   FilterType,
   ParameterType,
   QueryType,
-  ScriptType,
   duplicateComponent,
 } from '@endge/core'
 
@@ -36,8 +35,6 @@ export function getEntityByDocType(
       return domain.getQuery(id)
     case 'data-view':
       return (domain as any).getDataView?.(id)
-    case ScriptType.ScenarioSetup:
-      return domain.getScenario(id)
     case 'action':
       return domain.getAction(id)
     case 'integration':

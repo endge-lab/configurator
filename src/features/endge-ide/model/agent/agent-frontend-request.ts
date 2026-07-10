@@ -147,10 +147,6 @@ const DOCUMENT_TYPE_ALIASES: Record<string, string> = {
   primitive: "primitive",
   action: "action",
   actions: "action",
-  "scenario-setup": "scenario-setup",
-  scenario_setup: "scenario-setup",
-  scenario: "scenario-setup",
-  scenarios: "scenario-setup",
   "default-parameter": "default-parameter",
   default_parameter: "default-parameter",
   parameter: "default-parameter",
@@ -190,7 +186,6 @@ const DOCUMENT_TYPE_ALIASES: Record<string, string> = {
   navigations: "navigation",
   project: "project",
   projects: "project",
-  settings: "settings",
 };
 
 const NEED_ENTITY_TYPE_ALIASES: Record<string, string> = {
@@ -219,9 +214,6 @@ const NEED_ENTITY_TYPE_ALIASES: Record<string, string> = {
   filters: "filters",
   action: "actions",
   actions: "actions",
-  scenario: "scenarios",
-  scenarios: "scenarios",
-  "scenario-setup": "scenarios",
   parameter: "parameters",
   parameters: "parameters",
   "default-parameter": "parameters",
@@ -248,7 +240,6 @@ const NEED_ENTITY_TYPE_ALIASES: Record<string, string> = {
   pages: "pages",
   "page-template": "page-templates",
   "page-templates": "page-templates",
-  settings: "settings",
   i18n: "i18n-bundles",
   "i18n-bundle": "i18n-bundles",
   "i18n-bundles": "i18n-bundles",
@@ -268,14 +259,12 @@ const DOMAIN_SLICE_KEY_SET = new Set<string>([
   "tenants",
   "policies",
   "styles",
-  "scenarios",
   "parameters",
   "converters",
   "vocabs",
   "navigations",
   "page-templates",
   "pages",
-  "settings",
   "i18n-bundles",
   "auth-profiles",
 ]);
@@ -630,7 +619,6 @@ const ALLOWED_WIDGET_IDS = new Set([
   "project",
   "inspector",
   "versions",
-  "settings",
   "errors",
   "storage",
   "testing",
@@ -654,7 +642,6 @@ const ALLOWED_DOCUMENT_TYPES = new Set([
   "type",
   "primitive",
   "action",
-  "scenario-setup",
   "default-parameter",
   "default-filter",
   "converter",
@@ -670,7 +657,6 @@ const ALLOWED_DOCUMENT_TYPES = new Set([
   "page-template",
   "navigation",
   "project",
-  "settings",
 ]);
 
 /** documentType для duplicate_document (поддерживается в model/domain/domain-duplicate.ts). */
@@ -682,7 +668,6 @@ const DUPLICATE_ALLOWED_DOCUMENT_TYPES = new Set([
   "component-table",
   "view",
   "action",
-  "scenario-setup",
   "default-parameter",
   "default-filter",
   "converter",
@@ -888,14 +873,10 @@ export function executeOpenDocumentChoice(
   }
   if (!identity) return { ok: false, message: "Укажите identity." };
   try {
-    if (documentType === "settings") {
-      EndgeIDE.tabs.openSettingsProfile(identity);
-    } else {
-      EndgeIDE.tabs.openDocument(
-        identity,
-        documentType as DomainDocumentType,
-      );
-    }
+    EndgeIDE.tabs.openDocument(
+      identity,
+      documentType as DomainDocumentType,
+    );
     return { ok: true, message: "" };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : String(e) };
@@ -1134,11 +1115,7 @@ export async function applyFrontendRequest(
         continue;
       }
       try {
-        if (documentType === "settings") {
-          tabs.openSettingsProfile(identity);
-        } else {
-          tabs.openDocument(identity, documentType as DomainDocumentType);
-        }
+        tabs.openDocument(identity, documentType as DomainDocumentType);
         actionsExecuted++;
       } catch (e) {
         errors.push(

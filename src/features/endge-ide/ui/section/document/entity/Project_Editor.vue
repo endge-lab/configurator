@@ -7,7 +7,6 @@ import { computed, ref } from 'vue'
 import { useDomainStore } from '@endge/vue'
 
 import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -43,17 +42,6 @@ function normalizeRelationId(value: unknown): number | null {
   return Number.isFinite(id) ? id : null
 }
 
-const settingsOptions = computed(() => {
-  const list = domainStore.settings ?? []
-  return [
-    { value: SELECT_NONE, label: '- не выбран -' },
-    ...list.map((s: { id?: string | number; identity?: string; displayName?: string }) => ({
-      value: s?.id != null ? String(s.id) : '',
-      label: (s?.displayName ?? s?.identity ?? String(s?.id ?? '')).trim() || String(s?.id ?? ''),
-    })).filter((o: { value: string }) => o.value.length > 0),
-  ]
-})
-
 const navigationOptions = computed(() => {
   const list = domainStore.navigations ?? []
   return [
@@ -65,29 +53,14 @@ const navigationOptions = computed(() => {
   ]
 })
 
-function settingsIdForSelect(): string {
-  const v = editor.value?.settingsId
-  return v != null ? String(v) : SELECT_NONE
-}
-
 function navigationIdForSelect(): string {
   const v = editor.value?.navigationId
   return v != null ? String(v) : SELECT_NONE
 }
 
-function onSettingsSelect(value: string): void {
-  if (!editor.value) return
-  editor.value.settingsId = value === SELECT_NONE ? null : normalizeRelationId(value)
-}
-
 function onNavigationSelect(value: string): void {
   if (!editor.value) return
   editor.value.navigationId = value === SELECT_NONE ? null : normalizeRelationId(value)
-}
-
-function onSettingsDrop(id: string | number): void {
-  if (!editor.value) return
-  editor.value.settingsId = normalizeRelationId(id)
 }
 
 function onNavigationDrop(id: string | number): void {
@@ -162,32 +135,6 @@ async function save(): Promise<void> {
                       placeholder="0"
                       @update:model-value="(v) => editor && (editor.order = v === '' || v == null ? null : Number(v))"
                     />
-                  </div>
-                  <div class="space-y-2">
-                    <Label>Профиль настроек</Label>
-                    <DomainEntityDropTarget
-                      :accept-section-types="[DomainSectionType.Settings]"
-                      @update:model-value="onSettingsDrop"
-                    >
-                      <div class="flex items-center gap-1">
-                        <SearchableSelect
-                          :model-value="settingsIdForSelect()"
-                          :options="settingsOptions"
-                          placeholder="Выберите профиль настроек"
-                          trigger-class="flex-1 min-w-0 h-9"
-                          @update:model-value="onSettingsSelect"
-                        />
-                        <OpenEntityButton
-                          :entity-id="editor?.settingsId ?? null"
-                          :section-type="DomainSectionType.Settings"
-                        />
-                      </div>
-                    </DomainEntityDropTarget>
-                    <p class="text-xs text-muted-foreground">Настройки проекта (vars, auth, vocabs и т.д.).</p>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <Checkbox :checked="editor?.extendSettings ?? true" @update:checked="(v) => editor && (editor.extendSettings = !!v)" />
-                    <Label class="text-sm">Наследовать настройки</Label>
                   </div>
                 </div>
               </ScrollArea>

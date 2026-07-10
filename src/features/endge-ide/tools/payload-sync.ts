@@ -77,7 +77,6 @@ async function syncEntity<T>(opts: {
 const ROOT_FOLDER_IDENTITIES = {
   queries: 'root-queries',
   // components: 'root-components',
-  // scenarios: 'root-scenarios',
   // types: 'root-types',
   // actions: 'root-actions',
   parameters: 'root-parameters',
@@ -95,7 +94,6 @@ export async function syncDomainToPayload(): Promise<void> {
   const rootFolderIds = {
     queries: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.queries),
     // components: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.components),
-    // scenarios: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.scenarios),
     // types: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.types),
     // actions: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.actions),
     parameters: await getFolderIdByIdentity(ROOT_FOLDER_IDENTITIES.parameters),
@@ -139,26 +137,6 @@ export async function syncDomainToPayload(): Promise<void> {
   //       identity: id,
   //       displayName: name,
   //       schema: comp,
-  //       active: true,
-  //       author: 'system',
-  //     },
-  //   })
-  // }
-
-  // // Сценарии: полные данные в schema, folder = корневая папка
-  // for (const scenario of plain.scenarios ?? []) {
-  //   const id = scenario.id ?? scenario.identity
-  //   const name = scenario.name ?? id
-  //   if (!id) continue
-  //   await syncEntity({
-  //     collection: 'scenarios',
-  //     identityKey: 'identity',
-  //     identityValue: id,
-  //     rootFolderId: rootFolderIds.scenarios,
-  //     payloadDoc: {
-  //       identity: id,
-  //       displayName: name,
-  //       schema: scenario,
   //       active: true,
   //       author: 'system',
   //     },

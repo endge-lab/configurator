@@ -62,12 +62,10 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   tenants: DomainSectionType.Tenant,
   policies: DomainSectionType.Policy,
   styles: DomainSectionType.Style,
-  scenarios: DomainSectionType.Scenario,
   vocabs: DomainSectionType.Vocabs,
   navigations: DomainSectionType.Navigation,
   pageTemplates: DomainSectionType.PageTemplate,
   pages: DomainSectionType.Page,
-  settings: DomainSectionType.Settings,
   projects: DomainSectionType.Project,
   i18nBundles: DomainSectionType.I18nBundles,
   authProfiles: DomainSectionType.AuthProfile,
@@ -84,8 +82,6 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getQueryById?.(numId) : null) ?? domain.getQueryByIdentity?.(id) ?? domain.getQuery?.(id)
     case DomainSectionType.Component:
       return domain.getComponentByIdentity?.(id) ?? domain.getComponent?.(id)
-    case DomainSectionType.Scenario:
-      return (numId != null ? domain.getScenarioById?.(numId) : null) ?? domain.getScenario?.(id)
     case DomainSectionType.Parameters:
       return (numId != null ? domain.getParameterById?.(numId) : null) ?? domain.getParameterIdentity?.(id)
     case DomainSectionType.Filters:
@@ -123,8 +119,6 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getAuthProfileById?.(numId) : null) ?? domain.getAuthProfile?.(id)
     case DomainSectionType.Project:
       return (numId != null ? domain.getProjectById?.(numId) : null) ?? domain.getProject?.(id)
-    case DomainSectionType.Settings:
-      return (numId != null ? domain.getSettingById?.(numId) : null) ?? domain.getSettingByIdentity?.(id) ?? domain.getSetting?.(id)
     default:
       return null
   }
@@ -141,9 +135,6 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.Component:
       rem(domain.removeComponent?.bind(domain))
-      break
-    case DomainSectionType.Scenario:
-      rem(domain.removeScenario?.bind(domain))
       break
     case DomainSectionType.Parameters:
       rem(domain.removeParameter?.bind(domain))
@@ -199,9 +190,6 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.Project:
       rem(domain.removeProject?.bind(domain))
-      break
-    case DomainSectionType.Settings:
-      if (entity?.identity != null) domain.removeSettings?.(String(entity.identity))
       break
     default:
       break

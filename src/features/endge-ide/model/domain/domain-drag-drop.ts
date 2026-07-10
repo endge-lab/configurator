@@ -18,7 +18,6 @@ import {
   ParameterType,
   QueryType,
   RFolder,
-  ScriptType,
 } from '@endge/core'
 import { randomString } from '@endge/utils'
 
@@ -83,7 +82,6 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Component]: 'root-components',
-  [DomainSectionType.Scenario]: 'root-scenarios',
   [DomainSectionType.Action]: 'root-actions',
   [DomainSectionType.Parameters]: 'root-parameters',
   [DomainSectionType.Converter]: 'root-converters',
@@ -100,7 +98,6 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Vocabs]: 'root-vocabs',
   [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
   [DomainSectionType.AuthProfile]: 'root-auth-profiles',
-  [DomainSectionType.Settings]: 'root-settings',
   [DomainSectionType.Project]: 'root-projects',
 }
 
@@ -112,7 +109,6 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   QueryType.GraphQL,
   QueryType.Custom,
   'data-view',
-  ScriptType.ScenarioSetup,
   ParameterType.DefaultParameter,
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
@@ -155,8 +151,6 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
 export function canSoftDelete(sectionType: DomainSectionType, docType?: DomainDocumentType): boolean {
   if (docType)
     return SCHEMA_SOFT_DELETE_TYPES.has(docType) || CHANGE_FOLDER_TYPES.has(docType)
-  if (sectionType === DomainSectionType.Settings)
-    return false
   return true
 }
 
@@ -718,9 +712,6 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
     else
       byId(entityId, identity, (x: any) => Endge.domain.removeComponentById?.(x), x => Endge.domain.removeComponent(x))
   }
-  else if (sectionType === DomainSectionType.Scenario) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeScenarioById?.(x), x => Endge.domain.removeScenario(x))
-  }
   else if (sectionType === DomainSectionType.Query) {
     byId(entityId, identity, (x: any) => Endge.domain.removeQueryById?.(x), x => Endge.domain.removeQuery(x))
   }
@@ -806,8 +797,6 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getQueryById(numId) : null) ?? Endge.domain.getQuery(id)
   if (sectionType === DomainSectionType.DataView)
     return (numId != null ? (Endge.domain as any).getDataViewById?.(numId) : null) ?? (Endge.domain as any).getDataView?.(id)
-  if (sectionType === DomainSectionType.Scenario)
-    return (numId != null ? Endge.domain.getScenarioById(numId) : null) ?? Endge.domain.getScenario(id)
   if (sectionType === DomainSectionType.Parameters)
     return (numId != null ? Endge.domain.getParameterById(numId) : null) ?? Endge.domain.getParameterIdentity(id)
   if (sectionType === DomainSectionType.Filters)
@@ -861,8 +850,6 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Query
   if (((Endge.domain as any).getDataViews?.() ?? []).some(hasInBranch))
     return DomainSectionType.DataView
-  if (Endge.domain.getScenarios().some(hasInBranch))
-    return DomainSectionType.Scenario
   if (Endge.domain.getFilters().some(hasInBranch))
     return DomainSectionType.Filters
   if (Endge.domain.getParameters().some(hasInBranch))

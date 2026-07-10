@@ -141,26 +141,6 @@ function removeEnvVar(index: number): void {
   envVars.value.splice(index, 1)
 }
 
-function fillGeneralFromLegacySettings(): void {
-  const settings = (Endge.domain.getSetting('general') ?? Endge.domain.getSettings()[0] ?? null) as any
-  if (!settings) {
-    toast.error('Документ настроек не загружен')
-    return
-  }
-
-  envVars.value = Array.isArray(settings.vars)
-    ? normalizeEnvVars(settings.vars)
-    : []
-
-  const legacySse = normalizeLegacySSE(settings.sse ?? settings.sse_endpoint ?? settings.sseEndpoint)
-  sseDraft.value = legacySse
-  sseEndpoint.value = legacySse?.url ?? ''
-
-  toast.success('Данные из настроек перенесены в форму', {
-    description: 'Проверьте значения и сохраните рабочее пространство вручную.',
-  })
-}
-
 function updateDirection(locale: EndgeWorkspaceLocale, value: string): void {
   locale.direction = value === 'rtl' ? 'rtl' : 'ltr'
 }
@@ -210,28 +190,6 @@ function normalizeWorkspaceSSE(): EndgeWorkspaceSSEConfig | undefined {
     authMode: draft?.authMode ?? 'inherit',
     ...(draft?.authProfileIdentity ? { authProfileIdentity: draft.authProfileIdentity } : {}),
     ...(draft?.manualToken ? { manualToken: draft.manualToken } : {}),
-  }
-}
-
-function normalizeLegacySSE(input: unknown): EndgeWorkspaceSSEConfig | undefined {
-  if (typeof input === 'string') {
-    const url = input.trim()
-    return url ? { url, authMode: 'inherit' } : undefined
-  }
-  if (!input || typeof input !== 'object' || Array.isArray(input))
-    return undefined
-  const source = input as Record<string, unknown>
-  const url = String(source.url ?? source.endpoint ?? '').trim()
-  const authMode = String(source.authMode ?? '').trim()
-  const authProfileIdentity = String(source.authProfileIdentity ?? '').trim()
-  const manualToken = String(source.manualToken ?? '').trim()
-  return {
-    url,
-    authMode: authMode === 'profile' || authMode === 'manual' || authMode === 'none'
-      ? authMode
-      : 'inherit',
-    ...(authProfileIdentity ? { authProfileIdentity } : {}),
-    ...(manualToken ? { manualToken } : {}),
   }
 }
 
@@ -320,18 +278,10 @@ async function saveWorkspaceSettings(): Promise<void> {
 
           <TabsContent value="general" class="mt-4">
             <Card class="rounded-md">
-              <CardHeader class="flex flex-row items-center justify-between gap-3 pb-3">
+              <CardHeader class="pb-3">
                 <CardTitle class="text-base">
                   Общие
                 </CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  class="h-8"
-                  @click="fillGeneralFromLegacySettings"
-                >
-                  Заполнить из настроек
-                </Button>
               </CardHeader>
               <CardContent class="space-y-4">
                 <div class="space-y-2">

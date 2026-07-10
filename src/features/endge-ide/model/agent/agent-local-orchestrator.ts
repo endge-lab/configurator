@@ -75,7 +75,6 @@ const DUPLICATE_SUPPORTED_DOCUMENT_TYPES = new Set([
   "component-table",
   "view",
   "action",
-  "scenario-setup",
   "converter",
   "integration",
   "environment",
@@ -112,11 +111,6 @@ const WIDGET_ALIASES: Array<{
     widgetId: "project",
     patterns: [/\bпроект\b/i, /\bproject\b/i],
     summary: "Открываю виджет Проект.",
-  },
-  {
-    widgetId: "settings",
-    patterns: [/\bнастройк/i, /\bsettings?\b/i],
-    summary: "Открываю виджет Настройки.",
   },
   {
     widgetId: "errors",

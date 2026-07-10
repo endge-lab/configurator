@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -13,8 +12,8 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 const props = defineProps<{
   tabContext?: {
     document?: {
-      editor?: { identity: string; displayName: string; extendSettings: boolean; description?: string | null; slug?: string | null; order?: number | null }
-      previewModel?: { identity?: string; name?: string; displayName?: string; extendSettings?: boolean; description?: string | null; slug?: string | null; order?: number | null }
+      editor?: { identity: string; displayName: string; description?: string | null; slug?: string | null; order?: number | null }
+      previewModel?: { identity?: string; name?: string; displayName?: string; description?: string | null; slug?: string | null; order?: number | null }
       component?: unknown
     }
   }
@@ -76,13 +75,6 @@ async function save(): Promise<void> {
             placeholder="0"
             @update:model-value="(v) => editor && (editor.order = v === '' || v == null ? null : Number(v))"
           />
-        </div>
-        <div class="flex items-center gap-2">
-          <Checkbox
-            :checked="editor?.extendSettings ?? (model as { extendSettings?: boolean })?.extendSettings ?? true"
-            @update:checked="(v) => editor && (editor.extendSettings = !!v)"
-          />
-          <Label class="text-sm">Наследовать настройки</Label>
         </div>
       </div>
     </ScrollArea>

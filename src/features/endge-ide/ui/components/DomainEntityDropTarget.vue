@@ -13,14 +13,12 @@ const SECTION_LABELS: Record<string, string> = {
   [DomainSectionType.Action]: 'действие',
   [DomainSectionType.Filters]: 'фильтр',
   [DomainSectionType.Query]: 'запрос',
-  [DomainSectionType.Scenario]: 'сценарий',
   [DomainSectionType.Type]: 'тип',
   [DomainSectionType.View]: 'представление',
   [DomainSectionType.Integration]: 'интеграция',
   [DomainSectionType.Parameters]: 'параметр',
   [DomainSectionType.PageTemplate]: 'шаблон страницы',
   [DomainSectionType.Page]: 'страница',
-  [DomainSectionType.Settings]: 'профиль настроек',
   [DomainSectionType.Navigation]: 'навигация',
 }
 

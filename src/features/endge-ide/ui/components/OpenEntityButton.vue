@@ -31,8 +31,6 @@ const docType = computed((): DomainDocumentType | null => {
     return FilterType.DefaultFilter as DomainDocumentType
   if (props.sectionType === DomainSectionType.View)
     return 'view' as DomainDocumentType
-  if (props.sectionType === DomainSectionType.Settings)
-    return 'settings' as DomainDocumentType
   if (props.sectionType === DomainSectionType.Navigation)
     return 'navigation' as DomainDocumentType
   return null
@@ -40,8 +38,6 @@ const docType = computed((): DomainDocumentType | null => {
 
 const canOpen = computed(() => {
   if (props.entityId == null || props.entityId === '') return false
-  if (props.sectionType === DomainSectionType.Settings)
-    return !!Endge.domain.getSetting(props.entityId)
   if (props.sectionType === DomainSectionType.Navigation)
     return !!Endge.domain.getNavigation(props.entityId)
   return !!docType.value
@@ -49,10 +45,6 @@ const canOpen = computed(() => {
 
 function open(): void {
   if (props.entityId == null || props.entityId === '') return
-  if (props.sectionType === DomainSectionType.Settings) {
-    EndgeIDE.tabs.openSettingsProfile(props.entityId)
-    return
-  }
   if (props.sectionType === DomainSectionType.Navigation && docType.value) {
     EndgeIDE.tabs.openDocument(props.entityId, docType.value)
     return

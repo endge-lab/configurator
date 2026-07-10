@@ -1,6 +1,5 @@
 export enum WidgetKey {
   Market = 'market',
-  Settings = 'settings',
   Domain = 'domain',
   Debug = 'debug',
   Testing = 'testing',

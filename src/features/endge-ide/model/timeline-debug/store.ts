@@ -209,19 +209,19 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
     })
 
     const groups: TimelineDebugGroup[] = [
-      { id: 'scenario', displayName: 'Сценарии' },
+      { id: 'action', displayName: 'Действия' },
       { id: 'http', displayName: 'Запросы' },
       { id: 'sse', displayName: 'SSE' },
       { id: 'raph', displayName: 'Raph' },
       { id: 'ui', displayName: 'Компоненты' },
     ]
 
-    // сценарий: 200–300 ms
-    const tScenario0 = base + 100
-    const durScenario = rand(200, 300)
+    // действие: 200-300 ms
+    const tAction0 = base + 100
+    const durAction = rand(200, 300)
 
-    // http основной: 80–150 ms, внутри сценария
-    const tHttpMain0 = tScenario0 + rand(10, 40)
+    // http основной: 80-150 ms, внутри действия
+    const tHttpMain0 = tAction0 + rand(10, 40)
     const durHttpMain = rand(80, 150)
 
     // парсинг ответа: 20–40 ms, вложенно после http
@@ -237,7 +237,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
     const durRender = rand(12, 30)
 
     // второй http (метаданные) в параллели: 60–120 ms
-    const tHttpMeta0 = tScenario0 + rand(20, 60)
+    const tHttpMeta0 = tAction0 + rand(20, 60)
     const durHttpMeta = rand(60, 120)
 
     // несколько SSE событий 10–50 ms, в разные моменты окна
@@ -248,7 +248,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
     })
 
     const tasks: TimelineDebugTask[] = [
-      mkRange('t-scn-run', 'Scenario.run', 'scenario', tScenario0, durScenario),
+      mkRange('t-action-run', 'Action.run', 'action', tAction0, durAction),
 
       mkRange(
         't-http-main',

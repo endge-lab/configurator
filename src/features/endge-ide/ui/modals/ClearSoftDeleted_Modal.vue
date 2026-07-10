@@ -8,7 +8,6 @@ import {
   FilterType,
   ParameterType,
   QueryType,
-  ScriptType,
 } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -87,7 +86,6 @@ async function clearAll(): Promise<void> {
       QueryType.REST,
       QueryType.GraphQL,
       QueryType.Custom,
-      ScriptType.ScenarioSetup,
       ParameterType.DefaultParameter,
       FilterType.DefaultFilter as DomainDocumentType,
       'type',
@@ -101,7 +99,6 @@ async function clearAll(): Promise<void> {
       await Endge.schema.deleteDocumentHard(item.id, type)
       if (type === ComponentType.Table || type === ComponentType.DSL) Endge.domain.removeComponent(item.id)
       else if (type === COMPONENT_SFC_TYPE) (Endge.domain as any).removeComponentSFC?.(item.id)
-      else if (type === ScriptType.ScenarioSetup) Endge.domain.removeScenario(item.id)
       else if (type === QueryType.REST || type === QueryType.GraphQL || type === QueryType.Custom) Endge.domain.removeQuery(item.id)
       else if (type === ParameterType.DefaultParameter) Endge.domain.removeParameter(item.id)
       else if (type === (FilterType.DefaultFilter as DomainDocumentType)) Endge.domain.removeFilter(item.id)

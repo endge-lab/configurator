@@ -12,9 +12,7 @@ import Inspector_Widget from '@/features/endge-ide/ui/widgets/Inspector_Widget.v
 import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import SFCPreview_Widget from '@/features/endge-ide/ui/widgets/SFCPreview_Widget.vue'
-import Settings_Widget from '@/features/endge-ide/ui/widgets/Settings_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
-import Testing_Widget from '@/features/endge-ide/ui/widgets/Testing_Widget.vue'
 import Versions_Widget from '@/features/endge-ide/ui/widgets/Versions_Widget.vue'
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
 
@@ -61,24 +59,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     icon: 'GitBranch',
     content: 'component',
     defaultComponent: markRaw(Versions_Widget),
-    singleton: true,
-    defaultPosition: 'left',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 250,
-      maxWidth: 500,
-      minHeight: 300,
-      maxHeight: 600,
-      defaultWidth: 300,
-      defaultHeight: 400,
-    },
-  },
-  {
-    id: 'settings',
-    title: 'Настройки',
-    icon: 'Settings',
-    content: 'component',
-    defaultComponent: markRaw(Settings_Widget),
     singleton: true,
     defaultPosition: 'left',
     allowedPositions: ['left', 'right', 'floating'],
@@ -151,24 +131,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     icon: 'Database',
     content: 'component',
     defaultComponent: markRaw(Storage_Widget),
-    singleton: true,
-    defaultPosition: 'right',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 300,
-      maxWidth: 600,
-      minHeight: 400,
-      maxHeight: 800,
-      defaultWidth: 400,
-      defaultHeight: 600,
-    },
-  },
-  {
-    id: 'testing',
-    title: 'Тестирование',
-    icon: 'Microscope',
-    content: 'component',
-    defaultComponent: markRaw(Testing_Widget),
     singleton: true,
     defaultPosition: 'right',
     allowedPositions: ['left', 'right', 'floating'],

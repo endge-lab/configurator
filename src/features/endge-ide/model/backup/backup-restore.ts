@@ -7,7 +7,6 @@ import {
   FilterType,
   ParameterType,
   QueryType,
-  ScriptType,
 } from '@endge/core'
 
 import type {
@@ -48,12 +47,6 @@ interface ImportPlan {
 }
 
 const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
-  settings: {
-    getAll: domain => domain.getSettings() as unknown as ImportDoc[],
-    get: (domain, idOrIdentity) => domain.getSetting(idOrIdentity) as ImportDoc | null,
-    add: (domain, doc) => domain.addSettings(doc as never),
-    removeByIdentity: (domain, identity) => domain.removeSettingsByIdentity(identity),
-  },
   project: {
     getAll: domain => domain.getProjects() as unknown as ImportDoc[],
     get: (domain, idOrIdentity) => domain.getProject(idOrIdentity) as ImportDoc | null,
@@ -77,12 +70,6 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
     get: (domain, idOrIdentity) => domain.getComponent(idOrIdentity) as ImportDoc | null,
     add: (domain, doc) => domain.addComponent(doc as never),
     removeByIdentity: (domain, identity) => domain.removeComponentByIdentity(identity),
-  },
-  scenario: {
-    getAll: domain => domain.getScenarios() as unknown as ImportDoc[],
-    get: (domain, idOrIdentity) => domain.getScenario(idOrIdentity) as ImportDoc | null,
-    add: (domain, doc) => domain.addScenario(doc as never),
-    removeByIdentity: (domain, identity) => domain.removeScenarioByIdentity(identity),
   },
   action: {
     getAll: domain => domain.getActions() as unknown as ImportDoc[],
@@ -189,7 +176,6 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
 }
 
 const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
-  { documentType: 'settings', entityKind: 'settings', sectionTitle: 'Настройки', getAll: domain => ENTITY_ADAPTERS.settings.getAll(domain) },
   { documentType: 'environment', entityKind: 'environment', sectionTitle: 'Окружения', getAll: domain => ENTITY_ADAPTERS.environment.getAll(domain) },
   { documentType: 'tenant', entityKind: 'tenant', sectionTitle: 'Тенанты', getAll: domain => ENTITY_ADAPTERS.tenant.getAll(domain) },
   { documentType: 'policy', entityKind: 'policy', sectionTitle: 'Политики', getAll: domain => ENTITY_ADAPTERS.policy.getAll(domain) },
@@ -202,7 +188,6 @@ const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
   { documentType: ParameterType.DefaultParameter, entityKind: 'parameter', sectionTitle: 'Параметры', getAll: domain => ENTITY_ADAPTERS.parameter.getAll(domain) },
   { documentType: FilterType.DefaultFilter, entityKind: 'filter', sectionTitle: 'Фильтры', getAll: domain => ENTITY_ADAPTERS.filter.getAll(domain) },
   { documentType: QueryType.REST, entityKind: 'query', sectionTitle: 'Запросы', getAll: domain => ENTITY_ADAPTERS.query.getAll(domain) },
-  { documentType: ScriptType.ScenarioSetup, entityKind: 'scenario', sectionTitle: 'Сценарии', getAll: domain => ENTITY_ADAPTERS.scenario.getAll(domain) },
   { documentType: 'action', entityKind: 'action', sectionTitle: 'Действия', getAll: domain => ENTITY_ADAPTERS.action.getAll(domain) },
   { documentType: ComponentType.DSL, entityKind: 'component', sectionTitle: 'DSL компоненты', getAll: domain => ENTITY_ADAPTERS.component.getAll(domain).filter(doc => doc.type === ComponentType.DSL) },
   { documentType: ComponentType.Table, entityKind: 'component', sectionTitle: 'Табличные компоненты', getAll: domain => ENTITY_ADAPTERS.component.getAll(domain).filter(doc => doc.type === ComponentType.Table) },
@@ -421,7 +406,6 @@ function remapDocumentReferences(
   }
 
   if (plan.config.documentType === 'project') {
-    model.settingsId = resolveLinkedId('settings', model.settingsId, importedDomain, finalIdsByKindIdentity)
     model.navigationId = resolveLinkedId('navigation', model.navigationId, importedDomain, finalIdsByKindIdentity)
     model.allowedEnvironmentIds = Array.from(new Set(
       (Array.isArray(model.allowedEnvironmentIds) ? model.allowedEnvironmentIds : [])
