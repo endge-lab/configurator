@@ -15,7 +15,6 @@ import { useDomainStore } from '@endge/vue'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, Handle, MarkerType, Position, VueFlow } from '@vue-flow/core'
-import { useLocalStorage } from '@vueuse/core'
 import { ArrowRight, Bell, BellRing, ChevronsDownUp, ChevronsUpDown, CirclePlus, Clock3, Database, GitBranch, Play, RefreshCcw, Repeat, Split, StepForward, Trash2, Zap } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
@@ -31,6 +30,7 @@ import EndgeFlowBottomPanel from '@/features/endge-ide/ui/section/action/flow-ed
 import EndgeFlowContextTree from '@/features/endge-ide/ui/section/action/flow-editor/EndgeFlowContextTree.vue'
 import EndgeFlowPalette from '@/features/endge-ide/ui/section/action/flow-editor/EndgeFlowPalette.vue'
 import EndgeFlowPayloadDialog from '@/features/endge-ide/ui/section/action/flow-editor/EndgeFlowPayloadDialog.vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 type PlaygroundBlockKind = 'action' | 'control'
 type PlaygroundNodeRole = 'entry' | 'step'
@@ -130,9 +130,9 @@ const nodeContextMenu = ref<{ nodeId: string, x: number, y: number } | null>(nul
 const isCanvasDragOver = ref(false)
 const isHydrating = ref(false)
 const showGeneratedCode = ref(false)
-const isPaletteCollapsed = useLocalStorage<boolean>(paletteCollapsedStorageKey, false)
+const isPaletteCollapsed = useSafeLocalStorage<boolean>(paletteCollapsedStorageKey, false)
 const bottomPanelTab = ref<'block' | 'context'>('context')
-const bottomPanelHeight = useLocalStorage<number>(bottomPanelHeightStorageKey, 220)
+const bottomPanelHeight = useSafeLocalStorage<number>(bottomPanelHeightStorageKey, 220)
 const isBottomPanelResizing = ref(false)
 
 const { refObj: runtimeModule } = useSubscribableRef(Endge.runtime)

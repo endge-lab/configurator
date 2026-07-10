@@ -2,7 +2,6 @@
 import { ComponentType, Endge, RComponentDSL } from '@endge/core'
 import { ComponentType_DSL_Canvas, NovaGraphics, createNovaTableSchemaFromModel } from '@endge/nova'
 import type { NovaSchema, NovaTableModel } from '@endge/nova'
-import { useLocalStorage } from '@vueuse/core'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const squareCanvasRef = ref<HTMLCanvasElement | null>(null)
 const jsxCanvasRef = ref<HTMLCanvasElement | null>(null)
@@ -43,7 +43,7 @@ const tableContentWidth = ref(960)
 const tableContentHeight = ref(520)
 const activeTab = ref('square')
 
-const jsxScript = useLocalStorage('nova-playground-jsx-editor', `<Layout direction="column" gap="10" p="16" bg="#F8FAFC">
+const jsxScript = useSafeLocalStorage('nova-playground-jsx-editor', `<Layout direction="column" gap="10" p="16" bg="#F8FAFC">
   <Box bg="#E2E8F0" p="12" borderWidth="1" borderColor="#CBD5E1">
     <Text size="18" color="#0F172A">{{ $.title }}</Text>
     <Text size="13" color="#334155">{{ $.subtitle }}</Text>
@@ -76,7 +76,7 @@ const DSL_DEMO_OPTIONS: { id: string; label: string; jsx: string }[] = [
   { id: 'styles', label: 'Стили (p, b, r)', jsx: '<Box p="2" b="1 #ddd" r="8">\n  <Text>Отступы, рамка, скругление</Text>\n</Box>' },
 ]
 
-const gsonScript = useLocalStorage('nova-playground-gson-editor', `[
+const gsonScript = useSafeLocalStorage('nova-playground-gson-editor', `[
   {
     "type": "rect",
     "x": 24,
@@ -89,7 +89,7 @@ const gsonScript = useLocalStorage('nova-playground-gson-editor', `[
   }
 ]`)
 
-const tableScript = useLocalStorage('nova-playground-table-editor', `{
+const tableScript = useSafeLocalStorage('nova-playground-table-editor', `{
   "bounds": { "x": 16, "y": 16, "width": 720, "height": 380 },
   "showRowIndex": true,
   "headerHeight": 38,

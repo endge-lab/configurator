@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type * as Monaco from 'monaco-editor'
 
-import { Endge } from '@endge/core'
-import * as monaco from 'monaco-editor'
+import { DomainSectionType, Endge } from '@endge/core'
 import { RotateCcw } from 'lucide-vue-next'
+import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -27,17 +27,134 @@ const source = computed({
 })
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
+const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
+
+interface DomainDragPayloadItem {
+  id?: string | number
+  identity?: string
+  sectionType?: string
+  docType?: string
+}
 
 /** Сбрасывает source к базовому шаблону RQuery v1. */
 function resetToDefaultSource(): void {
   source.value = Endge.source.createDefault('query')
 }
 
+function parseDomainDragPayload(event: DragEvent): DomainDragPayloadItem[] {
+  let raw: string | null = null
+  if (event.dataTransfer?.types.includes(DOMAIN_ENTITY_MIME)) {
+    raw = event.dataTransfer.getData(DOMAIN_ENTITY_MIME)
+  }
+  if (!raw) {
+    raw = event.dataTransfer?.getData('text/plain') ?? null
+  }
+  if (!raw) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  }
+  catch {
+    return []
+  }
+}
+
+function resolveAuthProfileIdentity(item: DomainDragPayloadItem): string {
+  const identity = String(item.identity ?? '').trim()
+  if (identity) {
+    return identity
+  }
+
+  const id = String(item.id ?? '').trim()
+  if (!id) {
+    return ''
+  }
+
+  const profile = Endge.domain.getAuthProfiles()
+    .find(profile => String(profile.id) === id || profile.identity === id)
+  return profile?.identity ?? ''
+}
+
+function toSourceStringLiteral(value: string): string {
+  return `'${value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, '\\u0027')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')}'`
+}
+
+function getDropPosition(event: DragEvent): Monaco.Position | null {
+  const target = editor?.getTargetAtClientPoint(event.clientX, event.clientY)
+  return target?.position ?? editor?.getPosition() ?? null
+}
+
+function insertAtPosition(value: string, position: Monaco.Position): void {
+  if (!editor) {
+    return
+  }
+
+  const range = new monaco.Range(
+    position.lineNumber,
+    position.column,
+    position.lineNumber,
+    position.column,
+  )
+
+  editor.executeEdits('endge-auth-profile-drop', [{ range, text: value, forceMoveMarkers: true }])
+  editor.setPosition({
+    lineNumber: position.lineNumber,
+    column: position.column + value.length,
+  })
+  editor.focus()
+}
+
+function readDraggedAuthProfileIdentity(event: DragEvent): string {
+  const payload = parseDomainDragPayload(event)
+  const authProfile = payload.find(item =>
+    item.sectionType === DomainSectionType.AuthProfile
+    || item.docType === 'auth-profile',
+  )
+
+  return authProfile ? resolveAuthProfileIdentity(authProfile) : ''
+}
+
+function onEditorDragOver(event: DragEvent): void {
+  if (!readDraggedAuthProfileIdentity(event)) {
+    return
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function onEditorDrop(event: DragEvent): void {
+  const identity = readDraggedAuthProfileIdentity(event)
+  if (!identity) {
+    return
+  }
+
+  const position = getDropPosition(event)
+  if (!position) {
+    return
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+  insertAtPosition(toSourceStringLiteral(identity), position)
+}
+
 /** Обновляет Monaco markers по diagnostics source language strategy. */
 function updateMarkers(): void {
   const model = editor?.getModel()
-  if (!model)
+  if (!model) {
     return
+  }
 
   const diagnostics = readDiagnostics(model.getValue())
   diagnosticsCount.value = diagnostics.length
@@ -146,8 +263,9 @@ function offsetRangeToMarkerRange(
 
 onMounted(() => {
   const languageId = registerQuerySourceLanguage(monaco)
-  if (!container.value)
+  if (!container.value) {
     return
+  }
 
   editor = monaco.editor.create(container.value, {
     value: source.value,
@@ -178,12 +296,15 @@ onMounted(() => {
     updateMarkers()
   })
 
+  container.value.addEventListener('dragover', onEditorDragOver, true)
+  container.value.addEventListener('drop', onEditorDrop, true)
+
   updateMarkers()
 })
 
 watch(
   () => props.modelValue,
-  value => {
+  (value) => {
     if (editor && editor.getValue() !== value) {
       editor.setValue(value)
       updateMarkers()
@@ -192,9 +313,13 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  container.value?.removeEventListener('dragover', onEditorDragOver, true)
+  container.value?.removeEventListener('drop', onEditorDrop, true)
+
   const model = editor?.getModel()
-  if (model)
+  if (model) {
     monaco.editor.setModelMarkers(model, 'endge-query-source', [])
+  }
 
   editor?.dispose()
   editor = null

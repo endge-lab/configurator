@@ -1,7 +1,6 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup lang="ts">
 import { compileComponentSFC } from '@endge/core'
-import { useLocalStorage } from '@vueuse/core'
 import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const SPLIT_MIN = 0.22
 const SPLIT_MAX = 0.68
@@ -200,9 +200,9 @@ const LEGACY_DEMO_OPTIONS: SFCDemoOption[] = [
   },
 ]
 
-const source = useLocalStorage('sfc-playground-source', DEFAULT_SOURCE)
-const contextJson = useLocalStorage('sfc-playground-context', DEFAULT_CONTEXT)
-const splitRatio = useLocalStorage('sfc-playground-split', SPLIT_DEFAULT)
+const source = useSafeLocalStorage('sfc-playground-source', DEFAULT_SOURCE)
+const contextJson = useSafeLocalStorage('sfc-playground-context', DEFAULT_CONTEXT)
+const splitRatio = useSafeLocalStorage('sfc-playground-split', SPLIT_DEFAULT)
 const selectedDemoId = ref('')
 const activeTab = ref('preview')
 const splitContainerRef = ref<HTMLElement | null>(null)

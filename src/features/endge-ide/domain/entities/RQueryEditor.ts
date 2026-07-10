@@ -99,7 +99,7 @@ export class RQueryEditor {
   /** Патчит auth mode как минимальный auth object. */
   patchAuthMode(value: 'inherit' | 'profile' | 'manual' | 'none'): void {
     const next = value === 'profile'
-      ? { mode: value, authProfileIdentity: this.authProfileIdentity }
+      ? { mode: value, profile: this.authProfileIdentity }
       : { mode: value }
     this.patchSource('request.auth', next)
   }
@@ -108,7 +108,7 @@ export class RQueryEditor {
     this.authProfileIdentity = value
     this.patchSource('request.auth', {
       mode: 'profile',
-      authProfileIdentity: value,
+      profile: value,
     })
   }
 
@@ -148,7 +148,7 @@ export class RQueryEditor {
     this.method = document.request?.method ?? 'POST'
     this.headersText = stringifyEditorJson(document.request?.headers ?? {})
     this.authMode = normalizeAuthMode(document.request?.auth?.mode)
-    this.authProfileIdentity = String(document.request?.auth?.authProfileIdentity ?? '')
+    this.authProfileIdentity = String(document.request?.auth?.profile ?? document.request?.auth?.authProfileIdentity ?? '')
     this.subField = legacyResponse?.subField ?? readRawResponsePath(document.outputs)
     this.returnExpression = printFieldExpression(legacyResponse?.return)
     this.mockEnabled = document.mock?.enabled ?? false

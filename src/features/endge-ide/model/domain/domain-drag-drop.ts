@@ -28,6 +28,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 /** Элемент payload при перетаскивании сущности. */
 export interface DragPayloadItem {
   id: string
+  identity?: string
   sectionType: DomainSectionType
   docType: DomainDocumentType
   rootId: string

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ComponentType, Endge, RComponentDSL } from '@endge/core'
 import { ComponentRenderer } from '@endge/vue'
-import { useLocalStorage } from '@vueuse/core'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +16,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const SPLIT_MIN = 0.15
 const SPLIT_MAX = 0.7
@@ -46,9 +46,9 @@ function createPreviewModel(): RComponentDSL {
 const version = ref(0)
 const previewModel = ref<RComponentDSL>(createPreviewModel())
 const isPreviewReady = ref(false)
-const jsxScript = useLocalStorage('dsl-playground-jsx', '<Text>Hello World</Text>')
+const jsxScript = useSafeLocalStorage('dsl-playground-jsx', '<Text>Hello World</Text>')
 const selectedDemoId = ref<string>('')
-const splitRatio = useLocalStorage('dsl-playground-split', SPLIT_DEFAULT)
+const splitRatio = useSafeLocalStorage('dsl-playground-split', SPLIT_DEFAULT)
 const splitContainerRef = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 

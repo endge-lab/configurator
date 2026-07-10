@@ -280,7 +280,7 @@ async function generate(): Promise<void> {
 function createGeneratedQuerySource(input: { filterIdentity: string | null; mockItems: unknown[] }): string {
   const filterItems = input.filterIdentity
     ? `[
-      filter.reference(${JSON.stringify(input.filterIdentity)}),
+      filter(${JSON.stringify(input.filterIdentity)}),
     ]`
     : '[]'
 

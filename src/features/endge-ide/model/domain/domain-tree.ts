@@ -35,6 +35,7 @@ export interface FsFolderNode extends FsNodeBase {
 export interface FsFileNode extends FsNodeBase {
   type: 'file'
   id: string
+  identity?: string
   docType: DomainDocumentType
   sectionType: DomainSectionType
   isSystem?: boolean
@@ -585,9 +586,11 @@ function buildFolderNode(
           || (itemSectionType === DomainSectionType.Type && (c as { isPrimitive?: boolean }).isPrimitive === true)
       const useIdentityForId = itemSectionType === DomainSectionType.Project
       const id = useIdentityForId ? String((c as any).identity ?? c.id ?? '') : String(c.id ?? (c as any).identity ?? c.name ?? '')
+      const identity = String((c as any).identity ?? '')
       const name = (c as any).displayName ?? c.name ?? id
       const fileNode: FsFileNode = {
         id,
+        ...(identity ? { identity } : {}),
         name,
         type: 'file',
         docType: isPrimitiveType ? ('primitive' as DomainDocumentType) : normalizeDocType(itemSectionType, c.type)!,

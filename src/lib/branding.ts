@@ -1,10 +1,11 @@
 import type { Plugin, Ref } from 'vue'
 
-import { useFavicon, useLocalStorage } from '@vueuse/core'
+import { useFavicon } from '@vueuse/core'
 import { computed, inject, watch } from 'vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const envBranding = import.meta.env.VITE_BRANDING ?? 'default'
-const brandingRef = useLocalStorage('app:branding', envBranding)
+const brandingRef = useSafeLocalStorage('app:branding', envBranding)
 
 // HELPERS ============================================================================================================
 

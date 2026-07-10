@@ -2,11 +2,12 @@
 import type { EndgeFlowDefinition } from '@endge/core'
 
 import { RField } from '@endge/core'
-import { StorageSerializers, useLocalStorage } from '@vueuse/core'
+import { StorageSerializers } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 interface PlaygroundPersistedState {
   identity: string
@@ -91,7 +92,7 @@ function toPersistedState(editor: RActionEditor): PlaygroundPersistedState {
   }
 }
 
-const persistedPlayground = useLocalStorage<PlaygroundPersistedState | null>(
+const persistedPlayground = useSafeLocalStorage<PlaygroundPersistedState | null>(
   'endge-action-playground',
   null,
   {

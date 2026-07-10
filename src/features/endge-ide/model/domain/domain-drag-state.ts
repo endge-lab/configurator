@@ -6,6 +6,7 @@ export interface DomainDragHierarchyNode {
   depth: number
   type: 'folder' | 'file'
   id: string
+  identity?: string
   name: string
   sectionType?: string
   docType?: string
@@ -16,6 +17,7 @@ export interface DomainDragHierarchyNode {
 /** Дерево одной перетаскиваемой сущности: путь и полная иерархия от корня */
 export interface DomainDragTreeItem {
   id: string
+  identity?: string
   name: string
   sectionType: string
   docType: string

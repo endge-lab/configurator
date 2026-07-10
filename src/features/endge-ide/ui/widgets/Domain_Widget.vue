@@ -6,7 +6,6 @@ import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
-import { useLocalStorage } from '@vueuse/core'
 import {
   ArrowLeftRight,
   Building2,
@@ -78,6 +77,7 @@ import {
   withoutDeleted,
   withoutDeletedAndInherited,
 } from '@/features/endge-ide/model/domain/domain-tree'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -100,7 +100,7 @@ const domainStore = useDomainStore()
 const softDeletedFolderId = computed(() => Endge.domain.getFolderByIdentity('soft-deleted')?.id ?? null)
 
 // ---------- expanded state (persisted) ----------
-const expandedKeys = useLocalStorage<Record<string, boolean>>(
+const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
   'endge-editor-domain-treeview-expanded',
   {},
 )
@@ -245,6 +245,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
   e.dataTransfer.effectAllowed = 'copyMove'
   const payload: DragPayloadItem[] = sourceItems.map(it => ({
     id: (it.node as FsFileNode).id,
+    identity: (it.node as FsFileNode).identity,
     sectionType: (it.node as FsFileNode).sectionType,
     docType: (it.node as FsFileNode).docType,
     rootId: it.rootId,
@@ -282,6 +283,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
           depth: f.depth,
           type: 'file' as const,
           id: file.id,
+          identity: file.identity,
           name: file.name ?? file.id,
           sectionType: file.sectionType,
           docType: String(file.docType ?? ''),
@@ -289,6 +291,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
       })
     return {
       id: n.id,
+      identity: n.identity,
       name: n.name ?? n.id,
       sectionType: n.sectionType,
       docType: String(n.docType ?? ''),

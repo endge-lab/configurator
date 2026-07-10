@@ -4,7 +4,6 @@ import type {
   UIEditorLibraryItem,
 } from '@/features/endge-admin-ui-editor/types'
 
-import { useLocalStorage } from '@vueuse/core'
 import {
   Blocks,
   ChevronDown,
@@ -31,13 +30,14 @@ import {
   buildUIEditorComponentLibraryGroups,
   buildUIEditorLibraryGroups,
 } from '@/features/endge-admin-ui-editor/entities/ui-editor-library-catalog'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY = 'endge-admin-ui-editor-library-expanded-groups'
 const EXPAND_ALL_LABEL = 'Развернуть все блоки'
 const COLLAPSE_ALL_LABEL = 'Свернуть все блоки'
 
 const query = ref('')
-const expandedGroupKeys = useLocalStorage<Record<string, boolean>>(
+const expandedGroupKeys = useSafeLocalStorage<Record<string, boolean>>(
   UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY,
   {},
 )

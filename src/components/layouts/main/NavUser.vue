@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useUI } from '@endge/vue'
-import { useLocalStorage } from '@vueuse/core'
 import {
   Languages,
   SunMoon,
@@ -32,6 +31,7 @@ import {
 } from '@/components/ui/sidebar'
 import Zoom_Button from '@/features/endge-configurator/ui/common/buttons/Zoom_Button.vue'
 import { availableLocales } from '@/i18n'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const props = defineProps<{
   user?: {
@@ -45,7 +45,7 @@ const { isMobile } = useSidebar()
 const { t } = useI18n()
 const ui = useUI()
 
-const dateFormat = useLocalStorage<'human' | 'robot'>('app:date-format', 'human')
+const dateFormat = useSafeLocalStorage<'human' | 'robot'>('app:date-format', 'human')
 watch(dateFormat, () => {
   toast.info(t('nav.user.dateFormat.changed'))
 })

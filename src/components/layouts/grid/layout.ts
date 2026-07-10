@@ -12,7 +12,7 @@ import type {
 import type { WidgetChannelMessage, WidgetPopupState } from '@/components/layouts/grid/widget-channel.ts'
 import type { ComputedRef, Ref } from 'vue'
 
-import { useLocalStorage, useTitle } from '@vueuse/core'
+import { useTitle } from '@vueuse/core'
 import { computed, isRef, onBeforeUnmount, reactive, toValue, watch } from 'vue'
 
 import {
@@ -24,6 +24,7 @@ import {
   unregisterPopupWindow,
 } from '@/components/layouts/grid/widget-channel.ts'
 import { useBranding } from '@/lib/branding.ts'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const STORAGE_KEY = 'app:grid-layout-state'
 
@@ -112,7 +113,7 @@ const defaultPersistedState: PersistedState = {
   definitionPositions: {},
 }
 
-const persistedState = useLocalStorage<PersistedState>(STORAGE_KEY, defaultPersistedState, {
+const persistedState = useSafeLocalStorage<PersistedState>(STORAGE_KEY, defaultPersistedState, {
   writeDefaults: false,
   mergeDefaults: (storageValue, defaults) => {
     const s = storageValue ?? {}
