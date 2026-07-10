@@ -2,14 +2,13 @@
 import type * as Monaco from 'monaco-editor'
 
 import { Endge } from '@endge/core'
-import * as monaco from 'monaco-editor'
 import { ChevronDown, ChevronUp, FileJson, RotateCcw } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { registerDataViewSourceLanguage } from '@/features/endge-ide/tools/source-editor/register-data-view-source-language'
+import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{
   modelValue: string
@@ -21,7 +20,6 @@ const emit = defineEmits<{
 }>()
 
 const container = ref<HTMLDivElement | null>(null)
-const diagnosticsCount = ref(0)
 const inlinePreviewOutput = ref<string | null>(null)
 const inlinePreviewCollapsed = ref(false)
 const source = computed({
@@ -31,91 +29,28 @@ const source = computed({
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let previewTimer: ReturnType<typeof setTimeout> | null = null
+const monacoAdapter = useEndgeSourceMonaco({
+  container,
+  sourceKind: 'data-view',
+  value: () => source.value,
+  onChange: (value) => {
+    source.value = value
+    scheduleInlinePreview()
+  },
+  owner: 'endge-data-view-source',
+  onReady: (instance) => {
+    editor = instance
+    scheduleInlinePreview()
+  },
+})
+const diagnosticsCount = monacoAdapter.diagnosticsCount
 
 /** Сбрасывает source к базовому шаблону RDataView v1. */
 function resetToDefaultSource(): void {
-  source.value = Endge.source.createDefault('data-view')
+  const value = Endge.source.createDefault('data-view')
+  source.value = value
+  monacoAdapter.setValue(value)
   scheduleInlinePreview()
-}
-
-/** Обновляет Monaco markers по diagnostics source language strategy. */
-function updateMarkers(): void {
-  const model = editor?.getModel()
-  if (!model)
-    return
-
-  const validation = Endge.source.validate('data-view', model.getValue())
-  const diagnostics = validation.diagnostics as Array<{
-    severity?: string
-    message?: string
-    code?: string
-    start?: number
-    end?: number
-  }>
-  diagnosticsCount.value = diagnostics.length
-
-  monaco.editor.setModelMarkers(
-    model,
-    'endge-data-view-source',
-    diagnostics.map(diagnostic => toEditorMarker(model, diagnostic)),
-  )
-}
-
-/** Конвертирует compiler diagnostic offset в Monaco marker. */
-function toEditorMarker(
-  model: Monaco.editor.ITextModel,
-  diagnostic: {
-    severity?: string
-    message?: string
-    code?: string
-    start?: number
-    end?: number
-  },
-): Monaco.editor.IMarkerData {
-  const fallbackRange = {
-    startLineNumber: 1,
-    startColumn: 1,
-    endLineNumber: 1,
-    endColumn: Math.max(2, model.getLineMaxColumn(1)),
-  }
-  const startOffset = typeof diagnostic.start === 'number' ? diagnostic.start : null
-  const endOffset = typeof diagnostic.end === 'number' ? diagnostic.end : null
-  const modelLength = model.getValueLength()
-  const normalizedStart = startOffset == null ? null : Math.max(0, Math.min(startOffset, modelLength))
-  const normalizedEnd = normalizedStart == null ? null : Math.max(normalizedStart, Math.min(endOffset ?? normalizedStart + 1, modelLength))
-  const range = normalizedStart == null || normalizedEnd == null
-    ? fallbackRange
-    : offsetRangeToMarkerRange(model, normalizedStart, normalizedEnd)
-
-  return {
-    severity: diagnostic.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
-    message: diagnostic.message ?? diagnostic.code ?? 'DataView source diagnostic',
-    ...range,
-  }
-}
-
-/** Строит непустой Monaco range из абсолютных offsets. */
-function offsetRangeToMarkerRange(
-  model: Monaco.editor.ITextModel,
-  startOffset: number,
-  endOffset: number,
-): Pick<Monaco.editor.IMarkerData, 'startLineNumber' | 'startColumn' | 'endLineNumber' | 'endColumn'> {
-  const startPosition = model.getPositionAt(startOffset)
-  const endPosition = model.getPositionAt(endOffset)
-  if (startPosition.lineNumber === endPosition.lineNumber && startPosition.column === endPosition.column) {
-    return {
-      startLineNumber: startPosition.lineNumber,
-      startColumn: startPosition.column,
-      endLineNumber: endPosition.lineNumber,
-      endColumn: endPosition.column + 1,
-    }
-  }
-  return {
-    startLineNumber: startPosition.lineNumber,
-    startColumn: startPosition.column,
-    endLineNumber: endPosition.lineNumber,
-    endColumn: endPosition.column,
-  }
 }
 
 /** Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ. */
@@ -151,45 +86,11 @@ function updateInlinePreview(): void {
   }
 }
 
-onMounted(() => {
-  const languageId = registerDataViewSourceLanguage(monaco)
-  if (!container.value)
-    return
-
-  editor = monaco.editor.create(container.value, {
-    value: source.value,
-    language: languageId,
-    theme: 'vs-dark',
-    minimap: { enabled: false },
-    automaticLayout: true,
-    fontSize: 14,
-    tabSize: 2,
-    insertSpaces: true,
-    scrollBeyondLastLine: true,
-    padding: { bottom: 10 },
-    wordWrap: 'on',
-    formatOnPaste: true,
-    formatOnType: true,
-  })
-
-  editor.onDidChangeModelContent(() => {
-    source.value = editor?.getValue() ?? ''
-    updateMarkers()
-    scheduleInlinePreview()
-  })
-
-  updateMarkers()
-  scheduleInlinePreview()
-})
-
 watch(
   () => props.modelValue,
   value => {
-    if (editor && editor.getValue() !== value) {
-      editor.setValue(value)
-      updateMarkers()
-      scheduleInlinePreview()
-    }
+    monacoAdapter.setValue(value)
+    scheduleInlinePreview()
   },
 )
 
@@ -201,10 +102,6 @@ watch(
 onBeforeUnmount(() => {
   if (previewTimer)
     clearTimeout(previewTimer)
-  const model = editor?.getModel()
-  if (model)
-    monaco.editor.setModelMarkers(model, 'endge-data-view-source', [])
-  editor?.dispose()
   editor = null
 })
 </script>

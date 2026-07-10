@@ -227,7 +227,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                 }"
                 @click="openWorkspaceSettings"
               >
-                <component :is="getIconComponent('Globe2')" class="size-4" />
+                <component :is="getIconComponent('Orbit')" class="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">

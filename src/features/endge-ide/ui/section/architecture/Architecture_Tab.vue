@@ -363,7 +363,8 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('comm-bus', 'Endge.events', 'Transport-шина для кодовых подписчиков', 1680, 570, 'runtime'),
 
       createFlowNode('comm-project', 'Project / Page', 'Lifecyle верхнего уровня проекта и страниц', 120, 830, 'source'),
-      createFlowNode('comm-view', 'View', 'Композиция runtime-области и локальных реакций', 640, 830, 'source'),
+      createFlowNode('comm-view', 'View', 'Legacy/presentation entity', 640, 830, 'source'),
+      createFlowNode('comm-composition', 'Composition', 'Runtime graph и orchestration без rendering', 1160, 830, 'source'),
       createFlowNode('comm-component', 'Component', 'UI interactions, mounted, click, input', 1160, 830, 'source'),
       createFlowNode('comm-query', 'Query / Action', 'Данные, загрузка, шаги исполнения и эффекты', 1680, 830, 'source'),
     ],
@@ -468,7 +469,7 @@ const architectureSections: ArchitectureFlowSection[] = [
     text: [
       'Проект является верхнеуровневым контейнером: в нём живут страницы, окружения, навигация, стили и общие поведенческие правила.',
       'Страница обычно собирается из нескольких источников: она может быть связана с шаблоном страницы, использовать навигацию и стили, а внутри содержать view как рабочую runtime-область.',
-      'View — это точка композиции данных и интерфейса: он соединяет компонент, запрос и, при необходимости, фильтр. Поверх всей этой структуры работают contracts, bindings, actions и шина событий.',
+      'View остаётся legacy/presentation entity. Новый runtime-граф Filter → Query → Component описывает Composition: orchestration без layout и rendering. Поверх обеих структур работают contracts, bindings, actions и шина событий.',
     ],
     nodes: [
       createFlowNode('behavior-contracts', 'Контракты', 'Какие события допустимы у сущностей', 220, 40, 'config'),
@@ -481,7 +482,8 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('navigation', 'Навигация', 'Связи переходов и меню проекта', 700, 430, 'config'),
       createFlowNode('styles', 'Стили', 'Токены, наборы стилей и оформление', 1160, 430, 'config'),
       createFlowNode('page', 'Страница', 'Конкретная точка входа и lifecycle страницы', 900, 650, 'source'),
-      createFlowNode('view', 'View', 'Рабочая runtime-область страницы', 900, 900, 'core'),
+      createFlowNode('view', 'View', 'Legacy/presentation entity страницы', 900, 900, 'core'),
+      createFlowNode('composition', 'Composition', 'Runtime graph и orchestration', 1460, 900, 'core'),
       createFlowNode('component', 'Компонент', 'UI и визуальная композиция', 340, 1130, 'source'),
       createFlowNode('query', 'Запрос', 'Источник данных для view', 900, 1130, 'source'),
       createFlowNode('filter', 'Фильтр', 'Предобработка и ограничения данных', 1460, 1130, 'source'),

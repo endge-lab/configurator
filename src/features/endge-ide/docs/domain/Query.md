@@ -10,18 +10,26 @@
 defineQuery({
   kind: 'rest',
 
+  props: defineProps({
+    filterPayload: field('Object').optional(),
+    rowsStoreKey: field('String').default('queries.flights.rows'),
+  }),
+
   request: {
     endpoint: '{ENDPOINT_AODB}',
     path: '/flights',
     method: 'GET',
     headers: {},
     auth: { mode: 'inherit' },
+    body: body(({ prop }) =>
+      merge({}, prop('filterPayload')),
+    ),
   },
 
   outputs: {
     raw: output()
       .from(response('items'))
-      .toStore(),
+      .toStore(prop('rowsStoreKey')),
 
     rows: output()
       .from('raw')
@@ -39,11 +47,12 @@ defineQuery({
       .toStore(),
   },
 
-  params: {},
-  filters: { mode: 'merge', items: [] },
   mock: { enabled: false, data: null },
 })
 ```
+
+`source` — единственный authoring-контракт Query. Старые top-level `params` и
+`filters` не поддерживаются: compiler вернет ошибку, а runtime их не читает.
 
 ## Секции
 
@@ -79,6 +88,26 @@ auth: {
   profile: 'keycloak-dev',
 }
 ```
+
+### `props` и `request.body`
+
+`props` — входы runtime, а не неявный HTTP payload. В HTTP-запрос попадают
+только значения, которые явно прочитаны в `request.body`.
+
+```ts
+props: defineProps({
+  filterPayload: field('Object').optional(),
+}),
+
+request: {
+  // ...
+  body: body(({ prop }) => merge({}, prop('filterPayload'))),
+}
+```
+
+Если `body` не задан, Query отправляет пустой object payload `{}`. Поэтому
+технические props, например ключи `.toStore(prop('rowsStoreKey'))`, никогда не
+попадут в HTTP body сами по себе.
 
 ### `outputs`
 

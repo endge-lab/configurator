@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, DocumentFactory, DomainSectionType, Endge, QueryType } from '@endge/core'
+import { ComponentType, DocumentFactory, DomainSectionType, Endge, FilterType, QueryType } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -30,6 +30,8 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
   { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
   { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
+  { type: 'composition' as DomainDocumentType, label: 'Композиция', section: DomainSectionType.Composition },
+  { type: FilterType.DefaultFilter, label: 'Фильтр', section: DomainSectionType.Filters },
   { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
   { type: 'view' as DomainDocumentType, label: 'Вид', section: DomainSectionType.View },
@@ -49,6 +51,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
+  [DomainSectionType.Composition]: 'root-compositions',
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
@@ -75,6 +78,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Component]: 'components',
   [DomainSectionType.Query]: 'queries',
   [DomainSectionType.DataView]: 'data-views',
+  [DomainSectionType.Composition]: 'compositions',
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
   [DomainSectionType.Converter]: 'converters',
@@ -133,6 +137,8 @@ const showFolderSelect = computed(() => {
   return s === DomainSectionType.Component
     || s === DomainSectionType.Query
     || s === DomainSectionType.DataView
+    || s === DomainSectionType.Composition
+    || s === DomainSectionType.Filters
     || s === DomainSectionType.Action
     || s === DomainSectionType.Integration
     || s === DomainSectionType.View
@@ -259,7 +265,7 @@ function buildPayloadTemplate(): Record<string, unknown> {
       ...base,
       type: QueryType.REST,
       source: Endge.source.createDefault('query'),
-      sourceVersion: 1,
+      sourceVersion: 2,
       meta: {},
       inherited: false,
     }
@@ -269,6 +275,28 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       source: Endge.source.createDefault('data-view'),
+      sourceVersion: 1,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === 'composition') {
+    return {
+      ...base,
+      description: null,
+      source: Endge.source.createDefault('composition'),
+      sourceVersion: 1,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === FilterType.DefaultFilter) {
+    return {
+      ...base,
+      fields: [],
+      source: Endge.source.createDefault('filter'),
       sourceVersion: 1,
       meta: {},
       inherited: false,

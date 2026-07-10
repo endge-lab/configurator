@@ -89,6 +89,12 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
     add: (domain, doc) => domain.addFilter(doc as never),
     removeByIdentity: (domain, identity) => domain.removeFilterByIdentity(identity),
   },
+  composition: {
+    getAll: domain => domain.getCompositions() as unknown as ImportDoc[],
+    get: (domain, idOrIdentity) => domain.getComposition(idOrIdentity) as ImportDoc | null,
+    add: (domain, doc) => domain.addComposition(doc as never),
+    removeByIdentity: (domain, identity) => domain.removeCompositionByIdentity(identity),
+  },
   converter: {
     getAll: domain => domain.getConverters() as unknown as ImportDoc[],
     get: (domain, idOrIdentity) => domain.getConverter(idOrIdentity) as ImportDoc | null,
@@ -187,6 +193,7 @@ const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
   { documentType: 'integration', entityKind: 'integration', sectionTitle: 'Интеграции', getAll: domain => ENTITY_ADAPTERS.integration.getAll(domain) },
   { documentType: ParameterType.DefaultParameter, entityKind: 'parameter', sectionTitle: 'Параметры', getAll: domain => ENTITY_ADAPTERS.parameter.getAll(domain) },
   { documentType: FilterType.DefaultFilter, entityKind: 'filter', sectionTitle: 'Фильтры', getAll: domain => ENTITY_ADAPTERS.filter.getAll(domain) },
+  { documentType: 'composition', entityKind: 'composition', sectionTitle: 'Композиции', getAll: domain => ENTITY_ADAPTERS.composition.getAll(domain) },
   { documentType: QueryType.REST, entityKind: 'query', sectionTitle: 'Запросы', getAll: domain => ENTITY_ADAPTERS.query.getAll(domain) },
   { documentType: 'action', entityKind: 'action', sectionTitle: 'Действия', getAll: domain => ENTITY_ADAPTERS.action.getAll(domain) },
   { documentType: ComponentType.DSL, entityKind: 'component', sectionTitle: 'DSL компоненты', getAll: domain => ENTITY_ADAPTERS.component.getAll(domain).filter(doc => doc.type === ComponentType.DSL) },

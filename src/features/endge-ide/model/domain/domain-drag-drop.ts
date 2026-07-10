@@ -82,6 +82,7 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
+  [DomainSectionType.Composition]: 'root-compositions',
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Action]: 'root-actions',
   [DomainSectionType.Parameters]: 'root-parameters',
@@ -110,6 +111,7 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   QueryType.GraphQL,
   QueryType.Custom,
   'data-view',
+  'composition',
   ParameterType.DefaultParameter,
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
@@ -719,6 +721,9 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   else if (sectionType === DomainSectionType.DataView) {
     byId(entityId, identity, (x: any) => (Endge.domain as any).removeDataViewById?.(x), x => (Endge.domain as any).removeDataView(x))
   }
+  else if (sectionType === DomainSectionType.Composition) {
+    byId(entityId, identity, (x: any) => Endge.domain.removeCompositionById(x), x => Endge.domain.removeComposition(x))
+  }
   else if (sectionType === DomainSectionType.Parameters) {
     byId(entityId, identity, (x: any) => Endge.domain.removeParameterById?.(x), x => Endge.domain.removeParameter(x))
   }
@@ -798,6 +803,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getQueryById(numId) : null) ?? Endge.domain.getQuery(id)
   if (sectionType === DomainSectionType.DataView)
     return (numId != null ? (Endge.domain as any).getDataViewById?.(numId) : null) ?? (Endge.domain as any).getDataView?.(id)
+  if (sectionType === DomainSectionType.Composition)
+    return (numId != null ? Endge.domain.getCompositionById(numId) : null) ?? Endge.domain.getComposition(id)
   if (sectionType === DomainSectionType.Parameters)
     return (numId != null ? Endge.domain.getParameterById(numId) : null) ?? Endge.domain.getParameterIdentity(id)
   if (sectionType === DomainSectionType.Filters)
@@ -851,6 +858,8 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Query
   if (((Endge.domain as any).getDataViews?.() ?? []).some(hasInBranch))
     return DomainSectionType.DataView
+  if (Endge.domain.getCompositions().some(hasInBranch))
+    return DomainSectionType.Composition
   if (Endge.domain.getFilters().some(hasInBranch))
     return DomainSectionType.Filters
   if (Endge.domain.getParameters().some(hasInBranch))

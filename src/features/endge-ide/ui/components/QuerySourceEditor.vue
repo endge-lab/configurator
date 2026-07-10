@@ -4,12 +4,12 @@ import type * as Monaco from 'monaco-editor'
 import { DomainSectionType, Endge } from '@endge/core'
 import { RotateCcw } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { registerQuerySourceLanguage } from '@/features/endge-ide/tools/source-editor/register-query-source-language'
+import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{
   modelValue: string
@@ -20,13 +20,25 @@ const emit = defineEmits<{
 }>()
 
 const container = ref<HTMLDivElement | null>(null)
-const diagnosticsCount = ref(0)
 const source = computed({
   get: () => props.modelValue ?? '',
   set: value => emit('update:modelValue', value),
 })
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
+const monacoAdapter = useEndgeSourceMonaco({
+  container,
+  sourceKind: 'query',
+  value: () => source.value,
+  onChange: value => { source.value = value },
+  owner: 'endge-query-source',
+  onReady: (instance) => {
+    editor = instance
+    container.value?.addEventListener('dragover', onEditorDragOver, true)
+    container.value?.addEventListener('drop', onEditorDrop, true)
+  },
+})
+const diagnosticsCount = monacoAdapter.diagnosticsCount
 const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 
 interface DomainDragPayloadItem {
@@ -36,9 +48,11 @@ interface DomainDragPayloadItem {
   docType?: string
 }
 
-/** Сбрасывает source к базовому шаблону RQuery v1. */
+/** Сбрасывает source к базовому шаблону RQuery v2. */
 function resetToDefaultSource(): void {
-  source.value = Endge.source.createDefault('query')
+  const value = Endge.source.createDefault('query')
+  source.value = value
+  monacoAdapter.setValue(value)
 }
 
 function parseDomainDragPayload(event: DragEvent): DomainDragPayloadItem[] {
@@ -149,166 +163,10 @@ function onEditorDrop(event: DragEvent): void {
   insertAtPosition(toSourceStringLiteral(identity), position)
 }
 
-/** Обновляет Monaco markers по diagnostics source language strategy. */
-function updateMarkers(): void {
-  const model = editor?.getModel()
-  if (!model) {
-    return
-  }
-
-  const diagnostics = readDiagnostics(model.getValue())
-  diagnosticsCount.value = diagnostics.length
-
-  monaco.editor.setModelMarkers(
-    model,
-    'endge-query-source',
-    diagnostics.map(diagnostic => toEditorMarker(model, diagnostic)),
-  )
-}
-
-function readDiagnostics(source: string): Array<{
-  severity?: string
-  message?: string
-  code?: string
-  start?: number
-  end?: number
-}> {
-  try {
-    const validation = Endge.source.validate('query', source)
-    return validation.diagnostics as Array<{
-      severity?: string
-      message?: string
-      code?: string
-      start?: number
-      end?: number
-    }>
-  }
-  catch (error) {
-    return [{
-      severity: 'error',
-      code: 'query-source-validation-error',
-      message: error instanceof Error ? error.message : String(error),
-    }]
-  }
-}
-
-/** Конвертирует compiler diagnostic offset в Monaco marker. */
-function toEditorMarker(
-  model: Monaco.editor.ITextModel,
-  diagnostic: {
-    severity?: string
-    message?: string
-    code?: string
-    start?: number
-    end?: number
-  },
-): Monaco.editor.IMarkerData {
-  const fallbackRange = {
-    startLineNumber: 1,
-    startColumn: 1,
-    endLineNumber: 1,
-    endColumn: Math.max(2, model.getLineMaxColumn(1)),
-  }
-
-  const startOffset = typeof diagnostic.start === 'number' ? diagnostic.start : null
-  const endOffset = typeof diagnostic.end === 'number' ? diagnostic.end : null
-  const modelLength = model.getValueLength()
-  const normalizedStart = startOffset == null
-    ? null
-    : Math.max(0, Math.min(startOffset, modelLength))
-  const normalizedEnd = normalizedStart == null
-    ? null
-    : Math.max(normalizedStart, Math.min(endOffset ?? normalizedStart + 1, modelLength))
-  const range = normalizedStart == null || normalizedEnd == null
-    ? fallbackRange
-    : offsetRangeToMarkerRange(model, normalizedStart, normalizedEnd)
-
-  return {
-    severity: diagnostic.severity === 'error'
-      ? monaco.MarkerSeverity.Error
-      : monaco.MarkerSeverity.Warning,
-    message: diagnostic.message ?? diagnostic.code ?? 'Query source diagnostic',
-    ...range,
-  }
-}
-
-/** Строит непустой Monaco range из абсолютных offsets. */
-function offsetRangeToMarkerRange(
-  model: Monaco.editor.ITextModel,
-  startOffset: number,
-  endOffset: number,
-): Pick<Monaco.editor.IMarkerData, 'startLineNumber' | 'startColumn' | 'endLineNumber' | 'endColumn'> {
-  const startPosition = model.getPositionAt(startOffset)
-  const endPosition = model.getPositionAt(endOffset)
-
-  if (
-    startPosition.lineNumber === endPosition.lineNumber
-    && startPosition.column === endPosition.column
-  ) {
-    return {
-      startLineNumber: startPosition.lineNumber,
-      startColumn: startPosition.column,
-      endLineNumber: endPosition.lineNumber,
-      endColumn: endPosition.column + 1,
-    }
-  }
-
-  return {
-    startLineNumber: startPosition.lineNumber,
-    startColumn: startPosition.column,
-    endLineNumber: endPosition.lineNumber,
-    endColumn: endPosition.column,
-  }
-}
-
-onMounted(() => {
-  const languageId = registerQuerySourceLanguage(monaco)
-  if (!container.value) {
-    return
-  }
-
-  editor = monaco.editor.create(container.value, {
-    value: source.value,
-    language: languageId,
-    theme: 'vs-dark',
-    minimap: { enabled: false },
-    automaticLayout: true,
-    fontSize: 14,
-    tabSize: 2,
-    insertSpaces: true,
-    scrollBeyondLastLine: true,
-    padding: {
-      bottom: 10,
-    },
-    wordWrap: 'on',
-    formatOnPaste: true,
-    formatOnType: true,
-    suggest: {
-      showMethods: true,
-      showFunctions: true,
-      showProperties: true,
-      showSnippets: true,
-    },
-  })
-
-  editor.onDidChangeModelContent(() => {
-    source.value = editor?.getValue() ?? ''
-    updateMarkers()
-  })
-
-  container.value.addEventListener('dragover', onEditorDragOver, true)
-  container.value.addEventListener('drop', onEditorDrop, true)
-
-  updateMarkers()
-})
-
 watch(
   () => props.modelValue,
   (value) => {
-    if (editor && editor.getValue() !== value) {
-      editor.setValue(value)
-      updateMarkers()
-    }
+    monacoAdapter.setValue(value)
   },
 )
 
@@ -316,12 +174,6 @@ onBeforeUnmount(() => {
   container.value?.removeEventListener('dragover', onEditorDragOver, true)
   container.value?.removeEventListener('drop', onEditorDrop, true)
 
-  const model = editor?.getModel()
-  if (model) {
-    monaco.editor.setModelMarkers(model, 'endge-query-source', [])
-  }
-
-  editor?.dispose()
   editor = null
 })
 </script>

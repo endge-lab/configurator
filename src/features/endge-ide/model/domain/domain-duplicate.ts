@@ -35,6 +35,8 @@ export function getEntityByDocType(
       return domain.getQuery(id)
     case 'data-view':
       return (domain as any).getDataView?.(id)
+    case 'composition':
+      return domain.getComposition(id)
     case 'action':
       return domain.getAction(id)
     case 'integration':

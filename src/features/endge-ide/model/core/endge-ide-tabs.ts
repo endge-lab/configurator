@@ -5,6 +5,7 @@ import type {
 	  RComponentDSL,
 	  RComponentTable,
 	  RDataView,
+	  RComposition,
 	  RQuery,
 	  RTenant,
 	  RType,
@@ -25,6 +26,7 @@ import { RComponentTableEditor } from '@/features/endge-ide/domain/entities/RCom
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
+import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
 import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
 import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
@@ -55,6 +57,7 @@ import Action_Editor from '@/features/endge-ide/ui/section/document/entity/Actio
 import FiltersPanel_Editor from '@/features/endge-ide/ui/section/document/entity/FiltersPanel_Editor.vue'
 import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'
 import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'
+import Composition_Editor from '@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
 import Integration_Editor from '@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'
@@ -540,6 +543,10 @@ export class EndgeIDETabs {
       const dataView = Endge.domain.getDataView(id)
       return dataView?.displayName ?? dataView?.name ?? id
     }
+    if (key === 'composition') {
+      const composition = Endge.domain.getComposition(id)
+      return composition?.displayName ?? composition?.name ?? id
+    }
     if (key === 'type' || key === 'primitive')
       return Endge.domain.getType(id)?.name ?? id
     if (key === 'action') {
@@ -597,6 +604,8 @@ export class EndgeIDETabs {
       return 'ti ti-api text-orange-500 text-xl'
     if (key === 'data-view')
       return 'ti ti-braces text-cyan-500 text-xl'
+    if (key === 'composition')
+      return 'ti ti-topology-star-3 text-violet-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))
       return 'ti ti-form-input text-slate-500 text-xl'
     if (key === String(FilterType.DefaultFilter))
@@ -791,6 +800,7 @@ export class EndgeIDETabs {
     [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId)],
     [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
     ['data-view', (documentId) => this._resolveDataView(documentId)],
+    ['composition', (documentId) => this._resolveComposition(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
     [String(FilterType.DefaultFilter), (documentId) => this._resolveFilter(documentId)],
@@ -931,6 +941,21 @@ export class EndgeIDETabs {
     }
   }
 
+  private _resolveComposition(documentId: string): EditorSession | null {
+    const composition = Endge.domain.getComposition(documentId) as RComposition | null
+    if (!composition)
+      return null
+    const rawEditor = new RCompositionEditor()
+    rawEditor.fillFromSource(composition)
+    const editor = reactive(rawEditor as object) as RCompositionEditor
+    return {
+      view: { component: markRaw(Composition_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: composition,
+      syncBeforeSave: () => editor.updateSource(composition),
+    }
+  }
+
   private _resolveParameter(documentId: string): EditorSession | null {
     const parameter = Endge.domain.getParameter(documentId)
     if (!parameter)
@@ -952,8 +977,9 @@ export class EndgeIDETabs {
     const filter = Endge.domain.getFilter(documentId)
     if (!filter)
       return null
-    const editor = new RFilterEditor()
-    editor.fillFromSource(filter)
+    const rawEditor = new RFilterEditor()
+    rawEditor.fillFromSource(filter)
+    const editor = reactive(rawEditor as object) as RFilterEditor
     return {
       view: {
         component: markRaw(Filter_Editor),
