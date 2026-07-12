@@ -3,6 +3,7 @@ import type { WidgetDefinition } from '@/components/layouts/grid'
 import { markRaw } from 'vue'
 
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
+import CompositionPreview_Widget from '@/features/endge-ide/ui/widgets/CompositionPreview_Widget.vue'
 import Demonstration_Widget from '@/features/endge-ide/ui/widgets/Demonstration_Widget.vue'
 import Domain_Widget from '@/features/endge-ide/ui/widgets/Domain_Widget.vue'
 import Errors_Widget from '@/features/endge-ide/ui/widgets/Errors_Widget.vue'
@@ -249,6 +250,24 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       maxHeight: 1200,
       defaultWidth: 980,
       defaultHeight: 560,
+    },
+  },
+  {
+    id: 'composition-preview',
+    title: 'Composition preview',
+    icon: 'Play',
+    content: 'component',
+    defaultComponent: markRaw(CompositionPreview_Widget),
+    singleton: true,
+    defaultPosition: 'floating',
+    allowedPositions: ['left', 'right', 'floating'],
+    floatingConstraints: {
+      minWidth: 420,
+      maxWidth: 1920,
+      minHeight: 260,
+      maxHeight: 1200,
+      defaultWidth: 980,
+      defaultHeight: 640,
     },
   },
   {

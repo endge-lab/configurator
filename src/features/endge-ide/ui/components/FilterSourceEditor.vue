@@ -85,12 +85,6 @@ function updateInlinePreview(): void {
         const value = evaluateSourceExpression(output.expression, { values: state })
         return [output.key, value ?? null]
       }
-      if (output.kind === 'controls') {
-        return [output.key, Object.fromEntries(output.fields.map(key => [
-          key,
-          state[key] ?? null,
-        ]))]
-      }
 
       // Predicate зависит от row, которого у preview Filter нет.
       return [output.key, null]
