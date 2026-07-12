@@ -1,518 +1,383 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import { Endge } from '@endge/core'
-import { Raph } from '@endge/raph'
-import { SFC_RuntimeRenderer } from '@endge/vue'
 import type {
   ComponentSFCRuntimeHost,
-  EndgeBootContext,
-  RuntimeBoundaryPatch,
-  RuntimeHostUpdateContext,
+  CompositionSession,
+  QueryRuntimeHost,
+  RuntimeHostInputSource,
 } from '@endge/core'
-import type { SFCVueRuntimeInputSource } from '@endge/vue'
 
-const SFC_IDENTITY = 'test-sfc-table'
-const RAPH_FLIGHTS_PATH = 'test.sfc.flights'
-const MANUAL_BOOT_CONTEXT = {} as EndgeBootContext
+import { Endge } from '@endge/core'
+import { Raph, RaphDerivedNode } from '@endge/raph'
+import { SFC_RuntimeRenderer } from '@endge/vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 
-const runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
-const isExecuting = ref(false)
+const QUERY_IDENTITY = 'schedule'
+const COMPONENT_IDENTITY = 'shedule-sfc'
+const COMPOSITION_IDENTITY = 'test-composition'
+const COMPOSITION_RUNTIME_ID = 'test-page:test-composition'
+const RAW_PATH = 'queries.schedule.raw'
+const TABLE_PATH = 'queries.schedule.table'
+const UI_TEXT = {
+  mounting: 'Запуск...',
+  mount: 'Запустить test-composition',
+  querying: 'Запрос...',
+  query: 'Повторить query schedule',
+  applyingSSE: 'SSE update...',
+  emulateSSE: 'SSE: изменить номер первого рейса',
+  stop: 'Остановить runtime',
+  rawRow: 'Первая raw-строка',
+  tableRow: 'Первая table-строка',
+  derivedNode: 'Raph Derived node',
+} as const
+
+const session = shallowRef<CompositionSession | null>(null)
+const isMounting = ref(false)
+const isRunningQuery = ref(false)
+const isApplyingSSE = ref(false)
 const errorMessage = ref<string | null>(null)
-const raphSnapshot = shallowRef<Record<string, unknown>>({})
-let runtimeDebugUnsubscribers: VoidFunction[] = []
+const lastAction = ref('Композиция ещё не запущена.')
+const rawSnapshot = shallowRef<unknown>(undefined)
+const tableSnapshot = shallowRef<unknown>(undefined)
+const derivedSnapshot = shallowRef<Record<string, unknown> | null>(null)
+let sseRevision = 0
+let storeUnsubscribers: VoidFunction[] = []
 
-const TEST_FLIGHTS: Record<string, unknown>[] = [
-  {
-    id: 'SU1402',
-    number: 'SU 1402',
-    status: 'Boarding',
-    statusTone: 'success',
-    std: '2026-07-05T13:45:00Z',
-    route: 'SVO -> LED',
-    counter: 0,
-  },
-  {
-    id: 'DP209',
-    number: 'DP 209',
-    status: 'Delayed',
-    statusTone: 'warning',
-    std: '2026-07-05T11:10:00Z',
-    route: 'VKO -> AER',
-    counter: 0,
-  },
-  {
-    id: 'SU99',
-    number: 'SU 99',
-    status: 'Check-in',
-    statusTone: 'info',
-    std: '2026-07-05T09:25:00Z',
-    route: 'SVO -> KZN',
-    counter: 0,
-  },
-  {
-    id: 'FV3001',
-    number: 'FV 3001',
-    status: 'Closed',
-    statusTone: 'neutral',
-    std: '2026-07-05T16:40:00Z',
-    route: 'LED -> SVO',
-    counter: 0,
-  },
-]
+const compositionRuntime = computed(() => session.value?.host ?? null)
+const componentRuntime = computed<ComponentSFCRuntimeHost | null>(() => {
+  const runtime = compositionRuntime.value?.getChild('table')
+  return runtime?.entityType === 'component-sfc'
+    ? runtime as ComponentSFCRuntimeHost
+    : null
+})
+const queryRuntime = computed<QueryRuntimeHost | null>(() => {
+  const runtime = compositionRuntime.value?.getChild('query')
+  return runtime?.entityType === 'query'
+    ? runtime as QueryRuntimeHost
+    : null
+})
+const renderInput = computed<RuntimeHostInputSource>(() => {
+  return componentRuntime.value?.getInputSource() ?? { kind: 'local', props: {} }
+})
+const hasRawRows = computed(() => Array.isArray(rawSnapshot.value) && rawSnapshot.value.length > 0)
+const firstRawRow = computed(() => firstRow(rawSnapshot.value))
+const firstTableRow = computed(() => firstRow(tableSnapshot.value))
 
-const renderInput = computed<SFCVueRuntimeInputSource>(() => ({
-  kind: 'raph',
-  bindings: {
-    flights: {
-      path: RAPH_FLIGHTS_PATH,
-      wildcardDynamic: true,
-    },
-  },
-}))
-
-function mockQuery() {
-  const legs = [
-    {
-      id: 'leg1',
-      flightCarrier: "SU",
-      flightNumber: "522",
-    }
-  ]
-  const attrs = [
-    {
-      legId: 'leg1',
-      items: [
-        {
-          attrId: 'attr1',
-          value: '2025-12-23T00:00:00Z',
-        }
-      ]
-    }
-  ]
-  Raph.set('mockQuery.legs', legs)
-  Raph.set('mockQuery.attrs', attrs)
-}
-
-async function executeSFC(): Promise<void> {
-  isExecuting.value = true
+async function mountComposition(): Promise<void> {
+  isMounting.value = true
   errorMessage.value = null
 
   try {
-    destroyRuntime()
-    prepareManualSFCExecution()
-    logCompilerState('После ручной сборки domain -> program')
+    destroyComposition()
+    await Endge.build()
+    assertDomainEntities()
+    compileTestArtifacts()
 
-    const component = Endge.domain.getComponentSFC(SFC_IDENTITY)
-    if (!component) {
-      runtime.value = null
-      resetRuntimeRenderState()
-      errorMessage.value = `SFC component "${SFC_IDENTITY}" not found.`
-      return
+    session.value = await Endge.composition.mount(COMPOSITION_IDENTITY, {
+      id: COMPOSITION_RUNTIME_ID,
+    })
+
+    if (!componentRuntime.value) {
+      throw new Error(`Composition runtime "table" не создал component "${COMPONENT_IDENTITY}".`)
+    }
+    if (!queryRuntime.value) {
+      throw new Error(`Composition runtime "query" не создал query "${QUERY_IDENTITY}".`)
     }
 
-    logDomainComponent(component)
-
-    const host = Endge.runtime.execute(component, {
-      target: 'dom',
-      input: renderInput.value,
-    }) as ComponentSFCRuntimeHost | null
-
-    if (!host) {
-      errorMessage.value = `SFC component "${SFC_IDENTITY}" was not executed.`
-      return
-    }
-
-    setupRuntimeDebugLogs(host)
-    seedRaphInput()
-    runtime.value = host
-    logRuntimeSystemInfo(host, 'После execute и seed Raph input')
+    attachStoreWatchers()
+    refreshSnapshots()
+    lastAction.value = 'Composition смонтирована; onMount выполнил query и materialized DataView.'
   }
   catch (error) {
-    resetRuntimeRenderState()
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    destroyComposition()
+    errorMessage.value = toErrorMessage(error)
   }
   finally {
-    isExecuting.value = false
+    isMounting.value = false
   }
 }
 
-function destroyRuntime(): void {
-  cleanupRuntimeDebugLogs()
-  if (runtime.value)
-    Endge.runtime.destroyRuntime(runtime.value.id)
-  runtime.value = null
-  resetRuntimeRenderState()
-}
-
-function incrementCounter(): void {
-  const flights = normalizeFlights(Raph.get(RAPH_FLIGHTS_PATH))
-  const firstFlight = flights[0] ?? {}
-  const nextCounter = Number(firstFlight.counter ?? 0) + 1
-
-  console.groupCollapsed('[SFC Test] Изменение Raph данных: increment counter')
-  console.log('Комментарий: это имитирует runtime-изменение данных, от которого должна проснуться ближайшая SFC boundary-нода.')
-  console.log('Путь изменения:', `${RAPH_FLIGHTS_PATH}[0].counter`)
-  console.log('Предыдущее значение:', firstFlight.counter ?? 0)
-  console.log('Следующее значение:', nextCounter)
-  console.groupEnd()
-
-  Raph.set(`${RAPH_FLIGHTS_PATH}[0].counter`, nextCounter)
-  refreshRaphSnapshot()
-  logRaphSnapshot('После Raph.set counter')
-}
-
-function prepareManualSFCExecution(): void {
-  Endge.compiler.build(MANUAL_BOOT_CONTEXT)
-  Endge.runtime.start()
-}
-
-function resetRuntimeRenderState(): void {
-  raphSnapshot.value = {}
-}
-
-function seedRaphInput(): void {
-  Raph.set(RAPH_FLIGHTS_PATH, normalizeFlights(TEST_FLIGHTS))
-  refreshRaphSnapshot()
-  logRaphSnapshot('После seed test rows в Raph')
-}
-
-function refreshRaphSnapshot(): void {
-  raphSnapshot.value = {
-    flights: cloneValue(Raph.get(RAPH_FLIGHTS_PATH)),
+async function runQuery(): Promise<void> {
+  const runtime = queryRuntime.value
+  if (!runtime) {
+    return
   }
-}
 
-function normalizeFlights(raw: unknown): Record<string, unknown>[] {
-  if (!Array.isArray(raw))
-    return []
-
-  return raw
-    .filter(item => item && typeof item === 'object' && !Array.isArray(item))
-    .map(item => ({
-      ...(item as Record<string, unknown>),
-      counter: Number((item as Record<string, unknown>).counter ?? 0),
-    }))
-}
-
-function cloneValue(value: unknown): unknown {
-  if (value == null)
-    return value
-
+  isRunningQuery.value = true
+  errorMessage.value = null
   try {
-    return JSON.parse(JSON.stringify(value))
+    await runtime.run()
+    refreshSnapshots()
+    lastAction.value = 'Query выполнен повторно: raw заменён целиком, DataView сделал full recompute.'
   }
-  catch {
-    return value
+  catch (error) {
+    errorMessage.value = toErrorMessage(error)
+  }
+  finally {
+    isRunningQuery.value = false
   }
 }
 
-function setupRuntimeDebugLogs(host: ComponentSFCRuntimeHost): void {
-  cleanupRuntimeDebugLogs()
-
-  const onPropsDirty = (ctx: RuntimeHostUpdateContext): void => {
-    console.groupCollapsed('[SFC Test] RuntimeHost получил props:dirty')
-    console.log('Комментарий: проснулась root/table boundary без точечного patch-а, bridge перечитает props из Raph.')
-    console.log('Runtime:', {
-      id: host.id,
-      runtimeType: host.runtimeType,
-      entityIdentity: host.entityIdentity,
-    })
-    console.log('Dirty root node:', summarizeRaphNode(ctx.node))
-    console.log('События Raph:', ctx.events.map(event => ({
-      canonical: event.canonical,
-      op: event.op,
-      value: cloneValue(event.value),
-    })))
-    console.log('Boundary records:', ctx.boundaries.map(boundary => ({
-      boundary: summarizeRaphNode(boundary.boundary),
-      dirtyNodes: boundary.dirtyNodes.map(summarizeRaphNode),
-      events: boundary.events.map(event => event.canonical),
-    })))
-    console.groupEnd()
+function emulateSSEUpdate(): void {
+  const rows = rawSnapshot.value
+  if (!Array.isArray(rows) || rows.length === 0) {
+    errorMessage.value = `В ${RAW_PATH} нет строк для SSE-обновления.`
+    return
   }
 
-  const onBoundaryDirty = (patch: RuntimeBoundaryPatch): void => {
-    console.groupCollapsed('[SFC Test] RuntimeHost получил boundary:dirty patch')
-    console.log('Комментарий: это точечный patch render-boundary. Для Table Vue adapter должен применить RevoGrid setDataAt без полного props rerender.')
-    console.log('Runtime:', {
-      id: host.id,
-      runtimeType: host.runtimeType,
-      entityIdentity: host.entityIdentity,
-    })
-    console.log('Patch:', {
-      ...patch,
-      itemSnapshot: cloneValue(patch.itemSnapshot),
-      node: summarizeRaphNode(patch.node),
-      events: patch.events.map(event => ({
-        canonical: event.canonical,
-        op: event.op,
-        value: cloneValue(event.value),
-      })),
-    })
-    console.groupEnd()
+  const first = rows[0]
+  if (!first || typeof first !== 'object' || Array.isArray(first)) {
+    errorMessage.value = 'Первая raw-строка имеет неподдерживаемую форму.'
+    return
   }
 
-  const onUpdate = (ctx: RuntimeHostUpdateContext): void => {
-    console.groupCollapsed('[SFC Test] RuntimeHost update event')
-    console.log('Комментарий: базовое runtime update событие после частной обработки ComponentSFCRuntimeHost.update().')
-    console.log('Update node:', summarizeRaphNode(ctx.node))
-    console.log('Events:', ctx.events.map(event => event.canonical))
-    console.groupEnd()
+  const id = (first as Record<string, unknown>).id
+  if ((typeof id !== 'string' && typeof id !== 'number') || String(id).length === 0) {
+    errorMessage.value = 'У первой raw-строки отсутствует primitive id; keyed SSE update невозможен.'
+    return
   }
 
-  host.on('props:dirty', onPropsDirty)
-  host.on('boundary:dirty', onBoundaryDirty)
-  host.on('update', onUpdate)
-  runtimeDebugUnsubscribers = [
-    () => host.off('props:dirty', onPropsDirty),
-    () => host.off('boundary:dirty', onBoundaryDirty),
-    () => host.off('update', onUpdate),
+  isApplyingSSE.value = true
+  errorMessage.value = null
+  try {
+    sseRevision += 1
+    const previousFlightNumber = String((first as Record<string, unknown>).flightNumber ?? '')
+    const nextFlightNumber = `SSE-${sseRevision}-${new Date().toLocaleTimeString('ru-RU')}`
+    const mutationPath = `${RAW_PATH}[id=${JSON.stringify(id)}].flightNumber`
+
+    // Принципиально изменяем только source branch. queries.schedule.table здесь не трогаем:
+    // его должен синхронно обновить collectionByKey derive, созданный QueryRuntimeHost.
+    Raph.set(mutationPath, nextFlightNumber)
+    refreshSnapshots()
+
+    const projected = readRowById(tableSnapshot.value, id)
+    if (projected?.flightNumber !== nextFlightNumber) {
+      throw new Error(
+        `Derived DataView не обновил ${TABLE_PATH} после mutation ${mutationPath}.`,
+      )
+    }
+
+    lastAction.value = `SSE изменил номер первого рейса: "${previousFlightNumber}" → "${nextFlightNumber}"; table обновлён через Raph Derived.`
+  }
+  catch (error) {
+    errorMessage.value = toErrorMessage(error)
+  }
+  finally {
+    isApplyingSSE.value = false
+  }
+}
+
+function destroyComposition(): void {
+  detachStoreWatchers()
+  session.value?.unmount()
+  session.value = null
+  rawSnapshot.value = undefined
+  tableSnapshot.value = undefined
+  derivedSnapshot.value = null
+}
+
+function assertDomainEntities(): void {
+  if (!Endge.domain.getQuery(QUERY_IDENTITY)) {
+    throw new Error(`Query "${QUERY_IDENTITY}" не найден в Endge.domain.`)
+  }
+  if (!Endge.domain.getComponentSFC(COMPONENT_IDENTITY)) {
+    throw new Error(`Component SFC "${COMPONENT_IDENTITY}" не найден в Endge.domain.`)
+  }
+  if (!Endge.domain.getComposition(COMPOSITION_IDENTITY)) {
+    throw new Error(`Composition "${COMPOSITION_IDENTITY}" не найдена в Endge.domain.`)
+  }
+}
+
+function compileTestArtifacts(): void {
+  const filter = Endge.domain.getFilter(QUERY_IDENTITY)
+  const query = Endge.domain.getQuery(QUERY_IDENTITY)
+  const composition = Endge.domain.getComposition(COMPOSITION_IDENTITY)
+
+  if (filter) {
+    assertValidArtifact('Filter', QUERY_IDENTITY, Endge.compiler.buildFilter(filter))
+  }
+  if (query) {
+    assertValidArtifact('Query', QUERY_IDENTITY, Endge.compiler.buildQuery(query))
+  }
+
+  const componentArtifact = Endge.program.getArtifact('component-sfc', COMPONENT_IDENTITY)
+  assertValidArtifact('Component SFC', COMPONENT_IDENTITY, componentArtifact)
+
+  if (composition) {
+    assertValidArtifact(
+      'Composition',
+      COMPOSITION_IDENTITY,
+      Endge.compiler.buildComposition(composition),
+    )
+  }
+}
+
+function assertValidArtifact(
+  entityType: string,
+  identity: string,
+  artifact: { status: string, diagnostics?: Array<{ severity?: string, message?: string }> } | null,
+): void {
+  if (!artifact) {
+    throw new Error(`${entityType} "${identity}" не собран в Endge.program.`)
+  }
+  if (artifact.status !== 'error') {
+    return
+  }
+
+  const details = artifact.diagnostics
+    ?.filter(item => item.severity === 'error')
+    .map(item => item.message)
+    .filter(Boolean)
+    .join('\n')
+  throw new Error(`${entityType} "${identity}" содержит compile errors.${details ? `\n${details}` : ''}`)
+}
+
+function attachStoreWatchers(): void {
+  detachStoreWatchers()
+  storeUnsubscribers = [
+    Raph.watch(RAW_PATH, refreshSnapshots),
+    Raph.watch(`${RAW_PATH}.*`, refreshSnapshots),
+    Raph.watch(TABLE_PATH, refreshSnapshots),
+    Raph.watch(`${TABLE_PATH}.*`, refreshSnapshots),
   ]
 }
 
-function cleanupRuntimeDebugLogs(): void {
-  for (const unsubscribe of runtimeDebugUnsubscribers)
+function detachStoreWatchers(): void {
+  for (const unsubscribe of storeUnsubscribers) {
     unsubscribe()
-  runtimeDebugUnsubscribers = []
+  }
+  storeUnsubscribers = []
 }
 
-function logCompilerState(stage: string): void {
-  const snapshot = Endge.program.snapshot()
+function refreshSnapshots(): void {
+  rawSnapshot.value = cloneValue(Raph.get(RAW_PATH))
+  tableSnapshot.value = cloneValue(Raph.get(TABLE_PATH))
 
-  console.groupCollapsed(`[SFC Test] ${stage}`)
-  console.log('Комментарий: compiler.build() должен переложить domain entities в compiled program artifacts.')
-  console.log('Program snapshot:', snapshot)
-  console.groupEnd()
+  const node = queryRuntime.value?.node?.children.find(child => child instanceof RaphDerivedNode)
+  derivedSnapshot.value = node instanceof RaphDerivedNode
+    ? { ...node.snapshot() }
+    : null
 }
 
-function logDomainComponent(component: unknown): void {
-  console.groupCollapsed('[SFC Test] Domain SFC component')
-  console.log('Комментарий: это исходная domain-сущность до runtime execute.')
-  console.log('Identity:', SFC_IDENTITY)
-  console.log('Component:', component)
-  console.groupEnd()
-}
-
-function logRuntimeSystemInfo(host: ComponentSFCRuntimeHost, stage: string): void {
-  const artifact = host.getArtifact()
-  const ir = host.getIr()
-  const runtimeDependencies = host.getRuntimeDependencies()
-
-  console.groupCollapsed(`[SFC Test] ${stage}`)
-  console.log('Комментарий: это главный снимок того, что runtime host знает о compiled SFC и входных данных.')
-  console.log('Runtime host snapshot:', host.snapshot())
-  console.log('Artifact summary:', artifact
-    ? {
-        ref: artifact.ref,
-        status: artifact.status,
-        sourceHash: artifact.sourceHash,
-        compilerVersion: artifact.compilerVersion,
-        capabilities: artifact.capabilities,
-        diagnostics: artifact.diagnostics,
-      }
-    : null)
-  console.log('Contract:', host.getContract())
-  console.log('Component dependencies:', host.getDependencies())
-  console.log('Runtime dependencies:', runtimeDependencies)
-  console.log('Комментарий: эти paths получаются из runtimeDependencies + render input bindings и используются для Raph observeData.')
-  console.table(resolveObservedRaphPaths(host))
-  console.log('IR summary:', summarizeIr(ir))
-  console.log('Preview props:', cloneValue(host.getPreviewProps()))
-  console.log('Input source:', host.getInputSource())
-  console.log('Raph snapshot:', cloneValue(raphSnapshot.value))
-  console.groupEnd()
-}
-
-function logRaphSnapshot(stage: string): void {
-  console.groupCollapsed(`[SFC Test] ${stage}`)
-  console.log('Комментарий: текущее значение данных, из которых SFCVueRuntimeBridge материализует props.')
-  console.log('Raph path:', RAPH_FLIGHTS_PATH)
-  console.log('Snapshot:', cloneValue(raphSnapshot.value))
-  console.groupEnd()
-}
-
-function resolveObservedRaphPaths(host: ComponentSFCRuntimeHost): Array<Record<string, unknown>> {
-  const input = host.getInputSource()
-  if (input?.kind !== 'raph')
-    return []
-
-  const dependencies = host.getRuntimeDependencies()
-  const patchableSources = dependencies.boundaries.map(boundary => ({
-    prop: boundary.sourceProp,
-    path: boundary.sourcePath.join('.'),
-  }))
-  const rootRows = dependencies.props.flatMap((dependency) => {
-    const coveredByBoundary = patchableSources.some(source => {
-      return source.prop === dependency.prop
-        && (source.path === '' || dependency.path.join('.').startsWith(source.path))
-    })
-    if (coveredByBoundary)
-      return []
-
-    const binding = input.bindings[dependency.prop]
-    if (!binding?.path)
-      return []
-
-    const path = joinRaphPath(binding.path, dependency.path)
-    if (!path)
-      return []
-
-    const observedPaths = dependency.path.length > 0
-      ? [path]
-      : [path, `${path}.*`]
-
-    return observedPaths.map(observedPath => ({
-      node: 'root',
-      prop: dependency.prop,
-      dependencyPath: dependency.path.join('.') || '(весь prop)',
-      rawRead: dependency.raw,
-      bindingPath: binding.path,
-      observedPath,
-      wildcardDynamic: binding.wildcardDynamic ?? true,
-    }))
-  })
-
-  const boundaryRows = dependencies.boundaries.flatMap((boundary) => {
-    const binding = input.bindings[boundary.sourceProp]
-    if (!binding?.path)
-      return []
-
-    const sourcePath = joinRaphPath(binding.path, boundary.sourcePath)
-    const tableRow = {
-      node: `table:${boundary.id}`,
-      prop: boundary.sourceProp,
-      dependencyPath: boundary.sourcePath.join('.') || '(вся коллекция)',
-      rawRead: '<Table rows>',
-      bindingPath: binding.path,
-      observedPath: sourcePath,
-      wildcardDynamic: binding.wildcardDynamic ?? true,
-    }
-
-    const columnRows = boundary.columns.flatMap((column) => {
-      const reads = column.rowReads.length > 0 ? column.rowReads : [column.key]
-      return reads.map(read => ({
-        node: `column:${column.key}`,
-        prop: boundary.sourceProp,
-        dependencyPath: `${boundary.sourcePath.join('.') || '(коллекция)'}[*].${read}`,
-        rawRead: `row.${read}`,
-        bindingPath: binding.path,
-        observedPath: `${sourcePath}[*].${read}`,
-        wildcardDynamic: binding.wildcardDynamic ?? true,
-      }))
-    })
-
-    return [tableRow, ...columnRows]
-  })
-
-  return [...rootRows, ...boundaryRows]
-}
-
-function joinRaphPath(basePath: string, childPath: string[]): string {
-  const base = String(basePath ?? '').trim().replace(/\.$/, '')
-  const child = childPath
-    .map(part => String(part ?? '').trim())
-    .filter(Boolean)
-    .join('.')
-
-  if (!base)
-    return child
-  if (!child)
-    return base
-
-  return `${base}.${child}`
-}
-
-function summarizeIr(ir: ReturnType<ComponentSFCRuntimeHost['getIr']>): Record<string, unknown> | null {
-  if (!ir)
+function firstRow(value: unknown): Record<string, unknown> | null {
+  if (!Array.isArray(value)) {
     return null
-
-  const tags = new Map<string, number>()
-  for (const root of ir.template.roots)
-    collectIrTags(root, tags)
-
-  return {
-    version: ir.version,
-    props: ir.script.props,
-    locals: ir.script.locals,
-    rootCount: ir.template.roots.length,
-    tags: Object.fromEntries(tags.entries()),
-    hasStyle: Boolean(ir.style),
   }
+  const row = value[0]
+  return row && typeof row === 'object' && !Array.isArray(row)
+    ? row as Record<string, unknown>
+    : null
 }
 
-function collectIrTags(node: any, tags: Map<string, number>): void {
-  if (node?.kind !== 'element')
-    return
-
-  tags.set(node.tag, (tags.get(node.tag) ?? 0) + 1)
-  for (const child of node.children ?? [])
-    collectIrTags(child, tags)
-}
-
-function summarizeRaphNode(node: any): Record<string, unknown> {
-  return {
-    id: node?.id,
-    meta: cloneValue(node?.meta),
+function readRowById(value: unknown, id: string | number): Record<string, unknown> | null {
+  if (!Array.isArray(value)) {
+    return null
   }
+  const row = value.find(item => item && typeof item === 'object' && (item as Record<string, unknown>).id === id)
+  return row && typeof row === 'object'
+    ? row as Record<string, unknown>
+    : null
 }
 
-onBeforeUnmount(() => {
-  destroyRuntime()
-})
+function cloneValue(value: unknown): unknown {
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value)
+    }
+    catch {}
+  }
+  return value
+}
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
 
 onMounted(() => {
-  void executeSFC()
+  void mountComposition()
+})
+
+onBeforeUnmount(() => {
+  destroyComposition()
 })
 </script>
 
 <template>
-  <main class="p-6 flex flex-col gap-4">
-    <div class="flex items-center gap-3">
+  <main class="flex h-full min-h-0 flex-col gap-4 p-6">
+    <header class="flex flex-wrap items-center gap-3">
       <button
-        class="px-3 py-2 border rounded bg-background hover:bg-muted"
+        class="rounded border bg-background px-3 py-2 hover:bg-muted disabled:opacity-50"
         type="button"
-        :disabled="isExecuting"
-        @click="executeSFC"
+        :disabled="isMounting"
+        @click="mountComposition"
       >
-        {{ isExecuting ? 'Executing...' : 'Execute test-sfc-table' }}
+        {{ isMounting ? UI_TEXT.mounting : UI_TEXT.mount }}
       </button>
 
       <button
-        class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
+        class="rounded border bg-background px-3 py-2 hover:bg-muted disabled:opacity-50"
         type="button"
-        :disabled="!runtime"
-        @click="destroyRuntime"
+        :disabled="!queryRuntime || isRunningQuery"
+        @click="runQuery"
       >
-        Destroy runtime
+        {{ isRunningQuery ? UI_TEXT.querying : UI_TEXT.query }}
       </button>
 
       <button
-        class="px-3 py-2 border rounded bg-background hover:bg-muted disabled:opacity-50"
+        class="rounded border border-sky-600 bg-sky-600 px-3 py-2 text-white hover:bg-sky-700 disabled:opacity-50"
         type="button"
-        :disabled="!runtime"
-        @click="incrementCounter"
+        :disabled="!queryRuntime || !hasRawRows || isApplyingSSE"
+        @click="emulateSSEUpdate"
       >
-        Increment counter
+        {{ isApplyingSSE ? UI_TEXT.applyingSSE : UI_TEXT.emulateSSE }}
       </button>
-    </div>
 
-    <p v-if="errorMessage" class="text-sm text-destructive">
+      <button
+        class="rounded border bg-background px-3 py-2 hover:bg-muted disabled:opacity-50"
+        type="button"
+        :disabled="!compositionRuntime"
+        @click="destroyComposition"
+      >
+        {{ UI_TEXT.stop }}
+      </button>
+    </header>
+
+    <p class="text-sm text-muted-foreground">
+      {{ lastAction }}
+    </p>
+
+    <p v-if="errorMessage" class="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
       {{ errorMessage }}
     </p>
 
-    <section v-if="runtime" class="flex flex-col gap-3 min-h-0">
-      <div class="text-sm text-muted-foreground">
-        {{ runtime.runtimeType }} / {{ runtime.entityIdentity }}
-      </div>
-
-      <div class="border rounded p-4">
+    <section v-if="compositionRuntime" class="grid min-h-0 flex-1 grid-rows-[minmax(320px,1fr)_auto] gap-4">
+      <div class="min-h-0 overflow-hidden rounded border bg-background p-3">
         <SFC_RuntimeRenderer
-          :host="runtime"
+          v-if="componentRuntime"
+          :host="componentRuntime"
           :input="renderInput"
         />
       </div>
 
-      <pre class="text-xs overflow-auto border rounded p-3">{{ raphSnapshot }}</pre>
+      <div class="grid gap-3 text-xs xl:grid-cols-3">
+        <article class="min-w-0 rounded border p-3">
+          <div class="mb-2 font-semibold">
+            {{ UI_TEXT.rawRow }}
+          </div>
+          <pre class="max-h-48 overflow-auto">{{ firstRawRow }}</pre>
+        </article>
+        <article class="min-w-0 rounded border p-3">
+          <div class="mb-2 font-semibold">
+            {{ UI_TEXT.tableRow }}
+          </div>
+          <pre class="max-h-48 overflow-auto">{{ firstTableRow }}</pre>
+        </article>
+        <article class="min-w-0 rounded border p-3">
+          <div class="mb-2 font-semibold">
+            {{ UI_TEXT.derivedNode }}
+          </div>
+          <pre class="max-h-48 overflow-auto">{{ derivedSnapshot }}</pre>
+        </article>
+      </div>
     </section>
   </main>
 </template>
