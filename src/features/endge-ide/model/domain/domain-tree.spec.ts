@@ -4,6 +4,14 @@ import { DomainSectionType } from '@endge/core'
 import { buildDomainTree } from '@/features/endge-ide/model/domain/domain-tree'
 
 describe('buildDomainTree', () => {
+  it('places stores and vocabs into the Data root block after Context', async () => {
+    const { getDomainTreeRootBlocks } = await import('@/features/endge-ide/model/domain/domain-tree')
+    const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-integrations'])
+
+    expect(blocks.map(block => block.title)).toEqual(['Контекст', 'Данные', 'Инфраструктура'])
+    expect(blocks[1]?.rootIds).toEqual(['root-stores', 'root-vocabs'])
+  })
+
   it('uses configured labels for persisted root folders', () => {
     const tree = buildDomainTree({
       rootToSection: {

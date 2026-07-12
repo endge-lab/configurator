@@ -90,6 +90,7 @@ async function clearAll(): Promise<void> {
       FilterType.DefaultFilter as DomainDocumentType,
       'type',
       'primitive',
+      'store',
       'auth-profile',
     ])
     const deletableNonViews = nonViews.filter(i => i.type && supportedDocTypes.has(i.type))
@@ -103,6 +104,7 @@ async function clearAll(): Promise<void> {
       else if (type === ParameterType.DefaultParameter) Endge.domain.removeParameter(item.id)
       else if (type === (FilterType.DefaultFilter as DomainDocumentType)) Endge.domain.removeFilter(item.id)
       else if (type === 'type' || type === 'primitive') Endge.domain.removeType(item.id)
+      else if (type === 'store') Endge.domain.removeStore(item.id)
       else if (type === 'auth-profile') Endge.domain.removeAuthProfile(item.id)
       closeTab(item.id, type)
     }

@@ -178,8 +178,7 @@ defineQuery({
 
   outputs: {
     raw: output()
-      .from(response('items'))
-      .toStore(),
+      .from(response('items')),
 
     rows: output()
       .from('raw')
@@ -192,8 +191,7 @@ defineQuery({
             flightNumber: path('row.flight'),
           }),
         ],
-      }))
-      .toStore(),
+      })),
   },
 })
 ```
@@ -215,13 +213,11 @@ defineQuery({
 
   outputs: {
     raw: output()
-      .from(response('items'))
-      .toStore(),
+      .from(response('items')),
 
     rows: output()
       .from('raw')
-      .dataView(dataView('flightRows'))
-      .toStore(),
+      .dataView(dataView('flightRows')),
   },
 })
 ```

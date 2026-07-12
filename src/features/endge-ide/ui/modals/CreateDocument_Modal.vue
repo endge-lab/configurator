@@ -31,6 +31,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
   { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
   { type: 'composition' as DomainDocumentType, label: 'Композиция', section: DomainSectionType.Composition },
+  { type: 'store' as DomainDocumentType, label: 'Хранилище', section: DomainSectionType.Store },
   { type: FilterType.DefaultFilter, label: 'Фильтр', section: DomainSectionType.Filters },
   { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
@@ -52,6 +53,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Composition]: 'root-compositions',
+  [DomainSectionType.Store]: 'root-stores',
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
@@ -79,6 +81,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Query]: 'queries',
   [DomainSectionType.DataView]: 'data-views',
   [DomainSectionType.Composition]: 'compositions',
+  [DomainSectionType.Store]: 'stores',
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
   [DomainSectionType.Converter]: 'converters',
@@ -138,6 +141,7 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.Query
     || s === DomainSectionType.DataView
     || s === DomainSectionType.Composition
+    || s === DomainSectionType.Store
     || s === DomainSectionType.Filters
     || s === DomainSectionType.Action
     || s === DomainSectionType.Integration
@@ -286,6 +290,17 @@ function buildPayloadTemplate(): Record<string, unknown> {
       ...base,
       description: null,
       source: Endge.source.createDefault('composition'),
+      sourceVersion: 1,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === 'store') {
+    return {
+      ...base,
+      description: null,
+      source: Endge.source.createDefault('store'),
       sourceVersion: 1,
       meta: {},
       inherited: false,

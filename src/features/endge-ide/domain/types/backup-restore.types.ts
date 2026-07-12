@@ -9,6 +9,7 @@ export type BackupRestoreEntityKind =
   | 'parameter'
   | 'filter'
   | 'composition'
+  | 'store'
   | 'converter'
   | 'integration'
   | 'environment'

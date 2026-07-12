@@ -117,6 +117,7 @@ export interface DomainStoreForTree {
   queries?: any[]
   dataViews?: any[]
   compositions?: any[]
+  stores?: any[]
   actions?: any[]
   typesComplex?: any[]
   typesPrimitives?: any[]
@@ -188,6 +189,7 @@ export function getSoftDeletedItems(
   add(store.queries, DomainSectionType.Query)
   add(store.dataViews, DomainSectionType.DataView)
   add(store.compositions, DomainSectionType.Composition)
+  add(store.stores, DomainSectionType.Store)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
   add(store.parameters, DomainSectionType.Parameters)
@@ -248,6 +250,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-navigations': 'Навигации',
   'root-data-views': 'Представления',
   'root-compositions': 'Композиции',
+  'root-stores': 'Хранилище',
   'root-vocabs': 'Словари',
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Аутентификация',
@@ -274,6 +277,14 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     ],
   },
   {
+    id: 'data',
+    title: 'Данные',
+    rootIds: [
+      'root-stores',
+      'root-vocabs',
+    ],
+  },
+  {
     id: 'domain',
     title: 'Сущности',
     rootIds: [
@@ -293,7 +304,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     id: 'infrastructure',
     title: 'Инфраструктура',
     rootIds: [
-      'root-vocabs',
       'root-i18n-bundles',
       'root-auth-profiles',
       'root-integrations',
@@ -361,6 +371,8 @@ export function normalizeDocType(
     return 'data-view' as DomainDocumentType
   if (sectionType === DomainSectionType.Composition)
     return 'composition' as DomainDocumentType
+  if (sectionType === DomainSectionType.Store)
+    return 'store' as DomainDocumentType
   if (sectionType === DomainSectionType.Action)
     return 'action'
   if (sectionType === DomainSectionType.Converter)

@@ -69,6 +69,7 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   projects: DomainSectionType.Project,
   i18nBundles: DomainSectionType.I18nBundles,
   authProfiles: DomainSectionType.AuthProfile,
+  stores: DomainSectionType.Store,
 }
 
 function getEntityByMergeKey(type: string, identity: string): unknown {
@@ -119,6 +120,8 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getAuthProfileById?.(numId) : null) ?? domain.getAuthProfile?.(id)
     case DomainSectionType.Project:
       return (numId != null ? domain.getProjectById?.(numId) : null) ?? domain.getProject?.(id)
+    case DomainSectionType.Store:
+      return (numId != null ? domain.getStoreById?.(numId) : null) ?? domain.getStore?.(id)
     default:
       return null
   }
@@ -190,6 +193,9 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.Project:
       rem(domain.removeProject?.bind(domain))
+      break
+    case DomainSectionType.Store:
+      rem(domain.removeStore?.bind(domain))
       break
     default:
       break

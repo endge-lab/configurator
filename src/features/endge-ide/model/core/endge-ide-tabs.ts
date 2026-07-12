@@ -6,6 +6,7 @@ import type {
 	  RComponentTable,
 	  RDataView,
 	  RComposition,
+	  RStore,
 	  RQuery,
 	  RTenant,
 	  RType,
@@ -27,6 +28,7 @@ import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEdito
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
+import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
 import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
 import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
@@ -58,6 +60,7 @@ import FiltersPanel_Editor from '@/features/endge-ide/ui/section/document/entity
 import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'
 import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'
 import Composition_Editor from '@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'
+import Store_Editor from '@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
 import Integration_Editor from '@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'
@@ -286,6 +289,15 @@ export class EndgeIDETabs {
       session?.syncBeforeSave?.()
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
       await Endge.schema.saveDocument(saveDocumentId, documentType, { model: session?.model ?? session?.editor ?? null })
+      if (documentType === 'store' && session?.model && typeof session.model === 'object') {
+        const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
+        if (identity) {
+          const tabPayload = this._getPayload<DocumentTabPayload>(activeTab.payload)
+          if (tabPayload)
+            tabPayload.documentId = identity
+          activeTab.label = this.getDocumentLabel(identity, documentType)
+        }
+      }
       await this._syncBindingsEditorState(documentType, session?.editor ?? null)
       await this._syncPresentationBindingsEditorState(documentType, session?.editor ?? null)
       const label = this.getDocumentLabel(saveDocumentId, documentType)
@@ -547,6 +559,10 @@ export class EndgeIDETabs {
       const composition = Endge.domain.getComposition(id)
       return composition?.displayName ?? composition?.name ?? id
     }
+    if (key === 'store') {
+      const store = Endge.domain.getStore(id)
+      return store?.displayName ?? store?.name ?? id
+    }
     if (key === 'type' || key === 'primitive')
       return Endge.domain.getType(id)?.name ?? id
     if (key === 'action') {
@@ -606,6 +622,8 @@ export class EndgeIDETabs {
       return 'ti ti-braces text-cyan-500 text-xl'
     if (key === 'composition')
       return 'ti ti-topology-star-3 text-violet-500 text-xl'
+    if (key === 'store')
+      return 'ti ti-database text-emerald-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))
       return 'ti ti-form-input text-slate-500 text-xl'
     if (key === String(FilterType.DefaultFilter))
@@ -801,6 +819,7 @@ export class EndgeIDETabs {
     [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
     ['data-view', (documentId) => this._resolveDataView(documentId)],
     ['composition', (documentId) => this._resolveComposition(documentId)],
+    ['store', (documentId) => this._resolveStore(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
     [String(FilterType.DefaultFilter), (documentId) => this._resolveFilter(documentId)],
@@ -953,6 +972,21 @@ export class EndgeIDETabs {
       editor,
       model: composition,
       syncBeforeSave: () => editor.updateSource(composition),
+    }
+  }
+
+  private _resolveStore(documentId: string): EditorSession | null {
+    const store = Endge.domain.getStore(documentId) as RStore | null
+    if (!store)
+      return null
+    const rawEditor = new RStoreEditor()
+    rawEditor.fillFromSource(store)
+    const editor = reactive(rawEditor as object) as RStoreEditor
+    return {
+      view: { component: markRaw(Store_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: store,
+      syncBeforeSave: () => editor.updateSource(store),
     }
   }
 
