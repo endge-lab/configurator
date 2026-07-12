@@ -38,6 +38,7 @@ export type CompositionPreviewRenderable
 export const compositionPreviewRuntime = shallowRef<CompositionRuntimeHost | null>(null)
 export const compositionPreviewError = shallowRef<string | null>(null)
 export const compositionPreviewTitle = shallowRef('Composition preview')
+export const compositionPreviewData = shallowRef<Readonly<Record<string, unknown>>>({})
 export const hasCompositionPreviewRuntime = computed(() => Boolean(compositionPreviewRuntime.value))
 export const compositionPreviewRenderables = computed<CompositionPreviewRenderable[]>(() => {
   const host = compositionPreviewRuntime.value
@@ -97,7 +98,18 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
   if (!runtime || runtime.entityType !== 'composition')
     throw new Error('Не удалось создать runtime композиции.')
 
-  await runtime.mountGraph()
+  try {
+    await runtime.mountGraph()
+  }
+  catch (error) {
+    Endge.runtime.destroyRuntimeTree(runtime.id)
+    throw error
+  }
+  const syncData = () => {
+    compositionPreviewData.value = runtime.getDataSnapshot()
+  }
+  runtime.on('data:change', syncData)
+  syncData()
   compositionPreviewRuntime.value = runtime
 }
 
@@ -106,6 +118,7 @@ export function destroyCompositionPreviewRuntime(): void {
   if (runtimeId)
     Endge.runtime.destroyRuntimeTree(runtimeId)
   compositionPreviewRuntime.value = null
+  compositionPreviewData.value = {}
 }
 
 function createPreviewComposition(input: CompositionPreviewLaunchInput): RComposition {
@@ -151,6 +164,7 @@ export const compositionPreviewState = reactive({
   runtime: compositionPreviewRuntime,
   error: compositionPreviewError,
   title: compositionPreviewTitle,
+  data: compositionPreviewData,
   hasRuntime: hasCompositionPreviewRuntime,
   renderables: compositionPreviewRenderables,
 })

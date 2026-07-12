@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import {
+  compositionPreviewData,
   compositionPreviewError,
   compositionPreviewRenderables,
   compositionPreviewRuntime,
@@ -15,6 +16,8 @@ const runtime = computed(() => compositionPreviewRuntime.value)
 const error = computed(() => compositionPreviewError.value)
 const title = computed(() => compositionPreviewTitle.value)
 const renderables = computed(() => compositionPreviewRenderables.value)
+const data = computed(() => compositionPreviewData.value)
+const dataJson = computed(() => JSON.stringify(data.value, null, 2))
 </script>
 
 <template>
@@ -59,9 +62,23 @@ const renderables = computed(() => compositionPreviewRenderables.value)
             :input="item.input"
           />
         </section>
+        <section v-if="Object.keys(data).length" class="composition-preview-widget__section">
+          <div class="composition-preview-widget__title">
+            {{ 'Data' }}
+          </div>
+          <pre class="max-h-80 overflow-auto rounded-md border bg-muted/30 p-3 text-xs">{{ dataJson }}</pre>
+        </section>
+      </div>
+      <div v-else-if="Object.keys(data).length" class="composition-preview-widget__stack">
+        <section class="composition-preview-widget__section">
+          <div class="composition-preview-widget__title">
+            {{ 'Data' }}
+          </div>
+          <pre class="max-h-full overflow-auto rounded-md border bg-muted/30 p-3 text-xs">{{ dataJson }}</pre>
+        </section>
       </div>
       <div v-else class="flex min-h-full items-center justify-center p-4 text-sm text-muted-foreground">
-        В композиции нет runtime-сущностей с доступной визуализацией.
+        {{ 'В композиции нет runtime-сущностей или data с доступной визуализацией.' }}
       </div>
     </div>
 

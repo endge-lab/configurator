@@ -3,17 +3,19 @@ import type {
   ComponentSFCPreviewProps,
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
+  CompositionRuntimeHost,
   ProgramArtifact,
   RuntimeHostInputSource,
 } from '@endge/core'
 
-import { Raph } from '@endge/raph'
 import {
-  ComponentSFCRuntimeHost as EndgeComponentSFCRuntimeHost,
-  Endge,
-  RComponentSFC,
   compileComponentSFC,
+  Endge,
+  ComponentSFCRuntimeHost as EndgeComponentSFCRuntimeHost,
+  RComponentSFC,
+  RComposition,
 } from '@endge/core'
+import { Raph } from '@endge/raph'
 import { computed, reactive, shallowRef } from 'vue'
 
 export interface SFCPreviewLaunchInput {
@@ -31,6 +33,12 @@ export const sfcPreviewTitle = shallowRef('SFC preview')
 export const hasSFCPreviewRuntime = computed(() => Boolean(sfcPreviewRuntime.value))
 
 let runtimeCounter = 0
+let previewComposition: PreviewCompositionContext | null = null
+
+interface PreviewCompositionContext {
+  host: CompositionRuntimeHost
+  dataAliases: Map<string, string>
+}
 
 export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<void> {
   destroySFCPreviewRuntime()
@@ -56,35 +64,45 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     throw new Error('Сначала определите превью props')
   }
 
-  await applyPreviewOptions(artifact.payload.previewOptions)
-
-  const runtimeInput = resolvePreviewInput(previewProps)
-  const runtimeId = resolvePreviewRuntimeId(input)
-  sfcPreviewInput.value = runtimeInput
-  const runtime = EndgeComponentSFCRuntimeHost.createRuntime({
-    id: runtimeId,
-    model,
-    meta: {
-      target: 'dom',
-      input: runtimeInput,
+  const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
+  try {
+    const runtimeInput = resolvePreviewInput(previewProps, composition)
+    const runtimeId = resolvePreviewRuntimeId(input)
+    sfcPreviewInput.value = runtimeInput
+    const runtime = EndgeComponentSFCRuntimeHost.createRuntime({
+      id: runtimeId,
+      model,
+      parent: composition?.host ?? null,
+      meta: {
+        target: 'dom',
+        input: runtimeInput,
+        persistence: 'local',
+      },
+      artifactReader: {
+        getArtifact: () => artifact,
+      },
+    })
+    runtime.attachRuntimeState(Endge.context.createRuntimeStateController({
+      runtimeId: runtime.id,
       persistence: 'local',
-    },
-    artifactReader: {
-      getArtifact: () => artifact,
-    },
-  })
-  runtime.attachRuntimeState(Endge.context.createRuntimeStateController({
-    runtimeId: runtime.id,
-    persistence: 'local',
-  }))
-  sfcPreviewRuntime.value = runtime
+    }))
+    previewComposition = composition
+    sfcPreviewRuntime.value = runtime
+  }
+  catch (error) {
+    destroyPreviewComposition(composition)
+    throw error
+  }
 }
 
 export function destroySFCPreviewRuntime(): void {
   const runtimeId = sfcPreviewRuntime.value?.id
   sfcPreviewRuntime.value?.destroy()
-  if (runtimeId)
+  if (runtimeId) {
     Endge.context.destroyRuntimeStateController(runtimeId)
+  }
+  destroyPreviewComposition(previewComposition)
+  previewComposition = null
   sfcPreviewRuntime.value = null
   sfcPreviewInput.value = { kind: 'local', props: {} }
 }
@@ -115,27 +133,65 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
   }
 }
 
-async function applyPreviewOptions(options: ComponentSFCPreviewOptions | null): Promise<void> {
-  for (const [path, value] of Object.entries(options?.seed ?? {}))
+async function applyPreviewOptions(
+  options: ComponentSFCPreviewOptions | null,
+  props: ComponentSFCPreviewProps,
+  input: SFCPreviewLaunchInput,
+): Promise<PreviewCompositionContext | null> {
+  for (const [path, value] of Object.entries(options?.seed ?? {})) {
     Raph.set(path, clonePreviewValue(value))
+  }
 
   await ensurePreviewQueryArtifacts(options)
 
-  for (const target of options?.run ?? []) {
-    if (target.type === 'query') {
-      const query = Endge.domain.getQuery(target.identity)
-      if (!query)
-        throw new Error(`Preview query not found: "${target.identity}".`)
-
-      await Endge.query.run(query, {})
+  const storeIdentities = new Set<string>()
+  for (const value of Object.values(props)) {
+    if (isDataPreviewProp(value)) {
+      storeIdentities.add(value.store)
     }
   }
+  for (const target of options?.run ?? []) {
+    if (target.storeTo) {
+      storeIdentities.add(target.storeTo.store)
+    }
+  }
+  const targets = options?.run ?? []
+  if (!storeIdentities.size && !targets.length) {
+    return null
+  }
+
+  const dataAliases = new Map<string, string>()
+  Array.from(storeIdentities).forEach((identity, index) => dataAliases.set(identity, `store${index}`))
+  const model = createPreviewComposition(input, dataAliases, targets)
+  const artifact = Endge.compiler.buildComposition(model)
+  if (artifact.status === 'error') {
+    const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
+      ?? 'Не удалось собрать preview composition.'
+    throw new Error(message)
+  }
+
+  const host = Endge.runtime.execute(model, {
+    id: `${resolvePreviewRuntimeId(input)}:composition`,
+    persistence: 'disabled',
+  }) as CompositionRuntimeHost | null
+  if (!host || host.entityType !== 'composition') {
+    throw new Error('Не удалось создать preview composition runtime.')
+  }
+  try {
+    await host.mountGraph()
+  }
+  catch (error) {
+    Endge.runtime.destroyRuntimeTree(host.id)
+    throw error
+  }
+  return { host, dataAliases }
 }
 
 async function ensurePreviewQueryArtifacts(options: ComponentSFCPreviewOptions | null): Promise<void> {
   const queryTargets = options?.run?.filter(target => target.type === 'query') ?? []
-  if (!queryTargets.length)
+  if (!queryTargets.length) {
     return
+  }
 
   try {
     await Endge.build()
@@ -146,18 +202,23 @@ async function ensurePreviewQueryArtifacts(options: ComponentSFCPreviewOptions |
 
   for (const target of queryTargets) {
     const query = Endge.domain.getQuery(target.identity)
-    if (!query)
+    if (!query) {
       throw new Error(`Preview query not found: "${target.identity}".`)
+    }
 
     const idOrIdentity = query.id ?? query.identity
-    if (Endge.program.getQueryArtifact(idOrIdentity))
+    if (Endge.program.getQueryArtifact(idOrIdentity)) {
       continue
+    }
 
     Endge.compiler.buildQuery(query)
   }
 }
 
-function resolvePreviewInput(previewProps: ComponentSFCPreviewProps): RuntimeHostInputSource {
+function resolvePreviewInput(
+  previewProps: ComponentSFCPreviewProps,
+  composition: PreviewCompositionContext | null,
+): RuntimeHostInputSource {
   const bindings: Record<string, { path: string, wildcardDynamic: true }> = {}
   const localProps: Record<string, unknown> = {}
 
@@ -169,12 +230,24 @@ function resolvePreviewInput(previewProps: ComponentSFCPreviewProps): RuntimeHos
       }
       continue
     }
+    if (isDataPreviewProp(value)) {
+      const alias = composition?.dataAliases.get(value.store)
+      if (!alias || !composition) {
+        throw new Error(`Preview Store not mounted: "${value.store}".`)
+      }
+      bindings[key] = {
+        path: composition.host.getDataPath(alias, value.path),
+        wildcardDynamic: true,
+      }
+      continue
+    }
 
     localProps[key] = clonePreviewValue(value)
   }
 
-  if (Object.keys(bindings).length === 0)
+  if (Object.keys(bindings).length === 0) {
     return { kind: 'local', props: localProps }
+  }
 
   for (const [key, value] of Object.entries(localProps)) {
     const path = `preview.sfc.props.${key}`
@@ -191,6 +264,52 @@ function resolvePreviewInput(previewProps: ComponentSFCPreviewProps): RuntimeHos
   }
 }
 
+function createPreviewComposition(
+  input: SFCPreviewLaunchInput,
+  dataAliases: Map<string, string>,
+  targets: NonNullable<ComponentSFCPreviewOptions['run']>,
+): RComposition {
+  const data = Array.from(dataAliases.entries())
+    .map(([identity, alias]) => `${alias}: store(${JSON.stringify(identity)})`)
+    .join(',\n    ')
+  const runtimes = targets.map((target, index) => {
+    const publication = target.storeTo
+      ? `.storeTo(data(${JSON.stringify(dataAliases.get(target.storeTo.store))}), ${serializeStoreMapping(target.storeTo.fields)})`
+      : ''
+    return `query${index}: query(${JSON.stringify(target.identity)})${publication}`
+  }).join(',\n    ')
+  const hooks = targets.map((_, index) => `onMount().run('query${index}')`).join(',\n    ')
+  const model = new RComposition()
+  model.id = `${resolvePreviewRuntimeId(input)}:composition-model` as any
+  model.identity = `${resolvePreviewRuntimeId(input)}:composition`
+  model.name = 'SFC preview composition'
+  model.displayName = 'SFC preview composition'
+  model.source = `defineComposition({
+  data: {
+    ${data}
+  },
+  runtimes: {
+    ${runtimes}
+  },
+  hooks: [
+    ${hooks}
+  ],
+})`
+  return model
+}
+
+function serializeStoreMapping(fields: Record<string, string>): string {
+  return `{ ${Object.entries(fields)
+    .map(([target, output]) => `${JSON.stringify(target)}: output(${JSON.stringify(output)})`)
+    .join(', ')} }`
+}
+
+function destroyPreviewComposition(context: PreviewCompositionContext | null): void {
+  if (context && Endge.runtime.getRuntimeById(context.host.id)) {
+    Endge.runtime.destroyRuntimeTree(context.host.id)
+  }
+}
+
 function isStorePreviewProp(value: unknown): value is { type: 'store', path: string } {
   return Boolean(
     value
@@ -201,9 +320,21 @@ function isStorePreviewProp(value: unknown): value is { type: 'store', path: str
   )
 }
 
+function isDataPreviewProp(value: unknown): value is { type: 'data', store: string, path: string } {
+  return Boolean(
+    value
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && (value as { type?: unknown }).type === 'data'
+    && typeof (value as { store?: unknown }).store === 'string'
+    && typeof (value as { path?: unknown }).path === 'string',
+  )
+}
+
 function clonePreviewValue(value: unknown): unknown {
-  if (value == null)
+  if (value == null) {
     return value
+  }
 
   try {
     return JSON.parse(JSON.stringify(value))
