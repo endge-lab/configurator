@@ -5,6 +5,7 @@ packages:
   - '../../packages/@endge-raph'
   - '../../packages/@endge-utils'
   - '../../packages/@endge-vue'
+  - '../../packages/@endge-shadcn-vue'
 allowBuilds:
   '@parcel/watcher': set this to true or false
   esbuild: set this to true or false

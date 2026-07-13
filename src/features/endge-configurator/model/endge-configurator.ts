@@ -1,6 +1,7 @@
 import type { EndgeBootContext, EndgeDataProvider } from '@endge/core'
 
-import { Endge } from '@endge/core'
+import { DEFAULT_ENDGE_WORKSPACE, Endge } from '@endge/core'
+import { EndgeShadcnVuePlugin } from '@endge/shadcn-vue'
 import { EndgeVuePlugin } from '@endge/vue'
 
 import domainJson from '@/mock/endge-domain.json'
@@ -10,7 +11,7 @@ import domainJson from '@/mock/endge-domain.json'
  */
 export class EndgeConfigurator {
   private static _isInitialized = false
-  private static _isVuePluginInstallAttempted = false
+  private static _isRendererPluginInstallAttempted = false
 
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
@@ -19,7 +20,7 @@ export class EndgeConfigurator {
   public static async init(): Promise<void> {
     const ctx = this._createBootContext()
 
-    this._installVuePlugin()
+    this._installRendererPlugins()
     await Endge.boot(ctx)
 
     this._isInitialized = true
@@ -51,7 +52,15 @@ export class EndgeConfigurator {
       vars: {
         ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
       },
-      plainSource: dataProvider === 'plain' ? domainJson.domain : undefined,
+      plainSource: dataProvider === 'plain'
+        ? {
+            ...domainJson.domain,
+            workspace: {
+              ...DEFAULT_ENDGE_WORKSPACE,
+              sfcAdapterIds: ['native-vue', 'shadcn-vue'],
+            },
+          }
+        : undefined,
       payload: dataProvider === 'payload'
         ? {
             baseAPI: import.meta.env.VITE_PAYLOAD_BASE_URL || '',
@@ -62,22 +71,24 @@ export class EndgeConfigurator {
   }
 
   /**
-   * Регистрирует Vue-плагин до конфигурации federation.
+   * Регистрирует Vue renderer-плагины до конфигурации federation.
    * В HMR-сценарии federation host может быть уже configured в globalThis,
    * поэтому повторную регистрацию считаем нефатальной и продолжаем boot.
    */
-  private static _installVuePlugin(): void {
-    if (this._isVuePluginInstallAttempted)
+  private static _installRendererPlugins(): void {
+    if (this._isRendererPluginInstallAttempted)
       return
 
-    this._isVuePluginInstallAttempted = true
+    this._isRendererPluginInstallAttempted = true
 
-    try {
-      Endge.use(EndgeVuePlugin)
-    }
-    catch (error) {
-      if (!this._isPluginAlreadyLockedError(error))
-        throw error
+    for (const plugin of [EndgeVuePlugin, EndgeShadcnVuePlugin]) {
+      try {
+        Endge.use(plugin)
+      }
+      catch (error) {
+        if (!this._isPluginAlreadyLockedError(error))
+          throw error
+      }
     }
   }
 
