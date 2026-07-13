@@ -1,7 +1,8 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup lang="ts">
 import { compileComponentSFC } from '@endge/core'
-import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
+import { SFC_Renderer } from '@endge/vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -354,96 +355,6 @@ function badgeClass(tone: string | number): string {
   return 'border-border bg-muted text-muted-foreground'
 }
 
-function valueToText(value: unknown): string {
-  if (value == null) {
-    return ''
-  }
-  if (typeof value === 'string') {
-    return value
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value)
-  }
-  return JSON.stringify(value)
-}
-
-function readValue(input: any, ctx: Record<string, unknown>): unknown {
-  if (!input) {
-    return null
-  }
-  if (input.kind === 'literal') {
-    return input.value
-  }
-  if (input.kind !== 'expression') {
-    return null
-  }
-
-  return readExpression(input.source, ctx)
-}
-
-function readExpression(source: string, ctx: Record<string, unknown>): unknown {
-  const expression = source.trim()
-  if (!expression) {
-    return ''
-  }
-
-  if (expression.startsWith('!')) {
-    return !readExpression(expression.slice(1), ctx)
-  }
-
-  if (expression === 'true') {
-    return true
-  }
-  if (expression === 'false') {
-    return false
-  }
-  if (expression === 'null') {
-    return null
-  }
-
-  const numericValue = Number(expression)
-  if (Number.isFinite(numericValue) && expression !== '') {
-    return numericValue
-  }
-
-  if (
-    (expression.startsWith('"') && expression.endsWith('"'))
-    || (expression.startsWith('\'') && expression.endsWith('\''))
-  ) {
-    return expression.slice(1, -1)
-  }
-
-  return readPath(ctx, expression) ?? `{{ ${source} }}`
-}
-
-function readPath(ctx: Record<string, unknown>, path: string): unknown {
-  return path
-    .split('.')
-    .map(part => part.trim())
-    .filter(Boolean)
-    .reduce<unknown>((current, part) => {
-      if (current && typeof current === 'object' && part in current) {
-        return (current as Record<string, unknown>)[part]
-      }
-
-      return undefined
-    }, ctx)
-}
-
-function shouldRender(node: any, ctx: Record<string, unknown>): boolean {
-  const directives = node?.directives ?? {}
-  if (directives.else) {
-    return true
-  }
-  if (directives.if) {
-    return Boolean(readValue(directives.if, ctx))
-  }
-  if (directives.elseIf) {
-    return Boolean(readValue(directives.elseIf, ctx))
-  }
-  return true
-}
-
 function summaryText(item: { label: string, value: string | number }): string {
   return `${item.label}: ${item.value}`
 }
@@ -457,122 +368,6 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
   const rangeStart = diagnostic.start ?? ''
   const rangeEnd = diagnostic.end != null ? `-${diagnostic.end}` : ''
   return `${sourcePath} ${rangeStart}${rangeEnd}`.trim()
-}
-
-const SFCPreviewNode = defineComponent({
-  name: 'SFCPreviewNode',
-  props: {
-    node: {
-      type: Object,
-      required: true,
-    },
-    context: {
-      type: Object,
-      required: true,
-    },
-  },
-  setup(props) {
-    return () => {
-      const node = props.node as any
-      const ctx = props.context as Record<string, unknown>
-
-      if (!shouldRender(node, ctx)) {
-        return null
-      }
-
-      if (node.kind === 'text') {
-        return h('span', node.value)
-      }
-
-      if (node.kind === 'expression') {
-        return h('span', valueToText(readValue(node.value, ctx)))
-      }
-
-      if (node.kind !== 'element') {
-        return null
-      }
-
-      const propValue = (name: string) => readValue(node.props?.[name], ctx)
-      const children = renderChildren(node, ctx)
-
-      if (node.tag === 'Flex') {
-        const isColumn = node.props?.col || propValue('direction') === 'column'
-        return h('div', {
-          class: ['sfc-preview-flex', isColumn ? 'sfc-preview-flex--col' : 'sfc-preview-flex--row'],
-          style: {
-            gap: `${Number(propValue('gap') ?? 2) * 4}px`,
-            padding: node.props?.p ? `${Number(propValue('p') ?? 0) * 4}px` : undefined,
-            alignItems: String(propValue('align') ?? 'stretch'),
-          },
-        }, children)
-      }
-
-      if (node.tag === 'Box') {
-        return h('div', {
-          class: 'sfc-preview-box',
-          style: {
-            padding: node.props?.p ? `${Number(propValue('p') ?? 0) * 4}px` : undefined,
-          },
-        }, children)
-      }
-
-      if (node.tag === 'Text') {
-        return h('span', {
-          class: 'sfc-preview-text',
-          style: {
-            fontWeight: propValue('weight') ? String(propValue('weight')) : undefined,
-            color: propValue('color') === 'muted' ? 'var(--muted-foreground)' : String(propValue('color') ?? ''),
-          },
-        }, children)
-      }
-
-      if (node.tag === 'Badge') {
-        return h('span', {
-          class: ['sfc-preview-badge', `sfc-preview-badge--${String(propValue('tone') ?? 'neutral')}`],
-        }, children)
-      }
-
-      if (node.tag === 'Dot') {
-        return h('span', {
-          class: ['sfc-preview-dot', `sfc-preview-dot--${String(propValue('tone') ?? 'neutral')}`],
-        })
-      }
-
-      if (node.tag === 'Divider') {
-        return h('hr', { class: 'sfc-preview-divider' })
-      }
-
-      if (node.tag === 'DateTime') {
-        const value = propValue('value')
-        const date = value ? new Date(String(value)) : null
-        const text = date && !Number.isNaN(date.getTime())
-          ? date.toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-          : valueToText(value)
-        return h('span', { class: 'sfc-preview-datetime' }, text)
-      }
-
-      if (node.tag === 'Number') {
-        return h('span', { class: 'sfc-preview-number' }, valueToText(propValue('value')))
-      }
-
-      if (node.tag === 'Icon') {
-        return h('i', { class: ['ti', `ti-${String(propValue('name') ?? 'circle')}`] })
-      }
-
-      if (node.tag === 'Component') {
-        return h('span', { class: 'sfc-preview-component' }, `Component: ${valueToText(propValue('is'))}`)
-      }
-
-      return h('span', children)
-    }
-  },
-})
-
-function renderChildren(node: any, ctx: Record<string, unknown>): any[] {
-  return (node.children ?? []).map((child: any) => h(SFCPreviewNode, {
-    node: child,
-    context: ctx,
-  }))
 }
 </script>
 
@@ -715,11 +510,9 @@ function renderChildren(node: any, ctx: Record<string, unknown>): any[] {
                     v-else
                     class="sfc-preview-surface"
                   >
-                    <SFCPreviewNode
-                      v-for="rootNode in compileResult.ir.template.roots"
-                      :key="rootNode.id"
-                      :node="rootNode"
-                      :context="previewContext"
+                    <SFC_Renderer
+                      :ir="compileResult.ir"
+                      :props="previewContext"
                     />
                   </div>
                 </div>

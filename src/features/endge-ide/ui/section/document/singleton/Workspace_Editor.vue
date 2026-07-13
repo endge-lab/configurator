@@ -35,10 +35,13 @@ type AuthProfileOption = {
 }
 
 const NO_AUTH_PROFILE = '__none__'
+const SFC_ADAPTER_LABEL = 'SFC-адаптер по умолчанию'
+const SFC_ADAPTER_DESCRIPTION = 'Список доступных идентификаторов задаётся в текущем Workspace.'
 
 const domainStore = useDomainStore()
 const workspaceVersion = ref(0)
 const defaultAuthProfileIdentity = ref(NO_AUTH_PROFILE)
+const defaultSfcAdapterId = ref('shadcn-vue')
 const defaultLocale = ref('')
 const fallbackLocale = ref('')
 const locales = ref<EndgeWorkspaceLocale[]>([])
@@ -77,6 +80,8 @@ const localeOptions = computed(() =>
     .filter(locale => locale.code),
 )
 
+const sfcAdapterOptions = computed(() => workspace.value.sfcAdapterIds)
+
 watchEffect(() => {
   const current = workspace.value
   locales.value = current.locales.map(locale => ({ ...locale }))
@@ -86,6 +91,7 @@ watchEffect(() => {
   defaultLocale.value = current.defaultLocale
   fallbackLocale.value = current.fallbackLocale
   defaultAuthProfileIdentity.value = current.defaultAuthProfileIdentity ?? NO_AUTH_PROFILE
+  defaultSfcAdapterId.value = current.defaultSfcAdapterId
 })
 
 function ensureLocaleSelection(): void {
@@ -221,6 +227,8 @@ async function saveWorkspaceSettings(): Promise<void> {
           defaultAuthProfileIdentity: defaultAuthProfileIdentity.value === NO_AUTH_PROFILE
             ? null
             : defaultAuthProfileIdentity.value,
+          sfcAdapterIds: [...workspace.value.sfcAdapterIds],
+          defaultSfcAdapterId: defaultSfcAdapterId.value,
         },
       }),
     )
@@ -292,6 +300,27 @@ async function saveWorkspaceSettings(): Promise<void> {
                     placeholder="{ENDPOINT_AODB_SSE}"
                     autocomplete="off"
                   />
+                </div>
+
+                <div class="space-y-2">
+                  <Label>{{ SFC_ADAPTER_LABEL }}</Label>
+                  <Select v-model="defaultSfcAdapterId">
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="Выберите SFC-адаптер" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="adapterId in sfcAdapterOptions"
+                        :key="adapterId"
+                        :value="adapterId"
+                      >
+                        {{ adapterId }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p class="text-xs text-muted-foreground">
+                    {{ SFC_ADAPTER_DESCRIPTION }}
+                  </p>
                 </div>
 
                 <div class="space-y-2">
