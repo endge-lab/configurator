@@ -1,3 +1,5 @@
+/* eslint-disable perfectionist/sort-imports -- renderer plugins must be registered before imports that read Endge modules */
+import '@/features/endge-configurator/model/endge-renderer-plugins.ts'
 import '@endge/vue/vue.css'
 import '@endge/shadcn-vue/shadcn-vue.css'
 import './assets/main.css'
@@ -10,14 +12,14 @@ import { captureAppRenderFailure } from '@/features/endge-configurator/model/app
 import { i18n } from '@/i18n'
 import { branding } from '@/lib/branding.ts'
 import { installEndgeChromeBridge } from '@/features/endge-ide/tools/chrome-bridge'
+import App from './App.vue'
+import router from './router'
+/* eslint-enable perfectionist/sort-imports */
 
 // В dev приложение само отдаёт домен в Vite-плагин для кодогенерации в src/gen
 if (import.meta.env.DEV) {
   import('virtual:endge-codegen-push')
 }
-
-import App from './App.vue'
-import router from './router'
 
 const app = createApp(App)
 

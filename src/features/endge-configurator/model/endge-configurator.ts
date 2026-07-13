@@ -1,8 +1,12 @@
 import type { EndgeBootContext, EndgeDataProvider } from '@endge/core'
 
-import { DEFAULT_ENDGE_WORKSPACE, Endge } from '@endge/core'
-import { EndgeShadcnVuePlugin } from '@endge/shadcn-vue'
-import { EndgeVuePlugin } from '@endge/vue'
+import {
+  DEFAULT_ENDGE_WORKSPACE,
+  Endge,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
+  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+} from '@endge/core'
 
 import domainJson from '@/mock/endge-domain.json'
 
@@ -11,17 +15,16 @@ import domainJson from '@/mock/endge-domain.json'
  */
 export class EndgeConfigurator {
   private static _isInitialized = false
-  private static _isRendererPluginInstallAttempted = false
 
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
-   * Подключает Vue-плагин Endge и передает boot-контекст в централизованный `Endge.boot()`.
+   * Передает boot-контекст в `Endge.boot()` и проверяет выбранный renderer adapter.
    */
   public static async init(): Promise<void> {
     const ctx = this._createBootContext()
 
-    this._installRendererPlugins()
     await Endge.boot(ctx)
+    this._assertWorkspaceRendererReady()
 
     this._isInitialized = true
   }
@@ -31,8 +34,9 @@ export class EndgeConfigurator {
    * Используется для полного повторного boot без пересоздания `EndgeConfigurator`.
    */
   public static async reset(): Promise<void> {
-    if (!this.isInitialized)
+    if (!this.isInitialized) {
       return
+    }
 
     await Endge.reset()
     this._isInitialized = false
@@ -70,30 +74,19 @@ export class EndgeConfigurator {
     }
   }
 
-  /**
-   * Регистрирует Vue renderer-плагины до конфигурации federation.
-   * В HMR-сценарии federation host может быть уже configured в globalThis,
-   * поэтому повторную регистрацию считаем нефатальной и продолжаем boot.
-   */
-  private static _installRendererPlugins(): void {
-    if (this._isRendererPluginInstallAttempted)
-      return
+  private static _assertWorkspaceRendererReady(): void {
+    const adapter = Endge.uiRegistry.adapters.requireActive({
+      protocol: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
+      protocolVersion: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
+      renderer: 'vue',
+      requiredRendererKeys: ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+    })
 
-    this._isRendererPluginInstallAttempted = true
-
-    for (const plugin of [EndgeVuePlugin, EndgeShadcnVuePlugin]) {
-      try {
-        Endge.use(plugin)
-      }
-      catch (error) {
-        if (!this._isPluginAlreadyLockedError(error))
-          throw error
-      }
+    if (adapter.id !== Endge.workspace.defaultSfcAdapterId) {
+      throw new Error(
+        `[EndgeConfigurator] active SFC adapter "${adapter.id}" does not match workspace adapter "${Endge.workspace.defaultSfcAdapterId}"`,
+      )
     }
-  }
-
-  private static _isPluginAlreadyLockedError(error: unknown): boolean {
-    return String(error).includes('plugins must be registered before federation configuration')
   }
 
   /**
