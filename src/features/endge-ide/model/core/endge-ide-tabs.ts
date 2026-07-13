@@ -50,6 +50,10 @@ import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
 import { getBehaviorBindingEditorState } from '@/features/endge-ide/model/bindings/behavior-binding-editor-state.ts'
 import { getPresentationBindingEditorState } from '@/features/endge-ide/model/bindings/presentation-binding-editor-state.ts'
+import {
+  isQueryComposition,
+  QUERY_COMPOSITION_PRESENTATION_KIND,
+} from '@/features/endge-ide/model/domain/query-composition-presentation'
 import MarkdownViewer from '@/features/endge-ide/ui/components/MarkdownViewer.vue'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
@@ -311,6 +315,10 @@ export class EndgeIDETabs {
 
   public openDocument(id: string | number, docType: DomainDocumentType): void {
     const documentId = id != null && id !== '' ? String(id) : ''
+    const presentationKind = String(docType) === 'composition'
+      && isQueryComposition(Endge.domain.getComposition(documentId))
+      ? QUERY_COMPOSITION_PRESENTATION_KIND
+      : undefined
     const tabId = `${String(docType)}-${documentId || 'empty'}`
     const tabRef: SmartTabRef = {
       id: tabId,
@@ -318,7 +326,7 @@ export class EndgeIDETabs {
       viewId: VIEW_ID_DOCUMENT,
       payload: { documentId, documentType: docType } satisfies DocumentTabPayload,
       closable: true,
-      meta: { icon: this.getDocumentIcon(docType) },
+      meta: { icon: this.getDocumentIcon(docType, presentationKind) },
     }
     this.openTab(tabRef)
   }
@@ -608,7 +616,7 @@ export class EndgeIDETabs {
     return id
   }
 
-  public getDocumentIcon(docType: DomainDocumentType): string {
+  public getDocumentIcon(docType: DomainDocumentType, presentationKind?: string): string {
     const key = String(docType)
     if (key === String(ComponentType.Table))
       return 'ti ti-table text-green-500 text-xl'
@@ -621,7 +629,9 @@ export class EndgeIDETabs {
     if (key === 'data-view')
       return 'ti ti-braces text-cyan-500 text-xl'
     if (key === 'composition')
-      return 'ti ti-topology-star-3 text-violet-500 text-xl'
+      return presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
+        ? 'ti ti-topology-star-3 text-orange-500 text-xl'
+        : 'ti ti-topology-star-3 text-violet-500 text-xl'
     if (key === 'store')
       return 'ti ti-database text-emerald-500 text-xl'
     if (key === String(ParameterType.DefaultParameter))

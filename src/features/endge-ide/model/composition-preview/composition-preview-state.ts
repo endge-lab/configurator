@@ -79,7 +79,10 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
   compositionPreviewTitle.value = input.displayName || input.name || input.identity || 'Composition preview'
 
   await Endge.build()
-  ensureCompositionRuntimeArtifacts(input.source)
+  ensureCompositionRuntimeArtifacts(
+    input.source,
+    new Set(input.identity ? [input.identity] : []),
+  )
 
   const model = createPreviewComposition(input)
   const artifact = Endge.compiler.buildComposition(model)
@@ -131,7 +134,8 @@ function resolvePreviewRuntimeId(input: CompositionPreviewLaunchInput): string {
   return `composition-preview:${normalized}`
 }
 
-function ensureCompositionRuntimeArtifacts(source: string): void {
+/** Достраивает runtime dependencies Composition в dependency-first порядке для preview. */
+export function ensureCompositionRuntimeArtifacts(source: string, visiting = new Set<string>()): void {
   const result = Endge.source.compile('composition', source)
   const payload = result.artifact
   if (!payload)
@@ -149,6 +153,23 @@ function ensureCompositionRuntimeArtifacts(source: string): void {
       const model = Endge.domain.getQuery(runtime.identity)
       if (model && !Endge.program.getQueryArtifact(runtime.identity))
         Endge.compiler.buildQuery(model)
+      continue
+    }
+
+    if (runtime.kind === 'composition') {
+      if (visiting.has(runtime.identity))
+        continue
+      const model = Endge.domain.getComposition(runtime.identity)
+      if (!model)
+        continue
+
+      visiting.add(runtime.identity)
+      ensureCompositionRuntimeArtifacts(model.source, visiting)
+      visiting.delete(runtime.identity)
+
+      const artifact = Endge.program.getCompositionArtifact(runtime.identity)
+      if (!artifact || artifact.status === 'error')
+        Endge.compiler.buildComposition(model)
     }
   }
 }

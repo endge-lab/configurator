@@ -2,6 +2,7 @@
 import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, DocumentFactory, DomainSectionType, Endge, FilterType, QueryType } from '@endge/core'
+import { useDomainStore } from '@endge/vue'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -13,12 +14,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { useDomainStore } from '@endge/vue'
+import {
+  getQueryRootFolderId,
+  QUERY_COMPOSITION_CREATE_KIND,
+  QUERY_COMPOSITION_PRESENTATION_KIND,
+  setQueryCompositionRole,
+} from '@/features/endge-ide/model/domain/query-composition-presentation'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+type CreateDocumentKind = DomainDocumentType | typeof QUERY_COMPOSITION_CREATE_KIND
 
 interface DocTypeOption {
-  type: DomainDocumentType
+  type: CreateDocumentKind
   label: string
   section: DomainSectionType
 }
@@ -29,6 +36,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: ComponentType.Table, label: 'Table', section: DomainSectionType.Component },
   { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
   { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
+  { type: QUERY_COMPOSITION_CREATE_KIND, label: 'Композиция запросов', section: DomainSectionType.Query },
   { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
   { type: 'composition' as DomainDocumentType, label: 'Композиция', section: DomainSectionType.Composition },
   { type: 'store' as DomainDocumentType, label: 'Хранилище', section: DomainSectionType.Store },
@@ -112,7 +120,7 @@ const emit = defineEmits<{
 
 const domainStore = useDomainStore()
 
-const activeType = ref<DomainDocumentType>(ComponentType.DSL)
+const activeType = ref<CreateDocumentKind>(ComponentType.DSL)
 const identity = ref('')
 const name = ref('')
 const selectedFolderId = ref<string>('')
@@ -224,9 +232,10 @@ watch([identity, name, selectedFolderId], () => {
 function buildPayloadTemplate(): Record<string, unknown> {
   const id = identity.value.trim() || 'new-doc'
   const displayName = name.value.trim() || id
+  const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
   const folder = showFolderSelect.value && selectedFolderId.value
     ? selectedFolderId.value
-    : null
+    : isQueryComposition ? getQueryRootFolderId() : null
 
   const base: Record<string, unknown> = {
     identity: id,
@@ -285,13 +294,13 @@ function buildPayloadTemplate(): Record<string, unknown> {
     }
   }
 
-  if (activeType.value === 'composition') {
+  if (activeType.value === 'composition' || isQueryComposition) {
     return {
       ...base,
       description: null,
       source: Endge.source.createDefault('composition'),
       sourceVersion: 1,
-      meta: {},
+      meta: isQueryComposition ? setQueryCompositionRole({}, true) : {},
       inherited: false,
     }
   }
@@ -425,10 +434,26 @@ async function onSubmit(): Promise<void> {
         throw new Error(`Невалидный JSON: ${e?.message ?? String(e)}`)
       }
 
-      await Endge.schema.upsertPayloadDocumentRaw(activeType.value, parsed)
+      const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
+      const documentType = isQueryComposition
+        ? 'composition' as DomainDocumentType
+        : activeType.value as DomainDocumentType
+      if (isQueryComposition) {
+        parsed.meta = setQueryCompositionRole(parsed.meta as Record<string, unknown> | undefined, true)
+        if (parsed.folder == null || parsed.folder === '') {
+          const rootFolderId = getQueryRootFolderId()
+          if (rootFolderId == null) {
+            throw new Error('Системная папка запросов не найдена')
+          }
+          parsed.folder = rootFolderId
+        }
+      }
+
+      await Endge.schema.upsertPayloadDocumentRaw(documentType, parsed)
       const createdIdentity = String(parsed.identity ?? '').trim()
-      if (createdIdentity)
-        EndgeIDE.tabs.openDocument(createdIdentity, activeType.value)
+      if (createdIdentity) {
+        EndgeIDE.tabs.openDocument(createdIdentity, documentType)
+      }
       toast.success('Документ создан из JSON', { description: createdIdentity || 'без identity' })
       openModel.value = false
       return
@@ -439,17 +464,30 @@ async function onSubmit(): Promise<void> {
       toast.error('Введите идентификатор (identity)')
       return
     }
-    const draft = DocumentFactory.create(activeType.value, {
+    const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
+    const documentType = isQueryComposition
+      ? 'composition' as DomainDocumentType
+      : activeType.value as DomainDocumentType
+    const rootFolderId = isQueryComposition ? getQueryRootFolderId() : null
+    if (isQueryComposition && rootFolderId == null) {
+      throw new Error('Системная папка запросов не найдена')
+    }
+    const draft = DocumentFactory.create(documentType, {
       id,
       name: name.value.trim() || undefined,
-      folderId: showFolderSelect.value && selectedFolderId.value ? selectedFolderId.value : undefined,
+      folderId: showFolderSelect.value && selectedFolderId.value
+        ? selectedFolderId.value
+        : rootFolderId ?? undefined,
       registerInDomain: false,
     })
+    if (isQueryComposition) {
+      draft.meta = setQueryCompositionRole(draft.meta, true)
+    }
 
     // Сохраняем новый документ в payload (tabs.save() сохраняет активную вкладку, а не созданный документ)
-    await Endge.schema.saveDocument(id, activeType.value, { model: draft })
+    await Endge.schema.saveDocument(id, documentType, { model: draft })
 
-    EndgeIDE.tabs.openDocument(id, activeType.value)
+    EndgeIDE.tabs.openDocument(id, documentType)
     toast.success('Документ создан', { description: id })
     openModel.value = false
   }
@@ -487,7 +525,13 @@ function onCancel(): void {
                 :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
                 @click="activeType = doc.type"
               >
-                <i :class="EndgeIDE.tabs.getDocumentIcon(doc.type)" class="text-lg shrink-0" />
+                <i
+                  :class="EndgeIDE.tabs.getDocumentIcon(
+                    doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
+                    doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
+                  )"
+                  class="text-lg shrink-0"
+                />
                 <span class="font-medium">{{ doc.label }}</span>
               </button>
             </div>

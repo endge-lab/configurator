@@ -33,6 +33,39 @@ describe('buildDomainTree', () => {
     expect(tree[0]?.name).toBe('Представления')
   })
 
+  it('keeps query Composition canonical while applying its query presentation', () => {
+    const tree = buildDomainTree({
+      rootToSection: {
+        'root-queries': {
+          section: DomainSectionType.Query,
+          items: () => [{
+            id: 10,
+            identity: 'groundhandling-default',
+            displayName: 'Запросы ТГО',
+            type: 'composition',
+            folderId: 'root-queries',
+            sectionType: DomainSectionType.Composition,
+            presentationKind: 'query-composition',
+          }],
+        },
+      },
+      rootOrder: ['root-queries'],
+      rootLabels: { 'root-queries': 'Запросы' },
+      allFolders: [
+        { id: 'root-queries', identity: 'root-queries', name: 'Queries', parent: null },
+      ],
+      softDeletedFolderId: null,
+    })
+
+    const file = tree[0]?.children?.[0]
+    expect(file).toMatchObject({
+      type: 'file',
+      docType: 'composition',
+      sectionType: DomainSectionType.Composition,
+      presentationKind: 'query-composition',
+    })
+  })
+
   it('stops traversing cyclic folder branches from malformed folder data', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 

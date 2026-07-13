@@ -78,6 +78,10 @@ import {
   withoutDeleted,
   withoutDeletedAndInherited,
 } from '@/features/endge-ide/model/domain/domain-tree'
+import {
+  isQueryComposition,
+  QUERY_COMPOSITION_PRESENTATION_KIND,
+} from '@/features/endge-ide/model/domain/query-composition-presentation'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -384,11 +388,25 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
 /** Маппинг: identity корневой папки - секция и список сущностей домена (без удалённых, без inherited в корне). Все доступные сущности. */
 const ROOT_TO_SECTION = computed(() => {
   const softId = softDeletedFolderId.value
+  const compositions = withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId)
+  const queryCompositions = compositions
+    .filter(isQueryComposition)
+    .map(composition => ({
+      ...composition,
+      sectionType: DomainSectionType.Composition,
+      presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND,
+    }))
   return {
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
-    'root-queries': { section: DomainSectionType.Query, items: () => withoutDeletedAndInherited(domainStore.queries, softId) },
+    'root-queries': {
+      section: DomainSectionType.Query,
+      items: () => [...withoutDeletedAndInherited(domainStore.queries, softId), ...queryCompositions],
+    },
     'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeletedAndInherited((Endge.domain as any).getDataViews?.() ?? [], softId) },
-    'root-compositions': { section: DomainSectionType.Composition, items: () => withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId) },
+    'root-compositions': {
+      section: DomainSectionType.Composition,
+      items: () => compositions.filter(composition => !isQueryComposition(composition)),
+    },
     'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? [], softId) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
@@ -470,6 +488,7 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   COMPONENT_SFC_TYPE,
   QueryType.REST,
   'data-view',
+  'composition',
   'store',
   'action',
   'integration',
@@ -1061,7 +1080,10 @@ function rowClasses(item: FlatFsItem): string {
                 />
                 <i
                   v-else
-                  :class="EndgeIDE.tabs.getDocumentIcon((it.node as FsFileNode).docType)"
+                  :class="EndgeIDE.tabs.getDocumentIcon(
+                    (it.node as FsFileNode).docType,
+                    (it.node as FsFileNode).presentationKind,
+                  )"
                   class="text-base shrink-0"
                 />
               </template>

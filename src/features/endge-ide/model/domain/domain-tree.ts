@@ -14,6 +14,8 @@ import {
   QueryType,
 } from '@endge/core'
 
+import { isQueryComposition, QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
+
 export type FsNodeType = 'file' | 'folder'
 
 export interface FsNodeBase {
@@ -45,6 +47,7 @@ export interface FsFileNode extends FsNodeBase {
   viewChildInherited?: boolean
   isTableColumn?: boolean
   parentComponentId?: string
+  presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
 }
 
 export type FsNode = FsFolderNode | FsFileNode
@@ -147,6 +150,7 @@ export function getSoftDeletedItems(
   type?: DomainDocumentType
   sectionType: DomainSectionType
   project?: string | null
+  presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
 }> {
   const out: Array<{
     id: string
@@ -181,6 +185,7 @@ export function getSoftDeletedItems(
         type: e.type,
         sectionType,
         project: e.project ?? null,
+        ...(isQueryComposition(e) && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
       })
     }
   }
@@ -618,6 +623,8 @@ function buildFolderNode(
           || (c as { type?: string }).type === 'system'
           || SYSTEM_TYPE_FOLDER_IDENTITIES.has(folderIdentity),
         isInDeletedFolder: currentInDeletedBranch,
+        ...((c as { presentationKind?: unknown }).presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
+          && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
       }
       if (itemSectionType === DomainSectionType.View) {
         fileNode.children = buildViewChildRefs(c as ViewWithRefs)

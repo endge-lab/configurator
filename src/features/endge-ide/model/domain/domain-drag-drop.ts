@@ -22,6 +22,14 @@ import {
 import { randomString } from '@endge/utils'
 
 import { SOFT_DELETED_IDENTITY } from './domain-tree'
+import {
+  COMPOSITION_ROOT_IDENTITY,
+  QUERY_ROOT_IDENTITY,
+  getCompositionRootFolderId,
+  getQueryRootFolderId,
+  isQueryComposition,
+  setQueryCompositionRole,
+} from './query-composition-presentation'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -277,6 +285,8 @@ export async function deleteEntity(node: FsFileNode, permanent = false): Promise
  * Восстанавливает сущность в корневую секцию.
  */
 export async function restoreEntity(node: FsFileNode): Promise<void> {
+  const entity = getEntityBySection(node.id, node.sectionType)
+  const restoreToQueries = node.docType === 'composition' && isQueryComposition(entity)
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
     await Endge.schema.restoreDocument(node.id, node.docType)
   }
@@ -291,6 +301,10 @@ export async function restoreEntity(node: FsFileNode): Promise<void> {
   }
 
   markEntityAsRestoredInDomain(node.id, node.sectionType)
+  if (restoreToQueries) {
+    await Endge.schema.changeDocumentFolder(node.id, node.docType, QUERY_ROOT_IDENTITY)
+    setEntityFolderInDomain(node.id, node.sectionType, getQueryRootFolderId())
+  }
   Endge.domain.notify()
 }
 
@@ -420,8 +434,23 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
     }
 
     if (item.rootId !== dropTarget.targetRootId) {
-      result.skipped++
-      result.errors.push(`«${item.id}»: перетаскивание между разными секциями запрещено`)
+      const canReclassifyComposition = item.docType === 'composition'
+        && ((item.rootId === COMPOSITION_ROOT_IDENTITY && dropTarget.targetRootId === QUERY_ROOT_IDENTITY)
+          || (item.rootId === QUERY_ROOT_IDENTITY && dropTarget.targetRootId === COMPOSITION_ROOT_IDENTITY))
+      if (!canReclassifyComposition) {
+        result.skipped++
+        result.errors.push(`«${item.id}»: перетаскивание между разными секциями запрещено`)
+        continue
+      }
+
+      try {
+        await reclassifyComposition(item.id, dropTarget.targetRootId, dropTarget.dropFolderId)
+        result.moved++
+      }
+      catch (err) {
+        result.skipped++
+        result.errors.push(`«${item.id}»: ${(err as Error)?.message ?? 'ошибка смены роли композиции'}`)
+      }
       continue
     }
 
@@ -443,6 +472,38 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
 
   Endge.domain.notify()
   return result
+}
+
+/** Переносит Composition между обычной и query presentation-ролью. */
+async function reclassifyComposition(
+  id: string,
+  targetRootId: string,
+  dropFolderId: string | number | null,
+): Promise<void> {
+  const composition = getEntityBySection(id, DomainSectionType.Composition)
+  if (!composition) {
+    throw new Error('композиция не найдена')
+  }
+
+  const targetIsQueries = targetRootId === QUERY_ROOT_IDENTITY
+  const rootFolderId = targetIsQueries ? getQueryRootFolderId() : getCompositionRootFolderId()
+  const targetFolderId = dropFolderId ?? rootFolderId
+  if (targetFolderId == null) {
+    throw new Error('системная папка назначения не найдена')
+  }
+
+  const previousMeta = composition.meta
+  const previousFolderId = composition.folderId
+  composition.meta = setQueryCompositionRole(composition.meta, targetIsQueries)
+  composition.folderId = targetFolderId
+  try {
+    await Endge.schema.saveDocument(id, 'composition', { model: composition })
+  }
+  catch (error) {
+    composition.meta = previousMeta
+    composition.folderId = previousFolderId
+    throw error
+  }
 }
 
 /**
