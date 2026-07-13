@@ -1,9 +1,7 @@
 import type {
   ComponentSFCRuntimeHost,
-  CompositionFilterFieldsSlice,
   CompositionRuntimeHost,
-  FilterFieldsRuntimeHost,
-  FilterRuntimeHost,
+  FilterViewRuntimeHost,
   RuntimeHostInputSource,
 } from '@endge/core'
 
@@ -21,11 +19,10 @@ export interface CompositionPreviewLaunchInput {
 
 export type CompositionPreviewRenderable
   = | {
-    kind: 'filter-fields'
+    kind: 'filter-view'
     key: string
     title: string
-    runtime: FilterRuntimeHost
-    slice: CompositionFilterFieldsSlice
+    runtime: FilterViewRuntimeHost
   }
     | {
       kind: 'component-sfc'
@@ -38,7 +35,6 @@ export type CompositionPreviewRenderable
 export const compositionPreviewRuntime = shallowRef<CompositionRuntimeHost | null>(null)
 export const compositionPreviewError = shallowRef<string | null>(null)
 export const compositionPreviewTitle = shallowRef('Composition preview')
-export const compositionPreviewData = shallowRef<Readonly<Record<string, unknown>>>({})
 export const hasCompositionPreviewRuntime = computed(() => Boolean(compositionPreviewRuntime.value))
 export const compositionPreviewRenderables = computed<CompositionPreviewRenderable[]>(() => {
   const host = compositionPreviewRuntime.value
@@ -47,14 +43,16 @@ export const compositionPreviewRenderables = computed<CompositionPreviewRenderab
 
   const renderables: CompositionPreviewRenderable[] = []
   for (const child of host.getChildren()) {
-    if (child.runtime.runtimeType === 'filter-fields-runtime-host') {
-      const runtime = child.runtime as unknown as FilterFieldsRuntimeHost
+    if (!child.runtime.hasCapability('renderable'))
+      continue
+
+    if (child.runtime.runtimeType === 'filter-view-runtime-host') {
+      const runtime = child.runtime as unknown as FilterViewRuntimeHost
       renderables.push({
-        kind: 'filter-fields',
+        kind: 'filter-view',
         key: child.name,
         title: child.name,
-        runtime: runtime.getFilterRuntime(),
-        slice: runtime.getSlice(),
+        runtime,
       })
       continue
     }
@@ -105,11 +103,6 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
     Endge.runtime.destroyRuntimeTree(runtime.id)
     throw error
   }
-  const syncData = () => {
-    compositionPreviewData.value = runtime.getDataSnapshot()
-  }
-  runtime.on('data:change', syncData)
-  syncData()
   compositionPreviewRuntime.value = runtime
 }
 
@@ -118,7 +111,6 @@ export function destroyCompositionPreviewRuntime(): void {
   if (runtimeId)
     Endge.runtime.destroyRuntimeTree(runtimeId)
   compositionPreviewRuntime.value = null
-  compositionPreviewData.value = {}
 }
 
 function createPreviewComposition(input: CompositionPreviewLaunchInput): RComposition {
@@ -164,7 +156,6 @@ export const compositionPreviewState = reactive({
   runtime: compositionPreviewRuntime,
   error: compositionPreviewError,
   title: compositionPreviewTitle,
-  data: compositionPreviewData,
   hasRuntime: hasCompositionPreviewRuntime,
   renderables: compositionPreviewRenderables,
 })
