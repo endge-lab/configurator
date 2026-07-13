@@ -114,8 +114,9 @@ function resolvePreviewRuntimeId(input: SFCPreviewLaunchInput): string {
 }
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
-  const payload = compileComponentSFC(model.source)
-  const hasErrors = payload.diagnostics.some(diagnostic => diagnostic.severity === 'error')
+  const compiled = compileComponentSFC(model.source)
+  const { diagnostics, metadata, ...payload } = compiled
+  const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error')
 
   return {
     ref: {
@@ -125,10 +126,11 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
     },
     sourceHash: `preview:${Date.now()}`,
     compilerVersion: 'preview',
-    status: hasErrors ? 'error' : payload.diagnostics.length ? 'warning' : 'valid',
-    diagnostics: payload.diagnostics,
+    status: hasErrors ? 'error' : diagnostics.length ? 'warning' : 'valid',
+    diagnostics,
     dependencies: [],
     capabilities: ['compilable', 'runnable', 'renderable'],
+    metadata,
     payload,
   }
 }
