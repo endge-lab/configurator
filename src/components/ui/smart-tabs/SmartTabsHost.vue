@@ -235,7 +235,7 @@ watch(contextMenu, (v) => {
   <div class="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
     <Tabs
       :model-value="activeId ?? ''"
-      class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      class="flex h-full min-h-0 flex-1 flex-col gap-0 overflow-hidden"
       @update:model-value="(val) => tabsApi.activateTab(String(val))"
     >
       <!-- HEADER: полоса вкладок, справа кнопка «ещё» для непоместившихся вкладок -->

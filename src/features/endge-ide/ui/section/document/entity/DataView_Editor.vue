@@ -2,12 +2,15 @@
 import type { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor'
 
 import { Endge } from '@endge/core'
-import { Braces, Code2, FileJson, Loader2, Play, Save, TriangleAlert } from 'lucide-vue-next'
+import { Code2, FileJson, Loader2, Play, RotateCcw, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
@@ -15,7 +18,7 @@ import DataViewSourceEditor from '@/features/endge-ide/ui/components/DataViewSou
 
 const tabs = EndgeIDE.tabs
 const editor = computed<RDataViewEditor | null>(() => tabs.documentEditorModel.value as RDataViewEditor | null)
-const activeTab = ref<'source' | 'preview' | 'artifact' | 'diagnostics'>('source')
+const activeTab = ref<'general' | 'source' | 'preview' | 'artifact' | 'diagnostics'>('general')
 const previewInput = ref(`{
   "legs": [
     {
@@ -40,11 +43,16 @@ const previewOutput = ref('')
 const previewDiagnostics = ref<unknown[]>([])
 const runningPreview = ref(false)
 
-const tabButtons = [
-  { value: 'source', icon: Code2, label: 'Source' },
-  { value: 'preview', icon: Play, label: 'Preview' },
-  { value: 'artifact', icon: FileJson, label: 'Artifact' },
-  { value: 'diagnostics', icon: TriangleAlert, label: 'Diagnostics' },
+const tabGroups = [
+  [
+    { value: 'general', icon: Settings2, label: 'Основное' },
+    { value: 'source', icon: Code2, label: 'Source' },
+  ],
+  [
+    { value: 'preview', icon: Play, label: 'Запуск' },
+    { value: 'artifact', icon: FileJson, label: 'Артифакт' },
+    { value: 'diagnostics', icon: TriangleAlert, label: 'Диагностика' },
+  ],
 ] as const
 
 const artifactJson = computed(() => {
@@ -66,6 +74,10 @@ const diagnosticsJson = computed(() => {
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
+}
+
+function resetToDefaultSource(): void {
+  editor.value?.resetSource()
 }
 
 function applySourceText(value: string): void {
@@ -115,62 +127,117 @@ async function runPreview(): Promise<void> {
     Нет редактора
   </div>
   <div v-else class="data-view-editor-root flex min-h-0 w-full flex-col overflow-hidden">
-    <div class="data-view-editor-root__content flex min-h-0 flex-1 flex-col gap-4 p-5">
-      <div class="flex shrink-0 items-center gap-3 min-w-0">
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10">
-          <Braces class="size-5 text-cyan-600" />
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="truncate text-lg font-semibold">
-            {{ editor.name ?? 'Data View' }}
-          </div>
-          <div class="truncate text-xs text-muted-foreground">
-            id: {{ editor.id ?? '-' }} · identity: {{ editor.identity ?? '-' }}
-          </div>
-        </div>
-
+    <div class="data-view-editor-root__content flex min-h-0 flex-1 flex-col">
+      <div class="flex min-w-0 shrink-0 items-center justify-start border-b px-1.5 py-1">
         <TooltipProvider>
-          <div class="flex shrink-0 items-center rounded-md border bg-muted/40 p-0.5">
-            <Tooltip v-for="item in tabButtons" :key="item.value">
-              <TooltipTrigger as-child>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  class="h-8 w-8"
-                  :class="activeTab === item.value ? 'bg-background shadow-sm' : 'text-muted-foreground'"
-                  :aria-label="item.label"
-                  @click="activeTab = item.value"
-                >
-                  <component :is="item.icon" class="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{{ item.label }}</TooltipContent>
-            </Tooltip>
-          </div>
+          <div class="flex shrink-0 items-center gap-0">
+            <template v-for="(group, groupIndex) in tabGroups" :key="groupIndex">
+              <Separator v-if="groupIndex" orientation="vertical" class="mx-0.5 h-5" />
 
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                class="h-9 w-9 shrink-0"
-                aria-label="Сохранить"
-                :disabled="EndgeIDE.busy.value"
-                @click="save"
-              >
-                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
-                <Save v-else class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
-          </Tooltip>
+              <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+                <Tooltip v-for="item in group" :key="item.value">
+                  <TooltipTrigger as-child>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      class="h-7 w-7"
+                      :class="activeTab === item.value ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+                      :aria-label="item.label"
+                      @click="activeTab = item.value"
+                    >
+                      <component :is="item.icon" class="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ item.label }}</TooltipContent>
+                </Tooltip>
+              </div>
+            </template>
+
+            <Separator orientation="vertical" class="mx-0.5 h-5" />
+
+            <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="h-7 w-7"
+                    aria-label="Сбросить source"
+                    @click="resetToDefaultSource"
+                  >
+                    <RotateCcw class="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Сбросить source</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="h-7 w-7"
+                    aria-label="Сохранить"
+                    :disabled="EndgeIDE.busy.value"
+                    @click="save"
+                  >
+                    <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                    <Save v-else class="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Сохранить</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
         </TooltipProvider>
       </div>
 
-      <Card class="data-view-editor-card flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
-        <div v-if="activeTab === 'source'" class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <Card class="data-view-editor-card flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-none py-0">
+        <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+          <div class="max-w-2xl space-y-5">
+            <div class="space-y-2">
+              <Label for="data-view-id">ID</Label>
+              <Input
+                id="data-view-id"
+                :model-value="String(editor.id ?? '')"
+                class="bg-muted/40 font-mono"
+                readonly
+              />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="data-view-name">Название</Label>
+                <Input id="data-view-name" v-model="editor.name" placeholder="Название DataView" />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="data-view-identity">Identity</Label>
+                <Input
+                  id="data-view-identity"
+                  v-model="editor.identity"
+                  placeholder="Уникальный идентификатор"
+                  spellcheck="false"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <Label for="data-view-description">Описание</Label>
+              <Textarea
+                id="data-view-description"
+                v-model="editor.description"
+                rows="5"
+                placeholder="Назначение DataView"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="activeTab === 'source'" class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
           <DataViewSourceEditor
             :model-value="editor.source"
             :preview-input="previewInput"

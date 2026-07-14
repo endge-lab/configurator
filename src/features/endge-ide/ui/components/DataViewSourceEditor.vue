@@ -2,12 +2,8 @@
 import type * as Monaco from 'monaco-editor'
 
 import { Endge } from '@endge/core'
-import { RotateCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
@@ -53,14 +49,6 @@ const monacoAdapter = useEndgeSourceMonaco({
   },
 })
 const diagnosticsCount = monacoAdapter.diagnosticsCount
-
-/** Сбрасывает source к базовому шаблону RDataView v1. */
-function resetToDefaultSource(): void {
-  const value = Endge.source.createDefault('data-view')
-  source.value = value
-  monacoAdapter.setValue(value)
-  scheduleInlinePreview()
-}
 
 /** Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ. */
 function scheduleInlinePreview(): void {
@@ -119,31 +107,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="data-view-source-editor">
-    <div class="data-view-source-editor__toolbar">
-      <div class="data-view-source-editor__title">
-        <Label class="font-semibold">DataView source</Label>
-        <span v-if="diagnosticsCount" class="data-view-source-editor__diagnostics">
-          {{ diagnosticsCount }} diagnostics
-        </span>
-      </div>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              class="h-8 w-8 shrink-0"
-              aria-label="Сбросить source"
-              @click="resetToDefaultSource"
-            >
-              <RotateCcw class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Сбросить source</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <div v-if="diagnosticsCount" class="data-view-source-editor__diagnostics">
+      {{ diagnosticsCount }} diagnostics
     </div>
 
     <div class="data-view-source-editor__body">
@@ -181,25 +146,10 @@ onBeforeUnmount(() => {
   background: hsl(var(--background));
 }
 
-.data-view-source-editor__toolbar {
-  min-height: 44px;
+.data-view-source-editor__diagnostics {
   padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   border-bottom: 1px solid hsl(var(--border));
   background: hsl(var(--muted) / 0.45);
-}
-
-.data-view-source-editor__title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.data-view-source-editor__diagnostics {
   font-size: 12px;
   color: hsl(var(--muted-foreground));
   white-space: nowrap;
@@ -219,7 +169,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-top: 1px solid hsl(var(--border));
   overflow: hidden;
   background: #1e1e1e;
 }
