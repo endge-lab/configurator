@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ComponentType, Endge, RComponentDSL } from '@endge/core'
+import { ComponentType, RComponentDSL } from '@endge/core'
 import { ComponentRenderer } from '@endge/vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
@@ -80,7 +80,6 @@ function onMouseUp(): void {
 }
 
 onMounted(() => {
-  Endge.script.declareJSX()
   compilePreview()
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)

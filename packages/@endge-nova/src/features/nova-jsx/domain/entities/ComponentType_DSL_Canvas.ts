@@ -398,9 +398,7 @@ export function createDefaultNovaJSXRegistry(): NovaJSXRegistry {
 
 function createDefaultEvaluateExpr(
   model: RComponentDSL,
-  scope: any,
   comData: Record<string, any>,
-  allData: Record<string, any>,
 ): (expr: string) => any {
   const varsMap = new Map<string, any>()
   model.varsPaths.forEach((path, key) => {
@@ -413,13 +411,9 @@ function createDefaultEvaluateExpr(
     if (varsMap.has(key)) {
       return varsMap.get(key)
     }
-    return Endge.script.evaluate(key, scope, {
-      ...comData,
-      Data: {
-        all: allData,
-        ...comData,
-      },
-    })
+    return Object.prototype.hasOwnProperty.call(comData, key)
+      ? comData[key]
+      : undefined
   }
 }
 
@@ -452,9 +446,7 @@ export function ComponentType_DSL_Canvas(
   }
   const evaluateExpr = createDefaultEvaluateExpr(
     model,
-    props.scope,
     props.comData,
-    allData,
   )
 
   const renderDSLModel = (

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { DomainDocumentType, RType } from '@endge/core'
-import { DomainSectionType, Endge } from '@endge/core'
+import { DomainSectionType } from '@endge/core'
 import { ComponentPreview } from '@endge/vue'
 import { useDomainStore } from '@endge/vue'
 import { Loader2, Save, Trash2 } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -54,10 +54,6 @@ const tab = ref('0')
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
-
-onMounted(() => {
-  Endge.script.declareJSX()
-})
 
 const componentInputOptions = computed(() =>
   domainStore.types.map((x: RType) => ({ name: x.name, code: x.name })),

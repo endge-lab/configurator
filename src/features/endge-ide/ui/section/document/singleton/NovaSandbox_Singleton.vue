@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ComponentType, Endge, RComponentDSL } from '@endge/core'
+import { ComponentType, RComponentDSL, RuntimeScope } from '@endge/core'
 import { ComponentType_DSL_Canvas, NovaGraphics, createNovaTableSchemaFromModel } from '@endge/nova'
 import type { NovaSchema, NovaTableModel } from '@endge/nova'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -464,7 +464,7 @@ function drawJSXCanvas(): void {
     return
   }
 
-  const scope = Endge.script.getScope('nova-playground-jsx')
+  const scope = new RuntimeScope('nova-playground-jsx')
   const schema = ComponentType_DSL_Canvas({
     model: jsxModel.value,
     scope,
@@ -866,7 +866,6 @@ watch(activeTab, async () => {
 })
 
 onMounted(() => {
-  Endge.script.declareJSX()
   compileJSXModel()
   compileGSONSchema()
   compileTableSchema()

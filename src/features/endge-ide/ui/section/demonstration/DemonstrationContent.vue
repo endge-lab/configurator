@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ComponentType, Endge, RComponentTableColumn_isComponent, RComponentTableColumn_isHtml } from '@endge/core'
+import { ComponentType, Endge, RComponentTableColumn_isComponent, RComponentTableColumn_isHtml, RuntimeScope } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { ComponentType_TableV2 as ComponentType_Table } from '@endge/vue'
 import { ComponentType_DSL_Canvas, NovaGraphics, createNovaTableSchemaFromModel } from '@endge/nova'
@@ -344,7 +344,7 @@ function buildCanvasSchema(): void {
       showRowIndex: !!model.showRowIndex,
     }
 
-    const scope = Endge.script.getScope('demonstration-canvas-table')
+    const scope = new RuntimeScope('demonstration-canvas-table')
     const cellSchema: NovaSchema = []
 
     for (let rowIndex = 0; rowIndex < visibleRowsCount; rowIndex++) {

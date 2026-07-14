@@ -335,7 +335,6 @@ export class EndgeIDEDocs {
       { id: 'submodules-extract', title: 'Endge.extract', description: 'Извлечение данных из источников.', icon: 'ti ti-file-export', file: 'submodules/Extract', category: DocsCategory.EndgeCoreModules },
       { id: 'submodules-render', title: 'Endge.render', description: 'Рендеринг UI по доменным компонентам.', icon: 'ti ti-palette', file: 'submodules/Render', category: DocsCategory.EndgeCoreModules },
       { id: 'submodules-store', title: 'Endge.store', description: 'Хранилище состояния приложения.', icon: 'ti ti-stack', file: 'submodules/Store', category: DocsCategory.EndgeCoreModules },
-      { id: 'submodules-script', title: 'Endge.script', description: 'Объявление JSX и сценариев.', icon: 'ti ti-code', file: 'submodules/Script', category: DocsCategory.EndgeCoreModules },
       { id: 'submodules-runtime', title: 'Endge.runtime', description: 'Жизнь runtime-host поверх Raph и исполнение фаз.', icon: 'ti ti-cpu', file: 'submodules/Runtime', category: DocsCategory.EndgeCoreModules },
       { id: 'submodules-communication-layers', title: 'Слои коммуникации', description: 'Как Raph, runtime host, contracts, bindings и event bus разделены по ролям.', icon: 'ti ti-layers-intersect', file: 'submodules/CommunicationLayers', category: DocsCategory.EndgeSubModules },
       { id: 'submodules-event-contracts', title: 'Контракты событий', description: 'Каталог допустимых событий, scope и связь с UI-конфигуратором.', icon: 'ti ti-list-details', file: 'submodules/EventContracts', category: DocsCategory.EndgeSubModules },

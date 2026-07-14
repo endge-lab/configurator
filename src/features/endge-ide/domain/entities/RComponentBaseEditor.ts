@@ -17,9 +17,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
 
   type!: ComponentType
 
-  // Код setup-скрипта
-  setupScript!: string
-
   // Список входных переменных
   inputFields: RFieldEditor[] = []
 
@@ -38,7 +35,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
     source.identity = this.identity
     source.name = this.name
     source.type = this.type
-    source.setupScript = this.setupScript
     source.runtimeFilters = this.runtimeFilters
 
     // inputFields - Record<string, RField>
@@ -61,7 +57,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
     this.identity = String(source.identity ?? '').trim()
     this.name = source.name
     this.type = source.type
-    this.setupScript = source.setupScript
     this.runtimeFilters = source.runtimeFilters
     this.hasCustomRenderer = source.customRenderer !== null
 
