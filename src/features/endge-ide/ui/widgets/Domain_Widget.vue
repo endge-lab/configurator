@@ -520,23 +520,30 @@ function isSystemTypeFolder(node: FsFolderNode): boolean {
 }
 
 function getSectionFolderPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } | null {
-  return SECTION_FOLDER_PRESENTATION.value.get(sectionType) ?? null
+  const normalizedSectionType = sectionType === DomainSectionType.Primitive
+    ? DomainSectionType.Type
+    : sectionType
+  return SECTION_FOLDER_PRESENTATION.value.get(normalizedSectionType) ?? null
 }
 
 function getFolderIcon(node: FsFolderNode): any {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.icon
-  if (isSystemTypeFolder(node))
-    return getSectionFolderPresentation(node.sectionType)?.icon ?? Folder
   return Folder
 }
 
 function getFolderColorClass(node: FsFolderNode): string {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
-  if (isSystemTypeFolder(node))
-    return getSectionFolderPresentation(node.sectionType)?.colorClass ?? 'text-yellow-500'
   return 'text-yellow-500'
+}
+
+function getTreeDocumentIconClass(node: FsFileNode): string[] {
+  const iconClass = EndgeIDE.tabs.getDocumentIcon(node.docType, node.presentationKind)
+    .split(/\s+/)
+    .filter(token => token && !token.startsWith('text-') && !token.startsWith('dark:text-'))
+  const colorClass = getSectionFolderPresentation(node.sectionType)?.colorClass ?? 'text-muted-foreground'
+  return [...iconClass, colorClass, 'text-base']
 }
 
 // ---------- дерево ----------
@@ -1060,7 +1067,11 @@ function rowClasses(item: FlatFsItem): string {
               <template v-if="it.node.type === 'folder'">
                 <ChevronDown v-if="folderIsExpanded(it.path)" class="size-4 shrink-0" />
                 <ChevronRight v-else class="size-4 shrink-0" />
-                <component :is="getFolderIcon(it.node)" class="size-4 shrink-0" :class="[getFolderColorClass(it.node)]" />
+                <component
+                  :is="getFolderIcon(it.node)"
+                  class="size-4 shrink-0"
+                  :class="getFolderColorClass(it.node)"
+                />
               </template>
 
               <template v-else>
@@ -1085,11 +1096,8 @@ function rowClasses(item: FlatFsItem): string {
                 />
                 <i
                   v-else
-                  :class="EndgeIDE.tabs.getDocumentIcon(
-                    (it.node as FsFileNode).docType,
-                    (it.node as FsFileNode).presentationKind,
-                  )"
-                  class="text-base shrink-0"
+                  :class="getTreeDocumentIconClass(it.node as FsFileNode)"
+                  class="shrink-0"
                 />
               </template>
 
