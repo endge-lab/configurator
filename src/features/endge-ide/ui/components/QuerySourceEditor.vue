@@ -2,13 +2,9 @@
 import type * as Monaco from 'monaco-editor'
 
 import { DomainSectionType, Endge } from '@endge/core'
-import { RotateCcw } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{
@@ -38,7 +34,6 @@ const monacoAdapter = useEndgeSourceMonaco({
     container.value?.addEventListener('drop', onEditorDrop, true)
   },
 })
-const diagnosticsCount = monacoAdapter.diagnosticsCount
 const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 
 interface DomainDragPayloadItem {
@@ -46,13 +41,6 @@ interface DomainDragPayloadItem {
   identity?: string
   sectionType?: string
   docType?: string
-}
-
-/** Сбрасывает source к базовому шаблону RQuery v2. */
-function resetToDefaultSource(): void {
-  const value = Endge.source.createDefault('query')
-  source.value = value
-  monacoAdapter.setValue(value)
 }
 
 function parseDomainDragPayload(event: DragEvent): DomainDragPayloadItem[] {
@@ -180,36 +168,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="query-source-editor">
-    <div class="query-source-editor__toolbar">
-      <div class="query-source-editor__title">
-        <Label class="font-semibold">Query source</Label>
-        <span
-          v-if="diagnosticsCount"
-          class="query-source-editor__diagnostics"
-        >
-          {{ diagnosticsCount }} diagnostics
-        </span>
-      </div>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              class="h-8 w-8 shrink-0"
-              aria-label="Сбросить source"
-              @click="resetToDefaultSource"
-            >
-              <RotateCcw class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Сбросить source</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-
     <div ref="container" class="query-source-editor__monaco" />
   </div>
 </template>
@@ -224,36 +182,11 @@ onBeforeUnmount(() => {
   background: hsl(var(--background));
 }
 
-.query-source-editor__toolbar {
-  min-height: 44px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--muted) / 0.45);
-}
-
-.query-source-editor__title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.query-source-editor__diagnostics {
-  font-size: 12px;
-  color: hsl(var(--muted-foreground));
-  white-space: nowrap;
-}
-
 .query-source-editor__monaco {
   flex: 1 1 auto;
   min-height: 280px;
   height: 100%;
   width: 100%;
-  border-top: 1px solid hsl(var(--border));
   background: #1e1e1e;
 }
 </style>

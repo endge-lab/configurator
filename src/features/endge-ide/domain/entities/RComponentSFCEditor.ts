@@ -14,6 +14,8 @@ export class RComponentSFCEditor {
 
   identity!: string
 
+  tag = ''
+
   name!: string
 
   displayName!: string
@@ -40,6 +42,7 @@ export class RComponentSFCEditor {
   fillFromSource(source: any): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
+    this.tag = normalizeTag(source.tag) ?? ''
     this.name = source.name
     this.displayName = source.displayName ?? source.name
     this.description = source.description ?? null
@@ -58,6 +61,7 @@ export class RComponentSFCEditor {
     this.parseSource()
     source.id = this.id
     source.identity = this.identity
+    source.tag = normalizeTag(this.tag)
     source.name = this.name
     source.displayName = this.displayName || this.name
     source.description = this.description
@@ -74,6 +78,12 @@ export class RComponentSFCEditor {
   parseSource(): void {
     this.sourceParts = parseSFCSourceParts(this.source)
   }
+}
+
+/** Нормализует пустой editor input в отсутствие пользовательского tag. */
+function normalizeTag(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  return raw.trim() || null
 }
 
 /** Оставляет только targets, которые поддерживает SFC v1. */

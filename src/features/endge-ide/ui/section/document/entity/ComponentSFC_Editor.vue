@@ -1,53 +1,74 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { Loader2, Play } from "lucide-vue-next";
-import { toast } from "vue-sonner";
+import { AlignLeft, Code2, Loader2, Play, Save, Settings2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { showWidget } from "@/components/layouts/grid";
-import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
-import { launchSFCPreview, sfcPreviewError } from "@/features/endge-ide/model/sfc-preview/sfc-preview-state";
-import SaveDocumentButton from "@/features/endge-ide/ui/components/SaveDocumentButton.vue";
-import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
+import { showWidget } from '@/components/layouts/grid'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import {
+  launchSFCPreview,
+  sfcPreviewError,
+} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
-const tabs = EndgeIDE.tabs;
-const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
-const launchLoading = ref(false);
+interface ScriptEditorHandle {
+  formatDocument: () => Promise<void>
+}
+
+const tabs = EndgeIDE.tabs
+const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
+const launchLoading = ref(false)
+const activeTab = ref<'general' | 'source'>('source')
+const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
 async function save(): Promise<void> {
-  await EndgeIDE.tabs.save();
+  await EndgeIDE.tabs.save()
 }
 
 async function launchPreview(): Promise<void> {
-  const current = editor.value;
-  if (!current)
-    return;
+  const current = editor.value
+  if (!current) { return }
 
-  launchLoading.value = true;
+  launchLoading.value = true
   try {
-    current.parseSource?.();
+    current.parseSource?.()
     await launchSFCPreview({
       id: current.id,
       identity: current.identity,
+      tag: current.tag,
       name: current.name,
       displayName: current.displayName,
       source: current.source,
-    });
-    sfcPreviewError.value = null;
-    showWidget("sfc-preview");
+    })
+    sfcPreviewError.value = null
+    showWidget('sfc-preview')
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    sfcPreviewError.value = message;
-    if (message === "Сначала определите превью props")
-      toast.warning("Сначала определите превью props");
-    else
-      toast.error("Не удалось запустить демонстрацию", { description: message });
+    const message = error instanceof Error ? error.message : String(error)
+    sfcPreviewError.value = message
+    if (message === 'Сначала определите превью props') {
+      toast.warning('Сначала определите превью props')
+    }
+    else {
+      toast.error('Не удалось запустить демонстрацию', {
+        description: message,
+      })
+    }
   }
   finally {
-    launchLoading.value = false;
+    launchLoading.value = false
   }
 }
 </script>
@@ -56,57 +77,158 @@ async function launchPreview(): Promise<void> {
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
     Нет редактора
   </div>
-  <div v-else class="w-full h-full">
-    <div class="p-5 flex flex-col gap-5 h-full min-h-0">
-      <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <div
-          class="size-10 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0"
-        >
-          <i class="ti ti-file-type-tsx text-cyan-500 text-2xl" />
+  <SourceDocumentEditorShell
+    v-else
+    :document-id="editor.id"
+    :identity="editor.identity"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Основное</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'source'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Source"
+                @click="activeTab = 'source'"
+              >
+                <Code2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Source</TooltipContent>
+          </Tooltip>
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="text-lg font-semibold truncate">
-            {{ editor.displayName || editor.name || editor.identity }}
-          </div>
-          <div class="text-xs text-muted-foreground truncate">
-            {{ editor.identity }}
-          </div>
-        </div>
-        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
-        <Button
-          size="icon"
-          variant="outline"
-          aria-label="Запуск"
-          :disabled="launchLoading"
-          @click="launchPreview"
-        >
-          <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
-          <Play v-else class="size-4" />
-        </Button>
-      </div>
 
-      <div class="grid gap-3 sm:grid-cols-2 shrink-0">
-        <div class="grid gap-1.5">
-          <Label>Identity</Label>
-          <Input v-model="editor.identity" />
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Запуск"
+                :disabled="launchLoading"
+                @click="launchPreview"
+              >
+                <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Запустить preview</TooltipContent>
+          </Tooltip>
         </div>
-        <div class="grid gap-1.5">
-          <Label>Название</Label>
-          <Input v-model="editor.displayName" />
-        </div>
-      </div>
 
-      <div class="min-h-0 flex-1 flex flex-col">
-        <Label class="font-semibold mb-2">Source</Label>
-        <ScriptEditor
-          v-model="editor.source"
-          language="html"
-          class="min-h-0 flex-1"
-          min-height="420px"
-          show-toolbar
-          @blur="editor.parseSource()"
-        />
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider>
+        <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Форматировать"
+                @click="sourceEditorRef?.formatDocument()"
+              >
+                <AlignLeft class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Форматировать</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+      <div class="max-w-2xl space-y-5">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="component-sfc-display-name">Название</Label>
+            <Input
+              id="component-sfc-display-name"
+              v-model="editor.displayName"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-identity">Identity</Label>
+            <Input
+              id="component-sfc-identity"
+              v-model="editor.identity"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <Label for="component-sfc-tag">Tag</Label>
+          <Input
+            id="component-sfc-tag"
+            v-model="editor.tag"
+            placeholder="Tail или Module.SomeTag"
+            spellcheck="false"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label for="component-sfc-description">Описание</Label>
+          <Textarea
+            id="component-sfc-description"
+            v-model="editor.description"
+            :rows="5"
+          />
+        </div>
       </div>
     </div>
-  </div>
+
+    <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ScriptEditor
+        ref="sourceEditorRef"
+        v-model="editor.source"
+        language="html"
+        class="min-h-0 flex-1"
+        min-height="420px"
+        @blur="editor.parseSource()"
+      />
+    </div>
+  </SourceDocumentEditorShell>
 </template>

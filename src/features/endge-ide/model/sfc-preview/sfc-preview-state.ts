@@ -27,6 +27,7 @@ import {
 export interface SFCPreviewLaunchInput {
   id?: string | number | null
   identity?: string | null
+  tag?: string | null
   name?: string | null
   displayName?: string | null
   source: string
@@ -53,6 +54,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
   const model = RComponentSFC.fromPlain({
     id: input.id ?? `preview-${++runtimeCounter}`,
     identity: input.identity || `sfc-preview-${runtimeCounter}`,
+    tag: input.tag,
     name: input.name || input.displayName || input.identity || 'SFC preview',
     displayName: input.displayName || input.name || input.identity || 'SFC preview',
     source: input.source,
@@ -119,7 +121,10 @@ function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
 }
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
-  const compiled = compileComponentSFC(model.source)
+  const compiled = compileComponentSFC(model.source, {
+    resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
+    hasComponentIdentity: identity => Endge.domain.getComponentSFC(identity) != null || identity === model.identity,
+  })
   const { diagnostics, metadata, ...payload } = compiled
   const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error')
 

@@ -5,9 +5,8 @@ import { Endge } from '@endge/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
+import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
-import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
-import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
 
 interface SourceJsonTreeHandle {
   expandAll: () => void
@@ -21,16 +20,19 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void
+  (event: 'outputState', value: { available: boolean, collapsed: boolean, data: unknown }): void
 }>()
 
 const container = ref<HTMLDivElement | null>(null)
 const inlinePreview = ref<{ data: unknown } | null>(null)
 const inlinePreviewCollapsed = ref(false)
 const inlinePreviewTree = ref<SourceJsonTreeHandle | null>(null)
+const splitRatio = ref(0.7)
 const source = computed({
   get: () => props.modelValue ?? '',
   set: value => emit('update:modelValue', value),
 })
+const outputVisible = computed(() => inlinePreview.value !== null && !inlinePreviewCollapsed.value)
 
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let previewTimer: ReturnType<typeof setTimeout> | null = null
@@ -48,7 +50,19 @@ const monacoAdapter = useEndgeSourceMonaco({
     scheduleInlinePreview()
   },
 })
-const diagnosticsCount = monacoAdapter.diagnosticsCount
+function expandOutput(): void {
+  inlinePreviewTree.value?.expandAll()
+}
+
+function collapseOutput(): void {
+  inlinePreviewTree.value?.collapseAll()
+}
+
+function toggleOutput(): void {
+  inlinePreviewCollapsed.value = !inlinePreviewCollapsed.value
+}
+
+defineExpose({ expandOutput, collapseOutput, toggleOutput })
 
 /** Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ. */
 function scheduleInlinePreview(): void {
@@ -97,6 +111,18 @@ watch(
   () => scheduleInlinePreview(),
 )
 
+watch(
+  [inlinePreview, inlinePreviewCollapsed],
+  ([preview, collapsed]) => {
+    emit('outputState', {
+      available: preview !== null,
+      collapsed,
+      data: preview?.data,
+    })
+  },
+  { immediate: true },
+)
+
 onBeforeUnmount(() => {
   if (previewTimer) {
     clearTimeout(previewTimer)
@@ -107,32 +133,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="data-view-source-editor">
-    <div v-if="diagnosticsCount" class="data-view-source-editor__diagnostics">
-      {{ diagnosticsCount }} diagnostics
-    </div>
-
-    <div class="data-view-source-editor__body">
-      <div ref="container" class="data-view-source-editor__monaco" />
-
-      <SourceOutputPanel
-        v-if="inlinePreview"
-        v-model:collapsed="inlinePreviewCollapsed"
-        title="output.json"
-        collapse-label="Свернуть output.json"
-        expand-label="Показать output.json"
-        mode="full-height"
-      >
-        <template #actions>
-          <SourceJsonTreeControls
-            :copy-value="inlinePreview.data"
-            @expand-all="inlinePreviewTree?.expandAll()"
-            @collapse-all="inlinePreviewTree?.collapseAll()"
-          />
-        </template>
-
-        <SourceJsonTree ref="inlinePreviewTree" :data="inlinePreview.data" root-path="output" />
-      </SourceOutputPanel>
-    </div>
+    <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="outputVisible">
+      <template #editor>
+        <div ref="container" class="data-view-source-editor__monaco" />
+      </template>
+      <template #output>
+        <SourceJsonTree ref="inlinePreviewTree" :data="inlinePreview?.data" root-path="output" />
+      </template>
+    </SourceEditorSplitView>
   </div>
 </template>
 
@@ -146,30 +154,11 @@ onBeforeUnmount(() => {
   background: hsl(var(--background));
 }
 
-.data-view-source-editor__diagnostics {
-  padding: 6px 10px;
-  border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--muted) / 0.45);
-  font-size: 12px;
-  color: hsl(var(--muted-foreground));
-  white-space: nowrap;
-}
-
 .data-view-source-editor__monaco {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
   width: 100%;
-  background: #1e1e1e;
-}
-
-.data-view-source-editor__body {
-  position: relative;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
   background: #1e1e1e;
 }
 </style>

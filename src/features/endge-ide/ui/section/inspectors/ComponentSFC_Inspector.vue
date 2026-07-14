@@ -16,6 +16,7 @@ const model = computed<any>(() => EndgeIDE.tabs.documentModel.value ?? null)
     </div>
     <div class="grid gap-2 text-xs text-muted-foreground">
       <div>identity: {{ model?.identity }}</div>
+      <div>tag: {{ model?.tag || '—' }}</div>
       <div>modelVersion: {{ model?.modelVersion ?? 1 }}</div>
       <div>targets: {{ (model?.supportedTargets ?? []).join(', ') }}</div>
       <div>source: {{ String(model?.source ?? '').length }} chars</div>

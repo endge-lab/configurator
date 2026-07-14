@@ -2,14 +2,11 @@
 import type { FilterProgramPayload } from '@endge/core'
 
 import { Endge, evaluateSourceExpression } from '@endge/core'
-import { RotateCcw } from 'lucide-vue-next'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
+import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
-import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
-import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
 
 interface SourceJsonTreeHandle {
   expandAll: () => void
@@ -17,12 +14,17 @@ interface SourceJsonTreeHandle {
 }
 
 const props = defineProps<{ modelValue: string }>()
-const emit = defineEmits<{ (event: 'update:modelValue', value: string): void }>()
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void
+  (event: 'outputState', value: { available: boolean, collapsed: boolean, data: unknown }): void
+}>()
 const container = ref<HTMLDivElement | null>(null)
 const source = ref(props.modelValue ?? '')
 const inlinePreviewOutput = ref<Record<string, unknown> | null>(null)
 const inlinePreviewCollapsed = ref(false)
 const inlinePreviewTree = ref<SourceJsonTreeHandle | null>(null)
+const splitRatio = ref(0.7)
+const outputVisible = computed(() => inlinePreviewOutput.value !== null && !inlinePreviewCollapsed.value)
 let previewTimer: ReturnType<typeof setTimeout> | null = null
 
 const monaco = useEndgeSourceMonaco({
@@ -35,8 +37,6 @@ const monaco = useEndgeSourceMonaco({
     scheduleInlinePreview()
   },
 })
-const diagnosticsCount = monaco.diagnosticsCount
-
 watch(() => props.modelValue, (value) => {
   source.value = value ?? ''
   monaco.setValue(source.value)
@@ -54,13 +54,19 @@ onBeforeUnmount(() => {
   }
 })
 
-function reset(): void {
-  const value = Endge.source.createDefault('filter')
-  source.value = value
-  emit('update:modelValue', value)
-  monaco.setValue(value)
-  scheduleInlinePreview()
+function expandOutput(): void {
+  inlinePreviewTree.value?.expandAll()
 }
+
+function collapseOutput(): void {
+  inlinePreviewTree.value?.collapseAll()
+}
+
+function toggleOutput(): void {
+  inlinePreviewCollapsed.value = !inlinePreviewCollapsed.value
+}
+
+defineExpose({ expandOutput, collapseOutput, toggleOutput })
 
 /** Обновляет preview после паузы ввода, не компилируя Filter на каждый символ. */
 function scheduleInlinePreview(): void {
@@ -110,39 +116,30 @@ function updateInlinePreview(): void {
 function isFilterArtifact(value: unknown): value is FilterProgramPayload {
   return Boolean(value) && typeof value === 'object' && (value as { type?: unknown }).type === 'filter'
 }
+
+watch(
+  [inlinePreviewOutput, inlinePreviewCollapsed],
+  ([preview, collapsed]) => {
+    emit('outputState', {
+      available: preview !== null,
+      collapsed,
+      data: preview,
+    })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div class="filter-source-editor">
-    <div class="filter-source-editor__toolbar">
-      <span class="text-sm font-medium">Filter source · {{ diagnosticsCount }} diagnostics</span>
-      <Button variant="outline" size="icon" class="h-8 w-8" title="Сбросить source" @click="reset">
-        <RotateCcw class="size-4" />
-      </Button>
-    </div>
-
-    <div class="filter-source-editor__body">
-      <div ref="container" class="filter-source-editor__monaco" />
-
-      <SourceOutputPanel
-        v-if="inlinePreviewOutput"
-        v-model:collapsed="inlinePreviewCollapsed"
-        title="outputs.json · defaults"
-        collapse-label="Свернуть outputs.json"
-        expand-label="Показать outputs.json"
-        mode="full-height"
-      >
-        <template #actions>
-          <SourceJsonTreeControls
-            :copy-value="inlinePreviewOutput"
-            @expand-all="inlinePreviewTree?.expandAll()"
-            @collapse-all="inlinePreviewTree?.collapseAll()"
-          />
-        </template>
-
+    <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="outputVisible">
+      <template #editor>
+        <div ref="container" class="filter-source-editor__monaco" />
+      </template>
+      <template #output>
         <SourceJsonTree ref="inlinePreviewTree" :data="inlinePreviewOutput" root-path="outputs" />
-      </SourceOutputPanel>
-    </div>
+      </template>
+    </SourceEditorSplitView>
   </div>
 </template>
 
@@ -154,27 +151,6 @@ function isFilterArtifact(value: unknown): value is FilterProgramPayload {
   display: flex;
   flex-direction: column;
   background: hsl(var(--background));
-}
-
-.filter-source-editor__toolbar {
-  min-height: 44px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--muted) / 0.45);
-}
-
-.filter-source-editor__body {
-  position: relative;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  background: #1e1e1e;
 }
 
 .filter-source-editor__monaco {

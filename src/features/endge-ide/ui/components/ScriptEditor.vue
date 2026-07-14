@@ -69,6 +69,8 @@ async function formatDocument(): Promise<void> {
   emit("format");
 }
 
+defineExpose({ formatDocument });
+
 onMounted(() => {
   monaco.editor.defineTheme("palenight", palenightTheme);
 
