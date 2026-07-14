@@ -7,6 +7,8 @@ import {
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
 } from '@endge/core'
 
+import { registerEndgeMockProviders } from '@/features/endge-configurator/model/endge-mock-providers'
+
 /**
  * Композитный слой для соединения логики Endge/EndgeIDE федераций
  */
@@ -20,6 +22,7 @@ export class EndgeConfigurator {
   public static async init(): Promise<void> {
     const ctx = this._createBootContext()
 
+    registerEndgeMockProviders()
     await Endge.boot(ctx)
     this._assertWorkspaceRendererReady()
 

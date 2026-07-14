@@ -203,6 +203,7 @@ export class EndgeIDETabs {
       return
     this._registerSystemViews()
     this._registerDocsView()
+    this._refreshPersistedMockTabIcons()
     this._isRegistryBootstrapped = true
   }
 
@@ -650,6 +651,23 @@ export class EndgeIDETabs {
     if (key === 'project')
       return 'ti ti-briefcase text-sky-500 text-2xl'
     return 'ti ti-file-alert text-xl text-red-500'
+  }
+
+  /** Обновляет icon metadata Mock-вкладок, восстановленных из localStorage. */
+  private _refreshPersistedMockTabIcons(): void {
+    for (const tab of this.openTabs.value) {
+      if (tab.viewId !== VIEW_ID_DOCUMENT) {
+        continue
+      }
+      const payload = this._getPayload<DocumentTabPayload>(tab.payload)
+      if (!payload || String(payload.documentType) !== 'mock') {
+        continue
+      }
+      tab.meta = {
+        ...tab.meta,
+        icon: this.getDocumentIcon(payload.documentType),
+      }
+    }
   }
 
   private _registerSystemViews(): void {

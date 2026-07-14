@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronsDownUp, ChevronsUpDown, Copy } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const props = defineProps<{
   copyValue: unknown
+  copyLabel?: string
+  copySuccessTitle?: string
+  copySuccessDescription?: string
+  copyErrorTitle?: string
 }>()
 
 const emit = defineEmits<{
@@ -20,16 +25,18 @@ const labels = {
   copyAll: 'Скопировать весь output',
 } as const
 
+const copyLabel = computed(() => props.copyLabel ?? labels.copyAll)
+
 async function copyAll(): Promise<void> {
   try {
     const serialized = JSON.stringify(props.copyValue, null, 2)
     await navigator.clipboard.writeText(serialized ?? String(props.copyValue))
-    toast.success('Весь output скопирован', {
-      description: 'JSON сохранён в буфер обмена.',
+    toast.success(props.copySuccessTitle ?? 'Весь output скопирован', {
+      description: props.copySuccessDescription ?? 'JSON сохранён в буфер обмена.',
     })
   }
   catch {
-    toast.error('Не удалось скопировать output')
+    toast.error(props.copyErrorTitle ?? 'Не удалось скопировать output')
   }
 }
 </script>
@@ -76,13 +83,13 @@ async function copyAll(): Promise<void> {
             variant="ghost"
             size="icon"
             class="source-json-tree-controls__action"
-            :aria-label="labels.copyAll"
+            :aria-label="copyLabel"
             @click="copyAll"
           >
             <Copy class="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ labels.copyAll }}</TooltipContent>
+        <TooltipContent>{{ copyLabel }}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   </div>

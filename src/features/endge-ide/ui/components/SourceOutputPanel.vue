@@ -8,7 +8,7 @@ withDefaults(defineProps<{
   collapsed: boolean
   collapseLabel: string
   expandLabel: string
-  mode?: 'popover' | 'full-height'
+  mode?: 'popover' | 'full-height' | 'docked'
 }>(), {
   mode: 'popover',
 })
@@ -32,7 +32,7 @@ const emit = defineEmits<{
     <FileJson class="size-4" />
     <span class="truncate">{{ title }}</span>
     <slot name="collapsed-meta" />
-    <ChevronLeft v-if="mode === 'full-height'" class="size-4" />
+    <ChevronLeft v-if="mode === 'full-height' || mode === 'docked'" class="size-4" />
     <ChevronDown v-else class="size-4" />
   </Button>
 
@@ -60,7 +60,7 @@ const emit = defineEmits<{
         :aria-label="collapseLabel"
         @click="emit('update:collapsed', true)"
       >
-        <ChevronRight v-if="mode === 'full-height'" class="size-4" />
+        <ChevronRight v-if="mode === 'full-height' || mode === 'docked'" class="size-4" />
         <ChevronUp v-else class="size-4" />
       </Button>
     </header>
@@ -100,6 +100,19 @@ const emit = defineEmits<{
   backdrop-filter: blur(14px);
 }
 
+.source-output-panel[data-mode='docked'] {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: rgb(15 23 42);
+  box-shadow: none;
+}
+
 .source-output-panel__collapsed {
   position: absolute;
   top: 12px;
@@ -131,7 +144,8 @@ const emit = defineEmits<{
   font-weight: 600;
 }
 
-.source-output-panel[data-mode='full-height'] .source-output-panel__header {
+.source-output-panel[data-mode='full-height'] .source-output-panel__header,
+.source-output-panel[data-mode='docked'] .source-output-panel__header {
   padding: 9px 8px 8px 12px;
   background: linear-gradient(180deg, rgb(30 41 59 / 0.9), rgb(15 23 42 / 0.84));
 }
