@@ -33,7 +33,7 @@ for (const path in brandLocaleFiles) {
 }
 
 const initialLocale = Endge.workspace.normalizeLocale(
-  Endge.context.currentLocale ?? import.meta.env.VITE_DEFAULT_LOCALE,
+  Endge.context.currentLocale,
 ) as string
 
 const i18nOptions: I18nOptions = {

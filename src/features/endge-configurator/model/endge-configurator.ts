@@ -1,14 +1,11 @@
-import type { EndgeBootContext, EndgeDataProvider } from '@endge/core'
+import type { EndgeBootContext } from '@endge/core'
 
 import {
-  DEFAULT_ENDGE_WORKSPACE,
   Endge,
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
 } from '@endge/core'
-
-import domainJson from '@/mock/endge-domain.json'
 
 /**
  * Композитный слой для соединения логики Endge/EndgeIDE федераций
@@ -43,34 +40,24 @@ export class EndgeConfigurator {
   }
 
   /**
-   * Собирает boot-контекст из env-переменных и mock-домена.
-   * Payload включается только при явном `VITE_STORAGE_PROVIDER=payload`.
+   * Собирает Payload boot-контекст из env-переменных.
    */
   private static _createBootContext(): EndgeBootContext {
-    const rawProvider = String(import.meta.env.VITE_STORAGE_PROVIDER || 'plain').trim().toLowerCase()
-    const dataProvider: EndgeDataProvider = rawProvider === 'payload' ? 'payload' : 'plain'
+    const baseAPI = String(import.meta.env.VITE_PAYLOAD_BASE_URL || '').trim()
+    const secret = String(import.meta.env.VITE_PAYLOAD_SECRET || '').trim()
+    if (!baseAPI || !secret) {
+      throw new Error(
+        '[EndgeConfigurator] VITE_PAYLOAD_BASE_URL and VITE_PAYLOAD_SECRET are required',
+      )
+    }
 
     return {
-      dataProvider,
+      dataProvider: 'payload',
       scope: {},
       vars: {
         ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
       },
-      plainSource: dataProvider === 'plain'
-        ? {
-            ...domainJson.domain,
-            workspace: {
-              ...DEFAULT_ENDGE_WORKSPACE,
-              sfcAdapterIds: ['native-vue', 'shadcn-vue'],
-            },
-          }
-        : undefined,
-      payload: dataProvider === 'payload'
-        ? {
-            baseAPI: import.meta.env.VITE_PAYLOAD_BASE_URL || '',
-            secret: import.meta.env.VITE_PAYLOAD_SECRET || '',
-          }
-        : undefined,
+      payload: { baseAPI, secret },
     }
   }
 

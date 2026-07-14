@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, DocumentFactory, DomainSectionType, Endge, FilterType, QueryType } from '@endge/core'
+import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -27,33 +27,34 @@ type CreateDocumentKind = DomainDocumentType | typeof QUERY_COMPOSITION_CREATE_K
 interface DocTypeOption {
   type: CreateDocumentKind
   label: string
+  defaultName: string
   section: DomainSectionType
 }
 
 /** Типы документов, которые можно создать через фабрику (без типов/примитивов - для них не выбираем папку). */
 const CREATABLE_DOC_TYPES: DocTypeOption[] = [
-  { type: ComponentType.DSL, label: 'DSL', section: DomainSectionType.Component },
-  { type: ComponentType.Table, label: 'Table', section: DomainSectionType.Component },
-  { type: COMPONENT_SFC_TYPE, label: 'SFC', section: DomainSectionType.Component },
-  { type: QueryType.REST, label: 'Запрос', section: DomainSectionType.Query },
-  { type: QUERY_COMPOSITION_CREATE_KIND, label: 'Композиция запросов', section: DomainSectionType.Query },
-  { type: 'data-view' as DomainDocumentType, label: 'Data View', section: DomainSectionType.DataView },
-  { type: 'composition' as DomainDocumentType, label: 'Композиция', section: DomainSectionType.Composition },
-  { type: 'store' as DomainDocumentType, label: 'Хранилище', section: DomainSectionType.Store },
-  { type: FilterType.DefaultFilter, label: 'Фильтр', section: DomainSectionType.Filters },
-  { type: 'action' as DomainDocumentType, label: 'Действие', section: DomainSectionType.Action },
-  { type: 'integration' as DomainDocumentType, label: 'Интеграция', section: DomainSectionType.Integration },
-  { type: 'view' as DomainDocumentType, label: 'Вид', section: DomainSectionType.View },
-  { type: 'environment' as DomainDocumentType, label: 'Окружение', section: DomainSectionType.Environment },
-  { type: 'tenant' as DomainDocumentType, label: 'Тенант', section: DomainSectionType.Tenant },
-  { type: 'policy' as DomainDocumentType, label: 'Политика', section: DomainSectionType.Policy },
-  { type: 'style' as DomainDocumentType, label: 'Стиль', section: DomainSectionType.Style },
-  { type: 'page-template' as DomainDocumentType, label: 'Шаблон страницы', section: DomainSectionType.PageTemplate },
-  { type: 'page' as DomainDocumentType, label: 'Страница', section: DomainSectionType.Page },
-  { type: 'navigation' as DomainDocumentType, label: 'Навигация', section: DomainSectionType.Navigation },
-  { type: 'vocabs' as DomainDocumentType, label: 'Словарь', section: DomainSectionType.Vocabs },
-  { type: 'i18n-bundles' as DomainDocumentType, label: 'Словарь переводов', section: DomainSectionType.I18nBundles },
-  { type: 'auth-profile' as DomainDocumentType, label: 'Профиль авторизации', section: DomainSectionType.AuthProfile },
+  { type: ComponentType.DSL, label: 'DSL', defaultName: 'Без названия', section: DomainSectionType.Component },
+  { type: ComponentType.Table, label: 'Table', defaultName: 'Новая таблица', section: DomainSectionType.Component },
+  { type: COMPONENT_SFC_TYPE, label: 'SFC', defaultName: 'Новый SFC-компонент', section: DomainSectionType.Component },
+  { type: QueryType.REST, label: 'Запрос', defaultName: 'Новый запрос', section: DomainSectionType.Query },
+  { type: QUERY_COMPOSITION_CREATE_KIND, label: 'Композиция запросов', defaultName: 'Новая композиция', section: DomainSectionType.Query },
+  { type: 'data-view' as DomainDocumentType, label: 'Data View', defaultName: 'Новый Data View', section: DomainSectionType.DataView },
+  { type: 'composition' as DomainDocumentType, label: 'Композиция', defaultName: 'Новая композиция', section: DomainSectionType.Composition },
+  { type: 'store' as DomainDocumentType, label: 'Хранилище', defaultName: 'Без названия', section: DomainSectionType.Store },
+  { type: FilterType.DefaultFilter, label: 'Фильтр', defaultName: 'Новый фильтр', section: DomainSectionType.Filters },
+  { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
+  { type: 'integration' as DomainDocumentType, label: 'Интеграция', defaultName: 'Новая интеграция', section: DomainSectionType.Integration },
+  { type: 'view' as DomainDocumentType, label: 'Вид', defaultName: 'Новый вид', section: DomainSectionType.View },
+  { type: 'environment' as DomainDocumentType, label: 'Окружение', defaultName: 'Новое окружение', section: DomainSectionType.Environment },
+  { type: 'tenant' as DomainDocumentType, label: 'Тенант', defaultName: 'Новый tenant', section: DomainSectionType.Tenant },
+  { type: 'policy' as DomainDocumentType, label: 'Политика', defaultName: 'Новая политика', section: DomainSectionType.Policy },
+  { type: 'style' as DomainDocumentType, label: 'Стиль', defaultName: 'Новый стиль', section: DomainSectionType.Style },
+  { type: 'page-template' as DomainDocumentType, label: 'Шаблон страницы', defaultName: 'Новый шаблон страницы', section: DomainSectionType.PageTemplate },
+  { type: 'page' as DomainDocumentType, label: 'Страница', defaultName: 'Новая страница', section: DomainSectionType.Page },
+  { type: 'navigation' as DomainDocumentType, label: 'Навигация', defaultName: 'Новая навигация', section: DomainSectionType.Navigation },
+  { type: 'vocabs' as DomainDocumentType, label: 'Словарь', defaultName: 'Новый словарь', section: DomainSectionType.Vocabs },
+  { type: 'i18n-bundles' as DomainDocumentType, label: 'Словарь переводов', defaultName: 'Новый словарь переводов', section: DomainSectionType.I18nBundles },
+  { type: 'auth-profile' as DomainDocumentType, label: 'Профиль авторизации', defaultName: 'Новый профиль авторизации', section: DomainSectionType.AuthProfile },
 ]
 
 const ROOT_IDS: Record<DomainSectionType, string> = {
@@ -472,13 +473,12 @@ async function onSubmit(): Promise<void> {
     if (isQueryComposition && rootFolderId == null) {
       throw new Error('Системная папка запросов не найдена')
     }
-    const draft = DocumentFactory.create(documentType, {
-      id,
-      name: name.value.trim() || undefined,
+    const draft = DocumentDraftFactory.create(documentType, {
+      identity: id,
+      name: name.value.trim() || activeOption.value.defaultName,
       folderId: showFolderSelect.value && selectedFolderId.value
         ? selectedFolderId.value
         : rootFolderId ?? undefined,
-      registerInDomain: false,
     })
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)
