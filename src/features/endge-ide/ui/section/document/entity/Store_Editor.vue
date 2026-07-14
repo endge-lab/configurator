@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import type { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
+import type { StoreRuntimeHost } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import { Code2, FileJson, Loader2, Play, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
-import { selectPulseHost, startPulseRuntimeSync } from '@/features/endge-ide/model/pulse/pulse.mock'
-import { launchStorePreview, storePreviewError } from '@/features/endge-ide/model/store-preview/store-preview-state'
+import { resolvePreviewRuntime } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
+import { launchStorePreview, storePreviewError, storePreviewRuntime } from '@/features/endge-ide/model/store-preview/store-preview-state'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null)
-const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>('general')
+const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>('source')
 const launchLoading = ref(false)
 const compiled = computed(() => editor.value ? Endge.source.compile('store', editor.value.source) : null)
 const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
 const diagnosticsJson = computed(() => JSON.stringify(compiled.value?.diagnostics ?? [], null, 2))
+const currentStorePreviewRuntime = computed<StoreRuntimeHost | null>(() => {
+  void storePreviewRuntime.value
+  const identity = editor.value?.identity?.trim()
+  return identity ? resolvePreviewRuntime<StoreRuntimeHost>('store', identity) : null
+})
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
 }
@@ -63,9 +68,6 @@ async function launchPreview(): Promise<void> {
       sourceVersion: current.sourceVersion,
     })
     storePreviewError.value = null
-    startPulseRuntimeSync()
-    selectPulseHost(runtime.id, 'details')
-    showWidget('pulse')
     toast.success('Store preview запущен', { description: runtime.id })
   }
   catch (error) {
@@ -113,7 +115,12 @@ async function launchPreview(): Promise<void> {
           </div>
         </div>
       </div>
-      <StoreSourceEditor v-else-if="activeTab === 'source'" :model-value="editor.source" @update:model-value="updateSource" />
+      <StoreSourceEditor
+        v-else-if="activeTab === 'source'"
+        :model-value="editor.source"
+        :runtime="currentStorePreviewRuntime"
+        @update:model-value="updateSource"
+      />
       <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto bg-muted/30 p-4 text-xs">{{ artifactJson }}</pre>
       <pre v-else class="h-full overflow-auto bg-muted/30 p-4 text-xs">{{ diagnosticsJson }}</pre>
     </div>

@@ -11,7 +11,7 @@ import FilterLegacyFieldsEditor from '@/features/endge-ide/ui/components/FilterL
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RFilterEditor | null)
-const activeTab = ref<'ui' | 'source' | 'artifact' | 'diagnostics'>('ui')
+const activeTab = ref<'ui' | 'source' | 'artifact' | 'diagnostics'>('source')
 const tabs = [
   { value: 'ui', label: 'UI', icon: LayoutPanelTop },
   { value: 'source', label: 'Source', icon: Code2 },

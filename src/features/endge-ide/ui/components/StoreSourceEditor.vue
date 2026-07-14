@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import type { StoreRuntimeHost } from '@endge/core'
+
 import { Endge } from '@endge/core'
 import { RotateCcw } from 'lucide-vue-next'
 import { ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
+import StoreRuntimeInspector from '@/features/endge-ide/ui/components/StoreRuntimeInspector.vue'
 
-const props = defineProps<{ modelValue: string }>()
+const props = defineProps<{
+  modelValue: string
+  runtime?: StoreRuntimeHost | null
+}>()
 const emit = defineEmits<{ (event: 'update:modelValue', value: string): void }>()
 const container = ref<HTMLDivElement | null>(null)
 const source = ref(props.modelValue ?? '')
@@ -42,6 +48,9 @@ function reset(): void {
         <RotateCcw class="size-4" />
       </Button>
     </div>
-    <div ref="container" class="min-h-0 flex-1" />
+    <div class="relative flex min-h-0 flex-1 overflow-hidden bg-[#1e1e1e]">
+      <div ref="container" class="min-h-0 flex-1" />
+      <StoreRuntimeInspector :runtime="runtime ?? null" />
+    </div>
   </div>
 </template>
