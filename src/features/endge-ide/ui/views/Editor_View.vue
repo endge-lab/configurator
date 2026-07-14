@@ -9,6 +9,7 @@ import { useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
 import { triggerAppRenderGuardTest } from '@/features/endge-configurator/model/app-render-guard.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
 import ClearSoftDeleted_Modal from '@/features/endge-ide/ui/modals/ClearSoftDeleted_Modal.vue'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
 import CreateVersion_Modal from '@/features/endge-ide/ui/modals/CreateVersion_Modal.vue'
@@ -152,6 +153,7 @@ onBeforeUnmount(() => {
       :title="modals.vocabJsonPreviewTitle.value"
       :data="modals.vocabJsonPreviewData.value"
     />
+    <SourceEditorDialogHost />
 
     <EndgeAppHelperMenu />
   </div>

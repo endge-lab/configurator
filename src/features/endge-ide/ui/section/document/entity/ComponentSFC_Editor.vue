@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { RComponentSFC } from '@endge/core'
+
 import { AlignLeft, Code2, Loader2, Play, Save, Settings2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -20,6 +22,7 @@ import {
   launchSFCPreview,
   sfcPreviewError,
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
+import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -32,6 +35,12 @@ const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const launchLoading = ref(false)
 const activeTab = ref<'general' | 'source'>('source')
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const sourceEditorExtensions = [
+  createExtractComponentContribution({
+    getEditorModel: () => editor.value,
+    getPersistedModel: () => tabs.documentModel.value as RComponentSFC | null,
+  }),
+]
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -224,6 +233,7 @@ async function launchPreview(): Promise<void> {
       <ScriptEditor
         ref="sourceEditorRef"
         v-model="editor.source"
+        :extensions="sourceEditorExtensions"
         language="html"
         class="min-h-0 flex-1"
         min-height="420px"
