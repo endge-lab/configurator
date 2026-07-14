@@ -128,6 +128,7 @@ export interface DomainStoreForTree {
   parameters?: any[]
   filters?: any[]
   converters?: any[]
+  computations?: any[]
   integrations?: any[]
   views?: any[]
   tenants?: any[]
@@ -202,6 +203,7 @@ export function getSoftDeletedItems(
   add(store.parameters, DomainSectionType.Parameters)
   add(store.filters, DomainSectionType.Filters)
   add(store.converters, DomainSectionType.Converter)
+  add(store.computations, DomainSectionType.Computation)
   add(store.integrations, DomainSectionType.Integration)
   add(store.views, DomainSectionType.View)
   add(store.tenants, DomainSectionType.Tenant)
@@ -263,6 +265,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Аутентификация',
   'root-projects': 'Проекты',
+  'root-computations': 'Вычисления',
   'soft-deleted': 'Удалённые',
 }
 
@@ -306,6 +309,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-filters',
       'root-views',
       'root-converters',
+      'root-computations',
       'root-parameters',
     ],
   },
@@ -388,6 +392,8 @@ export function normalizeDocType(
     return 'action'
   if (sectionType === DomainSectionType.Converter)
     return 'converter'
+  if (sectionType === DomainSectionType.Computation)
+    return 'computation'
   if (sectionType === DomainSectionType.Integration)
     return 'integration'
   if (sectionType === DomainSectionType.View)

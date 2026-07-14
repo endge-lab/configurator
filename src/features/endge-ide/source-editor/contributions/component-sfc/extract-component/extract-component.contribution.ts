@@ -25,13 +25,32 @@ import {
   registerSourceEditorDialog,
 } from '@/features/endge-ide/source-editor/core/source-editor-dialogs'
 
+import { buildExtractComponentFolderOptions } from './extract-component.folders'
 import {
   buildExtractedComponentSource,
   replaceExtractedColumnBody,
 } from './extract-component.transform'
 
 const DIALOG_ID = 'component-sfc.extract-component'
+const ACTION_CLASS_NAME = 'endge-sfc-column-action'
+const ACTION_DATA_KIND = 'endge.sfc-column.extract-component'
+const ACTION_LABEL = 'Экспорт компонента'
 let contributionSequence = 0
+
+interface ExtractColumnActionData {
+  kind: typeof ACTION_DATA_KIND
+  target: ExtractColumnCommandTarget
+}
+
+interface MonacoInjectedTextMouseTarget {
+  detail?: {
+    injectedText?: {
+      options?: {
+        attachedData?: unknown
+      }
+    } | null
+  }
+}
 
 registerSourceEditorDialog({
   id: DIALOG_ID,
@@ -52,9 +71,10 @@ export function createExtractComponentContribution(
     id: `${DIALOG_ID}.${instanceId}`,
     install: ({ monaco, editor, model }) => {
       const commandId = `${DIALOG_ID}.command.${instanceId}`
-      let cachedVersion = -1
-      let cachedColumns: ExtractableSFCColumn[] = []
-      const action = editor.addAction({
+      let disposed = false
+      let refreshTimer: ReturnType<typeof setTimeout> | null = null
+      let refreshSequence = 0
+      const actionDisposable = editor.addAction({
         id: commandId,
         label: 'Экспорт компонента',
         run: async (_editor, target?: ExtractColumnCommandTarget) => {
@@ -62,56 +82,70 @@ export function createExtractComponentContribution(
           await openExtractDialog(model, target, options)
         },
       })
+      const decorations = editor.createDecorationsCollection()
 
-      const provider = monaco.languages.registerInlayHintsProvider(model.getLanguageId(), {
-        displayName: 'SFC Column actions',
-        async provideInlayHints(candidateModel, visibleRange) {
-          if (candidateModel !== model) { return { hints: [], dispose() {} } }
+      const refreshDecorations = async (): Promise<void> => {
+        const sequence = ++refreshSequence
+        const sourceVersion = model.getVersionId()
+        const { analyzeExtractableSFCColumns } = await import('./extract-component.analysis')
+        if (disposed || sequence !== refreshSequence || sourceVersion !== model.getVersionId()) { return }
 
-          const { analyzeExtractableSFCColumns } = await import('./extract-component.analysis')
-          const currentVersion = candidateModel.getVersionId()
-          if (cachedVersion !== currentVersion) {
-            cachedColumns = analyzeExtractableSFCColumns(candidateModel.getValue())
-            cachedVersion = currentVersion
-          }
-
-          const hints: Monaco.languages.InlayHint[] = cachedColumns
-            .map((column) => {
-              const position = candidateModel.getPositionAt(column.tagNameEnd)
-              if (
-                position.lineNumber < visibleRange.startLineNumber
-                || position.lineNumber > visibleRange.endLineNumber
-              ) { return null }
-
-              return {
-                position,
-                kind: monaco.languages.InlayHintKind.Type,
-                paddingLeft: true,
-                paddingRight: false,
-                label: [{
-                  label: 'Экспорт компонента',
-                  tooltip: 'Вынести разметку колонки в отдельный SFC-компонент',
-                  command: {
-                    id: commandId,
-                    title: 'Экспорт компонента',
-                    arguments: [{
-                      columnStart: column.columnRange.start,
-                      sourceVersion: candidateModel.getVersionId(),
-                    } satisfies ExtractColumnCommandTarget],
+        const columns: ExtractableSFCColumn[] = analyzeExtractableSFCColumns(model.getValue())
+        decorations.set(columns.map((column) => {
+          const position = model.getPositionAt(column.tagNameEnd)
+          return {
+            range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+            options: {
+              description: 'SFC Column extract component action',
+              showIfCollapsed: true,
+              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+              after: {
+                content: ACTION_LABEL,
+                inlineClassName: ACTION_CLASS_NAME,
+                inlineClassNameAffectsLetterSpacing: true,
+                cursorStops: monaco.editor.InjectedTextCursorStops.None,
+                attachedData: {
+                  kind: ACTION_DATA_KIND,
+                  target: {
+                    columnStart: column.columnRange.start,
+                    sourceVersion,
                   },
-                }],
-              }
-            })
-            .filter((hint): hint is Monaco.languages.InlayHint => hint !== null)
+                } satisfies ExtractColumnActionData,
+              },
+            },
+          }
+        }))
+      }
 
-          return { hints, dispose() {} }
-        },
+      const scheduleRefresh = (): void => {
+        if (refreshTimer) { clearTimeout(refreshTimer) }
+        refreshTimer = setTimeout(() => {
+          refreshTimer = null
+          void refreshDecorations()
+        }, 80)
+      }
+
+      const contentListener = model.onDidChangeContent(scheduleRefresh)
+      const mouseListener = editor.onMouseDown((event) => {
+        const injectedText = (event.target as unknown as MonacoInjectedTextMouseTarget).detail?.injectedText
+        const actionData = injectedText?.options?.attachedData
+        if (!isExtractColumnActionData(actionData)) { return }
+
+        event.event.preventDefault()
+        event.event.stopPropagation()
+        void openExtractDialog(model, actionData.target, options)
       })
+      void refreshDecorations()
 
       return {
         dispose() {
-          provider.dispose()
-          action.dispose()
+          disposed = true
+          refreshSequence += 1
+          if (refreshTimer) { clearTimeout(refreshTimer) }
+          contentListener.dispose()
+          mouseListener.dispose()
+          decorations.clear()
+          actionDisposable.dispose()
         },
       }
     },
@@ -124,8 +158,10 @@ async function openExtractDialog(
   options: ExtractComponentContributionOptions,
 ): Promise<void> {
   const editorModel = options.getEditorModel()
-  const persistedModel = options.getPersistedModel()
-  if (!editorModel || !persistedModel) { return }
+  if (!editorModel) {
+    toast.error('Не удалось открыть экспорт', { description: 'Активный SFC-документ недоступен.' })
+    return
+  }
 
   const source = model.getValue()
   const { resolveExtractableSFCColumn } = await import('./extract-component.analysis')
@@ -142,6 +178,7 @@ async function openExtractDialog(
     suggestedName: `${suggestionBase} — ячейка`,
     suggestedIdentity: `${editorModel.identity}-${suggestionKey}-cell`,
     suggestedTag: `${toPascalCase(suggestionBase)}Cell`,
+    folderOptions: buildExtractComponentFolderOptions(Endge.domain.getFolders()),
     column,
   }
 
@@ -157,6 +194,15 @@ async function openExtractDialog(
       description: error instanceof Error ? error.message : String(error),
     })
   }
+}
+
+function isExtractColumnActionData(value: unknown): value is ExtractColumnActionData {
+  if (!value || typeof value !== 'object') { return false }
+
+  const candidate = value as Partial<ExtractColumnActionData>
+  return candidate.kind === ACTION_DATA_KIND
+    && typeof candidate.target?.columnStart === 'number'
+    && typeof candidate.target.sourceVersion === 'number'
 }
 
 async function executeExtraction(
@@ -181,12 +227,13 @@ async function executeExtraction(
   const child = DocumentDraftFactory.create(ComponentType.SFC, {
     identity: result.identity,
     name: result.name,
-    folderId: editorModel.folderId ?? undefined,
+    folderId: result.folderId ?? undefined,
   }) as RComponentSFC
 
   child.tag = result.tag
   child.source = childSource
   child.project = editorModel.project ?? null
+  child.folderId = result.folderId
 
   const previousPersistedSource = persistedModel.source
   let childSaved = false

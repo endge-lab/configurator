@@ -8,6 +8,7 @@ import type {
   RComposition,
   RStore,
   RMock,
+  RComputation,
   RQuery,
   RTenant,
   RType,
@@ -31,6 +32,7 @@ import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewE
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
 import { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor.ts'
+import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
 import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
 import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
@@ -68,6 +70,7 @@ import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/Dat
 import Composition_Editor from '@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'
 import Store_Editor from '@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'
 import Mock_Editor from '@/features/endge-ide/ui/section/document/entity/Mock_Editor.vue'
+import Computation_Editor from '@/features/endge-ide/ui/section/document/entity/Computation_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
 import Converter_Editor from '@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'
 import Integration_Editor from '@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'
@@ -559,6 +562,8 @@ export class EndgeIDETabs {
       return Endge.domain.getFilter(id)?.displayName ?? id
     if (key === 'converter')
       return Endge.domain.getConverter(id)?.name ?? id
+    if (key === 'computation')
+      return Endge.domain.getComputation(id)?.displayName ?? Endge.domain.getComputation(id)?.name ?? id
     if (key === 'integration')
       return Endge.domain.getIntegration(id)?.name ?? id
     if (key === 'environment')
@@ -624,6 +629,8 @@ export class EndgeIDETabs {
       return 'ti ti-function text-blue-500 text-2xl'
     if (key === 'converter')
       return 'ti ti-exchange text-blue-500 text-2xl'
+    if (key === 'computation')
+      return 'ti ti-calculator text-orange-500 text-2xl'
     if (key === 'integration')
       return 'ti ti-plug text-violet-500 text-2xl'
     if (key === 'environment')
@@ -822,6 +829,7 @@ export class EndgeIDETabs {
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
     [String(FilterType.DefaultFilter), (documentId) => this._resolveFilter(documentId)],
     ['converter', (documentId) => this._resolveConverter(documentId)],
+    ['computation', (documentId) => this._resolveComputation(documentId)],
     ['integration', (documentId) => this._resolveIntegration(documentId)],
     ['environment', (documentId) => this._resolveEnvironment(documentId)],
     ['tenant', (documentId) => this._resolveTenant(documentId)],
@@ -1052,6 +1060,24 @@ export class EndgeIDETabs {
       editor,
       model: converter,
       syncBeforeSave: () => editor.updateSource(converter),
+    }
+  }
+
+  private _resolveComputation(documentId: string): EditorSession | null {
+    const computation = Endge.domain.getComputation(documentId) as RComputation | null
+    if (!computation)
+      return null
+    const rawEditor = new RComputationEditor()
+    rawEditor.fillFromSource(computation)
+    const editor = reactive(rawEditor as object) as RComputationEditor
+    return {
+      view: {
+        component: markRaw(Computation_Editor),
+        props: { tabContext: { editor } },
+      },
+      editor,
+      model: computation,
+      syncBeforeSave: () => editor.updateSource(computation),
     }
   }
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { analyzeExtractableSFCColumns } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component/extract-component.analysis'
+import { buildExtractComponentFolderOptions } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component/extract-component.folders'
+import {
+  parseExtractComponentPropsJson,
+  serializeExtractComponentPropsJson,
+} from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component/extract-component.props-json'
 import {
   buildExtractedComponentSource,
   replaceExtractedColumnBody,
@@ -132,6 +137,7 @@ defineProps<{ suffix: string }>()
       name: 'Aircraft tail',
       identity: 'aircraft-tail',
       tag: 'Module.AircraftTail',
+      folderId: null,
       dependencies: column!.dependencies.map(({ hasWrite: _hasWrite, ...dependency }) => dependency),
     }
     const parentSource = replaceExtractedColumnBody(source, column!, result)
@@ -157,6 +163,7 @@ defineProps<{ suffix: string }>()
       name: 'Aircraft tail',
       identity: 'aircraft-tail',
       tag: null,
+      folderId: null,
       dependencies: column!.dependencies.map(({ hasWrite: _hasWrite, ...dependency }) => dependency),
     }
     const parentSource = replaceExtractedColumnBody(source, column!, result)
@@ -177,5 +184,40 @@ defineProps<{ suffix: string }>()
 
     expect(column?.dependencies.map(item => item.propName)).toEqual(['row'])
     expect(column?.dependencies[0]?.hasWrite).toBe(false)
+  })
+
+  it('edits detected prop types through a flat JSON map', () => {
+    const dependencies = [{
+      propName: 'row',
+      sourceExpression: 'row',
+      type: 'unknown',
+      paths: ['tail'],
+    }]
+
+    expect(serializeExtractComponentPropsJson(dependencies)).toBe('{\n  "row": "unknown"\n}')
+    expect(parseExtractComponentPropsJson('{ "row": "FlightRow" }', dependencies)).toEqual({
+      dependencies: [{ ...dependencies[0], type: 'FlightRow' }],
+      error: null,
+    })
+    expect(parseExtractComponentPropsJson('{}', dependencies).error).toContain('row')
+    expect(parseExtractComponentPropsJson('{ "row": "unknown", "extra": "string" }', dependencies).error).toContain('extra')
+  })
+
+  it('builds a searchable component-folder tree below root-components', () => {
+    const options = buildExtractComponentFolderOptions([
+      { id: 1, identity: 'root-components', displayName: 'Компоненты', entityType: 'components', parent: null },
+      { id: 2, identity: 'base', displayName: 'Базовые', entityType: 'components', parent: 1 },
+      { id: 3, identity: 'tables', displayName: 'Таблицы', entityType: 'components', parent: 1 },
+      { id: 4, identity: 'cells', displayName: 'Ячейки', entityType: 'components', parent: 3 },
+      { id: 5, identity: 'query-folder', displayName: 'Запросы', entityType: 'queries', parent: 1 },
+      { id: 6, identity: 'soft-deleted', displayName: 'Удалённые', entityType: 'components', parent: 1 },
+      { id: 7, identity: 'inside-deleted', displayName: 'Скрытая', entityType: 'components', parent: 6 },
+    ])
+
+    expect(options).toEqual([
+      { id: '2', name: 'Базовые', path: 'Базовые', depth: 1 },
+      { id: '3', name: 'Таблицы', path: 'Таблицы', depth: 1 },
+      { id: '4', name: 'Ячейки', path: 'Таблицы / Ячейки', depth: 2 },
+    ])
   })
 })

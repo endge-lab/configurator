@@ -6,7 +6,7 @@ import type {
   ExtractComponentDialogResult,
 } from './extract-component.types'
 
-import { ArrowRight, Box, Braces, CircleAlert } from 'lucide-vue-next'
+import { Box, Braces, CircleAlert, FolderTree } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -15,7 +15,13 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
+
+import {
+  parseExtractComponentPropsJson,
+  serializeExtractComponentPropsJson,
+} from './extract-component.props-json'
+import ExtractComponentFolderPicker from './ExtractComponentFolderPicker.vue'
 
 const props = defineProps<{
   open: boolean
@@ -32,6 +38,8 @@ const name = ref('')
 const identity = ref('')
 const tag = ref('')
 const dependencies = ref<ExtractComponentDialogDependency[]>([])
+const propsJson = ref('{}')
+const selectedFolderId = ref<string | null>(null)
 
 const openModel = computed({
   get: () => props.open,
@@ -44,11 +52,12 @@ const tagIsValid = computed(() => {
   if (!normalizedTag.value) { return true }
   return /^[A-Z_$][\w$-]*(?:\.[A-Z_$][\w$-]*)*$/i.test(normalizedTag.value)
 })
+const parsedProps = computed(() => parseExtractComponentPropsJson(propsJson.value, dependencies.value))
 const formIsValid = computed(() => Boolean(
   name.value.trim()
   && identity.value.trim()
   && tagIsValid.value
-  && dependencies.value.every(dependency => dependency.type.trim()),
+  && parsedProps.value.dependencies,
 ))
 
 watch(
@@ -65,6 +74,8 @@ watch(
       type: dependency.type,
       paths: [...dependency.paths],
     }))
+    propsJson.value = serializeExtractComponentPropsJson(dependencies.value)
+    selectedFolderId.value = null
   },
   { immediate: true },
 )
@@ -76,18 +87,15 @@ function submit(): void {
     name: name.value.trim(),
     identity: identity.value.trim(),
     tag: normalizedTag.value || null,
-    dependencies: dependencies.value.map(dependency => ({
-      ...dependency,
-      type: dependency.type.trim() || 'unknown',
-      paths: [...dependency.paths],
-    })),
+    folderId: selectedFolderId.value,
+    dependencies: parsedProps.value.dependencies!,
   })
 }
 </script>
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent class="overflow-hidden p-0 sm:max-w-[720px]">
+    <DialogContent class="overflow-hidden p-0 sm:max-w-[1060px]">
       <DialogHeader class="border-b bg-muted/30 px-6 py-5">
         <div class="flex items-start gap-3 pr-8">
           <div class="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
@@ -102,7 +110,7 @@ function submit(): void {
         </div>
       </DialogHeader>
 
-      <div class="grid min-h-0 gap-5 px-6 py-5 md:grid-cols-[minmax(0,1fr)_260px]">
+      <div class="grid min-h-0 gap-5 px-6 py-5 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_300px_260px]">
         <div class="space-y-4">
           <div class="space-y-2">
             <Label for="extract-component-name">Название</Label>
@@ -137,7 +145,7 @@ function submit(): void {
           </div>
         </div>
 
-        <aside class="min-w-0 rounded-lg border bg-muted/20">
+        <aside class="min-w-0 overflow-hidden rounded-lg border bg-muted/20">
           <div class="flex items-center justify-between border-b px-3 py-2.5">
             <div class="flex items-center gap-2 text-sm font-medium">
               <Braces class="size-4 text-sky-500" />
@@ -148,39 +156,41 @@ function submit(): void {
             </Badge>
           </div>
 
-          <ScrollArea class="h-[238px]">
-            <div v-if="dependencies.length" class="divide-y">
-              <div
-                v-for="dependency in dependencies"
-                :key="dependency.propName"
-                class="space-y-2 px-3 py-3"
-              >
-                <div class="flex items-center gap-1.5 font-mono text-xs">
-                  <span class="text-muted-foreground">{{ dependency.sourceExpression }}</span>
-                  <ArrowRight class="size-3 text-muted-foreground/60" />
-                  <span class="font-semibold text-foreground">{{ dependency.propName }}</span>
-                </div>
-                <Input
-                  v-model="dependency.type"
-                  class="h-8 font-mono text-xs"
-                  aria-label="Тип prop"
-                  spellcheck="false"
-                />
-                <div v-if="dependency.paths.length" class="flex flex-wrap gap-1">
-                  <code
-                    v-for="path in dependency.paths"
-                    :key="path"
-                    class="max-w-full truncate rounded bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground ring-1 ring-border"
-                  >
-                    {{ path || 'value' }}
-                  </code>
-                </div>
-              </div>
+          <div class="space-y-2 p-3">
+            <Textarea
+              v-model="propsJson"
+              class="min-h-[220px] resize-none bg-background font-mono text-xs leading-5"
+              :class="parsedProps.error ? 'border-destructive focus-visible:ring-destructive/30' : ''"
+              spellcheck="false"
+              aria-label="Props JSON"
+            />
+            <p v-if="parsedProps.error" class="text-xs text-destructive">
+              {{ parsedProps.error }}
+            </p>
+            <p v-else class="text-[11px] leading-4 text-muted-foreground">
+              Ключ — имя prop, значение — TypeScript type. Source expressions определены автоматически.
+            </p>
+          </div>
+        </aside>
+
+        <aside class="min-w-0 overflow-hidden rounded-lg border bg-muted/20 md:col-span-2 lg:col-span-1">
+          <div class="flex items-center gap-2 border-b px-3 py-2.5 text-sm font-medium">
+            <FolderTree class="size-4 text-amber-500" />
+            Папка компонента
+          </div>
+
+          <div class="space-y-3 p-3">
+            <ExtractComponentFolderPicker
+              v-model="selectedFolderId"
+              :options="input.folderOptions"
+            />
+            <p class="text-xs leading-5 text-muted-foreground">
+              По умолчанию компонент будет создан в корне секции «Компоненты».
+            </p>
+            <div class="rounded-md border border-dashed bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
+              Доступно папок: <span class="font-mono text-foreground">{{ input.folderOptions.length }}</span>
             </div>
-            <div v-else class="flex h-[180px] items-center justify-center px-6 text-center text-xs text-muted-foreground">
-              Внешние данные не найдены. Компонент будет создан без props.
-            </div>
-          </ScrollArea>
+          </div>
         </aside>
       </div>
 

@@ -10,6 +10,7 @@ const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 const SECTION_LABELS: Record<string, string> = {
   [DomainSectionType.Component]: 'компонент',
   [DomainSectionType.Converter]: 'конвертер',
+  [DomainSectionType.Computation]: 'вычисление',
   [DomainSectionType.Action]: 'действие',
   [DomainSectionType.Filters]: 'фильтр',
   [DomainSectionType.Query]: 'запрос',

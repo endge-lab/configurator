@@ -28,7 +28,15 @@ export interface ExtractComponentDialogInput {
   suggestedName: string
   suggestedIdentity: string
   suggestedTag: string
+  folderOptions: ExtractComponentFolderOption[]
   column: ExtractableSFCColumn
+}
+
+export interface ExtractComponentFolderOption {
+  id: string
+  name: string
+  path: string
+  depth: number
 }
 
 export interface ExtractComponentDialogDependency {
@@ -42,6 +50,7 @@ export interface ExtractComponentDialogResult {
   name: string
   identity: string
   tag: string | null
+  folderId: string | null
   dependencies: ExtractComponentDialogDependency[]
 }
 

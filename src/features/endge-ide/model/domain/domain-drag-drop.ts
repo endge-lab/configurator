@@ -97,6 +97,7 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Action]: 'root-actions',
   [DomainSectionType.Parameters]: 'root-parameters',
   [DomainSectionType.Converter]: 'root-converters',
+  [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',
   [DomainSectionType.Filters]: 'root-filters',
   [DomainSectionType.View]: 'root-views',
@@ -810,6 +811,9 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   else if (sectionType === DomainSectionType.Converter) {
     byId(entityId, identity, (x: any) => Endge.domain.removeConverterById?.(x), x => Endge.domain.removeConverter(x))
   }
+  else if (sectionType === DomainSectionType.Computation) {
+    byId(entityId, identity, (x: any) => Endge.domain.removeComputationById?.(x), x => Endge.domain.removeComputation(x))
+  }
   else if (sectionType === DomainSectionType.Integration) {
     byId(entityId, identity, (x: any) => Endge.domain.removeIntegrationById?.(x), x => Endge.domain.removeIntegration(x))
   }
@@ -890,6 +894,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getActionById(numId) : null) ?? Endge.domain.getAction(id)
   if (sectionType === DomainSectionType.Converter)
     return (numId != null ? Endge.domain.getConverterById(numId) : null) ?? Endge.domain.getConverter(id)
+  if (sectionType === DomainSectionType.Computation)
+    return (numId != null ? Endge.domain.getComputationById(numId) : null) ?? Endge.domain.getComputation(id)
   if (sectionType === DomainSectionType.Integration)
     return (numId != null ? Endge.domain.getIntegrationById(numId) : null) ?? Endge.domain.getIntegration(id)
   if (sectionType === DomainSectionType.View)
@@ -949,6 +955,8 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Action
   if (Endge.domain.getConverters().some(hasInBranch))
     return DomainSectionType.Converter
+  if (Endge.domain.getComputations().some(hasInBranch))
+    return DomainSectionType.Computation
   if (Endge.domain.getIntegrations().some(hasInBranch))
     return DomainSectionType.Integration
   if (Endge.domain.getViews().some(hasInBranch))

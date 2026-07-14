@@ -44,6 +44,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: 'mock' as DomainDocumentType, label: 'Mock', defaultName: 'Новый Mock', section: DomainSectionType.Mock },
   { type: FilterType.DefaultFilter, label: 'Фильтр', defaultName: 'Новый фильтр', section: DomainSectionType.Filters },
   { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
+  { type: 'computation' as DomainDocumentType, label: 'Вычисление', defaultName: 'Новое вычисление', section: DomainSectionType.Computation },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', defaultName: 'Новая интеграция', section: DomainSectionType.Integration },
   { type: 'view' as DomainDocumentType, label: 'Вид', defaultName: 'Новый вид', section: DomainSectionType.View },
   { type: 'environment' as DomainDocumentType, label: 'Окружение', defaultName: 'Новое окружение', section: DomainSectionType.Environment },
@@ -69,6 +70,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
   [DomainSectionType.Converter]: 'root-converters',
+  [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',
   [DomainSectionType.View]: 'root-views',
   [DomainSectionType.Parameters]: 'root-parameters',
@@ -97,6 +99,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
   [DomainSectionType.Converter]: 'converters',
+  [DomainSectionType.Computation]: 'computations',
   [DomainSectionType.Integration]: 'integrations',
   [DomainSectionType.View]: 'views',
   [DomainSectionType.Parameters]: 'parameters',
@@ -157,6 +160,7 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.Mock
     || s === DomainSectionType.Filters
     || s === DomainSectionType.Action
+    || s === DomainSectionType.Computation
     || s === DomainSectionType.Integration
     || s === DomainSectionType.View
     || s === DomainSectionType.Environment
@@ -329,6 +333,23 @@ function buildPayloadTemplate(): Record<string, unknown> {
       contentType: 'application/json',
       source: '{}',
       codeRef: null,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === 'computation') {
+    return {
+      ...base,
+      description: null,
+      implementationKind: 'source',
+      sourceLanguage: 'typescript',
+      source: 'export default function compute(input: unknown, context: unknown): unknown {\n  return input\n}\n',
+      providerRef: null,
+      sourceVersion: 1,
+      contractVersion: 1,
+      input: null,
+      output: null,
       meta: {},
       inherited: false,
     }

@@ -221,4 +221,21 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex: 1;
 }
+
+:deep(.endge-sfc-column-action) {
+  margin-left: 32px;
+  color: #8790a8 !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer !important;
+  user-select: none;
+  transition: color 120ms ease;
+}
+
+:deep(.endge-sfc-column-action:hover) {
+  color: #c792ea !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
 </style>
