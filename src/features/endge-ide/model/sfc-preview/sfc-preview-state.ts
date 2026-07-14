@@ -11,12 +11,16 @@ import type {
 import {
   compileComponentSFC,
   Endge,
-  ComponentSFCRuntimeHost as EndgeComponentSFCRuntimeHost,
   RComponentSFC,
   RComposition,
 } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { computed, reactive, shallowRef } from 'vue'
+
+import {
+  configuratorPreviewMeta,
+  makePreviewRuntimeId,
+} from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface SFCPreviewLaunchInput {
   id?: string | number | null
@@ -41,7 +45,6 @@ interface PreviewCompositionContext {
 }
 
 export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<void> {
-  destroySFCPreviewRuntime()
   sfcPreviewError.value = null
   sfcPreviewTitle.value = input.displayName || input.name || input.identity || 'SFC preview'
 
@@ -64,28 +67,28 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     throw new Error('Сначала определите превью props')
   }
 
+  const runtimeId = resolvePreviewRuntimeId(input)
+  destroySFCPreviewRuntime()
+  Endge.runtime.destroyRuntimeTree(`${runtimeId}:composition`)
+  Endge.runtime.destroyRuntimeTree(runtimeId)
   const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
   try {
     const runtimeInput = resolvePreviewInput(previewProps, composition)
-    const runtimeId = resolvePreviewRuntimeId(input)
     sfcPreviewInput.value = runtimeInput
-    const runtime = EndgeComponentSFCRuntimeHost.createRuntime({
+    const artifactReader = {
+      getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
+    }
+    const runtime = Endge.runtime.execute(model, {
       id: runtimeId,
-      model,
       parent: composition?.host ?? null,
-      meta: {
-        target: 'dom',
-        input: runtimeInput,
-        persistence: 'local',
-      },
-      artifactReader: {
-        getArtifact: () => artifact,
-      },
-    })
-    runtime.attachRuntimeState(Endge.context.createRuntimeStateController({
-      runtimeId: runtime.id,
-      persistence: 'local',
-    }))
+      ...configuratorPreviewMeta(),
+      target: 'dom',
+      input: runtimeInput,
+      artifactReader,
+    }) as ComponentSFCRuntimeHost | null
+    if (!runtime || runtime.entityType !== 'component-sfc') {
+      throw new Error('Не удалось создать SFC preview runtime.')
+    }
     previewComposition = composition
     sfcPreviewRuntime.value = runtime
   }
@@ -97,11 +100,12 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
 
 export function destroySFCPreviewRuntime(): void {
   const runtimeId = sfcPreviewRuntime.value?.id
-  sfcPreviewRuntime.value?.destroy()
-  if (runtimeId) {
-    Endge.context.destroyRuntimeStateController(runtimeId)
+  if (previewComposition) {
+    destroyPreviewComposition(previewComposition)
   }
-  destroyPreviewComposition(previewComposition)
+  else if (runtimeId) {
+    Endge.runtime.destroyRuntimeTree(runtimeId)
+  }
   previewComposition = null
   sfcPreviewRuntime.value = null
   sfcPreviewInput.value = { kind: 'local', props: {} }
@@ -110,7 +114,7 @@ export function destroySFCPreviewRuntime(): void {
 function resolvePreviewRuntimeId(input: SFCPreviewLaunchInput): string {
   const source = input.identity ?? input.id ?? input.name ?? input.displayName ?? 'draft'
   const normalized = String(source).trim() || 'draft'
-  return `component-sfc-preview:${normalized}`
+  return makePreviewRuntimeId('component-sfc', normalized)
 }
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
@@ -174,7 +178,8 @@ async function applyPreviewOptions(
 
   const host = Endge.runtime.execute(model, {
     id: `${resolvePreviewRuntimeId(input)}:composition`,
-    persistence: 'disabled',
+    ...configuratorPreviewMeta(),
+    dataRuntimes: resolvePreviewStoreRuntimes(dataAliases),
   }) as CompositionRuntimeHost | null
   if (!host || host.entityType !== 'composition') {
     throw new Error('Не удалось создать preview composition runtime.')
@@ -187,6 +192,17 @@ async function applyPreviewOptions(
     throw error
   }
   return { host, dataAliases }
+}
+
+function resolvePreviewStoreRuntimes(dataAliases: Map<string, string>): Record<string, string> {
+  const runtimes: Record<string, string> = {}
+  for (const [identity, alias] of dataAliases) {
+    const runtimeId = makePreviewRuntimeId('store', identity)
+    if (Endge.runtime.getRuntimeById(runtimeId)?.entityType === 'store') {
+      runtimes[alias] = runtimeId
+    }
+  }
+  return runtimes
 }
 
 async function ensurePreviewQueryArtifacts(options: ComponentSFCPreviewOptions | null): Promise<void> {

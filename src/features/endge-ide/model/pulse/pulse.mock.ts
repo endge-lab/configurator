@@ -11,6 +11,7 @@ export interface PulseMockResource {
   kind: 'raph-node' | 'event-subscription' | 'behavior-binding' | 'contract' | 'scope' | 'meta'
   title: string
   subtitle: string
+  payload?: Record<string, unknown>
 }
 
 export interface PulseMockHost {
@@ -24,6 +25,8 @@ export interface PulseMockHost {
   uptime: string
   description: string
   tags: string[]
+  meta: Record<string, unknown>
+  context: Record<string, unknown>
   resources: PulseMockResource[]
   subscriptions: PulseMockResource[]
   bindings: PulseMockResource[]
@@ -138,10 +141,10 @@ export function clearPulseSelection(): void {
 
 export function startPulseRuntimeSync(): void {
   pulseSyncConsumers += 1
+  refreshPulseRuntimeData()
   if (pulseSyncTimer)
     return
 
-  refreshPulseRuntimeData()
   pulseSyncTimer = setInterval(() => {
     refreshPulseRuntimeData()
   }, 5000)
@@ -194,6 +197,8 @@ export function launchPulseRuntimeFromEntity(
     model = Endge.domain.getPage(id)
   else if (sectionType === 'query')
     model = Endge.domain.getQuery(id)
+  else if (sectionType === 'store')
+    model = Endge.domain.getStore(id)
   else if (sectionType === 'action')
     model = Endge.domain.getAction(id)
   else if (sectionType === 'component') {
@@ -278,6 +283,7 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
     kind: mapResourceKind(resource.kind),
     title: resource.title,
     subtitle: resource.subtitle ?? String(resource.kind),
+    payload: resource.payload,
   }))
   const subscriptions: PulseMockResource[] = host.channels.map(channel => ({
     id: channel.id,
@@ -304,11 +310,14 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
     uptime: formatUptime(host.createdAt, now),
     description,
     tags: [
+      ...(host.meta.mode === 'preview' ? ['preview'] : []),
       host.entityType,
       host.runtimeType,
       `resources:${resources.length}`,
       `channels:${host.channels.length}`,
     ],
+    meta: host.meta,
+    context: host.context,
     resources,
     subscriptions,
     bindings,

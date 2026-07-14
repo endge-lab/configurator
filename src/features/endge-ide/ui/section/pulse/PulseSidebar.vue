@@ -103,6 +103,7 @@ const droppableSections = [
   DomainSection.View,
   DomainSection.Page,
   DomainSection.Query,
+  DomainSection.Store,
   DomainSection.Action,
   DomainSection.Component,
 ] as DomainSectionType[]
@@ -226,6 +227,11 @@ function openDomainEntity(hostId: string): void {
       return
     }
     EndgeIDE.tabs.openDocument(identity, queryType as any)
+    return
+  }
+
+  if (entityType === 'store') {
+    EndgeIDE.tabs.openDocument(identity, DomainSection.Store as any)
     return
   }
 

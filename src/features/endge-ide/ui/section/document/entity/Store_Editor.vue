@@ -2,27 +2,34 @@
 import type { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
 
 import { Endge } from '@endge/core'
-import { Code2, FileJson, Loader2, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
+import { Code2, FileJson, Loader2, Play, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { selectPulseHost, startPulseRuntimeSync } from '@/features/endge-ide/model/pulse/pulse.mock'
+import { launchStorePreview, storePreviewError } from '@/features/endge-ide/model/store-preview/store-preview-state'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null)
 const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>('general')
+const launchLoading = ref(false)
 const compiled = computed(() => editor.value ? Endge.source.compile('store', editor.value.source) : null)
 const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
 const diagnosticsJson = computed(() => JSON.stringify(compiled.value?.diagnostics ?? [], null, 2))
-function updateSource(value: string): void { editor.value?.applySourceText(value) }
+function updateSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
 
 async function save(): Promise<void> {
   const current = editor.value
-  if (!current)
+  if (!current) {
     return
+  }
 
   current.identity = current.identity.trim()
   current.name = current.name.trim()
@@ -31,10 +38,44 @@ async function save(): Promise<void> {
     activeTab.value = 'general'
     return
   }
-  if (!current.name)
+  if (!current.name) {
     current.name = current.identity
+  }
 
   await EndgeIDE.tabs.save()
+}
+
+async function launchPreview(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  launchLoading.value = true
+  try {
+    current.refreshDiagnostics()
+    const runtime = await launchStorePreview({
+      id: current.id,
+      identity: current.identity,
+      name: current.name,
+      displayName: current.name,
+      source: current.source,
+      sourceVersion: current.sourceVersion,
+    })
+    storePreviewError.value = null
+    startPulseRuntimeSync()
+    selectPulseHost(runtime.id, 'details')
+    showWidget('pulse')
+    toast.success('Store preview запущен', { description: runtime.id })
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    storePreviewError.value = message
+    toast.error('Не удалось запустить preview хранилища', { description: message })
+  }
+  finally {
+    launchLoading.value = false
+  }
 }
 </script>
 
@@ -50,6 +91,10 @@ async function save(): Promise<void> {
       <Button variant="outline" size="icon" :disabled="EndgeIDE.busy.value" title="Сохранить" @click="save">
         <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
         <Save v-else class="size-4" />
+      </Button>
+      <Button variant="outline" size="icon" :disabled="launchLoading" title="Запустить preview хранилища" @click="launchPreview">
+        <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+        <Play v-else class="size-4" />
       </Button>
     </div>
     <div class="min-h-0 flex-1 overflow-hidden">

@@ -8,6 +8,12 @@ import type {
 import { Endge, RComposition } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 
+import {
+  configuratorPreviewMeta,
+  destroyPreviewRuntime,
+  makePreviewRuntimeId,
+} from '@/features/endge-ide/model/preview-runtime/preview-runtime'
+
 export interface CompositionPreviewLaunchInput {
   id?: string | number | null
   identity?: string | null
@@ -74,7 +80,6 @@ export const compositionPreviewRenderables = computed<CompositionPreviewRenderab
 let runtimeCounter = 0
 
 export async function launchCompositionPreview(input: CompositionPreviewLaunchInput): Promise<void> {
-  destroyCompositionPreviewRuntime()
   compositionPreviewError.value = null
   compositionPreviewTitle.value = input.displayName || input.name || input.identity || 'Composition preview'
 
@@ -92,9 +97,12 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
     throw new Error(message)
   }
 
+  const runtimeId = destroyPreviewRuntime('composition', model.identity)
+  const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
   const runtime = Endge.runtime.execute(model, {
-    id: resolvePreviewRuntimeId(input),
-    persistence: 'disabled',
+    id: runtimeId,
+    ...configuratorPreviewMeta(),
+    dataRuntimes,
   }) as CompositionRuntimeHost | null
   if (!runtime || runtime.entityType !== 'composition')
     throw new Error('Не удалось создать runtime композиции.')
@@ -128,18 +136,20 @@ function createPreviewComposition(input: CompositionPreviewLaunchInput): RCompos
   return model
 }
 
-function resolvePreviewRuntimeId(input: CompositionPreviewLaunchInput): string {
-  const source = input.identity ?? input.id ?? input.name ?? input.displayName ?? 'draft'
-  const normalized = String(source).trim() || 'draft'
-  return `composition-preview:${normalized}`
-}
-
 /** Достраивает runtime dependencies Composition в dependency-first порядке для preview. */
 export function ensureCompositionRuntimeArtifacts(source: string, visiting = new Set<string>()): void {
   const result = Endge.source.compile('composition', source)
   const payload = result.artifact
   if (!payload)
     return
+
+  for (const data of payload.data) {
+    if (data.kind !== 'store')
+      continue
+    const model = Endge.domain.getStore(data.identity)
+    if (model && !Endge.program.getStoreArtifact(data.identity))
+      Endge.compiler.buildStore(model)
+  }
 
   for (const runtime of payload.runtimes) {
     if (runtime.kind === 'filter') {
@@ -172,6 +182,21 @@ export function ensureCompositionRuntimeArtifacts(source: string, visiting = new
         Endge.compiler.buildComposition(model)
     }
   }
+}
+
+function resolvePreviewStoreRuntimes(
+  data: Array<{ name: string, kind: 'store' | 'vocab', identity: string }>,
+): Record<string, string> {
+  const runtimes: Record<string, string> = {}
+  for (const descriptor of data) {
+    if (descriptor.kind !== 'store')
+      continue
+    const runtimeId = makePreviewRuntimeId('store', descriptor.identity)
+    const runtime = Endge.runtime.getRuntimeById(runtimeId)
+    if (runtime?.entityType === 'store')
+      runtimes[descriptor.name] = runtimeId
+  }
+  return runtimes
 }
 
 function logCompositionPreviewOutputs(runtime: CompositionRuntimeHost): void {
