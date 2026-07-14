@@ -227,7 +227,7 @@ export function launchPulseRuntimeFromEntity(
     }
   }
 
-  const host = configuratorPreviewAppScope.execute(model as any, executeMeta)
+  const host = configuratorPreviewAppScope.execute(model as any, { meta: executeMeta })
   if (!host) {
     return {
       ok: false,

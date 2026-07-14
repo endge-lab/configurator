@@ -81,10 +81,12 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     }
     const runtime = configuratorPreviewAppScope.execute(model, {
       parent: composition?.host ?? null,
-      ...configuratorPreviewMeta(),
-      target: 'dom',
-      input: runtimeInput,
       artifactReader,
+      meta: {
+        ...configuratorPreviewMeta(),
+        target: 'dom',
+        input: runtimeInput,
+      },
     }) as ComponentSFCRuntimeHost | null
     if (!runtime || runtime.entityType !== 'component-sfc') {
       throw new Error('Не удалось создать SFC preview runtime.')
@@ -176,8 +178,10 @@ async function applyPreviewOptions(
   }
 
   const host = configuratorPreviewAppScope.execute(model, {
-    ...configuratorPreviewMeta(),
-    dataRuntimes: resolvePreviewStoreRuntimes(dataAliases),
+    meta: {
+      ...configuratorPreviewMeta(),
+      dataRuntimes: resolvePreviewStoreRuntimes(dataAliases),
+    },
   }) as CompositionRuntimeHost | null
   if (!host || host.entityType !== 'composition') {
     throw new Error('Не удалось создать preview composition runtime.')

@@ -101,8 +101,10 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
   destroyPreviewRuntime('composition', model.identity)
   const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
   const runtime = configuratorPreviewAppScope.execute(model, {
-    ...configuratorPreviewMeta(),
-    dataRuntimes,
+    meta: {
+      ...configuratorPreviewMeta(),
+      dataRuntimes,
+    },
   }) as CompositionRuntimeHost | null
   if (!runtime || runtime.entityType !== 'composition')
     throw new Error('Не удалось создать runtime композиции.')

@@ -43,8 +43,8 @@ export async function launchStorePreview(input: StorePreviewLaunchInput): Promis
     getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
   }
   const runtime = configuratorPreviewAppScope.execute(model, {
-    ...configuratorPreviewMeta(),
     artifactReader,
+    meta: configuratorPreviewMeta(),
   }) as StoreRuntimeHost | null
   if (!runtime || runtime.entityType !== 'store') {
     throw new Error('Не удалось создать Store preview runtime.')
