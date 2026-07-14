@@ -45,6 +45,7 @@ export class EndgeConfigurator {
   private static _createBootContext(): EndgeBootContext {
     const baseAPI = String(import.meta.env.VITE_PAYLOAD_BASE_URL || '').trim()
     const secret = String(import.meta.env.VITE_PAYLOAD_SECRET || '').trim()
+    const workspaceIdentity = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
     if (!baseAPI || !secret) {
       throw new Error(
         '[EndgeConfigurator] VITE_PAYLOAD_BASE_URL and VITE_PAYLOAD_SECRET are required',
@@ -53,7 +54,7 @@ export class EndgeConfigurator {
 
     return {
       dataProvider: 'payload',
-      scope: {},
+      scope: workspaceIdentity ? { workspaceIdentity } : {},
       vars: {
         ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
       },

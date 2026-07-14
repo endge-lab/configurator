@@ -54,7 +54,7 @@ async function runQuery(): Promise<void> {
     current.updateSource(query)
     await buildQueryArtifact(query.id ?? query.identity)
 
-    const outputs = await Endge.query.run(query, {}) as Record<string, unknown>
+    const outputs = await Endge.runtime.query.run(query, {}) as Record<string, unknown>
     console.groupCollapsed(`[Query_Editor] Outputs: ${query.identity}`)
     for (const [key, value] of Object.entries(outputs))
       console.log(key, value)

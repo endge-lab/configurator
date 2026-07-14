@@ -99,7 +99,7 @@ async function testAuthProfile(): Promise<void> {
   testLoading.value = true
   try {
     const profile = buildProfileSchema(current)
-    const session = await Endge.authProfiles.test(profile)
+    const session = await Endge.auth.profiles.test(profile)
     const token = String(session.accessToken ?? '')
     const storageKey = getStorageKey(profile)
 
@@ -191,7 +191,7 @@ function getStorageKey(profile: AuthProfileSchema): string {
   const value = raw == null ? '' : String(raw).trim()
   if (!value)
     return `endge.auth.${profile.identity}`
-  return String(Endge.vars.resolve(value) ?? value).trim() || `endge.auth.${profile.identity}`
+  return String(Endge.workspace.variables.resolve(value) ?? value).trim() || `endge.auth.${profile.identity}`
 }
 
 function maskToken(token: string): string {

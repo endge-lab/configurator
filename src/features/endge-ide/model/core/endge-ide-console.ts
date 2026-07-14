@@ -41,7 +41,7 @@ export class EndgeIDEConsole {
    * Вывести в консоль все доступные contracts faceted cascade
    */
   public contracts(): EndgeContract[] {
-    const contracts = [...Endge.contracts.getAll()].sort((a, b) => {
+    const contracts = [...Endge.configuration.contracts.getAll()].sort((a, b) => {
       const aFacet = String(a.facet ?? '')
       const bFacet = String(b.facet ?? '')
       if (aFacet !== bFacet)

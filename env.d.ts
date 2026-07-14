@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_BRANDING?: string
   readonly VITE_DEFAULT_LOCALE?: string
   readonly VITE_PAYLOAD_BASE_URL?: string
+  readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
   readonly VITE_PAYLOAD_SECRET?: string
   readonly VITE_ENDPOINT_AUTH?: string
   readonly VITE_APP_SWITCHER?: string

@@ -149,7 +149,7 @@ export function getValueByPath(obj: any, path: string): unknown {
   }, obj)
 }
 
-/** Префикс ключей в Endge.store для превью ячеек таблицы (виджет Демонстрация) */
+/** Префикс runtime-ключей превью ячеек таблицы (виджет Демонстрация). */
 export const TABLE_PREVIEW_STORE_PREFIX = 'endge:admin:table-preview:'
 
 /** Путь в строке после [$i]. из accessor (например $store.legs[$i].id → "id") */

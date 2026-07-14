@@ -78,7 +78,7 @@ function updateInlinePreview(): void {
       return
     }
 
-    const output = Endge.dataView.runSource(editor?.getValue() ?? source.value, input as Record<string, unknown>)
+    const output = Endge.runtime.dataView.runSource(editor?.getValue() ?? source.value, input as Record<string, unknown>)
     inlinePreviewOutput.value = JSON.stringify(output, null, 2) ?? 'undefined'
   }
   catch {

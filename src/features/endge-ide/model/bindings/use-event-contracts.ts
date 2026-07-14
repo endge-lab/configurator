@@ -30,7 +30,7 @@ export function resolveEventContractEntityType(documentType: DomainDocumentType)
 }
 
 export function getEventContractsByEntity(entityType: EventContractEntityType): EventContract[] {
-  return Endge.contracts.getBehaviorByEntity(entityType)
+  return Endge.configuration.contracts.getBehaviorByEntity(entityType)
 }
 
 export function getEventContractsForDocument(documentType: DomainDocumentType): EventContract[] {
@@ -45,7 +45,7 @@ export function getEventContractForDocument(
 ): EventContract | null {
   const entityType = resolveEventContractEntityType(documentType)
   if (!entityType) { return null }
-  return Endge.contracts.getBehaviorByEvent(entityType, eventName)
+  return Endge.configuration.contracts.getBehaviorByEvent(entityType, eventName)
 }
 
 export function supportsEnvironmentOverrideForDocument(
@@ -54,5 +54,5 @@ export function supportsEnvironmentOverrideForDocument(
 ): boolean {
   const entityType = resolveEventContractEntityType(documentType)
   if (!entityType) { return false }
-  return Endge.contracts.supportsBehaviorOverride(entityType, eventName)
+  return Endge.configuration.contracts.supportsBehaviorOverride(entityType, eventName)
 }

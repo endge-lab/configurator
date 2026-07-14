@@ -70,8 +70,6 @@ const endgeModules: ModuleSpec[] = [
   { title: 'debug', description: 'Трассировка операций и диагностика.', docId: 'submodules-debug' },
   { title: 'domain', description: 'Доменная модель и CRUD сущностей.', docId: 'submodules-domain' },
   { title: 'vocabs', description: 'Загрузка словарей по namespace.', docId: 'submodules-vocabs' },
-  { title: 'extract', description: 'Извлечение и нормализация данных.', docId: 'submodules-extract' },
-  { title: 'store', description: 'Рантайм-хранилище состояния.', docId: 'submodules-store' },
   { title: 'runtime', description: 'Выполнение runtime-фаз и вычислений.', docId: 'submodules-runtime' },
   { title: 'vars', description: 'Переменные и интерполяции.', docId: 'submodules-vars' },
   { title: 'query', description: 'Единая точка запуска запросов.', docId: 'submodules-query' },
@@ -329,7 +327,7 @@ const architectureSections: ArchitectureFlowSection[] = [
     title: 'Слои коммуникации',
     text: [
       'Коммуникация в системе разделена на три уровня. Нижний уровень — Raph: он следит только за изменениями данных, dirty-узлами и фазами перерасчёта.',
-      'Над ним живёт событийный semantic-слой: runtime host испускает канонический факт, event contract задаёт его смысл, Endge.behaviorBindings подбирает реакции, а Endge.events работает как transport-шина для подписчиков из кода.',
+      'Над ним живёт событийный semantic-слой: runtime host испускает канонический факт, event contract задаёт его смысл, Endge.configuration.behaviorBindings подбирает реакции, а Endge.events работает как transport-шина для подписчиков из кода.',
       'На верхнем уровне находятся доменные runtime-сущности проекта: Project, Page, View, Component, Query и Action. Они одновременно потребляют data-reactivity снизу и публикуют lifecycle/interaction события наверх.',
       'Такое разделение делает архитектуру production-ready: Raph не загрязняется временными lifecycle-фактами, а событийный слой не зависит от внутренней механики dirty-path и фаз графа.',
     ],
@@ -346,8 +344,8 @@ const architectureSections: ArchitectureFlowSection[] = [
 
       createFlowNode('comm-fact', 'Канонический runtime-факт', 'Например: page.mounted или query.loaded', 120, 430, 'source'),
       createFlowNode('comm-contracts', 'Event Contracts', 'Что это за событие, scope и допустимость binding', 640, 430, 'config'),
-      createFlowNode('comm-bindings', 'Endge.behaviorBindings', 'Resolver, inheritance, environment, priority, mode', 1160, 430, 'config'),
-      createFlowNode('comm-actions', 'Endge.flow', 'Исполнение action/script по matched bindings', 1680, 430, 'action'),
+      createFlowNode('comm-bindings', 'Endge.configuration.behaviorBindings', 'Resolver, inheritance, environment, priority, mode', 1160, 430, 'config'),
+      createFlowNode('comm-actions', 'Endge.runtime.flow', 'Исполнение action/script по matched bindings', 1680, 430, 'action'),
       createFlowNode('comm-bus', 'Endge.events', 'Transport-шина для кодовых подписчиков', 1680, 570, 'runtime'),
 
       createFlowNode('comm-project', 'Project / Page', 'Lifecyle верхнего уровня проекта и страниц', 120, 830, 'source'),
@@ -387,7 +385,7 @@ const architectureSections: ArchitectureFlowSection[] = [
     ],
     nodes: [
       createFlowNode('contracts', 'Контракты', 'Какие события вообще допустимы', 40, 80, 'config'),
-      createFlowNode('bindings', 'Endge.behaviorBindings', 'Какие действия привязаны к контрактам', 560, 80, 'config'),
+      createFlowNode('bindings', 'Endge.configuration.behaviorBindings', 'Какие действия привязаны к контрактам', 560, 80, 'config'),
       createFlowNode('dispatcher', 'Диспетчер биндингов', 'Единая точка резолва и исполнения', 1180, 80, 'core'),
       createFlowNode('actions', 'Действия', 'Исполняемая логика из папки Действия', 1800, 80, 'action'),
       createFlowNode('bus', 'Шина Endge.events', 'Транспорт runtime-сообщений', 1180, 430, 'runtime'),

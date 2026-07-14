@@ -29,7 +29,7 @@
 - `Runtime host`
 - `EventContract`
 - `Endge.bindings`
-- `Endge.flow`
+- `Endge.runtime.flow`
 - `Endge.events`
 
 Его задача - ответить на вопрос: какой значимый факт произошёл в системе и какие реакции он должен вызвать.
@@ -106,7 +106,7 @@
 3. runtime-host интерпретирует это как lifecycle или data-факт;
 4. `EventContract` даёт факту каноническое имя;
 5. `Endge.bindings` подбирает действия;
-6. `Endge.flow` исполняет реакцию;
+6. `Endge.runtime.flow` исполняет реакцию;
 7. `Endge.events` может опубликовать это для подписчиков из кода.
 
 То есть:

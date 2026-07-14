@@ -14,7 +14,7 @@ function normalizePath(value: unknown): string | null {
 
 function resolveNavigationPath(value: unknown): string | null {
   if (typeof value !== 'string') { return null }
-  const resolved = Endge.vars.resolve<string>(value, {
+  const resolved = Endge.workspace.variables.resolve<string>(value, {
     coerce: (next) => next == null ? '' : String(next),
     onInvalid: 'as-is',
     fallback: value,

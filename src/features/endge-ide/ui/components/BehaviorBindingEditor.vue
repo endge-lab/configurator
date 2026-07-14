@@ -147,7 +147,7 @@ const environmentOptions = computed(() => {
 const inheritedRows = computed(() => {
   if (!ownerType.value || ownerId.value == null || targetId.value == null)
     return []
-  return Endge.behaviorBindings.getInheritedBindings({
+  return Endge.configuration.behaviorBindings.getInheritedBindings({
     ownerType: ownerType.value,
     ownerId: ownerId.value,
     targetType: targetType.value,

@@ -129,7 +129,7 @@ const rendererOptions = computed(() => {
 const inheritedRows = computed(() => {
   if (!ownerType.value || ownerId.value == null || targetId.value == null)
     return []
-  return Endge.presentationBindings.getInheritedBindings({
+  return Endge.configuration.presentationBindings.getInheritedBindings({
     ownerType: ownerType.value,
     ownerId: ownerId.value,
     targetType: targetType.value,

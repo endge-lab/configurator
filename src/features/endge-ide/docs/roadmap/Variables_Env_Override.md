@@ -10,7 +10,7 @@
 
 ## Текущее состояние
 
-- **Переменные в настройках**: в домене в `settings.general.vars` задаются переменные (name, defaultValue, currentValue). Они резолвятся через `Endge.vars.getValue(name)` и подстановку `{VAR_NAME}` через `Endge.vars.resolve()`.
+- **Переменные workspace**: definitions задаются в workspace и резолвятся через `Endge.workspace.variables.getValue(name)` или подстановку `{VAR_NAME}` через `Endge.workspace.variables.resolve()`.
 - **EndgeVars** уже имеет приоритет источников:
   1. ENVY (специальный объект/JSON в `import.meta.env.ENVY`)
   2. Vite env: `import.meta.env.VITE_<NAME>` (имя переменной без префикса: переменная `ENDPOINT_AUTH` → ключ в env `VITE_ENDPOINT_AUTH`)

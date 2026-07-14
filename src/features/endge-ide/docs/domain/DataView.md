@@ -307,4 +307,4 @@ DataViewProgramPayload {
 
 `Endge.compiler` оборачивает payload в `ProgramArtifact<DataViewProgramPayload>`.
 
-`Endge.dataView` исполняет compiled payload. Для query-owned локальных DataView query runtime должен передавать child artifact в тот же executor, который используется для глобальных DataView.
+`Endge.runtime.dataView` исполняет compiled payload. Для query-owned локальных DataView query runtime должен передавать child artifact в тот же executor, который используется для глобальных DataView.

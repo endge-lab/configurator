@@ -29,7 +29,7 @@ const manualToken = computed({
       <Label class="text-xs text-muted-foreground">Token</Label>
       <Input v-model="manualToken" autocomplete="off" />
       <div class="text-xs text-muted-foreground">
-        Можно указать прямое значение или ссылку на переменную Endge.vars.
+        Можно указать прямое значение или ссылку на Endge.workspace.variables.
       </div>
     </div>
   </div>

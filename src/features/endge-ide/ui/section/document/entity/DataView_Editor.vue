@@ -95,7 +95,7 @@ async function runPreview(): Promise<void> {
       throw new Error(message)
     }
 
-    const output = Endge.dataView.run(dataView, input)
+    const output = Endge.runtime.dataView.run(dataView, input)
     previewOutput.value = JSON.stringify(output, null, 2)
     toast.success('Preview выполнен')
   }

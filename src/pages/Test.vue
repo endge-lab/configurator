@@ -72,7 +72,7 @@ async function mountComposition(): Promise<void> {
     assertDomainEntities()
     compileTestArtifacts()
 
-    session.value = await Endge.composition.mount(COMPOSITION_IDENTITY, {
+    session.value = await Endge.runtime.composition.mount(COMPOSITION_IDENTITY, {
       id: COMPOSITION_RUNTIME_ID,
     })
 

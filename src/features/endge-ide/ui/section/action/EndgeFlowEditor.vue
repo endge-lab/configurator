@@ -953,7 +953,7 @@ function updateSelectedDelayMs(value: string): void {
 }
 
 /** Условия из реестра flow для панели switch. */
-const flowRegistryConditions = computed<FlowConditionSpec[]>(() => Endge.flowRegistry.listConditions())
+const flowRegistryConditions = computed<FlowConditionSpec[]>(() => Endge.runtime.flow.conditions.listConditions())
 
 /** Опции выбора словаря (для условий типа vocab.exists). */
 const vocabOptionsForSwitch = computed(() =>
@@ -2346,7 +2346,7 @@ async function runWholeFlow(): Promise<void> {
   if (!runtime)
     return
 
-  await Endge.flow.run(runtime)
+  await Endge.runtime.flow.run(runtime)
   executionContextTick.value += 1
   bottomPanelTab.value = 'context'
 }
@@ -2361,7 +2361,7 @@ async function runSelectedNode(): Promise<void> {
   if (!runtime)
     return
 
-  await Endge.flow.runBlock(runtime, nodeId)
+  await Endge.runtime.flow.runBlock(runtime, nodeId)
   executionContextTick.value += 1
   bottomPanelTab.value = 'context'
 }
@@ -2379,7 +2379,7 @@ async function runNextNode(): Promise<void> {
   if (!runtime)
     return
 
-  await Endge.flow.runBlock(runtime, nodeId)
+  await Endge.runtime.flow.runBlock(runtime, nodeId)
   executionContextTick.value += 1
   bottomPanelTab.value = 'context'
 }
