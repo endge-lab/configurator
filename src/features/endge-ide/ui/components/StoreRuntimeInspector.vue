@@ -2,10 +2,18 @@
 import type { StoreRuntimeHost } from '@endge/core'
 
 import { Raph } from '@endge/raph'
+import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { readStorePreviewFields } from '@/features/endge-ide/model/store-preview/store-preview-inspector'
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
+import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
+
+interface SourceJsonTreeHandle {
+  expandAll: () => void
+  collapseAll: () => void
+}
 
 const props = defineProps<{
   runtime: StoreRuntimeHost | null
@@ -13,17 +21,15 @@ const props = defineProps<{
 
 const copy = {
   title: 'output.json',
-  live: 'live',
   collapse: 'Свернуть output.json',
   expand: 'Показать output.json',
   empty: 'Store runtime не содержит полей.',
-  raph: 'Raph',
-  fields: 'fields',
-  separator: '·',
   flow: '→',
 } as const
 
 const collapsed = ref(false)
+const expandedFieldKey = ref<string | null>(null)
+const expandedFieldTree = ref<SourceJsonTreeHandle | null>(null)
 const revision = ref(0)
 let disposeRuntimeWatch: VoidFunction | null = null
 
@@ -53,20 +59,31 @@ const fields = computed(() => {
   void revision.value
   return props.runtime ? readStorePreviewFields(props.runtime) : []
 })
+const output = computed(() => Object.fromEntries(
+  fields.value.map(field => [field.key, field.value]),
+))
 
-const rootPath = computed(() => props.runtime?.getDataPath() ?? '')
+watch(
+  fields,
+  (nextFields) => {
+    if (!nextFields.some(field => field.key === expandedFieldKey.value)) {
+      expandedFieldKey.value = nextFields[0]?.key ?? null
+    }
+  },
+  { immediate: true },
+)
 
-function formatValue(value: unknown): string {
-  if (value === undefined) {
-    return 'undefined'
+function toggleField(key: string): void {
+  if (expandedFieldKey.value === key) {
+    expandedFieldKey.value = null
+    return
   }
 
-  try {
-    return JSON.stringify(value, null, 2) ?? 'undefined'
-  }
-  catch {
-    return String(value)
-  }
+  expandedFieldKey.value = key
+}
+
+function setExpandedFieldTree(instance: unknown): void {
+  expandedFieldTree.value = instance as SourceJsonTreeHandle | null
 }
 </script>
 
@@ -79,91 +96,125 @@ function formatValue(value: unknown): string {
     :expand-label="copy.expand"
     mode="full-height"
   >
-    <template #meta>
-      <span class="store-runtime-inspector__live-badge">
-        <span class="store-runtime-inspector__live-dot" />
-        {{ copy.live }}
-      </span>
-      <span class="text-[10px] font-normal text-slate-400">{{ fields.length }} {{ copy.fields }}</span>
-    </template>
-
-    <template #collapsed-meta>
-      <span class="store-runtime-inspector__live-dot" />
-    </template>
-
-    <template #subtitle>
-      <div class="truncate font-mono" :title="rootPath">
-        {{ `${copy.raph} ${copy.separator} ${rootPath}` }}
-      </div>
+    <template #actions>
+      <SourceJsonTreeControls
+        :copy-value="output"
+        @expand-all="expandedFieldTree?.expandAll()"
+        @collapse-all="expandedFieldTree?.collapseAll()"
+      />
     </template>
 
     <div v-if="!fields.length" class="p-4 text-xs text-slate-400">
       {{ copy.empty }}
     </div>
 
-    <template v-else>
-      <article
+    <div v-else class="store-runtime-inspector__fields">
+      <section
         v-for="field in fields"
         :key="field.key"
         class="store-runtime-inspector__field"
+        :data-expanded="expandedFieldKey === field.key"
       >
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="font-mono text-xs font-semibold text-slate-100">{{ field.key }}</span>
-          <span class="store-runtime-inspector__kind" :data-kind="field.kind">{{ field.kind }}</span>
-          <span v-if="field.mockIdentity" class="text-[10px] text-amber-300/90">
-            {{ `mock:${field.mockIdentity}` }}
+        <button
+          type="button"
+          class="store-runtime-inspector__field-header"
+          :aria-expanded="expandedFieldKey === field.key"
+          @click="toggleField(field.key)"
+        >
+          <ChevronDown v-if="expandedFieldKey === field.key" class="mt-0.5 size-4 shrink-0 text-sky-300" />
+          <ChevronRight v-else class="mt-0.5 size-4 shrink-0 text-slate-500" />
+
+          <span class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <span class="font-mono text-xs font-semibold text-slate-100">{{ field.key }}</span>
+            <span class="store-runtime-inspector__kind" :data-kind="field.kind">{{ field.kind }}</span>
           </span>
-        </div>
+        </button>
 
-        <div v-if="field.kind === 'derived'" class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
-          <span>{{ field.source }}</span>
-          <template v-for="dataView in field.dataViews" :key="dataView">
-            <span>{{ copy.flow }}</span>
-            <span class="rounded border border-cyan-800/70 bg-cyan-950/40 px-1.5 py-0.5 text-cyan-200">{{ dataView }}</span>
-          </template>
-        </div>
+        <div v-if="expandedFieldKey === field.key" class="store-runtime-inspector__field-body">
+          <div v-if="field.kind === 'derived'" class="store-runtime-inspector__data-views">
+            <span>{{ field.source }}</span>
+            <template v-for="dataView in field.dataViews" :key="dataView">
+              <span>{{ copy.flow }}</span>
+              <span class="rounded border border-cyan-800/70 bg-cyan-950/40 px-1.5 py-0.5 text-cyan-200">{{ dataView }}</span>
+            </template>
+          </div>
 
-        <div class="mt-2 truncate font-mono text-[10px] text-slate-500" :title="field.raphPath">
-          {{ `${copy.raph} ${copy.separator} ${field.raphPath}` }}
+          <SourceJsonTree
+            :ref="setExpandedFieldTree"
+            :data="field.value"
+            :root-path="field.key"
+          />
         </div>
-
-        <pre class="store-runtime-inspector__value">{{ formatValue(field.value) }}</pre>
-      </article>
-    </template>
+      </section>
+    </div>
   </SourceOutputPanel>
 </template>
 
 <style scoped>
-.store-runtime-inspector__live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid rgb(16 185 129 / 0.28);
-  border-radius: 999px;
-  padding: 2px 6px;
-  color: #6ee7b7;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.store-runtime-inspector__live-dot {
-  width: 6px;
-  height: 6px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: #34d399;
-  box-shadow: 0 0 0 3px rgb(52 211 153 / 0.12), 0 0 10px rgb(52 211 153 / 0.55);
+.store-runtime-inspector__fields {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .store-runtime-inspector__field {
-  padding: 12px;
+  min-height: 0;
+  flex: 0 0 auto;
   border-bottom: 1px solid rgb(51 65 85 / 0.72);
 }
 
-.store-runtime-inspector__field:hover {
-  background: rgb(30 41 59 / 0.34);
+.store-runtime-inspector__field[data-expanded='true'] {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.store-runtime-inspector__field-header {
+  width: 100%;
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.store-runtime-inspector__field-header:hover {
+  background: rgb(30 41 59 / 0.44);
+}
+
+.store-runtime-inspector__field-header:focus-visible {
+  outline: 1px solid rgb(56 189 248 / 0.7);
+  outline-offset: -2px;
+}
+
+.store-runtime-inspector__field-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid rgb(51 65 85 / 0.56);
+  background: rgb(2 6 23 / 0.34);
+}
+
+.store-runtime-inspector__data-views {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgb(51 65 85 / 0.56);
+  color: #94a3b8;
+  font-size: 10px;
 }
 
 .store-runtime-inspector__kind {
@@ -181,20 +232,5 @@ function formatValue(value: unknown): string {
   border-color: rgb(8 145 178 / 0.55);
   background: rgb(8 145 178 / 0.1);
   color: #67e8f9;
-}
-
-.store-runtime-inspector__value {
-  min-height: 38px;
-  max-height: 360px;
-  margin: 9px 0 0;
-  padding: 9px 10px;
-  overflow: auto;
-  border: 1px solid rgb(51 65 85 / 0.82);
-  border-radius: 6px;
-  background: rgb(2 6 23 / 0.62);
-  color: #cbd5e1;
-  font-size: 11px;
-  line-height: 1.5;
-  white-space: pre;
 }
 </style>

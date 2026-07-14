@@ -9,7 +9,14 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
+import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
+
+interface SourceJsonTreeHandle {
+  expandAll: () => void
+  collapseAll: () => void
+}
 
 const props = defineProps<{
   modelValue: string
@@ -21,8 +28,9 @@ const emit = defineEmits<{
 }>()
 
 const container = ref<HTMLDivElement | null>(null)
-const inlinePreviewOutput = ref<string | null>(null)
+const inlinePreview = ref<{ data: unknown } | null>(null)
 const inlinePreviewCollapsed = ref(false)
+const inlinePreviewTree = ref<SourceJsonTreeHandle | null>(null)
 const source = computed({
   get: () => props.modelValue ?? '',
   set: value => emit('update:modelValue', value),
@@ -69,22 +77,22 @@ function scheduleInlinePreview(): void {
 function updateInlinePreview(): void {
   const inputSource = props.previewInput?.trim()
   if (!inputSource) {
-    inlinePreviewOutput.value = null
+    inlinePreview.value = null
     return
   }
 
   try {
     const input = JSON.parse(inputSource)
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
-      inlinePreviewOutput.value = null
+      inlinePreview.value = null
       return
     }
 
     const output = Endge.runtime.dataView.runSource(editor?.getValue() ?? source.value, input as Record<string, unknown>)
-    inlinePreviewOutput.value = JSON.stringify(output, null, 2) ?? 'undefined'
+    inlinePreview.value = { data: output }
   }
   catch {
-    inlinePreviewOutput.value = null
+    inlinePreview.value = null
   }
 }
 
@@ -142,13 +150,22 @@ onBeforeUnmount(() => {
       <div ref="container" class="data-view-source-editor__monaco" />
 
       <SourceOutputPanel
-        v-if="inlinePreviewOutput"
+        v-if="inlinePreview"
         v-model:collapsed="inlinePreviewCollapsed"
         title="output.json"
         collapse-label="Свернуть output.json"
         expand-label="Показать output.json"
+        mode="full-height"
       >
-        <pre class="data-view-source-editor__preview-content">{{ inlinePreviewOutput }}</pre>
+        <template #actions>
+          <SourceJsonTreeControls
+            :copy-value="inlinePreview.data"
+            @expand-all="inlinePreviewTree?.expandAll()"
+            @collapse-all="inlinePreviewTree?.collapseAll()"
+          />
+        </template>
+
+        <SourceJsonTree ref="inlinePreviewTree" :data="inlinePreview.data" root-path="output" />
       </SourceOutputPanel>
     </div>
   </div>
@@ -205,15 +222,5 @@ onBeforeUnmount(() => {
   border-top: 1px solid hsl(var(--border));
   overflow: hidden;
   background: #1e1e1e;
-}
-
-.data-view-source-editor__preview-content {
-  min-height: 0;
-  margin: 0;
-  padding: 10px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.45;
-  white-space: pre;
 }
 </style>

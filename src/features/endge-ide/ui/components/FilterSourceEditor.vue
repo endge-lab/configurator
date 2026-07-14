@@ -7,14 +7,22 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
+import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
+
+interface SourceJsonTreeHandle {
+  expandAll: () => void
+  collapseAll: () => void
+}
 
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ (event: 'update:modelValue', value: string): void }>()
 const container = ref<HTMLDivElement | null>(null)
 const source = ref(props.modelValue ?? '')
-const inlinePreviewOutput = ref<string | null>(null)
+const inlinePreviewOutput = ref<Record<string, unknown> | null>(null)
 const inlinePreviewCollapsed = ref(false)
+const inlinePreviewTree = ref<SourceJsonTreeHandle | null>(null)
 let previewTimer: ReturnType<typeof setTimeout> | null = null
 
 const monaco = useEndgeSourceMonaco({
@@ -92,7 +100,7 @@ function updateInlinePreview(): void {
       // Predicate зависит от row, которого у preview Filter нет.
       return [output.key, null]
     }))
-    inlinePreviewOutput.value = JSON.stringify(outputs, null, 2)
+    inlinePreviewOutput.value = outputs
   }
   catch {
     inlinePreviewOutput.value = null
@@ -122,8 +130,17 @@ function isFilterArtifact(value: unknown): value is FilterProgramPayload {
         title="outputs.json · defaults"
         collapse-label="Свернуть outputs.json"
         expand-label="Показать outputs.json"
+        mode="full-height"
       >
-        <pre class="filter-source-editor__preview-content">{{ inlinePreviewOutput }}</pre>
+        <template #actions>
+          <SourceJsonTreeControls
+            :copy-value="inlinePreviewOutput"
+            @expand-all="inlinePreviewTree?.expandAll()"
+            @collapse-all="inlinePreviewTree?.collapseAll()"
+          />
+        </template>
+
+        <SourceJsonTree ref="inlinePreviewTree" :data="inlinePreviewOutput" root-path="outputs" />
       </SourceOutputPanel>
     </div>
   </div>
@@ -166,15 +183,5 @@ function isFilterArtifact(value: unknown): value is FilterProgramPayload {
   height: 100%;
   width: 100%;
   background: #1e1e1e;
-}
-
-.filter-source-editor__preview-content {
-  min-height: 0;
-  margin: 0;
-  padding: 10px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.45;
-  white-space: pre;
 }
 </style>
