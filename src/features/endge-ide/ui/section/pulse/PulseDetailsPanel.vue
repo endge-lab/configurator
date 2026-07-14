@@ -50,6 +50,10 @@ const storeFields = computed(() => {
     kind: field.kind,
     source: field.kind === 'derived' ? field.source : null,
     dataViews: field.kind === 'derived' ? field.dataViews.length : 0,
+    initializer: field.kind === 'value' ? field.initial.kind : null,
+    mockIdentity: field.kind === 'value' && field.initial.kind === 'mock'
+      ? field.initial.identity
+      : null,
     value: snapshot[field.key],
   }))
 })
@@ -147,6 +151,12 @@ function formatValue(value: unknown): string {
                 class="text-[10px] text-muted-foreground"
               >
                 {{ field.source }} · {{ field.dataViews }} DataView
+              </span>
+              <span
+                v-else-if="field.initializer === 'mock'"
+                class="text-[10px] text-muted-foreground"
+              >
+                {{ `mock: ${field.mockIdentity}` }}
               </span>
             </div>
             <pre class="mt-3 max-h-72 overflow-auto rounded-md bg-background p-3 text-[11px] leading-5">{{ formatValue(field.value) }}</pre>

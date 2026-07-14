@@ -83,6 +83,23 @@ function createPreviewStoreArtifact(model: RStore): ProgramArtifact<StoreSourceA
   const dependencies: ProgramDependency[] = []
 
   for (const field of payload?.data ?? []) {
+    if (field.kind === 'value' && field.initial.kind === 'mock') {
+      dependencies.push({
+        entityType: 'mock-data',
+        id: field.initial.identity,
+        identity: field.initial.identity,
+        role: `store-initial:${field.key}`,
+      })
+      if (!Endge.mock.has(field.initial.identity)) {
+        diagnostics.push({
+          severity: 'error',
+          code: 'store-mock-missing',
+          message: `Mock "${field.initial.identity}" для Store field "${field.key}" не зарегистрирован.`,
+          sourcePath: `data.${field.key}`,
+          entityRef: ref,
+        })
+      }
+    }
     if (field.kind !== 'derived') {
       continue
     }
