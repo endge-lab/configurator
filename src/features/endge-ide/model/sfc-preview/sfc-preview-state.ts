@@ -18,8 +18,10 @@ import { Raph } from '@endge/raph'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {
+  configuratorPreviewAppScope,
   configuratorPreviewMeta,
-  makePreviewRuntimeId,
+  destroyPreviewRuntime,
+  resolvePreviewRuntime,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface SFCPreviewLaunchInput {
@@ -67,10 +69,9 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     throw new Error('Сначала определите превью props')
   }
 
-  const runtimeId = resolvePreviewRuntimeId(input)
+  const identity = resolvePreviewIdentity(input)
   destroySFCPreviewRuntime()
-  Endge.runtime.destroyRuntimeTree(`${runtimeId}:composition`)
-  Endge.runtime.destroyRuntimeTree(runtimeId)
+  destroyPreviewRuntime('component-sfc', identity)
   const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
   try {
     const runtimeInput = resolvePreviewInput(previewProps, composition)
@@ -78,8 +79,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     const artifactReader = {
       getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
     }
-    const runtime = Endge.runtime.execute(model, {
-      id: runtimeId,
+    const runtime = configuratorPreviewAppScope.execute(model, {
       parent: composition?.host ?? null,
       ...configuratorPreviewMeta(),
       target: 'dom',
@@ -111,10 +111,9 @@ export function destroySFCPreviewRuntime(): void {
   sfcPreviewInput.value = { kind: 'local', props: {} }
 }
 
-function resolvePreviewRuntimeId(input: SFCPreviewLaunchInput): string {
+function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
   const source = input.identity ?? input.id ?? input.name ?? input.displayName ?? 'draft'
-  const normalized = String(source).trim() || 'draft'
-  return makePreviewRuntimeId('component-sfc', normalized)
+  return String(source).trim() || 'draft'
 }
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
@@ -176,8 +175,7 @@ async function applyPreviewOptions(
     throw new Error(message)
   }
 
-  const host = Endge.runtime.execute(model, {
-    id: `${resolvePreviewRuntimeId(input)}:composition`,
+  const host = configuratorPreviewAppScope.execute(model, {
     ...configuratorPreviewMeta(),
     dataRuntimes: resolvePreviewStoreRuntimes(dataAliases),
   }) as CompositionRuntimeHost | null
@@ -197,9 +195,9 @@ async function applyPreviewOptions(
 function resolvePreviewStoreRuntimes(dataAliases: Map<string, string>): Record<string, string> {
   const runtimes: Record<string, string> = {}
   for (const [identity, alias] of dataAliases) {
-    const runtimeId = makePreviewRuntimeId('store', identity)
-    if (Endge.runtime.getRuntimeById(runtimeId)?.entityType === 'store') {
-      runtimes[alias] = runtimeId
+    const runtime = resolvePreviewRuntime<{ id: string, entityType: string }>('store', identity)
+    if (runtime?.entityType === 'store') {
+      runtimes[alias] = runtime.id
     }
   }
   return runtimes
@@ -298,8 +296,8 @@ function createPreviewComposition(
   }).join(',\n    ')
   const hooks = targets.map((_, index) => `onMount().run('query${index}')`).join(',\n    ')
   const model = new RComposition()
-  model.id = `${resolvePreviewRuntimeId(input)}:composition-model` as any
-  model.identity = `${resolvePreviewRuntimeId(input)}:composition`
+  model.id = `${resolvePreviewIdentity(input)}-sfc-context-model` as any
+  model.identity = `${resolvePreviewIdentity(input)}-sfc-context`
   model.name = 'SFC preview composition'
   model.displayName = 'SFC preview composition'
   model.source = `defineComposition({

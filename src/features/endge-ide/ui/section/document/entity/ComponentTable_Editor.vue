@@ -10,7 +10,6 @@ import {
   Loader2,
   Plus,
   Save,
-  ScanEye,
   Table2,
   Trash2,
 } from "lucide-vue-next";
@@ -54,6 +53,7 @@ import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor"
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import BehaviorBindingEditor from "@/features/endge-ide/ui/components/BehaviorBindingEditor.vue";
 import PresentationBindingEditor from "@/features/endge-ide/ui/components/PresentationBindingEditor.vue";
+import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
 import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
@@ -161,12 +161,6 @@ function clearAllDataPathBindings(): void {
       acc.converter = "";
     }
   }
-}
-
-function openDemonstration(): void {
-  const id = editor.value?.id;
-  if (!id) return;
-  EndgeIDE.demonstration.showTable(id);
 }
 
 function removeColumn(index: number): void {
@@ -463,23 +457,6 @@ watch(
               </Button>
             </TooltipTrigger>
             <TooltipContent>Сохранить</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                size="icon"
-                variant="outline"
-                class="h-9 w-9 shrink-0"
-                aria-label="Демонстрация таблицы"
-                :disabled="!editor?.id"
-                @click="openDemonstration"
-              >
-                <ScanEye class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent
-              >Показать таблицу с данными из раздела «Помощь»</TooltipContent
-            >
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -928,6 +905,10 @@ watch(
               <ScrollArea class="flex-1">
                 <div class="p-4 space-y-4">
                   <div class="space-y-2">
+                    <Label>Source index</Label>
+                    <Input v-model="editor.sourceIndex" placeholder="rows" />
+                  </div>
+                  <div class="space-y-2">
                     <Label>Входные переменные и привязки (PK/FK)</Label>
                     <div class="rounded-lg border overflow-hidden">
                       <div
@@ -1030,6 +1011,20 @@ watch(
                         <Label class="font-normal">Зависит от zoom</Label>
                       </div>
                     </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label>Runtime filters (persisted only)</Label>
+                    <Input
+                      :model-value="(editor.runtimeFilters ?? []).join(', ')"
+                      @update:model-value="(value) => editor.runtimeFilters = String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean)"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <Label>Legacy setup source (data only)</Label>
+                    <ScriptEditor v-model="editor.setupScript" :type="editor.type" />
+                    <p class="text-xs text-muted-foreground">
+                      This field is preserved in the document but is no longer executed.
+                    </p>
                   </div>
                 </div>
               </ScrollArea>

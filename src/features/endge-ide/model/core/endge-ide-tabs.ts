@@ -84,9 +84,7 @@ import Filter_Editor from '@/features/endge-ide/ui/section/document/entity/Filte
 import Workspace_Editor from '@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'
 import Version_Editor from '@/features/endge-ide/ui/section/document/singleton/Version_Editor.vue'
 import ViewGenerator_Editor from '@/features/endge-ide/ui/section/document/singleton/ViewGenerator_Editor.vue'
-import NovaSandbox_Singleton from '@/features/endge-ide/ui/section/document/singleton/NovaSandbox_Singleton.vue'
 import ActionPlaygrounds_Singleton from '@/features/endge-ide/ui/section/document/singleton/ActionPlaygrounds_Singleton.vue'
-import TableBenchmark_Singleton from '@/features/endge-ide/ui/section/document/singleton/TableBenchmark_Singleton.vue'
 import BackupRestore_Singleton from '@/features/endge-ide/ui/section/document/singleton/BackupRestore_Singleton.vue'
 import DSL_Playground_Widget from '@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'
 import SFC_Playground_Widget from '@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'
@@ -105,9 +103,7 @@ const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_VIEW_GENERATOR = 'endge-view-generator' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
-const VIEW_ID_NOVA_SANDBOX = 'endge-nova-sandbox' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
-const VIEW_ID_TABLE_BENCHMARK = 'endge-table-benchmark' as const
 const VIEW_ID_BACKUP_RESTORE = 'endge-backup-restore' as const
 const VIEW_ID_UI_EDITOR_DEMO = 'endge-ui-editor-demo' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
@@ -404,20 +400,6 @@ export class EndgeIDETabs {
     this.openTab(tabRef)
   }
 
-  /** Открыть вкладку «Singleton» с Nova-песочницей в единственном экземпляре. */
-  public openNovaSandboxSingleton(): void {
-    const tabRef: SmartTabRef = {
-      id: 'nova-sandbox-singleton',
-      label: 'Playground Nova',
-      viewId: VIEW_ID_NOVA_SANDBOX,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-square text-red-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
   public openActionPlaygroundsSingleton(): void {
     const tabRef: SmartTabRef = {
       id: 'action-playgrounds-singleton',
@@ -427,20 +409,6 @@ export class EndgeIDETabs {
       closable: true,
       singleton: true,
       meta: { icon: 'ti ti-route-square text-sky-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
-  /** Открыть вкладку «Тестирование таблиц» в единственном экземпляре. */
-  public openTableBenchmarkSingleton(): void {
-    const tabRef: SmartTabRef = {
-      id: 'table-benchmark-singleton',
-      label: 'Тестирование таблиц',
-      viewId: VIEW_ID_TABLE_BENCHMARK,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-chart-histogram text-blue-500 text-xl' },
     }
     this.openTab(tabRef)
   }
@@ -698,16 +666,8 @@ export class EndgeIDETabs {
       component: markRaw(SFC_Playground_Widget),
       props: {},
     }))
-    registerSmartTabView(VIEW_ID_NOVA_SANDBOX, (): SmartTabViewResolved => ({
-      component: markRaw(NovaSandbox_Singleton),
-      props: {},
-    }))
     registerSmartTabView(VIEW_ID_ACTION_PLAYGROUNDS, (): SmartTabViewResolved => ({
       component: markRaw(ActionPlaygrounds_Singleton),
-      props: {},
-    }))
-    registerSmartTabView(VIEW_ID_TABLE_BENCHMARK, (): SmartTabViewResolved => ({
-      component: markRaw(TableBenchmark_Singleton),
       props: {},
     }))
     registerSmartTabView(VIEW_ID_BACKUP_RESTORE, (): SmartTabViewResolved => ({

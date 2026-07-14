@@ -2,29 +2,33 @@ import type { RuntimeEntityType } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-export const CONFIGURATOR_PREVIEW_SCOPE = 'configurator'
+export const CONFIGURATOR_PREVIEW_SCOPE = 'preview'
 
-/** Строит стабильный runtime-id preview instance из типа и реального identity. */
-export function makePreviewRuntimeId(entityType: RuntimeEntityType, identity: string): string {
-  const normalizedIdentity = String(identity ?? '').trim()
-  if (!normalizedIdentity) {
-    throw new Error('Identity is required for preview runtime.')
-  }
-  return `${entityType}:${normalizedIdentity}-preview`
+/** Общий runtime root всех запускаемых из Configurator preview entities. */
+export const configuratorPreviewAppScope = Endge.runtime.createAppScope({
+  id: CONFIGURATOR_PREVIEW_SCOPE,
+  rootPath: 'runtime-preview',
+  collisionPolicy: 'replace',
+  persistence: 'disabled',
+})
+
+/** Возвращает активную preview entity из scope registry. */
+export function resolvePreviewRuntime<T>(
+  entityType: RuntimeEntityType,
+  identity: string,
+): T | null {
+  return configuratorPreviewAppScope.resolve<T>(entityType, identity)
 }
 
-/** Удаляет предыдущий preview runtime tree перед запуском новой версии draft. */
-export function destroyPreviewRuntime(entityType: RuntimeEntityType, identity: string): string {
-  const runtimeId = makePreviewRuntimeId(entityType, identity)
-  Endge.runtime.destroyRuntimeTree(runtimeId)
-  return runtimeId
+/** Удаляет preview runtime tree сущности по domain identity. */
+export function destroyPreviewRuntime(entityType: RuntimeEntityType, identity: string): void {
+  configuratorPreviewAppScope.destroy(entityType, identity)
 }
 
-/** Единая metadata всех preview runtimes Configurator. */
+/** Metadata режима Configurator, не участвующая в runtime addressing. */
 export function configuratorPreviewMeta(): Record<string, unknown> {
   return {
     mode: 'preview',
     previewScope: CONFIGURATOR_PREVIEW_SCOPE,
-    persistence: 'disabled',
   }
 }

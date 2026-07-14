@@ -36,6 +36,9 @@ const props = withDefaults(defineProps<{
 interface PulseHostTreeItem {
   host: PulseMockHost
   depth: number
+  scopeId: string
+  scopeRootPath: string
+  scopeStart: boolean
 }
 
 const hosts = computed(() => pulseMockHosts.value)
@@ -47,10 +50,9 @@ const visibleHosts = computed(() =>
       : host.status !== 'deleted',
   ),
 )
-const hostTreeItems = computed<PulseHostTreeItem[]>(() => {
+function buildHostTree(allHosts: PulseMockHost[]): Array<Pick<PulseHostTreeItem, 'host' | 'depth'>> {
   const byParent = new Map<string | null, PulseMockHost[]>()
   const roots: PulseMockHost[] = []
-  const allHosts = visibleHosts.value
   const existingIds = new Set(allHosts.map(host => host.id))
 
   for (const host of allHosts) {
@@ -63,7 +65,7 @@ const hostTreeItems = computed<PulseHostTreeItem[]>(() => {
     byParent.set(parentId, [...(byParent.get(parentId) ?? []), host])
   }
 
-  const ordered: PulseHostTreeItem[] = []
+  const ordered: Array<Pick<PulseHostTreeItem, 'host' | 'depth'>> = []
   const visited = new Set<string>()
 
   const visit = (host: PulseMockHost, depth: number) => {
@@ -85,6 +87,23 @@ const hostTreeItems = computed<PulseHostTreeItem[]>(() => {
   }
 
   return ordered
+}
+
+const hostTreeItems = computed<PulseHostTreeItem[]>(() => {
+  const groups = new Map<string, PulseMockHost[]>()
+  for (const host of visibleHosts.value) {
+    const scopeId = host.appScopeId || 'app'
+    groups.set(scopeId, [...(groups.get(scopeId) ?? []), host])
+  }
+
+  return [...groups.entries()].flatMap(([scopeId, scopedHosts]) =>
+    buildHostTree(scopedHosts).map((item, index) => ({
+      ...item,
+      scopeId,
+      scopeRootPath: scopedHosts[0]?.appScopeRootPath || 'runtime',
+      scopeStart: index === 0,
+    })),
+  )
 })
 const visibilityButtonTooltip = computed(() =>
   visibilityMode.value === 'deleted'
@@ -358,9 +377,22 @@ function cancelLaunchDialog(): void {
     <ScrollArea class="min-h-0 flex-1">
       <TooltipProvider>
         <div class="space-y-2 p-2">
-          <details
+          <template
             v-for="item in hostTreeItems"
             :key="item.host.id"
+          >
+            <div
+              v-if="item.scopeStart"
+              class="flex items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5"
+            >
+              <i class="ti ti-app-window text-xs text-muted-foreground" />
+              <span class="text-xs font-semibold">AppScope: {{ item.scopeId }}</span>
+              <span class="ml-auto truncate font-mono text-[10px] text-muted-foreground">
+                {{ item.scopeRootPath }}
+              </span>
+            </div>
+
+          <details
             class="overflow-hidden rounded-lg border bg-card"
             :style="{ marginLeft: `${item.depth * 16}px` }"
           >
@@ -390,7 +422,13 @@ function cancelLaunchDialog(): void {
                     </Tooltip>
                   </div>
                   <div class="mt-0.5 truncate text-[10px] text-muted-foreground">
-                    {{ item.host.runtimeType }} • {{ item.host.id }}
+                    {{ item.host.runtimeType }}
+                  </div>
+                  <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                    {{ item.host.basePath }}
+                  </div>
+                  <div class="mt-0.5 truncate text-[9px] text-muted-foreground/70">
+                    internal: {{ item.host.id }}
                   </div>
                 </div>
 
@@ -552,6 +590,7 @@ function cancelLaunchDialog(): void {
               </div>
             </div>
           </details>
+          </template>
         </div>
       </TooltipProvider>
     </ScrollArea>

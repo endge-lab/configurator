@@ -1,7 +1,7 @@
 import { Endge, RComposition, RQuery } from '@endge/core'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { ensureCompositionRuntimeArtifacts } from './composition-preview-state'
+import { ensureCompositionRuntimeArtifacts } from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
 
 describe('Composition preview artifacts', () => {
   afterEach(() => {

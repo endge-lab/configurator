@@ -9,8 +9,6 @@ export enum DocsCategory {
   EndgeCoreModules = 'EndgeCoreModules',
   EndgeSubModules = 'EndgeSubModules',
   EndgeDomain = 'EndgeDomain',
-  EndgeComponents = 'EndgeComponents',
-  Styling = 'Styling',
   Configuring = 'Configuring',
   Codegen = 'Codegen',
 }

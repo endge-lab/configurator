@@ -4,7 +4,7 @@ import {
   isQueryComposition,
   QUERY_COMPOSITION_ROLE,
   setQueryCompositionRole,
-} from './query-composition-presentation'
+} from '../../../../../features/endge-ide/model/domain/query-composition-presentation'
 
 describe('query Composition presentation', () => {
   it('adds the role without losing user metadata', () => {

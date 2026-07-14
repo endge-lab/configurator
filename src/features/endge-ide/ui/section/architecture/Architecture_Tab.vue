@@ -68,13 +68,10 @@ const endgeModules: ModuleSpec[] = [
   { title: 'context', description: 'Текущий проект, среда и локаль.', docId: 'submodules-context' },
   { title: 'diagnostics', description: 'Системная диагностика, мониторинг и structured records.', docId: 'submodules-diagnostics' },
   { title: 'debug', description: 'Трассировка операций и диагностика.', docId: 'submodules-debug' },
-  { title: 'testing', description: 'Тестовый режим и тестовые опции.', docId: 'submodules-testing' },
   { title: 'domain', description: 'Доменная модель и CRUD сущностей.', docId: 'submodules-domain' },
   { title: 'vocabs', description: 'Загрузка словарей по namespace.', docId: 'submodules-vocabs' },
   { title: 'extract', description: 'Извлечение и нормализация данных.', docId: 'submodules-extract' },
-  { title: 'render', description: 'Реестр рендер-функций/компонентов.', docId: 'submodules-render' },
   { title: 'store', description: 'Рантайм-хранилище состояния.', docId: 'submodules-store' },
-  { title: 'script', description: 'Скрипты и JSX-сценарии.', docId: 'submodules-script' },
   { title: 'runtime', description: 'Выполнение runtime-фаз и вычислений.', docId: 'submodules-runtime' },
   { title: 'vars', description: 'Переменные и интерполяции.', docId: 'submodules-vars' },
   { title: 'query', description: 'Единая точка запуска запросов.', docId: 'submodules-query' },
@@ -85,7 +82,6 @@ const endgeModules: ModuleSpec[] = [
   { title: 'events', description: 'Событийная шина.', docId: 'submodules-events' },
   { title: 'sse', description: 'Server-Sent Events канал.', docId: 'submodules-sse' },
   { title: 'ui', description: 'UI-состояние и утилиты интерфейса.', docId: 'submodules-ui' },
-  { title: 'reports', description: 'Отчеты и экспорт.', docId: 'submodules-reports' },
   { title: 'behaviorBindings', description: 'Declarative behavior bindings, resolver и dispatch реакций.', docId: 'submodules-bindings' },
   { title: 'bind', description: 'Программная подмена кода у converter/action/runtime step.', docId: 'submodules-bind' },
   { title: 'console', description: 'Команды dev-консоли.', docId: 'submodules-console' },
@@ -94,15 +90,7 @@ const endgeModules: ModuleSpec[] = [
 ]
 
 const endgeVueModules: ModuleSpec[] = [
-  { title: 'render: Table', description: 'Регистрация table-render в Endge.render.', docId: 'submodules-render' },
-  { title: 'render: DSL', description: 'Регистрация DSL-render в Endge.render.', docId: 'submodules-endge-vue' },
-  { title: 'jsx: Layout', description: 'JSX-компонент Layout для построения структуры.', docId: 'layout' },
-  { title: 'jsx: Flex', description: 'JSX-компонент Flex для упрощенной верстки.', docId: 'flex' },
-  { title: 'jsx: Box', description: 'Контейнерный JSX-компонент Box.', docId: 'box' },
-  { title: 'jsx: Component', description: 'Встраивание доменных компонентов в JSX.', docId: 'jsx-component' },
-  { title: 'jsx: Text', description: 'Форматированный вывод текста.', docId: 'text' },
-  { title: 'jsx: DateTime', description: 'Вывод даты и времени.', docId: 'datetime' },
-  { title: 'jsx: Icon', description: 'Иконки через JSXRender_Icon.', docId: 'jsx-icon' },
+  { title: 'SFC adapter', description: 'Native Vue renderer adapter for ComponentSFC.', docId: 'submodules-endge-vue' },
   { title: 'raph: watch phase', description: 'Фаза watch для синхронизации reactive ref с Raph.', docId: 'submodules-endge-vue' },
 ]
 

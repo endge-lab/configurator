@@ -19,7 +19,7 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
   }
 
   // источник данных для таблицы (берет количество элементов для revoGrid)
-  sourceIndex: number = 0
+  sourceIndex: string = ''
 
   bindings: TableBinding = { keys: {} }
 
@@ -49,6 +49,7 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
     const len = this.columns.length
     if (fromIndex >= len || toIndex >= len) return
     const [removed] = this.columns.splice(fromIndex, 1)
+    if (!removed) return
     this.columns.splice(toIndex, 0, removed)
     if (this.selectedColumns[0] === removed)
       this.selectedColumns = [removed]
@@ -60,7 +61,8 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
       this.selectedColumns = []
       return
     }
-    this.selectedColumns = [this.columns[index]]
+    const column = this.columns[index]
+    this.selectedColumns = column ? [column] : []
   }
 
   // Обновляет доменную сущность на основании редактора

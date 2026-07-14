@@ -1,5 +1,4 @@
 packages:
-  - 'packages/@endge-nova'
   - '../../packages/@endge-codegen'
   - '../../packages/@endge-core'
   - '../../packages/@endge-raph'

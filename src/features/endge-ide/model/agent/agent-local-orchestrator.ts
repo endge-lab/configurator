@@ -180,19 +180,9 @@ const SINGLETON_ALIASES: Array<{
     summary: "Открываю вкладку DSL Playground.",
   },
   {
-    viewId: "nova-sandbox",
-    patterns: [/\bnova[\s-]*sandbox\b/i, /\bnova[\s-]*песочниц/i],
-    summary: "Открываю вкладку Nova Sandbox.",
-  },
-  {
     viewId: "action-playgrounds",
     patterns: [/\baction[\s-]*playgrounds?\b/i],
     summary: "Открываю вкладку Action Playgrounds.",
-  },
-  {
-    viewId: "table-benchmark",
-    patterns: [/\btable[\s-]*benchmark\b/i, /\bбенчмарк\b/i],
-    summary: "Открываю вкладку Table Benchmark.",
   },
   {
     viewId: "backup-restore",

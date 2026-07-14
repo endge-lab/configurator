@@ -4,6 +4,11 @@ import type { RuntimeHostSnapshot } from '@endge/core'
 import { Endge } from '@endge/core'
 import { computed, ref } from 'vue'
 
+import {
+  configuratorPreviewAppScope,
+  configuratorPreviewMeta,
+} from '@/features/endge-ide/model/preview-runtime/preview-runtime.ts'
+
 export type PulseStatus = 'active' | 'idle' | 'deleted' | 'error'
 
 export interface PulseMockResource {
@@ -16,6 +21,9 @@ export interface PulseMockResource {
 
 export interface PulseMockHost {
   id: string
+  basePath: string
+  appScopeId: string
+  appScopeRootPath: string
   parentId: string | null
   title: string
   entityIdentity: string
@@ -187,7 +195,7 @@ export function launchPulseRuntimeFromEntity(
   }
 
   let model: unknown = null
-  let executeMeta: Record<string, unknown> = {}
+  let executeMeta: Record<string, unknown> = configuratorPreviewMeta()
 
   if (sectionType === 'project')
     model = Endge.domain.getProject(id)
@@ -203,7 +211,7 @@ export function launchPulseRuntimeFromEntity(
     model = Endge.domain.getAction(id)
   else if (sectionType === 'component') {
     model = Endge.domain.getComponent(id)
-    executeMeta = { basePath }
+    executeMeta = { ...executeMeta, basePath }
   }
   else {
     return {
@@ -219,7 +227,7 @@ export function launchPulseRuntimeFromEntity(
     }
   }
 
-  const host = Endge.runtime.execute(model as any, executeMeta)
+  const host = configuratorPreviewAppScope.execute(model as any, executeMeta)
   if (!host) {
     return {
       ok: false,
@@ -301,6 +309,9 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
 
   return {
     id: host.id,
+    basePath: host.basePath,
+    appScopeId: String(host.meta.appScopeId ?? 'app'),
+    appScopeRootPath: String(host.meta.appScopeRootPath ?? 'runtime'),
     parentId: host.parentId,
     title,
     entityIdentity: host.entityIdentity,
@@ -311,6 +322,7 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
     description,
     tags: [
       ...(host.meta.mode === 'preview' ? ['preview'] : []),
+      `scope:${String(host.meta.appScopeId ?? 'app')}`,
       host.entityType,
       host.runtimeType,
       `resources:${resources.length}`,

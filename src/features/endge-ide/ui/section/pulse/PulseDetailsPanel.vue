@@ -92,6 +92,9 @@ function formatValue(value: unknown): string {
             <div class="mt-1 text-sm text-muted-foreground">
               {{ host.entityType }} -> {{ host.runtimeType }} -> {{ host.id }}
             </div>
+            <div class="mt-1 font-mono text-xs text-muted-foreground">
+              Raph: {{ host.basePath }}
+            </div>
             <div class="mt-3 text-sm text-muted-foreground">
               {{ host.description }}
             </div>

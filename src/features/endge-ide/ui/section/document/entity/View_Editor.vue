@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { DomainSectionType, Endge } from '@endge/core'
-import { Copy, Eye, Loader2, Save, ScanEye } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
+import { DomainSectionType } from '@endge/core'
+import { Eye, Loader2, Save } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { useDomainStore } from '@endge/vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
@@ -84,108 +81,6 @@ const queryOptions = computed(() => {
   ]
 })
 
-const viewIdentity = computed(() => editor.value?.identity ?? '')
-
-/** Блок 1: код для setup (import, useEndge.view, onMounted). */
-const setupSnippet = computed(() => {
-  const id = viewIdentity.value || 'view-id'
-  return `import { EndgeComponent, useEndge } from '@endge/vue'
-
-const { comRt, refresh, filter } = useEndge.view('${id}')
-
-onMounted(async () => {
-  await refresh()
-})`
-})
-
-/** Блок 2: компонент вида. */
-const componentSnippet = computed(() =>
-  '<EndgeComponent v-if="comRt" :runtime="comRt" enabled-status-bar />')
-
-/** Поля текущего фильтра вида (для выбора в модалке). */
-const filterFields = computed(() => {
-  const filterId = editor.value?.filterId
-  if (filterId == null) return []
-  const f = Endge.domain.getFilter(filterId)
-  const fields = f?.fields
-  return Array.isArray(fields) ? fields : []
-})
-
-const copyCodeDialogOpen = ref(false)
-/** Выбранные ключи полей фильтра (массив для надёжной реактивности). */
-const selectedFilterFieldKeys = ref<string[]>([])
-
-watch(copyCodeDialogOpen, (open) => {
-  if (open) {
-    selectedFilterFieldKeys.value = filterFields.value.map((x: { key: string }) => x.key)
-  }
-})
-
-/** Блок 3: фильтр (с :field-keys если выбраны не все поля). Метод - чтобы обновлялся при каждом рендере после смены чекбоксов. */
-function getFilterSnippet(): string {
-  const keys = selectedFilterFieldKeys.value.slice()
-  const allKeys = filterFields.value.map((x: { key: string }) => x.key)
-  if (keys.length === 0 || keys.length >= allKeys.length)
-    return `<FilterGenerator
-      v-if="filter"
-      :filter="filter"
-      :labels-enabled="true"
-    />`
-  const keysStr = keys.map(k => `'${k}'`).join(', ')
-  return `<FilterGenerator
-      v-if="filter"
-      :filter="filter"
-      :labels-enabled="true"
-      :field-keys="[${keysStr}]"
-    />`
-}
-
-function isFilterFieldSelected(key: string): boolean {
-  return selectedFilterFieldKeys.value.includes(key)
-}
-
-function setFilterFieldChecked(key: string, checked: boolean): void {
-  if (checked)
-    selectedFilterFieldKeys.value = [...selectedFilterFieldKeys.value, key]
-  else
-    selectedFilterFieldKeys.value = selectedFilterFieldKeys.value.filter(k => k !== key)
-}
-
-async function copyToClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success('Скопировано в буфер обмена')
-  } catch {
-    toast.error('Не удалось скопировать')
-  }
-}
-
-const demonstrationLoading = ref(false)
-/** Запуск демонстрации: выполнить запрос вида, подставить в «Помощь» и открыть виджет. */
-async function openDemonstration(): Promise<void> {
-  const queryId = normalizeRelationId(editor.value?.queryId)
-  const componentId = normalizeRelationId(editor.value?.componentId)
-  if (queryId == null) {
-    toast.error('Выберите запрос вида')
-    return
-  }
-  if (componentId == null) {
-    toast.error('Выберите компонент вида')
-    return
-  }
-  demonstrationLoading.value = true
-  try {
-    await EndgeIDE.demonstration.runQueryAndShowTable(queryId, componentId)
-  } finally {
-    demonstrationLoading.value = false
-  }
-}
-
-const demonstrationDisabled = computed(() =>
-  normalizeRelationId(editor.value?.queryId) == null
-  || normalizeRelationId(editor.value?.componentId) == null
-  || demonstrationLoading.value,
-)
 </script>
 
 <template>
@@ -216,102 +111,7 @@ const demonstrationDisabled = computed(() =>
           </TooltipTrigger>
           <TooltipContent>Сохранить</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon"
-              class="h-9 w-9 shrink-0"
-              aria-label="Демонстрация вида"
-              :disabled="demonstrationDisabled"
-              @click="openDemonstration"
-            >
-              <ScanEye v-if="!demonstrationLoading" class="h-4 w-4" />
-              <Loader2 v-else class="h-4 w-4 animate-spin" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Выполнить запрос вида и показать таблицу в виджете «Демонстрация»</TooltipContent>
-        </Tooltip>
       </TooltipProvider>
-      <Dialog v-model:open="copyCodeDialogOpen">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <DialogTrigger as-child>
-                <Button variant="outline" size="icon" class="h-9 w-9 shrink-0">
-                  <Copy class="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-            </TooltipTrigger>
-            <TooltipContent>Копировать код вида</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <DialogContent class="copy-code-dialog max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Код для вставки</DialogTitle>
-          </DialogHeader>
-          <div class="flex flex-col gap-4 overflow-y-auto pr-2">
-            <div class="space-y-2">
-              <div class="text-sm font-medium text-muted-foreground">Setup</div>
-              <div class="relative rounded-lg border bg-muted/50">
-                <pre class="p-4 pr-12 overflow-x-auto text-sm"><code>{{ setupSnippet }}</code></pre>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="absolute top-2 right-2 h-7 gap-1"
-                  @click="copyToClipboard(setupSnippet)"
-                >
-                  <Copy class="size-3.5" />
-                  Copy
-                </Button>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <div class="text-sm font-medium text-muted-foreground">Компонент</div>
-              <div class="relative rounded-lg border bg-muted/50">
-                <pre class="p-4 pr-12 overflow-x-auto text-sm"><code>{{ componentSnippet }}</code></pre>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="absolute top-2 right-2 h-7 gap-1"
-                  @click="copyToClipboard(componentSnippet)"
-                >
-                  <Copy class="size-3.5" />
-                  Copy
-                </Button>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <div class="text-sm font-medium text-muted-foreground">Фильтр</div>
-              <div v-if="filterFields.length > 0" class="flex flex-wrap gap-x-4 gap-y-1.5 pb-2">
-                <label
-                  v-for="field in filterFields"
-                  :key="field.key"
-                  class="flex items-center gap-2 cursor-pointer text-sm"
-                >
-                  <Checkbox
-                    :model-value="isFilterFieldSelected(field.key)"
-                    @update:model-value="(value: boolean | 'indeterminate') => setFilterFieldChecked(field.key, value === true)"
-                  />
-                  <span class="truncate">{{ field.label ?? field.key }}</span>
-                </label>
-              </div>
-              <div class="relative rounded-lg border bg-muted/50">
-                <pre class="p-4 pr-12 overflow-x-auto text-sm"><code>{{ getFilterSnippet() }}</code></pre>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="absolute top-2 right-2 h-7 gap-1"
-                  @click="copyToClipboard(getFilterSnippet())"
-                >
-                  <Copy class="size-3.5" />
-                  Copy
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
 
     <ScrollArea class="flex-1">

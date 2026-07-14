@@ -29,8 +29,6 @@ const categoryLabels: Record<DocsCategory, string> = {
   [DocsCategory.EndgeDomain]: 'Домен',
   [DocsCategory.EndgeCoreModules]: 'Модули ядра',
   [DocsCategory.EndgeSubModules]: 'Архитектура ядра',
-  [DocsCategory.EndgeComponents]: 'Компоненты',
-  [DocsCategory.Styling]: 'Стилизация',
   [DocsCategory.Configuring]: 'Конфигурирование',
   [DocsCategory.HowToUse]: 'Примеры кода',
   [DocsCategory.Codegen]: 'Кодогенерация',
@@ -40,8 +38,6 @@ const categoryLabels: Record<DocsCategory, string> = {
 const categoryOrder: DocsCategory[] = [
   DocsCategory.HowToUse,
   DocsCategory.ArchitectureConcepts,
-  DocsCategory.EndgeComponents,
-  DocsCategory.Styling,
   DocsCategory.EndgeDomain,
   DocsCategory.EndgeCoreModules,
   DocsCategory.EndgeSubModules,

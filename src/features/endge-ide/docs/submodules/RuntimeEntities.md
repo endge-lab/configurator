@@ -88,14 +88,14 @@ Runtime-хост обычно имеет:
 
 ---
 
-## Runtime entity и RuntimeScope
+## Runtime entity и RuntimeBindingScope
 
 Это тоже разные вещи.
 
-- `Runtime entity` - живой объект уровня `query / table / action / page / view`.
-- `RuntimeScope` - контекст исполнения кода, переменных и вложенных вычислений.
+- `Runtime entity` - живой объект уровня `query / action / component-sfc / page / view`.
+- `RuntimeBindingScope` - описание путей данных для binding и projection.
 
-Scope может создаваться внутри runtime entity, но он не заменяет сам runtime host.
+Binding scope может использоваться внутри runtime entity, но он не заменяет сам runtime host.
 
 ---
 

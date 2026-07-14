@@ -4,6 +4,7 @@ import { createEmptyProgramMetadata, Endge, RStore } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {
+  configuratorPreviewAppScope,
   configuratorPreviewMeta,
   destroyPreviewRuntime,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
@@ -37,12 +38,11 @@ export async function launchStorePreview(input: StorePreviewLaunchInput): Promis
     throw new Error(message)
   }
 
-  const runtimeId = destroyPreviewRuntime('store', identity)
+  destroyPreviewRuntime('store', identity)
   const artifactReader = {
     getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
   }
-  const runtime = Endge.runtime.execute(model, {
-    id: runtimeId,
+  const runtime = configuratorPreviewAppScope.execute(model, {
     ...configuratorPreviewMeta(),
     artifactReader,
   }) as StoreRuntimeHost | null

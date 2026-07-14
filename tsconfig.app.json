@@ -13,9 +13,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "paths": {
-      "@/*": ["./src/*"],
-      "@endge/nova": ["./packages/@endge-nova/src"],
-      "@endge/nova/*": ["./packages/@endge-nova/src/*"]
+      "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
     "strict": true,

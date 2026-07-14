@@ -45,16 +45,8 @@ function openSFCPlayground(): void {
   tabs.openSFCPlayground()
 }
 
-function openNovaSandboxSingleton(): void {
-  tabs.openNovaSandboxSingleton()
-}
-
 function openActionPlaygroundsSingleton(): void {
   tabs.openActionPlaygroundsSingleton()
-}
-
-function openTableBenchmarkSingleton(): void {
-  tabs.openTableBenchmarkSingleton()
 }
 
 function openBackupRestoreSingleton(): void {
@@ -140,16 +132,10 @@ function openArchitecture(): void {
               <DropdownMenuItem @click="openSFCPlayground">
                 SFC
               </DropdownMenuItem>
-              <DropdownMenuItem @click="openNovaSandboxSingleton">
-                NOVA
-              </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuItem @click="openActionPlaygroundsSingleton">
             Action Playgrounds
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="openTableBenchmarkSingleton">
-            Тестирование таблиц
           </DropdownMenuItem>
           <DropdownMenuItem @click="openBackupRestoreSingleton">
             Резервное восстановление

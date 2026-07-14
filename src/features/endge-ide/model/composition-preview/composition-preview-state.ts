@@ -9,9 +9,10 @@ import { Endge, RComposition } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {
+  configuratorPreviewAppScope,
   configuratorPreviewMeta,
   destroyPreviewRuntime,
-  makePreviewRuntimeId,
+  resolvePreviewRuntime,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface CompositionPreviewLaunchInput {
@@ -97,10 +98,9 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
     throw new Error(message)
   }
 
-  const runtimeId = destroyPreviewRuntime('composition', model.identity)
+  destroyPreviewRuntime('composition', model.identity)
   const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
-  const runtime = Endge.runtime.execute(model, {
-    id: runtimeId,
+  const runtime = configuratorPreviewAppScope.execute(model, {
     ...configuratorPreviewMeta(),
     dataRuntimes,
   }) as CompositionRuntimeHost | null
@@ -191,10 +191,9 @@ function resolvePreviewStoreRuntimes(
   for (const descriptor of data) {
     if (descriptor.kind !== 'store')
       continue
-    const runtimeId = makePreviewRuntimeId('store', descriptor.identity)
-    const runtime = Endge.runtime.getRuntimeById(runtimeId)
+    const runtime = resolvePreviewRuntime<{ id: string, entityType: string }>('store', descriptor.identity)
     if (runtime?.entityType === 'store')
-      runtimes[descriptor.name] = runtimeId
+      runtimes[descriptor.name] = runtime.id
   }
   return runtimes
 }

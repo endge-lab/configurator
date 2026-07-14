@@ -30,7 +30,7 @@ Runtime-сущность - это не просто запись в домене
 - собственная жизнь `create -> work -> destroy`
 - связь с runtime-событиями
 
-В текущем коде роль таких сущностей выполняет `RuntimeHost<'query' | 'table' | 'action'>`.
+В текущем коде роль таких сущностей выполняют typed runtime hosts для query, action, filter, composition, store и ComponentSFC.
 
 ---
 
@@ -41,7 +41,7 @@ Runtime-сущность - это не просто запись в домене
 - `EventContract` - каталог допустимых событий;
 - `Binding` - сохраняемая конфигурация реакции;
 - `Project / Page / View` - доменные сущности, которые пока ещё не доведены до общего runtime-host слоя;
-- `RuntimeScope` - это контекст исполнения, а не root runtime-сущность.
+- `RuntimeBindingScope` - это описание binding-контекста, а не root runtime-сущность.
 
 ---
 
@@ -57,7 +57,7 @@ Runtime-сущность - это не просто запись в домене
 4. фазы `Raph` уведомляют runtime;
 5. runtime исполняет свою логику и при необходимости эмитит события.
 
-Для таблиц это, например, обновление корня таблицы,  
+For SFC components this includes reactive input bindings and collection projections.
 для запросов - реакция на смену filter-space,  
 для action - lifecycle шагов flow.
 

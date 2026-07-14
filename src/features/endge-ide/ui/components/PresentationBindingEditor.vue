@@ -119,7 +119,7 @@ const environmentOptions = computed(() => {
 })
 
 const rendererOptions = computed(() => {
-  const list = domainStore.rendersNames ?? []
+  const list = Endge.uiRegistry.serialize().renderers
   return list.map((key: string) => ({
     value: String(key),
     label: String(key),
@@ -203,7 +203,7 @@ function loadRowsFromDomain(): void {
       return binding?.isInherited !== true
     })
     .map(toEditableRow)
-    .sort((a, b) => a.priority - b.priority)
+    .sort((a: PresentationBindingRow, b: PresentationBindingRow) => a.priority - b.priority)
 
   rows.push(...loaded)
 }
