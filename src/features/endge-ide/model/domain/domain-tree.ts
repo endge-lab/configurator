@@ -121,6 +121,7 @@ export interface DomainStoreForTree {
   dataViews?: any[]
   compositions?: any[]
   stores?: any[]
+  mocks?: any[]
   actions?: any[]
   typesComplex?: any[]
   typesPrimitives?: any[]
@@ -195,6 +196,7 @@ export function getSoftDeletedItems(
   add(store.dataViews, DomainSectionType.DataView)
   add(store.compositions, DomainSectionType.Composition)
   add(store.stores, DomainSectionType.Store)
+  add(store.mocks, DomainSectionType.Mock)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
   add(store.parameters, DomainSectionType.Parameters)
@@ -257,6 +259,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-compositions': 'Композиции',
   'root-stores': 'Хранилище',
   'root-vocabs': 'Словари',
+  'root-mocks': 'Mock',
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Аутентификация',
   'root-projects': 'Проекты',
@@ -287,6 +290,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     rootIds: [
       'root-stores',
       'root-vocabs',
+      'root-mocks',
     ],
   },
   {
@@ -378,6 +382,8 @@ export function normalizeDocType(
     return 'composition' as DomainDocumentType
   if (sectionType === DomainSectionType.Store)
     return 'store' as DomainDocumentType
+  if (sectionType === DomainSectionType.Mock)
+    return 'mock' as DomainDocumentType
   if (sectionType === DomainSectionType.Action)
     return 'action'
   if (sectionType === DomainSectionType.Converter)

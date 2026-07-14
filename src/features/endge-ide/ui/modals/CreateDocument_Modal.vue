@@ -41,6 +41,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: 'data-view' as DomainDocumentType, label: 'Data View', defaultName: 'Новый Data View', section: DomainSectionType.DataView },
   { type: 'composition' as DomainDocumentType, label: 'Композиция', defaultName: 'Новая композиция', section: DomainSectionType.Composition },
   { type: 'store' as DomainDocumentType, label: 'Хранилище', defaultName: 'Без названия', section: DomainSectionType.Store },
+  { type: 'mock' as DomainDocumentType, label: 'Mock', defaultName: 'Новый Mock', section: DomainSectionType.Mock },
   { type: FilterType.DefaultFilter, label: 'Фильтр', defaultName: 'Новый фильтр', section: DomainSectionType.Filters },
   { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', defaultName: 'Новая интеграция', section: DomainSectionType.Integration },
@@ -63,6 +64,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Composition]: 'root-compositions',
   [DomainSectionType.Store]: 'root-stores',
+  [DomainSectionType.Mock]: 'root-mocks',
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
@@ -91,6 +93,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.DataView]: 'data-views',
   [DomainSectionType.Composition]: 'compositions',
   [DomainSectionType.Store]: 'stores',
+  [DomainSectionType.Mock]: 'mocks',
   [DomainSectionType.Type]: 'types',
   [DomainSectionType.Action]: 'actions',
   [DomainSectionType.Converter]: 'converters',
@@ -151,6 +154,7 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.DataView
     || s === DomainSectionType.Composition
     || s === DomainSectionType.Store
+    || s === DomainSectionType.Mock
     || s === DomainSectionType.Filters
     || s === DomainSectionType.Action
     || s === DomainSectionType.Integration
@@ -312,6 +316,19 @@ function buildPayloadTemplate(): Record<string, unknown> {
       description: null,
       source: Endge.source.createDefault('store'),
       sourceVersion: 1,
+      meta: {},
+      inherited: false,
+    }
+  }
+
+  if (activeType.value === 'mock') {
+    return {
+      ...base,
+      description: null,
+      contentSource: 'document',
+      contentType: 'application/json',
+      source: '{}',
+      codeRef: null,
       meta: {},
       inherited: false,
     }

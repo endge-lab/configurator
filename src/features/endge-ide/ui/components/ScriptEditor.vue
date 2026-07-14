@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { Button } from "@/components/ui/button";
 
-type EditorLanguage = "typescript" | "javascript" | "html" | "css" | "json";
+type EditorLanguage = "typescript" | "javascript" | "html" | "css" | "json" | "plaintext";
 
 const props = withDefaults(
   defineProps<{

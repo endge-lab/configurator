@@ -90,11 +90,17 @@ function createPreviewStoreArtifact(model: RStore): ProgramArtifact<StoreSourceA
         identity: field.initial.identity,
         role: `store-initial:${field.key}`,
       })
-      if (!Endge.mock.has(field.initial.identity)) {
+      const mockStatus = Endge.mock.getBindingStatus(field.initial.identity)
+      if (mockStatus !== 'document' && mockStatus !== 'connected') {
+        const code = mockStatus === 'missing-document'
+          ? 'store-mock-document-missing'
+          : mockStatus === 'missing-provider'
+            ? 'store-mock-provider-missing'
+            : 'store-mock-invalid-content'
         diagnostics.push({
           severity: 'error',
-          code: 'store-mock-missing',
-          message: `Mock "${field.initial.identity}" для Store field "${field.key}" не зарегистрирован.`,
+          code,
+          message: `Mock "${field.initial.identity}" для Store field "${field.key}" недоступен: ${mockStatus}.`,
           sourcePath: `data.${field.key}`,
           entityRef: ref,
         })

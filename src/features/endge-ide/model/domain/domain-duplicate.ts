@@ -67,6 +67,8 @@ export function getEntityByDocType(
       return domain.getAuthProfile(id)
     case 'i18n-bundles':
       return domain.getI18nBundle(id)
+    case 'mock':
+      return domain.getMock(id)
     case FilterType.DefaultFilter:
       return domain.getFilter(id)
     case ParameterType.DefaultParameter:

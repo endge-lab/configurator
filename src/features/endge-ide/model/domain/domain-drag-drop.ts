@@ -92,6 +92,7 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Composition]: 'root-compositions',
   [DomainSectionType.Store]: 'root-stores',
+  [DomainSectionType.Mock]: 'root-mocks',
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Action]: 'root-actions',
   [DomainSectionType.Parameters]: 'root-parameters',
@@ -122,6 +123,7 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   'data-view',
   'composition',
   'store',
+  'mock',
   ParameterType.DefaultParameter,
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
@@ -790,6 +792,9 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   else if (sectionType === DomainSectionType.Store) {
     byId(entityId, identity, (x: any) => Endge.domain.removeStoreById(x), x => Endge.domain.removeStore(x))
   }
+  else if (sectionType === DomainSectionType.Mock) {
+    byId(entityId, identity, (x: any) => Endge.domain.removeMockById(x), x => Endge.domain.removeMock(x))
+  }
   else if (sectionType === DomainSectionType.Parameters) {
     byId(entityId, identity, (x: any) => Endge.domain.removeParameterById?.(x), x => Endge.domain.removeParameter(x))
   }
@@ -873,6 +878,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getCompositionById(numId) : null) ?? Endge.domain.getComposition(id)
   if (sectionType === DomainSectionType.Store)
     return (numId != null ? Endge.domain.getStoreById(numId) : null) ?? Endge.domain.getStore(id)
+  if (sectionType === DomainSectionType.Mock)
+    return (numId != null ? Endge.domain.getMockById(numId) : null) ?? Endge.domain.getMock(id)
   if (sectionType === DomainSectionType.Parameters)
     return (numId != null ? Endge.domain.getParameterById(numId) : null) ?? Endge.domain.getParameterIdentity(id)
   if (sectionType === DomainSectionType.Filters)
@@ -930,6 +937,8 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Composition
   if (Endge.domain.getStores().some(hasInBranch))
     return DomainSectionType.Store
+  if (Endge.domain.getMocks().some(hasInBranch))
+    return DomainSectionType.Mock
   if (Endge.domain.getFilters().some(hasInBranch))
     return DomainSectionType.Filters
   if (Endge.domain.getParameters().some(hasInBranch))
