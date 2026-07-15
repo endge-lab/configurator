@@ -32,6 +32,8 @@ const PRETTIER_WRAPPED_ENDGE_SELECTOR_SEGMENT_RE
   = /\[\(\s*[a-z_$][\w$-]*\s*=\s*(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\d+)\s*\)\]/gi
 const VUE_TEMPLATE_BLOCK_RE
   = /(<template(?:\s[^>]*)?>)([\s\S]*?)(<\/template\s*>)/gi
+const VUE_CONTROL_FLOW_DIRECTIVE_RE
+  = /(\s)v-(else-if|if|else|for)(?=\s|=|\/?>)/g
 
 /**
  * Vue parser treats `[name='value']` as a JavaScript assignment and adds
@@ -81,6 +83,95 @@ function protectEndgeSelectors(source: string): ProtectedSource {
       return restored
     },
   }
+}
+
+/**
+ * Нормализует Vue-совместимый control-flow syntax в канонический Endge SFC syntax.
+ * Обрабатываются только атрибуты открывающих тегов внутри template, поэтому строки
+ * в script и обычный текст с примерами директив остаются без изменений.
+ */
+function normalizeEndgeControlFlowDirectives(source: string): string {
+  return source.replace(
+    VUE_TEMPLATE_BLOCK_RE,
+    (_block, open: string, template: string, close: string) =>
+      `${open}${normalizeTemplateTagDirectives(template)}${close}`,
+  )
+}
+
+function normalizeTemplateTagDirectives(template: string): string {
+  let result = ''
+  let cursor = 0
+
+  while (cursor < template.length) {
+    const tagStart = template.indexOf('<', cursor)
+    if (tagStart < 0) {
+      result += template.slice(cursor)
+      break
+    }
+
+    result += template.slice(cursor, tagStart)
+
+    if (template.startsWith('<!--', tagStart)) {
+      const commentEnd = template.indexOf('-->', tagStart + 4)
+      if (commentEnd < 0) {
+        result += template.slice(tagStart)
+        break
+      }
+
+      result += template.slice(tagStart, commentEnd + 3)
+      cursor = commentEnd + 3
+      continue
+    }
+
+    const tagNameStart = template[tagStart + 1] === '/'
+      ? tagStart + 2
+      : tagStart + 1
+
+    if (!/[a-z]/i.test(template[tagNameStart] ?? '')) {
+      result += '<'
+      cursor = tagStart + 1
+      continue
+    }
+
+    const tagEnd = findTemplateTagEnd(template, tagNameStart)
+    if (tagEnd < 0) {
+      result += template.slice(tagStart)
+      break
+    }
+
+    result += template
+      .slice(tagStart, tagEnd + 1)
+      .replace(VUE_CONTROL_FLOW_DIRECTIVE_RE, '$1$2')
+    cursor = tagEnd + 1
+  }
+
+  return result
+}
+
+function findTemplateTagEnd(template: string, start: number): number {
+  let quote: '"' | '\'' | null = null
+
+  for (let index = start; index < template.length; index += 1) {
+    const character = template[index]
+
+    if (quote) {
+      if (character === quote && template[index - 1] !== '\\') {
+        quote = null
+      }
+      continue
+    }
+
+    if (character === '"' || character === '\'') {
+      quote = character
+      continue
+    }
+
+    if (character === '>') {
+      return index
+    }
+  }
+
+  return -1
 }
 
 async function loadPrettierConfig(
@@ -177,5 +268,9 @@ export async function formatSource(
       : {}),
   })
 
-  return protectedSource.restore(formatted)
+  const restored = protectedSource.restore(formatted)
+
+  return language === 'vue'
+    ? normalizeEndgeControlFlowDirectives(restored)
+    : restored
 }
