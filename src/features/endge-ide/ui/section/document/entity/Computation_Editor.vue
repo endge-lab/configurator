@@ -42,6 +42,10 @@ function setSourceLanguage(value: unknown): void {
   editor.value.sourceLanguage = value === 'endge' ? 'endge' : 'typescript'
 }
 
+function applySourceText(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
 async function save(): Promise<void> {
   const current = editor.value
   if (!current) {
@@ -183,7 +187,7 @@ async function save(): Promise<void> {
           </SelectContent>
         </Select>
       </div>
-      <ScriptEditor v-if="editor.implementationKind === 'source'" ref="sourceEditorRef" :model-value="editor.source" :language="editor.sourceLanguage === 'typescript' ? 'typescript' : 'plaintext'" class="min-h-0 flex-1" min-height="100%" @update:model-value="editor.applySourceText" />
+      <ScriptEditor v-if="editor.implementationKind === 'source'" ref="sourceEditorRef" :model-value="editor.source" :language="editor.sourceLanguage === 'typescript' ? 'typescript' : 'plaintext'" class="min-h-0 flex-1" min-height="100%" @update:model-value="applySourceText" />
       <div v-else class="flex-1 overflow-auto p-6">
         <div class="max-w-2xl space-y-3 rounded-lg border bg-muted/20 p-4">
           <Label for="computation-provider-ref">Provider ref</Label>

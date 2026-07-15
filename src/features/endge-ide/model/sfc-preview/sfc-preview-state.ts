@@ -13,6 +13,9 @@ import {
   Endge,
   RComponentSFC,
   RComposition,
+  RComputation,
+  analyzeComponentSFCScript,
+  parseComponentSFC,
 } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { computed, reactive, shallowRef } from 'vue'
@@ -72,6 +75,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
   }
 
   const identity = resolvePreviewIdentity(input)
+  ensurePreviewPortArtifacts(artifact.payload)
   destroySFCPreviewRuntime()
   destroyPreviewRuntime('component-sfc', identity)
   const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
@@ -124,6 +128,7 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
   const compiled = compileComponentSFC(model.source, {
     resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
     hasComponentIdentity: identity => Endge.domain.getComponentSFC(identity) != null || identity === model.identity,
+    resolvePortProvider: (identity, expectedKind) => resolvePreviewPortProvider(identity, expectedKind),
   })
   const { diagnostics, metadata, ...payload } = compiled
   const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error')
@@ -142,6 +147,57 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
     capabilities: ['compilable', 'runnable', 'renderable'],
     metadata,
     payload,
+  }
+}
+
+function resolvePreviewPortProvider(identity: string, expectedKind: 'computation' | 'component') {
+  const computation = Endge.domain.getComputation(identity)
+  const component = Endge.domain.getComponentSFC(identity)
+  const target = expectedKind === 'computation'
+    ? computation ?? component
+    : component ?? computation
+  if (target instanceof RComputation) {
+    return {
+      kind: 'computation' as const,
+      identity: target.identity,
+      active: target.active !== false && !target.deletedAt,
+      input: target.input ? { type: target.input.type, isArray: target.input.isArray, optional: target.input.optional } : null,
+      output: target.output ? { type: target.output.type, isArray: target.output.isArray, optional: target.output.optional } : null,
+    }
+  }
+  if (target instanceof RComponentSFC) {
+    const parsed = parseComponentSFC(target.source)
+    return {
+      kind: 'component' as const,
+      identity: target.identity,
+      active: target.active !== false && !target.deletedAt,
+      inputs: analyzeComponentSFCScript(parsed.ast?.script ?? null).contract.inputs,
+    }
+  }
+  return null
+}
+
+function ensurePreviewPortArtifacts(
+  payload: ComponentSFCProgramPayload,
+  visited = new Set<string>(),
+): void {
+  for (const dependency of payload.dependencies.computations) {
+    if (Endge.program.getComputationArtifact(dependency.id)) continue
+    const model = Endge.domain.getComputation(dependency.id)
+    if (model) Endge.compiler.buildComputation(model)
+  }
+
+  for (const dependency of payload.dependencies.components) {
+    const identity = String(dependency.id)
+    if (visited.has(identity)) continue
+    visited.add(identity)
+    let artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
+    if (!artifact) {
+      const model = Endge.domain.getComponentSFC(identity)
+      if (model) artifact = Endge.compiler.buildComponentSFC(model)
+    }
+    if (artifact && artifact.status !== 'error')
+      ensurePreviewPortArtifacts(artifact.payload, visited)
   }
 }
 
