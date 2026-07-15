@@ -11,7 +11,6 @@ import {
   Building2,
   BookOpen,
   Braces,
-  Calculator,
   Briefcase,
   ChevronsDown,
   ChevronsUp,
@@ -22,6 +21,8 @@ import {
   Database,
   Download,
   Eye,
+  FileCode2,
+  FileWarning,
   Filter,
   Folder,
   FolderPlus,
@@ -37,10 +38,15 @@ import {
   Pencil,
   Plug,
   Plus,
+  Puzzle,
   RotateCcw,
   Route,
   Save,
+  Send,
+  ServerCog,
   Shield,
+  SquareFunction,
+  Table2,
   Trash2,
   Type,
   Zap,
@@ -69,6 +75,10 @@ import {
   softDeleteFolder,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
+import {
+  getDomainDocumentPresentation,
+  getDomainSectionPresentation,
+} from '@/features/endge-ide/model/domain/domain-document-presentation'
 import {
   buildDomainTree,
   getDomainTreeRootBlocks,
@@ -448,33 +458,72 @@ const ROOT_FOLDER_ORDER = computed(() => getRootFolderOrder(Object.keys(ROOT_TO_
 
 const ROOT_BLOCKS = computed(() => getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value))
 
+const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
+  ArrowLeftRight,
+  BookOpen,
+  Braces,
+  Briefcase,
+  Building2,
+  Columns,
+  Database,
+  Eye,
+  FileCode2,
+  FileWarning,
+  Filter,
+  FormInput,
+  GitBranch,
+  KeyRound,
+  Languages,
+  Layout,
+  Network,
+  Palette,
+  Plug,
+  Puzzle,
+  Route,
+  Send,
+  ServerCog,
+  Shield,
+  SquareFunction,
+  Table2,
+  Type,
+  Zap,
+}
+
+function createSectionPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } {
+  const presentation = getDomainSectionPresentation(sectionType)
+  return {
+    icon: DOMAIN_ICON_COMPONENTS[presentation.icon] ?? FileWarning,
+    colorClass: presentation.colorClass,
+  }
+}
+
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
 const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
-  'root-types': { icon: Type, colorClass: 'text-blue-500' },
-  'root-queries': { icon: Network, colorClass: 'text-violet-500' },
-  'root-data-views': { icon: GitBranch, colorClass: 'text-cyan-500' },
-  'root-compositions': { icon: Network, colorClass: 'text-violet-500' },
-  'root-stores': { icon: Database, colorClass: 'text-emerald-500' },
-  'root-components': { icon: Layout, colorClass: 'text-emerald-500' },
-  'root-actions': { icon: Zap, colorClass: 'text-amber-500' },
-  'root-parameters': { icon: FormInput, colorClass: 'text-slate-500' },
-  'root-converters': { icon: ArrowLeftRight, colorClass: 'text-cyan-500' },
-  'root-computations': { icon: Calculator, colorClass: 'text-orange-500' },
-  'root-integrations': { icon: Plug, colorClass: 'text-teal-500' },
-  'root-filters': { icon: Filter, colorClass: 'text-rose-500' },
-  'root-views': { icon: Eye, colorClass: 'text-indigo-500' },
-  'root-environments': { icon: Zap, colorClass: 'text-lime-500' },
-  'root-tenants': { icon: Building2, colorClass: 'text-emerald-500' },
-  'root-policies': { icon: Shield, colorClass: 'text-sky-500' },
-  'root-styles': { icon: Palette, colorClass: 'text-fuchsia-500' },
-  'root-page-templates': { icon: Layout, colorClass: 'text-emerald-400' },
-  'root-pages': { icon: Columns, colorClass: 'text-indigo-400' },
-  'root-navigations': { icon: Route, colorClass: 'text-cyan-400' },
-  'root-vocabs': { icon: BookOpen, colorClass: 'text-teal-500' },
-  'root-mocks': { icon: Braces, colorClass: 'text-[#8B5A2B] dark:text-[#C08A52]' },
-  'root-i18n-bundles': { icon: Languages, colorClass: 'text-amber-500' },
-  'root-auth-profiles': { icon: KeyRound, colorClass: 'text-sky-500' },
-  'root-projects': { icon: Briefcase, colorClass: 'text-sky-500' },
+  'root-types': createSectionPresentation(DomainSectionType.Type),
+  'root-queries': createSectionPresentation(DomainSectionType.Query),
+  'root-data-views': createSectionPresentation(DomainSectionType.DataView),
+  'root-compositions': createSectionPresentation(DomainSectionType.Composition),
+  'root-stores': createSectionPresentation(DomainSectionType.Store),
+  'root-components': createSectionPresentation(DomainSectionType.Component),
+  'root-actions': createSectionPresentation(DomainSectionType.Action),
+  'root-parameters': createSectionPresentation(DomainSectionType.Parameters),
+  'root-converters': createSectionPresentation(DomainSectionType.Converter),
+  'root-computations': createSectionPresentation(DomainSectionType.Computation),
+  'root-integrations': createSectionPresentation(DomainSectionType.Integration),
+  'root-filters': createSectionPresentation(DomainSectionType.Filters),
+  'root-views': createSectionPresentation(DomainSectionType.View),
+  'root-environments': createSectionPresentation(DomainSectionType.Environment),
+  'root-tenants': createSectionPresentation(DomainSectionType.Tenant),
+  'root-policies': createSectionPresentation(DomainSectionType.Policy),
+  'root-styles': createSectionPresentation(DomainSectionType.Style),
+  'root-page-templates': createSectionPresentation(DomainSectionType.PageTemplate),
+  'root-pages': createSectionPresentation(DomainSectionType.Page),
+  'root-navigations': createSectionPresentation(DomainSectionType.Navigation),
+  'root-vocabs': createSectionPresentation(DomainSectionType.Vocabs),
+  'root-mocks': createSectionPresentation(DomainSectionType.Mock),
+  'root-i18n-bundles': createSectionPresentation(DomainSectionType.I18nBundles),
+  'root-auth-profiles': createSectionPresentation(DomainSectionType.AuthProfile),
+  'root-projects': createSectionPresentation(DomainSectionType.Project),
   'soft-deleted': { icon: Trash2, colorClass: 'text-muted-foreground' },
 }
 
@@ -549,6 +598,20 @@ function getTreeDocumentIconClass(node: FsFileNode): string[] {
     .filter(token => token && !token.startsWith('text-') && !token.startsWith('dark:text-'))
   const colorClass = getSectionFolderPresentation(node.sectionType)?.colorClass ?? 'text-muted-foreground'
   return [...iconClass, colorClass, 'text-base']
+}
+
+function getRootDocumentIcon(node: FsFileNode): any | null {
+  const presentation = getDomainDocumentPresentation(node.docType, node.presentationKind)
+  return DOMAIN_ICON_COMPONENTS[presentation.icon] ?? FileWarning
+}
+
+function getRootDocumentIconColor(node: FsFileNode): string {
+  return getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
+}
+
+function getRootDocumentBadgeIcon(node: FsFileNode): any | null {
+  const badgeIcon = getDomainDocumentPresentation(node.docType, node.presentationKind).badgeIcon
+  return badgeIcon == null ? null : DOMAIN_ICON_COMPONENTS[badgeIcon] ?? null
 }
 
 // ---------- дерево ----------
@@ -1099,6 +1162,22 @@ function rowClasses(item: FlatFsItem): string {
                   v-if="(it.node as FsFileNode).isTableColumn"
                   class="size-4 shrink-0 text-sky-500 mr-1"
                 />
+                <span
+                  v-else-if="getRootDocumentIcon(it.node as FsFileNode)"
+                  class="relative size-4 shrink-0"
+                >
+                  <component
+                    :is="getRootDocumentIcon(it.node as FsFileNode)"
+                    class="size-4"
+                    :class="getRootDocumentIconColor(it.node as FsFileNode)"
+                  />
+                  <component
+                    :is="getRootDocumentBadgeIcon(it.node as FsFileNode)"
+                    v-if="getRootDocumentBadgeIcon(it.node as FsFileNode)"
+                    class="absolute -bottom-1 -right-1 size-2.5 rounded-[2px] bg-background p-px"
+                    :class="getRootDocumentIconColor(it.node as FsFileNode)"
+                  />
+                </span>
                 <i
                   v-else
                   :class="getTreeDocumentIconClass(it.node as FsFileNode)"

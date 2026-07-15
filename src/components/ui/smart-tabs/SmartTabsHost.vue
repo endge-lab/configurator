@@ -97,8 +97,7 @@ function getTabIconRaw(tab: SmartTabRef): unknown {
   return props.getIconClass?.(tab) ?? tab.meta?.icon
 }
 
-function getIconComponent(tab: SmartTabRef): Component | null {
-  const iconRaw = getTabIconRaw(tab)
+function resolveLucideIcon(iconRaw: unknown): Component | null {
   if (typeof iconRaw !== 'string')
     return null
 
@@ -123,11 +122,26 @@ function getIconComponent(tab: SmartTabRef): Component | null {
   return component
 }
 
+function getIconComponent(tab: SmartTabRef): Component | null {
+  return resolveLucideIcon(getTabIconRaw(tab))
+}
+
+function getIconBadgeComponent(tab: SmartTabRef): Component | null {
+  return resolveLucideIcon(tab.meta?.iconBadge)
+}
+
 function getIconComponentClass(tab: SmartTabRef): string {
   const iconClass = tab.meta?.iconClass
   if (typeof iconClass === 'string' && iconClass.trim())
     return iconClass
   return 'size-4'
+}
+
+function getIconBadgeComponentClass(tab: SmartTabRef): string {
+  const iconBadgeClass = tab.meta?.iconBadgeClass
+  if (typeof iconBadgeClass === 'string' && iconBadgeClass.trim())
+    return iconBadgeClass
+  return 'size-2.5'
 }
 
 function close(tabId: string): void {
@@ -263,11 +277,21 @@ watch(contextMenu, (v) => {
               @dragend="handleDragEnd"
               @contextmenu="(e) => openContextMenu(e, tab.id)"
             >
-              <component
-                :is="getIconComponent(tab)"
+              <span
                 v-if="getIconComponent(tab)"
-                :class="[getIconComponentClass(tab), 'shrink-0']"
-              />
+                class="relative size-4 shrink-0"
+              >
+                <component
+                  :is="getIconComponent(tab)"
+                  :class="getIconComponentClass(tab)"
+                />
+                <component
+                  :is="getIconBadgeComponent(tab)"
+                  v-if="getIconBadgeComponent(tab)"
+                  :class="getIconBadgeComponentClass(tab)"
+                  class="absolute -bottom-1 -right-1 rounded-[2px] bg-background p-px"
+                />
+              </span>
               <i
                 v-else-if="getIconClass?.(tab) ?? tab.meta?.icon"
                 :class="getIconClass?.(tab) ?? tab.meta?.icon"

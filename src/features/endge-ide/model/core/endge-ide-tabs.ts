@@ -54,6 +54,7 @@ import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
 import { getBehaviorBindingEditorState } from '@/features/endge-ide/model/bindings/behavior-binding-editor-state.ts'
 import { getPresentationBindingEditorState } from '@/features/endge-ide/model/bindings/presentation-binding-editor-state.ts'
+import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import {
   isQueryComposition,
   QUERY_COMPOSITION_PRESENTATION_KIND,
@@ -133,6 +134,7 @@ interface DocsTabPayload {
 interface DocumentTabPayload {
   documentId: string
   documentType: DomainDocumentType
+  presentationKind?: string
 }
 
 interface VersionTabPayload {
@@ -206,7 +208,7 @@ export class EndgeIDETabs {
       return
     this._registerSystemViews()
     this._registerDocsView()
-    this._refreshPersistedMockTabIcons()
+    this._refreshPersistedDocumentTabIcons()
     this._isRegistryBootstrapped = true
   }
 
@@ -318,18 +320,21 @@ export class EndgeIDETabs {
 
   public openDocument(id: string | number, docType: DomainDocumentType): void {
     const documentId = id != null && id !== '' ? String(id) : ''
-    const presentationKind = String(docType) === 'composition'
-      && isQueryComposition(Endge.domain.getComposition(documentId))
-      ? QUERY_COMPOSITION_PRESENTATION_KIND
-      : undefined
+    const presentationKind = this._getDocumentPresentationKind(documentId, docType)
+    const presentation = getDomainDocumentPresentation(docType, presentationKind)
     const tabId = `${String(docType)}-${documentId || 'empty'}`
     const tabRef: SmartTabRef = {
       id: tabId,
       label: documentId ? this.getDocumentLabel(documentId, docType) : 'Без имени',
       viewId: VIEW_ID_DOCUMENT,
-      payload: { documentId, documentType: docType } satisfies DocumentTabPayload,
+      payload: { documentId, documentType: docType, presentationKind } satisfies DocumentTabPayload,
       closable: true,
-      meta: { icon: this.getDocumentIcon(docType, presentationKind) },
+      meta: {
+        icon: presentation.icon,
+        iconClass: `size-4 ${presentation.colorClass}`,
+        iconBadge: presentation.badgeIcon ?? null,
+        iconBadgeClass: `size-2.5 ${presentation.colorClass}`,
+      },
     }
     this.openTab(tabRef)
   }
@@ -600,15 +605,15 @@ export class EndgeIDETabs {
   public getDocumentIcon(docType: DomainDocumentType, presentationKind?: string): string {
     const key = String(docType)
     if (key === String(ComponentType.Table))
-      return 'ti ti-table text-green-500 text-xl'
+      return 'ti ti-table text-blue-500 text-xl'
     if (key === String(ComponentType.DSL))
-      return 'ti ti-file-type-jsx text-purple-500 text-xl'
+      return 'ti ti-file-type-jsx text-blue-500 text-xl'
     if (key === String(COMPONENT_SFC_TYPE))
-      return 'ti ti-file-type-tsx text-cyan-500 text-xl'
+      return 'ti ti-file-type-tsx text-blue-500 text-xl'
     if (isQueryDocumentType(key))
-      return 'ti ti-api text-orange-500 text-xl'
+      return 'ti ti-send text-orange-500 text-xl'
     if (key === 'data-view')
-      return 'ti ti-braces text-cyan-500 text-xl'
+      return 'ti ti-git-branch text-cyan-500 text-xl'
     if (key === 'composition')
       return presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
         ? 'ti ti-topology-star-3 text-orange-500 text-xl'
@@ -620,21 +625,21 @@ export class EndgeIDETabs {
     if (key === String(ParameterType.DefaultParameter))
       return 'ti ti-form-input text-slate-500 text-xl'
     if (key === String(FilterType.DefaultFilter))
-      return 'ti ti-filter text-blue-500 text-xl'
+      return 'ti ti-filter text-rose-500 text-xl'
     if (key === 'primitive')
-      return 'ti ti-box-padding text-pink-500 text-xl'
+      return 'ti ti-box-padding text-blue-500 text-xl'
     if (key === 'type')
-      return 'ti ti-box-multiple text-rose-500 text-xl'
+      return 'ti ti-box-multiple text-blue-500 text-xl'
     if (key === 'action')
-      return 'ti ti-function text-blue-500 text-2xl'
+      return 'ti ti-bolt text-amber-500 text-2xl'
     if (key === 'converter')
-      return 'ti ti-exchange text-blue-500 text-2xl'
+      return 'ti ti-exchange text-cyan-500 text-2xl'
     if (key === 'computation')
       return 'ti ti-calculator text-orange-500 text-2xl'
     if (key === 'integration')
-      return 'ti ti-plug text-violet-500 text-2xl'
+      return 'ti ti-plug text-teal-500 text-2xl'
     if (key === 'environment')
-      return 'ti ti-bolt text-lime-500 text-2xl'
+      return 'ti ti-server-cog text-lime-500 text-2xl'
     if (key === 'tenant')
       return 'ti ti-building-community text-emerald-500 text-2xl'
     if (key === 'policy')
@@ -650,31 +655,55 @@ export class EndgeIDETabs {
     if (key === 'i18n-bundles')
       return 'ti ti-language text-amber-500 text-2xl'
     if (key === 'page-template')
-      return 'ti ti-layout-navbar text-emerald-500 text-2xl'
+      return 'ti ti-layout-navbar text-indigo-400 text-2xl'
     if (key === 'page')
-      return 'ti ti-layout-board text-indigo-500 text-2xl'
+      return 'ti ti-layout-board text-indigo-400 text-2xl'
     if (key === 'navigation')
-      return 'ti ti-route text-cyan-500 text-2xl'
+      return 'ti ti-route text-cyan-400 text-2xl'
     if (key === 'project')
       return 'ti ti-briefcase text-sky-500 text-2xl'
     return 'ti ti-file-alert text-xl text-red-500'
   }
 
-  /** Обновляет icon metadata Mock-вкладок, восстановленных из localStorage. */
-  private _refreshPersistedMockTabIcons(): void {
+  /** Синхронизирует иконки восстановленных document-вкладок с presentation registry. */
+  private _refreshPersistedDocumentTabIcons(): void {
     for (const tab of this.openTabs.value) {
       if (tab.viewId !== VIEW_ID_DOCUMENT) {
         continue
       }
       const payload = this._getPayload<DocumentTabPayload>(tab.payload)
-      if (!payload || String(payload.documentType) !== 'mock') {
+      if (!payload) {
         continue
       }
+      const presentationKind = this._getDocumentPresentationKind(
+        payload.documentId,
+        payload.documentType,
+        payload.presentationKind,
+      )
+      const presentation = getDomainDocumentPresentation(payload.documentType, presentationKind)
       tab.meta = {
         ...tab.meta,
-        icon: this.getDocumentIcon(payload.documentType),
+        icon: presentation.icon,
+        iconClass: `size-4 ${presentation.colorClass}`,
+        iconBadge: presentation.badgeIcon ?? null,
+        iconBadgeClass: `size-2.5 ${presentation.colorClass}`,
       }
     }
+  }
+
+  private _getDocumentPresentationKind(
+    documentId: string,
+    documentType: DomainDocumentType,
+    fallback?: string,
+  ): string | undefined {
+    if (String(documentType) !== 'composition') {
+      return undefined
+    }
+    const composition = Endge.domain.getComposition(documentId)
+    if (composition == null) {
+      return fallback
+    }
+    return isQueryComposition(composition) ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined
   }
 
   private _registerSystemViews(): void {
