@@ -150,42 +150,26 @@ function rootIcon(hostType: string): string {
     .replace('text-xl', 'text-sm')
 }
 
-function groupIcon(group: 'resources' | 'subscriptions' | 'bindings' | 'contracts'): string {
+function groupIcon(group: 'resources' | 'subscriptions'): string {
   if (group === 'resources')
     return 'ti ti-hierarchy-2'
-  if (group === 'subscriptions')
-    return 'ti ti-route-2'
-  if (group === 'bindings')
-    return 'ti ti-link'
-  return 'ti ti-file-description'
+  return 'ti ti-route-2'
 }
 
-function groupTitle(group: 'resources' | 'subscriptions' | 'bindings' | 'contracts'): string {
+function groupTitle(group: 'resources' | 'subscriptions'): string {
   if (group === 'resources')
     return 'RAPH-ноды и runtime-ресурсы'
-  if (group === 'subscriptions')
-    return 'Каналы runtime'
-  if (group === 'bindings')
-    return 'Event bindings'
-  return 'Event contracts'
+  return 'Каналы runtime'
 }
 
-function groupHint(group: 'resources' | 'subscriptions' | 'bindings' | 'contracts'): string {
+function groupHint(group: 'resources' | 'subscriptions'): string {
   if (group === 'resources')
     return 'Внутренние сущности host: raph-node, scope, meta и другие runtime-ресурсы.'
-  if (group === 'subscriptions')
-    return 'Каналы взаимодействия host: event-bus, raph, external и направление потока.'
-  if (group === 'bindings')
-    return 'Декларативные реакции, связанные с host.'
-  return 'Контракты событий, доступные для host.'
+  return 'Каналы взаимодействия host: event-bus, raph, external и направление потока.'
 }
 
 function runtimeResources(host: { resources: PulseMockResource[] }): PulseMockResource[] {
-  return host.resources.filter(resource =>
-    resource.kind !== 'behavior-binding'
-    && resource.kind !== 'contract'
-    && resource.kind !== 'event-subscription',
-  )
+  return host.resources.filter(resource => resource.kind !== 'event-subscription')
 }
 
 function resourceIcon(resource: PulseMockResource): string {
@@ -193,10 +177,6 @@ function resourceIcon(resource: PulseMockResource): string {
     return 'ti ti-vector'
   if (resource.kind === 'event-subscription')
     return 'ti ti-antenna-bars-5'
-  if (resource.kind === 'behavior-binding')
-    return 'ti ti-link'
-  if (resource.kind === 'contract')
-    return 'ti ti-file-description'
   return 'ti ti-braces'
 }
 
@@ -535,57 +515,6 @@ function cancelLaunchDialog(): void {
                   </div>
                 </details>
 
-                <details class="rounded-md border bg-background/80">
-                  <summary class="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs hover:bg-muted/20">
-                    <i :class="groupIcon('bindings')" class="text-xs text-muted-foreground" />
-                    <span class="font-medium">{{ groupTitle('bindings') }}</span>
-                    <span class="ml-auto text-muted-foreground">{{ item.host.bindings.length }}</span>
-                  </summary>
-                  <div class="px-2 pt-1 text-[10px] text-muted-foreground">
-                    {{ groupHint('bindings') }}
-                  </div>
-                  <div class="space-y-1 border-t px-2 py-1.5">
-                    <div
-                      v-for="binding in item.host.bindings"
-                      :key="binding.id"
-                      class="flex items-center gap-2 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted/20"
-                    >
-                      <Tooltip>
-                        <TooltipTrigger as-child>
-                          <i :class="resourceIcon(binding)" class="text-xs" />
-                        </TooltipTrigger>
-                        <TooltipContent>{{ binding.subtitle }}</TooltipContent>
-                      </Tooltip>
-                      <span class="truncate">{{ binding.title }}</span>
-                    </div>
-                  </div>
-                </details>
-
-                <details class="rounded-md border bg-background/80">
-                  <summary class="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs hover:bg-muted/20">
-                    <i :class="groupIcon('contracts')" class="text-xs text-muted-foreground" />
-                    <span class="font-medium">{{ groupTitle('contracts') }}</span>
-                    <span class="ml-auto text-muted-foreground">{{ item.host.contracts.length }}</span>
-                  </summary>
-                  <div class="px-2 pt-1 text-[10px] text-muted-foreground">
-                    {{ groupHint('contracts') }}
-                  </div>
-                  <div class="space-y-1 border-t px-2 py-1.5">
-                    <div
-                      v-for="contract in item.host.contracts"
-                      :key="contract.id"
-                      class="flex items-center gap-2 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-muted/20"
-                    >
-                      <Tooltip>
-                        <TooltipTrigger as-child>
-                          <i :class="resourceIcon(contract)" class="text-xs" />
-                        </TooltipTrigger>
-                        <TooltipContent>{{ contract.subtitle }}</TooltipContent>
-                      </Tooltip>
-                      <span class="truncate">{{ contract.title }}</span>
-                    </div>
-                  </div>
-                </details>
               </div>
             </div>
           </details>

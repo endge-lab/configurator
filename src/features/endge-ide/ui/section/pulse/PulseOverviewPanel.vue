@@ -1,22 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { pulseBindingChannel, pulsePhaseLoad, pulseSummary, pulseTimeline } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
+import { pulsePhaseLoad, pulseSummary, pulseTimeline } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
-const channelGradient = computed(() => {
-  const total = pulseBindingChannel.value.reduce((acc, item) => acc + item.value, 0) || 1
-  const colors = ['#0ea5e9', '#22c55e', '#ef4444']
-  let start = 0
-  const segments = pulseBindingChannel.value.map((item, index) => {
-    const end = start + (item.value / total) * 360
-    const color = colors[index] ?? '#94a3b8'
-    const segment = `${color} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`
-    start = end
-    return segment
-  })
-  return `conic-gradient(${segments.join(', ')})`
-})
 
 function toLinePoints(values: number[], width: number, height: number): string {
   if (values.length === 0)
@@ -44,7 +28,7 @@ function toLinePoints(values: number[], width: number, height: number): string {
     </div>
 
     <TooltipProvider>
-      <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Tooltip>
           <TooltipTrigger as-child>
             <div class="rounded-xl border bg-muted/20 p-4">
@@ -84,36 +68,12 @@ function toLinePoints(values: number[], width: number, height: number): string {
         <Tooltip>
           <TooltipTrigger as-child>
             <div class="rounded-xl border bg-muted/20 p-4">
-              <div class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Bindings</div>
-              <div class="mt-1 text-2xl font-semibold">{{ pulseSummary.bindings }}</div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Количество event bindings, связанных с runtime-host в снимке.
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <div class="rounded-xl border bg-muted/20 p-4">
               <div class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Subscriptions</div>
               <div class="mt-1 text-2xl font-semibold">{{ pulseSummary.subscriptions }}</div>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            Количество подписок на события (`contracts`, `bus`, внешние каналы).
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <div class="rounded-xl border bg-muted/20 p-4">
-              <div class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Contracts</div>
-              <div class="mt-1 text-2xl font-semibold">{{ pulseSummary.contracts }}</div>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Количество event contracts, задействованных в runtime-картине.
+            Количество event-bus и внешних runtime-каналов.
           </TooltipContent>
         </Tooltip>
       </div>
@@ -124,7 +84,7 @@ function toLinePoints(values: number[], width: number, height: number): string {
         <h3 class="text-sm font-semibold">Что показывает этот mock</h3>
         <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>registry хранит все живые runtime-host в едином индексе;</li>
-          <li>каждый host может иметь ресурсы (`RaphNode`, bindings, contracts);</li>
+          <li>каждый host может иметь ресурсы (`RaphNode`, scope, metadata);</li>
           <li>каналы отражают подписки и публикации (event-bus/external);</li>
           <li>карточки сверху показывают актуальные aggregate-метрики в моменте.</li>
         </ul>
@@ -134,7 +94,7 @@ function toLinePoints(values: number[], width: number, height: number): string {
         <h3 class="text-sm font-semibold">Как читать слои</h3>
         <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>`Raph` отвечает за data-driven сигналы и dirty propagation;</li>
-          <li>`contracts + bindings` описывают semantic event layer;</li>
+          <li>runtime channels описывают взаимодействие host с event bus и внешними источниками;</li>
           <li>`Pulse` собирает всё это как единый runtime snapshot;</li>
           <li>правый sidebar показывает краткую tree-view картину host и их внутренностей.</li>
         </ul>
@@ -142,48 +102,6 @@ function toLinePoints(values: number[], width: number, height: number): string {
     </div>
 
     <div class="grid gap-4 xl:grid-cols-2">
-      <section class="rounded-xl border bg-background p-4">
-        <div class="mb-2 flex items-center justify-between">
-          <h3 class="text-sm font-semibold">Нагрузка на Event Binding канал</h3>
-          <span class="text-xs text-muted-foreground">live snapshot</span>
-        </div>
-        <p class="mb-4 text-xs text-muted-foreground">
-          Квадратная диаграмма показывает распределение текущей нагрузки по binding-каналу.
-        </p>
-        <div class="grid grid-cols-[180px_1fr] gap-4 items-center">
-          <div class="mx-auto h-[180px] w-[180px] rounded-full p-4" :style="{ background: channelGradient }">
-            <div class="flex h-full w-full items-center justify-center rounded-full bg-background text-center">
-              <div>
-                <div class="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">channel load</div>
-                <div class="mt-1 text-2xl font-semibold">{{ pulseBindingChannel.reduce((a, b) => a + b.value, 0) }}</div>
-                <div class="text-xs text-muted-foreground">ops / sec</div>
-              </div>
-            </div>
-          </div>
-          <div class="space-y-2">
-            <div
-              v-for="(item, index) in pulseBindingChannel"
-              :key="item.name"
-              class="rounded-lg border bg-muted/20 px-3 py-2"
-            >
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-medium">{{ item.name }}</span>
-                <span class="text-muted-foreground">{{ item.value }}%</span>
-              </div>
-              <div class="mt-1 h-2 rounded-full bg-muted">
-                <div
-                  class="h-2 rounded-full"
-                  :style="{
-                    width: `${item.value}%`,
-                    backgroundColor: index === 0 ? '#0ea5e9' : index === 1 ? '#22c55e' : '#ef4444',
-                  }"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section class="rounded-xl border bg-background p-4">
         <div class="mb-2 flex items-center justify-between">
           <h3 class="text-sm font-semibold">Нагрузка по фазам Raph</h3>
@@ -216,7 +134,7 @@ function toLinePoints(values: number[], width: number, height: number): string {
     <section class="rounded-xl border bg-background p-4">
       <div class="mb-2 flex items-center justify-between">
         <h3 class="text-sm font-semibold">Телеметрия во времени (60 сек)</h3>
-        <span class="text-xs text-muted-foreground">NPS / Binding RPS / Bus EPS</span>
+        <span class="text-xs text-muted-foreground">NPS / Bus EPS</span>
       </div>
       <p class="mb-4 text-xs text-muted-foreground">
         Широкая диаграмма динамики нагрузки. В production здесь обычно показывается скользящее окно по ring-buffer.
@@ -240,14 +158,6 @@ function toLinePoints(values: number[], width: number, height: number): string {
             stroke-linejoin="round"
           />
           <polyline
-            :points="toLinePoints(pulseTimeline.bindingsRps, 720, 200)"
-            fill="none"
-            stroke="#22c55e"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <polyline
             :points="toLinePoints(pulseTimeline.busEps, 720, 200)"
             fill="none"
             stroke="#f97316"
@@ -260,7 +170,6 @@ function toLinePoints(values: number[], width: number, height: number): string {
 
       <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <span class="inline-flex items-center gap-2"><span class="size-2 rounded-full bg-sky-500" />Raph NPS</span>
-        <span class="inline-flex items-center gap-2"><span class="size-2 rounded-full bg-green-500" />Binding RPS</span>
         <span class="inline-flex items-center gap-2"><span class="size-2 rounded-full bg-orange-500" />Bus EPS</span>
       </div>
     </section>

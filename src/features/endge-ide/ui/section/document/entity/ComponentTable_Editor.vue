@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { RComponentTableColumnEditor } from "@/features/endge-ide/domain/entities/RComponentTableColumnEditor";
-import type { DomainDocumentType } from "@endge/core";
-
 import { DomainSectionType, Endge } from "@endge/core";
 import { useDomainStore } from "@endge/vue";
 import {
@@ -51,8 +49,6 @@ import {
 } from "@/components/ui/tooltip";
 import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
-import BehaviorBindingEditor from "@/features/endge-ide/ui/components/BehaviorBindingEditor.vue";
-import PresentationBindingEditor from "@/features/endge-ide/ui/components/PresentationBindingEditor.vue";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
@@ -70,15 +66,6 @@ function normalizeRelationId(value: unknown): number | null {
   const id = Number(text);
   return Number.isFinite(id) ? id : null;
 }
-const projectId = computed(() =>
-  normalizeRelationId(
-    (previewModel.value as { project?: unknown } | null)?.project,
-  ),
-);
-const componentDocumentType = computed<DomainDocumentType | undefined>(
-  () => (editor.value as { type?: DomainDocumentType } | null)?.type,
-);
-
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save();
 }
@@ -463,12 +450,10 @@ watch(
 
       <div class="flex-1 min-h-0 flex flex-col gap-3 p-3 overflow-hidden">
         <Tabs v-model="mainTab" class="flex-1 min-h-0 flex flex-col">
-          <TabsList class="grid grid-cols-4 w-full max-w-[360px] shrink-0">
+          <TabsList class="grid grid-cols-3 w-full max-w-[360px] shrink-0">
             <TabsTrigger value="columns"> Колонки </TabsTrigger>
             <TabsTrigger value="data"> Данные </TabsTrigger>
             <TabsTrigger value="settings"> Таблица </TabsTrigger>
-            <TabsTrigger value="events"> События </TabsTrigger>
-            <TabsTrigger value="presentation"> Presentation </TabsTrigger>
           </TabsList>
 
           <TabsContent
@@ -1031,45 +1016,6 @@ watch(
             </Card>
           </TabsContent>
 
-          <TabsContent
-            value="events"
-            class="flex-1 min-h-0 mt-3 data-[state=inactive]:hidden"
-          >
-            <Card class="h-full flex flex-col overflow-hidden">
-              <ScrollArea class="flex-1">
-                <div class="p-4">
-                  <BehaviorBindingEditor
-                    :editor-model="editor"
-                    owner-type="component"
-                    :owner-id="editor?.id ?? null"
-                    target-type="component"
-                    :target-id="editor?.id ?? null"
-                    :project-id="projectId"
-                    :document-type="componentDocumentType"
-                  />
-                </div>
-              </ScrollArea>
-            </Card>
-          </TabsContent>
-          <TabsContent
-            value="presentation"
-            class="flex-1 min-h-0 mt-3 data-[state=inactive]:hidden"
-          >
-            <Card class="h-full flex flex-col overflow-hidden">
-              <ScrollArea class="flex-1">
-                <div class="p-4">
-                  <PresentationBindingEditor
-                    :editor-model="editor"
-                    owner-type="component"
-                    :owner-id="editor?.id ?? null"
-                    target-type="component"
-                    :target-id="editor?.id ?? null"
-                    :project-id="projectId"
-                  />
-                </div>
-              </ScrollArea>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </template>

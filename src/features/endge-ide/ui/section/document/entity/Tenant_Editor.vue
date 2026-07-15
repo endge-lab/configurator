@@ -9,7 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(() => tabs.documentEditorModel.value as {
@@ -97,15 +96,6 @@ async function save(): Promise<void> {
             :disabled="isSystem"
             placeholder="Описание тенанта"
             @update:model-value="(v) => editor && (editor.description = String(v ?? ''))"
-          />
-        </div>
-        <div class="rounded-md border p-3">
-          <PresentationBindingEditor
-            :editor-model="editor"
-            owner-type="tenant"
-            :owner-id="typeof editor?.id === 'number' ? editor.id : Number(editor?.id ?? '') || null"
-            target-type="tenant"
-            :target-id="typeof editor?.id === 'number' ? editor.id : Number(editor?.id ?? '') || null"
           />
         </div>
       </div>

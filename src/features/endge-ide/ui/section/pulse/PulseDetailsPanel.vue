@@ -199,39 +199,6 @@ function formatValue(value: unknown): string {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-background p-4">
-          <div class="mb-3 flex items-center justify-between">
-            <div class="text-sm font-semibold">Contract bindings</div>
-            <div class="text-xs text-muted-foreground">{{ host.bindings.length }}</div>
-          </div>
-          <div class="space-y-2">
-            <div
-              v-for="binding in host.bindings"
-              :key="binding.id"
-              class="rounded-lg border bg-muted/20 px-3 py-2"
-            >
-              <div class="text-xs font-medium">{{ binding.title }}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{{ binding.subtitle }}</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-background p-4">
-          <div class="mb-3 flex items-center justify-between">
-            <div class="text-sm font-semibold">Контракты</div>
-            <div class="text-xs text-muted-foreground">{{ host.contracts.length }}</div>
-          </div>
-          <div class="space-y-2">
-            <div
-              v-for="contract in host.contracts"
-              :key="contract.id"
-              class="rounded-lg border bg-muted/20 px-3 py-2"
-            >
-              <div class="text-xs font-medium">{{ contract.title }}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{{ contract.subtitle }}</div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
 

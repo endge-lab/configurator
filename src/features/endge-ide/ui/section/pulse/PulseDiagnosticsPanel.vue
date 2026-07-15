@@ -30,7 +30,7 @@ const MAX_RECORDS = 800
 type Level = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 const ALL_LEVELS: Level[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal']
 const ALL_KINDS = ['trace-start', 'trace-end', 'span-start', 'span-end', 'event', 'measurement', 'snapshot']
-const ALL_CHANNELS = ['runtime', 'domain', 'query', 'bindings', 'events']
+const ALL_CHANNELS = ['runtime', 'domain', 'query', 'events']
 
 interface DisplayRecord {
   id: number
@@ -82,9 +82,7 @@ const isFromRegister = computed(() => diagnosticsRegisterEntries.value.length > 
 const nextId = ref(14)
 const mockRecords = ref<DisplayRecord[]>([
   { id: 1, ts: 1000, level: 'info', kind: 'trace-start', channel: 'runtime', name: 'domain.compile', traceId: 'tr-1' },
-  { id: 2, ts: 1005, level: 'info', kind: 'span-start', channel: 'domain', name: 'resolve-bindings', traceId: 'tr-1', spanId: 'sp-1' },
   { id: 3, ts: 1020, level: 'debug', kind: 'event', channel: 'domain', name: 'binding.resolved', message: 'Query flights bound', traceId: 'tr-1', spanId: 'sp-1' },
-  { id: 4, ts: 1045, level: 'info', kind: 'span-end', channel: 'domain', name: 'resolve-bindings', traceId: 'tr-1', spanId: 'sp-1', durMs: 40 },
   { id: 5, ts: 1050, level: 'info', kind: 'span-start', channel: 'query', name: 'build-request', traceId: 'tr-1', spanId: 'sp-2' },
   { id: 6, ts: 1080, level: 'info', kind: 'measurement', channel: 'query', name: 'request.size', value: 256, unit: 'bytes', traceId: 'tr-1', spanId: 'sp-2' },
   { id: 7, ts: 1120, level: 'info', kind: 'span-end', channel: 'query', name: 'build-request', traceId: 'tr-1', spanId: 'sp-2', durMs: 70 },
@@ -127,9 +125,9 @@ const mockPolicy = { enabled: true, levelThreshold: 'info' as const, sampleRate:
 const streamActive = ref(false)
 let streamTimer: ReturnType<typeof setInterval> | null = null
 
-const TRACE_NAMES = ['domain.compile', 'query.run', 'runtime.execute', 'bindings.apply', 'flow.step']
-const CHANNELS = ['runtime', 'domain', 'query', 'bindings', 'events']
-const SPAN_NAMES = ['resolve-bindings', 'build-request', 'execute', 'hydrate', 'render', 'parse']
+const TRACE_NAMES = ['domain.compile', 'query.run', 'runtime.execute', 'flow.step']
+const CHANNELS = ['runtime', 'domain', 'query', 'events']
+const SPAN_NAMES = ['build-request', 'execute', 'hydrate', 'render', 'parse']
 const EVENT_NAMES = ['binding.resolved', 'request.sent', 'response.received', 'cache.hit', 'slow-render']
 const EVENT_MESSAGES = ['OK', 'Completed', 'Render > 50ms', 'Cache miss', 'Retry']
 const LEVELS: DisplayRecord['level'][] = ['trace', 'debug', 'info', 'warn', 'error']

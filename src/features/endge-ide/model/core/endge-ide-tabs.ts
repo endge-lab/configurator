@@ -51,8 +51,6 @@ import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
-import { getBehaviorBindingEditorState } from '@/features/endge-ide/model/bindings/behavior-binding-editor-state.ts'
-import { getPresentationBindingEditorState } from '@/features/endge-ide/model/bindings/presentation-binding-editor-state.ts'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import {
   isQueryComposition,
@@ -303,8 +301,6 @@ export class EndgeIDETabs {
           activeTab.label = this.getDocumentLabel(identity, documentType)
         }
       }
-      await this._syncBindingsEditorState(documentType, session?.editor ?? null)
-      await this._syncPresentationBindingsEditorState(documentType, session?.editor ?? null)
       const label = this.getDocumentLabel(saveDocumentId, documentType)
       toast.success('Сохранено', { description: label })
     }
@@ -1335,51 +1331,4 @@ export class EndgeIDETabs {
     return normalized || fallbackId
   }
 
-  private async _syncBindingsEditorState(
-    documentType: DomainDocumentType,
-    editor: unknown,
-  ): Promise<void> {
-    void documentType
-    const state = getBehaviorBindingEditorState(editor)
-    if (!state)
-      return
-
-    const ownerType = String(state.ownerType ?? '').trim().toLowerCase()
-    const ownerId = Number(state.ownerId)
-    if (!ownerType || !Number.isFinite(ownerId))
-      return
-
-    await Endge.schema.syncOwnerBehaviorBindings({
-      ownerType,
-      ownerId,
-      targetType: state.targetType ?? ownerType,
-      targetId: Number.isFinite(Number(state.targetId)) ? Number(state.targetId) : ownerId,
-      projectId: state.projectId ?? null,
-      items: state.items ?? [],
-    })
-  }
-
-  private async _syncPresentationBindingsEditorState(
-    documentType: DomainDocumentType,
-    editor: unknown,
-  ): Promise<void> {
-    void documentType
-    const state = getPresentationBindingEditorState(editor)
-    if (!state)
-      return
-
-    const ownerType = String(state.ownerType ?? '').trim().toLowerCase()
-    const ownerId = Number(state.ownerId)
-    if (!ownerType || !Number.isFinite(ownerId))
-      return
-
-    await Endge.schema.syncOwnerPresentationBindings({
-      ownerType,
-      ownerId,
-      targetType: state.targetType ?? ownerType,
-      targetId: Number.isFinite(Number(state.targetId)) ? Number(state.targetId) : ownerId,
-      projectId: state.projectId ?? null,
-      items: state.items ?? [],
-    })
-  }
 }

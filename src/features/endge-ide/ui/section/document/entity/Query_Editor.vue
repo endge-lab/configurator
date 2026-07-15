@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
-import type { DomainDocumentType } from '@endge/core'
-
-import { Endge, QueryType } from '@endge/core'
-import { Code2, Loader2, Play, Radio, RotateCcw, Save } from 'lucide-vue-next'
+import { Endge } from '@endge/core'
+import { Loader2, Play, RotateCcw, Save } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -16,7 +14,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -24,21 +21,7 @@ const tabs = EndgeIDE.tabs
 const editor = computed<RQueryEditor | null>(
   () => tabs.documentEditorModel.value as RQueryEditor | null,
 )
-const queryDocumentType = QueryType.REST as DomainDocumentType
-const activeTab = ref<'source' | 'events'>('source')
 const runQueryLoading = ref(false)
-const tabButtons = [
-  { value: 'source', icon: Code2, label: 'Source' },
-  { value: 'events', icon: Radio, label: 'События' },
-] as const
-
-const projectId = computed(() => {
-  const raw = (tabs.documentModel.value as { project?: unknown } | null)
-    ?.project
-  if (raw == null) { return null }
-  const id = Number(raw)
-  return Number.isFinite(id) ? id : null
-})
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -124,30 +107,6 @@ async function buildQueryArtifact(
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip v-for="item in tabButtons" :key="item.value">
-            <TooltipTrigger as-child>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                :class="
-                  activeTab === item.value
-                    ? 'bg-background shadow-sm'
-                    : 'text-muted-foreground'
-                "
-                :aria-label="item.label"
-                @click="activeTab = item.value"
-              >
-                <component :is="item.icon" class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{{ item.label }}</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <Separator orientation="vertical" class="mx-0.5 h-5" />
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -204,10 +163,7 @@ async function buildQueryArtifact(
     </template>
 
     <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div
-        v-if="activeTab === 'source'"
-        class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0"
-      >
+      <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
         <QuerySourceEditor
           :model-value="editor.source"
           class="min-h-0 flex-1"
@@ -215,19 +171,6 @@ async function buildQueryArtifact(
         />
       </div>
 
-      <div v-else class="h-full min-h-0 flex-1 overflow-hidden p-0">
-        <div class="h-full overflow-auto p-4">
-          <BehaviorBindingEditor
-            :editor-model="editor"
-            owner-type="query"
-            :owner-id="editor.id ?? null"
-            target-type="query"
-            :target-id="editor.id ?? null"
-            :project-id="projectId"
-            :document-type="queryDocumentType"
-          />
-        </div>
-      </div>
     </div>
   </SourceDocumentEditorShell>
 </template>

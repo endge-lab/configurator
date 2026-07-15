@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DomainDocumentType, RType } from '@endge/core'
+import type { RType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { Loader2, Save, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -20,30 +20,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
-import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
-import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-function normalizeRelationId(value: unknown): number | null {
-  if (value == null)
-    return null
-  if (typeof value === 'number')
-    return Number.isFinite(value) ? value : null
-  const text = String(value).trim()
-  if (!text)
-    return null
-  const id = Number(text)
-  return Number.isFinite(id) ? id : null
-}
-const projectId = computed(() => normalizeRelationId((editor.value as { project?: unknown } | null)?.project))
-const componentDocumentType = computed<DomainDocumentType | undefined>(() =>
-  (editor.value as { type?: DomainDocumentType } | null)?.type,
-)
-
 const tab = ref('0')
 
 async function save(): Promise<void> {
@@ -103,12 +85,6 @@ function addInputField(): void {
               </TabsTrigger>
               <TabsTrigger value="parameters">
                 Фильтры
-              </TabsTrigger>
-              <TabsTrigger value="bindings">
-                События
-              </TabsTrigger>
-              <TabsTrigger value="presentation">
-                Presentation
               </TabsTrigger>
             </TabsList>
           </div>
@@ -221,35 +197,6 @@ function addInputField(): void {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="bindings" class="flex-1 min-h-0 p-0 m-0">
-            <ScrollArea class="h-full">
-              <div class="p-4">
-                <BehaviorBindingEditor
-                  :editor-model="editor"
-                  owner-type="component"
-                  :owner-id="editor?.id ?? null"
-                  target-type="component"
-                  :target-id="editor?.id ?? null"
-                  :project-id="projectId"
-                  :document-type="componentDocumentType"
-                />
-              </div>
-            </ScrollArea>
-          </TabsContent>
-          <TabsContent value="presentation" class="flex-1 min-h-0 p-0 m-0">
-            <ScrollArea class="h-full">
-              <div class="p-4">
-                <PresentationBindingEditor
-                  :editor-model="editor"
-                  owner-type="component"
-                  :owner-id="editor?.id ?? null"
-                  target-type="component"
-                  :target-id="editor?.id ?? null"
-                  :project-id="projectId"
-                />
-              </div>
-            </ScrollArea>
-          </TabsContent>
         </Tabs>
       </Card>
     </div>

@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
 
 /** Legacy fields editor. Он намеренно не читает и не изменяет Filter source. */
 const tabs = EndgeIDE.tabs
@@ -654,15 +653,6 @@ async function save(): Promise<void> {
         </ScrollArea>
       </Card>
 
-      <Card class="p-4">
-        <PresentationBindingEditor
-          :editor-model="editor"
-          owner-type="filter"
-          :owner-id="typeof editor?.id === 'number' ? editor.id : Number(editor?.id ?? '') || null"
-          target-type="filter"
-          :target-id="typeof editor?.id === 'number' ? editor.id : Number(editor?.id ?? '') || null"
-        />
-      </Card>
     </div>
   </div>
 </template>

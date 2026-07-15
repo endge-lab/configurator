@@ -1437,7 +1437,7 @@ function createNodeFromBlock(
   initialQueryId: string | null = null,
   initialRuntimeId: string | null = null,
   initialTitle?: string,
-  initialStepKind: ActionFlowStepKind = 'behavior-binding',
+  initialStepKind: ActionFlowStepKind = 'action',
   initialParams: Record<string, unknown> = {},
   opts?: {
     fallbackToFirstAction?: boolean
@@ -1550,7 +1550,7 @@ function hydrateGraphFromEditor(): void {
         String(meta.queryId ?? '').trim() || null,
         String(meta.runtimeId ?? '').trim() || null,
         flowNode.title,
-        (meta.stepKind as ActionFlowStepKind | undefined) ?? 'behavior-binding',
+        (meta.stepKind as ActionFlowStepKind | undefined) ?? 'action',
         flowNode.params && typeof flowNode.params === 'object' && !Array.isArray(flowNode.params)
           ? flowNode.params as Record<string, unknown>
           : {},

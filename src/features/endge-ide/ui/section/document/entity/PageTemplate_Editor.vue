@@ -11,7 +11,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
-import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
@@ -207,16 +206,6 @@ async function save(): Promise<void> {
           </p>
         </Card>
 
-        <Card class="p-4">
-          <BehaviorBindingEditor
-            :editor-model="editor"
-            owner-type="page-template"
-            :owner-id="editor?.id ?? null"
-            target-type="page-template"
-            :target-id="editor?.id ?? null"
-            document-type="page-template"
-          />
-        </Card>
       </div>
     </ScrollArea>
   </div>

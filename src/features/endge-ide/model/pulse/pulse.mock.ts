@@ -13,7 +13,7 @@ export type PulseStatus = 'active' | 'idle' | 'deleted' | 'error'
 
 export interface PulseMockResource {
   id: string
-  kind: 'raph-node' | 'event-subscription' | 'behavior-binding' | 'contract' | 'scope' | 'meta'
+  kind: 'raph-node' | 'event-subscription' | 'scope' | 'meta'
   title: string
   subtitle: string
   payload?: Record<string, unknown>
@@ -37,14 +37,11 @@ export interface PulseMockHost {
   context: Record<string, unknown>
   resources: PulseMockResource[]
   subscriptions: PulseMockResource[]
-  bindings: PulseMockResource[]
-  contracts: PulseMockResource[]
 }
 
 interface PulseTelemetryPoint {
   hosts: number
   raphNodes: number
-  bindings: number
   subscriptions: number
 }
 
@@ -75,34 +72,14 @@ export const pulseSummary = computed(() => {
   const raphNodes = pulseMockHosts.value.reduce((acc, host) => {
     return acc + host.resources.filter(resource => resource.kind === 'raph-node').length
   }, 0)
-  const bindings = pulseMockHosts.value.reduce((acc, host) => acc + host.bindings.length, 0)
   const subscriptions = pulseMockHosts.value.reduce((acc, host) => acc + host.subscriptions.length, 0)
-  const contracts = pulseMockHosts.value.reduce((acc, host) => acc + host.contracts.length, 0)
 
   return {
     hosts,
     active,
     raphNodes,
-    bindings,
     subscriptions,
-    contracts,
   }
-})
-
-export const pulseBindingChannel = computed(() => {
-  const total = Math.max(
-    pulseSummary.value.bindings + pulseSummary.value.subscriptions + pulseSummary.value.contracts,
-    1,
-  )
-  const resolve = Math.round((pulseSummary.value.contracts / total) * 100)
-  const run = Math.round((pulseSummary.value.bindings / total) * 100)
-  const error = Math.max(0, 100 - resolve - run)
-
-  return [
-    { name: 'resolve', value: resolve },
-    { name: 'run', value: run },
-    { name: 'error', value: error },
-  ]
 })
 
 export const pulsePhaseLoad = computed(() => {
@@ -126,7 +103,6 @@ export const pulseTimeline = computed(() => {
   return {
     labels: points.map((_, index) => `-${(points.length - index - 1) * 5}s`),
     raphNps: points.map(point => point.raphNodes),
-    bindingsRps: points.map(point => point.bindings),
     busEps: points.map(point => point.subscriptions),
   }
 })
@@ -275,7 +251,6 @@ function refreshPulseRuntimeData(): void {
   const point: PulseTelemetryPoint = {
     hosts: pulseHostSnapshots.value.length,
     raphNodes: pulseHostSnapshots.value.reduce((acc, host) => acc + host.resources.filter(item => item.kind === 'raph-node').length, 0),
-    bindings: pulseHostSnapshots.value.reduce((acc, host) => acc + host.resources.filter(item => item.kind === 'behavior-binding').length, 0),
     subscriptions: pulseHostSnapshots.value.reduce((acc, host) => acc + host.channels.filter(item => item.kind === 'event-bus' || item.kind === 'external').length, 0),
   }
 
@@ -297,8 +272,6 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
     title: channel.name,
     subtitle: `${channel.kind} / ${channel.direction}${channel.subtitle ? ` / ${channel.subtitle}` : ''}`,
   }))
-  const bindings = resources.filter(resource => resource.kind === 'behavior-binding')
-  const contracts = resources.filter(resource => resource.kind === 'contract')
 
   const title = host.title || host.entityIdentity || host.id
   const description = typeof host.meta.description === 'string'
@@ -330,8 +303,6 @@ function toPulseHost(host: RuntimeHostSnapshot, now: number): PulseMockHost {
     context: host.context,
     resources,
     subscriptions,
-    bindings,
-    contracts,
   }
 }
 
@@ -348,10 +319,6 @@ function mapPulseStatus(status: string): PulseStatus {
 function mapResourceKind(kind: string): PulseMockResource['kind'] {
   if (kind === 'raph-node')
     return 'raph-node'
-  if (kind === 'behavior-binding')
-    return 'behavior-binding'
-  if (kind === 'contract')
-    return 'contract'
   if (kind === 'scope')
     return 'scope'
   return 'meta'

@@ -125,18 +125,6 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
     add: (domain, doc) => domain.addTenant(doc as never),
     removeByIdentity: (domain, identity) => domain.removeTenantByIdentity(identity),
   },
-  'behavior-binding': {
-    getAll: domain => domain.getBehaviorBindings() as unknown as ImportDoc[],
-    get: (domain, idOrIdentity) => domain.getBehaviorBinding(idOrIdentity) as ImportDoc | null,
-    add: (domain, doc) => domain.addBehaviorBinding(doc as never),
-    removeByIdentity: (domain, identity) => domain.removeBehaviorBindingByIdentity(identity),
-  },
-  'presentation-binding': {
-    getAll: domain => domain.getPresentationBindings() as unknown as ImportDoc[],
-    get: (domain, idOrIdentity) => domain.getPresentationBinding(idOrIdentity) as ImportDoc | null,
-    add: (domain, doc) => domain.addPresentationBinding(doc as never),
-    removeByIdentity: (domain, identity) => domain.removePresentationBindingByIdentity(identity),
-  },
   policy: {
     getAll: domain => domain.getPolicies() as unknown as ImportDoc[],
     get: (domain, idOrIdentity) => domain.getPolicy(idOrIdentity) as ImportDoc | null,
@@ -203,8 +191,6 @@ const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
   { documentType: 'page', entityKind: 'page', sectionTitle: 'Страницы', getAll: domain => ENTITY_ADAPTERS.page.getAll(domain) },
   { documentType: 'navigation', entityKind: 'navigation', sectionTitle: 'Навигации', getAll: domain => ENTITY_ADAPTERS.navigation.getAll(domain) },
   { documentType: 'project', entityKind: 'project', sectionTitle: 'Проекты', getAll: domain => ENTITY_ADAPTERS.project.getAll(domain) },
-  { documentType: 'behavior-binding', entityKind: 'behavior-binding', sectionTitle: 'Behavior Bindings', getAll: domain => ENTITY_ADAPTERS['behavior-binding'].getAll(domain) },
-  { documentType: 'presentation-binding', entityKind: 'presentation-binding', sectionTitle: 'Presentation Bindings', getAll: domain => ENTITY_ADAPTERS['presentation-binding'].getAll(domain) },
 ]
 
 function makeItemKey(documentType: DomainDocumentType, identity: string): string {
@@ -261,18 +247,10 @@ function extractPlainDomain(raw: unknown): { source: 'bundle' | 'plain', plainDo
   throw new Error('Файл резервной копии должен содержать JSON-объект.')
 }
 
-function kindFromBindingScope(value: unknown): BackupRestoreEntityKind | null {
+function kindFromEntityScope(value: unknown): BackupRestoreEntityKind | null {
   const kind = String(value ?? '').trim().toLowerCase()
-  if (!kind)
+  if (!kind || kind === 'table-cell')
     return null
-  if (kind === 'table-cell')
-    return null
-  if (kind === 'page-template')
-    return 'page-template'
-  if (kind === 'behavior-binding')
-    return 'behavior-binding'
-  if (kind === 'presentation-binding')
-    return 'presentation-binding'
   if (kind in ENTITY_ADAPTERS)
     return kind as BackupRestoreEntityKind
   return null
@@ -391,7 +369,7 @@ function remapDocumentReferences(
     model.templateId = resolveLinkedId('page-template', model.templateId, importedDomain, finalIdsByKindIdentity)
     for (const area of model.areas ?? []) {
       for (const block of area?.blocks ?? []) {
-        const kind = kindFromBindingScope(block?.entityType)
+        const kind = kindFromEntityScope(block?.entityType)
         const nextId = resolveLinkedId(kind, block?.entityId ?? block?.entityIdentity, importedDomain, finalIdsByKindIdentity)
         block.entityId = toNumericOrNull(nextId) ?? nextId
         if (!block.entityIdentity && kind && block.entityId != null) {
@@ -415,22 +393,6 @@ function remapDocumentReferences(
     return
   }
 
-  if (plan.config.documentType === 'behavior-binding') {
-    model.projectId = resolveLinkedId('project', model.projectId, importedDomain, finalIdsByKindIdentity)
-    model.environmentId = resolveLinkedId('environment', model.environmentId, importedDomain, finalIdsByKindIdentity)
-    model.originBindingId = resolveLinkedId('behavior-binding', model.originBindingId, importedDomain, finalIdsByKindIdentity)
-    model.ownerId = resolveLinkedId(kindFromBindingScope(model.ownerType), model.ownerId, importedDomain, finalIdsByKindIdentity)
-    model.targetId = resolveLinkedId(kindFromBindingScope(model.targetType), model.targetId, importedDomain, finalIdsByKindIdentity)
-    return
-  }
-
-  if (plan.config.documentType === 'presentation-binding') {
-    model.projectId = resolveLinkedId('project', model.projectId, importedDomain, finalIdsByKindIdentity)
-    model.environmentId = resolveLinkedId('environment', model.environmentId, importedDomain, finalIdsByKindIdentity)
-    model.originBindingId = resolveLinkedId('presentation-binding', model.originBindingId, importedDomain, finalIdsByKindIdentity)
-    model.ownerId = resolveLinkedId(kindFromBindingScope(model.ownerType), model.ownerId, importedDomain, finalIdsByKindIdentity)
-    model.targetId = resolveLinkedId(kindFromBindingScope(model.targetType), model.targetId, importedDomain, finalIdsByKindIdentity)
-  }
 }
 
 function replaceDomainDocument(plan: ImportPlan): void {

@@ -8,7 +8,7 @@
 - `Endge.compiler` запускает фазовую компиляцию домена и строит artifacts.
 - `Endge.program` хранит compiled artifacts, diagnostics, capabilities и индексы.
 - `Endge.runtime` создает live runtime-hosts и управляет lifecycle.
-- `Endge.uiRegistry` и presentation bindings подключают SFC-визуализацию только там, где она нужна.
+- `Endge.uiRegistry` предоставляет runtime доступ к зарегистрированным SFC-компонентам.
 
 ## Правило совместимости
 

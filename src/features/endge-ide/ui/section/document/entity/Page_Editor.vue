@@ -9,8 +9,6 @@ import { toast } from 'vue-sonner'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
-import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
@@ -279,25 +277,6 @@ const previewAreaLabels = computed(() =>
           </div>
         </Card>
 
-        <Card class="p-4">
-          <BehaviorBindingEditor
-            :editor-model="editor"
-            owner-type="page"
-            :owner-id="editor?.id ?? null"
-            target-type="page"
-            :target-id="editor?.id ?? null"
-            document-type="page"
-          />
-        </Card>
-        <Card class="p-4 mt-3">
-          <PresentationBindingEditor
-            :editor-model="editor"
-            owner-type="page"
-            :owner-id="editor?.id ?? null"
-            target-type="page"
-            :target-id="editor?.id ?? null"
-          />
-        </Card>
       </div>
     </ScrollArea>
   </div>

@@ -14,8 +14,6 @@ export type BackupRestoreEntityKind =
   | 'integration'
   | 'environment'
   | 'tenant'
-  | 'behavior-binding'
-  | 'presentation-binding'
   | 'policy'
   | 'style'
   | 'vocabs'

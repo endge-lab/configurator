@@ -259,8 +259,6 @@ const ITERATE_ENTITY_KEYS = [
   'pages',
   'pageTemplates',
   'navigations',
-  'behaviorBindings',
-  'presentationBindings',
 ] as const
 
 /** Маппинг ключа среза домена → ключ в entities-short-desc (camelCase). */

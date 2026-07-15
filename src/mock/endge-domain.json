@@ -2244,23 +2244,6 @@
         "fields": []
       },
       {
-        "id": "RefBinding",
-        "identity": "RefBinding",
-        "name": "RefBinding",
-        "description": null,
-        "folderId": 36,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {
-          "target": "behavior-bindings",
-          "storage": "id",
-          "primitiveKind": "reference"
-        },
-        "isPrimitive": true,
-        "fields": []
-      },
-      {
         "id": "RefComponent",
         "identity": "RefComponent",
         "name": "RefComponent",
@@ -2441,23 +2424,6 @@
         "inherited": false,
         "meta": {
           "target": "policies",
-          "storage": "id",
-          "primitiveKind": "reference"
-        },
-        "isPrimitive": true,
-        "fields": []
-      },
-      {
-        "id": "RefPresentationBinding",
-        "identity": "RefPresentationBinding",
-        "name": "RefPresentationBinding",
-        "description": null,
-        "folderId": 36,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {
-          "target": "presentation-bindings",
           "storage": "id",
           "primitiveKind": "reference"
         },
@@ -2854,7 +2820,7 @@
               },
               "meta": {
                 "actionId": 6,
-                "stepKind": "behavior-binding",
+                "stepKind": "action",
                 "runtimeId": null
               }
             }
@@ -3373,20 +3339,6 @@
         "parent": null
       },
       {
-        "id": 41,
-        "identity": "root-bindings",
-        "displayName": "Биндинги",
-        "name": "Биндинги",
-        "description": null,
-        "folderId": null,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {},
-        "entityType": "behavior-bindings",
-        "parent": null
-      },
-      {
         "id": 1,
         "identity": "root-components",
         "displayName": "Компоненты",
@@ -3538,20 +3490,6 @@
         "inherited": false,
         "meta": {},
         "entityType": "policies",
-        "parent": null
-      },
-      {
-        "id": 42,
-        "identity": "root-presentation-bindings",
-        "displayName": "Презентационные биндинги",
-        "name": "Презентационные биндинги",
-        "description": null,
-        "folderId": null,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {},
-        "entityType": "presentation-bindings",
         "parent": null
       },
       {
@@ -3710,8 +3648,6 @@
       }
     ],
     "tenants": [],
-    "behaviorBindings": [],
-    "presentationBindings": [],
     "policies": [],
     "styles": [
       {

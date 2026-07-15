@@ -8,7 +8,6 @@ export type { UITableConfigDocument } from '@/features/endge-ide/domain/ui/confi
 export type { UIComponentDefinition } from '@/features/endge-ide/domain/ui/definitions/UIComponentDefinition'
 export { getUIJsxTagName } from '@/features/endge-ide/domain/ui/jsx/UIJsxComponent'
 export type { UIJsxAttributeValue, UIJsxElementNode, UIJsxNode, UIJsxTextNode } from '@/features/endge-ide/domain/ui/jsx/UIJsxComponent'
-export type { UIPresentationBinding } from '@/features/endge-ide/domain/ui/presentation/UIPresentationBinding'
 export type { UIPresentationContract, UIPresentationRoleContract, UIPresentationSurface } from '@/features/endge-ide/domain/ui/presentation/UIPresentationContract'
 export {
   BUILTIN_DEFINITIONS,

@@ -16,8 +16,6 @@ import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEnt
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
 import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import BehaviorBindingEditor from '@/features/endge-ide/ui/components/BehaviorBindingEditor.vue'
-import PresentationBindingEditor from '@/features/endge-ide/ui/components/PresentationBindingEditor.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 
 const props = defineProps<{
@@ -26,7 +24,7 @@ const props = defineProps<{
 
 const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(() => props.tabContext?.editor ?? null)
-const tab = ref<'project' | 'navigation' | 'events' | 'presentation'>('project')
+const tab = ref<'project' | 'navigation'>('project')
 
 const SELECT_NONE = '__none__'
 
@@ -95,11 +93,9 @@ async function save(): Promise<void> {
         <Card class="min-h-[calc(100vh-15rem)]">
           <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
             <div class="border-b px-3 py-2">
-              <TabsList class="grid w-full grid-cols-4">
+              <TabsList class="grid w-full grid-cols-2">
                 <TabsTrigger value="project">Проект</TabsTrigger>
                 <TabsTrigger value="navigation">Навигация</TabsTrigger>
-                <TabsTrigger value="events">События</TabsTrigger>
-                <TabsTrigger value="presentation">Presentation</TabsTrigger>
               </TabsList>
             </div>
 
@@ -169,38 +165,6 @@ async function save(): Promise<void> {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="events" class="flex-1 min-h-0 p-0 m-0 data-[state=inactive]:hidden">
-              <ScrollArea class="h-full">
-                <div class="p-4">
-                  <BehaviorBindingEditor
-                    :editor-model="editor"
-                    owner-type="project"
-                    :owner-id="editor?.id ?? null"
-                    target-type="project"
-                    :target-id="editor?.id ?? null"
-                    :project-id="editor?.id ?? null"
-                    document-type="project"
-                    :allowed-environment-ids="editor?.allowedEnvironmentIds ?? []"
-                  />
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="presentation" class="flex-1 min-h-0 p-0 m-0 data-[state=inactive]:hidden">
-              <ScrollArea class="h-full">
-                <div class="p-4">
-                  <PresentationBindingEditor
-                    :editor-model="editor"
-                    owner-type="project"
-                    :owner-id="editor?.id ?? null"
-                    target-type="project"
-                    :target-id="editor?.id ?? null"
-                    :project-id="editor?.id ?? null"
-                    :allowed-environment-ids="editor?.allowedEnvironmentIds ?? []"
-                  />
-                </div>
-              </ScrollArea>
-            </TabsContent>
           </Tabs>
         </Card>
       </div>
