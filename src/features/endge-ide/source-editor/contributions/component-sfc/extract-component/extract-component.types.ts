@@ -13,7 +13,7 @@ export interface ExtractComponentDependency {
 
 export interface ExtractableSFCColumn {
   columnRange: ExtractComponentSourceRange
-  tagNameEnd: number
+  actionAnchor: number
   bodyRange: ExtractComponentSourceRange
   columnKey: string | null
   columnTitle: string | null

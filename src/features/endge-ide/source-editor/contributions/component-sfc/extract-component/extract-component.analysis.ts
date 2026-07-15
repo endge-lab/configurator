@@ -138,7 +138,7 @@ function analyzeColumn(
 
   return {
     columnRange: { ...column.range },
-    tagNameEnd: column.range.start + `<${column.tag}`.length,
+    actionAnchor: findColumnActionAnchor(source, column.range.start),
     bodyRange,
     columnKey: readStaticAttribute(column, 'key'),
     columnTitle: readStaticAttribute(column, 'title'),
@@ -147,6 +147,51 @@ function analyzeColumn(
     hasCell: Boolean(cell),
     dependencies: collectDependencies(significantNodes, propTypes),
   }
+}
+
+function findColumnActionAnchor(source: string, columnStart: number): number {
+  const firstLineEnd = findLineEnd(source, columnStart)
+  const openingTagEnd = findOpeningTagEnd(source, columnStart)
+
+  return openingTagEnd <= firstLineEnd ? openingTagEnd : firstLineEnd
+}
+
+function findLineEnd(source: string, start: number): number {
+  const lineFeed = source.indexOf('\n', start)
+  if (lineFeed === -1) { return source.length }
+
+  return lineFeed > start && source[lineFeed - 1] === '\r' ? lineFeed - 1 : lineFeed
+}
+
+function findOpeningTagEnd(source: string, start: number): number {
+  let quote: string | null = null
+  let escaped = false
+
+  for (let offset = start; offset < source.length; offset += 1) {
+    const character = source[offset]
+
+    if (quote) {
+      if (escaped) {
+        escaped = false
+      }
+      else if (character === '\\') {
+        escaped = true
+      }
+      else if (character === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (character === '"' || character === '\'') {
+      quote = character
+    }
+    else if (character === '>') {
+      return offset + 1
+    }
+  }
+
+  return findLineEnd(source, start)
 }
 
 function isRenderableNode(node: RComponentSFC_AST_TemplateNode): boolean {

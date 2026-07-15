@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { useUI } from '@endge/vue'
 import {
   CalendarDays,
   Languages,
   LogOut,
   Sparkles,
-  SunMoon,
   UserRoundXIcon,
 } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+
 import {
   Avatar,
   AvatarFallback,
@@ -46,7 +45,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const ui = useUI()
 
 const dateFormat = useSafeLocalStorage<'human' | 'robot'>('app:date-format', 'human')
 watch(dateFormat, () => {
@@ -142,28 +140,6 @@ const env = import.meta.env.MODE
                 @click="$i18n.locale = locale.value"
               >
                 {{ locale.label }}
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <SunMoon class="size-4 mr-2 text-muted-foreground" />
-            {{ t('nav.user.theme.title') }}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuCheckboxItem
-                :model-value="ui.theme === 'light'"
-                @click="ui.setTheme('light')"
-              >
-                {{ t('nav.user.theme.light') }}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                :model-value="ui.theme === 'dark'"
-                @click="ui.setTheme('dark')"
-              >
-                {{ t('nav.user.theme.dark') }}
               </DropdownMenuCheckboxItem>
             </DropdownMenuSubContent>
           </DropdownMenuPortal>

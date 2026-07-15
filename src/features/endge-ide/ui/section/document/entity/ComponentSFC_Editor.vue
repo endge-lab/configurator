@@ -235,6 +235,7 @@ async function launchPreview(): Promise<void> {
         v-model="editor.source"
         :extensions="sourceEditorExtensions"
         language="html"
+        format-language="vue"
         class="min-h-0 flex-1"
         min-height="420px"
         @blur="editor.parseSource()"

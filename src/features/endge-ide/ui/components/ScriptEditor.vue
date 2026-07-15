@@ -1,12 +1,14 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
+import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
 import { AlignLeft } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import { formatSource } from '@/features/endge-ide/tools/format-source'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
 
@@ -14,6 +16,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: string
     language?: EditorLanguage
+    formatLanguage?: SourceFormatLanguage
     themeDark?: boolean
     minHeight?: number | string
     showToolbar?: boolean
@@ -71,8 +74,32 @@ const palenightTheme: monaco.editor.IStandaloneThemeData = {
 async function formatDocument(): Promise<void> {
   if (!editor) { return }
 
-  await editor.getAction('editor.action.formatDocument')?.run()
-  emit('format')
+  const model = editor.getModel()
+  const formatLanguage = props.formatLanguage ?? (
+    props.language === 'plaintext' ? null : props.language
+  )
+
+  if (!model || !formatLanguage) {
+    await editor.getAction('editor.action.formatDocument')?.run()
+    return
+  }
+
+  try {
+    const formatted = await formatSource(model.getValue(), formatLanguage)
+    if (formatted !== model.getValue()) {
+      editor.pushUndoStop()
+      editor.executeEdits('format-document', [{
+        range: model.getFullModelRange(),
+        text: formatted,
+        forceMoveMarkers: true,
+      }])
+      editor.pushUndoStop()
+    }
+    emit('format')
+  }
+  catch (error) {
+    console.error(`[ScriptEditor] Failed to format ${formatLanguage} document`, error)
+  }
 }
 
 defineExpose({ formatDocument })

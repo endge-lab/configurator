@@ -48,7 +48,8 @@ defineProps<{ flights: FlightLeg[] }>()
     })
     expect(columns[0]!.bodySource).toContain('<Flex if="row.tail">')
     expect(columns[0]!.bodySource).not.toContain('<Cell>')
-    expect(source.slice(columns[0]!.columnRange.start, columns[0]!.tagNameEnd)).toBe('<Column')
+    expect(source.slice(columns[0]!.columnRange.start, columns[0]!.actionAnchor))
+      .toBe('<Column key="aircraft" title="ВС">')
   })
 
   it('anchors the inline action on the tag-name line for a multiline Column', () => {
@@ -64,10 +65,26 @@ defineProps<{ flights: FlightLeg[] }>()
 </template>`
 
     const [column] = analyzeExtractableSFCColumns(source)
-    const anchorPrefix = source.slice(0, column!.tagNameEnd)
+    const anchorPrefix = source.slice(0, column!.actionAnchor)
 
-    expect(source.slice(column!.columnRange.start, column!.tagNameEnd)).toBe('<Column')
+    expect(source.slice(column!.columnRange.start, column!.actionAnchor)).toBe('<Column')
+    expect(source[column!.actionAnchor]).toBe('\n')
     expect(anchorPrefix.split('\n')).toHaveLength(3)
+  })
+
+  it('anchors the inline action after a one-line opening tag with attributes', () => {
+    const source = `<template>
+  <Table>
+    <Column key="nextFlight" title="След > рейс" width="150">
+      <Text>Ready</Text>
+    </Column>
+  </Table>
+</template>`
+
+    const [column] = analyzeExtractableSFCColumns(source)
+
+    expect(source.slice(column!.columnRange.start, column!.actionAnchor))
+      .toBe('<Column key="nextFlight" title="След > рейс" width="150">')
   })
 
   it('supports a Column without Cell and keeps v-for aliases local', () => {

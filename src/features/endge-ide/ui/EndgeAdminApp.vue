@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { themeConfig } from '@endge/core'
 import { useUI } from '@endge/vue'
-import { HeartPulse } from 'lucide-vue-next'
+import { HeartPulse, Moon, Sun } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { showWidget } from '@/components/layouts/grid'
@@ -24,6 +24,10 @@ import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 const tabs = EndgeIDE.tabs
 const ui = useUI()
 const isBusy = computed(() => EndgeIDE.busy.value)
+const isDarkTheme = computed(() => ui.value.theme === 'dark')
+const themeButtonTitle = computed(() =>
+  isDarkTheme.value ? 'Включить светлую тему' : 'Включить тёмную тему',
+)
 
 async function saveCurrentDocument(): Promise<void> {
   await tabs.save()
@@ -66,6 +70,10 @@ function openPulse(): void {
 function openPulseFromHeader(): void {
   showWidget('domain')
   openPulse()
+}
+
+function toggleTheme(): void {
+  ui.value.setTheme(isDarkTheme.value ? 'light' : 'dark')
 }
 
 function openArchitecture(): void {
@@ -216,6 +224,16 @@ function openArchitecture(): void {
 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
     <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        :title="themeButtonTitle"
+        :aria-label="themeButtonTitle"
+        @click="toggleTheme"
+      >
+        <Moon v-if="isDarkTheme" class="size-4" />
+        <Sun v-else class="size-4" />
+      </button>
       <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

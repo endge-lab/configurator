@@ -80,8 +80,6 @@ function getComponentBadgeIcon(docType: DomainDocumentType): string | null {
       return 'Table2'
     case String(ComponentType.DSL):
       return 'Braces'
-    case String(ComponentType.SFC):
-      return 'FileCode2'
     default:
       return null
   }

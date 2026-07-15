@@ -92,7 +92,7 @@ export function createExtractComponentContribution(
 
         const columns: ExtractableSFCColumn[] = analyzeExtractableSFCColumns(model.getValue())
         decorations.set(columns.map((column) => {
-          const position = model.getPositionAt(column.tagNameEnd)
+          const position = model.getPositionAt(column.actionAnchor)
           return {
             range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
             options: {

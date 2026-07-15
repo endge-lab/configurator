@@ -33,7 +33,6 @@ describe('domain document presentation', () => {
     expect(getDomainDocumentPresentation(ComponentType.SFC)).toEqual({
       icon: 'Puzzle',
       colorClass: 'text-blue-500',
-      badgeIcon: 'FileCode2',
     })
   })
 

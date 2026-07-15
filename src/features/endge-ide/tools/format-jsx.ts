@@ -1,23 +1,16 @@
-import * as prettier from 'prettier'
-
-const PRETTIER_OPTIONS: prettier.Options = {
-  parser: 'babel',
-  useTabs: true,
-  tabWidth: 2,
-  singleAttributePerLine: true,
-  printWidth: 100,
-}
+import { formatSource } from '@/features/endge-ide/tools/format-source'
 
 /**
- * Форматирует JSX: табы, по одному атрибуту на строку.
+ * Форматирует JSX общим browser-safe Prettier formatter-ом.
  * При ошибке парсинга возвращает исходную строку.
  */
 export async function formatJsx(code: string): Promise<string> {
   const trimmed = code.trim()
-  if (!trimmed)
+  if (!trimmed) {
     return code
+  }
   try {
-    const out = await prettier.format(trimmed, PRETTIER_OPTIONS)
+    const out = await formatSource(trimmed, 'javascript')
     return out.trim()
   }
   catch {
