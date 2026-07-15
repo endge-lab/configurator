@@ -344,8 +344,8 @@ function buildPayloadTemplate(): Record<string, unknown> {
       providerRef: null,
       sourceVersion: 1,
       contractVersion: 1,
-      input: null,
-      output: null,
+      input: {},
+      output: {},
       meta: {},
       inherited: false,
     }
