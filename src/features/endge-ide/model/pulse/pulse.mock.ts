@@ -199,8 +199,6 @@ export function launchPulseRuntimeFromEntity(
 
   if (sectionType === 'project')
     model = Endge.domain.getProject(id)
-  else if (sectionType === 'view')
-    model = Endge.domain.getView(id)
   else if (sectionType === 'page')
     model = Endge.domain.getPage(id)
   else if (sectionType === 'query')

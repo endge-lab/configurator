@@ -46,7 +46,6 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
   { type: 'computation' as DomainDocumentType, label: 'Вычисление', defaultName: 'Новое вычисление', section: DomainSectionType.Computation },
   { type: 'integration' as DomainDocumentType, label: 'Интеграция', defaultName: 'Новая интеграция', section: DomainSectionType.Integration },
-  { type: 'view' as DomainDocumentType, label: 'Вид', defaultName: 'Новый вид', section: DomainSectionType.View },
   { type: 'environment' as DomainDocumentType, label: 'Окружение', defaultName: 'Новое окружение', section: DomainSectionType.Environment },
   { type: 'tenant' as DomainDocumentType, label: 'Тенант', defaultName: 'Новый tenant', section: DomainSectionType.Tenant },
   { type: 'policy' as DomainDocumentType, label: 'Политика', defaultName: 'Новая политика', section: DomainSectionType.Policy },
@@ -72,7 +71,6 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Converter]: 'root-converters',
   [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',
-  [DomainSectionType.View]: 'root-views',
   [DomainSectionType.Parameters]: 'root-parameters',
   [DomainSectionType.Filters]: 'root-filters',
   [DomainSectionType.Environment]: 'root-environments',
@@ -101,7 +99,6 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Converter]: 'converters',
   [DomainSectionType.Computation]: 'computations',
   [DomainSectionType.Integration]: 'integrations',
-  [DomainSectionType.View]: 'views',
   [DomainSectionType.Parameters]: 'parameters',
   [DomainSectionType.Filters]: 'filters',
   [DomainSectionType.Environment]: 'environments',
@@ -162,7 +159,6 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.Action
     || s === DomainSectionType.Computation
     || s === DomainSectionType.Integration
-    || s === DomainSectionType.View
     || s === DomainSectionType.Environment
     || s === DomainSectionType.Tenant
     || s === DomainSectionType.Policy
@@ -388,7 +384,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       routeName: id,
       routePath: `/${id}`,
       template: null,
-      controller: null,
       enabled: true,
       areas: [],
       meta: {},

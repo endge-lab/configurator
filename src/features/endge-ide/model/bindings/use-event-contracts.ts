@@ -21,7 +21,6 @@ export function resolveEventContractEntityType(documentType: DomainDocumentType)
     return ContractEntityType.Query
   }
 
-  if (documentType === 'view') { return ContractEntityType.View }
   if (documentType === 'project') { return ContractEntityType.Project }
   if (documentType === 'page') { return ContractEntityType.Page }
   if (documentType === 'page-template') { return ContractEntityType.PageTemplate }

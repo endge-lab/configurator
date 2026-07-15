@@ -328,7 +328,7 @@ const architectureSections: ArchitectureFlowSection[] = [
     text: [
       'Коммуникация в системе разделена на три уровня. Нижний уровень — Raph: он следит только за изменениями данных, dirty-узлами и фазами перерасчёта.',
       'Над ним живёт событийный semantic-слой: runtime host испускает канонический факт, event contract задаёт его смысл, Endge.configuration.behaviorBindings подбирает реакции, а Endge.events работает как transport-шина для подписчиков из кода.',
-      'На верхнем уровне находятся доменные runtime-сущности проекта: Project, Page, View, Component, Query и Action. Они одновременно потребляют data-reactivity снизу и публикуют lifecycle/interaction события наверх.',
+      'На верхнем уровне находятся доменные runtime-сущности проекта: Project, Page, Component, Query и Action. Они одновременно потребляют data-reactivity снизу и публикуют lifecycle/interaction события наверх.',
       'Такое разделение делает архитектуру production-ready: Raph не загрязняется временными lifecycle-фактами, а событийный слой не зависит от внутренней механики dirty-path и фаз графа.',
     ],
     minHeight: 1180,
@@ -349,7 +349,6 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('comm-bus', 'Endge.events', 'Transport-шина для кодовых подписчиков', 1680, 570, 'runtime'),
 
       createFlowNode('comm-project', 'Project / Page', 'Lifecyle верхнего уровня проекта и страниц', 120, 830, 'source'),
-      createFlowNode('comm-view', 'View', 'Legacy/presentation entity', 640, 830, 'source'),
       createFlowNode('comm-composition', 'Composition', 'Runtime graph и orchestration без rendering', 1160, 830, 'source'),
       createFlowNode('comm-component', 'Component', 'UI interactions, mounted, click, input', 1160, 830, 'source'),
       createFlowNode('comm-query', 'Query / Action', 'Данные, загрузка, шаги исполнения и эффекты', 1680, 830, 'source'),
@@ -365,9 +364,6 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowEdge('comm-7', 'comm-bindings', 'comm-actions', 'исполнение реакций'),
       createFlowEdge('comm-8', 'comm-fact', 'comm-bus', 'публикация в bus'),
 
-      createFlowEdge('comm-9', 'comm-project', 'comm-view', 'рендерит / содержит'),
-      createFlowEdge('comm-10', 'comm-view', 'comm-component', 'визуальный слой'),
-      createFlowEdge('comm-11', 'comm-view', 'comm-query', 'данные и сценарии'),
       createFlowEdge('comm-12', 'comm-project', 'comm-fact', 'page/project lifecycle'),
       createFlowEdge('comm-13', 'comm-component', 'comm-fact', 'interaction / mounted'),
       createFlowEdge('comm-14', 'comm-query', 'comm-fact', 'loaded / error / step'),
@@ -403,12 +399,12 @@ const architectureSections: ArchitectureFlowSection[] = [
     id: 'dispatch',
     title: 'Что происходит при mounted',
     text: [
-      'Runtime-источник (например, page/view-компонент) не должен сам перебирать bindings. Его задача - сообщить ядру, что произошёл канонический факт события.',
+      'Runtime-источник (например, page-компонент) не должен сам перебирать bindings. Его задача - сообщить ядру, что произошёл канонический факт события.',
       'Дальше ядро через dispatcher/resolver находит подходящие owner/target bindings, применяет inheritance/env/mode и запускает actions.',
       'Публикация в Endge.events лучше делать после нормализации события в ядре: это даёт единый формат события и не раздувает логику на стороне UI-компонентов.',
     ],
     nodes: [
-      createFlowNode('source-view', 'View/Page-компонент', 'Монтируется в UI/runtime', 40, 100, 'source'),
+      createFlowNode('source-page', 'Page-компонент', 'Монтируется в UI/runtime', 40, 100, 'source'),
       createFlowNode('source-module', 'Модуль Page/Project', 'Сообщает в ядро о факте события', 520, 100, 'source'),
       createFlowNode('core-event', 'Каноническое событие', 'Например: page.mounted', 1080, 100, 'core'),
       createFlowNode('resolver', 'Resolver биндингов', 'Ищет owner/target совпадения', 1640, 100, 'core'),
@@ -416,7 +412,7 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('runtime-bus', 'Шина Endge.events', 'Лента runtime-событий и подписки', 1640, 430, 'runtime'),
     ],
     edges: [
-      createFlowEdge('df-1', 'source-view', 'source-module', 'lifecycle mounted'),
+      createFlowEdge('df-1', 'source-page', 'source-module', 'lifecycle mounted'),
       createFlowEdge('df-2', 'source-module', 'core-event', 'передача факта в ядро'),
       createFlowEdge('df-3', 'core-event', 'resolver', 'диспетчеризация', true),
       createFlowEdge('df-4', 'resolver', 'action-runner', 'выполнение действий'),
@@ -454,8 +450,8 @@ const architectureSections: ArchitectureFlowSection[] = [
     title: 'Жизненный цикл и карта сущностей',
     text: [
       'Проект является верхнеуровневым контейнером: в нём живут страницы, окружения, навигация, стили и общие поведенческие правила.',
-      'Страница обычно собирается из нескольких источников: она может быть связана с шаблоном страницы, использовать навигацию и стили, а внутри содержать view как рабочую runtime-область.',
-      'View остаётся legacy/presentation entity. Новый runtime-граф Filter → Query → Component описывает Composition: orchestration без layout и rendering. Поверх обеих структур работают contracts, bindings, actions и шина событий.',
+      'Страница обычно собирается из нескольких источников: она может быть связана с шаблоном страницы, использовать навигацию и стили, а в областях напрямую размещать поддерживаемые компоненты.',
+      'Runtime-граф Filter → Query → Component описывает Composition: orchestration без layout и rendering. Поверх структуры работают contracts, bindings, actions и шина событий.',
     ],
     nodes: [
       createFlowNode('behavior-contracts', 'Контракты', 'Какие события допустимы у сущностей', 220, 40, 'config'),
@@ -468,10 +464,9 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('navigation', 'Навигация', 'Связи переходов и меню проекта', 700, 430, 'config'),
       createFlowNode('styles', 'Стили', 'Токены, наборы стилей и оформление', 1160, 430, 'config'),
       createFlowNode('page', 'Страница', 'Конкретная точка входа и lifecycle страницы', 900, 650, 'source'),
-      createFlowNode('view', 'View', 'Legacy/presentation entity страницы', 900, 900, 'core'),
       createFlowNode('composition', 'Composition', 'Runtime graph и orchestration', 1460, 900, 'core'),
       createFlowNode('component', 'Компонент', 'UI и визуальная композиция', 340, 1130, 'source'),
-      createFlowNode('query', 'Запрос', 'Источник данных для view', 900, 1130, 'source'),
+      createFlowNode('query', 'Запрос', 'Источник данных для runtime-графа', 900, 1130, 'source'),
       createFlowNode('filter', 'Фильтр', 'Предобработка и ограничения данных', 1460, 1130, 'source'),
       createFlowNode('runtime-user', 'Пользователь / Runtime', 'Источник взаимодействий и триггеров', 900, 1360, 'runtime'),
     ],
@@ -491,13 +486,7 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowEdge('ls-11', 'page-template', 'page', 'структура / layout'),
       createFlowEdge('ls-12', 'navigation', 'page', 'маршрут / переход'),
       createFlowEdge('ls-13', 'styles', 'page', 'оформление'),
-      createFlowEdge('ls-14', 'page', 'view', 'рендерит view'),
-
-      createFlowEdge('ls-15', 'view', 'component', 'визуальный слой'),
-      createFlowEdge('ls-16', 'view', 'query', 'источник данных'),
-      createFlowEdge('ls-17', 'view', 'filter', 'ограничения / трансформация'),
       createFlowEdge('ls-18', 'runtime-user', 'page', 'mounted / route / interactions'),
-      createFlowEdge('ls-19', 'runtime-user', 'view', 'input / runtime события'),
     ],
   },
   {
@@ -516,7 +505,7 @@ const architectureSections: ArchitectureFlowSection[] = [
       createFlowNode('raph-node', 'RaphNode', 'Узел runtime-сущности с meta и track', 80, 320, 'core'),
       createFlowNode('raph-track', 'Track paths', 'Например: filters.* или basePath.*', 520, 320, 'core'),
       createFlowNode('raph-phases', 'Фазы Raph', 'tables / queries / другие phase handlers', 980, 320, 'core'),
-      createFlowNode('raph-runtime', 'Runtime host', 'Query/Table/Action и далее Page/View', 1440, 320, 'source'),
+      createFlowNode('raph-runtime', 'Runtime host', 'Query/Table/Action и далее Page', 1440, 320, 'source'),
       createFlowNode('raph-contract', 'Contracts + Bindings', 'Диспетчер ищет реакции на событие', 980, 560, 'config'),
       createFlowNode('raph-actions', 'Действия', 'Выполнение бизнес-логики', 1440, 560, 'action'),
       createFlowNode('raph-bus', 'Endge.events', 'Наблюдаемость и cross-module transport', 1440, 780, 'runtime'),

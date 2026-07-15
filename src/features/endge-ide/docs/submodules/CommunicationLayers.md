@@ -40,7 +40,6 @@
 
 - `Project`
 - `Page`
-- `View`
 - `Component`
 - `Query`
 - `Action`
@@ -123,7 +122,6 @@
 На уровне продукта это выглядит так:
 
 - `Project` и `Page` живут своим lifecycle;
-- `View` соединяет UI, query и component;
 - `Query` и `Action` могут быть реактивны к данным через `Raph`;
 - `Component` и `Page` могут испускать mounted/click/ready события;
 - `Endge.bindings` решает, какие конфигурируемые реакции нужно выполнить;

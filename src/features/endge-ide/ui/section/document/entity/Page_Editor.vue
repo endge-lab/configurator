@@ -54,12 +54,6 @@ interface DomainEntity {
   name?: string | null
   displayName?: string | null
   type?: string | null
-  meta?: {
-    inheritedFrom?: Array<{
-      docType?: string
-      docIdentity?: string | number | null
-    }>
-  } | null
 }
 
 interface AddBlockPayload {
@@ -95,28 +89,6 @@ function getEntityKeys(entity: DomainEntity | null | undefined): Set<string> {
   return keys
 }
 
-function getInheritedViewRefs(entity: DomainEntity | null | undefined): Set<string> {
-  const refs = new Set<string>()
-  const inheritedFrom = entity?.meta?.inheritedFrom
-  if (!Array.isArray(inheritedFrom))
-    return refs
-  for (const ref of inheritedFrom) {
-    if (ref?.docType !== 'view')
-      continue
-    const key = normalizeKey(ref.docIdentity)
-    if (key)
-      refs.add(key)
-  }
-  return refs
-}
-
-const selectedController = computed(() => {
-  const controllerId = editor.value?.controllerId
-  if (controllerId == null)
-    return null
-  return (domainStore.views ?? []).find((view: any) => view?.id === controllerId) ?? null
-})
-
 function compactIconClass(iconClass: string): string {
   return `${iconClass
     .replace(/\btext-(xl|2xl)\b/g, '')
@@ -143,52 +115,15 @@ function getEntityByDrop(sectionType: DomainSectionType, id: string): DomainEnti
   return null
 }
 
-function isEntityChildOfController(entity: DomainEntity, sectionType: DomainSectionType): boolean {
-  const controller = selectedController.value as DomainEntity | null
-  if (!controller)
-    return false
-
-  const controllerKeys = getEntityKeys(controller)
-  const inheritedViewRefs = getInheritedViewRefs(entity)
-  for (const ref of inheritedViewRefs) {
-    if (controllerKeys.has(ref))
-      return true
-  }
-
-  const entityKeys = getEntityKeys(entity)
-  if (sectionType === DomainSectionType.Component) {
-    const linkedComponent = normalizeKey((controller as any).componentId)
-    if (linkedComponent && entityKeys.has(linkedComponent))
-      return true
-  }
-  if (sectionType === DomainSectionType.Filters) {
-    const linkedFilter = normalizeKey((controller as any).filterId)
-    if (linkedFilter && entityKeys.has(linkedFilter))
-      return true
-  }
-
-  return false
-}
-
 function resolveDropPayload(sectionType: DomainSectionType, id: string):
   | { entityType: 'component' | 'filter', entityIdentity: string, entityId: number | null }
   | null {
   if (sectionType !== DomainSectionType.Component && sectionType !== DomainSectionType.Filters)
     return null
 
-  if (!selectedController.value) {
-    toast.error('Сначала выберите контроллер страницы')
-    return null
-  }
-
   const entity = getEntityByDrop(sectionType, id)
   if (!entity) {
     toast.error('Сущность не найдена в домене')
-    return null
-  }
-
-  if (!isEntityChildOfController(entity, sectionType)) {
-    toast.error('Сущность не принадлежит выбранному контроллеру')
     return null
   }
 

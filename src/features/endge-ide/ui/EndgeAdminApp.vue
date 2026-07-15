@@ -33,10 +33,6 @@ function openDocs(): void {
   showWidget('help')
 }
 
-function openViewGenerator(): void {
-  tabs.openViewGenerator()
-}
-
 function openDSLPlayground(): void {
   tabs.openDSLPlayground()
 }
@@ -118,9 +114,6 @@ function openArchitecture(): void {
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuItem @click="openViewGenerator">
-            Генератор
-          </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               UI Playground

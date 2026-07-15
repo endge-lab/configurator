@@ -43,8 +43,6 @@ export interface FsFileNode extends FsNodeBase {
   isSystem?: boolean
   isInDeletedFolder?: boolean
   children?: FsNode[]
-  isViewChild?: boolean
-  viewChildInherited?: boolean
   isTableColumn?: boolean
   parentComponentId?: string
   presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
@@ -57,15 +55,6 @@ export interface FlatFsItem {
   path: string
   depth: number
   rootId: string
-}
-
-/** Вид с полями ссылок (componentId, filterId, queryId). */
-export interface ViewWithRefs {
-  id: string
-  name: string
-  componentId?: string | null
-  filterId?: string | null
-  queryId?: string | null
 }
 
 export const SOFT_DELETED_IDENTITY = 'soft-deleted'
@@ -130,7 +119,6 @@ export interface DomainStoreForTree {
   converters?: any[]
   computations?: any[]
   integrations?: any[]
-  views?: any[]
   tenants?: any[]
   pageTemplates?: any[]
   pages?: any[]
@@ -205,7 +193,6 @@ export function getSoftDeletedItems(
   add(store.converters, DomainSectionType.Converter)
   add(store.computations, DomainSectionType.Computation)
   add(store.integrations, DomainSectionType.Integration)
-  add(store.views, DomainSectionType.View)
   add(store.tenants, DomainSectionType.Tenant)
   add(store.pageTemplates, DomainSectionType.PageTemplate)
   add(store.pages, DomainSectionType.Page)
@@ -307,7 +294,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-components',
       'root-actions',
       'root-filters',
-      'root-views',
       'root-converters',
       'root-computations',
       'root-parameters',
@@ -396,8 +382,6 @@ export function normalizeDocType(
     return 'computation'
   if (sectionType === DomainSectionType.Integration)
     return 'integration'
-  if (sectionType === DomainSectionType.View)
-    return 'view'
   if (sectionType === DomainSectionType.Environment)
     return 'environment'
   if (sectionType === DomainSectionType.Tenant)
@@ -423,59 +407,6 @@ export function normalizeDocType(
   return raw
 }
 
-/** Дочерние узлы вида: компонент, фильтр, запрос. */
-export function buildViewChildRefs(view: ViewWithRefs): FsFileNode[] {
-  const nodes: FsFileNode[] = []
-  const domain = Endge.domain
-  if (view.componentId) {
-    const c = domain.getComponent(view.componentId)
-    if (c) {
-      const docType = (c as any).type === ComponentType.DSL ? ComponentType.DSL : ComponentType.Table
-      nodes.push({
-        id: String(c.id),
-        name: (c as any).name ?? String(c.id),
-        type: 'file',
-        docType,
-        sectionType: DomainSectionType.Component,
-        isSystem: (c as { isSystem?: boolean, type?: string }).isSystem === true || (c as { type?: string }).type === 'system',
-        isViewChild: true,
-        viewChildInherited: (c as { inherited?: boolean }).inherited === true,
-      })
-    }
-  }
-  if (view.filterId) {
-    const f = domain.getFilter(view.filterId)
-    if (f) {
-      nodes.push({
-        id: String(f.id),
-        name: f.displayName ?? f.name ?? String(f.id),
-        type: 'file',
-        docType: FilterType.DefaultFilter as DomainDocumentType,
-        sectionType: DomainSectionType.Filters,
-        isSystem: (f as { isSystem?: boolean, type?: string }).isSystem === true || (f as { type?: string }).type === 'system',
-        isViewChild: true,
-        viewChildInherited: (f as { inherited?: boolean }).inherited === true,
-      })
-    }
-  }
-  if (view.queryId) {
-    const q = domain.getQuery(view.queryId)
-    if (q) {
-      nodes.push({
-        id: String(q.id),
-        name: (q as any).displayName ?? (q as any).name ?? String(q.id),
-        type: 'file',
-        docType: QueryType.REST as DomainDocumentType,
-        sectionType: DomainSectionType.Query,
-        isSystem: (q as { isSystem?: boolean, type?: string }).isSystem === true || (q as { type?: string }).type === 'system',
-        isViewChild: true,
-        viewChildInherited: (q as { inherited?: boolean }).inherited === true,
-      })
-    }
-  }
-  return nodes
-}
-
 /** Дочерние узлы компонента-таблицы: активные колонки. */
 export function buildTableColumnRefs(componentId: string): FsFileNode[] {
   const component = Endge.domain.getComponent(componentId) as RComponentTable | null
@@ -494,8 +425,6 @@ export function buildTableColumnRefs(componentId: string): FsFileNode[] {
         type: 'file',
         docType: ComponentType.Table as DomainDocumentType,
         sectionType: DomainSectionType.Component,
-        isViewChild: false,
-        viewChildInherited: false,
         isTableColumn: true,
         parentComponentId: componentId,
       }
@@ -637,9 +566,6 @@ function buildFolderNode(
         isInDeletedFolder: currentInDeletedBranch,
         ...((c as { presentationKind?: unknown }).presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
           && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
-      }
-      if (itemSectionType === DomainSectionType.View) {
-        fileNode.children = buildViewChildRefs(c as ViewWithRefs)
       }
       if (
         itemSectionType === DomainSectionType.Component

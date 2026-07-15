@@ -140,8 +140,6 @@ const DOCUMENT_TYPE_ALIASES: Record<string, string> = {
   query_custom: "query-custom",
   custom_query: "query-custom",
   custom: "query-custom",
-  view: "view",
-  views: "view",
   type: "type",
   types: "type",
   primitive: "primitive",
@@ -208,8 +206,6 @@ const NEED_ENTITY_TYPE_ALIASES: Record<string, string> = {
   "component-dsl": "components",
   table: "components",
   tables: "components",
-  view: "views",
-  views: "views",
   filter: "filters",
   filters: "filters",
   action: "actions",
@@ -251,7 +247,6 @@ const DOMAIN_SLICE_KEY_SET = new Set<string>([
   "queries",
   "components",
   "folders",
-  "views",
   "filters",
   "actions",
   "integrations",
@@ -638,7 +633,6 @@ const ALLOWED_DOCUMENT_TYPES = new Set([
   "query-custom",
   "component-dsl",
   "component-table",
-  "view",
   "type",
   "primitive",
   "action",
@@ -666,7 +660,6 @@ const DUPLICATE_ALLOWED_DOCUMENT_TYPES = new Set([
   "query-custom",
   "component-dsl",
   "component-table",
-  "view",
   "action",
   "default-parameter",
   "default-filter",
@@ -687,7 +680,6 @@ const DUPLICATE_ALLOWED_DOCUMENT_TYPES = new Set([
 type RuntimeEntityType =
   | "component"
   | "query"
-  | "view"
   | "action"
   | "page"
   | "project";
@@ -699,7 +691,6 @@ const CREATE_RUNTIME_SECTION_TYPES: Record<
 > = {
   component: DomainSectionType.Component,
   query: DomainSectionType.Query,
-  view: DomainSectionType.View,
   action: DomainSectionType.Action,
   page: DomainSectionType.Page,
   project: DomainSectionType.Project,
@@ -718,8 +709,6 @@ const RUNTIME_ENTITY_TYPE_ALIASES: Record<string, RuntimeEntityType> = {
   "query-gql": "query",
   "query-rest": "query",
   "query-custom": "query",
-  view: "view",
-  views: "view",
   action: "action",
   actions: "action",
   page: "page",
@@ -757,8 +746,6 @@ function inferRuntimeEntityTypeByIdentity(
     matches.add("component");
   if (hasIdentity(Endge.domain.getQueries() as unknown[], id))
     matches.add("query");
-  if (hasIdentity(Endge.domain.getViews() as unknown[], id))
-    matches.add("view");
   if (hasIdentity(Endge.domain.getActions() as unknown[], id))
     matches.add("action");
   if (hasIdentity(Endge.domain.getPages() as unknown[], id))
@@ -776,7 +763,6 @@ function runtimeTypeByDocumentType(
   if (!doc) return null;
   if (doc.startsWith("component-")) return "component";
   if (doc.startsWith("query-")) return "query";
-  if (doc === "view") return "view";
   if (doc === "action") return "action";
   if (doc === "page") return "page";
   if (doc === "project") return "project";
@@ -841,7 +827,7 @@ export function executeCreateRuntime(
   if (!sectionType) {
     return {
       ok: false,
-      message: `Не удалось определить entityType для runtime: "${entityType}". Допустимы: component, query, view, action, page, project.`,
+      message: `Не удалось определить entityType для runtime: "${entityType}". Допустимы: component, query, action, page, project.`,
     };
   }
 
@@ -923,7 +909,7 @@ function readEntityName(
   return String(source?.name ?? source?.identity ?? identity);
 }
 
-/** Дублирует документ домена (component/query/view/...) и сохраняет копию. */
+/** Дублирует документ домена (component/query/action/...) и сохраняет копию. */
 export async function executeDuplicateDocument(
   documentTypeRaw: string,
   sourceIdentityRaw: string,
@@ -980,7 +966,6 @@ export async function executeDuplicateDocument(
 
 /** viewId → метод открытия синглтон-вкладки. */
 const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
-  "view-generator": () => EndgeIDE.tabs.openViewGenerator(),
   "dsl-playground": () => EndgeIDE.tabs.openDSLPlayground(),
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
   "action-playgrounds": () => EndgeIDE.tabs.openActionPlaygroundsSingleton(),

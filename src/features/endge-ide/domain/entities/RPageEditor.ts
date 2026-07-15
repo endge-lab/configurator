@@ -21,7 +21,6 @@ export class RPageEditor {
   routeName: string = ''
   routePath: string = ''
   templateId: number | null = null
-  controllerId: number | null = null
   enabled: boolean = true
 
   areas: Array<{
@@ -45,7 +44,6 @@ export class RPageEditor {
     this.routeName = source.routeName ?? ''
     this.routePath = source.routePath ?? ''
     this.templateId = normalizeRelationId(source.templateId)
-    this.controllerId = normalizeRelationId(source.controllerId)
     this.enabled = source.enabled ?? true
     this.areas = Array.isArray(source.areas)
       ? source.areas.map(a => ({
@@ -83,7 +81,6 @@ export class RPageEditor {
   updateSource(source: RPage): void {
     const sourceLegacy = source as RPage & {
       templateIdentity?: string | number | null
-      controllerIdentity?: string | number | null
     }
     source.id = this.id
     source.identity = this.identity
@@ -92,10 +89,8 @@ export class RPageEditor {
     source.routeName = this.routeName || null
     source.routePath = this.routePath || null
     source.templateId = this.templateId
-    source.controllerId = this.controllerId
     // legacy aliases are cleared to avoid persisting mutable identity links
     sourceLegacy.templateIdentity = null
-    sourceLegacy.controllerIdentity = null
     source.enabled = this.enabled
     source.areas = this.areas.map(a => ({
       slotId: a.slotId,

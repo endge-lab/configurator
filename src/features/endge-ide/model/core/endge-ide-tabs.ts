@@ -45,7 +45,6 @@ import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageT
 import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
 import { RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor.ts'
 import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
-import { RViewEditor } from '@/features/endge-ide/domain/entities/RViewEditor.ts'
 import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
 import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
@@ -82,7 +81,6 @@ import Style_Editor from '@/features/endge-ide/ui/section/document/entity/Style_
 import Vocabs_Editor from '@/features/endge-ide/ui/section/document/entity/Vocabs_Editor.vue'
 import AuthProfile_Editor from '@/features/endge-ide/ui/section/document/entity/AuthProfile_Editor.vue'
 import I18nBundles_Editor from '@/features/endge-ide/ui/section/document/entity/I18nBundles_Editor.vue'
-import View_Editor from '@/features/endge-ide/ui/section/document/entity/View_Editor.vue'
 import PageTemplate_Editor from '@/features/endge-ide/ui/section/document/entity/PageTemplate_Editor.vue'
 import Page_Editor from '@/features/endge-ide/ui/section/document/entity/Page_Editor.vue'
 import Navigation_Editor from '@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'
@@ -90,7 +88,6 @@ import Project_Editor from '@/features/endge-ide/ui/section/document/entity/Proj
 import Filter_Editor from '@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'
 import Workspace_Editor from '@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'
 import Version_Editor from '@/features/endge-ide/ui/section/document/singleton/Version_Editor.vue'
-import ViewGenerator_Editor from '@/features/endge-ide/ui/section/document/singleton/ViewGenerator_Editor.vue'
 import ActionPlaygrounds_Singleton from '@/features/endge-ide/ui/section/document/singleton/ActionPlaygrounds_Singleton.vue'
 import BackupRestore_Singleton from '@/features/endge-ide/ui/section/document/singleton/BackupRestore_Singleton.vue'
 import DSL_Playground_Widget from '@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'
@@ -107,7 +104,6 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 const VIEW_ID_DOCUMENT = 'endge-document-editor' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_VERSION = 'endge-version-editor' as const
-const VIEW_ID_VIEW_GENERATOR = 'endge-view-generator' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
@@ -370,20 +366,6 @@ export class EndgeIDETabs {
     this.openTab(tabRef)
   }
 
-  /** Открыть редактор «Генератор» в единственном экземпляре (при повторном вызове - активация вкладки). */
-  public openViewGenerator(): void {
-    const tabRef: SmartTabRef = {
-      id: 'view-generator',
-      label: 'Генератор',
-      viewId: VIEW_ID_VIEW_GENERATOR,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-forms text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
   /** Открыть DSL Песочницу в единственном экземпляре (при повторном вызове - активация вкладки). */
   public openDSLPlayground(): void {
     const tabRef: SmartTabRef = {
@@ -581,8 +563,6 @@ export class EndgeIDETabs {
       return Endge.domain.getPolicy(id)?.name ?? id
     if (key === 'style')
       return Endge.domain.getStyle(id)?.name ?? id
-    if (key === 'view')
-      return Endge.domain.getView(id)?.name ?? id
     if (key === 'vocabs')
       return Endge.domain.getVocab(id)?.displayName ?? Endge.domain.getVocab(id)?.name ?? id
     if (key === 'auth-profile')
@@ -646,8 +626,6 @@ export class EndgeIDETabs {
       return 'ti ti-shield text-sky-500 text-2xl'
     if (key === 'style')
       return 'ti ti-palette text-fuchsia-500 text-2xl'
-    if (key === 'view')
-      return 'ti ti-eye text-indigo-500 text-2xl'
     if (key === 'vocabs')
       return 'ti ti-book text-teal-500 text-2xl'
     if (key === 'auth-profile')
@@ -717,10 +695,6 @@ export class EndgeIDETabs {
       props: {},
     }))
     registerSmartTabView(VIEW_ID_VERSION, wrap)
-    registerSmartTabView(VIEW_ID_VIEW_GENERATOR, (): SmartTabViewResolved => ({
-      component: markRaw(ViewGenerator_Editor),
-      props: {},
-    }))
     registerSmartTabView(VIEW_ID_DSL_PLAYGROUND, (): SmartTabViewResolved => ({
       component: markRaw(DSL_Playground_Widget),
       props: {},
@@ -867,7 +841,6 @@ export class EndgeIDETabs {
     ['vocabs', (documentId) => this._resolveVocabs(documentId)],
     ['auth-profile', (documentId) => this._resolveAuthProfile(documentId)],
     ['i18n-bundles', (documentId) => this._resolveI18nBundle(documentId)],
-    ['view', (documentId) => this._resolveView(documentId)],
     ['page-template', (documentId) => this._resolvePageTemplate(documentId)],
     ['page', (documentId) => this._resolvePage(documentId)],
     ['navigation', (documentId) => this._resolveNavigation(documentId)],
@@ -1300,23 +1273,6 @@ export class EndgeIDETabs {
       editor,
       model: nav,
       syncBeforeSave: () => editor.updateSource(nav),
-    }
-  }
-
-  private _resolveView(documentId: string): EditorSession | null {
-    const view = Endge.domain.getView(documentId)
-    if (!view)
-      return null
-    const editor = new RViewEditor()
-    editor.fillFromSource(view)
-    return {
-      view: {
-        component: markRaw(View_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: view,
-      syncBeforeSave: () => editor.updateSource(view),
     }
   }
 

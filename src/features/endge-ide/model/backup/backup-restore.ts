@@ -161,12 +161,6 @@ const ENTITY_ADAPTERS: Record<BackupRestoreEntityKind, EntityAdapter> = {
     add: (domain, doc) => domain.addAuthProfile(doc as never),
     removeByIdentity: (domain, identity) => domain.removeAuthProfileByIdentity(identity),
   },
-  view: {
-    getAll: domain => domain.getViews() as unknown as ImportDoc[],
-    get: (domain, idOrIdentity) => domain.getView(idOrIdentity) as ImportDoc | null,
-    add: (domain, doc) => domain.addView(doc as never),
-    removeByIdentity: (domain, identity) => domain.removeViewByIdentity(identity),
-  },
   'page-template': {
     getAll: domain => domain.getPageTemplates() as unknown as ImportDoc[],
     get: (domain, idOrIdentity) => domain.getPageTemplate(idOrIdentity) as ImportDoc | null,
@@ -205,7 +199,6 @@ const BACKUP_DOC_CONFIGS: BackupDocConfig[] = [
   { documentType: 'action', entityKind: 'action', sectionTitle: 'Действия', getAll: domain => ENTITY_ADAPTERS.action.getAll(domain) },
   { documentType: ComponentType.DSL, entityKind: 'component', sectionTitle: 'DSL компоненты', getAll: domain => ENTITY_ADAPTERS.component.getAll(domain).filter(doc => doc.type === ComponentType.DSL) },
   { documentType: ComponentType.Table, entityKind: 'component', sectionTitle: 'Табличные компоненты', getAll: domain => ENTITY_ADAPTERS.component.getAll(domain).filter(doc => doc.type === ComponentType.Table) },
-  { documentType: 'view', entityKind: 'view', sectionTitle: 'Виды', getAll: domain => ENTITY_ADAPTERS.view.getAll(domain) },
   { documentType: 'page-template', entityKind: 'page-template', sectionTitle: 'Шаблоны страниц', getAll: domain => ENTITY_ADAPTERS['page-template'].getAll(domain) },
   { documentType: 'page', entityKind: 'page', sectionTitle: 'Страницы', getAll: domain => ENTITY_ADAPTERS.page.getAll(domain) },
   { documentType: 'navigation', entityKind: 'navigation', sectionTitle: 'Навигации', getAll: domain => ENTITY_ADAPTERS.navigation.getAll(domain) },
@@ -394,16 +387,8 @@ function remapDocumentReferences(
     return
   }
 
-  if (plan.config.documentType === 'view') {
-    model.componentId = resolveLinkedId('component', model.componentId, importedDomain, finalIdsByKindIdentity)
-    model.filterId = resolveLinkedId('filter', model.filterId, importedDomain, finalIdsByKindIdentity)
-    model.queryId = resolveLinkedId('query', model.queryId, importedDomain, finalIdsByKindIdentity)
-    return
-  }
-
   if (plan.config.documentType === 'page') {
     model.templateId = resolveLinkedId('page-template', model.templateId, importedDomain, finalIdsByKindIdentity)
-    model.controllerId = resolveLinkedId('view', model.controllerId, importedDomain, finalIdsByKindIdentity)
     for (const area of model.areas ?? []) {
       for (const block of area?.blocks ?? []) {
         const kind = kindFromBindingScope(block?.entityType)

@@ -322,26 +322,6 @@ function restoreFromLocalStorage(): void {
     if (savedId) selectedQueryId.value = savedId;
   } catch {}
 
-  // Если запрос не задан и у компонента есть ссылка на вид в meta.inheritedFrom - подставить запрос из вида
-  if (!selectedQueryId.value && componentId.value) {
-    const comp = resolveComponentByIdOrIdentity(componentId.value) as {
-      meta?: {
-        inheritedFrom?: Array<{ docType?: string; docIdentity?: string }>;
-      };
-    } | null;
-    const inheritedFrom = comp?.meta?.inheritedFrom;
-    if (Array.isArray(inheritedFrom)) {
-      const viewRef = inheritedFrom.find(
-        (r: { docType?: string; docIdentity?: string }) =>
-          r?.docType === "view",
-      ) as { docIdentity?: string } | undefined;
-      if (viewRef?.docIdentity) {
-        const view = Endge.domain.getView(viewRef.docIdentity);
-        if (view?.queryId) selectedQueryId.value = String(view.queryId);
-      }
-    }
-  }
-
   try {
     const raw = localStorage.getItem(valueKey);
     if (!raw) return;

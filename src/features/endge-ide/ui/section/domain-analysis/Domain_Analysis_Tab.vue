@@ -1,29 +1,14 @@
 <script setup lang="ts">
-import type { DomainDocumentType, StyleBlocksPayload } from '@endge/core'
+import type { StyleBlocksPayload } from '@endge/core'
 
-import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
-import { AlertTriangle, Loader2, Paintbrush, Play, Trash2 } from 'lucide-vue-next'
+import { Endge } from '@endge/core'
+import { Paintbrush, Play } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { isDeleted as isEntityDeleted } from '@/features/endge-ide/model/domain/domain-tree'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-
-/** Родительский вид удалён (нет в домене или помечен удалённым). */
-function isParentViewDead(viewIdentity: string): boolean {
-  const view = Endge.domain.getView(viewIdentity)
-  if (!view) return true
-  const softId = Endge.domain.getFolderByIdentity('soft-deleted')?.id ?? null
-  return isEntityDeleted(view, softId)
-}
-
-interface LeakItem {
-  id: string
-  docType: DomainDocumentType
-  name: string
-}
 
 interface StyleCheckError {
   styleId: string
@@ -115,67 +100,13 @@ function runStyleValidation(): StyleCheckError[] {
   return errors
 }
 
-const activeMenuId = ref<string>('inherited-leaks')
-const leaks = ref<LeakItem[]>([])
+const activeMenuId = ref<string>('styles-check')
 const styleErrors = ref<StyleCheckError[]>([])
-const running = ref(false)
-const hasRun = ref(false)
 const stylesCheckRun = ref(false)
 
 const menuItems = [
-  { id: 'inherited-leaks', label: 'Утечки inherited', icon: AlertTriangle },
   { id: 'styles-check', label: 'Проверка стилей', icon: Paintbrush },
 ] as const
-
-async function runInheritedLeaks(): Promise<void> {
-  running.value = true
-  hasRun.value = false
-  toast.info('Запуск анализа…', { description: 'Поиск утечек inherited' })
-
-  await new Promise<void>(r => setTimeout(r, 0))
-
-  const result: LeakItem[] = []
-  const checkInherited = (entity: { inherited?: boolean; id?: string; identity?: string; name?: string; displayName?: string; meta?: { inheritedFrom?: Array<{ docType?: string; docIdentity?: string }> } }, docType: DomainDocumentType) => {
-    if (!entity?.inherited) return
-    const from = entity.meta?.inheritedFrom
-    if (!Array.isArray(from)) return
-    for (const ref of from) {
-      if (ref?.docType !== 'view' || !ref?.docIdentity) continue
-      if (isParentViewDead(ref.docIdentity)) {
-        const id = entity.id ?? entity.identity ?? ''
-        const name = entity.name ?? entity.displayName ?? id
-        result.push({ id, docType, name })
-        break
-      }
-    }
-  }
-
-  try {
-    for (const c of Endge.domain.getComponents()) {
-      checkInherited(c as any, c.type as DomainDocumentType)
-    }
-    for (const q of Endge.domain.getQueries()) {
-      checkInherited(q as any, q.type)
-    }
-    for (const f of Endge.domain.getFilters()) {
-      checkInherited(f as any, FilterType.DefaultFilter as DomainDocumentType)
-    }
-    leaks.value = result
-    hasRun.value = true
-    if (result.length > 0) {
-      toast.success('Анализ завершён', { description: `Найдено утечек: ${result.length}` })
-    } else {
-      toast.success('Анализ завершён', { description: 'Проблем не найдено' })
-    }
-  } catch (e) {
-    hasRun.value = true
-    leaks.value = []
-    console.error(e)
-    toast.error('Ошибка анализа', { description: (e as Error)?.message })
-  } finally {
-    running.value = false
-  }
-}
 
 function runStylesCheck(): void {
   styleErrors.value = runStyleValidation()
@@ -191,27 +122,6 @@ function openStyle(styleId: string): void {
   EndgeIDE.tabs.openDocument(styleId, 'style')
 }
 
-function openEntity(item: LeakItem): void {
-  EndgeIDE.tabs.openDocument(item.id, item.docType)
-}
-
-async function deleteLeak(item: LeakItem): Promise<void> {
-  const id = item.id
-  const type = item.docType
-  try {
-    await Endge.schema.deleteDocumentHard(id, type)
-    if (type === (FilterType.DefaultFilter as DomainDocumentType)) Endge.domain.removeFilter(id)
-    else if (type === QueryType.REST || type === QueryType.GraphQL || type === QueryType.Custom) Endge.domain.removeQuery(id)
-    else if (type === ComponentType.Table || type === ComponentType.DSL) Endge.domain.removeComponent(id)
-    EndgeIDE.tabs.closeTab(`${type}-${id}`)
-    leaks.value = leaks.value.filter(l => l.id !== id || l.docType !== type)
-    Endge.domain.notify()
-    toast.success('Сущность удалена')
-  } catch (e) {
-    console.error(e)
-    toast.error('Не удалось удалить', { description: (e as Error)?.message })
-  }
-}
 </script>
 
 <template>
@@ -240,60 +150,7 @@ async function deleteLeak(item: LeakItem): Promise<void> {
       </ScrollArea>
     </nav>
     <div class="flex-1 min-w-0 flex flex-col">
-      <template v-if="activeMenuId === 'inherited-leaks'">
-        <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b">
-          <Button
-            size="sm"
-            :disabled="running"
-            @click="runInheritedLeaks"
-          >
-            <Loader2 v-if="running" class="size-4 mr-1 animate-spin" />
-            <Play v-else class="size-4 mr-1" />
-            {{ running ? 'Анализ…' : 'Запустить' }}
-          </Button>
-        </div>
-        <ScrollArea class="flex-1">
-          <div class="p-4 space-y-4">
-            <p v-if="!hasRun && !running" class="text-sm text-muted-foreground">
-              Нажмите «Запустить», чтобы найти сущности с флагом inherited, у которых родительский вид удалён.
-            </p>
-
-            <section v-if="hasRun" class="space-y-2">
-              <h3 class="text-sm font-medium">
-                Результат анализа
-              </h3>
-              <p v-if="leaks.length === 0" class="text-sm text-muted-foreground">
-                Проблем не найдено.
-              </p>
-              <ul v-else class="space-y-1">
-                <li
-                  v-for="item in leaks"
-                  :key="`${item.docType}-${item.id}`"
-                  class="flex items-center gap-2 rounded-md border px-3 py-2 group hover:bg-muted/50"
-                >
-                  <button
-                    type="button"
-                    class="flex-1 min-w-0 text-left text-sm truncate"
-                    @click="openEntity(item)"
-                  >
-                    {{ item.name || item.id }}
-                  </button>
-                  <button
-                    type="button"
-                    class="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition"
-                    title="Удалить сущность"
-                    @click.stop="deleteLeak(item)"
-                  >
-                    <Trash2 class="size-4" />
-                  </button>
-                </li>
-              </ul>
-            </section>
-          </div>
-        </ScrollArea>
-      </template>
-
-      <template v-else-if="activeMenuId === 'styles-check'">
+      <template v-if="activeMenuId === 'styles-check'">
         <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b">
           <Button
             size="sm"

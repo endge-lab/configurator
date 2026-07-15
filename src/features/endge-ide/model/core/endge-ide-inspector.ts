@@ -19,7 +19,6 @@ import StyleInspector from '@/features/endge-ide/ui/section/inspectors/Style_Ins
 import VocabsInspector from '@/features/endge-ide/ui/section/inspectors/Vocabs_Inspector.vue'
 import AuthProfileInspector from '@/features/endge-ide/ui/section/inspectors/AuthProfile_Inspector.vue'
 import I18nBundlesInspector from '@/features/endge-ide/ui/section/inspectors/I18nBundles_Inspector.vue'
-import ViewInspector from '@/features/endge-ide/ui/section/inspectors/View_Inspector.vue'
 import FilterInspector from '@/features/endge-ide/ui/section/inspectors/Filter_Inspector.vue'
 import ParameterInspector from '@/features/endge-ide/ui/section/inspectors/Parameter_Inspector.vue'
 import TableInspector from '@/features/endge-ide/ui/section/inspectors/Table_Inspector.vue'
@@ -97,7 +96,6 @@ export class EndgeIDEInspector {
     ['vocabs', markRaw(VocabsInspector)],
     ['auth-profile', markRaw(AuthProfileInspector)],
     ['i18n-bundles', markRaw(I18nBundlesInspector)],
-    ['view', markRaw(ViewInspector)],
     ['page', markRaw(PageInspector)],
     ['page-template', markRaw(PageTemplateInspector)],
     ['navigation', markRaw(NavigationInspector)],

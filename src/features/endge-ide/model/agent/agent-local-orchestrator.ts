@@ -28,14 +28,12 @@ export interface LocalOrchestratorResult {
 type DocumentHint =
   | "table"
   | "dsl"
-  | "view"
   | "query"
   | "component"
   | "document";
 type RuntimeHint =
   | "component"
   | "query"
-  | "view"
   | "action"
   | "page"
   | "project"
@@ -63,9 +61,9 @@ const AUTOFILL_DATAPATH_RE =
   /\b(подставь|заполни|автозаполн|свяжи|auto[\s-]*fill|fill)\b.*\b(data[\s-]*path|данн|колонк|accessor)\b/i;
 
 const OPEN_DOC_PREFIX_RE =
-  /^(документ|таблиц[ауые]?|столбец|вид|запрос|компонент|component|table|view|query)\s+/i;
+  /^(документ|таблиц[ауые]?|столбец|запрос|компонент|component|table|query)\s+/i;
 const DUPLICATE_DOC_PREFIX_RE =
-  /^(документ|таблиц[ауые]?|вид|запрос|компонент|component|table|view|query)\s+/i;
+  /^(документ|таблиц[ауые]?|запрос|компонент|component|table|query)\s+/i;
 
 const DUPLICATE_SUPPORTED_DOCUMENT_TYPES = new Set([
   "query-gql",
@@ -73,7 +71,6 @@ const DUPLICATE_SUPPORTED_DOCUMENT_TYPES = new Set([
   "query-custom",
   "component-dsl",
   "component-table",
-  "view",
   "action",
   "converter",
   "integration",
@@ -170,11 +167,6 @@ const SINGLETON_ALIASES: Array<{
   summary: string;
 }> = [
   {
-    viewId: "view-generator",
-    patterns: [/\bгенератор\b/i, /\bview[\s-]*generator\b/i],
-    summary: "Открываю вкладку Генератор.",
-  },
-  {
     viewId: "dsl-playground",
     patterns: [/\bdsl[\s-]*песочниц/i, /\bdsl[\s-]*playground\b/i],
     summary: "Открываю вкладку DSL Playground.",
@@ -214,7 +206,6 @@ const SINGLETON_ALIASES: Array<{
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   "component-table": "таблица",
   "component-dsl": "DSL-компонент",
-  view: "вид",
   "query-gql": "GraphQL-запрос",
   "query-rest": "REST-запрос",
   "query-custom": "кастомный запрос",
@@ -344,7 +335,6 @@ function hasPattern(text: string, patterns: RegExp[]): boolean {
 function detectDocumentHint(normalized: string): DocumentHint {
   if (/\b(dsl|jsx)\b/.test(normalized)) return "dsl";
   if (/\b(таблиц|table)\b/.test(normalized)) return "table";
-  if (/\b(вид|view)\b/.test(normalized)) return "view";
   if (/\b(запрос|query)\b/.test(normalized)) return "query";
   if (/\b(компонент|component)\b/.test(normalized)) return "component";
   return "document";
@@ -354,7 +344,6 @@ function scoreByHint(documentType: string, hint: DocumentHint): number {
   const isQuery = documentType.startsWith("query-");
   const isTable = documentType === "component-table";
   const isDsl = documentType === "component-dsl";
-  const isView = documentType === "view";
 
   if (hint === "table") {
     if (isTable) return 40;
@@ -366,7 +355,6 @@ function scoreByHint(documentType: string, hint: DocumentHint): number {
     if (isTable) return -30;
     return -8;
   }
-  if (hint === "view") return isView ? 40 : -8;
   if (hint === "query") return isQuery ? 40 : -8;
   if (hint === "component") {
     if (isTable) return 24;
@@ -376,7 +364,6 @@ function scoreByHint(documentType: string, hint: DocumentHint): number {
 
   if (isTable) return 18;
   if (isDsl) return 8;
-  if (isView) return 6;
   if (isQuery) return 5;
   return 0;
 }
@@ -460,7 +447,6 @@ function toDocChoiceNeed(name: string, ranked: RankedEntity[]): FrontendNeed {
 function runtimeTypeByDocumentType(documentType: string): RuntimeHint {
   if (documentType.startsWith("query-")) return "query";
   if (documentType.startsWith("component-")) return "component";
-  if (documentType === "view") return "view";
   if (documentType === "action") return "action";
   if (documentType === "page") return "page";
   if (documentType === "project") return "project";
@@ -478,9 +464,6 @@ function runtimeTypeByEntityType(entityType: string): RuntimeHint {
     case "component-table":
     case "component-dsl":
       return "component";
-    case "view":
-    case "views":
-      return "view";
     case "action":
     case "actions":
       return "action";
@@ -499,7 +482,6 @@ function detectRuntimeHint(normalized: string): RuntimeHint {
   if (/\b(запрос|query)\b/.test(normalized)) return "query";
   if (/\b(таблиц|компонент|component|table)\b/.test(normalized))
     return "component";
-  if (/\b(вид|view)\b/.test(normalized)) return "view";
   if (/\b(действи|action)\b/.test(normalized)) return "action";
   if (/\b(страниц|page)\b/.test(normalized)) return "page";
   if (/\b(проект|project)\b/.test(normalized)) return "project";

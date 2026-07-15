@@ -12,7 +12,6 @@
 ```ts
 type EndgeProjectId = string
 type EndgeEnvId = string
-type EndgeViewId = string
 type EndgeComponentId = string
 type EndgeActionId = string
 ```
@@ -53,7 +52,6 @@ interface Props {
 
 - `EndgeGen.ProjectId`
 - `EndgeGen.EnvId`
-- `EndgeGen.ViewId`
 - `EndgeGen.PageId`
 - `EndgeGen.ComponentId`
 - `EndgeGen.QueryId`

@@ -768,8 +768,6 @@ const selectedInputAcceptSectionTypes = computed<DomainSectionType[]>(() => {
     'type': DomainSectionType.Type,
     'vocabs': DomainSectionType.Vocabs,
     'vocab': DomainSectionType.Vocabs,
-    'views': DomainSectionType.View,
-    'view': DomainSectionType.View,
   }
 
   const sectionType = mapping[target.toLowerCase()]
@@ -813,8 +811,6 @@ const selectedInputReferenceOptions = computed(() => {
     'types': domainStore.types as Array<Record<string, unknown>> | undefined,
     'vocab': domainStore.vocabs as Array<Record<string, unknown>> | undefined,
     'vocabs': domainStore.vocabs as Array<Record<string, unknown>> | undefined,
-    'view': domainStore.views as Array<Record<string, unknown>> | undefined,
-    'views': domainStore.views as Array<Record<string, unknown>> | undefined,
   }
 
   return (sourceMap[target] ?? [])
@@ -1343,7 +1339,6 @@ function getReferenceHintText(): string {
     [DomainSectionType.Style]: 'стиль',
     [DomainSectionType.Type]: 'тип',
     [DomainSectionType.Vocabs]: 'словарь',
-    [DomainSectionType.View]: 'представление',
   }
 
   return `Или перетащите сюда ${labels[sectionType] ?? 'сущность'} из домена`

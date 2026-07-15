@@ -55,7 +55,6 @@ const DOMAIN_SLICE_KEYS = [
   'queries',
   'components',
   'folders',
-  'views',
   'filters',
   'actions',
   'integrations',
@@ -124,7 +123,6 @@ const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'query-gql': 'queries',
   'query-rest': 'queries',
   'query-custom': 'queries',
-  'view': 'views',
   'type': 'types',
   'primitive': 'types',
   'action': 'actions',
@@ -150,7 +148,6 @@ function getDocumentType(
   sliceKey: string,
   rec: Record<string, unknown>,
 ): string {
-  if (sliceKey === 'views') { return 'view' }
   if (sliceKey === 'queries') {
     const t = String(rec.type ?? rec.kind ?? 'gql').toLowerCase()
     if (t.includes('rest')) { return 'query-rest' }
@@ -247,7 +244,6 @@ const ITERATE_ENTITY_KEYS = [
   'types',
   'queries',
   'components',
-  'views',
   'actions',
   'parameters',
   'filters',
@@ -274,7 +270,6 @@ const SLICE_TO_CONTEXT_KEY: Record<string, string> = {
   'types': 'types',
   'queries': 'queries',
   'components': 'components',
-  'views': 'views',
   'actions': 'actions',
   'parameters': 'parameters',
   'filters': 'filters',
@@ -591,15 +586,6 @@ const CONTEXT_HINTS = computed<Array<{ label: string, text: string }>>(() => {
       {
         label: 'Подставить dataPaths через LLM',
         text: 'В инспекторе таблицы есть кнопка «Подставить через LLM» — она подставит привязки данных по ответу запроса и полям компонента. Кратко объясни, как ей пользоваться.',
-      },
-      ...base,
-    ]
-  }
-  if (docType === 'view') {
-    return [
-      {
-        label: 'Как связать вид с запросом и компонентом',
-        text: 'Объясни, как связать вид с запросом и компонентом отображения.',
       },
       ...base,
     ]

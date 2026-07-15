@@ -40,8 +40,6 @@ export interface DragPayloadItem {
   sectionType: DomainSectionType
   docType: DomainDocumentType
   rootId: string
-  /** Признак дочерней сущности вида (component/filter/query внутри view). */
-  isViewChild?: boolean
 }
 
 /** Цель drop-операции. */
@@ -100,7 +98,6 @@ const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',
   [DomainSectionType.Filters]: 'root-filters',
-  [DomainSectionType.View]: 'root-views',
   [DomainSectionType.Environment]: 'root-environments',
   [DomainSectionType.Tenant]: 'root-tenants',
   [DomainSectionType.Policy]: 'root-policies',
@@ -134,7 +131,6 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
 
 const SCHEMA_HARD_DELETE_TYPES = new Set<DomainDocumentType>([
   ...SCHEMA_SOFT_DELETE_TYPES,
-  'view',
   'environment',
   'tenant',
   'policy',
@@ -150,7 +146,6 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
   'action',
   'converter',
   'integration',
-  'view',
   'environment',
   'tenant',
   'policy',
@@ -425,7 +420,6 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
           id: item.id,
           sectionType: item.sectionType,
           docType: item.docType,
-          isViewChild: item.isViewChild,
         })
         result.moved++
       }
@@ -454,12 +448,6 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
         result.skipped++
         result.errors.push(`«${item.id}»: ${(err as Error)?.message ?? 'ошибка смены роли композиции'}`)
       }
-      continue
-    }
-
-    if (item.isViewChild) {
-      result.skipped++
-      result.errors.push(`«${item.id}»: дочернюю сущность вида нельзя перемещать`)
       continue
     }
 
@@ -510,15 +498,9 @@ async function reclassifyComposition(
 }
 
 /**
- * Выполняет мягкое удаление сущности и очищает ссылки view-child.
+ * Выполняет мягкое удаление сущности.
  */
-async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'docType' | 'isViewChild'>): Promise<void> {
-  if (node.isViewChild) {
-    const kind = kindBySection(node.sectionType)
-    if (kind)
-      await clearEntityRefsInViews(node.id, kind)
-  }
-
+async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'docType'>): Promise<void> {
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
     await Endge.schema.deleteDocument(node.id, node.docType)
   }
@@ -539,12 +521,6 @@ async function hardDeleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
   if (!node.isInDeletedFolder)
     throw new Error('Жёсткое удаление доступно только для сущностей из папки «Удалённые»')
 
-  if (node.sectionType === DomainSectionType.View) {
-    const deletedDocs = await hardDeleteViewWithInherited(node.id)
-    Endge.domain.notify()
-    return { mode: 'hard', deletedDocs }
-  }
-
   if (!SCHEMA_HARD_DELETE_TYPES.has(node.docType))
     throw new Error(`Жёсткое удаление не поддерживается для типа: ${node.docType}`)
 
@@ -555,124 +531,6 @@ async function hardDeleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
     mode: 'hard',
     deletedDocs: [{ id: node.id, docType: node.docType }],
   }
-}
-
-/**
- * Удаляет view и его зависимые inherited-сущности.
- */
-async function hardDeleteViewWithInherited(viewId: string): Promise<DeletedDocumentRef[]> {
-  const deleted: DeletedDocumentRef[] = []
-  const view = Endge.domain.getView(viewId)
-
-  if (view) {
-    const deps = collectInheritedOnlyDependencies(viewId)
-    for (const dep of deps) {
-      await Endge.schema.deleteDocumentHard(dep.id, dep.docType)
-      removeEntityFromDomain(dep.id, dep.sectionType)
-      deleted.push({ id: dep.id, docType: dep.docType })
-    }
-  }
-
-  await Endge.schema.deleteDocumentHard(viewId, 'view')
-  removeEntityFromDomain(viewId, DomainSectionType.View)
-  deleted.push({ id: viewId, docType: 'view' })
-  return deleted
-}
-
-/**
- * Собирает зависимости view, которые наследуются только от него.
- */
-function collectInheritedOnlyDependencies(viewId: string): Array<{ id: string, docType: DomainDocumentType, sectionType: DomainSectionType }> {
-  const out: Array<{ id: string, docType: DomainDocumentType, sectionType: DomainSectionType }> = []
-  const view = Endge.domain.getView(viewId)
-  if (!view)
-    return out
-
-  if (view.filterId) {
-    const f = Endge.domain.getFilter(view.filterId)
-    if (isInheritedOnlyFromView(f, viewId)) {
-      out.push({
-              id: String(view.filterId),
-        docType: FilterType.DefaultFilter as DomainDocumentType,
-        sectionType: DomainSectionType.Filters,
-      })
-    }
-  }
-
-  if (view.queryId) {
-    const q = Endge.domain.getQuery(view.queryId)
-    if (isInheritedOnlyFromView(q, viewId) && q?.type) {
-      out.push({
-              id: String(view.queryId),
-        docType: q.type,
-        sectionType: DomainSectionType.Query,
-      })
-    }
-  }
-
-  if (view.componentId) {
-    const c = Endge.domain.getComponent(view.componentId)
-    if (isInheritedOnlyFromView(c, viewId) && c?.type) {
-      out.push({
-              id: String(view.componentId),
-        docType: c.type as DomainDocumentType,
-        sectionType: DomainSectionType.Component,
-      })
-    }
-  }
-
-  return out
-}
-
-/**
- * Проверяет, что inherited-сущность связана только с указанным view.
- */
-function isInheritedOnlyFromView(
-  entity: { inherited?: boolean, meta?: { inheritedFrom?: Array<{ docType?: string, docIdentity?: string }> } } | null,
-  viewId: string,
-): boolean {
-  if (!entity?.inherited)
-    return false
-  const from = entity.meta?.inheritedFrom
-  if (!Array.isArray(from) || from.length !== 1)
-    return false
-  const ref = from[0]
-  return ref?.docType === 'view' && ref?.docIdentity === viewId
-}
-
-/**
- * Обнуляет ссылки во всех view на указанную сущность.
- */
-async function clearEntityRefsInViews(entityId: string, kind: 'component' | 'filter' | 'query'): Promise<void> {
-  const views = Endge.domain.getViews()
-  for (const view of views) {
-    const current = kind === 'component' ? view.componentId : kind === 'filter' ? view.filterId : view.queryId
-    if (current == null || String(current) !== String(entityId))
-      continue
-
-    const mutableView = view as any
-    if (kind === 'component')
-      mutableView.componentId = null
-    else if (kind === 'filter')
-      mutableView.filterId = null
-    else
-      mutableView.queryId = null
-
-    await Endge.schema.saveDocument(view.id, 'view')
-  }
-}
-
-/**
- * Возвращает тип связки view по секции домена.
- */
-function kindBySection(sectionType: DomainSectionType): 'component' | 'filter' | 'query' | null {
-  if (sectionType === DomainSectionType.Component)
-    return 'component'
-  if (sectionType === DomainSectionType.Filters)
-    return 'filter'
-  if (sectionType === DomainSectionType.Query)
-    return 'query'
-  return null
 }
 
 /**
@@ -817,9 +675,6 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
   else if (sectionType === DomainSectionType.Integration) {
     byId(entityId, identity, (x: any) => Endge.domain.removeIntegrationById?.(x), x => Endge.domain.removeIntegration(x))
   }
-  else if (sectionType === DomainSectionType.View) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeViewById?.(x), x => Endge.domain.removeView(x))
-  }
   else if (sectionType === DomainSectionType.Environment) {
     byId(entityId, identity, (x: any) => Endge.domain.removeEnvironmentById?.(x), x => Endge.domain.removeEnvironment(x))
   }
@@ -898,8 +753,6 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getComputationById(numId) : null) ?? Endge.domain.getComputation(id)
   if (sectionType === DomainSectionType.Integration)
     return (numId != null ? Endge.domain.getIntegrationById(numId) : null) ?? Endge.domain.getIntegration(id)
-  if (sectionType === DomainSectionType.View)
-    return (numId != null ? Endge.domain.getViewById(numId) : null) ?? Endge.domain.getView(id)
   if (sectionType === DomainSectionType.Environment)
     return (numId != null ? Endge.domain.getEnvironmentById(numId) : null) ?? Endge.domain.getEnvironment(id)
   if (sectionType === DomainSectionType.Tenant)
@@ -959,8 +812,6 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
     return DomainSectionType.Computation
   if (Endge.domain.getIntegrations().some(hasInBranch))
     return DomainSectionType.Integration
-  if (Endge.domain.getViews().some(hasInBranch))
-    return DomainSectionType.View
   if (Endge.domain.getEnvironments().some(hasInBranch))
     return DomainSectionType.Environment
   if (Endge.domain.getTenants().some(hasInBranch))

@@ -15,7 +15,6 @@ const SECTION_LABELS: Record<string, string> = {
   [DomainSectionType.Filters]: 'фильтр',
   [DomainSectionType.Query]: 'запрос',
   [DomainSectionType.Type]: 'тип',
-  [DomainSectionType.View]: 'представление',
   [DomainSectionType.Integration]: 'интеграция',
   [DomainSectionType.Parameters]: 'параметр',
   [DomainSectionType.PageTemplate]: 'шаблон страницы',

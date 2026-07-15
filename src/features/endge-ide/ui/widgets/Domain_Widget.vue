@@ -20,7 +20,6 @@ import {
   Copy,
   Database,
   Download,
-  Eye,
   FileCode2,
   FileWarning,
   Filter,
@@ -31,7 +30,6 @@ import {
   KeyRound,
   Layout,
   Languages,
-  Link,
   Loader2,
   Network,
   Palette,
@@ -266,7 +264,6 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     sectionType: (it.node as FsFileNode).sectionType,
     docType: (it.node as FsFileNode).docType,
     rootId: it.rootId,
-    isViewChild: (it.node as FsFileNode).isViewChild ?? false,
   }))
   const json = JSON.stringify(payload)
   e.dataTransfer.setData('text/plain', json)
@@ -423,7 +420,6 @@ const ROOT_TO_SECTION = computed(() => {
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
     'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeletedAndInherited(domainStore.filters, softId) },
-    'root-views': { section: DomainSectionType.View, items: () => withoutDeleted(domainStore.views, softId) },
     'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters, softId) },
     'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations(), softId) },
     'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters, softId) },
@@ -466,7 +462,6 @@ const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
   Building2,
   Columns,
   Database,
-  Eye,
   FileCode2,
   FileWarning,
   Filter,
@@ -511,7 +506,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-computations': createSectionPresentation(DomainSectionType.Computation),
   'root-integrations': createSectionPresentation(DomainSectionType.Integration),
   'root-filters': createSectionPresentation(DomainSectionType.Filters),
-  'root-views': createSectionPresentation(DomainSectionType.View),
   'root-environments': createSectionPresentation(DomainSectionType.Environment),
   'root-tenants': createSectionPresentation(DomainSectionType.Tenant),
   'root-policies': createSectionPresentation(DomainSectionType.Policy),
@@ -551,7 +545,6 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   'action',
   'computation',
   'integration',
-  'view',
   'environment',
   'tenant',
   'policy',
@@ -1017,10 +1010,9 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
 }
 
 // ---------- ui helpers ----------
-function rowPaddingStyle(depth: number, isViewChild?: boolean): Record<string, string> {
-  const base = isViewChild ? (depth - 1) * 12 + 4 : depth * 12
-  const extra = isViewChild ? 6 : 0
-  return { paddingLeft: `${base + extra}px` }
+function rowPaddingStyle(depth: number, isNestedEntity = false): Record<string, string> {
+  const base = isNestedEntity ? (depth - 1) * 12 + 4 : depth * 12
+  return { paddingLeft: `${base + (isNestedEntity ? 6 : 0)}px` }
 }
 
 function rowClasses(item: FlatFsItem): string {
@@ -1030,14 +1022,11 @@ function rowClasses(item: FlatFsItem): string {
     = item.node.type === 'folder'
       && isSystemTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
-  const node = item.node as FsFileNode
-  const nonInheritedViewChild = node.isViewChild && !node.viewChildInherited
   return [
     'flex items-center gap-1 py-0.5 px-1 rounded cursor-pointer select-none',
     isMutedSystemFolder ? 'text-slate-600' : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
-    nonInheritedViewChild ? 'opacity-60' : '',
   ].filter(Boolean).join(' ')
 }
 </script>
@@ -1122,8 +1111,8 @@ function rowClasses(item: FlatFsItem): string {
               v-for="it in block.items"
               :key="it.path"
               :class="rowClasses(it)"
-              :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isViewChild || (it.node as FsFileNode).isTableColumn)"
-              :draggable="it.node.type === 'file' && !(it.node as FsFileNode).isTableColumn && !(it.node as FsFileNode).isViewChild"
+              :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
+              :draggable="it.node.type === 'file' && !(it.node as FsFileNode).isTableColumn"
               @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
               @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
               @dragstart="(e) => onDragStart(e, it)"
@@ -1144,20 +1133,16 @@ function rowClasses(item: FlatFsItem): string {
 
               <template v-else>
                 <ChevronDown
-                  v-if="((it.node as FsFileNode).docType === 'view' || (it.node as FsFileNode).children?.length) && folderIsExpanded(it.path)"
+                  v-if="(it.node as FsFileNode).children?.length && folderIsExpanded(it.path)"
                   class="size-4 shrink-0"
                   @click.stop="toggleFolder(it.path)"
                 />
                 <ChevronRight
-                  v-else-if="(it.node as FsFileNode).docType === 'view' || (it.node as FsFileNode).children?.length"
+                  v-else-if="(it.node as FsFileNode).children?.length"
                   class="size-4 shrink-0"
                   @click.stop="toggleFolder(it.path)"
                 />
                 <span v-else class="size-4 shrink-0 ml-1 inline-block" />
-                <Link
-                  v-if="(it.node as FsFileNode).isViewChild"
-                  class="size-4 shrink-0 text-muted-foreground mr-1"
-                />
                 <Columns
                   v-if="(it.node as FsFileNode).isTableColumn"
                   class="size-4 shrink-0 text-sky-500 mr-1"

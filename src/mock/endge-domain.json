@@ -2550,23 +2550,6 @@
         "fields": []
       },
       {
-        "id": "RefView",
-        "identity": "RefView",
-        "name": "RefView",
-        "description": null,
-        "folderId": 36,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {
-          "target": "views",
-          "storage": "id",
-          "primitiveKind": "reference"
-        },
-        "isPrimitive": true,
-        "fields": []
-      },
-      {
         "id": "RefVocab",
         "identity": "RefVocab",
         "name": "RefVocab",
@@ -3150,7 +3133,6 @@
       }
     ],
     "integrations": [],
-    "views": [],
     "folders": [
       {
         "id": 37,
@@ -3319,20 +3301,6 @@
         "meta": {},
         "entityType": "components",
         "parent": 1
-      },
-      {
-        "id": 46,
-        "identity": "folder-J4Bjz",
-        "displayName": "Новая папка",
-        "name": "Новая папка",
-        "description": null,
-        "folderId": null,
-        "project": null,
-        "isSystem": false,
-        "inherited": false,
-        "meta": {},
-        "entityType": "views",
-        "parent": 29
       },
       {
         "id": 33,
@@ -3654,20 +3622,6 @@
         "inherited": false,
         "meta": {},
         "entityType": "types",
-        "parent": null
-      },
-      {
-        "id": 12,
-        "identity": "root-views",
-        "displayName": "Виды",
-        "name": "Виды",
-        "description": null,
-        "folderId": null,
-        "project": null,
-        "isSystem": true,
-        "inherited": false,
-        "meta": {},
-        "entityType": "views",
         "parent": null
       },
       {

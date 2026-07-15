@@ -20,7 +20,6 @@ export type BackupRestoreEntityKind =
   | 'style'
   | 'vocabs'
   | 'auth-profile'
-  | 'view'
   | 'page-template'
   | 'page'
   | 'navigation'

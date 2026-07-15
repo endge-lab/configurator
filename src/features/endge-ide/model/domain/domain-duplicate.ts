@@ -45,8 +45,6 @@ export function getEntityByDocType(
       return domain.getAction(id)
     case 'integration':
       return domain.getIntegration(id)
-    case 'view':
-      return domain.getView(id)
     case 'environment':
       return domain.getEnvironment(id)
     case 'tenant':

@@ -40,7 +40,7 @@ Runtime-сущность - это не просто запись в домене
 
 - `EventContract` - каталог допустимых событий;
 - `Binding` - сохраняемая конфигурация реакции;
-- `Project / Page / View` - доменные сущности, которые пока ещё не доведены до общего runtime-host слоя;
+- `Project / Page` - доменные сущности, которые пока ещё не доведены до общего runtime-host слоя;
 - `RuntimeBindingScope` - это описание binding-контекста, а не root runtime-сущность.
 
 ---
@@ -69,7 +69,6 @@ For SFC components this includes reactive input bindings and collection projecti
 
 - `Project`
 - `Page`
-- `View`
 
 Тогда весь runtime становится единообразным:
 

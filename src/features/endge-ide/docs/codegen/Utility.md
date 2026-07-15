@@ -53,7 +53,6 @@ import { EndgeGen } from '@/gen'
 
 type ProjectId = EndgeGen.ProjectId
 type EnvId = EndgeGen.EnvId
-type ViewId = EndgeGen.ViewId
 ```
 
 Пример `index.ts`:
@@ -86,14 +85,6 @@ interface ShellProps {
   project: EndgeGen.ProjectId
   env: EndgeGen.EnvId
 }
-```
-
-или:
-
-```ts
-import { EndgeGen } from '@/gen'
-
-const viewId: EndgeGen.ViewId = 'main-view'
 ```
 
 Если в текущем snapshot конкретная сущность отсутствует, generated type для нее откатывается к базовому типу из `@endge/core`, а не ломает сборку.

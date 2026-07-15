@@ -33,17 +33,6 @@ function getSoftDeletedItems(domainStore: ReturnType<typeof useDomainStore>): So
   return raw.map(({ id, name, type, sectionType }) => ({ id, name, type, sectionType }))
 }
 
-function isInheritedOnlyFromView(
-  entity: { inherited?: boolean; meta?: { inheritedFrom?: Array<{ docType?: string; docIdentity?: string }> } } | null,
-  viewId: string,
-): boolean {
-  if (!entity?.inherited) return false
-  const from = entity.meta?.inheritedFrom
-  if (!Array.isArray(from) || from.length !== 1) return false
-  const ref = from[0]
-  return ref?.docType === 'view' && ref?.docIdentity === viewId
-}
-
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
@@ -72,9 +61,6 @@ async function clearAll(): Promise<void> {
   loading.value = true
   try {
     await EndgeIDE.runBusy((async () => {
-    const nonViews = items.filter(i => i.sectionType !== DomainSectionType.View)
-    const views = items.filter(i => i.sectionType === DomainSectionType.View)
-
     const closeTab = (id: string, docType: DomainDocumentType) => {
       EndgeIDE.tabs.closeTab(`${docType}-${id}`)
     }
@@ -93,9 +79,9 @@ async function clearAll(): Promise<void> {
       'store',
       'auth-profile',
     ])
-    const deletableNonViews = nonViews.filter(i => i.type && supportedDocTypes.has(i.type))
+    const deletableItems = items.filter(i => i.type && supportedDocTypes.has(i.type))
 
-    for (const item of deletableNonViews) {
+    for (const item of deletableItems) {
       const type = item.type!
       await Endge.schema.deleteDocumentHard(item.id, type)
       if (type === ComponentType.Table || type === ComponentType.DSL) Endge.domain.removeComponent(item.id)
@@ -109,39 +95,8 @@ async function clearAll(): Promise<void> {
       closeTab(item.id, type)
     }
 
-    for (const item of views) {
-      const viewId = item.id
-      const view = Endge.domain.getView(viewId)
-      if (view) {
-        const toDelete: { id: string; type: DomainDocumentType }[] = []
-        if (view.filterId) {
-          const f = Endge.domain.getFilter(view.filterId)
-          if (f && isInheritedOnlyFromView(f, viewId)) toDelete.push({ id: String(view.filterId), type: FilterType.DefaultFilter as DomainDocumentType })
-        }
-        if (view.queryId) {
-          const q = Endge.domain.getQuery(view.queryId)
-          if (q && isInheritedOnlyFromView(q, viewId)) toDelete.push({ id: String(view.queryId), type: q.type })
-        }
-        if (view.componentId) {
-          const c = Endge.domain.getComponent(view.componentId)
-          if (c && isInheritedOnlyFromView(c, viewId)) toDelete.push({ id: String(view.componentId), type: c.type as DomainDocumentType })
-        }
-        for (const { id, type } of toDelete) {
-          await Endge.schema.deleteDocumentHard(id, type)
-          if (type === (FilterType.DefaultFilter as DomainDocumentType)) Endge.domain.removeFilter(id)
-          else if (type === QueryType.REST || type === QueryType.GraphQL || type === QueryType.Custom) Endge.domain.removeQuery(id)
-          else if (type === ComponentType.Table || type === ComponentType.DSL) Endge.domain.removeComponent(id)
-          closeTab(id, type)
-        }
-      }
-      await Endge.schema.deleteDocumentHard(viewId, 'view')
-      Endge.domain.removeView(viewId)
-      closeTab(viewId, 'view')
-    }
-
     Endge.domain.notify()
-    const totalDeleted = deletableNonViews.length + views.length
-    toast.success('Папка «Удалённые» очищена', { description: `Удалено сущностей: ${totalDeleted}` })
+    toast.success('Папка «Удалённые» очищена', { description: `Удалено сущностей: ${deletableItems.length}` })
     })())
     openModel.value = false
   } catch (e) {

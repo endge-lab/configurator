@@ -19,7 +19,6 @@ Runtime-сущность - это живой объект исполнения, 
 
 - `Project`
 - `Page`
-- `View`
 - `Query`
 - `Component`
 
@@ -92,7 +91,7 @@ Runtime-хост обычно имеет:
 
 Это тоже разные вещи.
 
-- `Runtime entity` - живой объект уровня `query / action / component-sfc / page / view`.
+- `Runtime entity` - живой объект уровня `query / action / component-sfc / page`.
 - `RuntimeBindingScope` - описание путей данных для binding и projection.
 
 Binding scope может использоваться внутри runtime entity, но он не заменяет сам runtime host.

@@ -21,7 +21,6 @@ const props = defineProps<{
         routeName?: string
         routePath?: string
         templateId?: string | number | null
-        controllerId?: string | number | null
         enabled?: boolean
       }
       previewModel?: {
@@ -31,7 +30,6 @@ const props = defineProps<{
         routeName?: string | null
         routePath?: string | null
         templateId?: string | number | null
-        controllerId?: string | number | null
         enabled?: boolean
         isSystem?: boolean
         areas?: unknown[]
@@ -49,7 +47,6 @@ type PageInspectorModel = {
   routeName?: string | null
   routePath?: string | null
   templateId?: string | number | null
-  controllerId?: string | number | null
   enabled?: boolean
   isSystem?: boolean
   areas?: unknown[]
@@ -81,15 +78,6 @@ const templateOptions = computed(() => {
     }))
     .filter((o: { value: string }) => o.value.length > 0)
 })
-const viewOptions = computed(() => {
-  const list = domainStore.views ?? []
-  return list
-    .map((v: any) => ({
-      value: v?.id != null ? String(v.id) : '',
-      label: `${v?.displayName ?? v?.name ?? v?.identity ?? v?.id ?? ''}`.trim() || String(v?.id ?? ''),
-    }))
-    .filter((o: { value: string }) => o.value.length > 0)
-})
 const areasCount = computed(() => {
   const fromEditor = model.value?.areas
   return Array.isArray(fromEditor) ? fromEditor.length : 0
@@ -99,12 +87,6 @@ function setTemplate(value: string | null): void {
   if (!editor.value)
     return
   editor.value.templateId = normalizeRelationId(value)
-}
-
-function setController(value: string | null): void {
-  if (!editor.value)
-    return
-  editor.value.controllerId = normalizeRelationId(value)
 }
 
 async function save(): Promise<void> {
@@ -187,18 +169,6 @@ async function save(): Promise<void> {
             placeholder="Выберите шаблон страницы"
             trigger-class="w-full h-9"
             @update:model-value="(v) => setTemplate(v != null ? String(v) : null)"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Контроллер</label>
-          <SearchableSelect
-            :model-value="editor?.controllerId != null ? String(editor.controllerId) : (model?.controllerId != null ? String(model.controllerId) : null)"
-            :options="viewOptions"
-            :disabled="isSystem"
-            placeholder="Выберите view-контроллер"
-            trigger-class="w-full h-9"
-            @update:model-value="(v) => setController(v != null ? String(v) : null)"
           />
         </div>
 

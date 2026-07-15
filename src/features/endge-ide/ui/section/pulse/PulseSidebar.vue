@@ -119,7 +119,6 @@ const pendingEntity = ref<{ id: string | number; sectionType: DomainSectionType 
 
 const droppableSections = [
   DomainSection.Project,
-  DomainSection.View,
   DomainSection.Page,
   DomainSection.Query,
   DomainSection.Store,
@@ -226,7 +225,7 @@ function openDomainEntity(hostId: string): void {
     return
   }
 
-  if (entityType === 'project' || entityType === 'view' || entityType === 'page' || entityType === 'action') {
+  if (entityType === 'project' || entityType === 'page' || entityType === 'action') {
     EndgeIDE.tabs.openDocument(identity, entityType as any)
     return
   }
@@ -611,7 +610,7 @@ function cancelLaunchDialog(): void {
         @entity-drop="handleEntityDrop"
       >
         <div class="rounded border border-dashed px-2 py-1 text-[11px] text-muted-foreground">
-          Drop zone: Project / View / Page / Query / Action / Component
+          Drop zone: Project / Page / Query / Action / Component
         </div>
       </DomainEntityDropTarget>
     </div>

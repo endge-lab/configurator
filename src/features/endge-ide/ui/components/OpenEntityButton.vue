@@ -29,8 +29,6 @@ const docType = computed((): DomainDocumentType | null => {
   }
   if (props.sectionType === DomainSectionType.Filters)
     return FilterType.DefaultFilter as DomainDocumentType
-  if (props.sectionType === DomainSectionType.View)
-    return 'view' as DomainDocumentType
   if (props.sectionType === DomainSectionType.Navigation)
     return 'navigation' as DomainDocumentType
   return null
