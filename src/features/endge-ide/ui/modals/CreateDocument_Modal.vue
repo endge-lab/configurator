@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, FilterType, QueryType } from '@endge/core'
+import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -429,8 +429,11 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'style') {
     return {
       ...base,
-      styles: {},
+      description: null,
+      source: ENDGE_STYLE_DEFAULT_SOURCE,
+      sourceVersion: 1,
       meta: {},
+      active: true,
     }
   }
 

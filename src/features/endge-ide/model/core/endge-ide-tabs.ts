@@ -1151,8 +1151,9 @@ export class EndgeIDETabs {
     const style = Endge.domain.getStyle(documentId)
     if (!style)
       return null
-    const editor = new RStyleEditor()
-    editor.fillFromSource(style)
+    const rawEditor = new RStyleEditor()
+    rawEditor.fillFromSource(style)
+    const editor = reactive(rawEditor as object) as RStyleEditor
     return {
       view: {
         component: markRaw(Style_Editor),

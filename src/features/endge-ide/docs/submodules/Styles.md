@@ -1,8 +1,7 @@
 # Endge.styles
 
-`Endge.styles` отвечает за инициализацию и применение стилей, связанных с доменными style-документами.
+`RStyle` is a source-first document. Payload stores only its canonical `source`, `sourceVersion`, metadata, and document relations.
 
-Что делает модуль:
-- синхронизирует style-конфигурацию домена с UI;
-- подготавливает CSS-правила и токены;
-- обновляет визуальное представление после изменений в стиле.
+На текущем этапе `Endge.styles` является lifecycle boundary для будущего EndgeCSS compiler/runtime. Модуль ещё не парсит source, не создаёт derived artifacts и не применяет CSS в DOM.
+
+Renderer-specific output for DOM, Canvas, or other targets must be produced later from one compiled EndgeCSS artifact. It must not become part of the persisted style document.

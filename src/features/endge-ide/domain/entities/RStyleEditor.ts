@@ -1,27 +1,53 @@
 import type { RStyle } from '@endge/core'
 
-/**
- * Модель редактора для RStyle (коллекция styles).
- */
+/** Editor state for a persisted source-first EndgeCSS document. */
 export class RStyleEditor {
-  id!: number
+  id!: string | number
   identity!: string
-  displayName!: string
-  styles!: Record<string, unknown>
+  name!: string
+  description: string = ''
+  source: string = ''
+  sourceVersion: number = 1
+  isSystem: boolean = false
+  diagnostics: string[] = []
 
   fillFromSource(source: RStyle): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
-    this.displayName = String(source.name ?? '').trim()
-    this.styles = (source.styles && typeof source.styles === 'object') ? { ...source.styles } : {}
+    this.name = source.displayName ?? source.name ?? this.identity
+    this.description = String(source.description ?? '')
+    this.source = String(source.source ?? '')
+    this.sourceVersion = Math.max(1, Number(source.sourceVersion ?? 1) || 1)
+    this.isSystem = source.isSystem === true
+    this.refreshDiagnostics()
   }
 
-  updateSource(source: RStyle): void {
-    source.id = this.id
-    if (!source.isSystem) {
-      source.identity = this.identity
-      source.name = this.displayName
+  updateSource(target: RStyle): void {
+    target.id = this.id as any
+    if (!target.isSystem) {
+      target.identity = this.identity.trim()
+      target.name = this.name.trim() || target.identity
+      target.displayName = target.name
     }
-    source.styles = (this.styles && typeof this.styles === 'object') ? { ...this.styles } : {}
+    target.description = this.description.trim() || null
+    target.source = this.source
+    target.sourceVersion = Math.max(1, Number(this.sourceVersion) || 1)
+  }
+
+  applySourceText(value: string): void {
+    this.source = value
+    this.refreshDiagnostics()
+  }
+
+  /** Structural checks only. EndgeCSS syntax validation belongs to the compiler stage. */
+  refreshDiagnostics(): void {
+    const diagnostics: string[] = []
+    if (!this.identity.trim()) {
+      diagnostics.push('Identity не может быть пустым.')
+    }
+    if (!Number.isInteger(Number(this.sourceVersion)) || Number(this.sourceVersion) < 1) {
+      diagnostics.push('sourceVersion должен быть целым числом больше нуля.')
+    }
+    this.diagnostics = diagnostics
   }
 }
