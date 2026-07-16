@@ -1,6 +1,7 @@
 packages:
   - '../../packages/@endge-codegen'
   - '../../packages/@endge-core'
+  - '../../packages/@endge-computation-sandbox'
   - '../../packages/@endge-raph'
   - '../../packages/@endge-utils'
   - '../../packages/@endge-vue'

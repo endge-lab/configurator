@@ -338,10 +338,7 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       description: null,
-      implementationKind: 'source',
-      sourceLanguage: 'typescript',
-      source: 'export default function compute(input: unknown, context: unknown): unknown {\n  return input\n}\n',
-      providerRef: null,
+      source: Endge.source.createDefault('computation'),
       sourceVersion: 1,
       contractVersion: 1,
       input: {},

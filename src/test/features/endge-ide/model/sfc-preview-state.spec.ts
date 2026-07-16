@@ -1,4 +1,4 @@
-import { Endge, RComponentSFC, RComputation, RField } from '@endge/core'
+import { Endge, RComponentSFC, RComputation } from '@endge/core'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -20,11 +20,12 @@ describe('ComponentSFC port preview', () => {
     computation.identity = 'preview-state'
     computation.name = 'preview-state'
     computation.displayName = 'Preview state'
-    computation.input = new RField('input', 'Input')
-    computation.output = new RField('output', 'Output')
-    computation.source = `export default function compute(input: Input): Output {
-  return { value: get(input, 'value') }
-}`
+    computation.source = `defineComputation({
+  outputs: {
+    state: { value: input('value') },
+  },
+  result: output('state'),
+})`
 
     const cell = new RComponentSFC()
     cell.id = 102
@@ -54,7 +55,7 @@ const ports = definePorts({
 })
 const state = ports.state({ value: props.value })
 </script>
-<template><Preview.Cell :point="state" /></template>`,
+<template><Preview.Cell :point="state.value" /></template>`,
     })
 
     expect(sfcPreviewRuntime.value?.entityIdentity).toBe('preview-owner')

@@ -1,4 +1,4 @@
-import type { ComputationImplementationKind, ComputationSourceLanguage, RComputation } from '@endge/core'
+import type { RComputation } from '@endge/core'
 
 import { RField } from '@endge/core'
 
@@ -8,10 +8,7 @@ export class RComputationEditor {
   identity!: string
   name!: string
   description: string = ''
-  implementationKind: ComputationImplementationKind = 'source'
-  sourceLanguage: ComputationSourceLanguage = 'typescript'
   source: string = ''
-  providerRef: string = ''
   sourceVersion: number = 1
   contractVersion: number = 1
   inputType: string = ''
@@ -27,10 +24,7 @@ export class RComputationEditor {
     this.identity = String(source.identity ?? '').trim()
     this.name = source.displayName ?? source.name ?? this.identity
     this.description = String(source.description ?? '')
-    this.implementationKind = source.implementationKind
-    this.sourceLanguage = source.sourceLanguage
     this.source = String(source.source ?? '')
-    this.providerRef = String(source.providerRef ?? '')
     this.sourceVersion = source.sourceVersion
     this.contractVersion = source.contractVersion
     this.inputType = source.input?.type ?? ''
@@ -48,10 +42,7 @@ export class RComputationEditor {
     target.name = this.name.trim() || target.identity
     target.displayName = target.name
     target.description = this.description.trim() || null
-    target.implementationKind = this.implementationKind
-    target.sourceLanguage = this.sourceLanguage
     target.source = this.source
-    target.providerRef = this.providerRef.trim() || null
     target.sourceVersion = Math.max(1, Number(this.sourceVersion) || 1)
     target.contractVersion = Math.max(1, Number(this.contractVersion) || 1)
     target.input = this.inputType.trim()
@@ -72,10 +63,7 @@ export class RComputationEditor {
     if (!this.identity.trim()) {
       diagnostics.push('Identity не может быть пустым.')
     }
-    if (this.implementationKind === 'provider' && !this.providerRef.trim()) {
-      diagnostics.push('Для provider необходимо указать providerRef.')
-    }
-    if (this.implementationKind === 'source' && !this.source.trim()) {
+    if (!this.source.trim()) {
       diagnostics.push('Source не может быть пустым.')
     }
     if (!Number.isInteger(Number(this.sourceVersion)) || Number(this.sourceVersion) < 1) {

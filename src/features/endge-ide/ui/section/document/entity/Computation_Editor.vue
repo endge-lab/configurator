@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor'
 
-import { AlignLeft, Cable, Code2, FileText, Loader2, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
+import { AlignLeft, Code2, Loader2, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -10,12 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 interface ScriptEditorHandle {
@@ -26,21 +25,6 @@ const props = defineProps<{ tabContext?: { editor?: RComputationEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = ref<'general' | 'implementation' | 'diagnostics'>('implementation')
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
-
-function setImplementationKind(value: unknown): void {
-  if (!editor.value) {
-    return
-  }
-  editor.value.implementationKind = value === 'provider' ? 'provider' : 'source'
-  editor.value.refreshDiagnostics()
-}
-
-function setSourceLanguage(value: unknown): void {
-  if (!editor.value) {
-    return
-  }
-  editor.value.sourceLanguage = value === 'endge' ? 'endge' : 'typescript'
-}
 
 function applySourceText(value: string): void {
   editor.value?.applySourceText(value)
@@ -53,7 +37,6 @@ async function save(): Promise<void> {
   }
   current.identity = current.identity.trim()
   current.name = current.name.trim() || current.identity
-  current.providerRef = current.providerRef.trim()
   current.refreshDiagnostics()
   if (current.diagnostics.length) {
     toast.error('Computation не сохранен', { description: current.diagnostics[0] })
@@ -104,20 +87,7 @@ async function save(): Promise<void> {
     </template>
 
     <template #right>
-      <div v-if="activeTab === 'implementation' && editor.implementationKind === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
-        <Select :model-value="editor.sourceLanguage" @update:model-value="setSourceLanguage">
-          <SelectTrigger class="h-7 w-28 border-0 bg-transparent px-2 text-xs shadow-none focus:ring-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="typescript">
-              TypeScript
-            </SelectItem>
-            <SelectItem value="endge">
-              Endge
-            </SelectItem>
-          </SelectContent>
-        </Select>
+      <div v-if="activeTab === 'implementation'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
         <Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Форматировать" @click="sourceEditorRef?.formatDocument()">
           <AlignLeft class="size-4" />
         </Button>
@@ -147,6 +117,9 @@ async function save(): Promise<void> {
         </div>
         <div class="space-y-3">
           <Label>Контракт</Label>
+          <p class="text-xs text-muted-foreground">
+            Опционально: ComponentSFC ports v1 не проверяют persisted input/output contract.
+          </p>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-3 rounded-lg border p-3">
               <Label for="computation-input-type">Input type identity</Label>
@@ -170,33 +143,7 @@ async function save(): Promise<void> {
     </div>
 
     <div v-else-if="activeTab === 'implementation'" class="flex min-h-0 flex-1 flex-col">
-      <div class="flex items-center gap-3 border-b px-4 py-2">
-        <FileText v-if="editor.implementationKind === 'source'" class="size-4 text-muted-foreground" />
-        <Cable v-else class="size-4 text-muted-foreground" />
-        <Select :model-value="editor.implementationKind" @update:model-value="setImplementationKind">
-          <SelectTrigger class="h-8 w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="source">
-              Source
-            </SelectItem>
-            <SelectItem value="provider">
-              Code provider
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <ScriptEditor v-if="editor.implementationKind === 'source'" ref="sourceEditorRef" :model-value="editor.source" :language="editor.sourceLanguage === 'typescript' ? 'typescript' : 'plaintext'" class="min-h-0 flex-1" min-height="100%" @update:model-value="applySourceText" />
-      <div v-else class="flex-1 overflow-auto p-6">
-        <div class="max-w-2xl space-y-3 rounded-lg border bg-muted/20 p-4">
-          <Label for="computation-provider-ref">Provider ref</Label>
-          <Input id="computation-provider-ref" v-model="editor.providerRef" placeholder="@app:ground-handling.cell-state" spellcheck="false" @blur="editor.refreshDiagnostics()" />
-          <p class="text-xs text-muted-foreground">
-            The application bundle registers this stable ref and owns the executable code.
-          </p>
-        </div>
-      </div>
+      <ComputationSourceEditor ref="sourceEditorRef" :model-value="editor.source" @update:model-value="applySourceText" />
     </div>
 
     <div v-else class="min-h-0 flex-1 overflow-auto bg-muted/20 p-5">

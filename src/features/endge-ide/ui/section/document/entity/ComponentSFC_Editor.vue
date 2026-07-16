@@ -1,8 +1,10 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RComponentSFC } from '@endge/core'
 
-import { AlignLeft, Code2, Loader2, Play, Save, Settings2 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { Endge, inspectComponentSFCVisual } from '@endge/core'
+import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { showWidget } from '@/components/layouts/grid'
@@ -25,6 +27,7 @@ import {
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
@@ -33,8 +36,20 @@ interface ScriptEditorHandle {
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const launchLoading = ref(false)
-const activeTab = ref<'general' | 'source'>('source')
+const activeTab = ref<'general' | 'visual' | 'source'>('source')
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const visualInspection = computed(() => {
+  const current = editor.value
+  return current ? inspectComponentSFCVisual(current.source ?? '') : null
+})
+const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
+const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)
+const tableComponentOptions = computed(() => Endge.domain.getComponentSFCs()
+  .filter((component: RComponentSFC) => component.id !== editor.value?.id && Boolean(component.identity?.trim()))
+  .map((component: RComponentSFC) => ({
+    value: component.identity,
+    label: component.displayName || component.name || component.identity,
+  })))
 const sourceEditorExtensions = [
   createExtractComponentContribution({
     getEditorModel: () => editor.value,
@@ -42,13 +57,30 @@ const sourceEditorExtensions = [
   }),
 ]
 
+watch(hasTableVisual, (supported) => {
+  if (!supported && activeTab.value === 'visual') {
+    activeTab.value = 'source'
+  }
+})
+
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
+function updateVisualSource(source: string): void {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+  current.source = source
+  current.parseSource?.()
+}
+
 async function launchPreview(): Promise<void> {
   const current = editor.value
-  if (!current) { return }
+  if (!current) {
+    return
+  }
 
   launchLoading.value = true
   try {
@@ -112,6 +144,25 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Основное</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="hasTableVisual">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'visual'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Visual Table"
+                @click="activeTab = 'visual'"
+              >
+                <Table2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Visual Table</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -228,6 +279,17 @@ async function launchPreview(): Promise<void> {
         </div>
       </div>
     </div>
+
+    <ComponentSFCTableVisualEditor
+      v-else-if="activeTab === 'visual' && tableVisualProjection"
+      :source="editor.source"
+      :projection="tableVisualProjection"
+      :component-options="tableComponentOptions"
+      :diagnostics="visualInspection?.diagnostics"
+      class="min-h-0 flex-1"
+      @update:source="updateVisualSource"
+      @open-source="activeTab = 'source'"
+    />
 
     <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScriptEditor

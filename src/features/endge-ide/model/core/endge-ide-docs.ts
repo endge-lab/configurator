@@ -212,6 +212,7 @@ export class EndgeIDEDocs {
       { id: 'domain-type', title: 'Type (Тип)', description: 'Тип данных: имя и набор полей.', icon: 'ti ti-type', file: 'domain/Type', category: DocsCategory.EndgeDomain },
       { id: 'domain-query', title: 'Query source', description: 'Синтаксис defineQuery: request, outputs, локальные DataView и сохранение результатов.', icon: 'ti ti-database-search', file: 'domain/Query', category: DocsCategory.EndgeDomain },
       { id: 'domain-data-view', title: 'DataView source', description: 'Синтаксис defineDataView: pipeline, map, path, converters и правила безопасности.', icon: 'ti ti-transform', file: 'domain/DataView', category: DocsCategory.EndgeDomain },
+      { id: 'domain-computation', title: 'Computation source', description: 'defineComputation graph, ValueExpression и sandboxed TypeScript nodes.', icon: 'ti ti-calculator', file: 'domain/Computation', category: DocsCategory.EndgeDomain },
       { id: 'domain-component', title: 'Component (Компонент)', description: 'Компонент отображения: таблица, DSL.', icon: 'ti ti-layout-grid', file: 'domain/Component', category: DocsCategory.EndgeDomain },
       { id: 'domain-parameter', title: 'Parameter (Параметр)', description: 'Параметр: идентификатор, тип, значения.', icon: 'ti ti-adjustments', file: 'domain/Parameter', category: DocsCategory.EndgeDomain },
       { id: 'domain-filter', title: 'Filter (Фильтр)', description: 'Фильтр данных: поля, условия, конвертеры.', icon: 'ti ti-filter', file: 'domain/Filter', category: DocsCategory.EndgeDomain },

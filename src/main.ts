@@ -1,4 +1,5 @@
 /* eslint-disable perfectionist/sort-imports -- renderer plugins must be registered before imports that read Endge modules */
+import '@/features/endge-configurator/model/endge-runtime-plugins.ts'
 import '@/features/endge-configurator/model/endge-renderer-plugins.ts'
 import '@endge/vue/vue.css'
 import '@endge/shadcn-vue/shadcn-vue.css'
