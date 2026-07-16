@@ -31,6 +31,10 @@ export default defineConfig(({ mode, command }) => {
       endgeCodegen({ enabled: codegenEnabled }),
     ],
     resolve: {
+      // Raph is a shared runtime singleton. Without dedupe, optimizeDeps can
+      // resolve the published copy nested under @endge/core instead of the
+      // current workspace package, producing an incompatible export surface.
+      dedupe: ['@endge/raph'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),

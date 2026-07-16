@@ -17,6 +17,12 @@ export class EndgeIDEDocs {
 
   public init(): void {
     this._entries = [
+      { id: 'endgecss-overview', title: 'EndgeCSS: обзор', description: 'Source-first lifecycle от RStyle/SFC до renderer backend.', icon: 'ti ti-brush', file: 'endgecss/1_Overview', category: DocsCategory.EndgeCSS },
+      { id: 'endgecss-syntax', title: 'Синтаксис и значения', description: 'Rules, nesting, custom properties и ограничения языка.', icon: 'ti ti-code', file: 'endgecss/2_Syntax', category: DocsCategory.EndgeCSS },
+      { id: 'endgecss-selectors', title: 'Селекторы и каскад', description: 'Abstract selectors, specificity, source order и important.', icon: 'ti ti-target', file: 'endgecss/3_Selectors', category: DocsCategory.EndgeCSS },
+      { id: 'endgecss-directives', title: 'Темы и директивы', description: '@theme, @scope, @supports и отсутствие @layer.', icon: 'ti ti-adjustments', file: 'endgecss/4_Directives', category: DocsCategory.EndgeCSS },
+      { id: 'endgecss-sfc', title: 'Endge SFC styles', description: 'Scoped styles, state, part и reserved slot.', icon: 'ti ti-components', file: 'endgecss/5_SFC', category: DocsCategory.EndgeCSS },
+      { id: 'endgecss-dom-canvas', title: 'DOM и Canvas boundary', description: 'Materialization algorithm and renderer-neutral contract.', icon: 'ti ti-arrows-split', file: 'endgecss/6_DOM_And_Canvas', category: DocsCategory.EndgeCSS },
       {
         id: 'nova-overview',
         title: 'NOVA: обзор',

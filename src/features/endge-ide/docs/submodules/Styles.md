@@ -1,7 +1,9 @@
 # Endge.styles
 
-`RStyle` is a source-first document. Payload stores only its canonical `source`, `sourceVersion`, metadata, and document relations.
+`Endge.styles` exposes valid renderer-neutral artifacts from `Endge.program`:
 
-На текущем этапе `Endge.styles` является lifecycle boundary для будущего EndgeCSS compiler/runtime. Модуль ещё не парсит source, не создаёт derived artifacts и не применяет CSS в DOM.
+- `getActiveArtifacts()` returns global styles in effective source order;
+- `createResolver(targetProfile)` resolves declarations against an abstract Endge node;
+- theme ids are registered in `Endge.ui` with owner-based cleanup.
 
-Renderer-specific output for DOM, Canvas, or other targets must be produced later from one compiled EndgeCSS artifact. It must not become part of the persisted style document.
+DOM compilation belongs to `@endge/vue`. Core does not know about HTML elements, `CSSStyleSheet`, Vue wrappers, or Shadcn. Canvas can consume the same artifact and matcher without parsing CSS.

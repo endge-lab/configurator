@@ -25,6 +25,7 @@ import {
   sfcPreviewError,
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
@@ -51,6 +52,7 @@ const tableComponentOptions = computed(() => Endge.domain.getComponentSFCs()
     label: component.displayName || component.name || component.identity,
   })))
 const sourceEditorExtensions = [
+  createSFCStyleEndgeCSSContribution(),
   createExtractComponentContribution({
     getEditorModel: () => editor.value,
     getPersistedModel: () => tabs.documentModel.value as RComponentSFC | null,

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { themeConfig } from '@endge/core'
 import { useUI } from '@endge/vue'
 import { HeartPulse, Moon, Sun } from 'lucide-vue-next'
 import { computed } from 'vue'
@@ -208,7 +207,7 @@ function openArchitecture(): void {
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem
-                v-for="name in themeConfig.availableThemes"
+                v-for="name in ui.availableThemes"
                 :key="name"
                 :class="{ 'bg-accent': ui.theme === name }"
                 @click="ui.setTheme(name)"

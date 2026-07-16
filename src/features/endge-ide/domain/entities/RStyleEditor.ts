@@ -39,7 +39,7 @@ export class RStyleEditor {
     this.refreshDiagnostics()
   }
 
-  /** Structural checks only. EndgeCSS syntax validation belongs to the compiler stage. */
+  /** Structural metadata checks. EndgeCSS drafts may be saved with syntax diagnostics. */
   refreshDiagnostics(): void {
     const diagnostics: string[] = []
     if (!this.identity.trim()) {

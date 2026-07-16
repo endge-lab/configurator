@@ -1,7 +1,7 @@
-# Style (Стиль)
+# Style (RStyle)
 
-Сущность домена, описывающая набор стилей (JSON). Коллекция Payload: `styles`.
+`RStyle` — глобальный source-first документ EndgeCSS. Payload хранит только авторский `source`, `sourceVersion`, identity, metadata и relations. AST, diagnostics, indexes и CSS никогда не являются второй persisted моделью.
 
-**Поля:** `identity`, `displayName`, `folder`, `project`, `styles` (обязательный JSON, по умолчанию `{}`), `meta`, `inherited`, `isSystem`.
+During `Endge.compiler.build`, every active style becomes a typed `style` artifact in `Endge.program`. Invalid drafts may be saved, but their artifacts are not applied.
 
-Системные стили (`isSystem: true`) нельзя редактировать и удалять в редакторе. В виджете домена отображаются в секции «Стили» (root-styles). При seed создаётся системный стиль с `identity=default` и именем «Общие».
+Порядок глобальных документов: system base → inherited → local/project; identity используется как стабильный tie-breaker.

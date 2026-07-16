@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Raph } from '@endge/raph'
-import { SFC_RuntimeRenderer } from '@endge/vue'
+import { SFC_RuntimeRenderer, useUI } from '@endge/vue'
 import { Braces } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -37,6 +37,9 @@ const runtime = computed(() => sfcPreviewRuntime.value)
 const input = computed(() => sfcPreviewInput.value)
 const error = computed(() => sfcPreviewError.value)
 const title = computed(() => sfcPreviewTitle.value)
+const ui = useUI()
+const themes = computed(() => ui.value.availableThemes)
+const currentTheme = computed(() => ui.value.theme)
 const body = ref<HTMLElement | null>(null)
 const propsTree = ref<SourceJsonTreeHandle | null>(null)
 const propsRevision = ref(0)
@@ -174,6 +177,14 @@ onBeforeUnmount(() => {
           <TooltipContent>{{ propsPanelVisible ? copy.hideProps : copy.showProps }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      <select
+        class="h-8 rounded-md border bg-background px-2 text-xs"
+        :value="currentTheme"
+        aria-label="Тема EndgeCSS preview"
+        @change="ui.setTheme(($event.target as HTMLSelectElement).value)"
+      >
+        <option v-for="theme in themes" :key="theme" :value="theme">{{ theme }}</option>
+      </select>
       <Button
         v-if="runtime"
         type="button"

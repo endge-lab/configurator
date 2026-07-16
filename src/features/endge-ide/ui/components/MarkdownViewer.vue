@@ -3,6 +3,8 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 
+hljs.registerAliases(['endgecss'], { languageName: 'css' })
+
 const props = defineProps<{ src: string }>()
 const htmlContent = ref<string>('')
 

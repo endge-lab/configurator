@@ -2,6 +2,8 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor'
 
+import { compileEndgeCSS } from '@endge/core'
+import { materializeEndgeCSSForDOM } from '@endge/vue'
 import { Code2, Loader2, Save, Settings2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -13,12 +15,20 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import EndgeStyleSourceEditor from '@/features/endge-ide/ui/components/EndgeStyleSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 
 const props = defineProps<{ tabContext?: { editor?: RStyleEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = ref<'general' | 'source'>('source')
+const splitRatio = ref(0.68)
+const compilation = computed(() => compileEndgeCSS(editor.value?.source ?? '', {
+  identity: editor.value?.identity || 'draft-style',
+}))
+const generatedCSS = computed(() => compilation.value.artifact
+  ? materializeEndgeCSSForDOM([compilation.value.artifact]).css
+  : '/* Invalid EndgeCSS is not materialized. */')
 
 function applySourceText(value: string): void {
   editor.value?.applySourceText(value)
@@ -104,14 +114,29 @@ async function save(): Promise<void> {
           <Label for="style-source-version">Source version</Label>
           <Input id="style-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
         </div>
-        <p class="text-xs text-muted-foreground">
-          EndgeCSS syntax validation and compiled artifacts will be added with the compiler in the next stage.
-        </p>
+        <p class="text-xs text-muted-foreground">Payload stores only source. AST, semantic artifact and DOM CSS are derived during compilation.</p>
       </div>
     </div>
 
     <div v-else class="flex min-h-0 flex-1 flex-col">
-      <ScriptEditor :model-value="editor.source" language="plaintext" :min-height="0" @update:model-value="applySourceText" />
+      <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="true" separator-label="Изменить ширину EndgeCSS и CSS preview">
+        <template #editor>
+          <EndgeStyleSourceEditor :model-value="editor.source" @update:model-value="applySourceText" />
+        </template>
+        <template #output>
+          <div class="flex h-full min-h-0 flex-col bg-slate-950 text-slate-200">
+            <div class="border-b border-slate-800 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Derived DOM CSS · {{ compilation.diagnostics.length }} diagnostics
+            </div>
+            <div v-if="compilation.diagnostics.length" class="max-h-36 overflow-auto border-b border-slate-800 p-2">
+              <div v-for="diagnostic in compilation.diagnostics" :key="`${diagnostic.code}:${diagnostic.range?.start}`" class="mb-1 rounded bg-slate-900 px-2 py-1 text-xs" :class="diagnostic.severity === 'error' ? 'text-red-300' : 'text-amber-300'">
+                {{ diagnostic.code }}: {{ diagnostic.message }}
+              </div>
+            </div>
+            <pre class="min-h-0 flex-1 overflow-auto p-3 text-xs leading-5"><code>{{ generatedCSS }}</code></pre>
+          </div>
+        </template>
+      </SourceEditorSplitView>
     </div>
   </SourceDocumentEditorShell>
 </template>

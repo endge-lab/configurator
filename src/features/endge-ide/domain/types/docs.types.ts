@@ -11,6 +11,7 @@ export enum DocsCategory {
   EndgeDomain = 'EndgeDomain',
   Configuring = 'Configuring',
   Codegen = 'Codegen',
+  EndgeCSS = 'EndgeCSS',
 }
 
 /**

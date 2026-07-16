@@ -6,6 +6,7 @@ import type {
   CompositionRuntimeHost,
   ProgramArtifact,
   RuntimeHostInputSource,
+  EndgeStyleSheetArtifact,
 } from '@endge/core'
 
 import {
@@ -18,6 +19,7 @@ import {
   parseComponentSFC,
 } from '@endge/core'
 import { Raph } from '@endge/raph'
+import { materializeEndgeCSSForDOM } from '@endge/vue'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {
@@ -44,6 +46,7 @@ export const hasSFCPreviewRuntime = computed(() => Boolean(sfcPreviewRuntime.val
 
 let runtimeCounter = 0
 let previewComposition: PreviewCompositionContext | null = null
+let previewStyleElement: HTMLStyleElement | null = null
 
 interface PreviewCompositionContext {
   host: CompositionRuntimeHost
@@ -68,7 +71,6 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
       ?? 'SFC source содержит ошибки.'
     throw new Error(message)
   }
-
   const previewProps = artifact.payload.previewProps
   if (!previewProps || Object.keys(previewProps).length === 0) {
     throw new Error('Сначала определите превью props')
@@ -77,6 +79,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
   const identity = resolvePreviewIdentity(input)
   ensurePreviewPortArtifacts(artifact.payload)
   destroySFCPreviewRuntime()
+  applyPreviewStyle(artifact.payload.ir?.style ?? null)
   destroyPreviewRuntime('component-sfc', identity)
   const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
   try {
@@ -117,6 +120,9 @@ export function destroySFCPreviewRuntime(): void {
   previewComposition = null
   sfcPreviewRuntime.value = null
   sfcPreviewInput.value = { kind: 'local', props: {} }
+  previewStyleElement?.remove()
+  previewStyleElement = null
+  Endge.ui.unregisterThemes('preview:sfc')
 }
 
 function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
@@ -126,12 +132,13 @@ function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
 
 function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
   const compiled = compileComponentSFC(model.source, {
+    identity: model.identity,
     resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
     hasComponentIdentity: identity => Endge.domain.getComponentSFC(identity) != null || identity === model.identity,
     resolvePortProvider: (identity, expectedKind) => resolvePreviewPortProvider(identity, expectedKind),
   })
   const { diagnostics, metadata, ...payload } = compiled
-  const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error')
+  const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error' && diagnostic.sourcePath !== 'style')
 
   return {
     ref: {
@@ -144,10 +151,19 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
     status: hasErrors ? 'error' : diagnostics.length ? 'warning' : 'valid',
     diagnostics,
     dependencies: [],
-    capabilities: ['compilable', 'runnable', 'renderable'],
+    capabilities: compiled.ir ? ['compilable', 'runnable', 'renderable'] : ['compilable'],
     metadata,
     payload,
   }
+}
+
+function applyPreviewStyle(style: EndgeStyleSheetArtifact | null): void {
+  if (typeof document === 'undefined') return
+  Endge.ui.registerThemes('preview:sfc', style?.themes.map(theme => theme.id) ?? [])
+  previewStyleElement ??= document.createElement('style')
+  previewStyleElement.dataset.endgePreviewStyles = ''
+  if (!previewStyleElement.isConnected) document.head.append(previewStyleElement)
+  previewStyleElement.textContent = style ? materializeEndgeCSSForDOM([style]).css : ''
 }
 
 function resolvePreviewPortProvider(identity: string, expectedKind: 'computation' | 'component') {

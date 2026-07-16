@@ -32,12 +32,14 @@ const categoryLabels: Record<DocsCategory, string> = {
   [DocsCategory.Configuring]: 'Конфигурирование',
   [DocsCategory.HowToUse]: 'Примеры кода',
   [DocsCategory.Codegen]: 'Кодогенерация',
+  [DocsCategory.EndgeCSS]: 'EndgeCSS',
 }
 
 /** Порядок категорий: «Развитие проекта» — в самом конце */
 const categoryOrder: DocsCategory[] = [
   DocsCategory.HowToUse,
   DocsCategory.ArchitectureConcepts,
+  DocsCategory.EndgeCSS,
   DocsCategory.EndgeDomain,
   DocsCategory.EndgeCoreModules,
   DocsCategory.EndgeSubModules,
