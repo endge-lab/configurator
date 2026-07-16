@@ -31,10 +31,11 @@ export default defineConfig(({ mode, command }) => {
       endgeCodegen({ enabled: codegenEnabled }),
     ],
     resolve: {
-      // Raph is a shared runtime singleton. Without dedupe, optimizeDeps can
-      // resolve the published copy nested under @endge/core instead of the
-      // current workspace package, producing an incompatible export surface.
-      dedupe: ['@endge/raph'],
+      // Endge runtime packages and class-transformer share singleton state.
+      // Without dedupe, optimizeDeps can resolve nested published copies:
+      // Raph then exposes an older API, while class-transformer loses the
+      // decorator metadata used by Serialize.fromJSON in @endge/core.
+      dedupe: ['@endge/raph', '@endge/utils', 'class-transformer'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),
