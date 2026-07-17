@@ -1,5 +1,5 @@
 import { Endge, RComponentSFC, RComputation } from '@endge/core'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   destroySFCPreviewRuntime,
@@ -8,10 +8,14 @@ import {
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
 describe('ComponentSFC port preview', () => {
+  beforeEach(() => prepareCompilerContext())
+
   afterEach(async () => {
     await destroySFCPreviewRuntime()
+    Endge.configuration.reset()
     Endge.program.clear()
     Endge.domain.reset()
+    Endge.workspace.reset()
   })
 
   it('compiles default providers without Composition port configuration', async () => {
@@ -63,3 +67,48 @@ const state = ports.state({ value: props.value })
     expect(Endge.program.getArtifact('component-sfc', 'preview-cell')?.status).toBe('valid')
   })
 })
+
+function prepareCompilerContext(): void {
+  Endge.workspace.apply({
+    identity: 'preview-workspace',
+    displayName: 'Preview Workspace',
+    configuration: {
+      vars: [],
+      locales: [{ code: 'en', displayName: 'English', shortLabel: 'EN', direction: 'ltr' }],
+      defaultLocale: 'en',
+      fallbackLocale: 'en',
+      themes: [{ identity: 'light', displayName: 'Light' }],
+      defaultTheme: 'light',
+      defaultAuthProfileIdentity: null,
+      sfcAdapterIds: ['native-vue'],
+      defaultSfcAdapterId: 'native-vue',
+    },
+  })
+  Endge.domain.addProject({
+    id: 1,
+    identity: 'preview-project',
+    allowedEnvironmentIds: [],
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.domain.addEnvironment({
+    id: 2,
+    identity: 'preview-environment',
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.domain.addTenant({
+    id: 3,
+    identity: 'preview-tenant',
+    code: 'preview-tenant',
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.configuration.build({
+    dataProvider: 'plain',
+    scope: {},
+    vars: {},
+    context: {
+      projectIdentity: 'preview-project',
+      environmentIdentity: 'preview-environment',
+      tenantIdentity: 'preview-tenant',
+    },
+  })
+}

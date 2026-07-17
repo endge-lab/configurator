@@ -16,6 +16,7 @@ initWidgetChannel()
 
 const route = useRoute()
 setLayoutScope(String(route.meta.layoutScope ?? 'endge-ide'))
+const showWorkspaceSettings = computed(() => route.meta.layoutScope !== 'endge-preview')
 
 // Close non-detachable popups on route change
 watch(() => route.fullPath, () => {
@@ -227,6 +228,7 @@ function handleGlobalDrop(event: DragEvent) {
           position="left"
           :widgets="leftWidgets"
           :bottom-widgets="bottomWidgets"
+          :show-workspace-settings="showWorkspaceSettings"
         />
 
         <div ref="mainAreaRef" class="flex-1 min-w-0 min-h-0 pb-1.5" :style="gridStyle">

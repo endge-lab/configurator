@@ -131,10 +131,6 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
           :key="item.key"
           class="min-w-0 border-b border-border/70 pb-5 last:border-b-0 last:pb-0"
         >
-          <div class="mb-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-            <span class="size-1.5 rounded-full bg-emerald-500" />
-            <span class="truncate">{{ item.title }}</span>
-          </div>
           <EndgeFilterRenderer
             v-if="item.kind === 'filter-view'"
             :runtime="item.runtime"

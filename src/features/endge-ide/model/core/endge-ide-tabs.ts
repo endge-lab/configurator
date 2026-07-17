@@ -21,6 +21,8 @@ import { toast } from 'vue-sonner'
 import { showWidget } from '@/components/layouts/grid'
 
 import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
+import { getDomainDocumentPresentation } from '@/features/endge-configurator/model/presentation/domain-document-presentation'
+import { getDomainDocumentLabel } from '@/features/endge-configurator/model/presentation/domain-entity-presentation'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
@@ -51,7 +53,6 @@ import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
-import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import MarkdownViewer from '@/features/endge-ide/ui/components/MarkdownViewer.vue'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
@@ -510,74 +511,7 @@ export class EndgeIDETabs {
   }
 
   public getDocumentLabel(id: string, docType: DomainDocumentType): string {
-    const key = String(docType)
-    if (key === String(ComponentType.Table) || key === String(ComponentType.DSL))
-      return Endge.domain.getComponent(id)?.name ?? id
-    if (key === String(COMPONENT_SFC_TYPE)) {
-      const component = (Endge.domain as any).getComponentSFC?.(id)
-      return component?.displayName ?? component?.name ?? id
-    }
-    if (isQueryDocumentType(key))
-      return Endge.domain.getQuery(id)?.displayName ?? Endge.domain.getQuery(id)?.name ?? id
-    if (key === 'data-view') {
-      const dataView = Endge.domain.getDataView(id)
-      return dataView?.displayName ?? dataView?.name ?? id
-    }
-    if (key === 'composition') {
-      const composition = Endge.domain.getComposition(id)
-      return composition?.displayName ?? composition?.name ?? id
-    }
-    if (key === 'store') {
-      const store = Endge.domain.getStore(id)
-      return store?.displayName ?? store?.name ?? id
-    }
-    if (key === 'mock') {
-      const mock = Endge.domain.getMock(id)
-      return mock?.displayName ?? mock?.name ?? id
-    }
-    if (key === 'type' || key === 'primitive')
-      return Endge.domain.getType(id)?.name ?? id
-    if (key === 'action') {
-      const action = Endge.domain.getAction(id)
-      return action?.displayName ?? action?.name ?? id
-    }
-    if (key === String(ParameterType.DefaultParameter))
-      return Endge.domain.getParameter(id)?.displayName ?? id
-    if (key === String(FilterType.DefaultFilter))
-      return Endge.domain.getFilter(id)?.displayName ?? id
-    if (key === 'converter')
-      return Endge.domain.getConverter(id)?.name ?? id
-    if (key === 'computation')
-      return Endge.domain.getComputation(id)?.displayName ?? Endge.domain.getComputation(id)?.name ?? id
-    if (key === 'integration')
-      return Endge.domain.getIntegration(id)?.name ?? id
-    if (key === 'environment')
-      return Endge.domain.getEnvironment(id)?.name ?? id
-    if (key === 'tenant') {
-      const tenant = Endge.domain.getTenant(id)
-      return tenant?.displayName ?? tenant?.name ?? id
-    }
-    if (key === 'policy')
-      return Endge.domain.getPolicy(id)?.name ?? id
-    if (key === 'style')
-      return Endge.domain.getStyle(id)?.name ?? id
-    if (key === 'vocabs')
-      return Endge.domain.getVocab(id)?.displayName ?? Endge.domain.getVocab(id)?.name ?? id
-    if (key === 'auth-profile')
-      return Endge.domain.getAuthProfile(id)?.displayName ?? Endge.domain.getAuthProfile(id)?.name ?? id
-    if (key === 'i18n-bundles')
-      return Endge.domain.getI18nBundle(id)?.displayName ?? Endge.domain.getI18nBundle(id)?.name ?? id
-    if (key === 'page-template')
-      return Endge.domain.getPageTemplate(id)?.name ?? id
-    if (key === 'page')
-      return Endge.domain.getPage(id)?.name ?? id
-    if (key === 'navigation')
-      return Endge.domain.getNavigation(id)?.name ?? id
-    if (key === 'project') {
-      const project = Endge.domain.getProject(id)
-      return project?.displayName ?? project?.name ?? id
-    }
-    return id
+    return getDomainDocumentLabel(id, docType)
   }
 
   public getDocumentIcon(docType: DomainDocumentType, presentationKind?: string): string {

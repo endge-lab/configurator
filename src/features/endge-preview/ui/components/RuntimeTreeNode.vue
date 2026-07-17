@@ -1,21 +1,12 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { PreviewRuntimeTreeNode } from '@/features/endge-preview/domain/types/preview.types'
 import type { Component } from 'vue'
 
-import {
-  Boxes,
-  Braces,
-  ChevronRight,
-  Component as ComponentIcon,
-  Database,
-  Filter,
-  FolderRoot,
-  Layers3,
-  Palette,
-} from 'lucide-vue-next'
+import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
+import { getIconComponent } from '@/components/layouts/grid/icons'
 import { endgePreviewSession } from '@/features/endge-preview/model/core/endge-preview-state'
 import RuntimeLifecycleStatusIcon from '@/features/endge-preview/ui/components/RuntimeLifecycleStatusIcon.vue'
 
@@ -34,15 +25,10 @@ const hasChildren = computed(() => props.node.children.length > 0)
 const leftPadding = computed(() => `${Math.max(0, props.depth ?? 0) * 14 + 8}px`)
 
 const nodeIcon = computed<Component>(() => {
-  if (props.node.kind === 'project') { return FolderRoot }
-  if (props.node.kind === 'composition') { return Boxes }
-  if (props.node.kind === 'scope') { return Layers3 }
-  if (props.node.kind === 'resource') { return Palette }
-  if (props.node.entityType === 'component-sfc') { return ComponentIcon }
-  if (props.node.entityType === 'filter' || props.node.entityType === 'filter-view') { return Filter }
-  if (props.node.entityType === 'store' || props.node.entityType === 'query') { return Database }
-  return Braces
+  return getIconComponent(props.node.presentation?.icon) as Component ?? Braces
 })
+const badgeIcon = computed<Component | null>(() => getIconComponent(props.node.presentation?.badgeIcon ?? undefined) as Component | null)
+const iconColorClass = computed(() => props.node.presentation?.colorClass ?? 'text-muted-foreground')
 
 async function select(): Promise<void> {
   await session.select(props.node.id)
@@ -53,10 +39,13 @@ async function select(): Promise<void> {
   <div class="min-w-0">
     <button
       type="button"
-      class="group flex h-8 w-full min-w-0 items-center gap-1.5 border-l-2 pr-2 text-left text-xs transition-colors"
-      :class="selected
-        ? 'border-primary bg-primary/10 text-foreground'
-        : 'border-transparent text-muted-foreground hover:bg-muted/65 hover:text-foreground'"
+      class="group flex w-full min-w-0 items-center gap-1.5 border-l-2 pr-2 text-left text-xs transition-colors"
+      :class="[
+        selected
+          ? 'border-primary bg-primary/10 text-foreground'
+          : 'border-transparent text-muted-foreground hover:bg-muted/65 hover:text-foreground',
+        node.subtitle ? 'min-h-10 py-1' : 'h-8',
+      ]"
       :style="{ paddingLeft: leftPadding }"
       @click="select"
     >
@@ -70,9 +59,20 @@ async function select(): Promise<void> {
           :class="expanded && 'rotate-90'"
         />
       </span>
-      <component :is="nodeIcon" class="size-3.5 shrink-0 text-muted-foreground" stroke-width="1.8" />
-      <span class="min-w-0 flex-1 truncate font-medium" :title="node.subtitle ?? node.title">
-        {{ node.title }}
+      <span class="relative size-3.5 shrink-0">
+        <component :is="nodeIcon" class="size-3.5" :class="iconColorClass" stroke-width="1.8" />
+        <component
+          :is="badgeIcon"
+          v-if="badgeIcon"
+          class="absolute -bottom-1 -right-1 size-2 rounded-[2px] bg-background p-px"
+          :class="iconColorClass"
+        />
+      </span>
+      <span class="flex min-w-0 flex-1 flex-col" :title="node.subtitle ?? node.title">
+        <span class="truncate font-medium text-foreground">{{ node.title }}</span>
+        <span v-if="node.subtitle" class="truncate text-[10px] leading-3 text-muted-foreground/75">
+          {{ node.subtitle }}
+        </span>
       </span>
       <span
         v-if="node.activationMode === 'manual'"

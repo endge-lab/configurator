@@ -10,11 +10,14 @@ import { getIconComponent } from '@/components/layouts/grid/icons.ts'
 import { endWidgetDrag, getLayoutState, getPopupInstances, getWidgetInstances, getWidgetOrder, moveWidget, reorderWidget, restorePopupInstance, startWidgetDrag, toggleWidget } from '@/components/layouts/grid/layout.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   position: 'left' | 'right'
   widgets: (WidgetDefinition & WidgetDefinitionState)[]
   bottomWidgets: (WidgetDefinition & WidgetDefinitionState)[]
-}>()
+  showWorkspaceSettings?: boolean
+}>(), {
+  showWorkspaceSettings: true,
+})
 
 const { t } = useI18n()
 
@@ -216,7 +219,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip v-if="position === 'left' && index === 0">
+          <Tooltip v-if="showWorkspaceSettings && position === 'left' && index === 0">
             <TooltipTrigger as-child>
               <Button
                 variant="ghost"

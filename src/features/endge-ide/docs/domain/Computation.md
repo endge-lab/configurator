@@ -24,6 +24,27 @@ defineComputation({
 - Imports, network, filesystem, timers, async functions and hidden domain reads are forbidden.
 - `result` is required and produces the single computation result.
 
+## External computation
+
+Один computation может statically вызвать другой по identity и передать ему любой safe input expression:
+
+```ts
+defineComputation({
+  outputs: {
+    label: computation('shared.normalize-name', {
+      value: input('name'),
+    }).get('label').upperCase(),
+  },
+  result: output('label'),
+})
+```
+
+`computation(identity, input)` is a normal value-expression source. Its result can be used in `get`, `map`, `when`, method chains, objects, arrays, and `typescript.inputs`.
+
+Identity должен быть static string literal. Compiler links all computation artifacts, propagates sync/async mode, rejects missing or invalid targets, and reports direct or transitive cycles before runtime starts.
+
+Dynamic identities and calls from inside `typescript.compute` are forbidden because they would bypass the compiler dependency graph.
+
 Для локальной полной замены используйте `Endge.bind.computation(identity, override)`. Persisted provider fields отсутствуют.
 
 ## ComponentSFC port

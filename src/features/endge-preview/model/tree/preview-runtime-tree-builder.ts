@@ -1,8 +1,10 @@
 import type { EndgePreviewTarget, PreviewCompositionAddress, PreviewRuntimeTreeNode } from '@/features/endge-preview/domain/types/preview.types'
 /* eslint-disable style/max-statements-per-line */
-import type { CompositionProgramPayload } from '@endge/core'
+import type { CompositionProgramPayload, CompositionRuntimeDescriptor, DomainDocumentType } from '@endge/core'
 
-import { Endge } from '@endge/core'
+import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
+
+import { resolveDomainEntityPresentation } from '@/features/endge-configurator/model/presentation/domain-entity-presentation'
 
 export function buildPreviewRuntimeTree(target: EndgePreviewTarget): PreviewRuntimeTreeNode[] {
   if (target.entityType === 'project') { return [buildProjectNode(target.identity)] }
@@ -12,14 +14,12 @@ export function buildPreviewRuntimeTree(target: EndgePreviewTarget): PreviewRunt
 }
 
 function buildProjectNode(identity: string): PreviewRuntimeTreeNode {
-  const project = Endge.domain.getProject(identity)
   const node = makeNode({
     id: `project:${identity}`,
     kind: 'project',
-    title: project?.displayName ?? project?.name ?? identity,
-    subtitle: identity,
     entityType: 'project',
     identity,
+    ...domainNodeFields('project', identity),
   })
   const compositions = Endge.domain.getCompositions()
     .filter(item => item.kind === 'project' && item.kindIdentity === identity && item.active !== false && !item.deletedAt)
@@ -30,6 +30,7 @@ function buildProjectNode(identity: string): PreviewRuntimeTreeNode {
     node.id,
     new Set(),
     Endge.program.getCompositionArtifact(composition.identity)?.payload.activation?.mode ?? 'startup',
+    null,
   ))
   return node
 }
@@ -41,31 +42,28 @@ function buildRootCompositionNode(identity: string): PreviewRuntimeTreeNode {
     null,
     new Set(),
     Endge.program.getCompositionArtifact(identity)?.payload.activation?.mode ?? 'startup',
+    null,
   )
 }
 
 function buildComponentNode(identity: string): PreviewRuntimeTreeNode {
-  const model = Endge.domain.getComponentSFC(identity)
   return makeNode({
     id: `component-sfc:${identity}`,
     kind: 'component-sfc',
-    title: model?.displayName ?? model?.name ?? identity,
-    subtitle: identity,
     entityType: 'component-sfc',
     identity,
+    ...domainNodeFields(ComponentType.SFC, identity),
     renderable: true,
   })
 }
 
 function buildStoreNode(identity: string): PreviewRuntimeTreeNode {
-  const model = Endge.domain.getStore(identity)
   return makeNode({
     id: `store:${identity}`,
     kind: 'runtime',
-    title: model?.displayName ?? model?.name ?? identity,
-    subtitle: identity,
     entityType: 'store',
     identity,
+    ...domainNodeFields('store', identity),
     renderable: true,
   })
 }
@@ -76,6 +74,7 @@ function buildCompositionNode(
   parentId: string | null,
   ancestors: Set<string>,
   activationMode: 'startup' | 'manual',
+  runtimeName: string | null,
 ): PreviewRuntimeTreeNode {
   const model = Endge.domain.getComposition(identity)
   const nodeId = compositionNodeId(address)
@@ -83,20 +82,19 @@ function buildCompositionNode(
     id: nodeId,
     parentId,
     kind: 'composition',
-    title: model?.displayName ?? model?.name ?? identity,
-    subtitle: identity,
     entityType: 'composition',
     identity,
+    ...domainNodeFields('composition', identity, runtimeName, String(model?.kind ?? 'library')),
     activationMode,
     composition: address,
   })
   if (ancestors.has(identity)) {
-    node.subtitle = `${identity} · cycle`
+    node.subtitle = 'cycle'
     return node
   }
   const artifact = Endge.program.getCompositionArtifact(identity)
   if (!artifact || artifact.status === 'error') {
-    node.subtitle = `${identity} · artifact unavailable`
+    node.subtitle = 'artifact unavailable'
     return node
   }
   const nextAncestors = new Set(ancestors).add(identity)
@@ -119,12 +117,19 @@ function buildScopeNode(
     parentId,
     kind: 'scope',
     title: descriptor.name,
-    subtitle: scopePath,
+    subtitle: null,
     entityType: 'scope',
     identity: scopePath,
     activationMode: descriptor.effectiveActivation.mode,
     composition: address,
     scopePath,
+    presentation: {
+      documentType: null,
+      icon: 'Layers3',
+      colorClass: 'text-slate-500',
+      badgeIcon: null,
+      runtimeName: descriptor.name,
+    },
   })
   node.children = buildScopeContents(payload, scopePath, address, id, ancestors)
   for (const child of payload.scopes.filter(item => item.parentPath === scopePath)) { node.children.push(buildScopeNode(payload, child.path, address, id, ancestors)) }
@@ -144,10 +149,9 @@ function buildScopeContents(
       id: `${compositionNodeId(address)}:resource:${resource.path}`,
       parentId,
       kind: 'resource',
-      title: resource.name,
-      subtitle: resource.identity,
       entityType: resource.kind,
       identity: resource.identity,
+      ...domainNodeFields('style', resource.identity, resource.name),
       composition: address,
       scopePath,
       resourcePath: resource.path,
@@ -161,18 +165,18 @@ function buildScopeContents(
         parentId,
         ancestors,
         runtime.effectiveActivation.mode,
+        runtime.name,
       ))
       continue
     }
-    const identity = runtime.componentIdentity ?? runtime.identity
+    const target = runtimeDocumentTarget(runtime)
     result.push(makeNode({
       id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
       parentId,
       kind: 'runtime',
-      title: runtime.name,
-      subtitle: identity,
-      entityType: runtime.kind === 'component' ? 'component-sfc' : runtime.kind,
-      identity,
+      entityType: String(target.documentType),
+      identity: target.identity,
+      ...domainNodeFields(target.documentType, target.identity, runtime.name),
       activationMode: runtime.effectiveActivation.mode,
       composition: address,
       runtimePath: runtime.path,
@@ -197,8 +201,50 @@ function makeNode(input: Partial<PreviewRuntimeTreeNode> & Pick<PreviewRuntimeTr
     runtimePath: null,
     scopePath: null,
     resourcePath: null,
+    presentation: null,
     renderable: false,
     children: [],
     ...input,
   }
+}
+
+function domainNodeFields(
+  documentType: DomainDocumentType,
+  identity: string,
+  runtimeName: string | null = null,
+  presentationKind?: string,
+): Pick<PreviewRuntimeTreeNode, 'presentation' | 'subtitle' | 'title'> {
+  const resolved = resolveDomainEntityPresentation(documentType, identity, presentationKind)
+  return {
+    title: resolved.title,
+    subtitle: runtimeName,
+    presentation: {
+      documentType,
+      icon: resolved.icon,
+      colorClass: resolved.colorClass,
+      badgeIcon: resolved.badgeIcon,
+      runtimeName,
+    },
+  }
+}
+
+function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
+  documentType: DomainDocumentType
+  identity: string
+} {
+  if (runtime.kind === 'component') {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity }
+  }
+  if (runtime.kind === 'query') {
+    const query = Endge.domain.getQuery(runtime.identity)
+    return { documentType: query?.type ?? QueryType.REST, identity: runtime.identity }
+  }
+  if (runtime.kind === 'filter') {
+    const filter = Endge.domain.getFilter(runtime.identity)
+    return { documentType: filter?.type ?? FilterType.DefaultFilter, identity: runtime.identity }
+  }
+  if (runtime.kind === 'filter-view' && runtime.componentIdentity) {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity }
+  }
+  return { documentType: FilterType.DefaultFilter, identity: runtime.identity }
 }

@@ -1,6 +1,7 @@
 import type {
   ComponentSFCRuntimeHost,
   CompositionRuntimeHost,
+  DomainDocumentType,
   FilterViewRuntimeHost,
   RuntimeHost,
   RuntimeHostInputSource,
@@ -22,6 +23,14 @@ export interface PreviewCompositionAddress {
   invocationPath: string[]
 }
 
+export interface PreviewTreeNodePresentation {
+  documentType: DomainDocumentType | null
+  icon: string
+  colorClass: string
+  badgeIcon: string | null
+  runtimeName: string | null
+}
+
 export interface PreviewRuntimeTreeNode {
   id: string
   parentId: string | null
@@ -30,6 +39,7 @@ export interface PreviewRuntimeTreeNode {
   subtitle: string | null
   entityType: string
   identity: string
+  presentation: PreviewTreeNodePresentation | null
   activationMode: 'startup' | 'manual' | null
   composition: PreviewCompositionAddress | null
   runtimePath: string | null

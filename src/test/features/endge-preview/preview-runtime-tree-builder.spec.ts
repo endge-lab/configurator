@@ -7,12 +7,16 @@ const { artifacts, compositions } = vi.hoisted(() => ({
   compositions: [] as any[],
 }))
 
-vi.mock('@endge/core', () => ({
+vi.mock('@endge/core', async importOriginal => ({
+  ...await importOriginal<typeof import('@endge/core')>(),
   Endge: {
     domain: {
       getProject: (identity: string) => identity === 'airport' ? { identity, displayName: 'Airport' } : null,
-      getComponentSFC: (identity: string) => ({ identity, displayName: identity }),
+      getComponentSFC: (identity: string) => ({ identity, displayName: identity === 'table-sfc' ? 'Flight table' : identity }),
       getStore: (identity: string) => identity === 'flights' ? { identity, displayName: 'Flights' } : null,
+      getStyle: (identity: string) => identity === 'airport-theme' ? { identity, name: 'Airport theme' } : null,
+      getQuery: () => null,
+      getFilter: () => null,
       getComposition: (identity: string) => compositions.find(item => item.identity === identity) ?? null,
       getCompositions: () => compositions,
     },
@@ -51,9 +55,26 @@ describe('preview runtime tree builder', () => {
     const [project] = buildPreviewRuntimeTree({ entityType: 'project', identity: 'airport' })
     const entry = project?.children[0]
 
-    expect(project?.title).toBe('Airport')
+    expect(project).toMatchObject({
+      title: 'Airport',
+      presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
+    })
     expect(entry?.children.map(node => node.kind)).toEqual(['resource', 'runtime', 'scope'])
-    expect(entry?.children[1]).toMatchObject({ title: 'table', renderable: true })
+    expect(entry).toMatchObject({
+      title: 'Entry',
+      presentation: { icon: 'Network', colorClass: 'text-sky-500' },
+    })
+    expect(entry?.children[0]).toMatchObject({
+      title: 'Airport theme',
+      subtitle: 'theme',
+      presentation: { icon: 'Palette', colorClass: 'text-fuchsia-500' },
+    })
+    expect(entry?.children[1]).toMatchObject({
+      title: 'Flight table',
+      subtitle: 'table',
+      renderable: true,
+      presentation: { icon: 'Puzzle', colorClass: 'text-blue-500' },
+    })
     const pages = entry?.children[2]
     expect(pages?.kind).toBe('scope')
     expect(pages?.children[0]).toMatchObject({
@@ -61,7 +82,11 @@ describe('preview runtime tree builder', () => {
       title: 'Child',
       activationMode: 'manual',
     })
-    expect(pages?.children[0]?.children[0]).toMatchObject({ title: 'filter', renderable: true })
+    expect(pages?.children[0]?.children[0]).toMatchObject({
+      title: 'flight-filter',
+      subtitle: 'filter',
+      renderable: true,
+    })
   })
 
   it('creates a standalone renderable Store runtime root', () => {

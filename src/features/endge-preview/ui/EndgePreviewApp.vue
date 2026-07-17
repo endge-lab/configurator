@@ -2,13 +2,11 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { EndgePreviewEntityType, EndgePreviewTarget } from '@/features/endge-preview/domain/types/preview.types'
 
-import { ArrowLeft, RefreshCw } from 'lucide-vue-next'
+import { ArrowLeft } from 'lucide-vue-next'
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 
 import { useLayout } from '@/components/layouts/grid'
-import { Button } from '@/components/ui/button'
-import { EnvironmentSwitcher, LocaleSwitcher, ProjectSwitcher, TenantSwitcher, ThemeSwitcher } from '@/features/endge-configurator/ui/context'
 import { EndgePreview } from '@/features/endge-preview/model/core/endge-preview'
 import { endgePreviewSession } from '@/features/endge-preview/model/core/endge-preview-state'
 import EntityPreview from '@/features/endge-preview/ui/views/EntityPreview.vue'
@@ -49,11 +47,6 @@ async function open(target: EndgePreviewTarget, initialize = false): Promise<voi
   finally { loading.value = false }
 }
 
-async function reload(): Promise<void> {
-  try { await open(targetFromRoute()) }
-  catch (cause) { error.value = cause instanceof Error ? cause.message : String(cause) }
-}
-
 onBeforeMount(async () => {
   try { await open(targetFromRoute(), true) }
   catch (cause) { error.value = cause instanceof Error ? cause.message : String(cause) }
@@ -72,22 +65,6 @@ function isPreviewEntityType(value: string): value is EndgePreviewEntityType {
 </script>
 
 <template>
-  <Teleport to="[data-target='grid-layout-header-tenant']" defer>
-    <TenantSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-project']" defer>
-    <ProjectSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-environment']" defer>
-    <EnvironmentSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-locale']" defer>
-    <LocaleSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-theme']" defer>
-    <ThemeSwitcher />
-  </Teleport>
-
   <Teleport to="[data-target='grid-layout-header-menu']" defer>
     <button
       type="button"
@@ -97,12 +74,6 @@ function isPreviewEntityType(value: string): value is EndgePreviewEntityType {
       <ArrowLeft class="size-3.5" />
       Конфигуратор
     </button>
-  </Teleport>
-
-  <Teleport to="[data-target='grid-layout-header-actions']" defer>
-    <Button variant="ghost" size="icon" title="Перезапустить preview" :disabled="loading" @click="reload">
-      <RefreshCw class="size-4" :class="loading && 'animate-spin'" />
-    </Button>
   </Teleport>
 
   <div class="h-full min-h-0">

@@ -57,6 +57,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  getDomainDocumentPresentation,
+  getDomainSectionPresentation,
+} from '@/features/endge-configurator/model/presentation/domain-document-presentation'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import {
   canHardDelete,
@@ -73,10 +77,6 @@ import {
   softDeleteFolder,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
-import {
-  getDomainDocumentPresentation,
-  getDomainSectionPresentation,
-} from '@/features/endge-ide/model/domain/domain-document-presentation'
 import {
   buildDomainTree,
   getDomainTreeRootBlocks,
