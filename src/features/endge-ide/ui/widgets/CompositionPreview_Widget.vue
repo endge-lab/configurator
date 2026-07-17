@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { EndgeFilterRenderer, SFC_RuntimeRenderer } from '@endge/vue'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,10 @@ const runtime = computed(() => compositionPreviewRuntime.value)
 const error = computed(() => compositionPreviewError.value)
 const title = computed(() => compositionPreviewTitle.value)
 const renderables = computed(() => compositionPreviewRenderables.value)
+
+onBeforeUnmount(() => {
+  void destroyCompositionPreviewRuntime()
+})
 </script>
 
 <template>

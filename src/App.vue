@@ -26,6 +26,7 @@ const currentLayout = computed(() => {
   const layout = (route.meta.layout || 'empty') as keyof typeof layouts
   return layouts[layout] ?? Empty
 })
+const currentLayoutKey = computed(() => String(route.meta.layoutScope ?? route.meta.layout ?? 'empty'))
 
 // Clear error on route change
 watch(() => route.fullPath, () => {
@@ -85,7 +86,7 @@ onErrorCaptured((err, instance, info) => {
     </template>
 
     <!-- ЛОГИКА LAYOUT -->
-    <component :is="currentLayout">
+    <component :is="currentLayout" :key="currentLayoutKey">
       <ErrorView
         v-if="fatalRenderGuard || error"
         :error="fatalRenderGuard?.error ?? error"

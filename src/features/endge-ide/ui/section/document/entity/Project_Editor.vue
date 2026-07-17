@@ -1,29 +1,33 @@
 <script setup lang="ts">
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
-
 import type { EndgeConfigurationContribution } from '@endge/core'
-import { DomainSectionType, Endge } from '@endge/core'
-import { Briefcase } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import { useDomainStore } from '@endge/vue'
 
+import { DomainSectionType, Endge } from '@endge/core'
+import { useDomainStore } from '@endge/vue'
+import { Briefcase, Bug } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
 import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
+import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
 }>()
 
+const router = useRouter()
 const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(() => props.tabContext?.editor ?? null)
 const tab = ref<'project' | 'navigation' | 'configuration'>('project')
@@ -76,6 +80,10 @@ function onNavigationDrop(id: string | number): void {
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
+
+function openDebugPreview(): void {
+  openEndgeDebugPreview(router, 'project', editor.value?.identity)
+}
 </script>
 
 <template>
@@ -92,6 +100,16 @@ async function save(): Promise<void> {
           id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
         </div>
       </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        title="Запустить Debug Preview проекта"
+        :disabled="!editor?.identity"
+        @click="openDebugPreview"
+      >
+        <Bug class="size-4" />
+      </Button>
       <SaveDocumentButton :loading="isBusy" @click="save" />
     </div>
 

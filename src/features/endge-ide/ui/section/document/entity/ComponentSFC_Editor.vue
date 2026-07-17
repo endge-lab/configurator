@@ -3,11 +3,12 @@
 import type { RComponentSFC } from '@endge/core'
 
 import { Endge, inspectComponentSFCVisual } from '@endge/core'
-import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
+import { AlignLeft, Bug, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import { showWidget } from '@/components/layouts/grid'
+import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,17 +25,19 @@ import {
   launchSFCPreview,
   sfcPreviewError,
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
-import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
+import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
+import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
 }
 
 const tabs = EndgeIDE.tabs
+const router = useRouter()
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const launchLoading = ref(false)
 const activeTab = ref<'general' | 'visual' | 'source'>('source')
@@ -96,7 +99,12 @@ async function launchPreview(): Promise<void> {
       source: current.source,
     })
     sfcPreviewError.value = null
-    showWidget('sfc-preview')
+    if (getWidgetInstances('sfc-preview').length) {
+      showWidget('sfc-preview')
+    }
+    else {
+      createWidgetInstance('sfc-preview', {})
+    }
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -113,6 +121,10 @@ async function launchPreview(): Promise<void> {
   finally {
     launchLoading.value = false
   }
+}
+
+function openDebugPreview(): void {
+  openEndgeDebugPreview(router, 'component-sfc', editor.value?.identity)
 }
 </script>
 
@@ -204,6 +216,20 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Запустить preview</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Открыть Debug Preview компонента"
+                @click="openDebugPreview"
+              >
+                <Bug class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Открыть Debug Preview сохранённого компонента</TooltipContent>
           </Tooltip>
         </div>
 

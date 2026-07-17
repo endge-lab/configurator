@@ -149,6 +149,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointermove', resizePanel)
   document.removeEventListener('pointerup', endResize)
   endResize()
+  void destroySFCPreviewRuntime()
 })
 </script>
 

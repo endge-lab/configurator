@@ -26,8 +26,8 @@
   },
   "dependencies": {
     "@endge/codegen": "^0.1.0",
-    "@endge/core": "^1.2.6",
     "@endge/computation-sandbox": "workspace:*",
+    "@endge/core": "^1.2.6",
     "@endge/raph": "^3.0.1",
     "@endge/shadcn-vue": "workspace:*",
     "@endge/utils": "^0.24.2",
@@ -90,6 +90,7 @@
     "typescript": "~5.9.3",
     "vite": "^7.2.2",
     "vite-plugin-vue-devtools": "^8.0.3",
+    "vitest": "^3.2.6",
     "vue-tsc": "^3.1.3"
   }
 }

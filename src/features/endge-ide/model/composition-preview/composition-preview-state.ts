@@ -13,6 +13,7 @@ import {
   configuratorPreviewMeta,
   destroyPreviewRuntime,
   resolvePreviewRuntime,
+  serializePreviewLifecycle,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface CompositionPreviewLaunchInput {
@@ -81,50 +82,63 @@ export const compositionPreviewRenderables = computed<CompositionPreviewRenderab
 let runtimeCounter = 0
 
 export async function launchCompositionPreview(input: CompositionPreviewLaunchInput): Promise<void> {
-  compositionPreviewError.value = null
-  compositionPreviewTitle.value = input.displayName || input.name || input.identity || 'Composition preview'
+  await serializePreviewLifecycle('composition', async () => {
+    compositionPreviewError.value = null
+    compositionPreviewTitle.value = input.displayName || input.name || input.identity || 'Composition preview'
 
-  await Endge.build()
-  ensureCompositionRuntimeArtifacts(
-    input.source,
-    new Set(input.identity ? [input.identity] : []),
-  )
+    await Endge.build()
+    ensureCompositionRuntimeArtifacts(
+      input.source,
+      new Set(input.identity ? [input.identity] : []),
+    )
 
-  const model = createPreviewComposition(input)
-  const artifact = Endge.compiler.buildComposition(model)
-  if (artifact.status === 'error') {
-    const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
-      ?? 'Composition source содержит ошибки.'
-    throw new Error(message)
-  }
+    const model = createPreviewComposition(input)
+    const artifact = Endge.compiler.buildComposition(model)
+    if (artifact.status === 'error') {
+      const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
+        ?? 'Composition source содержит ошибки.'
+      throw new Error(message)
+    }
 
-  destroyPreviewRuntime('composition', model.identity)
-  const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
-  const runtime = configuratorPreviewAppScope.execute(model, {
-    meta: {
-      ...configuratorPreviewMeta(),
-      dataRuntimes,
-    },
-  }) as CompositionRuntimeHost | null
-  if (!runtime || runtime.entityType !== 'composition')
-    throw new Error('Не удалось создать runtime композиции.')
+    await disposeCompositionPreviewRuntime()
+    await destroyPreviewRuntime('composition', model.identity)
+    const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
+    const runtime = configuratorPreviewAppScope.execute(model, {
+      meta: {
+        ...configuratorPreviewMeta(),
+        dataRuntimes,
+      },
+    }) as CompositionRuntimeHost | null
+    if (!runtime || runtime.entityType !== 'composition') {
+      throw new Error('Не удалось создать runtime композиции.')
+    }
 
-  try {
-    await runtime.mountGraph()
-  }
-  catch (error) {
-    Endge.runtime.destroyRuntimeTree(runtime.id)
-    throw error
-  }
-  compositionPreviewRuntime.value = runtime
-  logCompositionPreviewOutputs(runtime)
+    try {
+      await runtime.mountGraph()
+    }
+    catch (error) {
+      await Endge.runtime.destroyRuntimeTreeAsync(runtime.id)
+      throw error
+    }
+    compositionPreviewRuntime.value = runtime
+    logCompositionPreviewOutputs(runtime)
+  })
 }
 
-export function destroyCompositionPreviewRuntime(): void {
+export function destroyCompositionPreviewRuntime(): Promise<void> {
+  return serializePreviewLifecycle('composition', disposeCompositionPreviewRuntime)
+}
+
+async function disposeCompositionPreviewRuntime(): Promise<void> {
   const runtimeId = compositionPreviewRuntime.value?.id
-  if (runtimeId)
-    Endge.runtime.destroyRuntimeTree(runtimeId)
-  compositionPreviewRuntime.value = null
+  try {
+    if (runtimeId) {
+      await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
+    }
+  }
+  finally {
+    compositionPreviewRuntime.value = null
+  }
 }
 
 function createPreviewComposition(input: CompositionPreviewLaunchInput): RComposition {

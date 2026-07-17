@@ -7,6 +7,16 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/features/endge-ide/ui/EndgeAdminApp.vue'),
     meta: {
       layout: 'grid',
+      layoutScope: 'endge-ide',
+    },
+  },
+  {
+    path: '/preview/:entityType/:identity',
+    name: 'endge-preview',
+    component: () => import('@/features/endge-preview/ui/EndgePreviewApp.vue'),
+    meta: {
+      layout: 'grid',
+      layoutScope: 'endge-preview',
     },
   },
   {

@@ -1,10 +1,14 @@
 import { Endge, RComposition, RQuery } from '@endge/core'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { ensureCompositionRuntimeArtifacts } from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
+import {
+  destroyCompositionPreviewRuntime,
+  ensureCompositionRuntimeArtifacts,
+} from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
 
 describe('Composition preview artifacts', () => {
-  afterEach(() => {
+  afterEach(async () => {
+    await destroyCompositionPreviewRuntime()
     Endge.program.clear()
     Endge.domain.reset()
   })

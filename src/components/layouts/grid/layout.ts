@@ -13,7 +13,7 @@ import type { WidgetChannelMessage, WidgetPopupState } from '@/components/layout
 import type { ComputedRef, Ref } from 'vue'
 
 import { useTitle } from '@vueuse/core'
-import { computed, isRef, onBeforeUnmount, reactive, toValue, watch } from 'vue'
+import { computed, isRef, onBeforeUnmount, reactive, ref, toValue, watch } from 'vue'
 
 import {
   closePopupWindow,
@@ -27,6 +27,7 @@ import { useBranding } from '@/lib/branding.ts'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const STORAGE_KEY = 'app:grid-layout-state'
+const DEFAULT_LAYOUT_SCOPE = 'endge-ide'
 
 function createDefaultAreaState() {
   return {
@@ -113,24 +114,45 @@ const defaultPersistedState: PersistedState = {
   definitionPositions: {},
 }
 
-const persistedState = useSafeLocalStorage<PersistedState>(STORAGE_KEY, defaultPersistedState, {
-  writeDefaults: false,
-  mergeDefaults: (storageValue, defaults) => {
-    const s = storageValue ?? {}
-    const a = s.areas ?? {}
-    return {
-      areas: {
-        left: { ...defaults.areas.left, ...a.left },
-        right: { ...defaults.areas.right, ...a.right },
-        bottom: { ...defaults.areas.bottom, ...a.bottom },
-        floating: {
-          order: { ...defaults.areas.floating.order, ...a.floating?.order },
-          states: { ...defaults.areas.floating.states, ...a.floating?.states },
+const activeLayoutScope = ref(DEFAULT_LAYOUT_SCOPE)
+const persistedStates = new Map<string, Ref<PersistedState>>()
+
+function createPersistedState(scope: string): Ref<PersistedState> {
+  const storageKey = scope === DEFAULT_LAYOUT_SCOPE ? STORAGE_KEY : `${STORAGE_KEY}:${scope}`
+  return useSafeLocalStorage<PersistedState>(storageKey, structuredClone(defaultPersistedState), {
+    writeDefaults: false,
+    mergeDefaults: (storageValue, defaults) => {
+      const s = storageValue ?? {}
+      const a = s.areas ?? {}
+      return {
+        areas: {
+          left: { ...defaults.areas.left, ...a.left },
+          right: { ...defaults.areas.right, ...a.right },
+          bottom: { ...defaults.areas.bottom, ...a.bottom },
+          floating: {
+            order: { ...defaults.areas.floating.order, ...a.floating?.order },
+            states: { ...defaults.areas.floating.states, ...a.floating?.states },
+          },
         },
-      },
-      definitionPositions: { ...defaults.definitionPositions, ...s.definitionPositions },
-    }
-  },
+        definitionPositions: { ...defaults.definitionPositions, ...s.definitionPositions },
+      }
+    },
+  })
+}
+
+function getPersistedState(scope = activeLayoutScope.value): Ref<PersistedState> {
+  const normalized = String(scope ?? '').trim() || DEFAULT_LAYOUT_SCOPE
+  let state = persistedStates.get(normalized)
+  if (!state) {
+    state = createPersistedState(normalized)
+    persistedStates.set(normalized, state)
+  }
+  return state
+}
+
+const persistedState = computed<PersistedState>({
+  get: () => getPersistedState().value,
+  set: value => { getPersistedState().value = value },
 })
 
 let nextZIndex = 1000
@@ -140,6 +162,25 @@ function getNextZIndex(): number {
 }
 
 let _isLayoutHydrated = false
+
+/** Switches the global Grid host to an isolated persisted layout workspace. */
+export function setLayoutScope(scope: string): void {
+  const normalized = String(scope ?? '').trim() || DEFAULT_LAYOUT_SCOPE
+  if (activeLayoutScope.value === normalized) {
+    hydrateLayoutFromPersisted()
+    return
+  }
+  activeLayoutScope.value = normalized
+  layoutState.widgets = createDefaultWidgetsState()
+  layoutState.isDraggingWidget = false
+  layoutState.draggingWidgetId = null
+  _isLayoutHydrated = false
+  hydrateLayoutFromPersisted()
+}
+
+export function getLayoutScope(): string {
+  return activeLayoutScope.value
+}
 
 function hydrateLayoutFromPersisted(): void {
   if (_isLayoutHydrated)

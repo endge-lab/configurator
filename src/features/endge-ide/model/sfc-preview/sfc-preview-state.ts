@@ -27,6 +27,7 @@ import {
   configuratorPreviewMeta,
   destroyPreviewRuntime,
   resolvePreviewRuntime,
+  serializePreviewLifecycle,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface SFCPreviewLaunchInput {
@@ -54,74 +55,84 @@ interface PreviewCompositionContext {
 }
 
 export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<void> {
-  sfcPreviewError.value = null
-  sfcPreviewTitle.value = input.displayName || input.name || input.identity || 'SFC preview'
+  await serializePreviewLifecycle('component-sfc', async () => {
+    sfcPreviewError.value = null
+    sfcPreviewTitle.value = input.displayName || input.name || input.identity || 'SFC preview'
 
-  const model = RComponentSFC.fromPlain({
-    id: input.id ?? `preview-${++runtimeCounter}`,
-    identity: input.identity || `sfc-preview-${runtimeCounter}`,
-    tag: input.tag,
-    name: input.name || input.displayName || input.identity || 'SFC preview',
-    displayName: input.displayName || input.name || input.identity || 'SFC preview',
-    source: input.source,
+    const model = RComponentSFC.fromPlain({
+      id: input.id ?? `preview-${++runtimeCounter}`,
+      identity: input.identity || `sfc-preview-${runtimeCounter}`,
+      tag: input.tag,
+      name: input.name || input.displayName || input.identity || 'SFC preview',
+      displayName: input.displayName || input.name || input.identity || 'SFC preview',
+      source: input.source,
+    })
+    const artifact = createPreviewArtifact(model)
+    if (artifact.status === 'error') {
+      const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
+        ?? 'SFC source содержит ошибки.'
+      throw new Error(message)
+    }
+    const previewProps = artifact.payload.previewProps
+    if (!previewProps || Object.keys(previewProps).length === 0) {
+      throw new Error('Сначала определите превью props')
+    }
+
+    const identity = resolvePreviewIdentity(input)
+    ensurePreviewPortArtifacts(artifact.payload)
+    await disposeSFCPreviewRuntime()
+    applyPreviewStyle(artifact.payload.ir?.style ?? null)
+    await destroyPreviewRuntime('component-sfc', identity)
+    const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
+    try {
+      const runtimeInput = resolvePreviewInput(previewProps, composition)
+      sfcPreviewInput.value = runtimeInput
+      const artifactReader = {
+        getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
+      }
+      const runtime = configuratorPreviewAppScope.execute(model, {
+        parent: composition?.host ?? null,
+        artifactReader,
+        meta: {
+          ...configuratorPreviewMeta(),
+          target: 'dom',
+          input: runtimeInput,
+        },
+      }) as ComponentSFCRuntimeHost | null
+      if (!runtime || runtime.entityType !== 'component-sfc') {
+        throw new Error('Не удалось создать SFC preview runtime.')
+      }
+      previewComposition = composition
+      sfcPreviewRuntime.value = runtime
+    }
+    catch (error) {
+      await destroyPreviewComposition(composition)
+      throw error
+    }
   })
-  const artifact = createPreviewArtifact(model)
-  if (artifact.status === 'error') {
-    const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
-      ?? 'SFC source содержит ошибки.'
-    throw new Error(message)
-  }
-  const previewProps = artifact.payload.previewProps
-  if (!previewProps || Object.keys(previewProps).length === 0) {
-    throw new Error('Сначала определите превью props')
-  }
-
-  const identity = resolvePreviewIdentity(input)
-  ensurePreviewPortArtifacts(artifact.payload)
-  destroySFCPreviewRuntime()
-  applyPreviewStyle(artifact.payload.ir?.style ?? null)
-  destroyPreviewRuntime('component-sfc', identity)
-  const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
-  try {
-    const runtimeInput = resolvePreviewInput(previewProps, composition)
-    sfcPreviewInput.value = runtimeInput
-    const artifactReader = {
-      getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
-    }
-    const runtime = configuratorPreviewAppScope.execute(model, {
-      parent: composition?.host ?? null,
-      artifactReader,
-      meta: {
-        ...configuratorPreviewMeta(),
-        target: 'dom',
-        input: runtimeInput,
-      },
-    }) as ComponentSFCRuntimeHost | null
-    if (!runtime || runtime.entityType !== 'component-sfc') {
-      throw new Error('Не удалось создать SFC preview runtime.')
-    }
-    previewComposition = composition
-    sfcPreviewRuntime.value = runtime
-  }
-  catch (error) {
-    destroyPreviewComposition(composition)
-    throw error
-  }
 }
 
-export function destroySFCPreviewRuntime(): void {
+export function destroySFCPreviewRuntime(): Promise<void> {
+  return serializePreviewLifecycle('component-sfc', disposeSFCPreviewRuntime)
+}
+
+async function disposeSFCPreviewRuntime(): Promise<void> {
   const runtimeId = sfcPreviewRuntime.value?.id
-  if (previewComposition) {
-    destroyPreviewComposition(previewComposition)
+  try {
+    if (previewComposition) {
+      await destroyPreviewComposition(previewComposition)
+    }
+    else if (runtimeId) {
+      await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
+    }
   }
-  else if (runtimeId) {
-    Endge.runtime.destroyRuntimeTree(runtimeId)
+  finally {
+    previewComposition = null
+    sfcPreviewRuntime.value = null
+    sfcPreviewInput.value = { kind: 'local', props: {} }
+    previewStyleElement?.remove()
+    previewStyleElement = null
   }
-  previewComposition = null
-  sfcPreviewRuntime.value = null
-  sfcPreviewInput.value = { kind: 'local', props: {} }
-  previewStyleElement?.remove()
-  previewStyleElement = null
 }
 
 function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
@@ -399,9 +410,9 @@ function serializeStoreMapping(fields: Record<string, string>): string {
     .join(', ')} }`
 }
 
-function destroyPreviewComposition(context: PreviewCompositionContext | null): void {
+async function destroyPreviewComposition(context: PreviewCompositionContext | null): Promise<void> {
   if (context && Endge.runtime.getRuntimeById(context.host.id)) {
-    Endge.runtime.destroyRuntimeTree(context.host.id)
+    await Endge.runtime.destroyRuntimeTreeAsync(context.host.id)
   }
 }
 

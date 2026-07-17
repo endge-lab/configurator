@@ -8,8 +8,8 @@ import {
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
 describe('ComponentSFC port preview', () => {
-  afterEach(() => {
-    destroySFCPreviewRuntime()
+  afterEach(async () => {
+    await destroySFCPreviewRuntime()
     Endge.program.clear()
     Endge.domain.reset()
   })

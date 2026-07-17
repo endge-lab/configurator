@@ -1,0 +1,115 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { buildPreviewRuntimeTree } from '@/features/endge-preview/model/tree/preview-runtime-tree-builder'
+
+const { artifacts, compositions } = vi.hoisted(() => ({
+  artifacts: new Map<string, any>(),
+  compositions: [] as any[],
+}))
+
+vi.mock('@endge/core', () => ({
+  Endge: {
+    domain: {
+      getProject: (identity: string) => identity === 'airport' ? { identity, displayName: 'Airport' } : null,
+      getComponentSFC: (identity: string) => ({ identity, displayName: identity }),
+      getStore: (identity: string) => identity === 'flights' ? { identity, displayName: 'Flights' } : null,
+      getComposition: (identity: string) => compositions.find(item => item.identity === identity) ?? null,
+      getCompositions: () => compositions,
+    },
+    program: {
+      getCompositionArtifact: (identity: string) => artifacts.get(identity) ?? null,
+    },
+  },
+}))
+
+describe('preview runtime tree builder', () => {
+  beforeEach(() => {
+    artifacts.clear()
+    compositions.splice(0)
+  })
+
+  it('flattens scope_default and preserves named scopes and nested compositions', () => {
+    compositions.push(
+      { identity: 'project-entry', displayName: 'Entry', kind: 'project', kindIdentity: 'airport', active: true },
+      { identity: 'child', displayName: 'Child', kind: 'library', active: true },
+    )
+    artifacts.set('project-entry', artifact(payload({
+      resources: [{ name: 'theme', path: 'theme', kind: 'style', identity: 'airport-theme', scopePath: 'scope_default' }],
+      runtimes: [
+        runtime('table', 'component', 'scope_default', 'table-sfc'),
+        runtime('childRuntime', 'composition', 'pages', 'child'),
+      ],
+      scopes: [
+        scope('scope_default', null, ['pages']),
+        scope('pages', 'scope_default', []),
+      ],
+    })))
+    artifacts.set('child', artifact(payload({
+      runtimes: [runtime('filter', 'filter-view', 'scope_default', 'flight-filter')],
+    })))
+
+    const [project] = buildPreviewRuntimeTree({ entityType: 'project', identity: 'airport' })
+    const entry = project?.children[0]
+
+    expect(project?.title).toBe('Airport')
+    expect(entry?.children.map(node => node.kind)).toEqual(['resource', 'runtime', 'scope'])
+    expect(entry?.children[1]).toMatchObject({ title: 'table', renderable: true })
+    const pages = entry?.children[2]
+    expect(pages?.kind).toBe('scope')
+    expect(pages?.children[0]).toMatchObject({
+      kind: 'composition',
+      title: 'Child',
+      activationMode: 'manual',
+    })
+    expect(pages?.children[0]?.children[0]).toMatchObject({ title: 'filter', renderable: true })
+  })
+
+  it('creates a standalone renderable Store runtime root', () => {
+    const [store] = buildPreviewRuntimeTree({ entityType: 'store', identity: 'flights' })
+
+    expect(store).toMatchObject({
+      id: 'store:flights',
+      kind: 'runtime',
+      title: 'Flights',
+      entityType: 'store',
+      identity: 'flights',
+      renderable: true,
+    })
+  })
+})
+
+function artifact(value: any) {
+  return { status: 'valid', payload: value }
+}
+
+function payload(overrides: Record<string, any> = {}) {
+  return {
+    activation: { mode: 'startup' },
+    resources: [],
+    runtimes: [],
+    scopes: [scope('scope_default', null, [])],
+    ...overrides,
+  }
+}
+
+function scope(path: string, parentPath: string | null, children: string[]) {
+  return {
+    name: path,
+    path,
+    parentPath,
+    effectiveActivation: { mode: path === 'pages' ? 'manual' : 'startup' },
+    children,
+  }
+}
+
+function runtime(name: string, kind: string, scopePath: string, identity: string) {
+  return {
+    name,
+    path: name,
+    kind,
+    identity,
+    componentIdentity: kind === 'component' ? identity : null,
+    scopePath,
+    effectiveActivation: { mode: kind === 'composition' ? 'manual' : 'startup' },
+  }
+}

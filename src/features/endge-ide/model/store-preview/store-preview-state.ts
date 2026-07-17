@@ -7,6 +7,7 @@ import {
   configuratorPreviewAppScope,
   configuratorPreviewMeta,
   destroyPreviewRuntime,
+  serializePreviewLifecycle,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 
 export interface StorePreviewLaunchInput {
@@ -29,38 +30,49 @@ export async function launchStorePreview(input: StorePreviewLaunchInput): Promis
     throw new Error('Identity хранилища обязателен для запуска preview.')
   }
 
-  storePreviewError.value = null
-  const model = createPreviewStore(input, identity)
-  const artifact = createPreviewStoreArtifact(model)
-  if (artifact.status === 'error') {
-    const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
-      ?? 'Store source содержит ошибки.'
-    throw new Error(message)
-  }
+  return serializePreviewLifecycle('store', async () => {
+    storePreviewError.value = null
+    const model = createPreviewStore(input, identity)
+    const artifact = createPreviewStoreArtifact(model)
+    if (artifact.status === 'error') {
+      const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
+        ?? 'Store source содержит ошибки.'
+      throw new Error(message)
+    }
 
-  destroyPreviewRuntime('store', identity)
-  const artifactReader = {
-    getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
-  }
-  const runtime = configuratorPreviewAppScope.execute(model, {
-    artifactReader,
-    meta: configuratorPreviewMeta(),
-  }) as StoreRuntimeHost | null
-  if (!runtime || runtime.entityType !== 'store') {
-    throw new Error('Не удалось создать Store preview runtime.')
-  }
+    await disposeStorePreviewRuntime()
+    await destroyPreviewRuntime('store', identity)
+    const artifactReader = {
+      getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
+    }
+    const runtime = configuratorPreviewAppScope.execute(model, {
+      artifactReader,
+      meta: configuratorPreviewMeta(),
+    }) as StoreRuntimeHost | null
+    if (!runtime || runtime.entityType !== 'store') {
+      throw new Error('Не удалось создать Store preview runtime.')
+    }
 
-  storePreviewRuntime.value = runtime
-  return runtime
+    storePreviewRuntime.value = runtime
+    return runtime
+  })
 }
 
 /** Останавливает активный Store preview, если он ещё зарегистрирован. */
-export function destroyStorePreviewRuntime(): void {
+export function destroyStorePreviewRuntime(): Promise<void> {
+  return serializePreviewLifecycle('store', disposeStorePreviewRuntime)
+}
+
+async function disposeStorePreviewRuntime(): Promise<void> {
   const runtimeId = storePreviewRuntime.value?.id
-  if (runtimeId) {
-    Endge.runtime.destroyRuntimeTree(runtimeId)
+  try {
+    if (runtimeId) {
+      await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
+    }
   }
-  storePreviewRuntime.value = null
+  finally {
+    storePreviewRuntime.value = null
+  }
 }
 
 function createPreviewStore(input: StorePreviewLaunchInput, identity: string): RStore {

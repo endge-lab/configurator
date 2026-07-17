@@ -1,39 +1,42 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+
 import GridNavUser from '@/components/layouts/grid/GridNavUser.vue'
-import { getLayoutState } from '@/components/layouts/grid/layout.ts'
 import { AppSwitcherContent } from '@/components/layouts/shared'
 
-const { title } = getLayoutState()
 const route = useRoute()
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const hasConfiguratorContext = computed(() =>
+  route.name === 'configurator'
+  || route.name === 'endge-preview'
+  || route.path.startsWith('/admin'),
+)
 </script>
 
 <template>
   <div class="flex items-center gap-2">
     <div
-      v-if="isAdminRoute"
+      v-if="hasConfiguratorContext"
       data-target="grid-layout-header-tenant"
       class="flex items-center"
     />
     <div
-      v-if="isAdminRoute"
+      v-if="hasConfiguratorContext"
       data-target="grid-layout-header-project"
       class="flex items-center"
     />
     <div
-      v-if="isAdminRoute"
+      v-if="hasConfiguratorContext"
       data-target="grid-layout-header-environment"
       class="flex items-center"
     />
     <div
-      v-if="isAdminRoute"
+      v-if="hasConfiguratorContext"
       data-target="grid-layout-header-locale"
       class="flex items-center"
     />
     <div
-      v-if="isAdminRoute"
+      v-if="hasConfiguratorContext"
       data-target="grid-layout-header-theme"
       class="flex items-center"
     />

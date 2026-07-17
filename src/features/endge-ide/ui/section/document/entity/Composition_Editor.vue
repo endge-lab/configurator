@@ -3,6 +3,7 @@ import type { RCompositionEditor } from '@/features/endge-ide/domain/entities/RC
 
 import { Endge } from '@endge/core'
 import {
+  Bug,
   Code2,
   FileJson,
   Loader2,
@@ -12,9 +13,10 @@ import {
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import { showWidget } from '@/components/layouts/grid'
+import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -30,10 +32,12 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RCompositionEditor | null,
 )
+const router = useRouter()
 const activeTab = ref<'source' | 'artifact' | 'diagnostics'>('source')
 const launchLoading = ref(false)
 const compiled = computed(() =>
@@ -67,7 +71,12 @@ async function launchPreview(): Promise<void> {
       sourceVersion: current.sourceVersion,
     })
     compositionPreviewError.value = null
-    showWidget('composition-preview')
+    if (getWidgetInstances('composition-preview').length) {
+      showWidget('composition-preview')
+    }
+    else {
+      createWidgetInstance('composition-preview', {})
+    }
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -79,6 +88,10 @@ async function launchPreview(): Promise<void> {
   finally {
     launchLoading.value = false
   }
+}
+
+function openDebugPreview(): void {
+  openEndgeDebugPreview(router, 'composition', editor.value?.identity)
 }
 </script>
 
@@ -129,6 +142,20 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Запустить preview композиции</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Открыть Debug Preview композиции"
+                @click="openDebugPreview"
+              >
+                <Bug class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Открыть Debug Preview сохранённой композиции</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>

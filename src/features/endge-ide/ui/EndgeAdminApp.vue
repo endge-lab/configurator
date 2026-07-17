@@ -17,11 +17,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
-import EnvironmentSwitcher from '@/features/endge-ide/ui/section/header/EnvironmentSwitcher.vue'
-import LocaleSwitcher from '@/features/endge-ide/ui/section/header/LocaleSwitcher.vue'
-import ProjectSwitcher from '@/features/endge-ide/ui/section/header/ProjectSwitcher.vue'
-import TenantSwitcher from '@/features/endge-ide/ui/section/header/TenantSwitcher.vue'
-import ThemeSwitcher from '@/features/endge-ide/ui/section/header/ThemeSwitcher.vue'
+import { EnvironmentSwitcher, LocaleSwitcher, ProjectSwitcher, TenantSwitcher, ThemeSwitcher } from '@/features/endge-configurator/ui/context'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs

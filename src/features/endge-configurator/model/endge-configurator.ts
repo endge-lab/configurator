@@ -9,6 +9,11 @@ import {
 
 import { registerEndgeMockProviders } from '@/features/endge-configurator/model/endge-mock-providers'
 
+export interface ConfiguratorSurfaceLifecycle {
+  beforeContextReset?: () => Promise<void> | void
+  afterContextBoot?: () => Promise<void> | void
+}
+
 /**
  * Композитный слой для соединения логики Endge/EndgeIDE федераций
  */
@@ -19,6 +24,7 @@ export class EndgeConfigurator {
   private static _currentContext: Partial<EndgeExecutionContext> = {}
   private static _requestedContext: Partial<EndgeExecutionContext> = {}
   private static readonly _listeners = new Set<() => void>()
+  private static readonly _surfaces = new Map<string, ConfiguratorSurfaceLifecycle>()
 
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
@@ -124,13 +130,16 @@ export class EndgeConfigurator {
     this._isSwitchingContext = true
     this._notify()
     try {
+      await this._runSurfaceHook('beforeContextReset')
       await this.reset()
       await this.init({ context: next })
+      await this._runSurfaceHook('afterContextBoot')
     }
     catch (error) {
       try {
         await this.reset()
         await this.init({ context: previous })
+        await this._runSurfaceHook('afterContextBoot')
       }
       catch {
         // Исходная ошибка содержит первичную причину; rollback best-effort.
@@ -147,6 +156,19 @@ export class EndgeConfigurator {
   public static subscribe(listener: () => void): () => void {
     this._listeners.add(listener)
     return () => this._listeners.delete(listener)
+  }
+
+  /** Registers a mounted application surface that owns runtime handles across context reboots. */
+  public static registerSurface(id: string, lifecycle: ConfiguratorSurfaceLifecycle): () => void {
+    const key = String(id ?? '').trim()
+    if (!key) throw new Error('[EndgeConfigurator] surface id is required.')
+    this._surfaces.set(key, lifecycle)
+    return () => { if (this._surfaces.get(key) === lifecycle) this._surfaces.delete(key) }
+  }
+
+  private static async _runSurfaceHook(hook: keyof ConfiguratorSurfaceLifecycle): Promise<void> {
+    for (const lifecycle of this._surfaces.values())
+      await lifecycle[hook]?.()
   }
 
   private static _notify(): void {

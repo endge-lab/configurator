@@ -4,6 +4,7 @@ import type { StoreRuntimeHost } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import {
+  Bug,
   Code2,
   FileJson,
   Loader2,
@@ -14,6 +15,7 @@ import {
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -35,10 +37,12 @@ import {
 } from '@/features/endge-ide/model/store-preview/store-preview-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
+import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
 )
+const router = useRouter()
 const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>(
   'source',
 )
@@ -118,6 +122,10 @@ async function launchPreview(): Promise<void> {
     launchLoading.value = false
   }
 }
+
+function openDebugPreview(): void {
+  openEndgeDebugPreview(router, 'store', editor.value?.identity)
+}
 </script>
 
 <template>
@@ -186,6 +194,20 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Запустить preview хранилища</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Открыть Debug Preview хранилища"
+                @click="openDebugPreview"
+              >
+                <Bug class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Открыть Debug Preview сохранённого хранилища</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
