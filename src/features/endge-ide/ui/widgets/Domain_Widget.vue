@@ -1138,7 +1138,7 @@ function rowClasses(item: FlatFsItem): string {
             </Tooltip>
           </div>
 
-          <div class="flex items-center gap-px">
+          <div class="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
@@ -1154,7 +1154,7 @@ function rowClasses(item: FlatFsItem): string {
                   :aria-pressed="showRootHierarchyBackgrounds"
                   @click="showRootHierarchyBackgrounds = !showRootHierarchyBackgrounds"
                 >
-                  <Palette class="size-3" />
+                  <Palette class="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1166,7 +1166,12 @@ function rowClasses(item: FlatFsItem): string {
 
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" class="size-6 rounded-sm" @click="EndgeIDE.modals.openCreateDocument()">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm"
+                  @click="EndgeIDE.modals.openCreateDocument()"
+                >
                   <Plus class="size-3" />
                 </Button>
               </TooltipTrigger>
