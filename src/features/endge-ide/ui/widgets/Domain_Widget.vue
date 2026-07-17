@@ -1078,7 +1078,7 @@ function rowClasses(item: FlatFsItem): string {
           <div class="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" @click="Endge.download">
+                <Button size="icon" variant="ghost" class="size-7" @click="() => Endge.download()">
                   <Download class="size-3.5" />
                 </Button>
               </TooltipTrigger>
