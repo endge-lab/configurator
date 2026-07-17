@@ -153,6 +153,7 @@ interface EditorSession {
   editor: unknown | null
   model: unknown | null
   syncBeforeSave?: () => void
+  syncSystemBeforeSave?: () => void
 }
 
 type DocResolver = (documentId: string) => EditorSession | null
@@ -286,10 +287,15 @@ export class EndgeIDETabs {
       const session = this._sessionByTabId.get(activeTab.id)
       const model = session?.model as { isSystem?: boolean } | null | undefined
       if (model?.isSystem === true && documentType !== 'style') {
-        toast.info('Системный документ нельзя изменить')
-        return
+        if (!session?.syncSystemBeforeSave) {
+          toast.info('Системный документ нельзя изменить')
+          return
+        }
+        session.syncSystemBeforeSave()
       }
-      session?.syncBeforeSave?.()
+      else {
+        session?.syncBeforeSave?.()
+      }
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
       await Endge.schema.saveDocument(saveDocumentId, documentType, { model: session?.model ?? session?.editor ?? null })
       if ((documentType === 'store' || documentType === 'mock') && session?.model && typeof session.model === 'object') {
@@ -1110,6 +1116,7 @@ export class EndgeIDETabs {
       editor,
       model: environment,
       syncBeforeSave: () => editor.updateSource(environment),
+      syncSystemBeforeSave: () => editor.updateConfigurationSource(environment),
     }
   }
 
@@ -1127,6 +1134,7 @@ export class EndgeIDETabs {
       editor,
       model: tenant,
       syncBeforeSave: () => editor.updateSource(tenant),
+      syncSystemBeforeSave: () => editor.updateConfigurationSource(tenant),
     }
   }
 

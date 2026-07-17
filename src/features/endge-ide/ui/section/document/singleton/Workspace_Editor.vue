@@ -5,7 +5,6 @@ import { Endge } from '@endge/core'
 import { onScopeDispose, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
@@ -49,10 +48,8 @@ function clone<T>(value: T): T {
       </div>
       <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
     </div>
-    <ScrollArea class="min-h-0 flex-1">
-      <div class="p-4">
-        <ConfigurationSettingsEditor v-model="configuration" variant="root" />
-      </div>
-    </ScrollArea>
+    <div class="min-h-0 flex-1 overflow-hidden p-4">
+      <ConfigurationSettingsEditor v-model="configuration" variant="root" />
+    </div>
   </div>
 </template>

@@ -16,9 +16,10 @@ import { useConfiguratorContext } from '@/features/endge-configurator/model/use-
 
 const domainStore = useDomainStore()
 const context = useConfiguratorContext()
-const currentEnv = computed(() => Endge.context.getCurrentEnvironment())
+const currentEnv = computed(() => context.currentContext().environmentIdentity ?? Endge.context.getCurrentEnvironment())
 const environments = computed(() => {
-  const project = Endge.domain.getProject(Endge.context.getCurrentProject())
+  const projectIdentity = context.currentContext().projectIdentity ?? Endge.context.getCurrentProject()
+  const project = Endge.domain.getProject(projectIdentity)
   if (!project?.allowedEnvironmentIds.length)
     return domainStore.environments
   return domainStore.environments.filter((item: any) => project.allowedEnvironmentIds.includes(Number(item.id)))

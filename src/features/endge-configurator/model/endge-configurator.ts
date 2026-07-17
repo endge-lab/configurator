@@ -44,6 +44,13 @@ export class EndgeConfigurator {
   /** Полностью перезапускает Endge под новым immutable structural context. */
   public static async switchContext(next: Partial<EndgeExecutionContext>): Promise<void> {
     const requested = { ...this._requestedContext, ...next }
+    if (
+      next.projectIdentity != null
+      && next.projectIdentity !== this._requestedContext.projectIdentity
+      && !Object.prototype.hasOwnProperty.call(next, 'environmentIdentity')
+    ) {
+      requested.environmentIdentity = undefined
+    }
     this._requestedContext = requested
     this._switchQueue = this._switchQueue
       .catch(() => undefined)

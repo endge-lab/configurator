@@ -173,15 +173,13 @@ async function save(): Promise<void> {
             </TabsContent>
 
             <TabsContent value="configuration" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
-              <ScrollArea class="h-full">
-                <div class="p-4">
-                  <ConfigurationSettingsEditor
-                    v-model="configuration"
-                    variant="contribution"
-                    :upstream="upstreamConfiguration"
-                  />
-                </div>
-              </ScrollArea>
+              <div class="h-full min-h-0 p-4">
+                <ConfigurationSettingsEditor
+                  v-model="configuration"
+                  variant="contribution"
+                  :upstream="upstreamConfiguration"
+                />
+              </div>
             </TabsContent>
 
           </Tabs>

@@ -11,26 +11,12 @@ import { useConfiguratorContext } from '@/features/endge-configurator/model/use-
 
 const domain = useDomainStore()
 const context = useConfiguratorContext()
-const current = computed(() => Endge.context.getCurrentProject())
+const current = computed(() => context.currentContext().projectIdentity ?? Endge.context.getCurrentProject())
 const currentLabel = computed(() => domain.projects.find((item: any) => item.identity === current.value)?.displayName ?? current.value)
 
 async function select(identity: string): Promise<void> {
   try {
-    const project = domain.projects.find((item: any) => item.identity === identity)
-    const allowed = Array.isArray(project?.allowedEnvironmentIds) ? project.allowedEnvironmentIds.map(Number) : []
-    const currentEnvironment = domain.environments.find((item: any) => item.identity === Endge.context.getCurrentEnvironment())
-    const currentEnvironmentAllowed = allowed.length === 0 || allowed.includes(Number(currentEnvironment?.id))
-    const fallbackEnvironment = !currentEnvironmentAllowed
-      ? domain.environments.find((item: any) => allowed.includes(Number(item.id)))
-      : null
-
-    if (!currentEnvironmentAllowed && !fallbackEnvironment)
-      throw new Error('У проекта нет доступного окружения')
-
-    await context.switchContext({
-      projectIdentity: identity,
-      ...(fallbackEnvironment ? { environmentIdentity: fallbackEnvironment.identity } : {}),
-    })
+    await context.switchContext({ projectIdentity: identity })
   }
   catch (error: any) {
     toast.error('Не удалось переключить проект', { description: String(error?.message ?? error) })

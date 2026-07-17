@@ -6,11 +6,10 @@ import type {
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
-import { Plus } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { Braces, Languages, Palette, PanelsTopLeft, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -28,6 +27,7 @@ import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'sfcAdapterIds'
 type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
+type ConfigurationSection = 'general' | 'environment' | 'ui' | 'auth' | 'locales' | 'themes'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -42,6 +42,39 @@ const emit = defineEmits<{
 
 const EXCLUDED_VALUE_LABEL = 'Исключено из наследования'
 const excludedRowDrafts = new WeakMap<object, unknown>()
+const activeSection = ref<ConfigurationSection>('general')
+const sections = [
+  {
+    id: 'general',
+    label: 'Общие',
+    icon: Settings2,
+  },
+  {
+    id: 'environment',
+    label: 'Среда',
+    icon: Braces,
+  },
+  {
+    id: 'ui',
+    label: 'UI',
+    icon: PanelsTopLeft,
+  },
+  {
+    id: 'auth',
+    label: 'Авторизация',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'locales',
+    label: 'Локализация',
+    icon: Languages,
+  },
+  {
+    id: 'themes',
+    label: 'Темы',
+    icon: Palette,
+  },
+] as const
 
 const contribution = computed(() => props.variant === 'contribution'
   ? props.modelValue as EndgeConfigurationContribution
@@ -63,6 +96,12 @@ const effective = computed(() => {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
+}
+
+function setActiveSection(value: unknown): void {
+  if (sections.some(section => section.id === value)) {
+    activeSection.value = value as ConfigurationSection
+  }
 }
 
 function setContributionMode(mode: string): void {
@@ -244,111 +283,139 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <Card v-if="variant === 'contribution'" class="rounded-md">
-      <CardHeader class="pb-3">
-        <CardTitle class="text-base">Режим конфигурации</CardTitle>
-      </CardHeader>
-      <CardContent class="space-y-3">
-        <Select :model-value="contribution?.mode" :disabled="disabled" @update:model-value="setContributionMode(String($event))">
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="inherit">Наследовать и уточнить</SelectItem>
-            <SelectItem value="replace">Полностью заменить</SelectItem>
-          </SelectContent>
-        </Select>
-        <p class="text-xs text-muted-foreground">
-          {{ isInherit ? 'Сохраняются только локальные операции.' : 'Upstream configuration полностью сбрасывается.' }}
+  <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
+    <section
+      v-if="variant === 'contribution'"
+      class="grid shrink-0 gap-3 rounded-lg border border-border/80 bg-card/80 px-4 py-3 shadow-xs md:grid-cols-[minmax(0,1fr)_18rem] md:items-center"
+    >
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-foreground">
+          Режим конфигурации
         </p>
-      </CardContent>
-    </Card>
+        <p class="mt-0.5 text-xs leading-5 text-muted-foreground">
+          {{ isInherit
+            ? 'Наследуем родительскую конфигурацию и сохраняем только локальные уточнения.'
+            : 'Полностью заменяем родительскую конфигурацию значениями этого слоя.' }}
+        </p>
+      </div>
+      <Select :model-value="contribution?.mode" :disabled="disabled" @update:model-value="setContributionMode(String($event))">
+        <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="inherit">Наследовать и уточнить</SelectItem>
+          <SelectItem value="replace">Полностью заменить</SelectItem>
+        </SelectContent>
+      </Select>
+    </section>
 
-    <Tabs default-value="general" class="w-full">
-      <TabsList class="grid w-full grid-cols-4">
-        <TabsTrigger value="general">Общие</TabsTrigger>
-        <TabsTrigger value="auth">Авторизация</TabsTrigger>
-        <TabsTrigger value="locales">Локализация</TabsTrigger>
-        <TabsTrigger value="themes">Темы</TabsTrigger>
-      </TabsList>
+    <Tabs
+      v-model="activeSection"
+      orientation="vertical"
+      class="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)]"
+    >
+      <aside class="hidden min-h-0 overflow-hidden overscroll-none border-r border-border/70 bg-muted/25 lg:flex lg:flex-col">
+        <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
+          <TabsTrigger
+            v-for="section in sections"
+            :key="section.id"
+            :value="section.id"
+            class="group h-auto min-h-10 w-full flex-none justify-start gap-2.5 rounded-md border-0 border-l-2 border-l-transparent px-3 py-2 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+          >
+            <component :is="section.icon" class="size-4 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
+            <span>{{ section.label }}</span>
+          </TabsTrigger>
+        </TabsList>
+      </aside>
 
-      <TabsContent value="general" class="space-y-4">
-        <Card class="rounded-md"><CardContent class="space-y-4 pt-6">
-          <ConfigurationOverrideField label="SSE endpoint" :inherited="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
-            <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
-              <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />
-            </template>
-          </ConfigurationOverrideField>
+      <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background/60">
+        <div class="border-b border-border/70 px-4 py-3 lg:hidden">
+          <Select :model-value="activeSection" @update:model-value="setActiveSection">
+            <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="section in sections" :key="section.id" :value="section.id">
+                {{ section.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <Label>Доступные SFC-адаптеры</Label>
-              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('sfcAdapterIds')">
-                <Plus class="mr-2 size-4" />Добавить
-              </Button>
-            </div>
-            <div class="rounded-md border">
-              <div v-for="(row, index) in collectionRows('sfcAdapterIds')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Adapter id" @update:model-value="updateEntryKey('sfcAdapterIds', row, String($event ?? ''))" />
-                <Input v-else class="col-span-2" :model-value="String(row)" :disabled="disabled" placeholder="Adapter id" @update:model-value="editableConfiguration.sfcAdapterIds[index] = String($event ?? '')" />
-                <Input
-                  v-if="isInherit"
-                  :model-value="isCollectionRowExcluded(row) ? EXCLUDED_VALUE_LABEL : 'Добавляется или переопределяется'"
-                  disabled
-                  :class="isCollectionRowExcluded(row) ? 'text-destructive' : 'text-muted-foreground'"
-                />
-                <ConfigurationCollectionRowActions
-                  :excluded="isCollectionRowExcluded(row)"
-                  :excludable="isInherit"
-                  :disabled="disabled"
-                  @toggle-excluded="toggleCollectionRowExclusion('sfcAdapterIds', row)"
-                  @remove="removeCollectionRow('sfcAdapterIds', index)"
-                />
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
+            <ConfigurationOverrideField label="SSE endpoint" :inherited="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
+              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
+                <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />
+              </template>
+            </ConfigurationOverrideField>
+          </TabsContent>
+
+          <TabsContent value="environment" class="m-0 p-5 outline-none">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <Label>Environment variables</Label>
+                <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('vars')">
+                  <Plus class="mr-2 size-4" />Добавить
+                </Button>
+              </div>
+              <div class="rounded-md border">
+                <div v-for="(row, index) in collectionRows('vars')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
+                  <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Имя переменной" @update:model-value="updateEntryKey('vars', row, String($event ?? ''))" />
+                  <Input v-else v-model="row.name" :disabled="disabled" placeholder="Имя переменной" />
+                  <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'defaultValue')" :disabled="disabled" placeholder="Default value" @update:model-value="setRowValue(row, 'defaultValue', String($event ?? ''))" />
+                  <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+                  <ConfigurationCollectionRowActions
+                    :excluded="isCollectionRowExcluded(row)"
+                    :excludable="isInherit"
+                    :disabled="disabled"
+                    @toggle-excluded="toggleCollectionRowExclusion('vars', row)"
+                    @remove="removeCollectionRow('vars', index)"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </TabsContent>
 
-          <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
-            <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
-              <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
-            </template>
-          </ConfigurationOverrideField>
-
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <Label>Environment variables</Label>
-              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('vars')">
-                <Plus class="mr-2 size-4" />Добавить
-              </Button>
-            </div>
-            <div class="rounded-md border">
-              <div v-for="(row, index) in collectionRows('vars')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Имя переменной" @update:model-value="updateEntryKey('vars', row, String($event ?? ''))" />
-                <Input v-else v-model="row.name" :disabled="disabled" placeholder="Имя переменной" />
-                <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'defaultValue')" :disabled="disabled" placeholder="Default value" @update:model-value="setRowValue(row, 'defaultValue', String($event ?? ''))" />
-                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
-                <ConfigurationCollectionRowActions
-                  :excluded="isCollectionRowExcluded(row)"
-                  :excludable="isInherit"
-                  :disabled="disabled"
-                  @toggle-excluded="toggleCollectionRowExclusion('vars', row)"
-                  @remove="removeCollectionRow('vars', index)"
-                />
+          <TabsContent value="ui" class="m-0 space-y-6 p-5 outline-none">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <Label>Доступные SFC-адаптеры</Label>
+                <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('sfcAdapterIds')">
+                  <Plus class="mr-2 size-4" />Добавить
+                </Button>
+              </div>
+              <div class="rounded-md border">
+                <div v-for="(row, index) in collectionRows('sfcAdapterIds')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
+                  <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Adapter id" @update:model-value="updateEntryKey('sfcAdapterIds', row, String($event ?? ''))" />
+                  <Input v-else class="col-span-2" :model-value="String(row)" :disabled="disabled" placeholder="Adapter id" @update:model-value="editableConfiguration.sfcAdapterIds[index] = String($event ?? '')" />
+                  <Input
+                    v-if="isInherit"
+                    :model-value="isCollectionRowExcluded(row) ? EXCLUDED_VALUE_LABEL : 'Добавляется или переопределяется'"
+                    disabled
+                    :class="isCollectionRowExcluded(row) ? 'text-destructive' : 'text-muted-foreground'"
+                  />
+                  <ConfigurationCollectionRowActions
+                    :excluded="isCollectionRowExcluded(row)"
+                    :excludable="isInherit"
+                    :disabled="disabled"
+                    @toggle-excluded="toggleCollectionRowExclusion('sfcAdapterIds', row)"
+                    @remove="removeCollectionRow('sfcAdapterIds', index)"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent></Card>
-      </TabsContent>
 
-      <TabsContent value="auth">
-        <Card class="rounded-md"><CardContent class="pt-6">
-          <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
-            <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
-          </ConfigurationOverrideField>
-        </CardContent></Card>
-      </TabsContent>
+            <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
+              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
+                <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
+              </template>
+            </ConfigurationOverrideField>
+          </TabsContent>
 
-      <TabsContent value="locales" class="space-y-4">
-        <Card class="rounded-md"><CardContent class="space-y-4 pt-6">
+          <TabsContent value="auth" class="m-0 p-5 outline-none">
+            <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
+              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
+            </ConfigurationOverrideField>
+          </TabsContent>
+
+          <TabsContent value="locales" class="m-0 space-y-5 p-5 outline-none">
           <div class="grid gap-4 md:grid-cols-2">
             <ConfigurationOverrideField label="Локаль по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
             <ConfigurationOverrideField label="Резервная локаль" :inherited="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
@@ -378,11 +445,9 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
               />
             </div>
           </div>
-        </CardContent></Card>
-      </TabsContent>
+          </TabsContent>
 
-      <TabsContent value="themes" class="space-y-4">
-        <Card class="rounded-md"><CardContent class="space-y-4 pt-6">
+          <TabsContent value="themes" class="m-0 space-y-5 p-5 outline-none">
           <ConfigurationOverrideField label="Тема по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" /></template></ConfigurationOverrideField>
           <div class="flex items-center justify-between">
             <Label>Доступные темы</Label>
@@ -406,8 +471,9 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
             </div>
           </div>
           <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.</div>
-        </CardContent></Card>
-      </TabsContent>
+          </TabsContent>
+        </div>
+      </main>
     </Tabs>
   </div>
 </template>

@@ -146,8 +146,13 @@ async function reloadDomain(): Promise<void> {
 </template>
 
 <style scoped>
-.footer-context-switchers :deep([data-slot="button"]) {
+.footer-context-switchers :deep([data-slot="dropdown-menu-trigger"]) {
   font-size: inherit;
   line-height: inherit;
+  font-weight: inherit;
+}
+
+.footer-context-switchers :deep([data-slot="dropdown-menu-trigger"] span) {
+  font-weight: inherit;
 }
 </style>

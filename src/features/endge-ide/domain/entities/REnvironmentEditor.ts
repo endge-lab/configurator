@@ -23,6 +23,10 @@ export class REnvironmentEditor {
     source.displayName = this.displayName
     source.configuration = clone(this.configuration)
   }
+
+  updateConfigurationSource(source: REnvironment): void {
+    source.configuration = clone(this.configuration)
+  }
 }
 
 function clone<T>(value: T): T {

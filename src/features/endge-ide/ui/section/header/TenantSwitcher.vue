@@ -11,7 +11,7 @@ import { useConfiguratorContext } from '@/features/endge-configurator/model/use-
 
 const domain = useDomainStore()
 const context = useConfiguratorContext()
-const current = computed(() => Endge.context.getCurrentTenant())
+const current = computed(() => context.currentContext().tenantIdentity ?? Endge.context.getCurrentTenant())
 const currentLabel = computed(() => domain.tenants.find((item: any) => item.identity === current.value)?.displayName ?? current.value)
 const disabled = computed(() => context.isSwitching() || Endge.context.isTenantLockedBySession)
 

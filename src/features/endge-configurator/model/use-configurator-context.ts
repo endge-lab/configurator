@@ -14,6 +14,10 @@ export function useConfiguratorContext() {
 
   return {
     version,
+    currentContext: () => {
+      void version.value
+      return EndgeConfigurator.currentContext
+    },
     switchContext: (next: Partial<EndgeExecutionContext>) => EndgeConfigurator.switchContext(next),
     reloadCurrentContext: () => EndgeConfigurator.reloadCurrentContext(),
     isSwitching: () => {

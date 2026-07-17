@@ -29,6 +29,10 @@ export class RTenantEditor {
     source.description = this.description || null
     source.configuration = clone(this.configuration)
   }
+
+  updateConfigurationSource(source: RTenant): void {
+    source.configuration = clone(this.configuration)
+  }
 }
 
 function clone<T>(value: T): T {
