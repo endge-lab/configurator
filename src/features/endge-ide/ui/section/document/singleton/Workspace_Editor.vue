@@ -2,6 +2,7 @@
 import type {
   EndgeWorkspaceLocale,
   EndgeWorkspaceSSEConfig,
+  EndgeWorkspaceTheme,
   EndgeWorkspaceVar,
 } from '@endge/core'
 
@@ -45,7 +46,9 @@ const defaultSfcAdapterId = ref('native-vue')
 const defaultLocale = ref('')
 const fallbackLocale = ref('')
 const locales = ref<EndgeWorkspaceLocale[]>([])
-const activeTab = ref<'general' | 'auth' | 'localization'>('general')
+const defaultTheme = ref('')
+const themes = ref<EndgeWorkspaceTheme[]>([])
+const activeTab = ref<'general' | 'auth' | 'localization' | 'themes'>('general')
 const sseEndpoint = ref('')
 const sseDraft = ref<EndgeWorkspaceSSEConfig | undefined>()
 const envVars = ref<EndgeWorkspaceVar[]>([])
@@ -80,6 +83,15 @@ const localeOptions = computed(() =>
     .filter(locale => locale.code),
 )
 
+const themeOptions = computed(() =>
+  themes.value
+    .map(theme => ({
+      identity: String(theme.identity ?? '').trim(),
+      label: String(theme.displayName || theme.identity || '').trim(),
+    }))
+    .filter(theme => theme.identity),
+)
+
 const sfcAdapterOptions = computed(() => workspace.value.sfcAdapterIds)
 
 watchEffect(() => {
@@ -90,6 +102,8 @@ watchEffect(() => {
   sseEndpoint.value = current.sse?.url ?? ''
   defaultLocale.value = current.defaultLocale
   fallbackLocale.value = current.fallbackLocale
+  themes.value = current.themes.map(theme => ({ ...theme }))
+  defaultTheme.value = current.defaultTheme
   defaultAuthProfileIdentity.value = current.defaultAuthProfileIdentity ?? NO_AUTH_PROFILE
   defaultSfcAdapterId.value = current.defaultSfcAdapterId
 })
@@ -129,6 +143,33 @@ function removeLocale(index: number): void {
   ensureLocaleSelection()
 }
 
+function ensureThemeSelection(): void {
+  const identities = themeOptions.value.map(theme => theme.identity)
+  if (!identities.length) {
+    defaultTheme.value = ''
+    return
+  }
+  if (!identities.includes(defaultTheme.value))
+    defaultTheme.value = identities[0] ?? ''
+}
+
+function addTheme(): void {
+  const used = new Set(themes.value.map(theme => theme.identity))
+  let index = themes.value.length + 1
+  let identity = `theme-${index}`
+  while (used.has(identity)) {
+    index += 1
+    identity = `theme-${index}`
+  }
+  themes.value.push({ identity, displayName: '' })
+  ensureThemeSelection()
+}
+
+function removeTheme(index: number): void {
+  themes.value.splice(index, 1)
+  ensureThemeSelection()
+}
+
 function addEnvVar(): void {
   const used = new Set(envVars.value.map(item => item.name.trim()).filter(Boolean))
   let index = envVars.value.length + 1
@@ -163,6 +204,22 @@ function normalizeLocales(): EndgeWorkspaceLocale[] {
     const shortLabel = String(item.shortLabel ?? '').trim() || code.toUpperCase()
     const direction: LocaleDirection = item.direction === 'rtl' ? 'rtl' : 'ltr'
     result.push({ code, displayName, shortLabel, direction })
+  }
+  return result
+}
+
+function normalizeThemes(): EndgeWorkspaceTheme[] {
+  const used = new Set<string>()
+  const result: EndgeWorkspaceTheme[] = []
+  for (const item of themes.value) {
+    const identity = String(item.identity ?? '').trim()
+    if (!identity || used.has(identity))
+      continue
+    used.add(identity)
+    result.push({
+      identity,
+      displayName: String(item.displayName ?? '').trim() || identity,
+    })
   }
   return result
 }
@@ -205,6 +262,11 @@ async function saveWorkspaceSettings(): Promise<void> {
     toast.error('Добавьте хотя бы одну локаль')
     return
   }
+  const nextThemes = normalizeThemes()
+  if (!nextThemes.length) {
+    toast.error('Добавьте хотя бы одну тему')
+    return
+  }
 
   const defaultCode = nextLocales.some(locale => locale.code === defaultLocale.value)
     ? defaultLocale.value
@@ -212,6 +274,9 @@ async function saveWorkspaceSettings(): Promise<void> {
   const fallbackCode = nextLocales.some(locale => locale.code === fallbackLocale.value)
     ? fallbackLocale.value
     : defaultCode
+  const defaultThemeIdentity = nextThemes.some(theme => theme.identity === defaultTheme.value)
+    ? defaultTheme.value
+    : nextThemes[0]!.identity
 
   try {
     await EndgeIDE.runBusy(
@@ -224,6 +289,8 @@ async function saveWorkspaceSettings(): Promise<void> {
           locales: nextLocales,
           defaultLocale: defaultCode,
           fallbackLocale: fallbackCode,
+          themes: nextThemes,
+          defaultTheme: defaultThemeIdentity,
           defaultAuthProfileIdentity: defaultAuthProfileIdentity.value === NO_AUTH_PROFILE
             ? null
             : defaultAuthProfileIdentity.value,
@@ -272,7 +339,7 @@ async function saveWorkspaceSettings(): Promise<void> {
     <ScrollArea class="min-h-0 flex-1">
       <div class="p-4">
         <Tabs v-model="activeTab" class="w-full">
-          <TabsList class="grid w-full max-w-xl grid-cols-3">
+          <TabsList class="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="general">
               Общие
             </TabsTrigger>
@@ -281,6 +348,9 @@ async function saveWorkspaceSettings(): Promise<void> {
             </TabsTrigger>
             <TabsTrigger value="localization">
               Локализация
+            </TabsTrigger>
+            <TabsTrigger value="themes">
+              Темы
             </TabsTrigger>
           </TabsList>
 
@@ -490,6 +560,73 @@ async function saveWorkspaceSettings(): Promise<void> {
                       </Button>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="themes" class="mt-4">
+            <Card class="rounded-md">
+              <CardHeader class="pb-3">
+                <CardTitle class="text-base">
+                  Темы
+                </CardTitle>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <div class="max-w-xl space-y-2">
+                  <Label>Тема по умолчанию</Label>
+                  <Select v-model="defaultTheme">
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="Выберите тему" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="theme in themeOptions"
+                        :key="theme.identity"
+                        :value="theme.identity"
+                      >
+                        {{ theme.label }} ({{ theme.identity }})
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <Label>Доступные темы</Label>
+                    <Button size="sm" variant="outline" class="gap-2" @click="addTheme">
+                      <Plus class="size-4" />
+                      Добавить
+                    </Button>
+                  </div>
+
+                  <div class="overflow-hidden rounded-md border bg-background">
+                    <div class="grid grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)_2.25rem] gap-2 border-b bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground">
+                      <span>Identity</span>
+                      <span>Отображение</span>
+                      <span />
+                    </div>
+                    <div
+                      v-for="(theme, index) in themes"
+                      :key="`${theme.identity}-${index}`"
+                      class="grid grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)_2.25rem] gap-2 border-b px-3 py-2 last:border-b-0"
+                    >
+                      <Input v-model="theme.identity" class="h-8 font-mono text-xs" autocomplete="off" />
+                      <Input v-model="theme.displayName" class="h-8" autocomplete="off" />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        class="size-8"
+                        :disabled="themes.length <= 1"
+                        @click="removeTheme(index)"
+                      >
+                        <Trash2 class="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p class="text-xs text-muted-foreground">
+                    Theme identity связывает workspace catalog с блоками <code>@theme</code> в EndgeCSS.
+                  </p>
                 </div>
               </CardContent>
             </Card>

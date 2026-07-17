@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Languages,
   RefreshCcw,
+  SunMoon,
   Tag,
   Waypoints,
 } from 'lucide-vue-next'
@@ -23,12 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useCurrentEnvironment, useCurrentLocale, useDomainStore } from '@endge/vue'
+import { useCurrentEnvironment, useCurrentLocale, useCurrentTheme, useDomainStore } from '@endge/vue'
 import { useProjectsStore } from '@/features/endge-ide/store/projects'
 
 const domainStore = useDomainStore()
 const projectsStore = useProjectsStore()
 const { current: currentLocale, setCurrent: setCurrentLocale } = useCurrentLocale()
+const { current: currentTheme, setCurrent: setCurrentTheme } = useCurrentTheme()
 const { current: currentEnvironment } = useCurrentEnvironment()
 const workspaceVersion = ref(0)
 const offWorkspace = Endge.workspace.subscribe(() => {
@@ -39,6 +41,11 @@ onScopeDispose(offWorkspace)
 const availableLocales = computed(() => {
   workspaceVersion.value
   return Endge.workspace.locales
+})
+
+const availableThemes = computed(() => {
+  workspaceVersion.value
+  return Endge.workspace.themes
 })
 
 const activeProjectLabel = computed(() => {
@@ -75,6 +82,16 @@ function switchLocale(locale: string): void {
   setCurrentLocale(locale)
 }
 
+const activeThemeLabel = computed(() => {
+  workspaceVersion.value
+  const theme = Endge.workspace.normalizeTheme(currentTheme.value)
+  return Endge.workspace.getThemeLabel(theme)
+})
+
+function switchTheme(theme: string): void {
+  setCurrentTheme(theme)
+}
+
 const leftItems = computed(() => [
   {
     id: 'environment',
@@ -87,21 +104,21 @@ const leftItems = computed(() => [
     id: 'project',
     label: activeProjectLabel.value,
     icon: FolderKanban,
-    iconClass: 'text-slate-500',
+    iconClass: 'text-muted-foreground',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'branch',
     label: 'main',
     icon: GitBranch,
-    iconClass: 'text-slate-500',
+    iconClass: 'text-muted-foreground',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'version',
     label: 'Latest',
     icon: Tag,
-    iconClass: 'text-slate-500',
+    iconClass: 'text-muted-foreground',
     iconSizeClass: 'size-3.5',
   },
 ])
@@ -111,54 +128,54 @@ const rightItems = computed(() => [
     id: 'status',
     label: 'No queries running',
     icon: Waypoints,
-    iconClass: 'text-slate-400',
+    iconClass: 'text-muted-foreground/80',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'debug',
     label: 'Debug',
     icon: Bug,
-    iconClass: 'text-slate-500',
+    iconClass: 'text-muted-foreground',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'refresh',
     label: '',
     icon: RefreshCcw,
-    iconClass: 'text-slate-400',
+    iconClass: 'text-muted-foreground/80',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'clock',
     label: '',
     icon: Clock3,
-    iconClass: 'text-slate-400',
+    iconClass: 'text-muted-foreground/80',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'help',
     label: '',
     icon: HelpCircle,
-    iconClass: 'text-slate-400',
+    iconClass: 'text-muted-foreground/80',
     iconSizeClass: 'size-3.5',
   },
   {
     id: 'alerts',
     label: '',
     icon: BellDot,
-    iconClass: 'text-slate-400',
+    iconClass: 'text-muted-foreground/80',
     iconSizeClass: 'size-3.5',
   },
 ])
 </script>
 
 <template>
-  <div class="flex h-8 shrink-0 items-center justify-between border-t border-slate-200/80 bg-white/88 px-3 text-[12px] text-slate-500 backdrop-blur">
+  <div class="flex h-8 shrink-0 items-center justify-between border-t border-border/80 bg-background/88 px-3 text-[12px] text-muted-foreground backdrop-blur">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div
         v-for="item in leftItems"
         :key="item.id"
-        class="inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-slate-100/90"
+        class="inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90"
       >
         <component :is="item.icon" class="shrink-0" :class="[item.iconSizeClass, item.iconClass]" />
         <span class="truncate">{{ item.label }}</span>
@@ -168,11 +185,11 @@ const rightItems = computed(() => [
         <DropdownMenuTrigger as-child>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-slate-100/90"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90"
           >
-            <Languages class="size-3.5 text-slate-500" />
-            <span class="font-medium text-slate-600">{{ activeLocaleLabel }}</span>
-            <ChevronsUpDown class="size-3 text-slate-400" />
+            <Languages class="size-3.5 text-muted-foreground" />
+            <span class="font-medium text-foreground/80">{{ activeLocaleLabel }}</span>
+            <ChevronsUpDown class="size-3 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -196,13 +213,46 @@ const rightItems = computed(() => [
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90"
+          >
+            <SunMoon class="size-3.5 text-muted-foreground" />
+            <span class="font-medium text-foreground/80">{{ activeThemeLabel }}</span>
+            <ChevronsUpDown class="size-3 text-muted-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-36"
+          align="start"
+          side="top"
+          :side-offset="6"
+        >
+          <DropdownMenuItem
+            v-for="theme in availableThemes"
+            :key="theme.identity"
+            class="gap-2"
+            :class="{ 'bg-accent': Endge.workspace.normalizeTheme(currentTheme) === theme.identity }"
+            @click="switchTheme(theme.identity)"
+          >
+            <Check
+              class="size-3.5"
+              :class="Endge.workspace.normalizeTheme(currentTheme) === theme.identity ? 'opacity-100' : 'opacity-0'"
+            />
+            <span>{{ theme.displayName || theme.identity }}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
       <div
         v-for="item in rightItems"
         :key="item.id"
-        class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-slate-100/90"
+        class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90"
       >
         <component :is="item.icon" class="shrink-0" :class="[item.iconSizeClass, item.iconClass]" />
         <span v-if="item.label" class="truncate">{{ item.label }}</span>

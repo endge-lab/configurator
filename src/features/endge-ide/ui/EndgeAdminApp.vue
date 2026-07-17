@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Endge } from '@endge/core'
 import { useUI } from '@endge/vue'
 import { HeartPulse, Moon, Sun } from 'lucide-vue-next'
 import { computed } from 'vue'
@@ -212,7 +213,7 @@ function openArchitecture(): void {
                 :class="{ 'bg-accent': ui.theme === name }"
                 @click="ui.setTheme(name)"
               >
-                {{ name === 'light' ? 'Светлая' : name === 'dark' ? 'Тёмная' : name === 'light_calm' ? 'Светлая (calm)' : name }}
+                {{ Endge.workspace.getThemeLabel(name) }}
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>

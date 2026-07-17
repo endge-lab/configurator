@@ -34,6 +34,9 @@ const VUE_TEMPLATE_BLOCK_RE
   = /(<template(?:\s[^>]*)?>)([\s\S]*?)(<\/template\s*>)/gi
 const VUE_CONTROL_FLOW_DIRECTIVE_RE
   = /(\s)v-(else-if|if|else|for)(?=\s|=|\/?>)/g
+const VUE_STYLE_OPEN_TAG_RE = /<style\b([^>]*)>/gi
+const STYLE_LANG_ATTRIBUTE_RE
+  = /\blang\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i
 
 /**
  * Vue parser treats `[name='value']` as a JavaScript assignment and adds
@@ -83,6 +86,92 @@ function protectEndgeSelectors(source: string): ProtectedSource {
       return restored
     },
   }
+}
+
+/**
+ * Prettier keeps unknown SFC style languages opaque. EndgeCSS uses an
+ * SCSS-compatible formatting grammar, so the formatter temporarily exposes
+ * EndgeCSS blocks as SCSS and restores their original language declaration
+ * afterwards. A style block without lang is also EndgeCSS by contract.
+ */
+function exposeEndgeStylesToPrettier(source: string): ProtectedSource {
+  const styles: Array<{ marker: string, hadLanguage: boolean }> = []
+  let markerPrefix = 'data-endge-format-style-'
+
+  while (source.includes(markerPrefix))
+    markerPrefix = `x-${markerPrefix}`
+
+  const protectedSource = source.replace(
+    VUE_STYLE_OPEN_TAG_RE,
+    (openTag: string, rawAttributes: string) => {
+      const languageMatch = rawAttributes.match(STYLE_LANG_ATTRIBUTE_RE)
+      const language = String(
+        languageMatch?.[1] ?? languageMatch?.[2] ?? languageMatch?.[3] ?? '',
+      ).trim().toLowerCase()
+      const hadLanguage = languageMatch != null
+
+      if (hadLanguage && language !== 'endgecss')
+        return openTag
+
+      const marker = `${markerPrefix}${styles.length}`
+      styles.push({ marker, hadLanguage })
+
+      const attributes = hadLanguage
+        ? rawAttributes.replace(STYLE_LANG_ATTRIBUTE_RE, 'lang="scss"')
+        : `${rawAttributes} lang="scss"`
+
+      return `<style${attributes} ${marker}>`
+    },
+  )
+
+  return {
+    source: protectedSource,
+    restore: (formatted) => styles.reduce((result, style) => {
+      const blockPattern = new RegExp(
+        `<style\\b([^>]*?)\\s${escapeRegExp(style.marker)}(?:="")?([^>]*)>`
+        + `([\\s\\S]*?)<\\/style\\s*>`,
+        'i',
+      )
+
+      return result.replace(blockPattern, (
+        _block,
+        before: string,
+        after: string,
+        content: string,
+      ) => {
+        let attributes = `${before}${after}`
+        attributes = style.hadLanguage
+          ? attributes.replace(STYLE_LANG_ATTRIBUTE_RE, 'lang="endgecss"')
+          : attributes.replace(STYLE_LANG_ATTRIBUTE_RE, '')
+
+        const openTag = `<style${attributes.replace(/\s+/g, ' ').trimEnd()}>`
+        return `${openTag}${indentStyleContent(content)}</style>`
+      })
+    }, formatted),
+  }
+}
+
+function indentStyleContent(content: string): string {
+  const indentation = ' '.repeat(BASE_OPTIONS.tabWidth ?? 2)
+
+  return content
+    .split('\n')
+    .map(line => line.trim() ? `${indentation}${line}` : line)
+    .join('\n')
+}
+
+function protectEndgeVueSource(source: string): ProtectedSource {
+  const selectors = protectEndgeSelectors(source)
+  const styles = exposeEndgeStylesToPrettier(selectors.source)
+
+  return {
+    source: styles.source,
+    restore: formatted => selectors.restore(styles.restore(formatted)),
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**
@@ -251,7 +340,7 @@ export async function formatSource(
   }
 
   const protectedSource = language === 'vue'
-    ? protectEndgeSelectors(source)
+    ? protectEndgeVueSource(source)
     : { source, restore: (formatted: string) => formatted }
 
   const [{ format }, config] = await Promise.all([

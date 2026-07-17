@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useUI } from '@endge/vue'
+import { Endge } from '@endge/core'
 import {
   Languages,
   SunMoon,
@@ -128,24 +129,12 @@ watch(dateFormat, () => {
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
                   <DropdownMenuCheckboxItem
-                    :model-value="ui.theme === 'light'"
-                    @click="ui.setTheme('light')"
+                    v-for="theme in ui.availableThemes"
+                    :key="theme"
+                    :model-value="ui.theme === theme"
+                    @click="ui.setTheme(theme)"
                   >
-                    {{ t('nav.user.theme.light') }}
-                  </DropdownMenuCheckboxItem>
-
-                  <DropdownMenuCheckboxItem
-                    :model-value="ui.theme === 'light_calm'"
-                    @click="ui.setTheme('light_calm')"
-                  >
-                    {{ t('nav.user.theme.lightCalm') }}
-                  </DropdownMenuCheckboxItem>
-
-                  <DropdownMenuCheckboxItem
-                    :model-value="ui.theme === 'dark'"
-                    @click="ui.setTheme('dark')"
-                  >
-                    {{ t('nav.user.theme.dark') }}
+                    {{ Endge.workspace.getThemeLabel(theme) }}
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>

@@ -122,7 +122,6 @@ export function destroySFCPreviewRuntime(): void {
   sfcPreviewInput.value = { kind: 'local', props: {} }
   previewStyleElement?.remove()
   previewStyleElement = null
-  Endge.ui.unregisterThemes('preview:sfc')
 }
 
 function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
@@ -159,7 +158,6 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
 
 function applyPreviewStyle(style: EndgeStyleSheetArtifact | null): void {
   if (typeof document === 'undefined') return
-  Endge.ui.registerThemes('preview:sfc', style?.themes.map(theme => theme.id) ?? [])
   previewStyleElement ??= document.createElement('style')
   previewStyleElement.dataset.endgePreviewStyles = ''
   if (!previewStyleElement.isConnected) document.head.append(previewStyleElement)

@@ -70,4 +70,47 @@ defineProps<{ flight: { id: string } }>()
     expect(formatted).toContain('const example = \'v-if="ready"\'')
     expect(formatted).toContain('<Text>v-if="documentation"</Text>')
   })
+
+  it('formats EndgeCSS rules, directives, nesting and comments inside an SFC', async () => {
+    const source = `<template><Table id="flights" /></template><style lang="endgecss" scoped>#flights::part(header){background-color:#1e3a5f;font-weight:600}@theme dark{#flights::part(header-content){color:#fff}}// Grid lines
+Table{&::part(cell){border-right:1px solid #355a82}}</style>`
+
+    const formatted = await formatSource(source, 'vue')
+
+    expect(formatted).toContain(`<style lang="endgecss" scoped>
+  #flights::part(header) {
+    background-color: #1e3a5f;
+    font-weight: 600;
+  }
+  @theme dark {
+    #flights::part(header-content) {
+      color: #fff;
+    }
+  } // Grid lines
+  Table {
+    &::part(cell) {
+      border-right: 1px solid #355a82;
+    }
+  }
+</style>`)
+    expect(formatted).not.toContain('lang="scss"')
+    expect(formatted).not.toContain('data-endge-format-style')
+  })
+
+  it('formats a style block without lang as EndgeCSS and keeps lang omitted', async () => {
+    const formatted = await formatSource(
+      '<template><Text /></template><style scoped>Text{color:red;&:state(delayed){font-weight:700}}</style>',
+      'vue',
+    )
+
+    expect(formatted).toContain(`<style scoped>
+  Text {
+    color: red;
+    &:state(delayed) {
+      font-weight: 700;
+    }
+  }
+</style>`)
+    expect(formatted).not.toContain('lang="scss"')
+  })
 })
