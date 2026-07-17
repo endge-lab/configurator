@@ -52,10 +52,6 @@ import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
-import {
-  isQueryComposition,
-  QUERY_COMPOSITION_PRESENTATION_KIND,
-} from '@/features/endge-ide/model/domain/query-composition-presentation'
 import MarkdownViewer from '@/features/endge-ide/ui/components/MarkdownViewer.vue'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
@@ -596,10 +592,10 @@ export class EndgeIDETabs {
       return 'ti ti-send text-orange-500 text-xl'
     if (key === 'data-view')
       return 'ti ti-git-branch text-cyan-500 text-xl'
-    if (key === 'composition')
-      return presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
-        ? 'ti ti-topology-star-3 text-orange-500 text-xl'
-        : 'ti ti-topology-star-3 text-violet-500 text-xl'
+    if (key === 'composition') {
+      const colorClass = getDomainDocumentPresentation(docType, presentationKind).colorClass
+      return `ti ti-topology-star-3 ${colorClass} text-xl`
+    }
     if (key === 'store')
       return 'ti ti-database text-emerald-500 text-xl'
     if (key === 'mock')
@@ -683,7 +679,7 @@ export class EndgeIDETabs {
     if (composition == null) {
       return fallback
     }
-    return isQueryComposition(composition) ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined
+    return String(composition.kind ?? 'library')
   }
 
   private _registerSystemViews(): void {

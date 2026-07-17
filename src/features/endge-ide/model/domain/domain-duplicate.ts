@@ -13,7 +13,7 @@ import {
   duplicateComponent,
 } from '@endge/core'
 
-import { getQueryRootFolderId, isQueryComposition } from './query-composition-presentation'
+import { getQueryRootFolderId } from './query-composition-presentation'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -103,7 +103,7 @@ export async function duplicateEntity(
     throw new Error(`Не удалось создать копию: ${sourceId}`)
   }
 
-  if (docType === 'composition' && isQueryComposition(draft)) {
+  if (docType === 'composition' && String(draft.kind ?? 'library') === 'query') {
     const rootFolderId = getQueryRootFolderId()
     if (rootFolderId == null) {
       throw new Error('Системная папка запросов не найдена')

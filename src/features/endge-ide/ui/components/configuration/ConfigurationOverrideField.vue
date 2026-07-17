@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 
 defineProps<{
   label: string
-  inherited?: boolean
+  usesParentValue?: boolean
   overridden?: boolean
 }>()
 
@@ -21,7 +21,7 @@ const emit = defineEmits<{
     <div class="flex items-center justify-between gap-3">
       <Label>{{ label }}</Label>
       <Button
-        v-if="inherited"
+        v-if="usesParentValue"
         type="button"
         variant="ghost"
         size="icon"
@@ -34,10 +34,10 @@ const emit = defineEmits<{
       </Button>
     </div>
     <slot
-      :disabled="inherited && !overridden"
-      inherited-placeholder="Значение определяется контекстом"
+      :disabled="usesParentValue && !overridden"
+      parent-value-placeholder="Значение определяется контекстом"
     />
-    <p v-if="inherited && !overridden" class="text-xs text-muted-foreground">
+    <p v-if="usesParentValue && !overridden" class="text-xs text-muted-foreground">
       Наследуется из предыдущих слоёв конфигурации
     </p>
   </div>

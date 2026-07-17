@@ -4,4 +4,4 @@
 
 During `Endge.compiler.build`, every active style becomes a typed `style` artifact in `Endge.program`. Invalid drafts may be saved, but their artifacts are not applied.
 
-Порядок глобальных документов: system base → inherited → local/project; identity используется как стабильный tie-breaker.
+Порядок глобальных документов определяется эффективным контекстом подключения. Внутри одного source layer системные документы идут первыми, затем авторские; `identity` используется как стабильный tie-breaker.

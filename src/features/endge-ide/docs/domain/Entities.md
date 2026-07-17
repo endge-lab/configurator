@@ -8,4 +8,4 @@
 | Политика  | `policies`    | root-policies     | Политики доступа/поведения. |
 | Стиль     | `styles`      | root-styles       | JSON-стили. Системные (например default «Общие») нельзя редактировать. |
 
-Общее для них: `identity`, `displayName`, `folder`; при необходимости - `project`, `meta`, `inherited`, `isSystem`. Подробнее: [Environment](Environment.md), [Policy](Policy.md), [Style](Style.md).
+Общее для них: `identity`, `displayName`, `folder`; при необходимости — `meta` и `isSystem`. Контекстная принадлежность задаётся явными relations или типизированным placement-контрактом конкретного документа. Подробнее: [Environment](Environment.md), [Policy](Policy.md), [Style](Style.md).

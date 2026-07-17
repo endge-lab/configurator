@@ -27,7 +27,6 @@ import {
   QUERY_ROOT_IDENTITY,
   getCompositionRootFolderId,
   getQueryRootFolderId,
-  isQueryComposition,
   setQueryCompositionRole,
 } from './query-composition-presentation'
 
@@ -284,7 +283,7 @@ export async function deleteEntity(node: FsFileNode, permanent = false): Promise
  */
 export async function restoreEntity(node: FsFileNode): Promise<void> {
   const entity = getEntityBySection(node.id, node.sectionType)
-  const restoreToQueries = node.docType === 'composition' && isQueryComposition(entity)
+  const restoreToQueries = node.docType === 'composition' && String(entity?.kind ?? 'library') === 'query'
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
     await Endge.schema.restoreDocument(node.id, node.docType)
   }
@@ -485,13 +484,19 @@ async function reclassifyComposition(
 
   const previousMeta = composition.meta
   const previousFolderId = composition.folderId
+  const previousKind = composition.kind
+  const previousKindIdentity = composition.kindIdentity
   composition.meta = setQueryCompositionRole(composition.meta, targetIsQueries)
+  composition.kind = targetIsQueries ? 'query' : 'library'
+  composition.kindIdentity = null
   composition.folderId = targetFolderId
   try {
     await Endge.schema.saveDocument(id, 'composition', { model: composition })
   }
   catch (error) {
     composition.meta = previousMeta
+    composition.kind = previousKind
+    composition.kindIdentity = previousKindIdentity
     composition.folderId = previousFolderId
     throw error
   }

@@ -10,7 +10,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "Any",
           "primitiveKind": "scalar"
@@ -26,7 +25,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "Boolean",
           "primitiveKind": "scalar"
@@ -42,7 +40,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -168,7 +165,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -217,7 +213,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -245,7 +240,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -287,7 +281,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -399,7 +392,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -546,7 +538,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -581,7 +572,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -616,7 +606,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -644,7 +633,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -714,7 +702,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -833,7 +820,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "DateTime",
           "primitiveKind": "scalar"
@@ -849,7 +835,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -961,7 +946,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -982,7 +966,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1101,7 +1084,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1143,7 +1125,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1171,7 +1152,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1199,7 +1179,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "ID",
           "primitiveKind": "scalar"
@@ -1215,7 +1194,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1264,7 +1242,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1390,7 +1367,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1439,7 +1415,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1474,7 +1449,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1509,7 +1483,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1544,7 +1517,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "Null",
           "primitiveKind": "scalar"
@@ -1560,7 +1532,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "Number",
           "primitiveKind": "scalar"
@@ -1576,7 +1547,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1611,7 +1581,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1653,7 +1622,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1744,7 +1712,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1842,7 +1809,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -1933,7 +1899,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2017,7 +1982,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2059,7 +2023,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2143,7 +2106,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2234,7 +2196,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "actions",
           "storage": "id",
@@ -2251,7 +2212,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "components",
           "storage": "id",
@@ -2268,7 +2228,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "converters",
           "storage": "id",
@@ -2285,7 +2244,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "environments",
           "storage": "id",
@@ -2302,7 +2260,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "filters",
           "storage": "id",
@@ -2319,7 +2276,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "folders",
           "storage": "id",
@@ -2336,7 +2292,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "integrations",
           "storage": "id",
@@ -2353,7 +2308,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "navigations",
           "storage": "id",
@@ -2370,7 +2324,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "pages",
           "storage": "id",
@@ -2387,7 +2340,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "page-templates",
           "storage": "id",
@@ -2404,7 +2356,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "parameters",
           "storage": "id",
@@ -2421,7 +2372,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "policies",
           "storage": "id",
@@ -2438,7 +2388,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "projects",
           "storage": "id",
@@ -2455,7 +2404,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "queries",
           "storage": "id",
@@ -2472,7 +2420,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "styles",
           "storage": "id",
@@ -2489,7 +2436,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "tenants",
           "storage": "id",
@@ -2506,7 +2452,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "types",
           "storage": "id",
@@ -2523,7 +2468,6 @@
         "folderId": 36,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "target": "vocabs",
           "storage": "id",
@@ -2540,7 +2484,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2624,7 +2567,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "String",
           "primitiveKind": "scalar"
@@ -2640,7 +2582,6 @@
         "folderId": 35,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {
           "runtimeType": "Time",
           "primitiveKind": "scalar"
@@ -2656,7 +2597,6 @@
         "folderId": 5,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "isPrimitive": false,
         "fields": [
@@ -2710,7 +2650,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "kind": "component-sfc",
         "type": "component-sfc",
@@ -2730,7 +2669,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "kind": "component-sfc",
         "type": "component-sfc",
@@ -2752,7 +2690,6 @@
         "folderId": 37,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "definition": {
           "version": 1,
@@ -2799,7 +2736,6 @@
         "folderId": 4,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "definition": {
           "version": 1,
@@ -2848,7 +2784,6 @@
         "folderId": 38,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "definition": {
           "version": 1,
@@ -2896,7 +2831,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2907,7 +2841,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2918,7 +2851,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2929,7 +2861,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2940,7 +2871,6 @@
         "folderId": 19,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2951,7 +2881,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2962,7 +2891,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2973,7 +2901,6 @@
         "folderId": 22,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2984,7 +2911,6 @@
         "folderId": 22,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -2995,7 +2921,6 @@
         "folderId": 21,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3006,7 +2931,6 @@
         "folderId": 20,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3017,7 +2941,6 @@
         "folderId": 19,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3028,7 +2951,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3039,7 +2961,6 @@
         "folderId": 21,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3050,7 +2971,6 @@
         "folderId": 19,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3061,7 +2981,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3072,7 +2991,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3083,7 +3001,6 @@
         "folderId": 20,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3094,7 +3011,6 @@
         "folderId": 18,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       }
     ],
@@ -3109,7 +3025,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "actions",
         "parent": 4
@@ -3123,7 +3038,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "actions",
         "parent": 4
@@ -3137,7 +3051,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3151,7 +3064,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3165,7 +3077,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3179,7 +3090,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3193,7 +3103,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3207,7 +3116,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": 6
@@ -3221,7 +3129,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "queries",
         "parent": 2
@@ -3235,7 +3142,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": 1
@@ -3249,7 +3155,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": 1
@@ -3263,7 +3168,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": 1
@@ -3277,7 +3181,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": 1
@@ -3291,7 +3194,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "queries",
         "parent": 2
@@ -3305,7 +3207,6 @@
         "folderId": null,
         "project": null,
         "isSystem": false,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": 1
@@ -3319,7 +3220,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "system",
         "parent": null
@@ -3333,7 +3233,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "actions",
         "parent": null
@@ -3347,7 +3246,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "components",
         "parent": null
@@ -3361,7 +3259,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "converters",
         "parent": null
@@ -3375,7 +3272,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "environments",
         "parent": null
@@ -3389,7 +3285,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "filters",
         "parent": null
@@ -3403,7 +3298,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "i18n-bundles",
         "parent": null
@@ -3417,7 +3311,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "integrations",
         "parent": null
@@ -3431,7 +3324,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "navigations",
         "parent": null
@@ -3445,7 +3337,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "pages",
         "parent": null
@@ -3459,7 +3350,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "page-templates",
         "parent": null
@@ -3473,7 +3363,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "parameters",
         "parent": null
@@ -3487,7 +3376,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "policies",
         "parent": null
@@ -3501,7 +3389,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "projects",
         "parent": null
@@ -3515,7 +3402,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "queries",
         "parent": null
@@ -3529,7 +3415,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "styles",
         "parent": null
@@ -3543,7 +3428,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "tenants",
         "parent": null
@@ -3557,7 +3441,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "types",
         "parent": null
@@ -3571,7 +3454,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "vocabs",
         "parent": null
@@ -3585,7 +3467,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "system",
         "parent": null
@@ -3599,7 +3480,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "types",
         "parent": 5
@@ -3613,7 +3493,6 @@
         "folderId": null,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {},
         "entityType": "types",
         "parent": 5
@@ -3631,7 +3510,6 @@
         "folderId": 25,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       },
       {
@@ -3643,7 +3521,6 @@
         "folderId": 25,
         "project": null,
         "isSystem": true,
-        "inherited": false,
         "meta": {}
       }
     ],
@@ -3658,7 +3535,6 @@
         "project": null,
         "styles": {},
         "meta": {},
-        "inherited": false,
         "isSystem": true
       }
     ],

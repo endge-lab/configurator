@@ -3,7 +3,6 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { Loader2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import EntityInheritedInspector from '@/features/endge-ide/ui/section/inspectors/EntityInherited_Inspector.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -37,9 +36,6 @@ async function save(): Promise<void> {
           <Input v-model="editor.name" />
         </div>
 
-        <div class="space-y-2">
-          <EntityInheritedInspector :tab-context="tabContext" />
-        </div>
       </div>
     </ScrollArea>
 

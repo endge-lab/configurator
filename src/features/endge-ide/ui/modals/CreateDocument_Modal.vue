@@ -285,7 +285,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       source: Endge.source.createDefault('query'),
       sourceVersion: 2,
       meta: {},
-      inherited: false,
     }
   }
 
@@ -295,7 +294,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       source: Endge.source.createDefault('data-view'),
       sourceVersion: 1,
       meta: {},
-      inherited: false,
     }
   }
 
@@ -303,10 +301,11 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       description: null,
+      kind: isQueryComposition ? 'query' : 'library',
+      kindIdentity: null,
       source: Endge.source.createDefault('composition'),
       sourceVersion: 1,
       meta: isQueryComposition ? setQueryCompositionRole({}, true) : {},
-      inherited: false,
     }
   }
 
@@ -317,7 +316,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       source: Endge.source.createDefault('store'),
       sourceVersion: 1,
       meta: {},
-      inherited: false,
     }
   }
 
@@ -330,7 +328,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       source: '{}',
       codeRef: null,
       meta: {},
-      inherited: false,
     }
   }
 
@@ -344,7 +341,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       input: {},
       output: {},
       meta: {},
-      inherited: false,
     }
   }
 
@@ -355,7 +351,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
       source: Endge.source.createDefault('filter'),
       sourceVersion: 1,
       meta: {},
-      inherited: false,
     }
   }
 
@@ -474,6 +469,8 @@ async function onSubmit(): Promise<void> {
         : activeType.value as DomainDocumentType
       if (isQueryComposition) {
         parsed.meta = setQueryCompositionRole(parsed.meta as Record<string, unknown> | undefined, true)
+        parsed.kind = 'query'
+        parsed.kindIdentity = null
         if (parsed.folder == null || parsed.folder === '') {
           const rootFolderId = getQueryRootFolderId()
           if (rootFolderId == null) {
@@ -515,6 +512,8 @@ async function onSubmit(): Promise<void> {
     })
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)
+      draft.kind = 'query'
+      draft.kindIdentity = null
     }
 
     // Сохраняем новый документ в payload (tabs.save() сохраняет активную вкладку, а не созданный документ)

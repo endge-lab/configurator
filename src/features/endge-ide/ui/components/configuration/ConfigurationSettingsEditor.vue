@@ -340,9 +340,9 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
 
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
-            <ConfigurationOverrideField label="SSE endpoint" :inherited="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
-              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
-                <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />
+            <ConfigurationOverrideField label="SSE endpoint" :uses-parent-value="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />
               </template>
             </ConfigurationOverrideField>
           </TabsContent>
@@ -402,23 +402,23 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
               </div>
             </div>
 
-            <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
-              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }">
-                <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
+            <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
               </template>
             </ConfigurationOverrideField>
           </TabsContent>
 
           <TabsContent value="auth" class="m-0 p-5 outline-none">
-            <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
-              <template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
+            <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
             </ConfigurationOverrideField>
           </TabsContent>
 
           <TabsContent value="locales" class="m-0 space-y-5 p-5 outline-none">
           <div class="grid gap-4 md:grid-cols-2">
-            <ConfigurationOverrideField label="Локаль по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
-            <ConfigurationOverrideField label="Резервная локаль" :inherited="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
+            <ConfigurationOverrideField label="Локаль по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
+            <ConfigurationOverrideField label="Резервная локаль" :uses-parent-value="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
           </div>
           <div class="flex items-center justify-between">
             <Label>Доступные локали</Label>
@@ -448,7 +448,7 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
           </TabsContent>
 
           <TabsContent value="themes" class="m-0 space-y-5 p-5 outline-none">
-          <ConfigurationOverrideField label="Тема по умолчанию" :inherited="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')"><template #default="{ disabled: fieldDisabled, inheritedPlaceholder }"><Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? inheritedPlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" /></template></ConfigurationOverrideField>
+          <ConfigurationOverrideField label="Тема по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" /></template></ConfigurationOverrideField>
           <div class="flex items-center justify-between">
             <Label>Доступные темы</Label>
             <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('themes')">

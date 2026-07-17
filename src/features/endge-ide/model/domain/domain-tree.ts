@@ -3,7 +3,7 @@
  * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
  */
 
-import type { DomainDocumentType, RComponentTable } from '@endge/core'
+import type { DomainDocumentType, RComponentTable, RCompositionKind } from '@endge/core'
 
 import {
   ComponentType,
@@ -11,10 +11,11 @@ import {
   Endge,
   FilterType,
   ParameterType,
-  QueryType,
 } from '@endge/core'
 
-import { isQueryComposition, QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
+import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
+
+export type CompositionPresentationKind = RCompositionKind | typeof QUERY_COMPOSITION_PRESENTATION_KIND
 
 export type FsNodeType = 'file' | 'folder'
 
@@ -45,7 +46,7 @@ export interface FsFileNode extends FsNodeBase {
   children?: FsNode[]
   isTableColumn?: boolean
   parentComponentId?: string
-  presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
+  presentationKind?: CompositionPresentationKind
 }
 
 export type FsNode = FsFolderNode | FsFileNode
@@ -80,13 +81,6 @@ export function withoutDeleted<T extends { folderId?: string | number | null, fo
   if (!Array.isArray(list))
     return []
   return list.filter(e => !isDeleted(e, softDeletedFolderId) && !isTemporaryEntity(e))
-}
-
-/** Без удалённых и без inherited (inherited показываются только внутри вида). */
-export function withoutDeletedAndInherited(list: any[] | undefined, softDeletedFolderId?: string | number | null): any[] {
-  if (!Array.isArray(list))
-    return []
-  return list.filter((e: any) => !isDeleted(e, softDeletedFolderId) && !e.inherited && !isTemporaryEntity(e))
 }
 
 export function getFolderParent(f: { parent?: string | number | null, parentId?: string | number }): string | number | null {
@@ -132,7 +126,7 @@ export function getSoftDeletedItems(
   folderId?: string | number | null
   type?: DomainDocumentType
   sectionType: DomainSectionType
-  presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
+  presentationKind?: CompositionPresentationKind
 }> {
   const out: Array<{
     id: string
@@ -165,7 +159,7 @@ export function getSoftDeletedItems(
         folderId: e.folderId ?? e.folder ?? e.group,
         type: e.type,
         sectionType,
-        ...(isQueryComposition(e) && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
+        ...(e?.type === 'composition' && { presentationKind: String(e.kind ?? 'library') as CompositionPresentationKind }),
       })
     }
   }
@@ -429,6 +423,15 @@ export interface BuildDomainTreeParams {
   allFolders: any[]
   /** Id папки «Удалённые» для определения isInDeletedFolder и isDeleted. */
   softDeletedFolderId?: string | number | null
+  /** Composition documents presented by kind rather than their persisted folder. */
+  contextualCompositions?: Array<{
+    id?: string | number
+    identity?: string
+    name?: string
+    displayName?: string
+    kind?: RCompositionKind
+    kindIdentity?: string | null
+  }>
 }
 
 function getFolderTraversalKey(folder: { id?: string | number, identity?: string | number, name?: string }): string {
@@ -496,13 +499,7 @@ function buildFolderNode(
   nextVisitedFolderKeys.add(folderKey)
   const nextTraversalPath = [...traversalPath, folderKey]
 
-  const isSectionWithInherited
-    = sectionType === DomainSectionType.Query
-      || sectionType === DomainSectionType.Component
-      || sectionType === DomainSectionType.Filters
-  const effectiveItems = isSectionWithInherited
-    ? allSectionItems.filter((e: any) => !e.inherited)
-    : allSectionItems
+  const effectiveItems = allSectionItems
 
   const isSameId = (a: string | number | null | undefined, b: string | number | null | undefined) =>
     a != null && b != null ? String(a) === String(b) : a === b
@@ -554,8 +551,8 @@ function buildFolderNode(
           || (c as { type?: string }).type === 'system'
           || SYSTEM_TYPE_FOLDER_IDENTITIES.has(folderIdentity),
         isInDeletedFolder: currentInDeletedBranch,
-        ...((c as { presentationKind?: unknown }).presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND
-          && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
+        ...((c as { presentationKind?: unknown }).presentationKind != null
+          && { presentationKind: String((c as { presentationKind?: unknown }).presentationKind) as CompositionPresentationKind }),
       }
       if (
         itemSectionType === DomainSectionType.Component
@@ -594,7 +591,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
     })
     .filter(Boolean) as Array<{ root: any, sectionKey: string }>
 
-  return orderedRoots.map(({ root, sectionKey }) => {
+  const tree = orderedRoots.map(({ root, sectionKey }) => {
     const sectionInfo = sectionMapRecord[sectionKey]
     const sectionType = sectionInfo?.section ?? DomainSectionType.Type
     const allItems = sectionInfo?.items?.() ?? []
@@ -609,6 +606,80 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
     const isVirtualRoot = !rootFolders.some((f: any) => (f.identity ?? f.id) === sectionKey)
     return buildFolderNode(root, sectionType, items, folders, true, isVirtualRoot, softDeletedFolderId)
   })
+
+  attachContextualCompositions(tree, params.contextualCompositions ?? [])
+  return tree
+}
+
+const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {
+  query: 'root-queries',
+  tenant: 'root-tenants',
+  project: 'root-projects',
+  environment: 'root-environments',
+  workspace: 'root-compositions',
+}
+
+const COMPOSITION_KIND_SECTION: Partial<Record<RCompositionKind, DomainSectionType>> = {
+  query: DomainSectionType.Query,
+  tenant: DomainSectionType.Tenant,
+  project: DomainSectionType.Project,
+  environment: DomainSectionType.Environment,
+}
+
+function findOwnedNode(
+  nodes: FsNode[],
+  identity: string,
+  sectionType?: DomainSectionType,
+): FsFileNode | null {
+  for (const node of nodes) {
+    if (
+      node.type === 'file'
+      && (sectionType == null || node.sectionType === sectionType)
+      && (node.identity === identity || node.id === identity)
+    )
+      return node
+    const match = findOwnedNode(node.children ?? [], identity, sectionType)
+    if (match)
+      return match
+  }
+  return null
+}
+
+function attachContextualCompositions(
+  tree: FsNode[],
+  compositions: NonNullable<BuildDomainTreeParams['contextualCompositions']>,
+): void {
+  for (const composition of compositions) {
+    const kind = composition.kind ?? 'library'
+    if (kind === 'library')
+      continue
+
+    const rootId = COMPOSITION_KIND_ROOT[kind] ?? 'root-compositions'
+    const root = tree.find(node => node.type === 'folder' && node.id === rootId) as FsFolderNode | undefined
+    if (!root)
+      continue
+
+    const kindIdentity = String(composition.kindIdentity ?? '').trim()
+    const owner = kindIdentity
+      ? findOwnedNode(root.children ?? [], kindIdentity, COMPOSITION_KIND_SECTION[kind])
+      : null
+    const id = String(composition.id ?? composition.identity ?? '')
+    const identity = String(composition.identity ?? '')
+    const node: FsFileNode = {
+      id,
+      ...(identity ? { identity } : {}),
+      name: composition.displayName ?? composition.name ?? identity ?? id,
+      type: 'file',
+      docType: 'composition',
+      sectionType: DomainSectionType.Composition,
+      presentationKind: kind,
+    }
+
+    const targetChildren = owner
+      ? (owner.children ??= [])
+      : (root.children ??= [])
+    targetChildren.push(node)
+  }
 }
 
 /**

@@ -20,7 +20,6 @@ import {
   autoFillColumn,
   buildAccessor,
 } from "@/features/endge-ide/tools/table-editor-helper";
-import EntityInheritedInspector from "@/features/endge-ide/ui/section/inspectors/EntityInherited_Inspector.vue";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
@@ -988,9 +987,6 @@ watch(
           <Input v-model="editor.name" />
         </div>
 
-        <div class="space-y-2">
-          <EntityInheritedInspector :tab-context="tabContext" />
-        </div>
 
         <!-- Панель проверки запроса: выбор запроса, Выполнить, JSON первого элемента -->
         <div class="space-y-2 border-t pt-4">

@@ -30,8 +30,6 @@ export class RComponentSFCEditor {
 
   meta: Record<string, unknown> = {}
 
-  inherited = false
-
   source = ''
 
   sourceParts: RComponentSFCSource_Parts = parseSFCSourceParts('')
@@ -48,7 +46,6 @@ export class RComponentSFCEditor {
     this.modelVersion = Number(source.modelVersion ?? 1)
     this.supportedTargets = normalizeTargets(source.supportedTargets)
     this.meta = { ...(source.meta ?? {}) }
-    this.inherited = source.inherited === true
     this.source = source.source ?? ''
     this.sourceParts = parseSFCSourceParts(this.source)
   }
@@ -66,7 +63,6 @@ export class RComponentSFCEditor {
     source.modelVersion = Number(this.modelVersion ?? 1)
     source.supportedTargets = normalizeTargets(this.supportedTargets)
     source.meta = { ...this.meta }
-    source.inherited = this.inherited
     source.source = this.source
   }
 

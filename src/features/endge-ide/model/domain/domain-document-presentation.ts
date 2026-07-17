@@ -56,10 +56,11 @@ export function getDomainDocumentPresentation(
     ? FALLBACK_PRESENTATION
     : getDomainSectionPresentation(sectionType)
 
-  if (String(docType) === 'composition' && presentationKind === QUERY_COMPOSITION_PRESENTATION_KIND) {
+  const compositionOwnerSection = getCompositionOwnerSection(presentationKind)
+  if (String(docType) === 'composition' && compositionOwnerSection != null) {
     return {
       ...presentation,
-      colorClass: getDomainSectionPresentation(DomainSectionType.Query).colorClass,
+      colorClass: getDomainSectionPresentation(compositionOwnerSection).colorClass,
     }
   }
 
@@ -72,6 +73,24 @@ export function getDomainDocumentPresentation(
   }
 
   return presentation
+}
+
+function getCompositionOwnerSection(presentationKind?: string): DomainSectionType | null {
+  switch (presentationKind) {
+    case QUERY_COMPOSITION_PRESENTATION_KIND:
+    case 'query':
+      return DomainSectionType.Query
+    case 'tenant':
+      return DomainSectionType.Tenant
+    case 'project':
+      return DomainSectionType.Project
+    case 'environment':
+      return DomainSectionType.Environment
+    case 'workspace':
+      return DomainSectionType.Project
+    default:
+      return null
+  }
 }
 
 function getComponentBadgeIcon(docType: DomainDocumentType): string | null {

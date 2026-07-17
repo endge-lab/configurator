@@ -66,6 +66,74 @@ describe('buildDomainTree', () => {
     })
   })
 
+  it('places an unowned query Composition directly in the query root', () => {
+    const tree = buildDomainTree({
+      rootToSection: {
+        'root-queries': {
+          section: DomainSectionType.Query,
+          items: () => [],
+        },
+      },
+      rootOrder: ['root-queries'],
+      rootLabels: { 'root-queries': 'Запросы' },
+      allFolders: [],
+      contextualCompositions: [{
+        id: 10,
+        identity: 'groundhandling-default',
+        displayName: 'Запросы ТГО',
+        kind: 'query',
+        kindIdentity: null,
+      }],
+    })
+
+    expect(tree[0]?.children?.[0]).toMatchObject({
+      id: '10',
+      identity: 'groundhandling-default',
+      docType: 'composition',
+      sectionType: DomainSectionType.Composition,
+      presentationKind: 'query',
+    })
+  })
+
+  it('attaches a project Composition to its owner and ignores its persisted folder', () => {
+    const tree = buildDomainTree({
+      rootToSection: {
+        'root-projects': {
+          section: DomainSectionType.Project,
+          items: () => [{
+            id: 7,
+            identity: 'project-dev',
+            displayName: 'Project Dev',
+            folderId: 'root-projects',
+          }],
+        },
+      },
+      rootOrder: ['root-projects'],
+      rootLabels: { 'root-projects': 'Проекты' },
+      allFolders: [
+        { id: 'root-projects', identity: 'root-projects', name: 'Projects', parent: null },
+        { id: 'unrelated', identity: 'unrelated', name: 'Unrelated', parent: 'root-projects' },
+      ],
+      contextualCompositions: [{
+        id: 21,
+        identity: 'project-dev-startup',
+        displayName: 'Project startup',
+        kind: 'project',
+        kindIdentity: 'project-dev',
+      }],
+    })
+
+    const project = tree[0]?.children?.find(node => node.type === 'file' && node.identity === 'project-dev')
+    expect(project?.children).toEqual([
+      expect.objectContaining({
+        id: '21',
+        identity: 'project-dev-startup',
+        docType: 'composition',
+        presentationKind: 'project',
+      }),
+    ])
+  })
+
   it('stops traversing cyclic folder branches from malformed folder data', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 

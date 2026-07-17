@@ -45,6 +45,22 @@ describe('domain document presentation', () => {
       icon: 'Network',
       colorClass: 'text-orange-500',
     })
+    expect(getDomainDocumentPresentation('composition', 'query')).toEqual({
+      icon: 'Network',
+      colorClass: 'text-orange-500',
+    })
+    expect(getDomainDocumentPresentation('composition', 'project')).toEqual({
+      icon: 'Network',
+      colorClass: 'text-sky-500',
+    })
+    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual({
+      icon: 'Network',
+      colorClass: 'text-emerald-500',
+    })
+    expect(getDomainDocumentPresentation('composition', 'environment')).toEqual({
+      icon: 'Network',
+      colorClass: 'text-lime-500',
+    })
   })
 
   it('keeps computation and filter presentations aligned with their sections', () => {

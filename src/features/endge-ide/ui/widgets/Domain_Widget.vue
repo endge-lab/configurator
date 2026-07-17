@@ -2,7 +2,7 @@
 import type { DragPayloadItem } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
-import type { DomainDocumentType } from '@endge/core'
+import type { DomainDocumentType, RCompositionKind } from '@endge/core'
 
 import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
@@ -86,12 +86,7 @@ import {
   getSoftDeletedItems,
   ROOT_FOLDER_LABELS,
   withoutDeleted,
-  withoutDeletedAndInherited,
 } from '@/features/endge-ide/model/domain/domain-tree'
-import {
-  isQueryComposition,
-  QUERY_COMPOSITION_PRESENTATION_KIND,
-} from '@/features/endge-ide/model/domain/query-composition-presentation'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -395,32 +390,25 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   }
 }
 
-/** Маппинг: identity корневой папки - секция и список сущностей домена (без удалённых, без inherited в корне). Все доступные сущности. */
+/** Маппинг: identity корневой папки — секция и активные документы домена. */
 const ROOT_TO_SECTION = computed(() => {
   const softId = softDeletedFolderId.value
   const compositions = withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId)
-  const queryCompositions = compositions
-    .filter(isQueryComposition)
-    .map(composition => ({
-      ...composition,
-      sectionType: DomainSectionType.Composition,
-      presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND,
-    }))
   return {
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
     'root-queries': {
       section: DomainSectionType.Query,
-      items: () => [...withoutDeletedAndInherited(domainStore.queries, softId), ...queryCompositions],
+      items: () => withoutDeleted(domainStore.queries, softId),
     },
-    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeletedAndInherited((Endge.domain as any).getDataViews?.() ?? [], softId) },
+    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? [], softId) },
     'root-compositions': {
       section: DomainSectionType.Composition,
-      items: () => compositions.filter(composition => !isQueryComposition(composition)),
+      items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
     },
     'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? [], softId) },
-    'root-components': { section: DomainSectionType.Component, items: () => withoutDeletedAndInherited([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
+    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
-    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeletedAndInherited(domainStore.filters, softId) },
+    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters, softId) },
     'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters, softId) },
     'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations(), softId) },
     'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters, softId) },
@@ -522,17 +510,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'soft-deleted': { icon: Trash2, colorClass: 'text-muted-foreground' },
 }
 
-const SECTION_FOLDER_PRESENTATION = computed(() => {
-  const presentation = new Map<DomainSectionType, { icon: any, colorClass: string }>()
-  const rootToSection = ROOT_TO_SECTION.value as Record<string, { section: DomainSectionType, items: () => unknown[] }>
-  for (const [rootId, config] of Object.entries(ROOT_FOLDER_ICONS)) {
-    const section = rootToSection[rootId]?.section
-    if (section != null && !presentation.has(section))
-      presentation.set(section, config)
-  }
-  return presentation
-})
-
 /** Типы документов, которые можно дублировать (те же, что в «Создать»). */
 const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   ComponentType.DSL,
@@ -567,13 +544,6 @@ function isSystemTypeFolder(node: FsFolderNode): boolean {
   return node.isSystem === true || SYSTEM_TYPE_FOLDER_IDENTITIES.has(String(node.identity ?? ''))
 }
 
-function getSectionFolderPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } | null {
-  const normalizedSectionType = sectionType === DomainSectionType.Primitive
-    ? DomainSectionType.Type
-    : sectionType
-  return SECTION_FOLDER_PRESENTATION.value.get(normalizedSectionType) ?? null
-}
-
 function getFolderIcon(node: FsFolderNode): any {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.icon
@@ -590,7 +560,7 @@ function getTreeDocumentIconClass(node: FsFileNode): string[] {
   const iconClass = EndgeIDE.tabs.getDocumentIcon(node.docType, node.presentationKind)
     .split(/\s+/)
     .filter(token => token && !token.startsWith('text-') && !token.startsWith('dark:text-'))
-  const colorClass = getSectionFolderPresentation(node.sectionType)?.colorClass ?? 'text-muted-foreground'
+  const colorClass = getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
   return [...iconClass, colorClass, 'text-base']
 }
 
@@ -617,6 +587,17 @@ const fsTree = computed<FsNode[]>(() => {
     rootLabels: ROOT_FOLDER_LABELS,
     allFolders,
     softDeletedFolderId: softDeletedFolderId.value,
+    contextualCompositions: withoutDeleted(
+      (Endge.domain as any).getCompositions?.() ?? [],
+      softDeletedFolderId.value,
+    ).filter(composition => String(composition.kind ?? 'library') !== 'library') as Array<{
+      id?: string | number
+      identity?: string
+      name?: string
+      displayName?: string
+      kind?: RCompositionKind
+      kindIdentity?: string | null
+    }>,
   })
 
   return tree
