@@ -31,7 +31,6 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RCompositionEditor | null,
@@ -89,7 +88,10 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeEmbeddedPreview('composition', editor.value?.identity)
+  void EndgeIDE.runtimePreview.launch({
+    entityType: 'composition',
+    identity: editor.value?.identity ?? '',
+  })
 }
 </script>
 

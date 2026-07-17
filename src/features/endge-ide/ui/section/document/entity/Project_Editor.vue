@@ -20,7 +20,6 @@ import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/conf
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
-import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
@@ -80,7 +79,10 @@ async function save(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeEmbeddedPreview('project', editor.value?.identity)
+  void EndgeIDE.runtimePreview.launch({
+    entityType: 'project',
+    identity: editor.value?.identity ?? '',
+  })
 }
 </script>
 

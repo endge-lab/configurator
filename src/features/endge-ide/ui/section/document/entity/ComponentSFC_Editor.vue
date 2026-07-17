@@ -29,7 +29,6 @@ import { createExtractComponentContribution } from '@/features/endge-ide/source-
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
-import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
@@ -122,7 +121,10 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeEmbeddedPreview('component-sfc', editor.value?.identity)
+  void EndgeIDE.runtimePreview.launch({
+    entityType: 'component-sfc',
+    identity: editor.value?.identity ?? '',
+  })
 }
 </script>
 

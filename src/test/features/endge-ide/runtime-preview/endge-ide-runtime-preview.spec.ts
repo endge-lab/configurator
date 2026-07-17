@@ -1,0 +1,141 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref, shallowRef } from 'vue'
+
+import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
+
+const mocks = vi.hoisted(() => ({
+  valid: true,
+  showWidget: vi.fn(),
+  toastError: vi.fn(),
+  instances: [] as any[],
+  surfaceLifecycle: null as { beforeContextReset?: () => Promise<void> | void } | null,
+}))
+
+vi.mock('@endge/core', () => ({
+  Endge: {
+    runtime: {
+      subscribe: vi.fn(() => vi.fn()),
+      scopes: { subscribe: vi.fn(() => vi.fn()) },
+    },
+  },
+}))
+
+vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError } }))
+vi.mock('@/components/layouts/grid', () => ({ showWidget: mocks.showWidget }))
+vi.mock('@/features/endge-configurator/model/endge-configurator', () => ({
+  EndgeConfigurator: {
+    registerSurface: vi.fn((_id: string, lifecycle: { beforeContextReset?: () => Promise<void> | void }) => {
+      mocks.surfaceLifecycle = lifecycle
+      return vi.fn()
+    }),
+  },
+}))
+vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard', () => ({
+  validateRuntimePreviewContext: () => mocks.valid
+    ? { valid: true }
+    : { valid: false, message: 'Context mismatch', description: 'Switch context first' },
+}))
+vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-instance', () => ({
+  RuntimePreviewInstance: class RuntimePreviewInstance {
+    public key: string
+    public tree = shallowRef<any[]>([])
+    public selectedNodeId = ref<string | null>(null)
+    public selectedNode = computed(() => null)
+    public status = ref('inactive')
+    public error = ref<string | null>(null)
+    public renderables = shallowRef<any[]>([])
+    public inactiveRenderableChildren = computed(() => [])
+    public launch = vi.fn(async () => { this.status.value = 'active' })
+    public select = vi.fn(async () => undefined)
+    public pause = vi.fn(async () => { this.status.value = 'paused' })
+    public resume = vi.fn(async () => { this.status.value = 'active' })
+    public stop = vi.fn(async () => { this.status.value = 'stopped' })
+    public restart = vi.fn(async () => { this.status.value = 'active' })
+    public dispose = vi.fn(async () => { this.status.value = 'disposed' })
+    public pauseNode = vi.fn(async () => undefined)
+    public resumeNode = vi.fn(async () => undefined)
+    public stopNode = vi.fn(async () => undefined)
+    public restartNode = vi.fn(async () => undefined)
+    public lifecycleState = vi.fn(() => this.status.value)
+    public refresh = vi.fn()
+
+    public constructor(target: { entityType: string, identity: string }) {
+      this.key = `${target.entityType}:${target.identity}`
+      mocks.instances.push(this)
+    }
+  },
+}))
+
+describe('endgeIDE Runtime Preview manager', () => {
+  beforeEach(() => {
+    mocks.valid = true
+    mocks.showWidget.mockReset()
+    mocks.toastError.mockReset()
+    mocks.instances.splice(0)
+    mocks.surfaceLifecycle = null
+  })
+
+  it('starts empty and keeps multiple explicitly launched roots', async () => {
+    const manager = new EndgeIDERuntimePreview()
+
+    expect(manager.entries.value).toEqual([])
+    await manager.launch({ entityType: 'composition', identity: 'entry' })
+    await manager.launch({ entityType: 'component-sfc', identity: 'table' })
+
+    expect(manager.entries.value.map(item => item.key)).toEqual([
+      'composition:entry',
+      'component-sfc:table',
+    ])
+    expect(manager.selectedEntryKey.value).toBe('component-sfc:table')
+    expect(mocks.showWidget).toHaveBeenCalledTimes(2)
+  })
+
+  it('serializes duplicate documents through the same stable entry and launches a fresh generation', async () => {
+    const manager = new EndgeIDERuntimePreview()
+
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    expect(manager.entries.value).toHaveLength(1)
+    expect(mocks.instances).toHaveLength(1)
+    expect(mocks.instances[0].launch).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not create or replace an entry when context validation fails', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+    mocks.valid = false
+
+    expect(await manager.launch({ entityType: 'project', identity: 'other' })).toBe(false)
+    expect(manager.entries.value.map(item => item.key)).toEqual(['store:flights'])
+    expect(mocks.toastError).toHaveBeenCalledOnce()
+  })
+
+  it('stops all roots without removing them and disposes everything on reset', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    await manager.launch({ entityType: 'composition', identity: 'entry' })
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    await manager.stopAll()
+    expect(mocks.instances.every(instance => instance.stop.mock.calls.length === 1)).toBe(true)
+    expect(manager.entries.value).toHaveLength(2)
+
+    await manager.disposeAll()
+    expect(mocks.instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true)
+    expect(manager.entries.value).toEqual([])
+    expect(manager.selectedEntryKey.value).toBeNull()
+  })
+
+  it('clears every runtime before a context reset', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    manager.init()
+    await manager.launch({ entityType: 'composition', identity: 'entry' })
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    await mocks.surfaceLifecycle?.beforeContextReset?.()
+
+    expect(manager.entries.value).toEqual([])
+    expect(mocks.instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true)
+    manager.reset()
+  })
+})

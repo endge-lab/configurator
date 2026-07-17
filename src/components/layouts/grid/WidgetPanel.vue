@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview/config/constants'
 
 const props = withDefaults(defineProps<{
   position: 'left' | 'right'
@@ -88,8 +88,8 @@ const topWidgets = computed(() =>
 
 const workspaceSettingsActive = computed(() => EndgeIDE.tabs.activeTabId.value === 'workspace-settings')
 const workspaceSettingsAnchorId = computed(() => {
-  return topWidgets.value.some(widget => widget.id === ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID)
-    ? ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID
+  return topWidgets.value.some(widget => widget.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+    ? ENDGE_IDE_RUNTIME_TREE_WIDGET_ID
     : topWidgets.value[0]?.id ?? null
 })
 

@@ -36,7 +36,6 @@ import {
 } from '@/features/endge-ide/model/store-preview/store-preview-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
-import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
@@ -122,7 +121,10 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeEmbeddedPreview('store', editor.value?.identity)
+  void EndgeIDE.runtimePreview.launch({
+    entityType: 'store',
+    identity: editor.value?.identity ?? '',
+  })
 }
 </script>
 

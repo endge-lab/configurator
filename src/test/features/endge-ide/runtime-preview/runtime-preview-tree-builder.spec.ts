@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildPreviewRuntimeTree } from '@/features/endge-preview/model/tree/preview-runtime-tree-builder'
+import { buildRuntimePreviewTree } from '@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder'
 
 const { artifacts, compositions } = vi.hoisted(() => ({
   artifacts: new Map<string, any>(),
@@ -26,7 +26,7 @@ vi.mock('@endge/core', async importOriginal => ({
   },
 }))
 
-describe('preview runtime tree builder', () => {
+describe('runtime Preview tree builder', () => {
   beforeEach(() => {
     artifacts.clear()
     compositions.splice(0)
@@ -44,15 +44,15 @@ describe('preview runtime tree builder', () => {
         runtime('childRuntime', 'composition', 'pages', 'child'),
       ],
       scopes: [
-        scope('scope_default', null, ['pages']),
-        scope('pages', 'scope_default', []),
+        scope('scope_default', null),
+        scope('pages', 'scope_default'),
       ],
     })))
     artifacts.set('child', artifact(payload({
       runtimes: [runtime('filter', 'filter-view', 'scope_default', 'flight-filter')],
     })))
 
-    const [project] = buildPreviewRuntimeTree({ entityType: 'project', identity: 'airport' })
+    const [project] = buildRuntimePreviewTree({ entityType: 'project', identity: 'airport' })
     const entry = project?.children[0]
 
     expect(project).toMatchObject({
@@ -89,8 +89,8 @@ describe('preview runtime tree builder', () => {
     })
   })
 
-  it('creates a standalone renderable Store runtime root', () => {
-    const [store] = buildPreviewRuntimeTree({ entityType: 'store', identity: 'flights' })
+  it('creates a standalone renderable Store root', () => {
+    const [store] = buildRuntimePreviewTree({ entityType: 'store', identity: 'flights' })
 
     expect(store).toMatchObject({
       id: 'store:flights',
@@ -112,18 +112,18 @@ function payload(overrides: Record<string, any> = {}) {
     activation: { mode: 'startup' },
     resources: [],
     runtimes: [],
-    scopes: [scope('scope_default', null, [])],
+    scopes: [scope('scope_default', null)],
     ...overrides,
   }
 }
 
-function scope(path: string, parentPath: string | null, children: string[]) {
+function scope(path: string, parentPath: string | null) {
   return {
     name: path,
     path,
     parentPath,
     effectiveActivation: { mode: path === 'pages' ? 'manual' : 'startup' },
-    children,
+    children: [],
   }
 }
 

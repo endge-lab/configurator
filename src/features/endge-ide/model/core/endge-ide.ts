@@ -12,6 +12,7 @@ import { EndgeIDETabs } from '@/features/endge-ide/model/core/endge-ide-tabs.ts'
 import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { EndgeIDEWidgets } from '@/features/endge-ide/model/core/endge-ide-widgets.ts'
 import { startDiagnosticsChannelListener } from '@/features/endge-ide/model/pulse/diagnostics-register.ts'
+import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
 
 const noopModule = {
   init(): void {},
@@ -30,6 +31,7 @@ export class EndgeIDE extends EndgeModuleController {
   private _docs: EndgeIDEDocs = new EndgeIDEDocs()
   private _hotkeys: EndgeIDEHotkeys = new EndgeIDEHotkeys()
   private _flowCatalog: EndgeIDEFlowCatalog = new EndgeIDEFlowCatalog()
+  private _runtimePreview: EndgeIDERuntimePreview = new EndgeIDERuntimePreview()
 
   public static init(): void {
     const host = EndgeIDE._host
@@ -50,6 +52,7 @@ export class EndgeIDE extends EndgeModuleController {
     host.registerModule('docs', host._docs)
     host.registerModule('hotkeys', host._hotkeys)
     host.registerModule('flowCatalog', host._flowCatalog)
+    host.registerModule('runtimePreview', host._runtimePreview)
     host._hotkeys.setSaveHandler(() => {
       EndgeIDE.tabs.save()
     })
@@ -105,6 +108,10 @@ export class EndgeIDE extends EndgeModuleController {
 
   public static get flowCatalog(): EndgeIDEFlowCatalog {
     return EndgeIDE._host._flowCatalog
+  }
+
+  public static get runtimePreview(): EndgeIDERuntimePreview {
+    return EndgeIDE._host._runtimePreview
   }
 
   /** Единый флаг занятости (оверлей при сохранении/удалении/переименовании/перемещении). */

@@ -5,6 +5,7 @@ import {
   getWidget,
   getWidgetOrder,
   hideWidget,
+  migratePersistedWidgetId,
   registerWidget,
   reorderWidget,
   setAreaActiveWidget,
@@ -12,7 +13,10 @@ import {
   unregisterAllWidgets,
 } from '@/components/layouts/grid'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
-import { ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview/config/constants'
+import {
+  ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
+  LEGACY_ENDGE_PREVIEW_WIDGET_ID,
+} from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 type DockablePosition = 'left' | 'right' | 'bottom'
 
@@ -37,6 +41,8 @@ export class EndgeIDEWidgets {
     if (this._isInitialized) {
       return
     }
+
+    migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     this._widgetDefinitions.forEach(def => registerWidget(def))
@@ -108,13 +114,13 @@ export class EndgeIDEWidgets {
   private _ensureRuntimePreviewDefaultOrder(): void {
     const order = getWidgetOrder('left')
     const projectIndex = order.indexOf('project')
-    const previewIndex = order.indexOf(ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID)
+    const previewIndex = order.indexOf(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
     if (projectIndex < 0 || previewIndex === projectIndex + 1 || previewIndex !== order.length - 1) {
       return
     }
     const nextWidgetId = order[projectIndex + 1]
     if (nextWidgetId) {
-      reorderWidget(ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
+      reorderWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
     }
   }
 

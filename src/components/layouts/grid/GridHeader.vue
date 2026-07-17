@@ -6,16 +6,12 @@ import GridNavUser from '@/components/layouts/grid/GridNavUser.vue'
 import { AppSwitcherContent } from '@/components/layouts/shared'
 
 const route = useRoute()
-const hasConfiguratorContext = computed(() =>
-  route.name === 'configurator'
-  || route.name === 'endge-preview'
-  || route.path.startsWith('/admin'),
-)
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 </script>
 
 <template>
   <div class="flex items-center gap-2">
-    <AppSwitcherContent v-if="!hasConfiguratorContext" />
+    <AppSwitcherContent v-if="!isAdminRoute" />
     <div
       data-target="grid-layout-header-menu"
       class="flex h-full items-center"

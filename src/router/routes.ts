@@ -11,15 +11,6 @@ export const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/preview/:entityType/:identity',
-    name: 'endge-preview',
-    component: () => import('@/features/endge-preview/ui/EndgePreviewApp.vue'),
-    meta: {
-      layout: 'grid',
-      layoutScope: 'endge-preview',
-    },
-  },
-  {
     path: '/test',
     name: 'test',
     component: () => import('@/pages/Test.vue'),

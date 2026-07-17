@@ -1,42 +1,54 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { PreviewRuntimeTreeNode } from '@/features/endge-preview/domain/types/preview.types'
+import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { Component } from 'vue'
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
-import { endgePreviewSession } from '@/features/endge-preview/model/core/endge-preview-state'
-import RuntimeLifecycleStatusIcon from '@/features/endge-preview/ui/components/RuntimeLifecycleStatusIcon.vue'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 
 defineOptions({ name: 'RuntimeTreeNode' })
 
 const props = defineProps<{
-  node: PreviewRuntimeTreeNode
+  entryKey: string
+  node: RuntimePreviewTreeNode
   depth?: number
 }>()
 
+const emit = defineEmits<{
+  contextmenu: [payload: { entryKey: string, node: RuntimePreviewTreeNode, x: number, y: number }]
+}>()
+
 const expanded = ref(true)
-const session = endgePreviewSession
-const selected = computed(() => session.selectedNodeId.value === props.node.id)
-const state = computed(() => session.lifecycleState(props.node))
+const preview = EndgeIDE.runtimePreview
+const selected = computed(() => preview.selectedEntryKey.value === props.entryKey
+  && preview.selectedNode.value?.id === props.node.id)
+const state = computed(() => preview.lifecycleState(props.entryKey, props.node))
 const hasChildren = computed(() => props.node.children.length > 0)
 const leftPadding = computed(() => `${Math.max(0, props.depth ?? 0) * 14 + 8}px`)
-
-const nodeIcon = computed<Component>(() => {
-  return getIconComponent(props.node.presentation?.icon) as Component ?? Braces
-})
+const nodeIcon = computed<Component>(() => getIconComponent(props.node.presentation?.icon) as Component ?? Braces)
 const badgeIcon = computed<Component | null>(() => getIconComponent(props.node.presentation?.badgeIcon ?? undefined) as Component | null)
 const iconColorClass = computed(() => props.node.presentation?.colorClass ?? 'text-muted-foreground')
 
-async function select(): Promise<void> {
-  await session.select(props.node.id)
+function select(): void {
+  void preview.select(props.entryKey, props.node.id)
+}
+
+function openContextMenu(event: MouseEvent): void {
+  emit('contextmenu', {
+    entryKey: props.entryKey,
+    node: props.node,
+    x: event.clientX,
+    y: event.clientY,
+  })
 }
 </script>
 
 <template>
-  <div class="min-w-0">
+  <div class="min-w-0" :class="(depth ?? 0) === 0 && 'border-b border-border/45 py-1 last:border-b-0'">
     <button
       type="button"
       class="group flex w-full min-w-0 items-center gap-1.5 border-l-2 pr-2 text-left text-xs transition-colors"
@@ -48,6 +60,7 @@ async function select(): Promise<void> {
       ]"
       :style="{ paddingLeft: leftPadding }"
       @click="select"
+      @contextmenu.prevent.stop="openContextMenu"
     >
       <span
         class="inline-flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-foreground/5"
@@ -87,8 +100,10 @@ async function select(): Promise<void> {
       <RuntimeTreeNode
         v-for="child in node.children"
         :key="child.id"
+        :entry-key="entryKey"
         :node="child"
         :depth="(depth ?? 0) + 1"
+        @contextmenu="emit('contextmenu', $event)"
       />
     </div>
   </div>

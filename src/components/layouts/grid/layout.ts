@@ -301,6 +301,42 @@ export function getWidgetOrder(position: WidgetPosition): string[] {
   return persistedState.value.areas[position]?.order ?? []
 }
 
+/** Renames one persisted widget definition without resetting the user's layout. */
+export function migratePersistedWidgetId(previousId: string, nextId: string): void {
+  const previous = String(previousId ?? '').trim()
+  const next = String(nextId ?? '').trim()
+  if (!previous || !next || previous === next)
+    return
+
+  const current = persistedState.value
+  const state: PersistedState = {
+    areas: {
+      left: { ...current.areas.left, order: [...current.areas.left.order] },
+      right: { ...current.areas.right, order: [...current.areas.right.order] },
+      bottom: { ...current.areas.bottom, order: [...current.areas.bottom.order] },
+      floating: {
+        order: { ...current.areas.floating.order },
+        states: { ...current.areas.floating.states },
+      },
+    },
+    definitionPositions: { ...current.definitionPositions },
+  }
+  for (const position of ['left', 'right', 'bottom'] as const) {
+    const area = state.areas[position]
+    area.order = area.order.map(id => id === previous ? next : id)
+    area.order = area.order.filter((id, index, values) => values.indexOf(id) === index)
+    if (area.activeWidget === previous)
+      area.activeWidget = next
+    if (layoutState.widgets.areas[position].activeWidget === previous)
+      layoutState.widgets.areas[position].activeWidget = next
+  }
+  if (state.definitionPositions[previous]) {
+    state.definitionPositions[next] ??= state.definitionPositions[previous]
+    delete state.definitionPositions[previous]
+  }
+  persistedState.value = state
+}
+
 export function reorderWidget(widgetId: string, targetWidgetId: string, position: WidgetPosition): void {
   if (position === 'floating' || position === 'popup')
     return

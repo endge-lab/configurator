@@ -3,6 +3,7 @@ import type { WidgetDefinition } from '@/components/layouts/grid'
 import { markRaw } from 'vue'
 
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
+import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
 import CompositionPreview_Widget from '@/features/endge-ide/ui/widgets/CompositionPreview_Widget.vue'
 import Demonstration_Widget from '@/features/endge-ide/ui/widgets/Demonstration_Widget.vue'
@@ -13,10 +14,10 @@ import Help_Widget from '@/features/endge-ide/ui/widgets/Help_Widget.vue'
 import Inspector_Widget from '@/features/endge-ide/ui/widgets/Inspector_Widget.vue'
 import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
+import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
 import SFCPreview_Widget from '@/features/endge-ide/ui/widgets/SFCPreview_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
 import Versions_Widget from '@/features/endge-ide/ui/widgets/Versions_Widget.vue'
-import { endgePreviewRuntimeTreeWidget } from '@/features/endge-preview'
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {
@@ -37,7 +38,17 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       defaultHeight: 400,
     },
   },
-  endgePreviewRuntimeTreeWidget,
+  {
+    id: ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
+    title: 'Runtime Tree',
+    icon: 'Network',
+    content: 'component',
+    defaultComponent: markRaw(RuntimeTree_Widget),
+    singleton: true,
+    permanent: true,
+    defaultPosition: 'left',
+    allowedPositions: ['left'],
+  },
   {
     id: 'inspector',
     title: 'Инспектор',

@@ -1,19 +1,23 @@
-import type { EndgePreviewTarget, PreviewCompositionAddress, PreviewRuntimeTreeNode } from '@/features/endge-preview/domain/types/preview.types'
 /* eslint-disable style/max-statements-per-line */
+import type {
+  RuntimePreviewCompositionAddress,
+  RuntimePreviewTarget,
+  RuntimePreviewTreeNode,
+} from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { CompositionProgramPayload, CompositionRuntimeDescriptor, DomainDocumentType } from '@endge/core'
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 import { resolveDomainEntityPresentation } from '@/features/endge-configurator/model/presentation/domain-entity-presentation'
 
-export function buildPreviewRuntimeTree(target: EndgePreviewTarget): PreviewRuntimeTreeNode[] {
+export function buildRuntimePreviewTree(target: RuntimePreviewTarget): RuntimePreviewTreeNode[] {
   if (target.entityType === 'project') { return [buildProjectNode(target.identity)] }
   if (target.entityType === 'composition') { return [buildRootCompositionNode(target.identity)] }
   if (target.entityType === 'component-sfc') { return [buildComponentNode(target.identity)] }
   return [buildStoreNode(target.identity)]
 }
 
-function buildProjectNode(identity: string): PreviewRuntimeTreeNode {
+function buildProjectNode(identity: string): RuntimePreviewTreeNode {
   const node = makeNode({
     id: `project:${identity}`,
     kind: 'project',
@@ -35,7 +39,7 @@ function buildProjectNode(identity: string): PreviewRuntimeTreeNode {
   return node
 }
 
-function buildRootCompositionNode(identity: string): PreviewRuntimeTreeNode {
+function buildRootCompositionNode(identity: string): RuntimePreviewTreeNode {
   return buildCompositionNode(
     identity,
     { rootIdentity: identity, invocationPath: [] },
@@ -46,7 +50,7 @@ function buildRootCompositionNode(identity: string): PreviewRuntimeTreeNode {
   )
 }
 
-function buildComponentNode(identity: string): PreviewRuntimeTreeNode {
+function buildComponentNode(identity: string): RuntimePreviewTreeNode {
   return makeNode({
     id: `component-sfc:${identity}`,
     kind: 'component-sfc',
@@ -57,7 +61,7 @@ function buildComponentNode(identity: string): PreviewRuntimeTreeNode {
   })
 }
 
-function buildStoreNode(identity: string): PreviewRuntimeTreeNode {
+function buildStoreNode(identity: string): RuntimePreviewTreeNode {
   return makeNode({
     id: `store:${identity}`,
     kind: 'runtime',
@@ -70,12 +74,12 @@ function buildStoreNode(identity: string): PreviewRuntimeTreeNode {
 
 function buildCompositionNode(
   identity: string,
-  address: PreviewCompositionAddress,
+  address: RuntimePreviewCompositionAddress,
   parentId: string | null,
   ancestors: Set<string>,
   activationMode: 'startup' | 'manual',
   runtimeName: string | null,
-): PreviewRuntimeTreeNode {
+): RuntimePreviewTreeNode {
   const model = Endge.domain.getComposition(identity)
   const nodeId = compositionNodeId(address)
   const node = makeNode({
@@ -106,10 +110,10 @@ function buildCompositionNode(
 function buildScopeNode(
   payload: CompositionProgramPayload,
   scopePath: string,
-  address: PreviewCompositionAddress,
+  address: RuntimePreviewCompositionAddress,
   parentId: string,
   ancestors: Set<string>,
-): PreviewRuntimeTreeNode {
+): RuntimePreviewTreeNode {
   const descriptor = payload.scopes.find(item => item.path === scopePath)!
   const id = `${compositionNodeId(address)}:scope:${scopePath}`
   const node = makeNode({
@@ -139,11 +143,11 @@ function buildScopeNode(
 function buildScopeContents(
   payload: CompositionProgramPayload,
   scopePath: string,
-  address: PreviewCompositionAddress,
+  address: RuntimePreviewCompositionAddress,
   parentId: string,
   ancestors: Set<string>,
-): PreviewRuntimeTreeNode[] {
-  const result: PreviewRuntimeTreeNode[] = []
+): RuntimePreviewTreeNode[] {
+  const result: RuntimePreviewTreeNode[] = []
   for (const resource of payload.resources.filter(item => item.scopePath === scopePath)) {
     result.push(makeNode({
       id: `${compositionNodeId(address)}:resource:${resource.path}`,
@@ -187,12 +191,15 @@ function buildScopeContents(
   return result
 }
 
-function compositionNodeId(address: PreviewCompositionAddress): string {
+function compositionNodeId(address: RuntimePreviewCompositionAddress): string {
   const nested = address.invocationPath.length ? `/${address.invocationPath.join('/')}` : ''
   return `composition:${address.rootIdentity}${nested}`
 }
 
-function makeNode(input: Partial<PreviewRuntimeTreeNode> & Pick<PreviewRuntimeTreeNode, 'id' | 'kind' | 'title' | 'entityType' | 'identity'>): PreviewRuntimeTreeNode {
+function makeNode(
+  input: Partial<RuntimePreviewTreeNode>
+    & Pick<RuntimePreviewTreeNode, 'id' | 'kind' | 'title' | 'entityType' | 'identity'>,
+): RuntimePreviewTreeNode {
   return {
     parentId: null,
     subtitle: null,
@@ -213,7 +220,7 @@ function domainNodeFields(
   identity: string,
   runtimeName: string | null = null,
   presentationKind?: string,
-): Pick<PreviewRuntimeTreeNode, 'presentation' | 'subtitle' | 'title'> {
+): Pick<RuntimePreviewTreeNode, 'presentation' | 'subtitle' | 'title'> {
   const resolved = resolveDomainEntityPresentation(documentType, identity, presentationKind)
   return {
     title: resolved.title,
@@ -232,9 +239,7 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
   documentType: DomainDocumentType
   identity: string
 } {
-  if (runtime.kind === 'component') {
-    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity }
-  }
+  if (runtime.kind === 'component') { return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity } }
   if (runtime.kind === 'query') {
     const query = Endge.domain.getQuery(runtime.identity)
     return { documentType: query?.type ?? QueryType.REST, identity: runtime.identity }
@@ -243,8 +248,6 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
     const filter = Endge.domain.getFilter(runtime.identity)
     return { documentType: filter?.type ?? FilterType.DefaultFilter, identity: runtime.identity }
   }
-  if (runtime.kind === 'filter-view' && runtime.componentIdentity) {
-    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity }
-  }
+  if (runtime.kind === 'filter-view' && runtime.componentIdentity) { return { documentType: ComponentType.SFC, identity: runtime.componentIdentity } }
   return { documentType: FilterType.DefaultFilter, identity: runtime.identity }
 }

@@ -8,22 +8,33 @@ import type {
   StoreRuntimeHost,
 } from '@endge/core'
 
-export type EndgePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store'
-export type PreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'runtime' | 'resource' | 'component-sfc'
-export type PreviewLifecycleState = 'inactive' | 'activating' | 'active' | 'pausing' | 'paused' | 'error' | 'disposed'
+export const ENDGE_IDE_RUNTIME_TREE_WIDGET_ID = 'runtime-tree'
+export const LEGACY_ENDGE_PREVIEW_WIDGET_ID = 'preview-runtime-tree'
 
-export interface EndgePreviewTarget {
-  entityType: EndgePreviewEntityType
+export type RuntimePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store'
+export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'runtime' | 'resource' | 'component-sfc'
+export type RuntimePreviewLifecycleState
+  = | 'inactive'
+    | 'preparing'
+    | 'activating'
+    | 'active'
+    | 'pausing'
+    | 'paused'
+    | 'stopped'
+    | 'error'
+    | 'disposed'
+
+export interface RuntimePreviewTarget {
+  entityType: RuntimePreviewEntityType
   identity: string
 }
 
-/** Runtime path from a root project/composition entry to a nested Composition host. */
-export interface PreviewCompositionAddress {
+export interface RuntimePreviewCompositionAddress {
   rootIdentity: string
   invocationPath: string[]
 }
 
-export interface PreviewTreeNodePresentation {
+export interface RuntimePreviewTreeNodePresentation {
   documentType: DomainDocumentType | null
   icon: string
   colorClass: string
@@ -31,25 +42,25 @@ export interface PreviewTreeNodePresentation {
   runtimeName: string | null
 }
 
-export interface PreviewRuntimeTreeNode {
+export interface RuntimePreviewTreeNode {
   id: string
   parentId: string | null
-  kind: PreviewTreeNodeKind
+  kind: RuntimePreviewTreeNodeKind
   title: string
   subtitle: string | null
   entityType: string
   identity: string
-  presentation: PreviewTreeNodePresentation | null
+  presentation: RuntimePreviewTreeNodePresentation | null
   activationMode: 'startup' | 'manual' | null
-  composition: PreviewCompositionAddress | null
+  composition: RuntimePreviewCompositionAddress | null
   runtimePath: string | null
   scopePath: string | null
   resourcePath: string | null
   renderable: boolean
-  children: PreviewRuntimeTreeNode[]
+  children: RuntimePreviewTreeNode[]
 }
 
-export type PreviewRenderable
+export type RuntimePreviewRenderable
   = {
     kind: 'filter-view'
     key: string
@@ -76,7 +87,11 @@ export type PreviewRenderable
     runtime: RuntimeHost<any, any>
   }
 
-export interface ResolvedPreviewComposition {
+export interface ResolvedRuntimePreviewComposition {
   host: CompositionRuntimeHost
   rootIdentity: string
+}
+
+export function runtimePreviewKey(target: RuntimePreviewTarget): string {
+  return `${target.entityType}:${target.identity}`
 }

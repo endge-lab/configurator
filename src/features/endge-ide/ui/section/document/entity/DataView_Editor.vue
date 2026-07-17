@@ -1,8 +1,10 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor'
 
 import { Endge } from '@endge/core'
 import {
+  AlignLeft,
   Code2,
   FileJson,
   Loader2,
@@ -34,6 +36,7 @@ import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 
 interface DataViewSourceEditorHandle {
+  formatDocument: () => Promise<void>
   expandOutput: () => void
   collapseOutput: () => void
   toggleOutput: () => void
@@ -236,6 +239,22 @@ async function runPreview(): Promise<void> {
       <TooltipProvider>
         <div class="flex shrink-0 items-center gap-0">
           <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+            <Tooltip v-if="activeTab === 'source'">
+              <TooltipTrigger as-child>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  aria-label="Форматировать"
+                  @click="sourceEditorRef?.formatDocument()"
+                >
+                  <AlignLeft class="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Форматировать</TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button

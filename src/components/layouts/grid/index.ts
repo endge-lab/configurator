@@ -23,6 +23,7 @@ export {
   getWidgetInstances,
   getWidgetOrder,
   hideWidget,
+  migratePersistedWidgetId,
   moveWidget,
   registerWidget,
   removeHeaderAction,

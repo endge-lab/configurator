@@ -16,7 +16,7 @@ initWidgetChannel()
 
 const route = useRoute()
 setLayoutScope(String(route.meta.layoutScope ?? 'endge-ide'))
-const showWorkspaceSettings = computed(() => route.meta.layoutScope !== 'endge-preview')
+const showWorkspaceSettings = true
 
 // Close non-detachable popups on route change
 watch(() => route.fullPath, () => {

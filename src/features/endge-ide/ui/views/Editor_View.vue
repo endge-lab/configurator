@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router'
 import { getLayoutState, useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
 import { triggerAppRenderGuardTest } from '@/features/endge-configurator/model/app-render-guard.ts'
+import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
 import ClearSoftDeleted_Modal from '@/features/endge-ide/ui/modals/ClearSoftDeleted_Modal.vue'
@@ -14,7 +15,7 @@ import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_
 import CreateVersion_Modal from '@/features/endge-ide/ui/modals/CreateVersion_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
-import { EmbeddedRuntimePreview, ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview'
+import RuntimePreview_View from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreview_View.vue'
 
 const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals
@@ -64,7 +65,7 @@ const vocabJsonPreviewOpen = computed({
 const hasNoTabs = computed(() => tabs.openTabs.value.length === 0)
 const isRuntimePreviewActive = computed(() => {
   const area = widgets.value.areas.left
-  return area.expanded && area.activeWidget === ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID
+  return area.expanded && area.activeWidget === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID
 })
 const isBusy = computed(() => EndgeIDE.busy.value)
 const hotkeysList = computed(() => EndgeIDE.hotkeys.getAllHotkeys())
@@ -99,7 +100,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
-    <EmbeddedRuntimePreview v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
+    <RuntimePreview_View v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
 
     <div v-else class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <SmartTabsHost
