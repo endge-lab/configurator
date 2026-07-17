@@ -15,32 +15,7 @@ const hasConfiguratorContext = computed(() =>
 
 <template>
   <div class="flex items-center gap-2">
-    <div
-      v-if="hasConfiguratorContext"
-      data-target="grid-layout-header-tenant"
-      class="flex items-center"
-    />
-    <div
-      v-if="hasConfiguratorContext"
-      data-target="grid-layout-header-project"
-      class="flex items-center"
-    />
-    <div
-      v-if="hasConfiguratorContext"
-      data-target="grid-layout-header-environment"
-      class="flex items-center"
-    />
-    <div
-      v-if="hasConfiguratorContext"
-      data-target="grid-layout-header-locale"
-      class="flex items-center"
-    />
-    <div
-      v-if="hasConfiguratorContext"
-      data-target="grid-layout-header-theme"
-      class="flex items-center"
-    />
-    <AppSwitcherContent v-else />
+    <AppSwitcherContent v-if="!hasConfiguratorContext" />
     <div
       data-target="grid-layout-header-menu"
       class="flex h-full items-center"

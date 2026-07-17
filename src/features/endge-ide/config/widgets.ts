@@ -2,6 +2,7 @@ import type { WidgetDefinition } from '@/components/layouts/grid'
 
 import { markRaw } from 'vue'
 
+import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
 import CompositionPreview_Widget from '@/features/endge-ide/ui/widgets/CompositionPreview_Widget.vue'
 import Demonstration_Widget from '@/features/endge-ide/ui/widgets/Demonstration_Widget.vue'
@@ -15,7 +16,7 @@ import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import SFCPreview_Widget from '@/features/endge-ide/ui/widgets/SFCPreview_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
 import Versions_Widget from '@/features/endge-ide/ui/widgets/Versions_Widget.vue'
-import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
+import { endgePreviewRuntimeTreeWidget } from '@/features/endge-preview'
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {
@@ -36,6 +37,7 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       defaultHeight: 400,
     },
   },
+  endgePreviewRuntimeTreeWidget,
   {
     id: 'inspector',
     title: 'Инспектор',

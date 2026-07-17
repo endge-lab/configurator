@@ -15,7 +15,6 @@ import {
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -37,12 +36,11 @@ import {
 } from '@/features/endge-ide/model/store-preview/store-preview-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
-import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
+import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
 )
-const router = useRouter()
 const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>(
   'source',
 )
@@ -124,7 +122,7 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeDebugPreview(router, 'store', editor.value?.identity)
+  openEndgeEmbeddedPreview('store', editor.value?.identity)
 }
 </script>
 

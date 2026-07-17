@@ -22,6 +22,10 @@ import { computed, ref, shallowRef } from 'vue'
 import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator'
 import { buildPreviewRuntimeTree } from '@/features/endge-preview/model/tree/preview-runtime-tree-builder'
 
+export interface EndgePreviewSessionInitOptions {
+  resolveTargetAfterContextBoot?: () => EndgePreviewTarget | null
+}
+
 export class EndgePreviewSession {
   public readonly target = shallowRef<EndgePreviewTarget | null>(null)
   public readonly tree = shallowRef<PreviewRuntimeTreeNode[]>([])
@@ -47,13 +51,15 @@ export class EndgePreviewSession {
   private _runtimeOff: (() => void) | null = null
   private _scopeOff: (() => void) | null = null
   private _surfaceOff: (() => void) | null = null
+  private _resolveTargetAfterContextBoot: (() => EndgePreviewTarget | null) | null = null
 
-  public init(): void {
+  public init(options: EndgePreviewSessionInitOptions = {}): void {
+    this._resolveTargetAfterContextBoot = options.resolveTargetAfterContextBoot ?? null
     this._runtimeOff ??= Endge.runtime.subscribe(() => this.refresh())
     this._scopeOff ??= Endge.runtime.scopes.subscribe(() => this.refresh())
     this._surfaceOff ??= EndgeConfigurator.registerSurface('endge-preview', {
       beforeContextReset: () => this.suspendForContextReset(),
-      afterContextBoot: () => this.reopen(),
+      afterContextBoot: () => this.reopenAfterContextBoot(),
     })
   }
 
@@ -64,6 +70,7 @@ export class EndgePreviewSession {
     this._runtimeOff = null
     this._scopeOff = null
     this._surfaceOff = null
+    this._resolveTargetAfterContextBoot = null
     void this.disposeRuntime(true)
   }
 
@@ -109,6 +116,13 @@ export class EndgePreviewSession {
 
   public async reopen(): Promise<void> {
     const target = this.target.value
+    if (target) { await this.open(target) }
+  }
+
+  private async reopenAfterContextBoot(): Promise<void> {
+    const target = this._resolveTargetAfterContextBoot
+      ? this._resolveTargetAfterContextBoot()
+      : this.target.value
     if (target) { await this.open(target) }
   }
 
@@ -168,13 +182,21 @@ export class EndgePreviewSession {
   }
 
   public async dispose(): Promise<void> {
-    this._generation += 1
-    await this._openQueue.catch(() => undefined)
-    await this.disposeRuntime(true)
-    this._runtimeOff?.()
-    this._scopeOff?.()
-    this._surfaceOff?.()
-    this._runtimeOff = this._scopeOff = this._surfaceOff = null
+    const generation = ++this._generation
+    const pending = this._openQueue
+      .catch(() => undefined)
+      .then(async () => {
+        if (generation !== this._generation) { return }
+        await this.disposeRuntime(true)
+        if (generation !== this._generation) { return }
+        this._runtimeOff?.()
+        this._scopeOff?.()
+        this._surfaceOff?.()
+        this._runtimeOff = this._scopeOff = this._surfaceOff = null
+        this._resolveTargetAfterContextBoot = null
+      })
+    this._openQueue = pending.catch(() => undefined)
+    await pending
   }
 
   private async suspendForContextReset(): Promise<void> {

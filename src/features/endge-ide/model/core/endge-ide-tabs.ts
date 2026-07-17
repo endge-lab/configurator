@@ -12,6 +12,7 @@ import type {
   RQuery,
   RTenant,
   RType,
+  SourceDocumentReference,
 } from '@endge/core'
 import type { Component } from 'vue'
 
@@ -334,6 +335,25 @@ export class EndgeIDETabs {
     this.openTab(tabRef)
   }
 
+  /** Открывает внешний документ из semantic source reference. */
+  public openSourceReference(reference: SourceDocumentReference): boolean {
+    const target = this._resolveSourceReferenceTarget(reference)
+    if (!target) {
+      toast.warning('Документ не найден', {
+        description: `${this._sourceReferenceLabel(reference.target)} "${reference.identity}" не найден.`,
+      })
+      return false
+    }
+    if (!this._getDocResolver(target.documentType)) {
+      toast.warning('Документ нельзя открыть', {
+        description: `Тип "${String(target.documentType)}" пока не поддерживается редактором.`,
+      })
+      return false
+    }
+    this.openDocument(target.documentId, target.documentType)
+    return true
+  }
+
   public openWorkspaceSettings(): void {
     const workspace = Endge.workspace.current
     const label = workspace.displayName || workspace.identity || 'Workspace'
@@ -614,6 +634,64 @@ export class EndgeIDETabs {
       return fallback
     }
     return String(composition.kind ?? 'library')
+  }
+
+  private _resolveSourceReferenceTarget(reference: SourceDocumentReference): {
+    documentId: string
+    documentType: DomainDocumentType
+  } | null {
+    if (reference.target === 'query') {
+      const entity = Endge.domain.getQuery(reference.identity)
+      return entity ? { documentId: entity.identity, documentType: entity.type } : null
+    }
+    if (reference.target === 'component') {
+      const entity = Endge.domain.getComponent(reference.identity)
+      return entity ? { documentId: String(entity.identity), documentType: entity.type as DomainDocumentType } : null
+    }
+    if (reference.target === 'filter') {
+      const entity = Endge.domain.getFilter(reference.identity)
+      return entity ? { documentId: entity.identity, documentType: entity.type } : null
+    }
+
+    const fixedTargets = {
+      'auth-profile': { documentType: 'auth-profile', resolve: () => Endge.domain.getAuthProfile(reference.identity) },
+      'composition': { documentType: 'composition', resolve: () => Endge.domain.getComposition(reference.identity) },
+      'computation': { documentType: 'computation', resolve: () => Endge.domain.getComputation(reference.identity) },
+      'converter': { documentType: 'converter', resolve: () => Endge.domain.getConverter(reference.identity) },
+      'data-view': { documentType: 'data-view', resolve: () => Endge.domain.getDataView(reference.identity) },
+      'mock': { documentType: 'mock', resolve: () => Endge.domain.getMock(reference.identity) },
+      'store': { documentType: 'store', resolve: () => Endge.domain.getStore(reference.identity) },
+      'style': { documentType: 'style', resolve: () => Endge.domain.getStyle(reference.identity) },
+      'vocabs': { documentType: 'vocabs', resolve: () => Endge.domain.getVocab(reference.identity) },
+    } satisfies Record<
+      Exclude<SourceDocumentReference['target'], 'query' | 'component' | 'filter'>,
+      { documentType: DomainDocumentType; resolve: () => { identity?: unknown } | null }
+    >
+    const target = fixedTargets[reference.target]
+    const entity = target.resolve()
+    if (!entity)
+      return null
+    return {
+      documentId: String(entity.identity ?? reference.identity),
+      documentType: target.documentType,
+    }
+  }
+
+  private _sourceReferenceLabel(target: SourceDocumentReference['target']): string {
+    return {
+      'auth-profile': 'Auth profile',
+      'component': 'Component',
+      'composition': 'Composition',
+      'computation': 'Computation',
+      'converter': 'Converter',
+      'data-view': 'DataView',
+      'filter': 'Filter',
+      'mock': 'Mock',
+      'query': 'Query',
+      'store': 'Store',
+      'style': 'Style',
+      'vocabs': 'Vocab',
+    }[target]
   }
 
   private _registerSystemViews(): void {

@@ -13,7 +13,6 @@ import {
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
@@ -32,12 +31,11 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
+import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RCompositionEditor | null,
 )
-const router = useRouter()
 const activeTab = ref<'source' | 'artifact' | 'diagnostics'>('source')
 const launchLoading = ref(false)
 const compiled = computed(() =>
@@ -91,7 +89,7 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeDebugPreview(router, 'composition', editor.value?.identity)
+  openEndgeEmbeddedPreview('composition', editor.value?.identity)
 }
 </script>
 

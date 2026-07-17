@@ -9,7 +9,7 @@ import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useLayout } from '@/components/layouts/grid'
 import { EndgePreview } from '@/features/endge-preview/model/core/endge-preview'
 import { endgePreviewSession } from '@/features/endge-preview/model/core/endge-preview-state'
-import EntityPreview from '@/features/endge-preview/ui/views/EntityPreview.vue'
+import RuntimePreviewWorkspace from '@/features/endge-preview/ui/RuntimePreviewWorkspace.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -82,6 +82,6 @@ function isPreviewEntityType(value: string): value is EndgePreviewEntityType {
         {{ error }}
       </div>
     </div>
-    <EntityPreview v-else />
+    <RuntimePreviewWorkspace v-else />
   </div>
 </template>

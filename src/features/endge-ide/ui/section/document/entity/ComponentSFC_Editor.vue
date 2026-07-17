@@ -5,7 +5,6 @@ import type { RComponentSFC } from '@endge/core'
 import { Endge, inspectComponentSFCVisual } from '@endge/core'
 import { AlignLeft, Bug, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
@@ -30,14 +29,13 @@ import { createExtractComponentContribution } from '@/features/endge-ide/source-
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
-import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
+import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
 }
 
 const tabs = EndgeIDE.tabs
-const router = useRouter()
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const launchLoading = ref(false)
 const activeTab = ref<'general' | 'visual' | 'source'>('source')
@@ -124,7 +122,7 @@ async function launchPreview(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeDebugPreview(router, 'component-sfc', editor.value?.identity)
+  openEndgeEmbeddedPreview('component-sfc', editor.value?.identity)
 }
 </script>
 

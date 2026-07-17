@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Raph } from '@endge/raph'
 import { EndgeAppHelperMenu } from '@endge/vue'
 import { Box, Loader2 } from 'lucide-vue-next'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useLayout } from '@/components/layouts/grid'
+import { getLayoutState, useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
 import { triggerAppRenderGuardTest } from '@/features/endge-configurator/model/app-render-guard.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
@@ -15,10 +14,12 @@ import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_
 import CreateVersion_Modal from '@/features/endge-ide/ui/modals/CreateVersion_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
+import { EmbeddedRuntimePreview, ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview'
 
 const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals
 const route = useRoute()
+const { widgets } = getLayoutState()
 const createVersionOpen = computed({
   get: () => modals.isCreateVersionOpen.value,
   set: (v: boolean) => {
@@ -61,6 +62,10 @@ const vocabJsonPreviewOpen = computed({
   },
 })
 const hasNoTabs = computed(() => tabs.openTabs.value.length === 0)
+const isRuntimePreviewActive = computed(() => {
+  const area = widgets.value.areas.left
+  return area.expanded && area.activeWidget === ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID
+})
 const isBusy = computed(() => EndgeIDE.busy.value)
 const hotkeysList = computed(() => EndgeIDE.hotkeys.getAllHotkeys())
 const busyText = 'Подождите'
@@ -94,7 +99,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
-    <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <EmbeddedRuntimePreview v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
+
+    <div v-else class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <SmartTabsHost
         v-if="!hasNoTabs"
         :api="EndgeIDE.tabs"

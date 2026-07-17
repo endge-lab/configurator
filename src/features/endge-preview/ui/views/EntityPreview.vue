@@ -6,6 +6,7 @@ import { EndgeFilterRenderer, SFC_RuntimeRenderer } from '@endge/vue'
 import {
   Boxes,
   CircleAlert,
+  ExternalLink,
   LoaderCircle,
   Pause,
   Play,
@@ -13,13 +14,22 @@ import {
   Square,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { Button } from '@/components/ui/button'
 import { endgePreviewSession } from '@/features/endge-preview/model/core/endge-preview-state'
+import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
 import RuntimeLifecycleStatusIcon from '@/features/endge-preview/ui/components/RuntimeLifecycleStatusIcon.vue'
 import StoreRuntimePreview from '@/features/endge-preview/ui/components/StoreRuntimePreview.vue'
 
+withDefaults(defineProps<{
+  showExternalLink?: boolean
+}>(), {
+  showExternalLink: false,
+})
+
 const session = endgePreviewSession
+const router = useRouter()
 const busy = ref(false)
 const selected = computed(() => session.selectedNode.value)
 const state = computed<PreviewLifecycleState>(() => selected.value ? session.lifecycleState(selected.value) : 'inactive')
@@ -39,6 +49,11 @@ async function run(operation: () => Promise<void>): Promise<void> {
 
 function activateNode(node: PreviewRuntimeTreeNode): Promise<void> {
   return run(() => session.select(node.id))
+}
+
+function openStandalonePreview(): void {
+  const target = session.target.value
+  if (target) { openEndgeDebugPreview(router, target.entityType, target.identity) }
 }
 
 function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntimeTreeNode[] {
@@ -72,9 +87,9 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
         </div>
       </div>
 
-      <div v-if="canControl" class="flex shrink-0 items-center gap-1">
+      <div v-if="canControl || (showExternalLink && session.target.value)" class="flex shrink-0 items-center gap-1">
         <Button
-          v-if="state === 'active'"
+          v-if="canControl && state === 'active'"
           variant="ghost"
           size="icon"
           title="Поставить на паузу"
@@ -84,7 +99,7 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
           <Pause class="size-4" />
         </Button>
         <Button
-          v-else
+          v-else-if="canControl"
           variant="ghost"
           size="icon"
           title="Запустить или продолжить"
@@ -94,6 +109,7 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
           <Play class="size-4" />
         </Button>
         <Button
+          v-if="canControl"
           variant="ghost"
           size="icon"
           title="Остановить"
@@ -103,6 +119,7 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
           <Square class="size-4" />
         </Button>
         <Button
+          v-if="canControl"
           variant="ghost"
           size="icon"
           title="Перезапустить"
@@ -110,6 +127,16 @@ function collectCompositionChildren(node: PreviewRuntimeTreeNode): PreviewRuntim
           @click="run(() => session.restartSelected())"
         >
           <RefreshCw class="size-4" />
+        </Button>
+        <div v-if="canControl && showExternalLink && session.target.value" class="mx-1 h-5 w-px bg-border" />
+        <Button
+          v-if="showExternalLink && session.target.value"
+          variant="ghost"
+          size="icon"
+          title="Открыть Debug Preview в отдельной вкладке"
+          @click="openStandalonePreview"
+        >
+          <ExternalLink class="size-4" />
         </Button>
       </div>
     </header>

@@ -5,6 +5,9 @@ import type { SourceKind, SourceLanguageSyntaxDefinition } from '@endge/core'
 import { Endge } from '@endge/core'
 import * as monaco from 'monaco-editor'
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 
 interface EndgeSourceDiagnostic {
   severity?: string
@@ -40,6 +43,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const syntax = languageStrategy.syntax
   let completionDisposable: Monaco.IDisposable | null = null
   let contentDisposable: Monaco.IDisposable | null = null
+  let openReferenceDisposable: Monaco.IDisposable | null = null
 
   const validate = () => {
     const model = editor.value?.getModel()
@@ -98,6 +102,27 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       scrollBeyondLastLine: true,
       padding: { bottom: 10 },
     })
+    openReferenceDisposable = editor.value.addAction({
+      id: 'endge.open-source-reference',
+      label: 'Открыть связанный документ',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
+      run(instance) {
+        const model = instance.getModel()
+        const position = instance.getPosition()
+        if (!model || !position) {
+          return
+        }
+        const reference = Endge.source.referenceAt(options.sourceKind, {
+          source: model.getValue(),
+          position: { lineNumber: position.lineNumber, column: position.column },
+        })
+        if (!reference) {
+          toast.info('Под курсором нет ссылки на документ')
+          return
+        }
+        EndgeIDE.tabs.openSourceReference(reference)
+      },
+    })
     options.onReady?.(editor.value)
     contentDisposable = editor.value.onDidChangeModelContent(() => {
       options.onChange(editor.value?.getValue() ?? '')
@@ -112,6 +137,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       monaco.editor.setModelMarkers(model, markerOwner, [])
     contentDisposable?.dispose()
     completionDisposable?.dispose()
+    openReferenceDisposable?.dispose()
     editor.value?.dispose()
     model?.dispose()
     editor.value = null

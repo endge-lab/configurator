@@ -3,13 +3,16 @@ import {
   getAreaActiveWidget,
   getAreaExpanded,
   getWidget,
+  getWidgetOrder,
   hideWidget,
   registerWidget,
+  reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,
   unregisterAllWidgets,
 } from '@/components/layouts/grid'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
+import { ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview/config/constants'
 
 type DockablePosition = 'left' | 'right' | 'bottom'
 
@@ -31,11 +34,13 @@ export class EndgeIDEWidgets {
    * LIFECYCLE
    */
   public init(): void {
-    if (this._isInitialized)
+    if (this._isInitialized) {
       return
+    }
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     this._widgetDefinitions.forEach(def => registerWidget(def))
+    this._ensureRuntimePreviewDefaultOrder()
 
     // 2) Снимаем persisted-состояния ДО создания инстансов
     const persistedActive: Record<DockablePosition, string | null> = {
@@ -52,8 +57,9 @@ export class EndgeIDEWidgets {
 
     // 3) Создаём singleton-инстансы без “насильного открытия” областей
     this._widgetDefinitions.forEach((def) => {
-      if (!def.singleton)
+      if (!def.singleton) {
         return
+      }
 
       const widget = getWidget(def.id)
       const position = (widget?.position ?? def.defaultPosition ?? 'left')
@@ -96,6 +102,20 @@ export class EndgeIDEWidgets {
     hideWidget('composition-preview')
 
     this._isInitialized = true
+  }
+
+  /** Places a newly appended Preview widget after Project without overwriting a custom order. */
+  private _ensureRuntimePreviewDefaultOrder(): void {
+    const order = getWidgetOrder('left')
+    const projectIndex = order.indexOf('project')
+    const previewIndex = order.indexOf(ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID)
+    if (projectIndex < 0 || previewIndex === projectIndex + 1 || previewIndex !== order.length - 1) {
+      return
+    }
+    const nextWidgetId = order[projectIndex + 1]
+    if (nextWidgetId) {
+      reorderWidget(ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
+    }
   }
 
   /**

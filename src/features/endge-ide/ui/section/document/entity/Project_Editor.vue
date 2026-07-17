@@ -6,7 +6,6 @@ import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { Briefcase, Bug } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -21,13 +20,12 @@ import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/conf
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
-import { openEndgeDebugPreview } from '@/features/endge-preview/model/navigation/open-debug-preview'
+import { openEndgeEmbeddedPreview } from '@/features/endge-preview'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
 }>()
 
-const router = useRouter()
 const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(() => props.tabContext?.editor ?? null)
 const tab = ref<'project' | 'navigation' | 'configuration'>('project')
@@ -82,7 +80,7 @@ async function save(): Promise<void> {
 }
 
 function openDebugPreview(): void {
-  openEndgeDebugPreview(router, 'project', editor.value?.identity)
+  openEndgeEmbeddedPreview('project', editor.value?.identity)
 }
 </script>
 

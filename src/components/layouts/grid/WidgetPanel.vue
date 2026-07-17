@@ -1,14 +1,18 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text, curly */
 import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { getIconComponent } from '@/components/layouts/grid/icons.ts'
+import { endWidgetDrag, getLayoutState, getPopupInstances, getWidgetInstances, getWidgetOrder, moveWidget, reorderWidget, restorePopupInstance, startWidgetDrag, toggleWidget } from '@/components/layouts/grid/layout.ts'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { getIconComponent } from '@/components/layouts/grid/icons.ts'
-import { endWidgetDrag, getLayoutState, getPopupInstances, getWidgetInstances, getWidgetOrder, moveWidget, reorderWidget, restorePopupInstance, startWidgetDrag, toggleWidget } from '@/components/layouts/grid/layout.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-preview/config/constants'
 
 const props = withDefaults(defineProps<{
   position: 'left' | 'right'
@@ -83,6 +87,11 @@ const topWidgets = computed(() =>
 )
 
 const workspaceSettingsActive = computed(() => EndgeIDE.tabs.activeTabId.value === 'workspace-settings')
+const workspaceSettingsAnchorId = computed(() => {
+  return topWidgets.value.some(widget => widget.id === ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID)
+    ? ENDGE_PREVIEW_RUNTIME_TREE_WIDGET_ID
+    : topWidgets.value[0]?.id ?? null
+})
 
 const bottomWidgetsFiltered = computed(() =>
   sortByOrder(
@@ -194,7 +203,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
         class="absolute inset-0.5 rounded-lg border-2 border-dashed border-primary pointer-events-none"
       />
       <div class="flex flex-col items-center gap-0.5">
-        <template v-for="(widget, index) in topWidgets" :key="widget.id">
+        <template v-for="widget in topWidgets" :key="widget.id">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -219,7 +228,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip v-if="showWorkspaceSettings && position === 'left' && index === 0">
+          <Tooltip v-if="showWorkspaceSettings && position === 'left' && widget.id === workspaceSettingsAnchorId">
             <TooltipTrigger as-child>
               <Button
                 variant="ghost"

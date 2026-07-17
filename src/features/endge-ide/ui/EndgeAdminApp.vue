@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { HeartPulse } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -17,7 +18,6 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
-import { EnvironmentSwitcher, LocaleSwitcher, ProjectSwitcher, TenantSwitcher, ThemeSwitcher } from '@/features/endge-configurator/ui/context'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
@@ -72,22 +72,6 @@ function openArchitecture(): void {
 </script>
 
 <template>
-  <Teleport to="[data-target='grid-layout-header-tenant']" defer>
-    <TenantSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-project']" defer>
-    <ProjectSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-environment']" defer>
-    <EnvironmentSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-locale']" defer>
-    <LocaleSwitcher />
-  </Teleport>
-  <Teleport to="[data-target='grid-layout-header-theme']" defer>
-    <ThemeSwitcher />
-  </Teleport>
-
   <Teleport to="[data-target='grid-layout-header-menu']" defer>
     <nav class="flex items-center gap-1 text-xs font-medium">
       <!-- Схема / документ -->
