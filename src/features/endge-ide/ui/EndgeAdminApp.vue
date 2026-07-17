@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { Endge } from '@endge/core'
-import { useUI } from '@endge/vue'
-import { HeartPulse, Moon, Sun } from 'lucide-vue-next'
+import { HeartPulse } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { showWidget } from '@/components/layouts/grid'
@@ -19,15 +17,15 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
+import EnvironmentSwitcher from '@/features/endge-ide/ui/section/header/EnvironmentSwitcher.vue'
+import LocaleSwitcher from '@/features/endge-ide/ui/section/header/LocaleSwitcher.vue'
+import ProjectSwitcher from '@/features/endge-ide/ui/section/header/ProjectSwitcher.vue'
+import TenantSwitcher from '@/features/endge-ide/ui/section/header/TenantSwitcher.vue'
+import ThemeSwitcher from '@/features/endge-ide/ui/section/header/ThemeSwitcher.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
-const ui = useUI()
 const isBusy = computed(() => EndgeIDE.busy.value)
-const isDarkTheme = computed(() => ui.value.theme === 'dark')
-const themeButtonTitle = computed(() =>
-  isDarkTheme.value ? 'Включить светлую тему' : 'Включить тёмную тему',
-)
 
 async function saveCurrentDocument(): Promise<void> {
   await tabs.save()
@@ -72,16 +70,28 @@ function openPulseFromHeader(): void {
   openPulse()
 }
 
-function toggleTheme(): void {
-  ui.value.setTheme(isDarkTheme.value ? 'light' : 'dark')
-}
-
 function openArchitecture(): void {
   EndgeIDE.tabs.openArchitecture()
 }
 </script>
 
 <template>
+  <Teleport to="[data-target='grid-layout-header-tenant']" defer>
+    <TenantSwitcher />
+  </Teleport>
+  <Teleport to="[data-target='grid-layout-header-project']" defer>
+    <ProjectSwitcher />
+  </Teleport>
+  <Teleport to="[data-target='grid-layout-header-environment']" defer>
+    <EnvironmentSwitcher />
+  </Teleport>
+  <Teleport to="[data-target='grid-layout-header-locale']" defer>
+    <LocaleSwitcher />
+  </Teleport>
+  <Teleport to="[data-target='grid-layout-header-theme']" defer>
+    <ThemeSwitcher />
+  </Teleport>
+
   <Teleport to="[data-target='grid-layout-header-menu']" defer>
     <nav class="flex items-center gap-1 text-xs font-medium">
       <!-- Схема / документ -->
@@ -175,7 +185,7 @@ function openArchitecture(): void {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Справка (при наведении на кнопку - тултип Endge Framework v1.0; в меню: Документация, Тема) -->
+      <!-- Справка -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
@@ -202,21 +212,6 @@ function openArchitecture(): void {
           <DropdownMenuItem @click="openArchitecture">
             Архитектура
           </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              Тема оформления
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem
-                v-for="name in ui.availableThemes"
-                :key="name"
-                :class="{ 'bg-accent': ui.theme === name }"
-                @click="ui.setTheme(name)"
-              >
-                {{ Endge.workspace.getThemeLabel(name) }}
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
         </DropdownMenuContent>
       </DropdownMenu>
     </nav>
@@ -224,16 +219,6 @@ function openArchitecture(): void {
 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
     <div class="flex items-center gap-2">
-      <button
-        type="button"
-        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        :title="themeButtonTitle"
-        :aria-label="themeButtonTitle"
-        @click="toggleTheme"
-      >
-        <Moon v-if="isDarkTheme" class="size-4" />
-        <Sun v-else class="size-4" />
-      </button>
       <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

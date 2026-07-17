@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 
-import { DomainSectionType } from '@endge/core'
+import type { EndgeConfigurationContribution } from '@endge/core'
+import { DomainSectionType, Endge } from '@endge/core'
 import { Briefcase } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useDomainStore } from '@endge/vue'
@@ -17,6 +18,7 @@ import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButto
 import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
@@ -24,7 +26,12 @@ const props = defineProps<{
 
 const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(() => props.tabContext?.editor ?? null)
-const tab = ref<'project' | 'navigation'>('project')
+const tab = ref<'project' | 'navigation' | 'configuration'>('project')
+const configuration = computed<EndgeConfigurationContribution>({
+  get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
+  set: value => { if (editor.value) editor.value.configuration = value },
+})
+const upstreamConfiguration = computed(() => Endge.configuration.resolveUpstream('project'))
 
 const SELECT_NONE = '__none__'
 
@@ -88,18 +95,18 @@ async function save(): Promise<void> {
       <SaveDocumentButton :loading="isBusy" @click="save" />
     </div>
 
-    <ScrollArea class="flex-1">
-      <div class="p-4">
-        <Card class="min-h-[calc(100vh-15rem)]">
+    <div class="flex-1 min-h-0 p-4">
+        <Card class="h-full min-h-0 gap-0 overflow-hidden py-0">
           <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
             <div class="border-b px-3 py-2">
-              <TabsList class="grid w-full grid-cols-2">
+              <TabsList class="grid w-full grid-cols-3">
                 <TabsTrigger value="project">Проект</TabsTrigger>
                 <TabsTrigger value="navigation">Навигация</TabsTrigger>
+                <TabsTrigger value="configuration">Конфигурация</TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value="project" class="flex-1 min-h-0 p-0 m-0 data-[state=inactive]:hidden">
+            <TabsContent value="project" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
               <ScrollArea class="h-full">
                 <div class="p-4 space-y-4">
                   <div class="space-y-2">
@@ -136,7 +143,7 @@ async function save(): Promise<void> {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="navigation" class="flex-1 min-h-0 p-0 m-0 data-[state=inactive]:hidden">
+            <TabsContent value="navigation" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
               <ScrollArea class="h-full">
                 <div class="p-4 space-y-4">
                   <div class="space-y-2">
@@ -165,9 +172,20 @@ async function save(): Promise<void> {
               </ScrollArea>
             </TabsContent>
 
+            <TabsContent value="configuration" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
+              <ScrollArea class="h-full">
+                <div class="p-4">
+                  <ConfigurationSettingsEditor
+                    v-model="configuration"
+                    variant="contribution"
+                    :upstream="upstreamConfiguration"
+                  />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
           </Tabs>
         </Card>
-      </div>
-    </ScrollArea>
+    </div>
   </div>
 </template>

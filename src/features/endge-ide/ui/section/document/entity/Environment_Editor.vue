@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Loader2, Save, Zap } from 'lucide-vue-next'
-import { computed } from 'vue'
+import type { EndgeConfigurationContribution } from '@endge/core'
+import { Endge } from '@endge/core'
+import { computed, ref } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,11 +10,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 
 const tabs = EndgeIDE.tabs
-const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string } | null ?? null)
+const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string; configuration: EndgeConfigurationContribution } | null ?? null)
 const documentModel = computed(() => tabs.documentModel.value as { isSystem?: boolean } | null ?? null)
 const isSystem = computed(() => documentModel.value?.isSystem === true)
+const activeTab = ref<'general' | 'configuration'>('general')
+const configuration = computed<EndgeConfigurationContribution>({
+  get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
+  set: value => { if (editor.value) editor.value.configuration = value },
+})
+const upstreamConfiguration = computed(() => Endge.configuration.resolveUpstream('environment'))
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -49,8 +59,14 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </div>
 
-    <ScrollArea class="flex-1">
-      <div class="p-4 space-y-4">
+    <Tabs v-model="activeTab" class="flex min-h-0 flex-1 flex-col p-4">
+        <TabsList class="grid w-full shrink-0 grid-cols-2">
+          <TabsTrigger value="general">Окружение</TabsTrigger>
+          <TabsTrigger value="configuration">Конфигурация</TabsTrigger>
+        </TabsList>
+        <TabsContent value="general" class="mt-4 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+        <ScrollArea class="h-full">
+        <div class="space-y-4 pr-4">
         <div class="space-y-2">
           <Label>Идентификатор</Label>
           <input
@@ -71,7 +87,21 @@ async function save(): Promise<void> {
             @input="editor && (editor.displayName = (($event.target as HTMLInputElement).value ?? ''))"
           >
         </div>
-      </div>
-    </ScrollArea>
+        </div>
+        </ScrollArea>
+        </TabsContent>
+        <TabsContent value="configuration" class="mt-4 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+          <ScrollArea class="h-full">
+          <div class="pr-4">
+          <ConfigurationSettingsEditor
+            v-model="configuration"
+            variant="contribution"
+            :upstream="upstreamConfiguration"
+            :disabled="isSystem"
+          />
+          </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
   </div>
 </template>

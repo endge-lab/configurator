@@ -14,12 +14,27 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
   <div class="flex items-center gap-2">
     <div
       v-if="isAdminRoute"
+      data-target="grid-layout-header-tenant"
+      class="flex items-center"
+    />
+    <div
+      v-if="isAdminRoute"
+      data-target="grid-layout-header-project"
+      class="flex items-center"
+    />
+    <div
+      v-if="isAdminRoute"
       data-target="grid-layout-header-environment"
       class="flex items-center"
     />
     <div
       v-if="isAdminRoute"
       data-target="grid-layout-header-locale"
+      class="flex items-center"
+    />
+    <div
+      v-if="isAdminRoute"
+      data-target="grid-layout-header-theme"
       class="flex items-center"
     />
     <AppSwitcherContent v-else />

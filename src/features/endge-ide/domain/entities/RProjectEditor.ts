@@ -1,4 +1,4 @@
-import type { RProject } from '@endge/core'
+import type { EndgeConfigurationContribution, RProject } from '@endge/core'
 
 function normalizeRelationId(value: unknown): number | null {
   if (value == null)
@@ -24,6 +24,7 @@ export class RProjectEditor {
   order: number | null = null
   navigationId: number | null = null
   allowedEnvironmentIds: number[] = []
+  configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
 
   fillFromSource(source: RProject): void {
     this.id = source.id
@@ -36,6 +37,7 @@ export class RProjectEditor {
     this.allowedEnvironmentIds = Array.isArray(source.allowedEnvironmentIds)
       ? source.allowedEnvironmentIds.map(id => normalizeRelationId(id)).filter((id): id is number => id != null)
       : []
+    this.configuration = clone(source.configuration)
   }
 
   updateSource(source: RProject): void {
@@ -48,5 +50,10 @@ export class RProjectEditor {
     source.order = this.order ?? null
     source.navigationId = this.navigationId ?? null
     source.allowedEnvironmentIds = Array.from(new Set(this.allowedEnvironmentIds))
+    source.configuration = clone(this.configuration)
   }
+}
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
 }
