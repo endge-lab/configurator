@@ -117,6 +117,11 @@ const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
   {},
 )
 
+const showRootHierarchyBackgrounds = useSafeLocalStorage(
+  'endge-editor-domain-tree-root-backgrounds',
+  true,
+)
+
 const expandedFolders = computed<Set<string>>({
   get(): Set<string> {
     const s = new Set<string>()
@@ -613,9 +618,14 @@ const groupedFlatFs = computed(() =>
   ROOT_BLOCKS.value
     .map(block => ({
       ...block,
-      items: flatFs.value.filter(item => block.rootIds.includes(item.rootId)),
+      roots: block.rootIds
+        .map(rootId => ({
+          rootId,
+          items: flatFs.value.filter(item => item.rootId === rootId),
+        }))
+        .filter(root => root.items.length > 0),
     }))
-    .filter(block => block.items.length > 0),
+    .filter(block => block.roots.length > 0),
 )
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
@@ -1063,6 +1073,10 @@ function rowPaddingStyle(depth: number, isNestedEntity = false): Record<string, 
   return { paddingLeft: `${base + (isNestedEntity ? 6 : 0)}px` }
 }
 
+function getRootHierarchyColorClass(rootId: string): string {
+  return ROOT_FOLDER_ICONS[rootId]?.colorClass ?? 'text-muted-foreground'
+}
+
 function rowClasses(item: FlatFsItem): string {
   const isOver = dragOverPath.value === item.path && item.node.type === 'folder'
   const selected = isSelected(item)
@@ -1124,11 +1138,36 @@ function rowClasses(item: FlatFsItem): string {
             </Tooltip>
           </div>
 
-          <div class="flex items-center gap-0.5">
+          <div class="flex items-center gap-px">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" class="size-7" @click="EndgeIDE.modals.openCreateDocument()">
-                  <Plus class="size-3.5" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="showRootHierarchyBackgrounds
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="showRootHierarchyBackgrounds
+                    ? 'Скрыть фон корневых разделов'
+                    : 'Показать фон корневых разделов'"
+                  :aria-pressed="showRootHierarchyBackgrounds"
+                  @click="showRootHierarchyBackgrounds = !showRootHierarchyBackgrounds"
+                >
+                  <Palette class="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ showRootHierarchyBackgrounds
+                  ? 'Скрыть фон корневых разделов'
+                  : 'Показать фон корневых разделов' }}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button size="icon" class="size-6 rounded-sm" @click="EndgeIDE.modals.openCreateDocument()">
+                  <Plus class="size-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Создать</TooltipContent>
@@ -1156,69 +1195,79 @@ function rowClasses(item: FlatFsItem): string {
             </div>
 
             <div
-              v-for="it in block.items"
-              :key="it.path"
-              :class="rowClasses(it)"
-              :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
-              :draggable="it.node.type === 'file' && !(it.node as FsFileNode).isTableColumn"
-              @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
-              @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
-              @dragstart="(e) => onDragStart(e, it)"
-              @dragend="clearDragSources()"
-              @dragover="(e) => onDragOver(e, it)"
-              @dragleave="() => onDragLeave(it)"
-              @drop="(e) => onDrop(e, it)"
+              v-for="root in block.roots"
+              :key="root.rootId"
+              class="domain-root-hierarchy mb-1 last:mb-0"
+              :class="[
+                getRootHierarchyColorClass(root.rootId),
+                showRootHierarchyBackgrounds ? 'domain-root-hierarchy--highlighted' : '',
+              ]"
             >
-              <template v-if="it.node.type === 'folder'">
-                <ChevronDown v-if="folderIsExpanded(it.path)" class="size-4 shrink-0" />
-                <ChevronRight v-else class="size-4 shrink-0" />
-                <component
-                  :is="getFolderIcon(it.node)"
-                  class="size-4 shrink-0"
-                  :class="getFolderColorClass(it.node)"
-                />
-              </template>
-
-              <template v-else>
-                <ChevronDown
-                  v-if="(it.node as FsFileNode).children?.length && folderIsExpanded(it.path)"
-                  class="size-4 shrink-0"
-                  @click.stop="toggleFolder(it.path)"
-                />
-                <ChevronRight
-                  v-else-if="(it.node as FsFileNode).children?.length"
-                  class="size-4 shrink-0"
-                  @click.stop="toggleFolder(it.path)"
-                />
-                <span v-else class="size-4 shrink-0 ml-1 inline-block" />
-                <Columns
-                  v-if="(it.node as FsFileNode).isTableColumn"
-                  class="size-4 shrink-0 text-sky-500 mr-1"
-                />
-                <span
-                  v-else-if="getRootDocumentIcon(it.node as FsFileNode)"
-                  class="relative size-4 shrink-0"
-                >
+              <div
+                v-for="it in root.items"
+                :key="it.path"
+                :class="rowClasses(it)"
+                :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
+                :draggable="it.node.type === 'file' && !(it.node as FsFileNode).isTableColumn"
+                @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
+                @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
+                @dragstart="(e) => onDragStart(e, it)"
+                @dragend="clearDragSources()"
+                @dragover="(e) => onDragOver(e, it)"
+                @dragleave="() => onDragLeave(it)"
+                @drop="(e) => onDrop(e, it)"
+              >
+                <template v-if="it.node.type === 'folder'">
+                  <ChevronDown v-if="folderIsExpanded(it.path)" class="size-4 shrink-0" />
+                  <ChevronRight v-else class="size-4 shrink-0" />
                   <component
-                    :is="getRootDocumentIcon(it.node as FsFileNode)"
-                    class="size-4"
-                    :class="getRootDocumentIconColor(it.node as FsFileNode)"
+                    :is="getFolderIcon(it.node)"
+                    class="size-4 shrink-0"
+                    :class="getFolderColorClass(it.node)"
                   />
-                  <component
-                    :is="getRootDocumentBadgeIcon(it.node as FsFileNode)"
-                    v-if="getRootDocumentBadgeIcon(it.node as FsFileNode)"
-                    class="absolute -bottom-1 -right-1 size-2.5 rounded-[2px] bg-background p-px"
-                    :class="getRootDocumentIconColor(it.node as FsFileNode)"
-                  />
-                </span>
-                <i
-                  v-else
-                  :class="getTreeDocumentIconClass(it.node as FsFileNode)"
-                  class="shrink-0"
-                />
-              </template>
+                </template>
 
-              <span class="truncate">{{ it.node.name }}</span>
+                <template v-else>
+                  <ChevronDown
+                    v-if="(it.node as FsFileNode).children?.length && folderIsExpanded(it.path)"
+                    class="size-4 shrink-0"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                  <ChevronRight
+                    v-else-if="(it.node as FsFileNode).children?.length"
+                    class="size-4 shrink-0"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                  <span v-else class="size-4 shrink-0 ml-1 inline-block" />
+                  <Columns
+                    v-if="(it.node as FsFileNode).isTableColumn"
+                    class="size-4 shrink-0 text-sky-500 mr-1"
+                  />
+                  <span
+                    v-else-if="getRootDocumentIcon(it.node as FsFileNode)"
+                    class="relative size-4 shrink-0"
+                  >
+                    <component
+                      :is="getRootDocumentIcon(it.node as FsFileNode)"
+                      class="size-4"
+                      :class="getRootDocumentIconColor(it.node as FsFileNode)"
+                    />
+                    <component
+                      :is="getRootDocumentBadgeIcon(it.node as FsFileNode)"
+                      v-if="getRootDocumentBadgeIcon(it.node as FsFileNode)"
+                      class="absolute -bottom-1 -right-1 size-2.5 rounded-[2px] bg-background p-px"
+                      :class="getRootDocumentIconColor(it.node as FsFileNode)"
+                    />
+                  </span>
+                  <i
+                    v-else
+                    :class="getTreeDocumentIconClass(it.node as FsFileNode)"
+                    class="shrink-0"
+                  />
+                </template>
+
+                <span class="truncate">{{ it.node.name }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1281,3 +1330,18 @@ function rowClasses(item: FlatFsItem): string {
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+.domain-root-hierarchy {
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.domain-root-hierarchy--highlighted {
+  background-color: color-mix(in srgb, currentColor 9%, transparent);
+  box-shadow:
+    inset 2px 0 0 color-mix(in srgb, currentColor 52%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+</style>
