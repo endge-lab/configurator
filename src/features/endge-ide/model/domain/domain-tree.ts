@@ -431,6 +431,7 @@ export interface BuildDomainTreeParams {
     displayName?: string
     kind?: RCompositionKind
     kindIdentity?: string | null
+    folderId?: string | number | null
   }>
 }
 
@@ -645,6 +646,30 @@ function findOwnedNode(
   return null
 }
 
+function findFolderNode(
+  nodes: FsNode[],
+  folderId: string | number,
+): FsFolderNode | null {
+  const expected = String(folderId)
+  for (const node of nodes) {
+    if (
+      node.type === 'folder'
+      && (
+        String(node.folderId ?? '') === expected
+        || String(node.identity ?? '') === expected
+        || String(node.id ?? '') === expected
+        || String(node.id ?? '') === `folder:${expected}`
+      )
+    )
+      return node
+
+    const match = findFolderNode(node.children ?? [], folderId)
+    if (match)
+      return match
+  }
+  return null
+}
+
 function attachContextualCompositions(
   tree: FsNode[],
   compositions: NonNullable<BuildDomainTreeParams['contextualCompositions']>,
@@ -675,9 +700,14 @@ function attachContextualCompositions(
       presentationKind: kind,
     }
 
+    const folder = !kindIdentity && composition.folderId != null
+      ? findFolderNode([root], composition.folderId)
+      : null
     const targetChildren = owner
       ? (owner.children ??= [])
-      : (root.children ??= [])
+      : folder
+        ? (folder.children ??= [])
+        : (root.children ??= [])
     targetChildren.push(node)
   }
 }

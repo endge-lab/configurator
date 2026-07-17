@@ -99,6 +99,7 @@ type MenuAction
     | { type: 'rename-folder', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
     | { type: 'create-doc', node: FsFolderNode }
+    | { type: 'create-project-composition', node: FsFileNode }
     | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
@@ -597,6 +598,7 @@ const fsTree = computed<FsNode[]>(() => {
       displayName?: string
       kind?: RCompositionKind
       kindIdentity?: string | null
+      folderId?: string | number | null
     }>,
   })
 
@@ -937,6 +939,14 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
     const canSoftDeleteDoc = canSoftDelete(fileNode.sectionType, fileNode.docType)
     const canHardDeleteDoc = canHardDelete(fileNode.docType)
 
+    if (!isSystemDoc && !isInDeleted && fileNode.sectionType === DomainSectionType.Project) {
+      items.push({
+        label: 'Создать композицию',
+        icon: Network,
+        action: { type: 'create-project-composition', node: fileNode },
+      })
+    }
+
     if (isInDeleted && canRestoreDoc) {
       items.push({
         label: 'Восстановить',
@@ -994,6 +1004,25 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     EndgeIDE.modals.openCreateDocument({
       sectionType: a.node.sectionType,
       folderId: a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
+    })
+    return
+  }
+
+  if (a.type === 'create-project-composition') {
+    const projectIdentity = String(a.node.identity ?? a.node.id ?? '').trim()
+    if (!projectIdentity) {
+      toast.error('Не удалось определить identity проекта')
+      return
+    }
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: DomainSectionType.Composition,
+      documentType: 'composition',
+      compositionOwner: {
+        kind: 'project',
+        identity: projectIdentity,
+        displayName: a.node.name,
+      },
     })
     return
   }

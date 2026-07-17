@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { resolveCompositionCreatePlacement } from '@/features/endge-ide/model/domain/composition-create'
 import {
   getQueryRootFolderId,
   QUERY_COMPOSITION_CREATE_KIND,
@@ -146,8 +147,17 @@ const activeOption = computed<DocTypeOption>(() =>
   CREATABLE_DOC_TYPES.find(d => d.type === activeType.value) ?? CREATABLE_DOC_TYPES[0]!,
 )
 
+const createContext = computed(() => EndgeIDE.modals.createDocumentContext.value)
+const lockedDocumentType = computed(() => createContext.value?.documentType ?? null)
+const compositionOwner = computed(() =>
+  activeType.value === 'composition' ? createContext.value?.compositionOwner ?? null : null,
+)
+const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
+
 /** Показывать выбор папки только для доменных сущностей, не для типов. */
 const showFolderSelect = computed(() => {
+  if (compositionOwner.value)
+    return false
   const s = activeOption.value.section
   return s === DomainSectionType.Component
     || s === DomainSectionType.Query
@@ -205,7 +215,13 @@ const folderOptions = computed(() => {
 watch(() => props.open, (v) => {
   if (v) {
     const ctx = EndgeIDE.modals.createDocumentContext?.value ?? null
-    if (ctx?.sectionType != null) {
+    if (ctx?.documentType != null) {
+      const requestedType = CREATABLE_DOC_TYPES.find(d => d.type === ctx.documentType)
+      if (requestedType)
+        activeType.value = requestedType.type
+      selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ''
+    }
+    else if (ctx?.sectionType != null) {
       const firstOfSection = CREATABLE_DOC_TYPES.find(d => d.section === ctx.sectionType)
       if (firstOfSection) activeType.value = firstOfSection.type
       selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ''
@@ -238,6 +254,7 @@ function buildPayloadTemplate(): Record<string, unknown> {
   const id = identity.value.trim() || 'new-doc'
   const displayName = name.value.trim() || id
   const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
+  const owner = compositionOwner.value
   const folder = showFolderSelect.value && selectedFolderId.value
     ? selectedFolderId.value
     : isQueryComposition ? getQueryRootFolderId() : null
@@ -298,11 +315,14 @@ function buildPayloadTemplate(): Record<string, unknown> {
   }
 
   if (activeType.value === 'composition' || isQueryComposition) {
+    const placement = resolveCompositionCreatePlacement({
+      queryComposition: isQueryComposition,
+      owner,
+    })
     return {
       ...base,
       description: null,
-      kind: isQueryComposition ? 'query' : 'library',
-      kindIdentity: null,
+      ...placement,
       source: Endge.source.createDefault('composition'),
       sourceVersion: 1,
       meta: isQueryComposition ? setQueryCompositionRole({}, true) : {},
@@ -467,10 +487,14 @@ async function onSubmit(): Promise<void> {
       const documentType = isQueryComposition
         ? 'composition' as DomainDocumentType
         : activeType.value as DomainDocumentType
+      if (documentType === 'composition') {
+        Object.assign(parsed, resolveCompositionCreatePlacement({
+          queryComposition: isQueryComposition,
+          owner: compositionOwner.value,
+        }))
+      }
       if (isQueryComposition) {
         parsed.meta = setQueryCompositionRole(parsed.meta as Record<string, unknown> | undefined, true)
-        parsed.kind = 'query'
-        parsed.kindIdentity = null
         if (parsed.folder == null || parsed.folder === '') {
           const rootFolderId = getQueryRootFolderId()
           if (rootFolderId == null) {
@@ -510,10 +534,16 @@ async function onSubmit(): Promise<void> {
         ? selectedFolderId.value
         : rootFolderId ?? undefined,
     })
+    if (documentType === 'composition') {
+      const placement = resolveCompositionCreatePlacement({
+        queryComposition: isQueryComposition,
+        owner: compositionOwner.value,
+      })
+      draft.kind = placement.kind
+      draft.kindIdentity = placement.kindIdentity
+    }
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)
-      draft.kind = 'query'
-      draft.kindIdentity = null
     }
 
     // Сохраняем новый документ в payload (tabs.save() сохраняет активную вкладку, а не созданный документ)
@@ -540,12 +570,15 @@ function onCancel(): void {
   <Dialog v-model:open="openModel">
     <DialogContent class="sm:max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Создать документ</DialogTitle>
+        <DialogTitle>{{ dialogTitle }}</DialogTitle>
       </DialogHeader>
 
-      <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4 py-2">
+      <div
+        class="grid gap-4 py-2"
+        :class="lockedDocumentType ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]'"
+      >
         <!-- Слева: список типов сущностей -->
-        <div class="flex flex-col gap-2">
+        <div v-if="!lockedDocumentType" class="flex flex-col gap-2">
           <Label class="text-muted-foreground text-xs">Тип сущности</Label>
           <ScrollArea class="h-[240px] rounded-md border p-1">
             <div class="flex flex-col gap-0.5">
@@ -573,6 +606,15 @@ function onCancel(): void {
         <!-- Справа: данные для создания -->
         <div class="flex min-h-0 flex-col gap-3">
           <Label class="text-muted-foreground text-xs">Данные для создания</Label>
+
+          <div
+            v-if="compositionOwner"
+            class="rounded-md border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
+          >
+            Привязка к проекту:
+            <span class="font-medium text-foreground">{{ compositionOwner.displayName || compositionOwner.identity }}</span>
+            <span class="ml-1 font-mono">({{ compositionOwner.identity }})</span>
+          </div>
 
           <Tabs v-model="createMode" class="flex min-h-0 flex-1 flex-col">
             <TabsList class="grid w-full grid-cols-2">

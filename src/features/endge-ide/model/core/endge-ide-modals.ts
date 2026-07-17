@@ -1,5 +1,13 @@
-import type { DomainSectionType } from '@endge/core'
+import type { DomainDocumentType, DomainSectionType } from '@endge/core'
+import type { CompositionCreateOwner } from '@/features/endge-ide/model/domain/composition-create'
 import { ref } from 'vue'
+
+export interface CreateDocumentContext {
+  sectionType?: DomainSectionType
+  folderId?: string | number | null
+  documentType?: DomainDocumentType
+  compositionOwner?: CompositionCreateOwner
+}
 
 /**
  * Контроллер модальных окон Endge IDE.
@@ -7,7 +15,7 @@ import { ref } from 'vue'
  */
 const _createVersionOpen = ref(false)
 const _createDocumentOpen = ref(false)
-const _createDocumentContext = ref<{ sectionType: DomainSectionType, folderId?: string | number | null } | null>(null)
+const _createDocumentContext = ref<CreateDocumentContext | null>(null)
 const _clearSoftDeletedOpen = ref(false)
 const _duplicateDocumentOpen = ref(false)
 const _duplicateSourceNode = ref<{ id: string, docType: string, name: string } | null>(null)
@@ -37,12 +45,12 @@ export class EndgeIDEModals {
     return _createDocumentOpen
   }
 
-  /** Контекст открытия (секция/папка из виджета домена). */
+  /** Контекст открытия: секция, папка или typed owner для связанного документа. */
   get createDocumentContext() {
     return _createDocumentContext
   }
 
-  openCreateDocument(options?: { sectionType?: DomainSectionType, folderId?: string | number | null }): void {
+  openCreateDocument(options?: CreateDocumentContext): void {
     _createDocumentContext.value = options ?? null
     _createDocumentOpen.value = true
   }

@@ -66,7 +66,7 @@ describe('buildDomainTree', () => {
     })
   })
 
-  it('places an unowned query Composition directly in the query root', () => {
+  it('places an unowned query Composition in its persisted query folder', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-queries': {
@@ -76,17 +76,22 @@ describe('buildDomainTree', () => {
       },
       rootOrder: ['root-queries'],
       rootLabels: { 'root-queries': 'Запросы' },
-      allFolders: [],
+      allFolders: [
+        { id: 1, identity: 'root-queries', name: 'Queries', parent: null },
+        { id: 2, identity: 'groundhandling', name: 'Ground handling', parent: 1 },
+      ],
       contextualCompositions: [{
         id: 10,
         identity: 'groundhandling-default',
         displayName: 'Запросы ТГО',
         kind: 'query',
         kindIdentity: null,
+        folderId: 2,
       }],
     })
 
-    expect(tree[0]?.children?.[0]).toMatchObject({
+    const folder = tree[0]?.children?.find(node => node.type === 'folder' && node.identity === 'groundhandling')
+    expect(folder?.children?.[0]).toMatchObject({
       id: '10',
       identity: 'groundhandling-default',
       docType: 'composition',
@@ -120,6 +125,7 @@ describe('buildDomainTree', () => {
         displayName: 'Project startup',
         kind: 'project',
         kindIdentity: 'project-dev',
+        folderId: 'unrelated',
       }],
     })
 
