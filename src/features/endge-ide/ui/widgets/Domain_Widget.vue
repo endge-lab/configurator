@@ -107,6 +107,7 @@ type MenuAction
     | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
+    | { type: 'download-selected' }
     | { type: 'clear-soft-deleted' }
 
 const domainStore = useDomainStore()
@@ -674,6 +675,14 @@ function getSelectionKey(item: FlatFsItem): string {
 const selectedFileIds = ref<Set<string>>(new Set())
 const lastClickedPath = ref<string | null>(null)
 
+const selectedExportNodes = computed<FsFileNode[]>(() =>
+  flattenTree(fsTree.value, new Set(allExpandablePaths.value))
+    .filter(item => item.node.type === 'file'
+      && !(item.node as FsFileNode).isTableColumn
+      && selectedFileIds.value.has(getSelectionKey(item)))
+    .map(item => item.node as FsFileNode),
+)
+
 function getFileItemsInRoot(rootId: string): FlatFsItem[] {
   return flatFs.value.filter(it => it.node.type === 'file' && it.rootId === rootId)
 }
@@ -854,9 +863,25 @@ async function confirmRename(): Promise<void> {
   Endge.domain.notify()
 }
 
+async function downloadSelectedDocuments(): Promise<void> {
+  try {
+    await Endge.downloadSelected(selectedExportNodes.value.map(node => ({
+      id: node.id,
+      identity: node.identity,
+      sectionType: node.sectionType,
+      docType: node.docType,
+    })))
+    toast.success(`Скачано сущностей: ${selectedExportNodes.value.length}`)
+  }
+  catch (error) {
+    console.error('[Domain_Widget] Не удалось скачать выбранные сущности:', error)
+    toast.error('Не удалось скачать выбранные сущности', { description: (error as Error)?.message })
+  }
+}
+
 // ---------- context menu items ----------
 /** Формирует контекстные действия для узла дерева домена. */
-function getMenuActions(node: FsNode, _path?: string | null): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
+function getMenuActions(node: FsNode, path?: string | null): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
 
   if (node.type === 'folder') {
@@ -916,6 +941,14 @@ function getMenuActions(node: FsNode, _path?: string | null): Array<{ label: str
     const fileNode = node as FsFileNode
     if (fileNode.isTableColumn)
       return items
+
+    if (path && selectedFileIds.value.has(path) && selectedExportNodes.value.length > 1) {
+      items.push({
+        label: `Скачать выбранные (${selectedExportNodes.value.length})`,
+        icon: Download,
+        action: { type: 'download-selected' },
+      })
+    }
 
     const isSystemDoc = fileNode.isSystem === true
     const isInDeleted = fileNode.isInDeletedFolder === true
@@ -1001,6 +1034,11 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
       docType: a.node.docType,
       name: a.node.name ?? a.node.id,
     })
+    return
+  }
+
+  if (a.type === 'download-selected') {
+    await downloadSelectedDocuments()
     return
   }
 

@@ -232,7 +232,6 @@ async function executeExtraction(
 
   child.tag = result.tag
   child.source = childSource
-  child.project = editorModel.project ?? null
   child.folderId = result.folderId
 
   const previousPersistedSource = persistedModel.source

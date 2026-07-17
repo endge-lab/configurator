@@ -24,8 +24,6 @@ export class RComponentSFCEditor {
 
   folderId?: string | number | null = null
 
-  project?: string | null = null
-
   modelVersion = 1
 
   supportedTargets: Array<'dom' | 'canvas'> = ['dom', 'canvas']
@@ -47,7 +45,6 @@ export class RComponentSFCEditor {
     this.displayName = source.displayName ?? source.name
     this.description = source.description ?? null
     this.folderId = source.folderId ?? null
-    this.project = source.project ?? null
     this.modelVersion = Number(source.modelVersion ?? 1)
     this.supportedTargets = normalizeTargets(source.supportedTargets)
     this.meta = { ...(source.meta ?? {}) }
@@ -66,7 +63,6 @@ export class RComponentSFCEditor {
     source.displayName = this.displayName || this.name
     source.description = this.description
     source.folderId = this.folderId ?? null
-    source.project = this.project ?? null
     source.modelVersion = Number(this.modelVersion ?? 1)
     source.supportedTargets = normalizeTargets(this.supportedTargets)
     source.meta = { ...this.meta }

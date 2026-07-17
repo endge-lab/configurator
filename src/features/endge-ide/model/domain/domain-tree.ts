@@ -68,13 +68,6 @@ export function isDeleted(
   return (softDeletedFolderId != null && fid === softDeletedFolderId) || (e.deletedAt != null && e.deletedAt !== '')
 }
 
-/** Фильтр по проекту: при выбранном проекте показываем только сущности этого проекта или без проекта. */
-export function filterByProject<T extends { project?: string | null }>(list: T[], current: string | null): T[] {
-  if (current == null)
-    return list
-  return list.filter(e => e.project == null || e.project === current)
-}
-
 function isTemporaryEntity(entity: unknown): boolean {
   return (entity as { isTemporary?: boolean } | null | undefined)?.isTemporary === true
 }
@@ -139,7 +132,6 @@ export function getSoftDeletedItems(
   folderId?: string | number | null
   type?: DomainDocumentType
   sectionType: DomainSectionType
-  project?: string | null
   presentationKind?: typeof QUERY_COMPOSITION_PRESENTATION_KIND
 }> {
   const out: Array<{
@@ -148,7 +140,6 @@ export function getSoftDeletedItems(
     folderId?: string | number | null
     type?: DomainDocumentType
     sectionType: DomainSectionType
-    project?: string | null
   }> = []
 
   const deletedFolderIds = collectDeletedFolderBranchIds(
@@ -174,7 +165,6 @@ export function getSoftDeletedItems(
         folderId: e.folderId ?? e.folder ?? e.group,
         type: e.type,
         sectionType,
-        project: e.project ?? null,
         ...(isQueryComposition(e) && { presentationKind: QUERY_COMPOSITION_PRESENTATION_KIND }),
       })
     }
