@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
 
 import { Endge } from '@endge/core'
@@ -9,12 +10,16 @@ import {
   Play,
   RotateCcw,
   Save,
+  Settings2,
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +35,9 @@ import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RCompositionEditor | null,
 )
-const activeTab = ref<'source' | 'artifact' | 'diagnostics'>('source')
+const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>(
+  'source',
+)
 const launchLoading = ref(false)
 const compiled = computed(() =>
   editor.value
@@ -40,14 +47,18 @@ const compiled = computed(() =>
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),
 )
-const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('composition', editor.value))
+const diagnosticsEntityRef = computed(() =>
+  createEditorDiagnosticsEntityRef('composition', editor.value),
+)
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
 }
 
 async function launchPreview(): Promise<void> {
   const current = editor.value
-  if (!current) { return }
+  if (!current) {
+    return
+  }
 
   launchLoading.value = true
   try {
@@ -69,6 +80,25 @@ async function launchPreview(): Promise<void> {
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Основное</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -106,7 +136,9 @@ async function launchPreview(): Promise<void> {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
+            <TooltipContent>
+              Запустить Runtime Preview (⌘/Ctrl+Enter)
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -152,8 +184,18 @@ async function launchPreview(): Promise<void> {
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="EndgeIDE.tabs.save()">
-                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value"
+                aria-label="Сохранить"
+                @click="EndgeIDE.tabs.save()"
+              >
+                <Loader2
+                  v-if="EndgeIDE.busy.value"
+                  class="size-4 animate-spin"
+                />
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -185,8 +227,43 @@ async function launchPreview(): Promise<void> {
     </template>
 
     <div class="min-h-0 flex-1 overflow-hidden">
+      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+        <div class="max-w-2xl space-y-5">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="composition-name">Display name</Label>
+              <Input id="composition-name" v-model="editor.name" />
+            </div>
+            <div class="space-y-2">
+              <Label for="composition-identity">Identity</Label>
+              <Input
+                id="composition-identity"
+                v-model="editor.identity"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label for="composition-description">Описание</Label>
+            <Textarea
+              id="composition-description"
+              v-model="editor.description"
+              :rows="4"
+            />
+          </div>
+          <div class="max-w-xs space-y-2">
+            <Label for="composition-source-version">Source version</Label>
+            <Input
+              id="composition-source-version"
+              v-model.number="editor.sourceVersion"
+              type="number"
+              min="1"
+            />
+          </div>
+        </div>
+      </div>
       <CompositionSourceEditor
-        v-if="activeTab === 'source'"
+        v-else-if="activeTab === 'source'"
         :model-value="editor.source"
         @update:model-value="updateSource"
       />

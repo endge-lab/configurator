@@ -151,6 +151,9 @@ export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<Com
     resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
     hasComponentIdentity: identity => Endge.domain.getComponentSFC(identity) != null || identity === model.identity,
     resolvePortProvider: (identity, expectedKind) => resolvePreviewPortProvider(identity, expectedKind),
+    resolveComponentPortManifest: identity => Endge.program
+      .getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
+      ?.payload.ir?.script.ports ?? null,
   })
   const { diagnostics, metadata, ...payload } = compiled
   const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error' && diagnostic.sourcePath !== 'style')

@@ -271,7 +271,7 @@ function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEdito
       direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
       align: readAttribute(ast.attributes, 'align'),
       justify: readAttribute(ast.attributes, 'justify'),
-      wrap: hasAttribute(ast.attributes, 'wrap'),
+      wrap: readBooleanAttribute(ast.attributes, 'wrap'),
       columns: layoutMode === 'grid' ? readNumberAttribute(ast.attributes, 'columns', 12) : 12,
       gap: readPixelAttribute(ast.attributes, 'gap', 10),
       padding: readPixelAttribute(ast.attributes, 'p', 10),
@@ -294,7 +294,7 @@ function createContractNode(
       direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
       align: readAttribute(ast.attributes, 'align'),
       justify: readAttribute(ast.attributes, 'justify'),
-      wrap: hasAttribute(ast.attributes, 'wrap'),
+      wrap: readBooleanAttribute(ast.attributes, 'wrap'),
       gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
       padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
     })
@@ -451,8 +451,12 @@ function readAttribute(attributes: RComponentSFC_AST_Attribute[], name: string):
   return attributes.find(attribute => attribute.name === name)?.value ?? null
 }
 
-function hasAttribute(attributes: RComponentSFC_AST_Attribute[], name: string): boolean {
-  return attributes.some(attribute => attribute.name === name)
+function readBooleanAttribute(attributes: RComponentSFC_AST_Attribute[], name: string): boolean {
+  const attribute = attributes.find(candidate => candidate.name === name)
+  if (!attribute) {
+    return false
+  }
+  return attribute.value === null || attribute.value === '' || attribute.value === 'true'
 }
 
 function readPixelAttribute(

@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
           'bg-muted-foreground/40': session.status.value === 'idle',
         }"
       />
-      <span class="min-w-0 flex-1 truncate text-[11px] font-medium text-muted-foreground">
+      <span class="min-w-0 truncate text-[11px] font-medium text-muted-foreground">
         {{ statusLabel }}
       </span>
       <Button
@@ -88,9 +88,10 @@ onBeforeUnmount(() => {
       >
         <RefreshCw class="size-3.5" />
       </Button>
+      <span class="min-w-0 flex-1" />
     </header>
 
-    <div class="relative min-h-0 flex-1 overflow-auto bg-[linear-gradient(180deg,#f8fafc_0%,#eef4fb_100%)] p-4 dark:bg-[linear-gradient(180deg,#111827_0%,#0b1120_100%)]">
+    <div class="relative min-h-0 flex-1 overflow-auto p-3">
       <div
         v-if="session.error.value"
         class="sticky top-0 z-20 mb-3 flex items-start gap-2 border border-amber-500/30 bg-amber-50/95 px-3 py-2 text-xs text-amber-900 shadow-sm backdrop-blur dark:bg-amber-950/90 dark:text-amber-100"
@@ -109,7 +110,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="session.runtime.value"
-        class="mx-auto min-h-full overflow-hidden border border-border/60 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.10)] dark:bg-slate-950 dark:shadow-[0_22px_60px_rgba(0,0,0,0.38)]"
+        class="mx-auto min-h-full"
         :style="surfaceStyle"
       >
         <SFC_RuntimeRenderer

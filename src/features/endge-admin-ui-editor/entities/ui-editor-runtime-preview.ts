@@ -113,6 +113,7 @@ export class UIEditorRuntimePreviewSession {
         resolveStoreRuntime: identity => UI_EDITOR_PREVIEW_SCOPE.resolve('store', identity),
       },
     )
+    let nextRuntime: ComponentSFCRuntimeHost | null = null
     try {
       const input = resolveComponentPreviewInput(
         previewProps,
@@ -133,6 +134,7 @@ export class UIEditorRuntimePreviewSession {
       if (!runtime || runtime.entityType !== 'component-sfc') {
         throw new Error('Не удалось создать UI Editor preview runtime.')
       }
+      nextRuntime = runtime
       if (generation !== this._generation) {
         if (context) {
           await destroyComponentPreviewContext(context)
@@ -151,7 +153,12 @@ export class UIEditorRuntimePreviewSession {
       return true
     }
     catch (error) {
-      await destroyComponentPreviewContext(context)
+      if (context) {
+        await destroyComponentPreviewContext(context)
+      }
+      else if (nextRuntime && Endge.runtime.getRuntimeById(nextRuntime.id)) {
+        await Endge.runtime.destroyRuntimeTreeAsync(nextRuntime.id).catch(() => {})
+      }
       this.error.value = error instanceof Error ? error.message : String(error)
       this.status.value = 'error'
       return false

@@ -2,7 +2,7 @@
 import type { SmartTabRef, SmartTabsApi, SmartTabsOptions } from '@/components/ui/smart-tabs/types'
 import type { Component } from 'vue'
 
-import { X } from 'lucide-vue-next'
+import { CircleX, CopyX, PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, h, ref, watch } from 'vue'
 
 import { getSmartTabView } from '@/components/ui/smart-tabs/registry'
@@ -212,12 +212,15 @@ function closeContextMenu(): void {
   contextMenu.value = null
 }
 
-function runContextAction(action: 'close' | 'closeOthers' | 'closeAllToLeft' | 'closeAllToRight'): void {
+function runContextAction(action: 'close' | 'closeAll' | 'closeOthers' | 'closeAllToLeft' | 'closeAllToRight'): void {
   const tabId = contextMenu.value?.tabId
   if (!tabId) return
   switch (action) {
     case 'close':
       close(tabId)
+      break
+    case 'closeAll':
+      tabsApi.closeAll()
       break
     case 'closeOthers':
       tabsApi.closeOthers(tabId)
@@ -331,13 +334,23 @@ watch(contextMenu, (v) => {
               class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
               @click="runContextAction('close')"
             >
+              <X class="size-4 shrink-0" />
               Закрыть
+            </button>
+            <button
+              type="button"
+              class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
+              @click="runContextAction('closeAll')"
+            >
+              <CircleX class="size-4 shrink-0" />
+              Закрыть все
             </button>
             <button
               type="button"
               class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
               @click="runContextAction('closeOthers')"
             >
+              <CopyX class="size-4 shrink-0" />
               Закрыть другие
             </button>
             <button
@@ -345,6 +358,7 @@ watch(contextMenu, (v) => {
               class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
               @click="runContextAction('closeAllToLeft')"
             >
+              <PanelLeftClose class="size-4 shrink-0" />
               Закрыть все слева
             </button>
             <button
@@ -352,6 +366,7 @@ watch(contextMenu, (v) => {
               class="w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-left hover:bg-accent hover:text-accent-foreground"
               @click="runContextAction('closeAllToRight')"
             >
+              <PanelRightClose class="size-4 shrink-0" />
               Закрыть все справа
             </button>
           </div>

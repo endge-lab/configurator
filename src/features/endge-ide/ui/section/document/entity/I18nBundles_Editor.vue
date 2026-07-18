@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor'
 
 import { Endge } from '@endge/core'
@@ -9,7 +10,7 @@ import {
   Plus,
   RotateCcw,
   Save,
-  SlidersHorizontal,
+  Settings2,
   Trash2,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
@@ -55,7 +56,11 @@ const editor = computed<RI18nBundleEditor | null>(
 )
 const activeModel = computed<boolean>({
   get: () => editor.value?.active !== false,
-  set: value => { if (editor.value) editor.value.active = value === true },
+  set: (value) => {
+    if (editor.value) {
+      editor.value.active = value === true
+    }
+  },
 })
 
 const workspaceLocaleCodes = computed(() =>
@@ -64,22 +69,24 @@ const workspaceLocaleCodes = computed(() =>
 
 const localeCodes = computed(() => {
   const loc = editor.value?.locales
-  if (!loc || typeof loc !== 'object') { return workspaceLocaleCodes.value }
+  if (!loc || typeof loc !== 'object') {
+    return workspaceLocaleCodes.value
+  }
   const keys = Object.keys(loc)
   return keys.length ? keys : workspaceLocaleCodes.value
 })
 
 const currentLocale = ref<string>(Endge.workspace.defaultLocale)
 
-const activePanel = ref<'source' | 'ui'>('source')
+const activePanel = ref<'general' | 'source'>('source')
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
 /** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ→значение */
 const editMode = ref<'json' | 'table'>('table')
 
 const panelButtons = [
+  { value: 'general', icon: Settings2, label: 'Основное' },
   { value: 'source', icon: Code2, label: 'Source' },
-  { value: 'ui', icon: SlidersHorizontal, label: 'UI' },
 ] as const
 
 /** Разворачивает вложенный объект в плоский список ключей в точечной нотации */
@@ -114,7 +121,9 @@ function unflattenObject(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const { key, value } of rows) {
-    if (!key.trim()) { continue }
+    if (!key.trim()) {
+      continue
+    }
     const parts = key.trim().split('.')
     let cur: Record<string, unknown> = out
     for (let i = 0; i < parts.length - 1; i++) {
@@ -133,7 +142,9 @@ function unflattenObject(
 const tableRows = ref<{ key: string, value: string }[]>([])
 
 function syncTableRowsFromLocale(): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
   const loc = editor.value.locales?.[currentLocale.value]
   const obj
     = loc && typeof loc === 'object' && !Array.isArray(loc)
@@ -143,7 +154,9 @@ function syncTableRowsFromLocale(): void {
 }
 
 function applyTableRowsToLocale(): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
   const prev = editor.value.locales ?? {}
   const nested = unflattenObject(tableRows.value)
   editor.value.locales = { ...prev, [currentLocale.value]: nested }
@@ -159,7 +172,9 @@ function removeTableRow(index: number): void {
 
 function restoreDefaultLocales(): void {
   const current = editor.value
-  if (!current) { return }
+  if (!current) {
+    return
+  }
 
   if (activePanel.value === 'source') {
     try {
@@ -184,7 +199,9 @@ function restoreDefaultLocales(): void {
 
 function applySourceTextToLocales(): boolean {
   const current = editor.value
-  if (!current) { return false }
+  if (!current) {
+    return false
+  }
 
   try {
     current.applySourceText()
@@ -199,16 +216,24 @@ function applySourceTextToLocales(): boolean {
 }
 
 function syncLocalesToSourceText(): void {
-  if (editMode.value === 'table') { applyTableRowsToLocale() }
+  if (editMode.value === 'table') {
+    applyTableRowsToLocale()
+  }
   editor.value?.syncSourceTextFromLocales()
 }
 
-function switchPanel(panel: 'source' | 'ui'): void {
-  if (activePanel.value === panel) { return }
+function switchPanel(panel: 'general' | 'source'): void {
+  if (activePanel.value === panel) {
+    return
+  }
 
-  if (activePanel.value === 'source' && !applySourceTextToLocales()) { return }
+  if (activePanel.value === 'source' && !applySourceTextToLocales()) {
+    return
+  }
 
-  if (activePanel.value === 'ui' && panel === 'source') { syncLocalesToSourceText() }
+  if (activePanel.value === 'general' && panel === 'source') {
+    syncLocalesToSourceText()
+  }
 
   activePanel.value = panel
 }
@@ -220,14 +245,20 @@ watch(
 )
 
 watch(editMode, (mode) => {
-  if (mode === 'table') { syncTableRowsFromLocale() }
-  else if (mode === 'json') { applyTableRowsToLocale() }
+  if (mode === 'table') {
+    syncTableRowsFromLocale()
+  }
+  else if (mode === 'json') {
+    applyTableRowsToLocale()
+  }
 })
 
 const currentLocaleJson = computed({
   get: () => {
     const loc = editor.value?.locales?.[currentLocale.value]
-    if (loc == null) { return '{}' }
+    if (loc == null) {
+      return '{}'
+    }
     try {
       return JSON.stringify(loc, null, 2)
     }
@@ -236,7 +267,9 @@ const currentLocaleJson = computed({
     }
   },
   set: (value: string) => {
-    if (!editor.value) { return }
+    if (!editor.value) {
+      return
+    }
     try {
       const parsed = JSON.parse(value || '{}')
       if (
@@ -246,7 +279,9 @@ const currentLocaleJson = computed({
       ) {
         const prev = editor.value.locales ?? {}
         editor.value.locales = { ...prev, [currentLocale.value]: parsed }
-        if (editMode.value === 'table') { syncTableRowsFromLocale() }
+        if (editMode.value === 'table') {
+          syncTableRowsFromLocale()
+        }
       }
     }
     catch {
@@ -271,7 +306,9 @@ watch(
 
 async function save(): Promise<void> {
   if (activePanel.value === 'source') {
-    if (!applySourceTextToLocales()) { return }
+    if (!applySourceTextToLocales()) {
+      return
+    }
   }
   else {
     syncLocalesToSourceText()
@@ -344,8 +381,18 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="icon" variant="ghost" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="save">
-                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value"
+                aria-label="Сохранить"
+                @click="save"
+              >
+                <Loader2
+                  v-if="EndgeIDE.busy.value"
+                  class="size-4 animate-spin"
+                />
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -407,7 +454,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     <ScrollArea v-else class="flex-1 px-4 py-3">
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
-          <div class="font-semibold">Основное</div>
+          <div class="font-semibold">
+            Основное
+          </div>
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
             Активен

@@ -148,6 +148,14 @@ describe('ui editor SFC source projection', () => {
     expect(root.props).toMatchObject({ direction: 'row' })
   })
 
+  it('does not enable Flex wrapping for an explicit false boolean attribute', () => {
+    const projected = projectUIEditorDocumentFromSFC('<template><Flex wrap="false"><Text>A</Text><Text>B</Text></Flex></template>')
+
+    expect(projected.diagnostics).toEqual([])
+    const root = projected.document!.nodes[projected.document!.rootId]!
+    expect(root.props).toMatchObject({ wrap: false })
+  })
+
   it('patches only template content and preserves script and style', () => {
     const document = projectUIEditorDocumentFromSFC(SOURCE).document!
     const textId = document.nodes[document.rootId]!.children[0]!

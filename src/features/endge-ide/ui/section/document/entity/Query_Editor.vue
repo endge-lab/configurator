@@ -1,12 +1,23 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text, no-console */
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 
 import { Endge } from '@endge/core'
-import { Code2, Loader2, Play, RotateCcw, Save, TriangleAlert } from 'lucide-vue-next'
+import {
+  Code2,
+  Loader2,
+  Play,
+  RotateCcw,
+  Save,
+  Settings2,
+  TriangleAlert,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
@@ -24,8 +35,10 @@ const tabs = EndgeIDE.tabs
 const editor = computed<RQueryEditor | null>(
   () => tabs.documentEditorModel.value as RQueryEditor | null,
 )
-const activeTab = ref<'source' | 'diagnostics'>('source')
-const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('query', editor.value))
+const activeTab = ref<'general' | 'source' | 'diagnostics'>('source')
+const diagnosticsEntityRef = computed(() =>
+  createEditorDiagnosticsEntityRef('query', editor.value),
+)
 const runQueryLoading = ref(false)
 
 async function save(): Promise<void> {
@@ -59,7 +72,9 @@ async function runQuery(): Promise<void> {
       unknown
     >
     console.groupCollapsed(`[Query_Editor] Outputs: ${query.identity}`)
-    for (const [key, value] of Object.entries(outputs)) { console.log(key, value) }
+    for (const [key, value] of Object.entries(outputs)) {
+      console.log(key, value)
+    }
     console.log('all', outputs)
     console.groupEnd()
     toast.success('Запрос выполнен', {
@@ -81,7 +96,9 @@ async function buildQueryArtifact(
   idOrIdentity: string | number,
 ): Promise<void> {
   const query = Endge.domain.getQuery(idOrIdentity)
-  if (!query) { throw new Error(`Query not found: "${idOrIdentity}".`) }
+  if (!query) {
+    throw new Error(`Query not found: "${idOrIdentity}".`)
+  }
 
   Endge.compiler.buildQuery(query)
 
@@ -119,7 +136,31 @@ async function buildQueryArtifact(
                 variant="ghost"
                 size="icon"
                 class="h-7 w-7"
-                :class="activeTab === 'source' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Основное</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'source'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
                 aria-label="Source"
                 @click="activeTab = 'source'"
               >
@@ -135,7 +176,11 @@ async function buildQueryArtifact(
                 variant="ghost"
                 size="icon"
                 class="h-7 w-7"
-                :class="activeTab === 'diagnostics' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
                 aria-label="Диагностика"
                 @click="activeTab = 'diagnostics'"
               >
@@ -171,8 +216,18 @@ async function buildQueryArtifact(
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
-                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Сохранить"
+                :disabled="EndgeIDE.busy.value"
+                @click="save"
+              >
+                <Loader2
+                  v-if="EndgeIDE.busy.value"
+                  class="size-4 animate-spin"
+                />
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -184,7 +239,10 @@ async function buildQueryArtifact(
 
     <template #right>
       <TooltipProvider>
-        <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <div
+          v-if="activeTab === 'source'"
+          class="flex items-center rounded-md border bg-muted/40 p-0.5"
+        >
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -204,7 +262,37 @@ async function buildQueryArtifact(
     </template>
 
     <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div v-if="activeTab === 'source'" class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+        <div class="max-w-2xl space-y-5">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="query-name">Display name</Label>
+              <Input id="query-name" v-model="editor.name" />
+            </div>
+            <div class="space-y-2">
+              <Label for="query-identity">Identity</Label>
+              <Input
+                id="query-identity"
+                v-model="editor.identity"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="max-w-xs space-y-2">
+            <Label for="query-source-version">Source version</Label>
+            <Input
+              id="query-source-version"
+              :model-value="editor.sourceVersion"
+              type="number"
+              disabled
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        v-else-if="activeTab === 'source'"
+        class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0"
+      >
         <QuerySourceEditor
           :model-value="editor.source"
           class="min-h-0 flex-1"

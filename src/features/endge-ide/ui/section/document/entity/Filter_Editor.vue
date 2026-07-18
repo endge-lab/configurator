@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor'
 
 import { Endge } from '@endge/core'
@@ -13,7 +14,6 @@ import {
   Save,
   Settings2,
   TriangleAlert,
-  WandSparkles,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -30,7 +30,6 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
-import FilterLegacyAssistant from '@/features/endge-ide/ui/components/FilterLegacyAssistant.vue'
 import FilterLegacyFieldsEditor from '@/features/endge-ide/ui/components/FilterLegacyFieldsEditor.vue'
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -51,7 +50,9 @@ interface FilterOutputState {
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RFilterEditor | null,
 )
-const activeTab = ref<'general' | 'ui' | 'legacy-assistant' | 'source' | 'artifact' | 'diagnostics'>('source')
+const activeTab = ref<'general' | 'ui' | 'source' | 'artifact' | 'diagnostics'>(
+  'source',
+)
 const sourceEditorRef = ref<FilterSourceEditorHandle | null>(null)
 const outputState = ref<FilterOutputState>({
   available: false,
@@ -62,7 +63,6 @@ const tabGroups = [
   [
     { value: 'general', label: 'Основное', icon: Settings2 },
     { value: 'ui', label: 'UI', icon: LayoutPanelTop },
-    { value: 'legacy-assistant', label: 'Legacy help', icon: WandSparkles },
     { value: 'source', label: 'Source', icon: Code2 },
   ],
   [
@@ -76,7 +76,9 @@ const compiled = computed(() =>
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),
 )
-const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('filter', editor.value))
+const diagnosticsEntityRef = computed(() =>
+  createEditorDiagnosticsEntityRef('filter', editor.value),
+)
 
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
@@ -128,8 +130,18 @@ function updateOutputState(value: FilterOutputState): void {
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="EndgeIDE.tabs.save()">
-                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value"
+                aria-label="Сохранить"
+                @click="EndgeIDE.tabs.save()"
+              >
+                <Loader2
+                  v-if="EndgeIDE.busy.value"
+                  class="size-4 animate-spin"
+                />
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -160,7 +172,9 @@ function updateOutputState(value: FilterOutputState): void {
 
         <template v-if="activeTab === 'source' && outputState.available">
           <Separator orientation="vertical" class="mx-0.5 h-5" />
-          <div class="filter-output-actions flex items-center rounded-md border bg-muted/40 p-0.5">
+          <div
+            class="filter-output-actions flex items-center rounded-md border bg-muted/40 p-0.5"
+          >
             <SourceJsonTreeControls
               v-if="!outputState.collapsed"
               :copy-value="outputState.data"
@@ -173,14 +187,20 @@ function updateOutputState(value: FilterOutputState): void {
                   variant="ghost"
                   size="icon"
                   class="h-7 w-7"
-                  :aria-label="outputState.collapsed ? 'Показать output' : 'Скрыть output'"
+                  :aria-label="
+                    outputState.collapsed ? 'Показать output' : 'Скрыть output'
+                  "
                   @click="sourceEditorRef?.toggleOutput()"
                 >
                   <PanelRightOpen v-if="outputState.collapsed" class="size-4" />
                   <PanelRightClose v-else class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{{ outputState.collapsed ? 'Показать output' : 'Скрыть output' }}</TooltipContent>
+              <TooltipContent>
+                {{
+                  outputState.collapsed ? "Показать output" : "Скрыть output"
+                }}
+              </TooltipContent>
             </Tooltip>
           </div>
         </template>
@@ -192,11 +212,19 @@ function updateOutputState(value: FilterOutputState): void {
         <div class="max-w-xl space-y-5">
           <div class="space-y-2">
             <Label for="filter-identity">Identity</Label>
-            <Input id="filter-identity" v-model="editor.identity" placeholder="schedule-filter" />
+            <Input
+              id="filter-identity"
+              v-model="editor.identity"
+              placeholder="schedule-filter"
+            />
           </div>
           <div class="space-y-2">
             <Label for="filter-display-name">Название</Label>
-            <Input id="filter-display-name" v-model="editor.displayName" placeholder="Фильтр расписания" />
+            <Input
+              id="filter-display-name"
+              v-model="editor.displayName"
+              placeholder="Фильтр расписания"
+            />
           </div>
         </div>
       </div>
@@ -209,10 +237,6 @@ function updateOutputState(value: FilterOutputState): void {
         </div>
         <FilterLegacyFieldsEditor class="min-h-0 flex-1" />
       </div>
-      <FilterLegacyAssistant
-        v-else-if="activeTab === 'legacy-assistant'"
-        class="h-full min-h-0"
-      />
       <FilterSourceEditor
         v-else-if="activeTab === 'source'"
         ref="sourceEditorRef"

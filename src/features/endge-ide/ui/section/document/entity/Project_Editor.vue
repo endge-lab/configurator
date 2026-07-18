@@ -1,49 +1,79 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
-import { Briefcase, Play } from 'lucide-vue-next'
+import {
+  Loader2,
+  Map,
+  Play,
+  Save,
+  Settings2,
+  SlidersHorizontal,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
 }>()
 
 const domainStore = useDomainStore()
-const editor = computed<RProjectEditor | null>(() => props.tabContext?.editor ?? null)
-const tab = ref<'project' | 'navigation' | 'configuration'>('project')
+const editor = computed<RProjectEditor | null>(
+  () => props.tabContext?.editor ?? null,
+)
+const activeTab = ref<'general' | 'navigation' | 'configuration'>('general')
+const launchLoading = ref(false)
+const tabButtons = [
+  { value: 'general', icon: Settings2, label: 'Основное' },
+  { value: 'navigation', icon: Map, label: 'Навигация' },
+  { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
+] as const
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
-  set: value => { if (editor.value) editor.value.configuration = value },
+  set: (value) => {
+    if (editor.value) {
+      editor.value.configuration = value
+    }
+  },
 })
-const upstreamConfiguration = computed(() => Endge.configuration.resolveUpstream('project'))
+const upstreamConfiguration = computed(() =>
+  Endge.configuration.resolveUpstream('project'),
+)
 
 const SELECT_NONE = '__none__'
 
 function normalizeRelationId(value: unknown): number | null {
-  if (value == null)
+  if (value == null) {
     return null
-  if (typeof value === 'number')
+  }
+  if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null
+  }
   const text = String(value).trim()
-  if (!text)
+  if (!text) {
     return null
+  }
   const id = Number(text)
   return Number.isFinite(id) ? id : null
 }
@@ -52,10 +82,25 @@ const navigationOptions = computed(() => {
   const list = domainStore.navigations ?? []
   return [
     { value: SELECT_NONE, label: '- не выбран -' },
-    ...list.map((n: { id?: string | number; identity?: string; displayName?: string; name?: string }) => ({
-      value: n?.id != null ? String(n.id) : '',
-      label: (n?.displayName ?? n?.name ?? n?.identity ?? String(n?.id ?? '')).trim() || String(n?.id ?? ''),
-    })).filter((o: { value: string }) => o.value.length > 0),
+    ...list
+      .map(
+        (n: {
+          id?: string | number
+          identity?: string
+          displayName?: string
+          name?: string
+        }) => ({
+          value: n?.id != null ? String(n.id) : '',
+          label:
+            (
+              n?.displayName
+              ?? n?.name
+              ?? n?.identity
+              ?? String(n?.id ?? '')
+            ).trim() || String(n?.id ?? ''),
+        }),
+      )
+      .filter((o: { value: string }) => o.value.length > 0),
   ]
 })
 
@@ -64,13 +109,19 @@ function navigationIdForSelect(): string {
   return v != null ? String(v) : SELECT_NONE
 }
 
-function onNavigationSelect(value: string): void {
-  if (!editor.value) return
-  editor.value.navigationId = value === SELECT_NONE ? null : normalizeRelationId(value)
+function onNavigationSelect(value: string | string[] | null): void {
+  if (!editor.value) {
+    return
+  }
+  const selected = Array.isArray(value) ? value[0] : value
+  editor.value.navigationId
+    = selected === SELECT_NONE ? null : normalizeRelationId(selected)
 }
 
 function onNavigationDrop(id: string | number): void {
-  if (!editor.value) return
+  if (!editor.value) {
+    return
+  }
   editor.value.navigationId = normalizeRelationId(id)
 }
 
@@ -78,127 +129,194 @@ async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
-function launchRuntimePreview(): void {
-  void EndgeIDE.runtimePreview.launchEditor(editor.value)
+async function launchRuntimePreview(): Promise<void> {
+  if (!editor.value) {
+    return
+  }
+  launchLoading.value = true
+  try {
+    await EndgeIDE.runtimePreview.launchEditor(editor.value)
+  }
+  finally {
+    launchLoading.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col min-h-0">
-    <div class="p-3 border-b flex items-center gap-3 shrink-0">
-      <div class="size-9 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0">
-        <Briefcase class="size-4 text-sky-500" />
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="text-lg font-semibold truncate">
-          Проект - {{ editor?.displayName ?? '-' }}
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-for="item in tabButtons" :key="item.value">
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === item.value
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                :aria-label="item.label"
+                @click="activeTab = item.value"
+              >
+                <component :is="item.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ item.label }}</TooltipContent>
+          </Tooltip>
         </div>
-        <div class="text-xs text-muted-foreground truncate">
-          id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Запустить Runtime Preview"
+                :disabled="!editor.identity || launchLoading"
+                @click="launchRuntimePreview"
+              >
+                <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Запустить Runtime Preview проекта (⌘/Ctrl+Enter)
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        title="Запустить Runtime Preview проекта (⌘/Ctrl+Enter)"
-        :disabled="!editor?.identity"
-        @click="launchRuntimePreview"
-      >
-        <Play class="size-4" />
-      </Button>
-      <SaveDocumentButton :loading="isBusy" @click="save" />
-    </div>
 
-    <div class="flex-1 min-h-0 p-4">
-        <Card class="h-full min-h-0 gap-0 overflow-hidden py-0">
-          <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
-            <div class="border-b px-3 py-2">
-              <TabsList class="grid w-full grid-cols-3">
-                <TabsTrigger value="project">Основное</TabsTrigger>
-                <TabsTrigger value="navigation">Навигация</TabsTrigger>
-                <TabsTrigger value="configuration">Конфигурация</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="project" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
-              <ScrollArea class="h-full">
-                <div class="p-4 space-y-4">
-                  <div class="space-y-2">
-                    <Label>Идентификатор</Label>
-                    <Input v-model="editor!.identity" placeholder="my-project" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label>Название</Label>
-                    <Input v-model="editor!.displayName" placeholder="Мой проект" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label>Slug (URL)</Label>
-                    <Input :model-value="editor?.slug ?? ''" placeholder="my-project" @update:model-value="(v) => editor && (editor.slug = v || null)" />
-                  </div>
-                  <div class="space-y-2">
-                    <Label>Описание</Label>
-                    <textarea
-                      :value="editor?.description ?? ''"
-                      class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Краткое описание проекта"
-                      @input="(e) => editor && (editor.description = (e.target as HTMLTextAreaElement).value || null)"
-                    />
-                  </div>
-                  <div class="space-y-2">
-                    <Label>Порядок сортировки</Label>
-                    <Input
-                      type="number"
-                      :model-value="editor?.order ?? ''"
-                      placeholder="0"
-                      @update:model-value="(v) => editor && (editor.order = v === '' || v == null ? null : Number(v))"
-                    />
-                  </div>
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="navigation" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
-              <ScrollArea class="h-full">
-                <div class="p-4 space-y-4">
-                  <div class="space-y-2">
-                    <Label>Навигация проекта</Label>
-                    <DomainEntityDropTarget
-                      :accept-section-types="[DomainSectionType.Navigation]"
-                      @update:model-value="onNavigationDrop"
-                    >
-                      <div class="flex items-center gap-1">
-                        <SearchableSelect
-                          :model-value="navigationIdForSelect()"
-                          :options="navigationOptions"
-                          placeholder="Выберите навигацию"
-                          trigger-class="flex-1 min-w-0 h-9"
-                          @update:model-value="onNavigationSelect"
-                        />
-                        <OpenEntityButton
-                          :entity-id="editor?.navigationId ?? null"
-                          :section-type="DomainSectionType.Navigation"
-                        />
-                      </div>
-                    </DomainEntityDropTarget>
-                    <p class="text-xs text-muted-foreground">Главное меню / навигация приложения проекта.</p>
-                  </div>
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="configuration" class="flex-1 min-h-0 overflow-hidden p-0 m-0 data-[state=inactive]:hidden">
-              <div class="h-full min-h-0 p-4">
-                <ConfigurationSettingsEditor
-                  v-model="configuration"
-                  variant="contribution"
-                  :upstream="upstreamConfiguration"
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Сохранить"
+                :disabled="EndgeIDE.busy.value"
+                @click="save"
+              >
+                <Loader2
+                  v-if="EndgeIDE.busy.value"
+                  class="size-4 animate-spin"
                 />
-              </div>
-            </TabsContent>
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
 
-          </Tabs>
-        </Card>
+    <ScrollArea v-if="activeTab === 'general'" class="min-h-0 flex-1">
+      <div class="mx-auto max-w-2xl space-y-4 p-6">
+        <div class="space-y-2">
+          <Label for="project-identity">Identity</Label>
+          <Input
+            id="project-identity"
+            v-model="editor.identity"
+            placeholder="my-project"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label for="project-display-name">Display name</Label>
+          <Input
+            id="project-display-name"
+            v-model="editor.displayName"
+            placeholder="Мой проект"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label>Slug (URL)</Label>
+          <Input
+            :model-value="editor?.slug ?? ''"
+            placeholder="my-project"
+            @update:model-value="
+              (value) =>
+                editor && (editor.slug = value == null ? null : String(value))
+            "
+          />
+        </div>
+        <div class="space-y-2">
+          <Label>Описание</Label>
+          <Textarea
+            :model-value="editor.description ?? ''"
+            :rows="4"
+            placeholder="Краткое описание проекта"
+            @update:model-value="
+              (value) =>
+                editor && (editor.description = String(value || '') || null)
+            "
+          />
+        </div>
+        <div class="space-y-2">
+          <Label>Порядок сортировки</Label>
+          <Input
+            type="number"
+            :model-value="editor?.order ?? ''"
+            placeholder="0"
+            @update:model-value="
+              (v) =>
+                editor
+                && (editor.order = v === '' || v == null ? null : Number(v))
+            "
+          />
+        </div>
+      </div>
+    </ScrollArea>
+
+    <ScrollArea v-else-if="activeTab === 'navigation'" class="min-h-0 flex-1">
+      <div class="mx-auto max-w-2xl space-y-4 p-6">
+        <div class="space-y-2">
+          <Label>Навигация проекта</Label>
+          <DomainEntityDropTarget
+            :accept-section-types="[DomainSectionType.Navigation]"
+            @update:model-value="onNavigationDrop"
+          >
+            <div class="flex items-center gap-1">
+              <SearchableSelect
+                :model-value="navigationIdForSelect()"
+                :options="navigationOptions"
+                placeholder="Выберите навигацию"
+                trigger-class="flex-1 min-w-0 h-9"
+                @update:model-value="onNavigationSelect"
+              />
+              <OpenEntityButton
+                :entity-id="editor?.navigationId ?? null"
+                :section-type="DomainSectionType.Navigation"
+              />
+            </div>
+          </DomainEntityDropTarget>
+          <p class="text-xs text-muted-foreground">
+            Главное меню / навигация приложения проекта.
+          </p>
+        </div>
+      </div>
+    </ScrollArea>
+
+    <div v-else class="min-h-0 flex-1 overflow-auto p-6">
+      <div class="mx-auto h-full max-w-3xl">
+        <ConfigurationSettingsEditor
+          v-model="configuration"
+          variant="contribution"
+          :upstream="upstreamConfiguration"
+        />
+      </div>
     </div>
-  </div>
+  </SourceDocumentEditorShell>
 </template>
