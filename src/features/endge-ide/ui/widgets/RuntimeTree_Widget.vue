@@ -57,7 +57,10 @@ function closeFromOutside(event: MouseEvent): void {
 }
 
 function closeFromEscape(event: KeyboardEvent): void {
-  if (event.key === 'Escape') { closeContextMenu() }
+  if (event.key !== 'Escape' || !contextMenu.value) { return }
+  event.preventDefault()
+  event.stopPropagation()
+  closeContextMenu()
 }
 
 async function run(operation: (menu: RuntimeContextMenu) => Promise<void>): Promise<void> {

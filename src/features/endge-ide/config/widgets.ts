@@ -5,17 +5,13 @@ import { markRaw } from 'vue'
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
-import CompositionPreview_Widget from '@/features/endge-ide/ui/widgets/CompositionPreview_Widget.vue'
-import Demonstration_Widget from '@/features/endge-ide/ui/widgets/Demonstration_Widget.vue'
 import Domain_Widget from '@/features/endge-ide/ui/widgets/Domain_Widget.vue'
 import Errors_Widget from '@/features/endge-ide/ui/widgets/Errors_Widget.vue'
 import Events_Widget from '@/features/endge-ide/ui/widgets/Events_Widget.vue'
-import Help_Widget from '@/features/endge-ide/ui/widgets/Help_Widget.vue'
 import Inspector_Widget from '@/features/endge-ide/ui/widgets/Inspector_Widget.vue'
 import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
-import SFCPreview_Widget from '@/features/endge-ide/ui/widgets/SFCPreview_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
 import Versions_Widget from '@/features/endge-ide/ui/widgets/Versions_Widget.vue'
 
@@ -212,24 +208,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     },
   },
   {
-    id: 'help',
-    title: 'Документация',
-    icon: 'LifeBuoy',
-    content: 'component',
-    defaultComponent: markRaw(Help_Widget),
-    singleton: true,
-    defaultPosition: 'right',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 300,
-      maxWidth: 600,
-      minHeight: 400,
-      maxHeight: 800,
-      defaultWidth: 400,
-      defaultHeight: 600,
-    },
-  },
-  {
     id: 'agent',
     title: 'Агент',
     icon: 'Bot',
@@ -245,60 +223,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       maxHeight: 800,
       defaultWidth: 420,
       defaultHeight: 560,
-    },
-  },
-  {
-    id: 'sfc-preview',
-    title: 'SFC preview',
-    icon: 'Play',
-    content: 'component',
-    defaultComponent: markRaw(SFCPreview_Widget),
-    singleton: true,
-    defaultPosition: 'floating',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 420,
-      maxWidth: 1920,
-      minHeight: 260,
-      maxHeight: 1200,
-      defaultWidth: 980,
-      defaultHeight: 560,
-    },
-  },
-  {
-    id: 'composition-preview',
-    title: 'Composition preview',
-    icon: 'Play',
-    content: 'component',
-    defaultComponent: markRaw(CompositionPreview_Widget),
-    singleton: true,
-    defaultPosition: 'floating',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 420,
-      maxWidth: 1920,
-      minHeight: 260,
-      maxHeight: 1200,
-      defaultWidth: 980,
-      defaultHeight: 640,
-    },
-  },
-  {
-    id: 'demonstration',
-    title: 'Демонстрация',
-    icon: 'ScanEye',
-    content: 'component',
-    defaultComponent: markRaw(Demonstration_Widget),
-    singleton: true,
-    defaultPosition: 'floating',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 320,
-      maxWidth: 1920,
-      minHeight: 200,
-      maxHeight: 1200,
-      defaultWidth: 500,
-      defaultHeight: 320,
     },
   },
 ]

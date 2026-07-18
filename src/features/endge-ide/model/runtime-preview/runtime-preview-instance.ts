@@ -1,6 +1,7 @@
 /* eslint-disable style/max-statements-per-line, ts/naming-convention */
 import type {
   RuntimePreviewCompositionAddress,
+  RuntimePreviewDraft,
   RuntimePreviewLifecycleState,
   RuntimePreviewRenderable,
   RuntimePreviewTarget,
@@ -12,21 +13,37 @@ import type {
   ComponentSFCRuntimeHost,
   CompositionRuntimeHost,
   CompositionSession,
+  EndgeStyleSheetArtifact,
+  ProgramArtifact,
   ProjectRuntimeSession,
   RuntimeHost,
   StoreRuntimeHost,
 } from '@endge/core'
 
-import { Endge } from '@endge/core'
+import { Endge, RComponentSFC } from '@endge/core'
+import { materializeEndgeCSSForDOM } from '@endge/vue'
 import { computed, ref, shallowRef } from 'vue'
 
 import { runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import {
+  createPreviewComposition,
+  ensureCompositionRuntimeArtifacts,
+  resolvePreviewStoreRuntimes,
+} from '@/features/endge-ide/model/composition-preview/composition-preview-state'
 import {
   destroyComponentPreviewContext,
   prepareComponentPreviewContext,
   resolveComponentPreviewInput,
 } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import { buildRuntimePreviewTree } from '@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder'
+import {
+  createPreviewArtifact,
+  ensurePreviewPortArtifacts,
+} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
+import {
+  createPreviewStore,
+  createPreviewStoreArtifact,
+} from '@/features/endge-ide/model/store-preview/store-preview-state'
 
 /** Owns one explicitly launched preview root and all runtime resources below it. */
 export class RuntimePreviewInstance {
@@ -50,6 +67,8 @@ export class RuntimePreviewInstance {
   private _component: ComponentSFCRuntimeHost | null = null
   private _componentContext: ComponentPreviewContext | null = null
   private _store: StoreRuntimeHost | null = null
+  private _draft: RuntimePreviewDraft | null = null
+  private _draftStyleElement: HTMLStyleElement | null = null
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
 
@@ -61,7 +80,8 @@ export class RuntimePreviewInstance {
   }
 
   /** Replaces any previous generation of this document with a fresh runtime tree. */
-  public launch(): Promise<void> {
+  public launch(draft?: RuntimePreviewDraft): Promise<void> {
+    if (arguments.length > 0) { this._draft = draft ?? null }
     const generation = ++this._generation
     const pending = this._queue
       .catch(() => undefined)
@@ -84,13 +104,15 @@ export class RuntimePreviewInstance {
         for (const handle of this._project.compositions.getAll()) { await handle.activate() }
       }
       else if (this.target.entityType === 'composition') {
-        this._composition = await Endge.runtime.composition.mount(this.target.identity)
+        this._composition = this._draft
+          ? await this.mountDraftComposition(this._draft)
+          : await Endge.runtime.composition.mount(this.target.identity)
       }
       else if (this.target.entityType === 'component-sfc') {
-        this._component = await this.mountComponent(this.target.identity)
+        this._component = await this.mountComponent(this.target.identity, this._draft)
       }
       else {
-        this._store = await this.mountStore(this.target.identity)
+        this._store = await this.mountStore(this.target.identity, this._draft)
       }
       if (generation !== this._generation) {
         await this.disposeRuntime()
@@ -260,11 +282,24 @@ export class RuntimePreviewInstance {
     await this._queue.catch(() => undefined)
   }
 
-  private async mountComponent(identity: string): Promise<ComponentSFCRuntimeHost> {
-    const model = Endge.domain.getComponentSFC(identity)
-    const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
+  private async mountComponent(identity: string, draft: RuntimePreviewDraft | null): Promise<ComponentSFCRuntimeHost> {
+    const model = draft
+      ? RComponentSFC.fromPlain({
+          id: draft.id ?? identity,
+          identity,
+          tag: draft.tag,
+          name: draft.name || draft.displayName || identity,
+          displayName: draft.displayName || draft.name || identity,
+          source: draft.source,
+        })
+      : Endge.domain.getComponentSFC(identity)
+    const artifact = draft && model
+      ? createPreviewArtifact(model)
+      : Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
     if (!model || !artifact || artifact.status === 'error') { throw new Error(`[RuntimePreview] Component SFC "${identity}" is unavailable.`) }
     const previewProps = artifact.payload.previewProps ?? {}
+    ensurePreviewPortArtifacts(artifact.payload)
+    this.applyDraftStyle(draft ? artifact.payload.ir?.style ?? null : null)
     const context = await prepareComponentPreviewContext(
       artifact.payload.previewOptions,
       previewProps,
@@ -282,6 +317,7 @@ export class RuntimePreviewInstance {
       )
       const runtime = Endge.runtime.execute(model, {
         parent: context?.host ?? null,
+        ...(draft ? { artifactReader: createOverlayArtifactReader(artifact) } : {}),
         persistence: 'disabled',
         meta: { mode: 'debug-preview', target: 'dom', input },
       }) as ComponentSFCRuntimeHost | null
@@ -295,16 +331,67 @@ export class RuntimePreviewInstance {
     }
   }
 
-  private async mountStore(identity: string): Promise<StoreRuntimeHost> {
-    const model = Endge.domain.getStore(identity)
-    const artifact = Endge.program.getStoreArtifact(identity)
+  private async mountStore(identity: string, draft: RuntimePreviewDraft | null): Promise<StoreRuntimeHost> {
+    const model = draft ? createPreviewStore(draft, identity) : Endge.domain.getStore(identity)
+    const artifact = draft && model ? createPreviewStoreArtifact(model) : Endge.program.getStoreArtifact(identity)
     if (!model || !artifact || artifact.status === 'error') { throw new Error(`[RuntimePreview] Store "${identity}" is unavailable.`) }
     const runtime = Endge.runtime.execute(model, {
+      ...(draft ? { artifactReader: createOverlayArtifactReader(artifact) } : {}),
       persistence: 'disabled',
       meta: { mode: 'debug-preview' },
     }) as StoreRuntimeHost | null
     if (!runtime) { throw new Error(`[RuntimePreview] Store "${identity}" cannot be mounted.`) }
     return runtime
+  }
+
+  private async mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession> {
+    await Endge.build()
+    ensureCompositionRuntimeArtifacts(draft.source, new Set([this.target.identity]))
+    const model = createPreviewComposition({ ...draft, identity: this.target.identity })
+    const artifact = Endge.compiler.buildComposition(model)
+    if (artifact.status === 'error') {
+      throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
+        ?? 'Composition source содержит ошибки.')
+    }
+    const host = Endge.runtime.execute(model, {
+      persistence: 'disabled',
+      meta: {
+        mode: 'debug-preview',
+        dataRuntimes: resolvePreviewStoreRuntimes(artifact.payload.data),
+      },
+    }) as CompositionRuntimeHost | null
+    if (!host) { throw new Error(`[RuntimePreview] Composition "${this.target.identity}" cannot be mounted.`) }
+    try {
+      await host.mountGraph()
+    }
+    catch (error) {
+      await Endge.runtime.destroyRuntimeTreeAsync(host.id)
+      throw error
+    }
+    let mounted = true
+    return {
+      id: host.id,
+      host,
+      outputs: host.getOutputs(),
+      output: <T = unknown>(name: string) => host.getOutput(name) as T | undefined,
+      unmount: async () => {
+        if (!mounted) { return }
+        mounted = false
+        await host.getScope('scope_default')?.dispose()
+        await Endge.runtime.destroyRuntimeTreeAsync(host.id)
+      },
+    }
+  }
+
+  private applyDraftStyle(style: EndgeStyleSheetArtifact | null): void {
+    this._draftStyleElement?.remove()
+    this._draftStyleElement = null
+    if (!style || typeof document === 'undefined') { return }
+    const element = document.createElement('style')
+    element.dataset.endgeRuntimePreviewStyles = this.key
+    element.textContent = materializeEndgeCSSForDOM([style]).css
+    document.head.append(element)
+    this._draftStyleElement = element
   }
 
   private async activateNode(node: RuntimePreviewTreeNode): Promise<void> {
@@ -485,12 +572,24 @@ export class RuntimePreviewInstance {
     this._component = null
     this._componentContext = null
     this._store = null
+    this._draftStyleElement?.remove()
+    this._draftStyleElement = null
     this.renderables.value = []
     if (project) { await project.unmount().catch(() => {}) }
     if (composition) { await composition.unmount().catch(() => {}) }
     if (componentContext) { await destroyComponentPreviewContext(componentContext).catch(() => {}) }
     if (component && Endge.runtime.getRuntimeById(component.id)) { await Endge.runtime.destroyRuntimeTreeAsync(component.id).catch(() => {}) }
     if (store && Endge.runtime.getRuntimeById(store.id)) { await Endge.runtime.destroyRuntimeTreeAsync(store.id).catch(() => {}) }
+  }
+}
+
+function createOverlayArtifactReader(root: ProgramArtifact<unknown>) {
+  return {
+    getArtifact: <TPayload>(entityType: string, id: string | number) => {
+      const matchesRoot = entityType === root.ref.entityType
+        && (String(id) === String(root.ref.id) || String(id) === root.ref.identity)
+      return (matchesRoot ? root : Endge.program.getArtifact(entityType as any, id)) as ProgramArtifact<TPayload> | null
+    },
   }
 }
 

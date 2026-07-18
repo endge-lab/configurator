@@ -75,7 +75,7 @@ async function disposeStorePreviewRuntime(): Promise<void> {
   }
 }
 
-function createPreviewStore(input: StorePreviewLaunchInput, identity: string): RStore {
+export function createPreviewStore(input: StorePreviewLaunchInput, identity: string): RStore {
   const model = new RStore()
   model.id = (input.id ?? `${identity}-preview-model`) as any
   model.identity = identity
@@ -86,7 +86,7 @@ function createPreviewStore(input: StorePreviewLaunchInput, identity: string): R
   return model
 }
 
-function createPreviewStoreArtifact(model: RStore): ProgramArtifact<StoreSourceArtifact> {
+export function createPreviewStoreArtifact(model: RStore): ProgramArtifact<StoreSourceArtifact> {
   const result = Endge.source.compile('store', model.source)
   const payload = result.artifact as StoreSourceArtifact | undefined
   const ref = { entityType: 'store' as const, id: model.id, identity: model.identity }

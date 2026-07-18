@@ -9,20 +9,16 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import MarkdownViewer from '@/features/endge-ide/ui/components/MarkdownViewer.vue'
 
 interface DiagramMeta {
   title: string
   description: string
-  docId: string
   kind: 'federation' | 'module'
 }
 
 interface ModuleSpec {
   title: string
   description: string
-  docId: string
 }
 
 interface ArchitectureFlowSection {
@@ -47,53 +43,50 @@ const federationMetaByNodeId: Record<string, DiagramMeta> = {
   'f-endge': {
     title: 'Федерация ENDGE',
     description: 'Статическая федерация ядра. Регистрирует core-модули через configureFederation и предоставляет единый API Endge.*.',
-    docId: 'submodules-federation',
     kind: 'federation',
   },
   'f-endge-vue': {
     title: 'Федерация ENDGE VUE',
     description: 'Интеграционный слой @endge/vue: привязка рендеров и реактивных фаз к ядру Endge.',
-    docId: 'submodules-endge-vue',
     kind: 'federation',
   },
   'f-appcore': {
     title: 'APPCORE',
     description: 'Прикладная точка запуска: создает boot context, инициализирует Endge и подключает EndgeVue.',
-    docId: 'submodules-app-core',
     kind: 'federation',
   },
 }
 
 const endgeModules: ModuleSpec[] = [
-  { title: 'context', description: 'Текущий проект, среда и локаль.', docId: 'submodules-context' },
-  { title: 'diagnostics', description: 'Системная диагностика, мониторинг и structured records.', docId: 'submodules-diagnostics' },
-  { title: 'debug', description: 'Трассировка операций и диагностика.', docId: 'submodules-debug' },
-  { title: 'domain', description: 'Доменная модель и CRUD сущностей.', docId: 'submodules-domain' },
-  { title: 'vocabs', description: 'Загрузка словарей по namespace.', docId: 'submodules-vocabs' },
-  { title: 'runtime', description: 'Выполнение runtime-фаз и вычислений.', docId: 'submodules-runtime' },
-  { title: 'vars', description: 'Переменные и интерполяции.', docId: 'submodules-vars' },
-  { title: 'query', description: 'Единая точка запуска запросов.', docId: 'submodules-query' },
-  { title: 'auth', description: 'Авторизация и токены.', docId: 'submodules-auth' },
-  { title: 'schema', description: 'Слой хранения схемы/документов.', docId: 'submodules-schema' },
-  { title: 'flow', description: 'Движок исполнения действий.', docId: 'submodules-flow' },
-  { title: 'updates', description: 'Обновления и синхронизация состояния.', docId: 'submodules-updates' },
-  { title: 'events', description: 'Событийная шина.', docId: 'submodules-events' },
-  { title: 'sse', description: 'Server-Sent Events канал.', docId: 'submodules-sse' },
-  { title: 'ui', description: 'UI-состояние и утилиты интерфейса.', docId: 'submodules-ui' },
-  { title: 'bind', description: 'Программная подмена кода у converter/action/runtime step.', docId: 'submodules-bind' },
-  { title: 'console', description: 'Команды dev-консоли.', docId: 'submodules-console' },
-  { title: 'runtimeDebugger', description: 'Инструменты runtime-debugger.', docId: 'submodules-runtime-debugger' },
-  { title: 'styles', description: 'Стили, CSS токены и применение style-документов.', docId: 'submodules-styles' },
+  { title: 'context', description: 'Текущий проект, среда и локаль.' },
+  { title: 'diagnostics', description: 'Системная диагностика, мониторинг и structured records.' },
+  { title: 'debug', description: 'Трассировка операций и диагностика.' },
+  { title: 'domain', description: 'Доменная модель и CRUD сущностей.' },
+  { title: 'vocabs', description: 'Загрузка словарей по namespace.' },
+  { title: 'runtime', description: 'Выполнение runtime-фаз и вычислений.' },
+  { title: 'vars', description: 'Переменные и интерполяции.' },
+  { title: 'query', description: 'Единая точка запуска запросов.' },
+  { title: 'auth', description: 'Авторизация и токены.' },
+  { title: 'schema', description: 'Слой хранения схемы/документов.' },
+  { title: 'flow', description: 'Движок исполнения действий.' },
+  { title: 'updates', description: 'Обновления и синхронизация состояния.' },
+  { title: 'events', description: 'Событийная шина.' },
+  { title: 'sse', description: 'Server-Sent Events канал.' },
+  { title: 'ui', description: 'UI-состояние и утилиты интерфейса.' },
+  { title: 'bind', description: 'Программная подмена кода у converter/action/runtime step.' },
+  { title: 'console', description: 'Команды dev-консоли.' },
+  { title: 'runtimeDebugger', description: 'Инструменты runtime-debugger.' },
+  { title: 'styles', description: 'Стили, CSS токены и применение style-документов.' },
 ]
 
 const endgeVueModules: ModuleSpec[] = [
-  { title: 'SFC adapter', description: 'Native Vue renderer adapter for ComponentSFC.', docId: 'submodules-endge-vue' },
-  { title: 'raph: watch phase', description: 'Фаза watch для синхронизации reactive ref с Raph.', docId: 'submodules-endge-vue' },
+  { title: 'SFC adapter', description: 'Native Vue renderer adapter for ComponentSFC.' },
+  { title: 'raph: watch phase', description: 'Фаза watch для синхронизации reactive ref с Raph.' },
 ]
 
 const appCoreModules: ModuleSpec[] = [
-  { title: 'boot: Endge', description: 'Запуск ядра через Endge.boot(ctx).', docId: 'submodules-app-core-bootstrap' },
-  { title: 'plugin: EndgeVue', description: 'Подключение слоя EndgeVue через Endge.use.', docId: 'submodules-app-core-integration' },
+  { title: 'boot: Endge', description: 'Запуск ядра через Endge.boot(ctx).' },
+  { title: 'plugin: EndgeVue', description: 'Подключение слоя EndgeVue через Endge.use.' },
 ]
 
 function createModuleNodes(
@@ -111,7 +104,6 @@ function createModuleNodes(
     metaByNodeId[id] = {
       title: module.title,
       description: module.description,
-      docId: module.docId,
       kind: 'module',
     }
     return {
@@ -245,20 +237,11 @@ const edges = ref<Edge[]>([
   },
 ])
 
-const docs = EndgeIDE.docs
 const selectedNodeId = ref<string | null>(null)
 const selectedMeta = computed<DiagramMeta | null>(() => {
   if (!selectedNodeId.value)
     return null
   return diagramMetaByNodeId[selectedNodeId.value] ?? null
-})
-
-const selectedDocId = computed(() => selectedMeta.value?.docId ?? null)
-const selectedDocFile = computed(() => {
-  if (!selectedDocId.value)
-    return null
-  const entry = docs.getEntryById(selectedDocId.value)
-  return entry?.file ?? null
 })
 
 const activeTab = ref<'federation' | 'communication' | 'events' | 'dispatch' | 'example' | 'landscape' | 'raph' | 'nova'>('federation')
@@ -403,7 +386,7 @@ const architectureSections: ArchitectureFlowSection[] = [
       'В текущем приложении чаще используется именно декларативный schema/rendering path, но для понимания движка важно видеть обе ветки вместе: scene runtime и schema pipeline.',
     ],
     nodes: [
-      createFlowNode('nova-ui', 'UI / Playground / Документация', 'Места, где Nova используется в приложении', 80, 80, 'source'),
+      createFlowNode('nova-ui', 'UI / Playground', 'Места, где Nova используется в приложении', 80, 80, 'source'),
       createFlowNode('nova-schema', 'NovaSchema / JSX / DSL', 'Декларативное описание canvas-примитивов', 620, 80, 'config'),
       createFlowNode('nova-runtime', 'NovaApp', 'Главный runtime-объект canvas-движка', 1180, 80, 'core'),
       createFlowNode('nova-events', 'NovaEvents', 'DOM events -> hit-test -> handlers', 1740, 80, 'runtime'),
@@ -433,13 +416,6 @@ const architectureSections: ArchitectureFlowSection[] = [
   },
 ]
 
-function openDocsByNodeId(nodeId: string): void {
-  const meta = diagramMetaByNodeId[nodeId]
-  if (!meta)
-    return
-  docs.selectEntry(meta.docId)
-}
-
 function onNodeClick(payload: unknown, maybeNode?: Node): void {
   const nodeFromPayloadObject = (
     payload
@@ -462,7 +438,6 @@ function onNodeClick(payload: unknown, maybeNode?: Node): void {
   if (!nodeId || !diagramMetaByNodeId[nodeId])
     return
   selectedNodeId.value = nodeId
-  openDocsByNodeId(nodeId)
 }
 </script>
 
@@ -531,11 +506,13 @@ function onNodeClick(payload: unknown, maybeNode?: Node): void {
 
           <div class="h-full min-h-0 flex flex-col gap-4">
             <div class="rounded-xl border bg-background flex-1 min-h-[320px] overflow-auto">
-              <div v-if="selectedDocFile" class="p-4">
+              <div v-if="selectedMeta" class="p-4">
                 <div class="mb-3 text-sm font-semibold">
-                  {{ selectedMeta?.title }}
+                  {{ selectedMeta.title }}
                 </div>
-                <MarkdownViewer :src="selectedDocFile" />
+                <p class="text-sm text-muted-foreground">
+                  {{ selectedMeta.description }}
+                </p>
               </div>
               <div v-else class="p-4 text-sm text-muted-foreground">
                 Выберите ноду на диаграмме.

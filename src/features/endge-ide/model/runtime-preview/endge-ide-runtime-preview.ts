@@ -1,7 +1,7 @@
 /* eslint-disable style/max-statements-per-line */
 import type {
+  RuntimePreviewLaunchRequest,
   RuntimePreviewLifecycleState,
-  RuntimePreviewTarget,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
@@ -9,11 +9,12 @@ import { Endge } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { showWidget } from '@/components/layouts/grid'
+import { getLayoutState, showWidget } from '@/components/layouts/grid'
 import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard'
 import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
+import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 
 /** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
 export class EndgeIDERuntimePreview {
@@ -49,13 +50,28 @@ export class EndgeIDERuntimePreview {
     void this.disposeAll()
   }
 
-  public async launch(rawTarget: RuntimePreviewTarget): Promise<boolean> {
+  public async launch(rawTarget: RuntimePreviewLaunchRequest): Promise<boolean> {
+    return this._launch(rawTarget, true)
+  }
+
+  /** Launches persisted document targets in selection order and reveals the tree once after the batch. */
+  public async launchAll(rawTargets: readonly RuntimePreviewLaunchRequest[]): Promise<number> {
+    const targets = [...new Map(rawTargets.map(target => [runtimePreviewKey(target), target])).values()]
+    let launched = 0
+    for (const target of targets) {
+      if (await this._launch(target, false)) { launched += 1 }
+    }
+    showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+    return launched
+  }
+
+  private async _launch(rawTarget: RuntimePreviewLaunchRequest, revealTree: boolean): Promise<boolean> {
     const identity = String(rawTarget.identity ?? '').trim()
     if (!identity) {
       toast.error('Невозможно запустить Runtime Preview', { description: 'У документа отсутствует identity.' })
       return false
     }
-    const target: RuntimePreviewTarget = { entityType: rawTarget.entityType, identity }
+    const target = { entityType: rawTarget.entityType, identity } as const
     const validation = validateRuntimePreviewContext(target)
     if (!validation.valid) {
       toast.error(validation.message ?? 'Runtime Preview недоступен', { description: validation.description })
@@ -70,9 +86,9 @@ export class EndgeIDERuntimePreview {
       this._syncEntries()
     }
     this.selectedEntryKey.value = key
-    showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+    if (revealTree) { showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) }
     try {
-      await instance.launch()
+      await instance.launch(rawTarget.draft)
       return true
     }
     catch (error) {
@@ -81,6 +97,24 @@ export class EndgeIDERuntimePreview {
       })
       return false
     }
+  }
+
+  /** Launches the active editor only when its document type has a runtime contract. */
+  public launchEditor(editor: unknown): Promise<boolean> {
+    const request = createRuntimePreviewLaunchRequest(editor)
+    return request ? this.launch(request) : Promise.resolve(false)
+  }
+
+  public canLaunchEditor(editor: unknown): boolean {
+    return createRuntimePreviewLaunchRequest(editor) != null
+  }
+
+  /** Escape navigation: leave Runtime Preview without stopping its runtimes. */
+  public returnToProject(): boolean {
+    const area = getLayoutState().widgets.value.areas.left
+    if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) { return false }
+    showWidget('project')
+    return true
   }
 
   public get(key: string | null): RuntimePreviewInstance | null {

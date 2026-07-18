@@ -145,7 +145,7 @@ function resolvePreviewIdentity(input: SFCPreviewLaunchInput): string {
   return String(source).trim() || 'draft'
 }
 
-function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
+export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentSFCProgramPayload> {
   const compiled = compileComponentSFC(model.source, {
     identity: model.identity,
     resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
@@ -211,7 +211,7 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
   return null
 }
 
-function ensurePreviewPortArtifacts(
+export function ensurePreviewPortArtifacts(
   payload: ComponentSFCProgramPayload,
   visited = new Set<string>(),
 ): void {

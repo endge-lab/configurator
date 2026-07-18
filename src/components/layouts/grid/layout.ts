@@ -337,6 +337,44 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
   persistedState.value = state
 }
 
+/** Removes a retired widget definition from persisted layout state. */
+export function removePersistedWidgetId(widgetId: string): void {
+  const id = String(widgetId ?? '').trim()
+  if (!id) {
+    return
+  }
+
+  const current = persistedState.value
+  const state: PersistedState = {
+    areas: {
+      left: { ...current.areas.left, order: [...current.areas.left.order] },
+      right: { ...current.areas.right, order: [...current.areas.right.order] },
+      bottom: { ...current.areas.bottom, order: [...current.areas.bottom.order] },
+      floating: {
+        order: { ...current.areas.floating.order },
+        states: { ...current.areas.floating.states },
+      },
+    },
+    definitionPositions: { ...current.definitionPositions },
+  }
+
+  for (const position of ['left', 'right', 'bottom'] as const) {
+    const area = state.areas[position]
+    area.order = area.order.filter(candidate => candidate !== id)
+    if (area.activeWidget === id) {
+      area.activeWidget = null
+    }
+    if (layoutState.widgets.areas[position].activeWidget === id) {
+      layoutState.widgets.areas[position].activeWidget = null
+    }
+  }
+
+  delete state.areas.floating.order[id]
+  delete state.areas.floating.states[id]
+  delete state.definitionPositions[id]
+  persistedState.value = state
+}
+
 export function reorderWidget(widgetId: string, targetWidgetId: string, position: WidgetPosition): void {
   if (position === 'floating' || position === 'popup')
     return

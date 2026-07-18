@@ -2,14 +2,13 @@ import { Endge, EndgeModuleController } from '@endge/core'
 
 import { isBusy, runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDEConsole } from '@/features/endge-ide/model/core/endge-ide-console.ts'
+import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { EndgeIDEDemonstration } from '@/features/endge-ide/model/core/endge-ide-demonstration.ts'
-import { EndgeIDEDocs } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
 import { EndgeIDEFlowCatalog } from '@/features/endge-ide/model/core/endge-ide-flow-catalog.ts'
 import { EndgeIDEHotkeys } from '@/features/endge-ide/model/core/endge-ide-hotkeys.ts'
 import { EndgeIDEInspector } from '@/features/endge-ide/model/core/endge-ide-inspector.ts'
 import { EndgeIDEModals } from '@/features/endge-ide/model/core/endge-ide-modals.ts'
 import { EndgeIDETabs } from '@/features/endge-ide/model/core/endge-ide-tabs.ts'
-import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { EndgeIDEWidgets } from '@/features/endge-ide/model/core/endge-ide-widgets.ts'
 import { startDiagnosticsChannelListener } from '@/features/endge-ide/model/pulse/diagnostics-register.ts'
 import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
@@ -28,7 +27,6 @@ export class EndgeIDE extends EndgeModuleController {
   private _tabs: EndgeIDETabs = new EndgeIDETabs()
   private _widgets: EndgeIDEWidgets = new EndgeIDEWidgets()
   private _inspector: EndgeIDEInspector = new EndgeIDEInspector()
-  private _docs: EndgeIDEDocs = new EndgeIDEDocs()
   private _hotkeys: EndgeIDEHotkeys = new EndgeIDEHotkeys()
   private _flowCatalog: EndgeIDEFlowCatalog = new EndgeIDEFlowCatalog()
   private _runtimePreview: EndgeIDERuntimePreview = new EndgeIDERuntimePreview()
@@ -38,7 +36,7 @@ export class EndgeIDE extends EndgeModuleController {
     const widgetsDisabled = isIDEWidgetsDisabled()
     const runtimeDebuggerDisabled = isIDERuntimeDebuggerDisabled()
 
-    console.info('[EndgeIDE] init', {
+    console.warn('[EndgeIDE] init', {
       widgetsDisabled,
       runtimeDebuggerDisabled,
     })
@@ -49,7 +47,6 @@ export class EndgeIDE extends EndgeModuleController {
     host.registerModule('widgets', widgetsDisabled ? noopModule : host._widgets)
     host.registerModule('tabs', host._tabs)
     host.registerModule('inspector', host._inspector)
-    host.registerModule('docs', host._docs)
     host.registerModule('hotkeys', host._hotkeys)
     host.registerModule('flowCatalog', host._flowCatalog)
     host.registerModule('runtimePreview', host._runtimePreview)
@@ -58,11 +55,22 @@ export class EndgeIDE extends EndgeModuleController {
     })
     host._hotkeys.setCloseTabHandler(() => {
       const id = EndgeIDE.tabs.activeTabId.value
-      if (id) { EndgeIDE.tabs.closeTab(id) }
+      if (id) {
+        EndgeIDE.tabs.closeTab(id)
+      }
     })
     host._hotkeys.setCreateDocumentHandler(() => {
       EndgeIDE.modals.openCreateDocument()
     })
+    host._hotkeys.setRunRuntimeHandler(() => {
+      const editor = EndgeIDE.tabs.documentEditorModel.value
+      if (!EndgeIDE.runtimePreview.canLaunchEditor(editor)) {
+        return false
+      }
+      void EndgeIDE.runtimePreview.launchEditor(editor)
+      return true
+    })
+    host._hotkeys.setReturnToProjectHandler(() => EndgeIDE.runtimePreview.returnToProject())
     host.init()
     if (!runtimeDebuggerDisabled) {
       Endge.runtimeDebugger.startListening()
@@ -96,10 +104,6 @@ export class EndgeIDE extends EndgeModuleController {
 
   public static get inspector(): EndgeIDEInspector {
     return EndgeIDE._host._inspector
-  }
-
-  public static get docs(): EndgeIDEDocs {
-    return EndgeIDE._host._docs
   }
 
   public static get hotkeys(): EndgeIDEHotkeys {

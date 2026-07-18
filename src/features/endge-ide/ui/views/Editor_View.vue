@@ -166,15 +166,3 @@ onBeforeUnmount(() => {
     <EndgeAppHelperMenu />
   </div>
 </template>
-
-<style>
-.docs-tab-content .MarkdownWrapper {
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-.docs-tab-content .MarkdownWrapper h1 { font-size: 1rem; }
-.docs-tab-content .MarkdownWrapper h2 { font-size: 0.9375rem; }
-.docs-tab-content .MarkdownWrapper h3 { font-size: 0.875rem; }
-.docs-tab-content .MarkdownWrapper pre,
-.docs-tab-content .MarkdownWrapper code { font-size: 0.75rem; }
-</style>

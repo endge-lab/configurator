@@ -3,11 +3,9 @@
 import type { RComponentSFC } from '@endge/core'
 
 import { Endge, inspectComponentSFCVisual } from '@endge/core'
-import { AlignLeft, Bug, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
+import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
 
-import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,10 +18,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import {
-  launchSFCPreview,
-  sfcPreviewError,
-} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
@@ -87,44 +81,11 @@ async function launchPreview(): Promise<void> {
   launchLoading.value = true
   try {
     current.parseSource?.()
-    await launchSFCPreview({
-      id: current.id,
-      identity: current.identity,
-      tag: current.tag,
-      name: current.name,
-      displayName: current.displayName,
-      source: current.source,
-    })
-    sfcPreviewError.value = null
-    if (getWidgetInstances('sfc-preview').length) {
-      showWidget('sfc-preview')
-    }
-    else {
-      createWidgetInstance('sfc-preview', {})
-    }
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    sfcPreviewError.value = message
-    if (message === 'Сначала определите превью props') {
-      toast.warning('Сначала определите превью props')
-    }
-    else {
-      toast.error('Не удалось запустить демонстрацию', {
-        description: message,
-      })
-    }
+    await EndgeIDE.runtimePreview.launchEditor(current)
   }
   finally {
     launchLoading.value = false
   }
-}
-
-function openDebugPreview(): void {
-  void EndgeIDE.runtimePreview.launch({
-    entityType: 'component-sfc',
-    identity: editor.value?.identity ?? '',
-  })
 }
 </script>
 
@@ -215,21 +176,7 @@ function openDebugPreview(): void {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить preview</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                aria-label="Открыть Debug Preview компонента"
-                @click="openDebugPreview"
-              >
-                <Bug class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Открыть Debug Preview сохранённого компонента</TooltipContent>
+            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
           </Tooltip>
         </div>
 

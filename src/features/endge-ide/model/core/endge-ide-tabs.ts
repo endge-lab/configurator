@@ -17,7 +17,7 @@ import type {
 import type { Component } from 'vue'
 
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
-import { defineComponent, h, markRaw, reactive, shallowRef } from 'vue'
+import { markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { showWidget } from '@/components/layouts/grid'
 
@@ -53,8 +53,6 @@ import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParamete
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
-import { DOCS_VIEW_ID } from '@/features/endge-ide/model/core/endge-ide-docs.ts'
-import MarkdownViewer from '@/features/endge-ide/ui/components/MarkdownViewer.vue'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
 import ComponentSFC_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'
@@ -117,12 +115,6 @@ function isQueryDocumentType(value: string): boolean {
     || value === String(QueryType.Custom)
 }
 
-interface DocsTabPayload {
-  docId?: string
-  file?: string
-  title?: string
-}
-
 interface DocumentTabPayload {
   documentId: string
   documentType: DomainDocumentType
@@ -159,7 +151,7 @@ type DocResolver = (documentId: string) => EditorSession | null
 /**
  * Endge IDE Tabs
  *
- * Вкладки + резолв контента (document/version/docs), кэш сессий,
+ * Вкладки + резолв контента, кэш сессий,
  * текущий документ для инспектора, сохранение активной вкладки.
  */
 export class EndgeIDETabs {
@@ -199,8 +191,8 @@ export class EndgeIDETabs {
   public init(): void {
     if (this._isRegistryBootstrapped)
       return
+    this._tabsApi.closeTab('docs')
     this._registerSystemViews()
-    this._registerDocsView()
     this._refreshPersistedDocumentTabIcons()
     this._isRegistryBootstrapped = true
   }
@@ -753,34 +745,6 @@ export class EndgeIDETabs {
             debugTab: payload,
           },
         },
-      }
-    })
-  }
-
-  private _registerDocsView(): void {
-    registerSmartTabView(DOCS_VIEW_ID, (tab: SmartTabRef): SmartTabViewResolved => {
-      const payload = tab.payload as unknown as DocsTabPayload | undefined
-      const file = payload?.file
-      const title = payload?.title ?? 'Документация'
-      if (!file) {
-        return {
-          component: defineComponent({
-            name: 'EndgeDocsTabEmpty',
-            setup: () => () => h('div', { class: 'p-4 text-sm text-muted-foreground' }, 'Нет данных'),
-          }),
-          props: {},
-        }
-      }
-      return {
-        component: defineComponent({
-          name: 'EndgeDocsTab',
-          setup: () => () =>
-            h('div', { class: 'p-4 docs-tab-content h-full overflow-auto' }, [
-              h('h1', { class: 'text-lg font-bold mb-3' }, title),
-              h(MarkdownViewer, { src: file }),
-            ]),
-        }),
-        props: {},
       }
     })
   }

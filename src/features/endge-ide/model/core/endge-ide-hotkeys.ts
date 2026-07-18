@@ -9,7 +9,7 @@ export interface EndgeIDEHotkeyItem {
   /** Отображаемые клавиши в UI: например "Ctrl+S / ⌘ S" */
   keysLabel: string
   /** Привязка к колбэку; без указания - только лог в консоль */
-  action?: 'save' | 'closeTab' | 'createDocument'
+  action?: 'save' | 'closeTab' | 'createDocument' | 'runRuntime' | 'returnToProject'
 }
 
 /** Единый реестр всех горячих клавиш редактора (источник правды для регистрации и документирования) */
@@ -17,6 +17,8 @@ export const REGISTERED_HOTKEYS: readonly EndgeIDEHotkeyItem[] = [
   { label: 'Сохранить', keys: ['ctrl+s', 'meta+s'], keysLabel: 'Ctrl+S / ⌘ S', action: 'save' },
   { label: 'Закрыть вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
   { label: 'Создать документ', keys: ['ctrl+n', 'meta+n'], keysLabel: 'Ctrl+N / ⌘ N', action: 'createDocument' },
+  { label: 'Запустить Runtime Preview', keys: ['ctrl+enter', 'meta+enter'], keysLabel: 'Ctrl+Enter / ⌘ Enter', action: 'runRuntime' },
+  { label: 'Вернуться из Runtime Preview', keys: 'escape', keysLabel: 'Esc', action: 'returnToProject' },
 ]
 
 /**
@@ -28,8 +30,12 @@ export class EndgeIDEHotkeys {
   private _onSave: (() => void | Promise<void>) | null = null
   private _onCloseTab: (() => void) | null = null
   private _onCreateDocument: (() => void) | null = null
+  private _onRunRuntime: (() => boolean) | null = null
+  private _onReturnToProject: (() => boolean) | null = null
   private _closeTabCaptureBound: ((e: KeyboardEvent) => void) | null = null
   private _createDocumentCaptureBound: ((e: KeyboardEvent) => void) | null = null
+  private _runRuntimeCaptureBound: ((e: KeyboardEvent) => void) | null = null
+  private _returnToProjectBound: ((e: KeyboardEvent) => void) | null = null
 
   /** Колбэк сохранения документа. Задаётся из EndgeIDE.init(). */
   public setSaveHandler(handler: () => void | Promise<void>): void {
@@ -46,14 +52,23 @@ export class EndgeIDEHotkeys {
     this._onCreateDocument = handler
   }
 
+  public setRunRuntimeHandler(handler: () => boolean): void {
+    this._onRunRuntime = handler
+  }
+
+  public setReturnToProjectHandler(handler: () => boolean): void {
+    this._onReturnToProject = handler
+  }
+
   /** Все зарегистрированные горячие клавиши с описаниями (для документирования в UI). */
   public getAllHotkeys(): readonly EndgeIDEHotkeyItem[] {
     return REGISTERED_HOTKEYS
   }
 
   public init(): void {
-    if (this._manager)
+    if (this._manager) {
       return
+    }
     this._manager = new HotkeyManager({ target: window, ignoreInput: true })
 
     for (const item of REGISTERED_HOTKEYS) {
@@ -76,18 +91,30 @@ export class EndgeIDEHotkeys {
           this._onCreateDocument?.()
         })
       }
-      else {
-        const label = item.label
-        this._manager.on(keys, () => console.log('[EndgeIDEHotkeys]', label))
+      else if (item.action === 'runRuntime') {
+        this._manager.on(keys, (e) => {
+          if (this._onRunRuntime?.()) {
+            e.preventDefault()
+          }
+        })
+      }
+      else if (item.action === 'returnToProject') {
+        this._manager.on(keys, (e) => {
+          if (this._onReturnToProject?.()) {
+            e.preventDefault()
+          }
+        })
       }
     }
 
     // Capture-фаза: перехватываем Cmd+W/Ctrl+W до браузера
     this._closeTabCaptureBound = (e: KeyboardEvent) => {
-      if (e.key !== 'w' && e.key !== 'W')
+      if (e.key !== 'w' && e.key !== 'W') {
         return
-      if (!e.ctrlKey && !e.metaKey)
+      }
+      if (!e.ctrlKey && !e.metaKey) {
         return
+      }
       e.preventDefault()
       e.stopPropagation()
       this._onCloseTab?.()
@@ -96,18 +123,45 @@ export class EndgeIDEHotkeys {
 
     // Capture-фаза: перехватываем Cmd+N/Ctrl+N до браузера (новое окно)
     this._createDocumentCaptureBound = (e: KeyboardEvent) => {
-      if (e.key !== 'n' && e.key !== 'N')
+      if (e.key !== 'n' && e.key !== 'N') {
         return
-      if (!e.ctrlKey && !e.metaKey)
+      }
+      if (!e.ctrlKey && !e.metaKey) {
         return
+      }
       const target = e.target as HTMLElement | null
-      if (target?.closest?.('input, textarea, [contenteditable="true"]'))
+      if (target?.closest?.('input, textarea, [contenteditable="true"]')) {
         return
+      }
       e.preventDefault()
       e.stopPropagation()
       this._onCreateDocument?.()
     }
     window.addEventListener('keydown', this._createDocumentCaptureBound, { capture: true })
+
+    // Monaco and other source editors may consume Enter, so runtime launch uses capture phase.
+    this._runRuntimeCaptureBound = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || (!e.ctrlKey && !e.metaKey) || e.altKey || e.shiftKey) {
+        return
+      }
+      if (!this._onRunRuntime?.()) {
+        return
+      }
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    window.addEventListener('keydown', this._runRuntimeCaptureBound, { capture: true })
+
+    // Bubble phase lets dialogs and context menus consume Escape before workspace navigation.
+    this._returnToProjectBound = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) {
+        return
+      }
+      if (this._onReturnToProject?.()) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('keydown', this._returnToProjectBound)
   }
 
   public reset(): void {
@@ -119,9 +173,19 @@ export class EndgeIDEHotkeys {
       window.removeEventListener('keydown', this._createDocumentCaptureBound, { capture: true })
       this._createDocumentCaptureBound = null
     }
+    if (this._runRuntimeCaptureBound) {
+      window.removeEventListener('keydown', this._runRuntimeCaptureBound, { capture: true })
+      this._runRuntimeCaptureBound = null
+    }
+    if (this._returnToProjectBound) {
+      window.removeEventListener('keydown', this._returnToProjectBound)
+      this._returnToProjectBound = null
+    }
     this._onSave = null
     this._onCloseTab = null
     this._onCreateDocument = null
+    this._onRunRuntime = null
+    this._onReturnToProject = null
     if (this._manager) {
       this._manager.destroy()
       this._manager = null

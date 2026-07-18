@@ -28,6 +28,7 @@ export {
   registerWidget,
   removeHeaderAction,
   removeOptionsAction,
+  removePersistedWidgetId,
   reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,

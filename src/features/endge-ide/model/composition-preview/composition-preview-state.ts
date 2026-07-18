@@ -141,7 +141,7 @@ async function disposeCompositionPreviewRuntime(): Promise<void> {
   }
 }
 
-function createPreviewComposition(input: CompositionPreviewLaunchInput): RComposition {
+export function createPreviewComposition(input: CompositionPreviewLaunchInput): RComposition {
   const model = new RComposition()
   model.id = (input.id ?? `composition-preview-${++runtimeCounter}`) as any
   model.identity = input.identity || `composition-preview-${runtimeCounter}`
@@ -200,7 +200,7 @@ export function ensureCompositionRuntimeArtifacts(source: string, visiting = new
   }
 }
 
-function resolvePreviewStoreRuntimes(
+export function resolvePreviewStoreRuntimes(
   data: Array<{ name: string, kind: 'store' | 'vocab', identity: string }>,
 ): Record<string, string> {
   const runtimes: Record<string, string> = {}

@@ -3,7 +3,6 @@ import type { RCompositionEditor } from '@/features/endge-ide/domain/entities/RC
 
 import { Endge } from '@endge/core'
 import {
-  Bug,
   Code2,
   FileJson,
   Loader2,
@@ -13,9 +12,7 @@ import {
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { toast } from 'vue-sonner'
 
-import { createWidgetInstance, getWidgetInstances, showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -24,10 +21,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import {
-  compositionPreviewError,
-  launchCompositionPreview,
-} from '@/features/endge-ide/model/composition-preview/composition-preview-state'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -59,39 +52,11 @@ async function launchPreview(): Promise<void> {
   launchLoading.value = true
   try {
     current.refreshDiagnostics()
-    await launchCompositionPreview({
-      id: current.id,
-      identity: current.identity,
-      name: current.name,
-      displayName: current.name,
-      source: current.source,
-      sourceVersion: current.sourceVersion,
-    })
-    compositionPreviewError.value = null
-    if (getWidgetInstances('composition-preview').length) {
-      showWidget('composition-preview')
-    }
-    else {
-      createWidgetInstance('composition-preview', {})
-    }
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    compositionPreviewError.value = message
-    toast.error('Не удалось запустить демонстрацию композиции', {
-      description: message,
-    })
+    await EndgeIDE.runtimePreview.launchEditor(current)
   }
   finally {
     launchLoading.value = false
   }
-}
-
-function openDebugPreview(): void {
-  void EndgeIDE.runtimePreview.launch({
-    entityType: 'composition',
-    identity: editor.value?.identity ?? '',
-  })
 }
 </script>
 
@@ -141,21 +106,7 @@ function openDebugPreview(): void {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить preview композиции</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7"
-                aria-label="Открыть Debug Preview композиции"
-                @click="openDebugPreview"
-              >
-                <Bug class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Открыть Debug Preview сохранённой композиции</TooltipContent>
+            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>

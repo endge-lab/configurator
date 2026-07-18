@@ -4,9 +4,9 @@ import {
   getAreaExpanded,
   getWidget,
   getWidgetOrder,
-  hideWidget,
   migratePersistedWidgetId,
   registerWidget,
+  removePersistedWidgetId,
   reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,
@@ -43,6 +43,7 @@ export class EndgeIDEWidgets {
     }
 
     migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+    removePersistedWidgetId('help')
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     this._widgetDefinitions.forEach(def => registerWidget(def))
@@ -101,11 +102,6 @@ export class EndgeIDEWidgets {
     setAreaExpanded('left', persistedExpanded.left)
     setAreaExpanded('right', persistedExpanded.right)
     setAreaExpanded('bottom', persistedExpanded.bottom)
-
-    // Виджет «Демонстрация» по умолчанию скрыт (minimized)
-    hideWidget('demonstration')
-    hideWidget('sfc-preview')
-    hideWidget('composition-preview')
 
     this._isInitialized = true
   }

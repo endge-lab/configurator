@@ -29,16 +29,19 @@ import {
   Filter,
   Folder,
   FolderPlus,
+  FolderRoot,
   FormInput,
   GitBranch,
   KeyRound,
   Languages,
+  Layers3,
   Layout,
   ListFilter,
   Loader2,
   Network,
   Palette,
   Pencil,
+  Play,
   Plug,
   Plus,
   Puzzle,
@@ -95,8 +98,9 @@ import {
   domainFileNodeToWorkingSetRef,
   projectDomainWorkingSetFiles,
 } from '@/features/endge-ide/model/domain/domain-tree-working-set'
-import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
+import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
@@ -114,6 +118,7 @@ type MenuAction
     | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
+    | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
     | { type: 'download-selected' }
     | { type: 'clear-soft-deleted' }
 
@@ -128,10 +133,33 @@ const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
   {},
 )
 
-const showRootHierarchyBackgrounds = useSafeLocalStorage(
+const legacyShowRootHierarchyBackgrounds = useSafeLocalStorage(
   'endge-editor-domain-tree-root-backgrounds',
   true,
 )
+
+type DomainTreeHighlightMode = 'root' | 'block' | 'none'
+
+const DOMAIN_TREE_HIGHLIGHT_MODES: readonly DomainTreeHighlightMode[] = ['root', 'block', 'none']
+const domainTreeHighlightMode = useSafeLocalStorage<DomainTreeHighlightMode>(
+  'endge-editor-domain-tree-highlight-mode',
+  legacyShowRootHierarchyBackgrounds.value ? 'block' : 'none',
+)
+
+const DOMAIN_TREE_HIGHLIGHT_PRESENTATION: Record<DomainTreeHighlightMode, { icon: any, label: string }> = {
+  root: { icon: FolderRoot, label: 'Подсвечены только корневые папки' },
+  block: { icon: Layers3, label: 'Подсвечены все блоки' },
+  none: { icon: Palette, label: 'Подсветка отключена' },
+}
+
+const domainTreeHighlightPresentation = computed(() =>
+  DOMAIN_TREE_HIGHLIGHT_PRESENTATION[domainTreeHighlightMode.value],
+)
+
+function cycleDomainTreeHighlightMode(): void {
+  const currentIndex = DOMAIN_TREE_HIGHLIGHT_MODES.indexOf(domainTreeHighlightMode.value)
+  domainTreeHighlightMode.value = DOMAIN_TREE_HIGHLIGHT_MODES[(currentIndex + 1) % DOMAIN_TREE_HIGHLIGHT_MODES.length] ?? 'root'
+}
 
 const persistedWorkingSetFilter = useSafeLocalStorage<DomainWorkingSetFilterState>(
   'endge-editor-domain-working-set-filter',
@@ -580,7 +608,7 @@ function getFolderIcon(node: FsFolderNode): any {
 function getFolderColorClass(node: FsFolderNode): string {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
-  return 'text-yellow-500'
+  return 'fill-current text-slate-500 dark:text-slate-400'
 }
 
 function getTreeDocumentIconClass(node: FsFileNode): string[] {
@@ -970,6 +998,22 @@ async function downloadSelectedDocuments(): Promise<void> {
   }
 }
 
+async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void> {
+  const requests = nodes
+    .filter(node => node.isInDeletedFolder !== true)
+    .map(node => createRuntimePreviewLaunchRequestFromDocument(node))
+    .filter(request => request != null)
+
+  await EndgeIDE.runtimePreview.launchAll(requests)
+}
+
+function getContextFileNodes(node: FsFileNode, path?: string | null): FsFileNode[] {
+  if (path && selectedFileIds.value.has(path)) {
+    return selectedExportNodes.value
+  }
+  return [node]
+}
+
 // ---------- context menu items ----------
 /** Формирует контекстные действия для узла дерева домена. */
 function getMenuActions(node: FsNode, path?: string | null): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
@@ -1032,6 +1076,15 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
     const fileNode = node as FsFileNode
     if (fileNode.isTableColumn)
       return items
+
+    const contextNodes = getContextFileNodes(fileNode, path)
+    items.push({
+      label: contextNodes.length > 1
+        ? `Запустить в Runtime (${contextNodes.length})`
+        : 'Запустить в Runtime',
+      icon: Play,
+      action: { type: 'launch-runtime-previews', nodes: contextNodes },
+    })
 
     if (path && selectedFileIds.value.has(path) && selectedExportNodes.value.length > 1) {
       items.push({
@@ -1160,6 +1213,11 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
+  if (a.type === 'launch-runtime-previews') {
+    await EndgeIDE.runBusy(launchRuntimePreviews(a.nodes))
+    return
+  }
+
   if (a.type === 'clear-soft-deleted') {
     EndgeIDE.modals.openClearSoftDeleted()
   }
@@ -1264,22 +1322,18 @@ function rowClasses(item: FlatFsItem): string {
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm transition-colors"
-                  :class="showRootHierarchyBackgrounds
+                  :class="domainTreeHighlightMode !== 'none'
                     ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
                     : 'text-muted-foreground'"
-                  :aria-label="showRootHierarchyBackgrounds
-                    ? 'Скрыть фон корневых разделов'
-                    : 'Показать фон корневых разделов'"
-                  :aria-pressed="showRootHierarchyBackgrounds"
-                  @click="showRootHierarchyBackgrounds = !showRootHierarchyBackgrounds"
+                  :aria-label="`${domainTreeHighlightPresentation.label}. Нажмите, чтобы переключить режим`"
+                  :data-state="domainTreeHighlightMode"
+                  @click="cycleDomainTreeHighlightMode"
                 >
-                  <Palette class="size-3.5" />
+                  <component :is="domainTreeHighlightPresentation.icon" class="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {{ showRootHierarchyBackgrounds
-                  ? 'Скрыть фон корневых разделов'
-                  : 'Показать фон корневых разделов' }}
+                {{ domainTreeHighlightPresentation.label }}
               </TooltipContent>
             </Tooltip>
 
@@ -1304,7 +1358,7 @@ function rowClasses(item: FlatFsItem): string {
     <!-- tree -->
     <div class="flex-1 min-h-0" @click="closeContextMenu">
       <ScrollArea class="h-full">
-        <div class="p-2 text-sm">
+        <div class="p-2 text-[13px] leading-5">
           <div
             v-for="block in groupedFlatFs"
             :key="block.id"
@@ -1324,7 +1378,8 @@ function rowClasses(item: FlatFsItem): string {
               class="domain-root-hierarchy mb-1 last:mb-0"
               :class="[
                 getRootHierarchyColorClass(root.rootId),
-                showRootHierarchyBackgrounds && !workingSetFilterEnabled ? 'domain-root-hierarchy--highlighted' : '',
+                domainTreeHighlightMode === 'root' && !workingSetFilterEnabled ? 'domain-root-hierarchy--root-highlighted' : '',
+                domainTreeHighlightMode === 'block' && !workingSetFilterEnabled ? 'domain-root-hierarchy--highlighted' : '',
               ]"
             >
               <div
@@ -1457,9 +1512,26 @@ function rowClasses(item: FlatFsItem): string {
 
 <style scoped>
 .domain-root-hierarchy {
+  position: relative;
   transition:
     background-color 160ms ease,
     box-shadow 160ms ease;
+}
+
+.domain-root-hierarchy::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1.5rem;
+  pointer-events: none;
+  content: '';
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 0.25rem;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.domain-root-hierarchy--root-highlighted::before {
+  opacity: 1;
 }
 
 .domain-root-hierarchy--highlighted {

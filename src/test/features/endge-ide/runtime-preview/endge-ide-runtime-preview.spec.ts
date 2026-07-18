@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   instances: [] as any[],
   surfaceLifecycle: null as { beforeContextReset?: () => Promise<void> | void } | null,
+  leftArea: { expanded: true, activeWidget: 'runtime-tree' },
 }))
 
 vi.mock('@endge/core', () => ({
@@ -21,7 +22,10 @@ vi.mock('@endge/core', () => ({
 }))
 
 vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/components/layouts/grid', () => ({ showWidget: mocks.showWidget }))
+vi.mock('@/components/layouts/grid', () => ({
+  getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
+  showWidget: mocks.showWidget,
+}))
 vi.mock('@/features/endge-configurator/model/endge-configurator', () => ({
   EndgeConfigurator: {
     registerSurface: vi.fn((_id: string, lifecycle: { beforeContextReset?: () => Promise<void> | void }) => {
@@ -73,6 +77,27 @@ describe('endgeIDE Runtime Preview manager', () => {
     mocks.toastError.mockReset()
     mocks.instances.splice(0)
     mocks.surfaceLifecycle = null
+    mocks.leftArea.expanded = true
+    mocks.leftArea.activeWidget = 'runtime-tree'
+  })
+
+  it('passes the current editor draft to the stable runtime entry', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    const draft = { identity: 'table', source: '<template><div /></template>' }
+
+    await manager.launch({ entityType: 'component-sfc', identity: 'table', draft })
+
+    expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft)
+  })
+
+  it('returns from Runtime Tree to Project without disposing runtimes', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+    mocks.showWidget.mockClear()
+
+    expect(manager.returnToProject()).toBe(true)
+    expect(mocks.showWidget).toHaveBeenCalledWith('project')
+    expect(mocks.instances[0].dispose).not.toHaveBeenCalled()
   })
 
   it('starts empty and keeps multiple explicitly launched roots', async () => {
@@ -88,6 +113,34 @@ describe('endgeIDE Runtime Preview manager', () => {
     ])
     expect(manager.selectedEntryKey.value).toBe('component-sfc:table')
     expect(mocks.showWidget).toHaveBeenCalledTimes(2)
+  })
+
+  it('launches a document batch in order, deduplicates targets, and reveals the tree once', async () => {
+    const manager = new EndgeIDERuntimePreview()
+
+    const launched = await manager.launchAll([
+      { entityType: 'store', identity: 'flights' },
+      { entityType: 'composition', identity: 'entry' },
+      { entityType: 'store', identity: 'flights' },
+    ])
+
+    expect(launched).toBe(2)
+    expect(manager.entries.value.map(item => item.key)).toEqual([
+      'store:flights',
+      'composition:entry',
+    ])
+    expect(mocks.instances[0].launch.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.instances[1].launch.mock.invocationCallOrder[0],
+    )
+    expect(mocks.showWidget).toHaveBeenCalledOnce()
+    expect(mocks.showWidget).toHaveBeenCalledWith('runtime-tree')
+  })
+
+  it('reveals the Runtime Tree for an empty batch', async () => {
+    const manager = new EndgeIDERuntimePreview()
+
+    expect(await manager.launchAll([])).toBe(0)
+    expect(mocks.showWidget).toHaveBeenCalledWith('runtime-tree')
   })
 
   it('serializes duplicate documents through the same stable entry and launches a fresh generation', async () => {

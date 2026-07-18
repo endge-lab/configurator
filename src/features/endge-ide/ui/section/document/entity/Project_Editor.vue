@@ -4,7 +4,7 @@ import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
-import { Briefcase, Bug } from 'lucide-vue-next'
+import { Briefcase, Play } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -78,11 +78,8 @@ async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
-function openDebugPreview(): void {
-  void EndgeIDE.runtimePreview.launch({
-    entityType: 'project',
-    identity: editor.value?.identity ?? '',
-  })
+function launchRuntimePreview(): void {
+  void EndgeIDE.runtimePreview.launchEditor(editor.value)
 }
 </script>
 
@@ -104,11 +101,11 @@ function openDebugPreview(): void {
         type="button"
         variant="outline"
         size="icon"
-        title="Запустить Debug Preview проекта"
+        title="Запустить Runtime Preview проекта (⌘/Ctrl+Enter)"
         :disabled="!editor?.identity"
-        @click="openDebugPreview"
+        @click="launchRuntimePreview"
       >
-        <Bug class="size-4" />
+        <Play class="size-4" />
       </Button>
       <SaveDocumentButton :loading="isBusy" @click="save" />
     </div>

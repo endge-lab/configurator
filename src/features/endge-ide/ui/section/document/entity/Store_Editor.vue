@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
-import type { StoreRuntimeHost } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import {
-  Bug,
   Code2,
   FileJson,
   Loader2,
@@ -28,12 +26,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
-import { resolvePreviewRuntime } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
-import {
-  launchStorePreview,
-  storePreviewError,
-  storePreviewRuntime,
-} from '@/features/endge-ide/model/store-preview/store-preview-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
 
@@ -53,13 +45,6 @@ const artifactJson = computed(() =>
 const diagnosticsJson = computed(() =>
   JSON.stringify(compiled.value?.diagnostics ?? [], null, 2),
 )
-const currentStorePreviewRuntime = computed<StoreRuntimeHost | null>(() => {
-  void storePreviewRuntime.value
-  const identity = editor.value?.identity?.trim()
-  return identity
-    ? resolvePreviewRuntime<StoreRuntimeHost>('store', identity)
-    : null
-})
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
 }
@@ -97,34 +82,11 @@ async function launchPreview(): Promise<void> {
   launchLoading.value = true
   try {
     current.refreshDiagnostics()
-    const runtime = await launchStorePreview({
-      id: current.id,
-      identity: current.identity,
-      name: current.name,
-      displayName: current.name,
-      source: current.source,
-      sourceVersion: current.sourceVersion,
-    })
-    storePreviewError.value = null
-    toast.success('Store preview запущен', { description: runtime.id })
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    storePreviewError.value = message
-    toast.error('Не удалось запустить preview хранилища', {
-      description: message,
-    })
+    await EndgeIDE.runtimePreview.launchEditor(current)
   }
   finally {
     launchLoading.value = false
   }
-}
-
-function openDebugPreview(): void {
-  void EndgeIDE.runtimePreview.launch({
-    entityType: 'store',
-    identity: editor.value?.identity ?? '',
-  })
 }
 </script>
 
@@ -193,21 +155,7 @@ function openDebugPreview(): void {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить preview хранилища</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7"
-                aria-label="Открыть Debug Preview хранилища"
-                @click="openDebugPreview"
-              >
-                <Bug class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Открыть Debug Preview сохранённого хранилища</TooltipContent>
+            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -314,7 +262,6 @@ function openDebugPreview(): void {
       <StoreSourceEditor
         v-else-if="activeTab === 'source'"
         :model-value="editor.source"
-        :runtime="currentStorePreviewRuntime"
         @update:model-value="updateSource"
       />
       <pre

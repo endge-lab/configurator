@@ -145,19 +145,9 @@ const WIDGET_ALIASES: Array<{
     summary: "Открываю виджет Raph.",
   },
   {
-    widgetId: "help",
-    patterns: [/\bдокументац/i, /\bhelp\b/i],
-    summary: "Открываю виджет Документация.",
-  },
-  {
     widgetId: "agent",
     patterns: [/\bагент\b/i, /\bagent\b/i],
     summary: "Открываю виджет Агент.",
-  },
-  {
-    widgetId: "demonstration",
-    patterns: [/\bдемонстрац/i, /\bdemonstration\b/i],
-    summary: "Открываю виджет Демонстрация.",
   },
 ];
 

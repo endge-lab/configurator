@@ -566,10 +566,6 @@ const CONTEXT_HINTS = computed<Array<{ label: string, text: string }>>(() => {
       label: 'Что такое Endge?',
       text: 'Что такое Endge и для чего эта система?',
     },
-    {
-      label: 'Документация',
-      text: 'Расскажи детально по документации системы.',
-    },
   ]
   if (docType === 'component-table' || docType === 'component-dsl') {
     return [
@@ -624,7 +620,6 @@ const SUGGESTED_PROMPTS = [
     label: 'Что такое Endge?',
     text: 'Что такое Endge и для чего эта система?',
   },
-  { label: 'Документация', text: 'Расскажи детально по документации системы.' },
   {
     label: 'Как начать?',
     text: 'Как начать работу с системой? С чего начать?',

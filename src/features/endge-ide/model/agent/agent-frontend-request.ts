@@ -623,7 +623,6 @@ const ALLOWED_WIDGET_IDS = new Set([
   "raph",
   "help",
   "agent",
-  "demonstration",
 ]);
 
 /** documentType для openDocument (как в endge-admin-inspector). */

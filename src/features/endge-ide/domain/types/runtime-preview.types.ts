@@ -29,6 +29,21 @@ export interface RuntimePreviewTarget {
   identity: string
 }
 
+/** Current editor state used for a non-persisting Runtime Preview launch. */
+export interface RuntimePreviewDraft {
+  id?: string | number | null
+  identity?: string | null
+  tag?: string | null
+  name?: string | null
+  displayName?: string | null
+  source: string
+  sourceVersion?: number | null
+}
+
+export interface RuntimePreviewLaunchRequest extends RuntimePreviewTarget {
+  draft?: RuntimePreviewDraft
+}
+
 export interface RuntimePreviewCompositionAddress {
   rootIdentity: string
   invocationPath: string[]

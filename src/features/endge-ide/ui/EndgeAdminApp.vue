@@ -27,10 +27,6 @@ async function saveCurrentDocument(): Promise<void> {
   await tabs.save()
 }
 
-function openDocs(): void {
-  showWidget('help')
-}
-
 function openDSLPlayground(): void {
   tabs.openDSLPlayground()
 }
@@ -186,9 +182,6 @@ function openArchitecture(): void {
             Endge Framework v1.0
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem @click="openDocs">
-            Документация
-          </DropdownMenuItem>
           <DropdownMenuItem @click="openArchitecture">
             Архитектура
           </DropdownMenuItem>
