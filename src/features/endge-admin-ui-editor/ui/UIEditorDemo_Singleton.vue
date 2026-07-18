@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted } from 'vue'
+
 import { ensureUIEditorDemoCoreRenderersRegistered } from '@/features/endge-admin-ui-editor/entities/ui-editor-core-renderers'
 import { uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import UIEditorDemoCanvas from '@/features/endge-admin-ui-editor/ui/UIEditorDemoCanvas.vue'
@@ -6,6 +8,40 @@ import UIEditorDemoCodePanel from '@/features/endge-admin-ui-editor/ui/UIEditorD
 import UIEditorDemoToolbar from '@/features/endge-admin-ui-editor/ui/UIEditorDemoToolbar.vue'
 
 ensureUIEditorDemoCoreRenderersRegistered()
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && target.closest('input, textarea, select, [contenteditable="true"], .monaco-editor') != null
+}
+
+function handleEditorKeydown(event: KeyboardEvent): void {
+  if (isEditableTarget(event.target)) {
+    return
+  }
+
+  if (event.key === 'Escape') {
+    uiEditorDemoState.clearSelection()
+    return
+  }
+
+  if (event.key !== 'Delete' && event.key !== 'Backspace') {
+    return
+  }
+  if (event.repeat) {
+    return
+  }
+
+  const selectedNodeId = uiEditorDemoState.selectedNodeId
+  if (!selectedNodeId || selectedNodeId === uiEditorDemoState.document.rootId) {
+    return
+  }
+
+  event.preventDefault()
+  uiEditorDemoState.removeNode(selectedNodeId)
+}
+
+onMounted(() => window.addEventListener('keydown', handleEditorKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', handleEditorKeydown))
 </script>
 
 <template>

@@ -19,11 +19,13 @@ import { reactive } from 'vue'
 
 import { printUIEditorDocumentSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
+import { patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
-const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v7'
+const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v8'
 const UI_EDITOR_DEMO_STORAGE_KEYS = [
   UI_EDITOR_DEMO_STORAGE_KEY,
+  'endge-admin-ui-editor-demo-state:v7',
   'endge-admin-ui-editor-demo-state:v6',
   'endge-admin-ui-editor-demo-state:v5',
   'endge-admin-ui-editor-demo-state:v4',
@@ -453,8 +455,9 @@ function readPersistedState(): {
   activeBreakpoint: UIEditorBreakpoint
   canvasMode: UIEditorCanvasMode
   workspaceMode: UIEditorWorkspaceMode
-  selectedNodeId: string
+  selectedNodeId: string | null
   showGridOverlay: boolean
+  source: string
 } | null {
   if (!hasBrowserStorage()) {
     return null
@@ -473,8 +476,9 @@ function readPersistedState(): {
       activeBreakpoint?: UIEditorBreakpoint
       canvasMode?: UIEditorCanvasMode
       workspaceMode?: UIEditorWorkspaceMode
-      selectedNodeId?: string
+      selectedNodeId?: string | null
       showGridOverlay?: boolean
+      source?: string
       // Kept only to migrate the previous two-pane preference.
       showGeneratedCode?: boolean
     }
@@ -485,9 +489,11 @@ function readPersistedState(): {
 
     const normalizedDocument = normalizeDocument(parsed.document)
 
-    const selectedNodeId = parsed.selectedNodeId && normalizedDocument.nodes[parsed.selectedNodeId]
-      ? parsed.selectedNodeId
-      : normalizedDocument.rootId
+    const selectedNodeId = parsed.selectedNodeId === null
+      ? null
+      : parsed.selectedNodeId && normalizedDocument.nodes[parsed.selectedNodeId]
+        ? parsed.selectedNodeId
+        : normalizedDocument.rootId
 
     return {
       document: normalizedDocument,
@@ -498,6 +504,9 @@ function readPersistedState(): {
         : parsed.showGeneratedCode === true ? 'split' : 'visual',
       selectedNodeId,
       showGridOverlay: parsed.showGridOverlay === true,
+      source: typeof parsed.source === 'string'
+        ? parsed.source
+        : printUIEditorDocumentSFC(normalizedDocument),
     }
   }
   catch (error) {
@@ -511,7 +520,9 @@ export class UIEditorDemoState {
   public activeBreakpoint: UIEditorBreakpoint = 'desktop'
   public canvasMode: UIEditorCanvasMode = 'editor'
   public workspaceMode: UIEditorWorkspaceMode = 'visual'
-  public selectedNodeId: string = this.document.rootId
+  public selectedNodeId: string | null = this.document.rootId
+  public source = printUIEditorDocumentSFC(this.document)
+  public sourceDiagnostics: string[] = []
   public isGridInteractionActive = false
   public gridInteractionMode: 'idle' | 'drag' | 'resize' = 'idle'
   public interactionNodeId: string | null = null
@@ -528,6 +539,8 @@ export class UIEditorDemoState {
     this.canvasMode = 'editor'
     this.workspaceMode = 'visual'
     this.selectedNodeId = this.document.rootId
+    this.source = printUIEditorDocumentSFC(this.document)
+    this.sourceDiagnostics = []
     this.isGridInteractionActive = false
     this.gridInteractionMode = 'idle'
     this.interactionNodeId = null
@@ -604,6 +617,14 @@ export class UIEditorDemoState {
     }
   }
 
+  public clearSelection(): void {
+    if (this.selectedNodeId === null) {
+      return
+    }
+    this.selectedNodeId = null
+    this.persistState()
+  }
+
   public addNode(
     definitionRef: string,
     parentId?: string,
@@ -619,6 +640,9 @@ export class UIEditorDemoState {
     },
     index?: number,
   ): UIEditorNode | null {
+    if (this.sourceDiagnostics.length > 0) {
+      return null
+    }
     const targetParentId = parentId ?? this.document.rootId
     const parent = this.getNode(targetParentId)
     if (!parent || !isUIEditorContainer(parent.kind)) {
@@ -637,7 +661,7 @@ export class UIEditorDemoState {
     const targetIndex = Number.isInteger(index) ? Math.max(0, Math.min(Number(index), parent.children.length)) : parent.children.length
     parent.children.splice(targetIndex, 0, node.id)
     this.selectedNodeId = node.id
-    this.persistState()
+    this.persistDocumentState()
     return node
   }
 
@@ -690,6 +714,9 @@ export class UIEditorDemoState {
   }
 
   public moveNode(nodeId: string, targetParentId: string, targetIndex?: number): boolean {
+    if (this.sourceDiagnostics.length > 0) {
+      return false
+    }
     if (!nodeId || !targetParentId || nodeId === this.document.rootId) {
       return false
     }
@@ -728,11 +755,14 @@ export class UIEditorDemoState {
     currentParent.children = currentParent.children.filter(childId => childId !== nodeId)
     targetParent.children.splice(effectiveTargetIndex, 0, nodeId)
     this.selectedNodeId = nodeId
-    this.persistState()
+    this.persistDocumentState()
     return true
   }
 
   public removeNode(nodeId: string): void {
+    if (this.sourceDiagnostics.length > 0) {
+      return
+    }
     if (!nodeId || nodeId === this.document.rootId) {
       return
     }
@@ -747,13 +777,16 @@ export class UIEditorDemoState {
 
     this.removeNodeRecursive(nodeId)
     this.selectedNodeId = parentId ?? this.document.rootId
-    this.persistState()
+    this.persistDocumentState()
   }
 
   public patchNodeProps(
     nodeId: string,
     patch: Record<string, unknown>,
   ): void {
+    if (this.sourceDiagnostics.length > 0) {
+      return
+    }
     const node = this.getNode(nodeId)
     if (!node) {
       return
@@ -764,10 +797,13 @@ export class UIEditorDemoState {
       ...patch,
     } as UIEditorNode['props']
     ;(node as UIEditorNode).props = normalizeNodeProps(node)
-    this.persistState()
+    this.persistDocumentState()
   }
 
   public patchNodeLayout(nodeId: string, patch: Partial<UIEditorNodeLayout>): void {
+    if (this.sourceDiagnostics.length > 0) {
+      return
+    }
     const node = this.getNode(nodeId)
     if (!node || node.kind === 'page') {
       return
@@ -780,7 +816,7 @@ export class UIEditorDemoState {
       span,
       rowSpan: clampRowSpan(patch.rowSpan ?? node.layout?.rowSpan ?? 4),
     }
-    this.persistState()
+    this.persistDocumentState()
   }
 
   public patchNodeReferences(
@@ -790,6 +826,9 @@ export class UIEditorDemoState {
       assetRef?: string | null
     },
   ): void {
+    if (this.sourceDiagnostics.length > 0) {
+      return
+    }
     const node = this.getNode(nodeId)
     if (!node) {
       return
@@ -801,7 +840,7 @@ export class UIEditorDemoState {
     if (patch.assetRef !== undefined) {
       node.assetRef = String(patch.assetRef ?? '').trim() || null
     }
-    this.persistState()
+    this.persistDocumentState()
   }
 
   public toTree(): UIEditorTreeNode {
@@ -813,7 +852,23 @@ export class UIEditorDemoState {
   }
 
   public toSFCSource(): string {
-    return printUIEditorDocumentSFC(this.document)
+    return this.source
+  }
+
+  public applySFCSource(source: string): boolean {
+    this.source = source
+    const projection = projectUIEditorDocumentFromSFC(source, this.document)
+    this.sourceDiagnostics = projection.diagnostics
+
+    if (projection.document) {
+      this.document = projection.document
+      if (this.selectedNodeId && !this.document.nodes[this.selectedNodeId]) {
+        this.selectedNodeId = null
+      }
+    }
+
+    this.persistState()
+    return projection.document != null
   }
 
   public logTree(): void {
@@ -903,6 +958,21 @@ export class UIEditorDemoState {
     this.workspaceMode = persistedState.workspaceMode
     this.selectedNodeId = persistedState.selectedNodeId
     this.showGridOverlay = persistedState.showGridOverlay
+    this.source = persistedState.source
+    const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
+    this.sourceDiagnostics = projection.diagnostics
+    if (projection.document) {
+      this.document = projection.document
+      if (this.selectedNodeId && !this.document.nodes[this.selectedNodeId]) {
+        this.selectedNodeId = null
+      }
+    }
+  }
+
+  private persistDocumentState(): void {
+    this.source = patchUIEditorSFCTemplate(this.source, this.document)
+    this.sourceDiagnostics = []
+    this.persistState()
   }
 
   private persistState(): void {
@@ -918,6 +988,7 @@ export class UIEditorDemoState {
         workspaceMode: this.workspaceMode,
         selectedNodeId: this.selectedNodeId,
         showGridOverlay: this.showGridOverlay,
+        source: this.source,
       }))
     }
     catch (error) {
@@ -930,6 +1001,9 @@ export class UIEditorDemoState {
     parentId?: string,
     index?: number,
   ): UIEditorNode | null {
+    if (this.sourceDiagnostics.length > 0) {
+      return null
+    }
     const component = Endge.uiRegistry.getJsxComponent(componentId)
     if (!component) {
       return null
@@ -962,7 +1036,7 @@ export class UIEditorDemoState {
     const targetIndex = Number.isInteger(index) ? Math.max(0, Math.min(Number(index), parent.children.length)) : parent.children.length
     parent.children.splice(targetIndex, 0, rootNode.id)
     this.selectedNodeId = rootNode.id
-    this.persistState()
+    this.persistDocumentState()
     return rootNode
   }
 

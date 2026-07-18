@@ -111,7 +111,7 @@ function printNode(document: UIEditorDocument, nodeId: string, depth: number): s
 }
 
 export function printUIEditorDocumentSFC(document: UIEditorDocument): string {
-  const template = printNode(document, document.rootId, 1)
+  const template = printUIEditorDocumentTemplate(document)
 
   return [
     '<script setup lang="ts">',
@@ -122,6 +122,10 @@ export function printUIEditorDocumentSFC(document: UIEditorDocument): string {
     '</template>',
     '',
   ].join('\n')
+}
+
+export function printUIEditorDocumentTemplate(document: UIEditorDocument): string {
+  return printNode(document, document.rootId, 1)
 }
 
 /** @deprecated Use printUIEditorDocumentSFC. */
