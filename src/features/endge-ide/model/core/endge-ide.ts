@@ -1,7 +1,6 @@
 import { Endge, EndgeModuleController } from '@endge/core'
 
 import { isBusy, runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
-import { EndgeIDEConsole } from '@/features/endge-ide/model/core/endge-ide-console.ts'
 import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { EndgeIDEDemonstration } from '@/features/endge-ide/model/core/endge-ide-demonstration.ts'
 import { EndgeIDEFlowCatalog } from '@/features/endge-ide/model/core/endge-ide-flow-catalog.ts'
@@ -21,7 +20,6 @@ const noopModule = {
 export class EndgeIDE extends EndgeModuleController {
   public static readonly _host: EndgeIDE = new EndgeIDE()
 
-  private _console: EndgeIDEConsole = new EndgeIDEConsole()
   private _demonstration: EndgeIDEDemonstration = new EndgeIDEDemonstration()
   private _modals: EndgeIDEModals = new EndgeIDEModals()
   private _tabs: EndgeIDETabs = new EndgeIDETabs()
@@ -41,7 +39,6 @@ export class EndgeIDE extends EndgeModuleController {
       runtimeDebuggerDisabled,
     })
 
-    host.registerModule('console', host._console)
     host.registerModule('demonstration', host._demonstration)
     host.registerModule('modals', host._modals)
     host.registerModule('widgets', widgetsDisabled ? noopModule : host._widgets)
@@ -82,10 +79,6 @@ export class EndgeIDE extends EndgeModuleController {
 
   public static reset(): void {
     EndgeIDE._host.reset()
-  }
-
-  public static get console(): EndgeIDEConsole {
-    return EndgeIDE._host._console
   }
 
   public static get demonstration(): EndgeIDEDemonstration {

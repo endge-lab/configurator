@@ -38,7 +38,7 @@ function createWidgets(activeWidget: string | null, expanded = true): LayoutWidg
   }
 }
 
-describe('Endge IDE workspace surface', () => {
+describe('endge IDE workspace surface', () => {
   it.each([
     ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
     ENDGE_IDE_PROBLEMS_WIDGET_ID,

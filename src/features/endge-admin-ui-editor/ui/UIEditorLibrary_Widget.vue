@@ -199,19 +199,19 @@ function getItemIcon(item: UIEditorLibraryItem) {
 }
 
 function rowClasses(): string {
-  return 'flex items-center gap-1 rounded px-1 py-0.5 text-sm select-none transition hover:bg-primary/25'
+  return 'flex items-center gap-1 rounded px-1 py-px select-none transition hover:bg-primary/30'
 }
 
 function itemRowClasses(): string {
-  return 'flex w-full cursor-grab items-center gap-1 rounded px-1 py-0.5 text-left text-sm select-none transition hover:bg-primary/25 active:cursor-grabbing'
+  return 'flex w-full cursor-grab items-center gap-1 rounded px-1 py-px text-left text-foreground select-none transition hover:bg-primary/30 active:cursor-grabbing'
 }
 
 function exampleRowClasses(isActive: boolean): string {
   return [
-    'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition',
+    'flex w-full items-center gap-1 rounded px-1 py-px text-left text-foreground select-none transition hover:bg-primary/30',
     isActive
-      ? 'bg-sky-500/12 text-sky-700 ring-1 ring-inset ring-sky-500/20 dark:text-sky-300'
-      : 'text-foreground/85 hover:bg-primary/20',
+      ? 'bg-primary/30 ring-1 ring-secondary/70'
+      : '',
   ].join(' ')
 }
 
@@ -254,7 +254,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
     </div>
 
     <ScrollArea class="h-full flex-1">
-      <div class="p-2 text-sm">
+      <div class="p-2 text-[13px] leading-5">
         <div class="mb-3">
           <div class="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
             SFC primitives
@@ -279,7 +279,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
               </span>
             </button>
 
-            <div v-if="isExpanded(group.id)" class="mt-1 space-y-1">
+            <div v-if="isExpanded(group.id)" class="mt-1">
               <button
                 v-for="item in group.items"
                 :key="item.id"
@@ -314,15 +314,12 @@ function getItemTitle(item: UIEditorLibraryItem): string {
               <ChevronDown v-if="isExpanded(UI_EDITOR_EXAMPLES_GROUP_ID)" class="size-4 shrink-0" />
               <ChevronRight v-else class="size-4 shrink-0" />
               <BookOpenText class="size-4 shrink-0 text-sky-500" />
-              <span class="min-w-0 flex-1 truncate font-medium">
+              <span class="min-w-0 flex-1 truncate">
                 Примеры
-              </span>
-              <span class="pr-1 font-mono text-[9px] text-muted-foreground/70">
-                {{ filteredExamples.length }}
               </span>
             </button>
 
-            <div v-if="isExpanded(UI_EDITOR_EXAMPLES_GROUP_ID)" class="mt-1 space-y-0.5 pl-5">
+            <div v-if="isExpanded(UI_EDITOR_EXAMPLES_GROUP_ID)" class="mt-1">
               <button
                 v-for="example in filteredExamples"
                 :key="example.id"
@@ -331,14 +328,11 @@ function getItemTitle(item: UIEditorLibraryItem): string {
                 :title="`${example.description}\nЗагрузить пример в Source`"
                 @click="loadExample(example)"
               >
-                <span class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-sky-500/20 bg-sky-500/8 text-sky-600 dark:text-sky-300">
+                <span class="ml-5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-sky-500">
                   <FileCode2 class="size-3" />
                 </span>
                 <span class="min-w-0 flex-1 truncate">
                   {{ example.title }}
-                </span>
-                <span class="hidden font-mono text-[8px] uppercase tracking-wide text-muted-foreground/55 group-hover:inline">
-                  {{ example.tag }}
                 </span>
               </button>
             </div>

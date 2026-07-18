@@ -341,7 +341,7 @@ function kindLabel(kind: string): string {
   <div class="flex h-full min-h-0 flex-col gap-3 p-4">
     <p class="text-sm text-muted-foreground">
       <template v-if="isFromRegister">Логи и трейсы из подключённых вкладок (по каналу).</template>
-      <template v-else>Логи и трейсы (mock). Подключите вкладку через Endge.debugTab() для потока из приложения.</template>
+      <template v-else>Логи и трейсы (mock).</template>
     </p>
 
     <div class="shrink-0 flex items-center gap-2 flex-wrap">

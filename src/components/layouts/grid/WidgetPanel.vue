@@ -12,8 +12,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { isEditorTabSurfaceVisible } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
 const props = withDefaults(defineProps<{
   position: 'left' | 'right'

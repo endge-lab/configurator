@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { EndgeAppHelperMenu } from '@endge/vue'
 import { Box, Loader2 } from 'lucide-vue-next'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
@@ -182,6 +181,5 @@ onBeforeUnmount(() => {
     />
     <SourceEditorDialogHost />
 
-    <EndgeAppHelperMenu />
   </div>
 </template>

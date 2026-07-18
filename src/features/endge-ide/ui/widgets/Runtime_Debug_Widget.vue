@@ -37,7 +37,7 @@ watch(
 )
 
 function onStart(): void {
-  Endge.runtimeDebugger.start()
+  Endge.runtimeDebugger.startListening()
   toast.success('Runtime Debug запущен', { description: 'Канал прослушивается' })
 }
 
@@ -91,10 +91,7 @@ function openRuntimeDebugTab(tab: { id: string; url?: string; title?: string }):
     <template v-else-if="tabs.length === 0">
       <div class="flex-1 min-h-0 p-4 overflow-auto">
         <p class="text-sm text-muted-foreground">
-          Для запуска системы отладки активируйте дебаг режим в другой вкладке проекта.
-        </p>
-        <p class="text-xs text-muted-foreground mt-2">
-          В консоли разработчика той вкладки выполните: <code class="rounded bg-muted px-1">Endge.debugTab()</code>
+          Активные вкладки Runtime Debug не обнаружены.
         </p>
       </div>
     </template>

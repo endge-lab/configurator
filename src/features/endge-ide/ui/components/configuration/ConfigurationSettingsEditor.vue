@@ -6,7 +6,7 @@ import type {
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
-import { Braces, Languages, Palette, PanelsTopLeft, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
+import { Braces, HeartPulse, Languages, Palette, PanelsTopLeft, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -23,11 +23,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
+import DiagnosticsConfigurationMock from './DiagnosticsConfigurationMock.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'sfcAdapterIds'
 type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
-type ConfigurationSection = 'general' | 'environment' | 'ui' | 'auth' | 'locales' | 'themes'
+type ConfigurationSection = 'general' | 'environment' | 'ui' | 'auth' | 'locales' | 'themes' | 'diagnostics'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -73,6 +74,11 @@ const sections = [
     id: 'themes',
     label: 'Темы',
     icon: Palette,
+  },
+  {
+    id: 'diagnostics',
+    label: 'Диагностика',
+    icon: HeartPulse,
   },
 ] as const
 
@@ -471,6 +477,10 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
             </div>
           </div>
           <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.</div>
+          </TabsContent>
+
+          <TabsContent value="diagnostics" class="m-0 min-h-full p-0 outline-none">
+            <DiagnosticsConfigurationMock :variant="variant" :disabled="disabled" />
           </TabsContent>
         </div>
       </main>
