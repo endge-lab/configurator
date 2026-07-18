@@ -1,120 +1,130 @@
+import type { UIEditorSFCBaseTag } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 import type { UIEditorDocument, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 
-import { Endge, getUIJsxTagName } from '@endge/core'
+import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 
 function indent(depth: number): string {
   return '  '.repeat(depth)
 }
 
-function printAttributes(node: UIEditorNode): string[] {
-  const layoutAttrs = node.kind === 'page'
-    ? []
-    : [
-        node.layout?.colStart && node.layout.colStart !== 1 ? `colStart={${node.layout.colStart}}` : '',
-        node.layout?.rowStart && node.layout.rowStart !== 1 ? `rowStart={${node.layout.rowStart}}` : '',
-        node.layout?.span && node.layout.span !== 12 ? `span={${node.layout.span}}` : '',
-        node.layout?.rowSpan ? `rowSpan={${node.layout.rowSpan}}` : '',
-      ].filter(Boolean)
-
-  const referenceAttrs = [
-    node.configRef ? `configRef="${node.configRef}"` : '',
-    node.assetRef ? `assetRef="${node.assetRef}"` : '',
-  ].filter(Boolean)
-
-  switch (node.kind) {
-    case 'page':
-      return [
-        `title="${node.props.title}"`,
-        `gap={${node.props.gap}}`,
-        `padding={${node.props.padding}}`,
-        `rowHeight={${node.props.rowHeight}}`,
-        ...referenceAttrs,
-      ]
-    case 'flex':
-      return [
-        `direction="${node.props.direction}"`,
-        `gap={${node.props.gap}}`,
-        `padding={${node.props.padding}}`,
-        ...referenceAttrs,
-        ...layoutAttrs,
-      ]
-    case 'grid':
-      return [
-        `columns={${node.props.columns}}`,
-        `gap={${node.props.gap}}`,
-        `padding={${node.props.padding}}`,
-        `minHeight={${node.props.minHeight}}`,
-        ...referenceAttrs,
-        ...layoutAttrs,
-      ]
-    case 'box':
-      return [
-        `title="${node.props.title}"`,
-        `padding={${node.props.padding}}`,
-        ...referenceAttrs,
-        ...layoutAttrs,
-      ]
-    case 'custom-component':
-      return [
-        `title="${node.props.title}"`,
-        node.props.rendererRef ? `rendererRef="${node.props.rendererRef}"` : '',
-        ...referenceAttrs,
-        ...layoutAttrs,
-      ].filter(Boolean)
-    case 'button':
-      return [`label="${node.props.label}"`, ...referenceAttrs, ...layoutAttrs]
-    case 'text':
-      return [...referenceAttrs, ...layoutAttrs]
-    default:
-      return []
-  }
+function escapeText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
-function printNode(document: UIEditorDocument, nodeId: string, depth = 0): string {
-  const node = document.nodes[nodeId]
-  if (!node) {
-    return ''
+function escapeComment(value: unknown): string {
+  return String(value ?? '')
+    .replace(/-{2,}/g, '—')
+    .trim()
+}
+
+function pixelAttribute(name: string, value: unknown): string {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) && numeric > 0
+    ? `${name}="${numeric}px"`
+    : ''
+}
+
+function printAttributes(node: UIEditorNode): string[] {
+  if (node.kind === 'page') {
+    return [
+      'direction="column"',
+      pixelAttribute('gap', node.props.gap),
+      pixelAttribute('p', node.props.padding),
+    ].filter(Boolean)
   }
 
-  if (node.kind === 'text') {
-    return `${indent(depth)}<Text>${node.props.text}</Text>`
+  if (node.kind === 'flex') {
+    return [
+      `direction="${node.props.direction === 'row' ? 'row' : 'column'}"`,
+      pixelAttribute('gap', node.props.gap),
+      pixelAttribute('p', node.props.padding),
+    ].filter(Boolean)
   }
 
-  const definition = Endge.uiRegistry.getDefinition(node.definitionRef)
-  const tag = definition
-    ? getUIJsxTagName(definition)
-    : node.kind === 'page'
-      ? 'Page'
-      : node.kind === 'flex'
-        ? 'Flex'
-        : node.kind === 'grid'
-          ? 'Grid'
-          : node.kind === 'box'
-            ? 'Box'
-            : node.kind === 'custom-component'
-              ? 'CustomComponent'
-              : 'Button'
+  if (node.kind === 'box') {
+    return [pixelAttribute('p', node.props.padding)].filter(Boolean)
+  }
+
+  return []
+}
+
+function printChildren(document: UIEditorDocument, node: UIEditorNode, depth: number): string[] {
+  return node.children
+    .map(childId => printNode(document, childId, depth))
+    .filter(Boolean)
+}
+
+function printElement(
+  document: UIEditorDocument,
+  node: UIEditorNode,
+  tag: UIEditorSFCBaseTag,
+  depth: number,
+): string {
+  if (tag === 'Text') {
+    const content = node.kind === 'text'
+      ? node.props.text
+      : node.kind === 'button'
+        ? node.props.label
+        : node.name
+    return `${indent(depth)}<Text>${escapeText(content)}</Text>`
+  }
+
+  if (tag !== 'Box' && tag !== 'Flex') {
+    return `${indent(depth)}<${tag} />`
+  }
 
   const attrs = printAttributes(node)
-  if (node.kind === 'button' || node.kind === 'custom-component') {
-    return `${indent(depth)}<${tag}${attrs.length ? ` ${attrs.join(' ')}` : ''} />`
-  }
-
-  const children = node.children
-    .map(childId => printNode(document, childId, depth + 1))
-    .filter(Boolean)
+  const openTag = `${indent(depth)}<${tag}${attrs.length ? ` ${attrs.join(' ')}` : ''}`
+  const children = printChildren(document, node, depth + 1)
 
   if (children.length === 0) {
-    return `${indent(depth)}<${tag}${attrs.length ? ` ${attrs.join(' ')}` : ''} />`
+    return `${openTag} />`
   }
 
   return [
-    `${indent(depth)}<${tag}${attrs.length ? ` ${attrs.join(' ')}` : ''}>`,
+    `${openTag}>`,
     ...children,
     `${indent(depth)}</${tag}>`,
   ].join('\n')
 }
 
+function printNode(document: UIEditorDocument, nodeId: string, depth: number): string {
+  const node = document.nodes[nodeId]
+  if (!node) {
+    return ''
+  }
+
+  if (node.kind === 'page') {
+    return printElement(document, node, 'Flex', depth)
+  }
+
+  const contract = getUIEditorSFCDefinitionContract(node.definitionRef)
+  if (contract) {
+    return printElement(document, node, contract.tag, depth)
+  }
+
+  const label = escapeComment(`${node.name || node.kind} · ${node.definitionRef}`)
+  return `${indent(depth)}<!-- Unsupported legacy editor node: ${label} -->`
+}
+
+export function printUIEditorDocumentSFC(document: UIEditorDocument): string {
+  const template = printNode(document, document.rootId, 1)
+
+  return [
+    '<script setup lang="ts">',
+    '</script>',
+    '',
+    '<template>',
+    template,
+    '</template>',
+    '',
+  ].join('\n')
+}
+
+/** @deprecated Use printUIEditorDocumentSFC. */
 export function printUIEditorDocumentJsx(document: UIEditorDocument): string {
-  return printNode(document, document.rootId)
+  return printUIEditorDocumentSFC(document)
 }

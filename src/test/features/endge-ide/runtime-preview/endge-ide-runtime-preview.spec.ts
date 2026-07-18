@@ -26,8 +26,8 @@ vi.mock('@/components/layouts/grid', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
 }))
-vi.mock('@/features/endge-configurator/model/endge-configurator', () => ({
-  EndgeConfigurator: {
+vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
+  EndgeIDEContext: {
     registerSurface: vi.fn((_id: string, lifecycle: { beforeContextReset?: () => Promise<void> | void }) => {
       mocks.surfaceLifecycle = lifecycle
       return vi.fn()

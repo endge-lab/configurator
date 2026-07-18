@@ -18,6 +18,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
+import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
@@ -43,10 +44,6 @@ function openBackupRestoreSingleton(): void {
   tabs.openBackupRestoreSingleton()
 }
 
-function openUIEditorDemoSingleton(): void {
-  tabs.openUIEditorDemoSingleton()
-}
-
 function openDomainAnalysis(): void {
   EndgeIDE.tabs.openDomainAnalysis()
 }
@@ -68,6 +65,10 @@ function openArchitecture(): void {
 </script>
 
 <template>
+  <Teleport to="[data-target='grid-layout-status-bar']" defer>
+    <EndgeIDEStatusBar />
+  </Teleport>
+
   <Teleport to="[data-target='grid-layout-header-menu']" defer>
     <nav class="flex items-center gap-1 text-xs font-medium">
       <!-- Схема / документ -->
@@ -126,9 +127,6 @@ function openArchitecture(): void {
           </DropdownMenuItem>
           <DropdownMenuItem @click="openBackupRestoreSingleton">
             Резервное восстановление
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="openUIEditorDemoSingleton">
-            UI редактор демо
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

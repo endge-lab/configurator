@@ -11,14 +11,14 @@ import {
 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
-import { useConfiguratorContext } from '@/features/endge-configurator/model/use-configurator-context'
-import EnvironmentSwitcher from '@/features/endge-ide/ui/section/header/EnvironmentSwitcher.vue'
-import LocaleSwitcher from '@/features/endge-ide/ui/section/header/LocaleSwitcher.vue'
-import ProjectSwitcher from '@/features/endge-ide/ui/section/header/ProjectSwitcher.vue'
-import TenantSwitcher from '@/features/endge-ide/ui/section/header/TenantSwitcher.vue'
-import ThemeSwitcher from '@/features/endge-ide/ui/section/header/ThemeSwitcher.vue'
+import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
+import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
+import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
+import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'
+import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
+import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 
-const context = useConfiguratorContext()
+const context = useEndgeIDEContext()
 
 const leftItems = [
   {

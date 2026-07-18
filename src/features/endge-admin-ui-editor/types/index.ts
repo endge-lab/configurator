@@ -7,6 +7,7 @@ import type {
 
 export type UIEditorBreakpoint = 'desktop' | 'tablet' | 'mobile'
 export type UIEditorCanvasMode = 'editor' | 'preview'
+export type UIEditorWorkspaceMode = 'visual' | 'split' | 'source'
 
 export type UIEditorNodeKind = UIPrimitiveKind
 

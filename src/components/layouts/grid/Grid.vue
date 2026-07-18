@@ -2,14 +2,14 @@
 import { useWindowSize } from '@vueuse/core'
 import { computed, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Spinner } from '@/components/ui/spinner'
-import { TooltipProvider } from '@/components/ui/tooltip'
+
 import FloatingWidgets from '@/components/layouts/grid/FloatingWidgets.vue'
 import GridHeader from '@/components/layouts/grid/GridHeader.vue'
 import { cleanupWidgetChannel, closeNonDetachablePopups, endWidgetDrag, getAreaSize, getLayoutState, getWidgetsByPosition, initWidgetChannel, moveWidget, setAreaSize, setLayoutScope } from '@/components/layouts/grid/layout.ts'
 import WidgetArea from '@/components/layouts/grid/WidgetArea.vue'
 import WidgetPanel from '@/components/layouts/grid/WidgetPanel.vue'
-import ConfiguratorStatusBar from '@/features/endge-configurator/ui/shell/ConfiguratorStatusBar.vue'
+import { Spinner } from '@/components/ui/spinner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Initialize widget channel for popup communication
 initWidgetChannel()
@@ -96,8 +96,9 @@ function startLeftResize(event: MouseEvent) {
 
   const onMouseMove = (e: MouseEvent) => {
     const mainArea = mainAreaRef.value
-    if (!mainArea)
+    if (!mainArea) {
       return
+    }
 
     const maxWidth = mainArea.offsetWidth * 0.4
     const deltaX = e.clientX - startX
@@ -126,8 +127,9 @@ function startRightResize(event: MouseEvent) {
 
   const onMouseMove = (e: MouseEvent) => {
     const mainArea = mainAreaRef.value
-    if (!mainArea)
+    if (!mainArea) {
       return
+    }
 
     const maxWidth = mainArea.offsetWidth * 0.4
     const deltaX = startX - e.clientX
@@ -156,8 +158,9 @@ function startBottomResize(event: MouseEvent) {
 
   const onMouseMove = (e: MouseEvent) => {
     const mainArea = mainAreaRef.value
-    if (!mainArea)
+    if (!mainArea) {
       return
+    }
 
     const maxHeight = mainArea.offsetHeight * 0.5
     const deltaY = startY - e.clientY
@@ -183,8 +186,9 @@ const leftColumnStart = computed(() => 1)
 const mainColumnStart = computed(() => leftAreaExpanded.value ? 3 : 1)
 const rightHandleColumnStart = computed(() => {
   let col = 1
-  if (leftAreaExpanded.value)
+  if (leftAreaExpanded.value) {
     col += 2
+  }
   col += 1
   return col
 })
@@ -192,8 +196,9 @@ const rightColumnStart = computed(() => rightHandleColumnStart.value + 1)
 const bottomRowStart = computed(() => 3)
 
 function handleGlobalDragOver(event: DragEvent) {
-  if (!isDraggingWidget.value)
+  if (!isDraggingWidget.value) {
     return
+  }
   event.preventDefault()
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'move'
@@ -201,8 +206,9 @@ function handleGlobalDragOver(event: DragEvent) {
 }
 
 function handleGlobalDrop(event: DragEvent) {
-  if (!isDraggingWidget.value || !draggingWidgetId.value)
+  if (!isDraggingWidget.value || !draggingWidgetId.value) {
     return
+  }
   event.preventDefault()
   moveWidget(draggingWidgetId.value, 'floating')
   endWidgetDrag()
@@ -291,7 +297,7 @@ function handleGlobalDrop(event: DragEvent) {
         />
       </div>
 
-      <ConfiguratorStatusBar />
+      <div data-target="grid-layout-status-bar" />
 
       <FloatingWidgets />
 

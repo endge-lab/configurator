@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIPresentationSurface } from '@endge/core'
 
+import { Endge, UI_COMPONENT_HOST_DEFINITION_ID } from '@endge/core'
 import { Blocks } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import type { UIPresentationSurface } from '@endge/core'
-import { Endge, UI_COMPONENT_HOST_DEFINITION_ID } from '@endge/core'
 import { Card } from '@/components/ui/card'
 import { getUIEditorDefaultLayout, isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import UIEditorDemoSelectionChrome from '@/features/endge-admin-ui-editor/ui/UIEditorDemoSelectionChrome.vue'
@@ -1203,7 +1203,8 @@ function startPageChildCornerResize(
       const candidateLeft = moveEvent.clientX - geometry.rect.left - pointerOffsetFromLeft
       nextColStart = snapColStartBeforeColEnd(candidateLeft, fixedColEnd, geometry)
       nextSpan = fixedColEnd - nextColStart
-    } else {
+    }
+    else {
       const candidateRight = moveEvent.clientX - geometry.rect.left - pointerOffsetFromRight
       const nextColEnd = snapColEndFromRight(candidateRight, startCol, geometry)
       nextColStart = startPreview.colStart
@@ -1214,7 +1215,8 @@ function startPageChildCornerResize(
       const candidateTop = moveEvent.clientY - geometry.rect.top - pointerOffsetFromTop
       nextRowStart = snapRowStartBeforeRowEnd(candidateTop, fixedRowEnd, geometry)
       nextRowSpan = fixedRowEnd - nextRowStart
-    } else {
+    }
+    else {
       const candidateBottom = moveEvent.clientY - geometry.rect.top - pointerOffsetFromBottom
       const nextRowEnd = snapRowEndFromBottom(candidateBottom, startPreview.rowStart, geometry)
       nextRowStart = startPreview.rowStart
@@ -1292,7 +1294,6 @@ function onPageChildSelectionChromeResize(child: UIEditorNode, handle: UIEditorC
 
   if (handle === 'south') {
     startPageChildHeightResize(child, event)
-    return
   }
 }
 
@@ -1332,7 +1333,7 @@ function getInsertStyle(): Record<string, string> | undefined {
   >
     <div
       v-if="!props.preview && isContainer && !isSelected"
-      class="pointer-events-none absolute left-2 -top-3 z-10 inline-flex items-center text-[9px] font-medium text-sky-700/75"
+      class="pointer-events-none absolute left-2 -top-3 z-10 inline-flex items-center text-[9px] font-medium text-sky-700/75 dark:text-sky-300/80"
     >
       {{ node.name }}
     </div>
@@ -1342,14 +1343,14 @@ function getInsertStyle(): Record<string, string> | undefined {
       :class="[
         props.preview
           ? node.kind === 'page'
-            ? 'min-h-full w-full border-0 bg-white shadow-none'
+            ? 'min-h-full w-full border-0 bg-white shadow-none dark:bg-slate-950'
             : node.kind === 'box'
-              ? 'h-full border border-slate-200/80 bg-white/95 shadow-none'
+              ? 'h-full border border-slate-200/80 bg-white/95 shadow-none dark:border-slate-700/80 dark:bg-slate-900/95'
               : 'h-full border-0 bg-transparent shadow-none'
           : node.kind === 'page'
-            ? 'min-h-full w-full border border-white/60 bg-white/90 shadow-none'
+            ? 'min-h-full w-full border border-white/60 bg-white/90 shadow-none dark:border-slate-700/60 dark:bg-slate-950/90'
             : 'h-full border border-border/80 bg-card/90 shadow-none',
-        !props.preview && isContainer && isDropHovered ? 'border-sky-400 bg-sky-50/40' : '',
+        !props.preview && isContainer && isDropHovered ? 'border-sky-400 bg-sky-50/40 dark:border-sky-400 dark:bg-sky-950/35' : '',
         !props.preview && !isSelected ? 'hover:border-foreground/15' : '',
       ]"
       :style="cardStyle"
@@ -1399,7 +1400,7 @@ function getInsertStyle(): Record<string, string> | undefined {
               <div
                 v-for="cellIndex in pageGridOverlayCellCount"
                 :key="cellIndex"
-                class="pointer-events-none border border-slate-300/35 bg-transparent"
+                class="pointer-events-none border border-slate-300/35 bg-transparent dark:border-slate-600/35"
               />
             </div>
 
@@ -1419,7 +1420,7 @@ function getInsertStyle(): Record<string, string> | undefined {
             <div
               v-if="!props.preview && node.kind !== 'page'"
               class="relative z-10 border border-dashed transition"
-              :class="insertHoverIndex === 0 ? 'h-7 border-sky-500 bg-sky-100/80' : 'h-[3px] border-transparent bg-transparent hover:border-sky-300/80 hover:bg-sky-50/80'"
+              :class="insertHoverIndex === 0 ? 'h-7 border-sky-500 bg-sky-100/80 dark:border-sky-400 dark:bg-sky-950/70' : 'h-[3px] border-transparent bg-transparent hover:border-sky-300/80 hover:bg-sky-50/80 dark:hover:border-sky-700/80 dark:hover:bg-sky-950/45'"
               :style="getInsertStyle()"
               @dragover="onInsertDragover(0, $event)"
               @dragleave="onInsertDragleave(0)"
@@ -1429,7 +1430,7 @@ function getInsertStyle(): Record<string, string> | undefined {
             <div
               v-if="children.length === 0 && !(node.kind === 'page' && activePagePreview)"
               class="relative z-10 border border-dashed border-border/80 px-3 py-5 text-center text-xs text-muted-foreground"
-              :class="props.preview ? 'bg-slate-50/80' : 'bg-background/70'"
+              :class="props.preview ? 'bg-slate-50/80 dark:bg-slate-900/75' : 'bg-background/70'"
               :style="getInsertStyle()"
             >
               {{ props.preview ? 'Пустой контейнер' : 'Контейнер пока пуст. Перетащи блок из палитры слева.' }}
@@ -1467,7 +1468,7 @@ function getInsertStyle(): Record<string, string> | undefined {
               <div
                 v-if="!props.preview && node.kind !== 'page'"
                 class="relative z-10 border border-dashed transition"
-                :class="insertHoverIndex === index + 1 ? 'h-7 border-sky-500 bg-sky-100/80' : 'h-[3px] border-transparent bg-transparent hover:border-sky-300/80 hover:bg-sky-50/80'"
+                :class="insertHoverIndex === index + 1 ? 'h-7 border-sky-500 bg-sky-100/80 dark:border-sky-400 dark:bg-sky-950/70' : 'h-[3px] border-transparent bg-transparent hover:border-sky-300/80 hover:bg-sky-50/80 dark:hover:border-sky-700/80 dark:hover:bg-sky-950/45'"
                 :style="getInsertStyle()"
                 @dragover="onInsertDragover(index + 1, $event)"
                 @dragleave="onInsertDragleave(index + 1)"
@@ -1483,15 +1484,15 @@ function getInsertStyle(): Record<string, string> | undefined {
         :class="props.preview ? 'py-0.5' : 'p-1.5'"
       >
         <component
-          v-if="nodeRendererComponent"
           :is="nodeRendererComponent"
+          v-if="nodeRendererComponent"
           v-bind="nodeRendererProps"
         />
 
         <div
           v-else-if="node.kind === 'text'"
-          class="border px-2 py-1.5 text-xs font-medium text-amber-950"
-          :class="props.preview ? 'border border-amber-200/80 bg-amber-50/80' : 'border border-border/70 bg-amber-50'"
+          class="border px-2 py-1.5 text-xs font-medium text-amber-950 dark:text-amber-100"
+          :class="props.preview ? 'border border-amber-200/80 bg-amber-50/80 dark:border-amber-700/60 dark:bg-amber-950/35' : 'border border-border/70 bg-amber-50 dark:bg-amber-950/30'"
         >
           {{ textPreview }}
         </div>
@@ -1499,28 +1500,27 @@ function getInsertStyle(): Record<string, string> | undefined {
         <div
           v-else-if="node.kind === 'custom-component'"
           class="border border-dashed px-3 py-2.5"
-          :class="props.preview ? 'border-cyan-200/90 bg-cyan-50/70' : 'border-cyan-300/80 bg-cyan-50/90'"
+          :class="props.preview ? 'border-cyan-200/90 bg-cyan-50/70 dark:border-cyan-700/60 dark:bg-cyan-950/30' : 'border-cyan-300/80 bg-cyan-50/90 dark:border-cyan-700/70 dark:bg-cyan-950/35'"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1 space-y-1.5">
-              <div class="inline-flex items-center gap-1 rounded bg-cyan-600/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-800">
+              <div class="inline-flex items-center gap-1 rounded bg-cyan-600/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-800 dark:bg-cyan-400/10 dark:text-cyan-300">
                 <Blocks class="size-3" />
                 <span>{{ customComponentBadge }}</span>
               </div>
 
-              <div class="truncate text-sm font-semibold text-slate-900">
+              <div class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ customComponentHeadline }}
               </div>
 
-              <div class="truncate font-mono text-[11px] text-slate-600">
+              <div class="truncate font-mono text-[11px] text-slate-600 dark:text-slate-400">
                 {{ customComponentMeta || 'definitionRef is not set yet' }}
               </div>
 
-              <div class="text-xs text-slate-600/90">
+              <div class="text-xs text-slate-600/90 dark:text-slate-400">
                 {{ customComponentDescription }}
               </div>
             </div>
-
           </div>
         </div>
 

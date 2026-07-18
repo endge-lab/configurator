@@ -3,8 +3,8 @@ import Logo from '@/components/layouts/main/Logo.vue'
 import { useCurrentSectionTitle } from '@/components/layouts/main/navigation'
 import Navigation from '@/components/layouts/main/Navigation.vue'
 import NavUser from '@/components/layouts/main/NavUser.vue'
+import TimeButton from '@/components/layouts/main/TimeButton.vue'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
-import Time_Button from '@/features/endge-configurator/ui/common/buttons/Time_Button.vue'
 
 const sectionTitle = useCurrentSectionTitle()
 
@@ -51,7 +51,7 @@ const data = {
             </div>
 
             <div class="pr-2">
-              <Time_Button />
+              <TimeButton />
             </div>
 
             <div class="w-16">

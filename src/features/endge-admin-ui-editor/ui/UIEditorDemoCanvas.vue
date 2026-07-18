@@ -71,13 +71,19 @@ function onRootDrop(event: DragEvent): void {
 <template>
   <div
     class="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden border border-border/70"
-    :class="isPreviewMode ? 'bg-[linear-gradient(180deg,#f8fafc_0%,#eef4fb_100%)]' : 'bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,rgba(248,250,252,0.95),rgba(241,245,249,0.92))]'"
+    :class="isPreviewMode
+      ? 'bg-[linear-gradient(180deg,#f8fafc_0%,#eef4fb_100%)] dark:bg-[linear-gradient(180deg,#111827_0%,#0b1120_100%)]'
+      : 'bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,rgba(248,250,252,0.95),rgba(241,245,249,0.92))] dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.10),_transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))]'"
   >
     <div class="min-h-0 flex-1 overflow-auto">
       <div class="min-h-full w-full pb-6">
         <div
-          class="mx-auto h-fit min-h-full shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition"
-          :class="isPreviewMode ? 'border border-white/70 bg-white' : rootDropHovered ? 'border border-sky-500 bg-sky-50/80' : 'border border-dashed border-border/70 bg-white/60'"
+          class="mx-auto h-fit min-h-full shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition dark:shadow-[0_18px_48px_rgba(0,0,0,0.34)]"
+          :class="isPreviewMode
+            ? 'border border-white/70 bg-white dark:border-slate-700/80 dark:bg-slate-950'
+            : rootDropHovered
+              ? 'border border-sky-500 bg-sky-50/80 dark:border-sky-400 dark:bg-sky-950/45'
+              : 'border border-dashed border-border/70 bg-white/60 dark:bg-slate-950/55'"
           :style="canvasShellStyle"
           @dragover="onRootDragover"
           @dragleave="rootDropHovered = false"

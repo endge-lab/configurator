@@ -1,23 +1,20 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   UIEditorLibraryGroup,
   UIEditorLibraryItem,
 } from '@/features/endge-admin-ui-editor/types'
 
 import {
-  Blocks,
   ChevronDown,
   ChevronRight,
   ChevronsDown,
   ChevronsUp,
-  Folder,
   Layout,
-  LayoutGrid,
   Rows3,
   Search,
   SquareStack,
   Type,
-  WholeWord,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -26,10 +23,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { UI_EDITOR_DND_MIME, uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import {
-  buildUIEditorComponentLibraryGroups,
-  buildUIEditorLibraryGroups,
-} from '@/features/endge-admin-ui-editor/entities/ui-editor-library-catalog'
+import { buildUIEditorLibraryGroups } from '@/features/endge-admin-ui-editor/entities/ui-editor-library-catalog'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY = 'endge-admin-ui-editor-library-expanded-groups'
@@ -80,12 +74,8 @@ const expandedGroupIds = computed<Set<string>>({
 })
 
 const baseGroups = computed<UIEditorLibraryGroup[]>(() => filterGroups(buildUIEditorLibraryGroups()))
-const componentGroups = computed<UIEditorLibraryGroup[]>(() => filterGroups(buildUIEditorComponentLibraryGroups()))
 
-const allGroupIds = computed<string[]>(() => [
-  ...buildUIEditorLibraryGroups().map(group => group.id),
-  ...buildUIEditorComponentLibraryGroups().map(group => group.id),
-])
+const allGroupIds = computed<string[]>(() => buildUIEditorLibraryGroups().map(group => group.id))
 
 const isEverythingExpanded = computed<boolean>(() =>
   allGroupIds.value.every(groupId => expandedGroupIds.value.has(groupId)),
@@ -168,36 +158,15 @@ function getGroupIcon(groupId: string) {
   if (groupId === 'content') {
     return Type
   }
-  if (groupId === 'actions') {
-    return WholeWord
-  }
-  if (groupId === 'data') {
-    return LayoutGrid
-  }
-  if (groupId === 'forms') {
-    return Blocks
-  }
-  if (groupId === 'navigation') {
-    return Folder
-  }
   return Layout
 }
 
 function getItemIcon(item: UIEditorLibraryItem) {
-  if (item.kind === 'grid') {
-    return LayoutGrid
-  }
   if (item.kind === 'flex') {
     return Rows3
   }
   if (item.kind === 'box') {
     return SquareStack
-  }
-  if (item.kind === 'custom-component') {
-    return Blocks
-  }
-  if (item.kind === 'button') {
-    return WholeWord
   }
   return Type
 }
@@ -219,26 +188,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
   if (item.description) {
     parts.push(item.description)
   }
-  if (item.source === 'preset') {
-    parts.push('Preset component')
-  }
-  if (item.source === 'jsx') {
-    parts.push('JSX component')
-  }
-  if (item.configKind) {
-    parts.push(`config-backed: ${item.configKind}`)
-  }
   return parts.join('\n')
-}
-
-function getSourceBadgeLabel(item: UIEditorLibraryItem): string | null {
-  if (item.source === 'preset') {
-    return 'Preset'
-  }
-  if (item.source === 'jsx') {
-    return 'JSX'
-  }
-  return null
 }
 </script>
 
@@ -251,7 +201,7 @@ function getSourceBadgeLabel(item: UIEditorLibraryItem): string | null {
           <Input
             v-model="query"
             class="h-8 border-0 bg-transparent pl-7 shadow-none focus-visible:ring-0"
-            placeholder="Фильтр по definition и component catalog"
+            placeholder="Фильтр по SFC primitives"
           />
         </div>
 
@@ -271,7 +221,7 @@ function getSourceBadgeLabel(item: UIEditorLibraryItem): string | null {
       <div class="p-2 text-sm">
         <div class="mb-3">
           <div class="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-            Definitions
+            SFC primitives
           </div>
 
           <div
@@ -305,65 +255,11 @@ function getSourceBadgeLabel(item: UIEditorLibraryItem): string | null {
                 @dragend="onDragend"
               >
                 <span class="ml-5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm" :class="item.accentClass">
-                  <component :is="getItemIcon(item)" class="size-3 text-slate-900" />
+                  <component :is="getItemIcon(item)" class="size-3 text-slate-900 dark:text-slate-100" />
                 </span>
 
                 <span class="min-w-0 flex-1 truncate">
                   {{ item.label }}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-            Components
-          </div>
-
-          <div
-            v-for="group in componentGroups"
-            :key="group.id"
-            class="mb-1 last:mb-0"
-          >
-            <button
-              type="button"
-              :class="rowClasses()"
-              class="w-full text-left"
-              @click="toggleGroup(group.id)"
-            >
-              <ChevronDown v-if="isExpanded(group.id)" class="size-4 shrink-0" />
-              <ChevronRight v-else class="size-4 shrink-0" />
-              <Blocks class="size-4 shrink-0 text-cyan-500" />
-              <span class="truncate">
-                {{ group.title }}
-              </span>
-            </button>
-
-            <div v-if="isExpanded(group.id)" class="mt-1 space-y-1">
-              <button
-                v-for="item in group.items"
-                :key="item.id"
-                type="button"
-                draggable="true"
-                :class="itemRowClasses()"
-                :title="getItemTitle(item)"
-                @dragstart="onDragstart($event, item)"
-                @dragend="onDragend"
-              >
-                <span class="ml-5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm" :class="item.accentClass">
-                  <component :is="getItemIcon(item)" class="size-3 text-slate-900" />
-                </span>
-
-                <span class="min-w-0 flex-1 truncate">
-                  {{ item.label }}
-                </span>
-
-                <span
-                  v-if="getSourceBadgeLabel(item)"
-                  class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground"
-                >
-                  {{ getSourceBadgeLabel(item) }}
                 </span>
               </button>
             </div>

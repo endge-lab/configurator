@@ -6,9 +6,11 @@ import { useRoute } from 'vue-router'
 
 import { getLayoutState, useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
-import { triggerAppRenderGuardTest } from '@/features/endge-configurator/model/app-render-guard.ts'
+import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
+import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditorDemo_Singleton.vue'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { triggerEndgeIDERenderGuardTest } from '@/features/endge-ide/model/error/endge-ide-render-guard'
 import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
 import ClearSoftDeleted_Modal from '@/features/endge-ide/ui/modals/ClearSoftDeleted_Modal.vue'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
@@ -67,6 +69,15 @@ const isRuntimePreviewActive = computed(() => {
   const area = widgets.value.areas.left
   return area.expanded && area.activeWidget === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID
 })
+const isUIEditorActive = computed(() => {
+  const position = widgets.value.definitions[ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID]?.position
+  if (position !== 'left' && position !== 'right' && position !== 'bottom') {
+    return false
+  }
+
+  const area = widgets.value.areas[position]
+  return area.expanded && area.activeWidget === ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID
+})
 const isBusy = computed(() => EndgeIDE.busy.value)
 const hotkeysList = computed(() => EndgeIDE.hotkeys.getAllHotkeys())
 const busyText = 'Подождите'
@@ -86,7 +97,7 @@ onBeforeMount(() => {
 
 onMounted(() => {
   if (route.query.guardTest === '1') {
-    triggerAppRenderGuardTest({
+    triggerEndgeIDERenderGuardTest({
       routePath: route.path,
       componentName: 'EndgeAdminEditorView',
     })
@@ -101,6 +112,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
     <RuntimePreview_View v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
+    <UIEditorDemo_Singleton v-else-if="isUIEditorActive" class="min-h-0 flex-1" />
 
     <div v-else class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <SmartTabsHost

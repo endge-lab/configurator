@@ -2,6 +2,7 @@ import type { WidgetDefinition } from '@/components/layouts/grid'
 
 import { markRaw } from 'vue'
 
+import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
@@ -82,7 +83,7 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     },
   },
   {
-    id: 'ui-library',
+    id: ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID,
     title: 'UI Library',
     icon: 'LibraryBig',
     content: 'component',

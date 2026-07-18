@@ -8,7 +8,7 @@ import type { CompositionProgramPayload, CompositionRuntimeDescriptor, DomainDoc
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
-import { resolveDomainEntityPresentation } from '@/features/endge-configurator/model/presentation/domain-entity-presentation'
+import { resolveDomainEntityPresentation } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 
 export function buildRuntimePreviewTree(target: RuntimePreviewTarget): RuntimePreviewTreeNode[] {
   if (target.entityType === 'project') { return [buildProjectNode(target.identity)] }

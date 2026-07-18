@@ -9,20 +9,24 @@ import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { appRenderGuardState, captureAppRenderFailure, resetAppRenderGuard } from '@/features/endge-configurator/model/app-render-guard.ts'
-import ErrorView from '@/features/endge-configurator/ui/pages/common/Error.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
+import { captureEndgeIDERenderFailure, endgeIDERenderGuardState, resetEndgeIDERenderGuard } from '@/features/endge-ide/model/error/endge-ide-render-guard'
+import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 
 const route = useRoute()
 const error = ref<Error | null>(null)
 const errorInfo = ref<string>('')
 const errorComponentName = ref<string>('')
 const appLoadingText = 'Идет загрузка приложения...'
-const fatalRenderGuard = appRenderGuardState
+const fatalRenderGuard = endgeIDERenderGuardState
 
 const currentLayout = computed(() => {
-  if (fatalRenderGuard.value) { return Empty }
-  if (isIDEPlainMode()) { return Empty }
+  if (fatalRenderGuard.value) {
+    return Empty
+  }
+  if (isIDEPlainMode()) {
+    return Empty
+  }
   const layout = (route.meta.layout || 'empty') as keyof typeof layouts
   return layouts[layout] ?? Empty
 })
@@ -33,7 +37,7 @@ watch(() => route.fullPath, () => {
   error.value = null
   errorInfo.value = ''
   errorComponentName.value = ''
-  resetAppRenderGuard()
+  resetEndgeIDERenderGuard()
 })
 
 // Capture errors from child components
@@ -57,11 +61,12 @@ onErrorCaptured((err, instance, info) => {
 
   errorComponentName.value = componentName
   const capturedError = err instanceof Error ? err : new Error(String(err))
-  const fatalState = captureAppRenderFailure({
+  const fatalState = captureEndgeIDERenderFailure({
     err: capturedError,
     errorInfo: info,
     componentName,
     routePath: route.path,
+    isEndgeIDE: route.meta.layoutScope === 'endge-ide',
   })
 
   error.value = fatalState?.error ?? capturedError
@@ -87,7 +92,7 @@ onErrorCaptured((err, instance, info) => {
 
     <!-- ЛОГИКА LAYOUT -->
     <component :is="currentLayout" :key="currentLayoutKey">
-      <ErrorView
+      <EndgeIDEErrorView
         v-if="fatalRenderGuard || error"
         :error="fatalRenderGuard?.error ?? error"
         :error-info="fatalRenderGuard?.errorInfo ?? errorInfo"

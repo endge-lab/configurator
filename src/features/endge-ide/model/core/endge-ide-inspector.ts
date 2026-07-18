@@ -26,7 +26,6 @@ import PageInspector from '@/features/endge-ide/ui/section/inspectors/Page_Inspe
 import PageTemplateInspector from '@/features/endge-ide/ui/section/inspectors/PageTemplate_Inspector.vue'
 import NavigationInspector from '@/features/endge-ide/ui/section/inspectors/Navigation_Inspector.vue'
 import ProjectInspector from '@/features/endge-ide/ui/section/inspectors/Project_Inspector.vue'
-import UIEditorDemoInspector from '@/features/endge-admin-ui-editor/ui/UIEditorDemoInspector.vue'
 
 const INSPECTOR_WIDGET_ID = 'inspector'
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -101,9 +100,7 @@ export class EndgeIDEInspector {
   ])
 
   /** Регистратор singleton/view-based inspector views. */
-  private _viewRegistry = new Map<string, Component>([
-    ['endge-ui-editor-demo', markRaw(UIEditorDemoInspector)],
-  ])
+  private _viewRegistry = new Map<string, Component>()
 
   /** Перевести фокус на виджет инспектора (показать и активировать). */
   public activate(): void {

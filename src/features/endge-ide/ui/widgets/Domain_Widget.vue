@@ -6,6 +6,7 @@ import type {
 import type { DragPayloadItem } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
+import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
 import type { DomainDocumentType, RCompositionKind } from '@endge/core'
 
 import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
@@ -68,8 +69,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
-} from '@/features/endge-configurator/model/presentation/domain-document-presentation'
+} from '@/features/endge-ide/model/domain/domain-document-presentation'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
   canHardDelete,
   canRestore,
@@ -96,10 +99,9 @@ import {
 } from '@/features/endge-ide/model/domain/domain-tree'
 import {
   domainFileNodeToWorkingSetRef,
-  projectDomainWorkingSetFiles,
+  groupDomainWorkingSetItems,
+  projectDomainWorkingSetItems,
 } from '@/features/endge-ide/model/domain/domain-tree-working-set'
-import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
-import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
 import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
@@ -118,6 +120,7 @@ type MenuAction
     | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
+    | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
     | { type: 'download-selected' }
     | { type: 'clear-soft-deleted' }
@@ -130,6 +133,10 @@ const softDeletedFolderId = computed(() => Endge.domain.getFolderByIdentity('sof
 // ---------- expanded state (persisted) ----------
 const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
   'endge-editor-domain-treeview-expanded',
+  {},
+)
+const filteredExpandedKeys = useSafeLocalStorage<Record<string, boolean>>(
+  'endge-editor-domain-treeview-filtered-expanded',
   {},
 )
 
@@ -167,9 +174,14 @@ const persistedWorkingSetFilter = useSafeLocalStorage<DomainWorkingSetFilterStat
 )
 const workingSetFilterEnabled = ref(false)
 const workingSetRoots = ref<DomainWorkingSetRef[]>([])
+const DEPENDENCY_FILTER_PROJECTION: DomainWorkingSetProjectionOptions = {
+  folderMode: 'root-folders',
+  preserveGroups: false,
+}
+const SHOW_DEPENDENCIES_LABEL = 'Показать зависимости выбранных файлов'
 const workingSetFilterTooltip = computed(() => workingSetFilterEnabled.value
   ? 'Показать все файлы'
-  : 'Показать зависимости выбранных файлов')
+  : SHOW_DEPENDENCIES_LABEL)
 
 const expandedFolders = computed<Set<string>>({
   get(): Set<string> {
@@ -187,16 +199,50 @@ const expandedFolders = computed<Set<string>>({
   },
 })
 
+const workingSetExpandedFolders = computed<Set<string>>({
+  get(): Set<string> {
+    const expanded = new Set<string>()
+    for (const [path, isExpanded] of Object.entries(filteredExpandedKeys.value)) {
+      if (isExpanded) {
+        expanded.add(path)
+      }
+    }
+    return expanded
+  },
+  set(next: Set<string>) {
+    const persisted: Record<string, boolean> = {}
+    for (const path of next) {
+      persisted[path] = true
+    }
+    filteredExpandedKeys.value = persisted
+  },
+})
+const activeExpandedFolders = computed(() => workingSetFilterEnabled.value
+  ? workingSetExpandedFolders.value
+  : expandedFolders.value)
+
+function setActiveExpandedFolders(next: Set<string>): void {
+  if (workingSetFilterEnabled.value) {
+    workingSetExpandedFolders.value = next
+  }
+  else {
+    expandedFolders.value = next
+  }
+}
+
 function toggleFolder(path: string): void {
-  const s = new Set(expandedFolders.value)
-  if (s.has(path))
+  const s = new Set(activeExpandedFolders.value)
+  if (s.has(path)) {
     s.delete(path)
-  else s.add(path)
-  expandedFolders.value = s
+  }
+  else {
+    s.add(path)
+  }
+  setActiveExpandedFolders(s)
 }
 
 function folderIsExpanded(path: string): boolean {
-  return expandedFolders.value.has(path)
+  return activeExpandedFolders.value.has(path)
 }
 
 // ---------- dialogs ----------
@@ -608,7 +654,7 @@ function getFolderIcon(node: FsFolderNode): any {
 function getFolderColorClass(node: FsFolderNode): string {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
-  return 'fill-current text-slate-500 dark:text-slate-400'
+  return 'fill-current text-yellow-500 dark:text-slate-400'
 }
 
 function getTreeDocumentIconClass(node: FsFileNode): string[] {
@@ -667,23 +713,24 @@ const workingSetResult = computed(() => {
 
 const flatFs = computed<FlatFsItem[]>(() => {
   if (workingSetFilterEnabled.value) {
-    return projectDomainWorkingSetFiles(fsTree.value, workingSetResult.value)
+    return projectDomainWorkingSetItems(
+      fsTree.value,
+      workingSetResult.value,
+      workingSetExpandedFolders.value,
+      DEPENDENCY_FILTER_PROJECTION,
+    )
   }
   return flattenTree(fsTree.value, expandedFolders.value)
 })
 
 const groupedFlatFs = computed(() => {
   if (workingSetFilterEnabled.value) {
-    return [{
-      id: 'working-set',
-      title: '',
-      rootIds: ['working-set'],
-      showTitle: false,
-      roots: [{
-        rootId: 'working-set',
-        items: flatFs.value,
-      }],
-    }]
+    return groupDomainWorkingSetItems(
+      flatFs.value,
+      ROOT_BLOCKS.value,
+      ROOT_FOLDER_ORDER.value,
+      DEPENDENCY_FILTER_PROJECTION,
+    )
   }
 
   return ROOT_BLOCKS.value
@@ -730,11 +777,24 @@ const availableWorkingSetRefs = computed(() =>
 )
 
 function expandAll(): void {
+  if (workingSetFilterEnabled.value) {
+    const rootPaths = projectDomainWorkingSetItems(
+      fsTree.value,
+      workingSetResult.value,
+      new Set(),
+      DEPENDENCY_FILTER_PROJECTION,
+    )
+      .filter(item => item.node.type === 'folder')
+      .map(item => item.path)
+    workingSetExpandedFolders.value = new Set(rootPaths)
+    return
+  }
+
   expandedFolders.value = new Set(allExpandablePaths.value)
 }
 
 function collapseAll(): void {
-  expandedFolders.value = new Set()
+  setActiveExpandedFolders(new Set())
 }
 
 // ---------- выделение (множественное: Ctrl/Meta, диапазон: Shift) ----------
@@ -787,19 +847,24 @@ watch(availableWorkingSetRefs, (available) => {
   workingSetFilterInitialized = true
 }, { immediate: true })
 
-function toggleWorkingSetFilter(): void {
-  if (workingSetFilterEnabled.value) {
-    resetWorkingSetFilter()
-    return
-  }
-
-  const roots = selectedExportNodes.value.map(domainFileNodeToWorkingSetRef)
+function activateWorkingSetFilter(nodes: readonly FsFileNode[]): void {
+  const roots = nodes.map(domainFileNodeToWorkingSetRef)
   if (roots.length === 0) {
     toast.info('Выберите хотя бы один файл')
     return
   }
 
   applyWorkingSetFilter(roots)
+  expandAll()
+}
+
+function toggleWorkingSetFilter(): void {
+  if (workingSetFilterEnabled.value) {
+    resetWorkingSetFilter()
+    return
+  }
+
+  activateWorkingSetFilter(selectedExportNodes.value)
 }
 
 function getFileItemsInRoot(rootId: string): FlatFsItem[] {
@@ -924,9 +989,9 @@ async function createSubfolderUi(targetFolder: FsFolderNode, targetPath: string)
     toast.error('Не удалось создать папку', { description: (e as Error)?.message })
   }
 
-  const s = new Set(expandedFolders.value)
+  const s = new Set(activeExpandedFolders.value)
   s.add(targetPath)
-  expandedFolders.value = s
+  setActiveExpandedFolders(s)
 }
 
 async function removeFolder(node: FsFolderNode): Promise<void> {
@@ -1086,6 +1151,17 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       action: { type: 'launch-runtime-previews', nodes: contextNodes },
     })
 
+    const isSingleSelectedFile = path != null
+      && selectedFileIds.value.has(path)
+      && selectedExportNodes.value.length === 1
+    if (isSingleSelectedFile) {
+      items.push({
+        label: SHOW_DEPENDENCIES_LABEL,
+        icon: ListFilter,
+        action: { type: 'filter-dependencies', node: fileNode },
+      })
+    }
+
     if (path && selectedFileIds.value.has(path) && selectedExportNodes.value.length > 1) {
       items.push({
         label: `Скачать выбранные (${selectedExportNodes.value.length})`,
@@ -1208,6 +1284,11 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
+  if (a.type === 'filter-dependencies') {
+    activateWorkingSetFilter([a.node])
+    return
+  }
+
   if (a.type === 'download-selected') {
     await downloadSelectedDocuments()
     return
@@ -1241,7 +1322,7 @@ function rowClasses(item: FlatFsItem): string {
       && isSystemTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
   return [
-    'flex items-center gap-1 py-0.5 px-1 rounded cursor-pointer select-none',
+    'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
     isMutedSystemFolder ? 'text-slate-600' : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',

@@ -1,5 +1,0 @@
-export { default as EnvironmentSwitcher } from './EnvironmentSwitcher.vue'
-export { default as LocaleSwitcher } from './LocaleSwitcher.vue'
-export { default as ProjectSwitcher } from './ProjectSwitcher.vue'
-export { default as TenantSwitcher } from './TenantSwitcher.vue'
-export { default as ThemeSwitcher } from './ThemeSwitcher.vue'

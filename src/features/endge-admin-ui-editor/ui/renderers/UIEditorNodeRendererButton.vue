@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
 import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
 
 defineProps<{
   node: UIEditorNode
@@ -18,7 +18,7 @@ defineProps<{
     >
       {{ node.props.label }}
     </button>
-    <span class="ml-2 mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-700/80">
+    <span class="ml-2 mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-700/80 dark:text-sky-300/85">
       {{ definition?.title ?? 'Button' }}
     </span>
   </div>

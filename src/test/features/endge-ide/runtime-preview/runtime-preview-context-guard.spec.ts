@@ -23,8 +23,8 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-vi.mock('@/features/endge-configurator/model/endge-configurator', () => ({
-  EndgeConfigurator: {
+vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
+  EndgeIDEContext: {
     get isSwitchingContext() { return state.switching },
   },
 }))

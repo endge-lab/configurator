@@ -3,7 +3,7 @@ import type { RuntimePreviewTarget } from '@/features/endge-ide/domain/types/run
 
 import { Endge } from '@endge/core'
 
-import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator'
+import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
 
 export interface RuntimePreviewContextValidation {
   valid: boolean
@@ -12,7 +12,7 @@ export interface RuntimePreviewContextValidation {
 }
 
 export function validateRuntimePreviewContext(target: RuntimePreviewTarget): RuntimePreviewContextValidation {
-  if (EndgeConfigurator.isSwitchingContext) {
+  if (EndgeIDEContext.isSwitchingContext) {
     return {
       valid: false,
       message: 'Контекст приложения переключается',

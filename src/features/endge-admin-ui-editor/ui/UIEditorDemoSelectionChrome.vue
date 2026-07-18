@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
+import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -94,7 +94,7 @@ function onHandleMouseDown(handle: UIEditorChromeHandle, event: MouseEvent): voi
         <Button
           variant="ghost"
           size="sm"
-          class="pointer-events-auto absolute right-1.5 top-1.5 h-5 w-5 rounded-full border border-sky-200 bg-white p-0 text-sky-700 shadow-sm hover:border-destructive/40 hover:text-destructive"
+          class="pointer-events-auto absolute right-1.5 top-1.5 h-5 w-5 rounded-full border border-sky-200 bg-white p-0 text-sky-700 shadow-sm hover:border-destructive/40 hover:text-destructive dark:border-sky-700 dark:bg-slate-950 dark:text-sky-300"
           @click.stop="emit('delete')"
         >
           <Trash2 class="size-2.5" />
@@ -103,18 +103,18 @@ function onHandleMouseDown(handle: UIEditorChromeHandle, event: MouseEvent): voi
       <TooltipContent>Удалить блок</TooltipContent>
     </Tooltip>
 
-    <template v-if="showHandles" v-for="handle in handles" :key="handle.id">
+    <template v-for="handle in handles" v-if="showHandles" :key="handle.id">
       <button
         v-if="interactiveHandleSet.has(handle.id) || dragHandleSet.has(handle.id)"
         type="button"
-        class="pointer-events-auto absolute flex h-3 w-3 items-center justify-center rounded-full border border-sky-500 bg-white shadow-sm"
+        class="pointer-events-auto absolute flex h-3 w-3 items-center justify-center rounded-full border border-sky-500 bg-white shadow-sm dark:border-sky-400 dark:bg-slate-950"
         :class="[handle.className, dragHandleSet.has(handle.id) ? 'cursor-move' : handle.cursorClass]"
         @mousedown.stop.prevent="onHandleMouseDown(handle.id, $event)"
       />
 
       <div
         v-else
-        class="absolute h-3 w-3 rounded-full border border-sky-500 bg-white shadow-sm"
+        class="absolute h-3 w-3 rounded-full border border-sky-500 bg-white shadow-sm dark:border-sky-400 dark:bg-slate-950"
         :class="handle.className"
       />
     </template>

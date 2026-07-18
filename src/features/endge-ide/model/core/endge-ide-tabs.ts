@@ -22,8 +22,8 @@ import { toast } from 'vue-sonner'
 import { showWidget } from '@/components/layouts/grid'
 
 import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
-import { getDomainDocumentPresentation } from '@/features/endge-configurator/model/presentation/domain-document-presentation'
-import { getDomainDocumentLabel } from '@/features/endge-configurator/model/presentation/domain-entity-presentation'
+import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
+import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
@@ -53,6 +53,7 @@ import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParamete
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
+import { resolveComponentDocument } from '@/features/endge-ide/tools/resolve-component-document'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
 import ComponentSFC_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'
@@ -91,7 +92,6 @@ import Pulse_Tab from '@/features/endge-ide/ui/section/pulse/Pulse_Tab.vue'
 import Architecture_Tab from '@/features/endge-ide/ui/section/architecture/Architecture_Tab.vue'
 import Domain_Analysis_Tab from '@/features/endge-ide/ui/section/domain-analysis/Domain_Analysis_Tab.vue'
 import Runtime_Debug_Tab from '@/features/endge-ide/ui/section/runtime-debug/Runtime_Debug_Tab.vue'
-import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditorDemo_Singleton.vue'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -102,7 +102,6 @@ const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
 const VIEW_ID_BACKUP_RESTORE = 'endge-backup-restore' as const
-const VIEW_ID_UI_EDITOR_DEMO = 'endge-ui-editor-demo' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 const VIEW_ID_PULSE = 'endge-pulse' as const
 const VIEW_ID_ARCHITECTURE = 'endge-architecture' as const
@@ -192,6 +191,7 @@ export class EndgeIDETabs {
     if (this._isRegistryBootstrapped)
       return
     this._tabsApi.closeTab('docs')
+    this._tabsApi.closeTab('ui-editor-demo-singleton')
     this._registerSystemViews()
     this._refreshPersistedDocumentTabIcons()
     this._isRegistryBootstrapped = true
@@ -431,21 +431,6 @@ export class EndgeIDETabs {
     this.openTab(tabRef)
   }
 
-  public openUIEditorDemoSingleton(): void {
-    const tabRef: SmartTabRef = {
-      id: 'ui-editor-demo-singleton',
-      label: 'UI редактор (демо)',
-      viewId: VIEW_ID_UI_EDITOR_DEMO,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-devices text-xl text-violet-500' },
-    }
-    this.openTab(tabRef)
-    showWidget('ui-library')
-    showWidget('inspector')
-  }
-
   /** Открыть вкладку «Демонстрация» в единственном экземпляре. */
   public openDemonstrationTab(): void {
     const tabRef: SmartTabRef = {
@@ -637,8 +622,7 @@ export class EndgeIDETabs {
       return entity ? { documentId: entity.identity, documentType: entity.type } : null
     }
     if (reference.target === 'component') {
-      const entity = Endge.domain.getComponent(reference.identity)
-      return entity ? { documentId: String(entity.identity), documentType: entity.type as DomainDocumentType } : null
+      return resolveComponentDocument(reference.identity)
     }
     if (reference.target === 'filter') {
       const entity = Endge.domain.getFilter(reference.identity)
@@ -711,10 +695,6 @@ export class EndgeIDETabs {
     }))
     registerSmartTabView(VIEW_ID_BACKUP_RESTORE, (): SmartTabViewResolved => ({
       component: markRaw(BackupRestore_Singleton),
-      props: {},
-    }))
-    registerSmartTabView(VIEW_ID_UI_EDITOR_DEMO, (): SmartTabViewResolved => ({
-      component: markRaw(UIEditorDemo_Singleton),
       props: {},
     }))
     registerSmartTabView(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({

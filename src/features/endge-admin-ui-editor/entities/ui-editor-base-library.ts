@@ -3,45 +3,42 @@ import type {
   UIEditorLibraryItem,
 } from '@/features/endge-admin-ui-editor/types'
 
-import {
-  Endge,
-} from '@endge/core'
+import { UI_EDITOR_SFC_DEFINITION_CONTRACTS } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 
-function createLibraryItem(definitionRef: string): UIEditorLibraryItem {
-  const definition = Endge.uiRegistry.listDefinitions({ includeSystem: true })
-    .find(item => item.id === definitionRef)
-
-  if (!definition || definition.primitiveKind === 'page') {
-    throw new Error(`[UIEditorBaseLibrary] unknown palette definition: ${definitionRef}`)
-  }
-
+function createLibraryItem(
+  contract: typeof UI_EDITOR_SFC_DEFINITION_CONTRACTS[number],
+): UIEditorLibraryItem {
   return {
-    id: definition.id,
+    id: contract.definitionRef,
     source: 'definition',
     section: 'definitions',
-    folder: definition.groupId,
-    definitionRef: definition.id,
-    label: definition.title,
-    description: definition.description,
-    kind: definition.primitiveKind,
-    accentClass: definition.canvasAccentClass,
-    configKind: definition.configKind ?? null,
-    keywords: definition.keywords,
-    layoutPatch: Endge.uiRegistry.getDefinitionDefaultLayout(definition.id),
-    propsPatch: Endge.uiRegistry.getDefinitionDefaultProps(definition.id),
-    sourceLabel: definition.title,
+    folder: contract.groupId,
+    definitionRef: contract.definitionRef,
+    label: contract.label,
+    description: contract.description,
+    kind: contract.kind,
+    accentClass: contract.accentClass,
+    configKind: null,
+    keywords: contract.keywords,
+    layoutPatch: { ...contract.defaultLayout },
+    propsPatch: { ...contract.defaultProps },
+    sourceLabel: contract.label,
   }
 }
 
 export function getUIEditorBaseLibraryGroups(): UIEditorLibraryGroup[] {
-  const definitions = Endge.uiRegistry.listDefinitions({ paletteOnly: true })
+  const groups = new Map<string, UIEditorLibraryGroup>()
 
-  return Endge.uiRegistry.listDefinitionGroups().map((group): UIEditorLibraryGroup => ({
-    id: group.id,
-    title: group.title,
-    description: group.description,
-    items: definitions
-      .filter(definition => definition.groupId === group.id && definition.primitiveKind !== 'page')
-      .map(definition => createLibraryItem(definition.id)),
-  }))
+  for (const contract of UI_EDITOR_SFC_DEFINITION_CONTRACTS) {
+    const group = groups.get(contract.groupId) ?? {
+      id: contract.groupId,
+      title: contract.groupTitle,
+      description: contract.groupDescription,
+      items: [],
+    }
+    group.items.push(createLibraryItem(contract))
+    groups.set(contract.groupId, group)
+  }
+
+  return [...groups.values()]
 }

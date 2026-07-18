@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useUI } from '@endge/vue'
 import { Endge } from '@endge/core'
+import { useUI } from '@endge/vue'
 import {
   Languages,
   SunMoon,
@@ -10,12 +10,12 @@ import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
+import ZoomButton from '@/components/layouts/main/ZoomButton.vue'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuSeparator,
@@ -30,11 +30,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import Zoom_Button from '@/features/endge-configurator/ui/common/buttons/Zoom_Button.vue'
 import { availableLocales } from '@/i18n'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
-const props = defineProps<{
+defineProps<{
   user?: {
     name: string
     username: string
@@ -98,7 +97,7 @@ watch(dateFormat, () => {
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <Zoom_Button />
+            <ZoomButton />
 
             <DropdownMenuSeparator />
 
@@ -140,7 +139,6 @@ watch(dateFormat, () => {
               </DropdownMenuPortal>
             </DropdownMenuSub>
           </DropdownMenuGroup>
-
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>

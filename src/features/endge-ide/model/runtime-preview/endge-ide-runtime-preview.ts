@@ -10,8 +10,8 @@ import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { getLayoutState, showWidget } from '@/components/layouts/grid'
-import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
 import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard'
 import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
@@ -33,7 +33,7 @@ export class EndgeIDERuntimePreview {
     if (this._initialized) { return }
     this._runtimeOff = Endge.runtime.subscribe(() => this._refresh())
     this._scopeOff = Endge.runtime.scopes.subscribe(() => this._refresh())
-    this._surfaceOff = EndgeConfigurator.registerSurface('endge-ide-runtime-preview', {
+    this._surfaceOff = EndgeIDEContext.registerSurface('endge-ide-runtime-preview', {
       beforeContextReset: () => this.disposeAll(),
     })
     this._initialized = true

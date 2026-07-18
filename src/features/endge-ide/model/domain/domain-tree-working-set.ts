@@ -3,7 +3,12 @@ import type {
   DomainWorkingSetRef,
   DomainWorkingSetResult,
 } from '@/features/endge-ide/domain/types/domain-working-set.type'
-import type { FlatFsItem, FsFileNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
+import type {
+  DomainTreeRootBlock,
+  FlatFsItem,
+  FsFileNode,
+  FsNode,
+} from '@/features/endge-ide/model/domain/domain-tree'
 
 import {
   domainWorkingSetRefsMatch,
@@ -15,6 +20,22 @@ const ROLE_ORDER: Record<DomainWorkingSetMember['role'], number> = {
   root: 0,
   dependency: 1,
   context: 2,
+}
+
+export type DomainWorkingSetFolderMode = 'flat' | 'root-folders'
+
+export interface DomainWorkingSetProjectionOptions {
+  folderMode: DomainWorkingSetFolderMode
+  preserveGroups: boolean
+}
+
+export interface DomainWorkingSetProjectedRoot {
+  rootId: string
+  items: FlatFsItem[]
+}
+
+export interface DomainWorkingSetProjectedBlock extends DomainTreeRootBlock {
+  roots: DomainWorkingSetProjectedRoot[]
 }
 
 /** Преобразует file node дерева в ссылку working-set graph. */
@@ -50,10 +71,12 @@ function collectFileItems(
   return items
 }
 
-/** Показывает найденные working-set документы одним плоским списком без папок. */
-export function projectDomainWorkingSetFiles(
+/** Проецирует найденные working-set документы в плоский список или под исходные корневые папки. */
+export function projectDomainWorkingSetItems(
   tree: readonly FsNode[],
   result: DomainWorkingSetResult,
+  expandedPaths: ReadonlySet<string>,
+  options: DomainWorkingSetProjectionOptions,
 ): FlatFsItem[] {
   const members = [...result.members.values()]
   const projected: Array<{ item: FlatFsItem, member: DomainWorkingSetMember }> = []
@@ -82,27 +105,104 @@ export function projectDomainWorkingSetFiles(
       item: {
         node: { ...node, children: undefined },
         path: item.path,
-        depth: 0,
-        rootId: 'working-set',
+        depth: 1,
+        rootId: item.rootId,
       },
     })
   }
 
-  return projected
-    .sort((left, right) => {
-      const role = ROLE_ORDER[left.member.role] - ROLE_ORDER[right.member.role]
-      if (role !== 0) {
-        return role
-      }
-      const depth = left.member.depth - right.member.depth
-      if (depth !== 0) {
-        return depth
-      }
-      const type = left.member.ref.entityType.localeCompare(right.member.ref.entityType)
-      if (type !== 0) {
-        return type
-      }
-      return left.item.node.name.localeCompare(right.item.node.name)
-    })
-    .map(entry => entry.item)
+  const sortedProjected = projected.sort((left, right) => {
+    const role = ROLE_ORDER[left.member.role] - ROLE_ORDER[right.member.role]
+    if (role !== 0) {
+      return role
+    }
+    const depth = left.member.depth - right.member.depth
+    if (depth !== 0) {
+      return depth
+    }
+    const type = left.member.ref.entityType.localeCompare(right.member.ref.entityType)
+    if (type !== 0) {
+      return type
+    }
+    return left.item.node.name.localeCompare(right.item.node.name)
+  })
+
+  if (options.folderMode === 'flat') {
+    return sortedProjected.map(entry => ({ ...entry.item, depth: 0 }))
+  }
+
+  const projectedByRoot = new Map<string, Array<{ item: FlatFsItem, member: DomainWorkingSetMember }>>()
+  for (const entry of sortedProjected) {
+    const rootFiles = projectedByRoot.get(entry.item.rootId) ?? []
+    rootFiles.push(entry)
+    projectedByRoot.set(entry.item.rootId, rootFiles)
+  }
+
+  const items: FlatFsItem[] = []
+  for (const node of tree) {
+    if (node.type !== 'folder') {
+      continue
+    }
+
+    const rootFiles = projectedByRoot.get(node.id)
+    if (!rootFiles?.length) {
+      continue
+    }
+
+    const path = node.name
+    items.push({ node, path, depth: 0, rootId: node.id })
+    if (expandedPaths.has(path)) {
+      items.push(...rootFiles.map(entry => entry.item))
+    }
+  }
+
+  return items
+}
+
+/** Группирует projection независимо от режима сохранения папок. */
+export function groupDomainWorkingSetItems(
+  items: readonly FlatFsItem[],
+  rootBlocks: readonly DomainTreeRootBlock[],
+  rootOrder: readonly string[],
+  options: DomainWorkingSetProjectionOptions,
+): DomainWorkingSetProjectedBlock[] {
+  const itemsByRoot = new Map<string, FlatFsItem[]>()
+  for (const item of items) {
+    const rootItems = itemsByRoot.get(item.rootId) ?? []
+    rootItems.push(item)
+    itemsByRoot.set(item.rootId, rootItems)
+  }
+
+  if (options.preserveGroups) {
+    return rootBlocks
+      .map(block => ({
+        ...block,
+        roots: block.rootIds
+          .map(rootId => ({ rootId, items: itemsByRoot.get(rootId) ?? [] }))
+          .filter(root => root.items.length > 0),
+      }))
+      .filter(block => block.roots.length > 0)
+  }
+
+  if (options.folderMode === 'flat') {
+    return [{
+      id: 'working-set',
+      title: '',
+      rootIds: ['working-set'],
+      showTitle: false,
+      roots: [{ rootId: 'working-set', items: [...items] }],
+    }]
+  }
+
+  const rootIds = rootOrder.filter(rootId => itemsByRoot.has(rootId))
+  return [{
+    id: 'working-set',
+    title: '',
+    rootIds,
+    showTitle: false,
+    roots: rootIds.map(rootId => ({
+      rootId,
+      items: itemsByRoot.get(rootId) ?? [],
+    })),
+  }]
 }

@@ -1,4 +1,3 @@
-import type { UIPrimitiveKind } from '@endge/core'
 import type {
   UIEditorBreakpoint,
   UIEditorBreakpointConfig,
@@ -9,19 +8,23 @@ import type {
   UIEditorNodeKind,
   UIEditorNodeLayout,
   UIEditorTreeNode,
+  UIEditorWorkspaceMode,
 } from '@/features/endge-admin-ui-editor/types'
-
-import { reactive } from 'vue'
+import type { UIPrimitiveKind } from '@endge/core'
 
 import {
   Endge,
 } from '@endge/core'
-import { printUIEditorDocumentJsx } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
+import { reactive } from 'vue'
+
+import { printUIEditorDocumentSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
+import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
-const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v6'
+const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v7'
 const UI_EDITOR_DEMO_STORAGE_KEYS = [
   UI_EDITOR_DEMO_STORAGE_KEY,
+  'endge-admin-ui-editor-demo-state:v6',
   'endge-admin-ui-editor-demo-state:v5',
   'endge-admin-ui-editor-demo-state:v4',
   'endge-admin-ui-editor-demo-state:v3',
@@ -63,7 +66,9 @@ function resolveNodeDefinitionRef(input: string): string {
 }
 
 function createDefaultLayout(input: string): UIEditorNodeLayout {
-  const layout = Endge.uiRegistry.getDefinitionDefaultLayout(resolveNodeDefinitionRef(input))
+  const definitionRef = resolveNodeDefinitionRef(input)
+  const contract = getUIEditorSFCDefinitionContract(definitionRef)
+  const layout = contract?.defaultLayout ?? Endge.uiRegistry.getDefinitionDefaultLayout(definitionRef)
   return {
     colStart: 1,
     rowStart: 1,
@@ -80,9 +85,25 @@ export function getUIEditorDefaultLayout(input: string): UIEditorNodeLayout {
 }
 
 function createNode(definitionRef: string): UIEditorNode {
+  const resolvedDefinitionRef = resolveNodeDefinitionRef(definitionRef)
+  const contract = getUIEditorSFCDefinitionContract(resolvedDefinitionRef)
+  if (contract) {
+    return {
+      id: createNodeId(),
+      kind: contract.kind,
+      definitionRef: contract.definitionRef,
+      configRef: null,
+      assetRef: null,
+      name: contract.label,
+      children: [],
+      props: { ...contract.defaultProps } as UIEditorNode['props'],
+      layout: { ...contract.defaultLayout },
+    } as UIEditorNode
+  }
+
   return Endge.uiRegistry.createNodeFromDefinition({
     id: definitionRef === 'ui.page' ? 'ui-page-root' : createNodeId(),
-    definitionRef: resolveNodeDefinitionRef(definitionRef),
+    definitionRef: resolvedDefinitionRef,
   }) as UIEditorNode
 }
 
@@ -269,6 +290,10 @@ function isCanvasMode(value: unknown): value is UIEditorCanvasMode {
   return value === 'editor' || value === 'preview'
 }
 
+function isWorkspaceMode(value: unknown): value is UIEditorWorkspaceMode {
+  return value === 'visual' || value === 'split' || value === 'source'
+}
+
 function hasBrowserStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
@@ -427,6 +452,7 @@ function readPersistedState(): {
   document: UIEditorDocument
   activeBreakpoint: UIEditorBreakpoint
   canvasMode: UIEditorCanvasMode
+  workspaceMode: UIEditorWorkspaceMode
   selectedNodeId: string
   showGridOverlay: boolean
 } | null {
@@ -446,8 +472,11 @@ function readPersistedState(): {
       document?: UIEditorDocument
       activeBreakpoint?: UIEditorBreakpoint
       canvasMode?: UIEditorCanvasMode
+      workspaceMode?: UIEditorWorkspaceMode
       selectedNodeId?: string
       showGridOverlay?: boolean
+      // Kept only to migrate the previous two-pane preference.
+      showGeneratedCode?: boolean
     }
 
     if (!isUIEditorDocument(parsed.document)) {
@@ -464,6 +493,9 @@ function readPersistedState(): {
       document: normalizedDocument,
       activeBreakpoint: isBreakpoint(parsed.activeBreakpoint) ? parsed.activeBreakpoint : 'desktop',
       canvasMode: isCanvasMode(parsed.canvasMode) ? parsed.canvasMode : 'editor',
+      workspaceMode: isWorkspaceMode(parsed.workspaceMode)
+        ? parsed.workspaceMode
+        : parsed.showGeneratedCode === true ? 'split' : 'visual',
       selectedNodeId,
       showGridOverlay: parsed.showGridOverlay === true,
     }
@@ -478,6 +510,7 @@ export class UIEditorDemoState {
   public document: UIEditorDocument = createDefaultDocument()
   public activeBreakpoint: UIEditorBreakpoint = 'desktop'
   public canvasMode: UIEditorCanvasMode = 'editor'
+  public workspaceMode: UIEditorWorkspaceMode = 'visual'
   public selectedNodeId: string = this.document.rootId
   public isGridInteractionActive = false
   public gridInteractionMode: 'idle' | 'drag' | 'resize' = 'idle'
@@ -493,6 +526,7 @@ export class UIEditorDemoState {
     this.document = createDefaultDocument()
     this.activeBreakpoint = 'desktop'
     this.canvasMode = 'editor'
+    this.workspaceMode = 'visual'
     this.selectedNodeId = this.document.rootId
     this.isGridInteractionActive = false
     this.gridInteractionMode = 'idle'
@@ -509,6 +543,11 @@ export class UIEditorDemoState {
 
   public setCanvasMode(mode: UIEditorCanvasMode): void {
     this.canvasMode = mode
+    this.persistState()
+  }
+
+  public setWorkspaceMode(mode: UIEditorWorkspaceMode): void {
+    this.workspaceMode = mode
     this.persistState()
   }
 
@@ -770,7 +809,11 @@ export class UIEditorDemoState {
   }
 
   public toJsx(): string {
-    return printUIEditorDocumentJsx(this.document)
+    return this.toSFCSource()
+  }
+
+  public toSFCSource(): string {
+    return printUIEditorDocumentSFC(this.document)
   }
 
   public logTree(): void {
@@ -857,6 +900,7 @@ export class UIEditorDemoState {
     this.document = normalizeDocument(persistedState.document)
     this.activeBreakpoint = persistedState.activeBreakpoint
     this.canvasMode = persistedState.canvasMode
+    this.workspaceMode = persistedState.workspaceMode
     this.selectedNodeId = persistedState.selectedNodeId
     this.showGridOverlay = persistedState.showGridOverlay
   }
@@ -871,6 +915,7 @@ export class UIEditorDemoState {
         document: this.document,
         activeBreakpoint: this.activeBreakpoint,
         canvasMode: this.canvasMode,
+        workspaceMode: this.workspaceMode,
         selectedNodeId: this.selectedNodeId,
         showGridOverlay: this.showGridOverlay,
       }))

@@ -1,18 +1,14 @@
-/* eslint-disable perfectionist/sort-imports -- renderer plugins must be registered before imports that read Endge modules */
-import '@/features/endge-configurator/model/endge-runtime-plugins.ts'
-import '@/features/endge-configurator/model/endge-renderer-plugins.ts'
-import '@endge/vue/vue.css'
-import '@endge/shadcn-vue/shadcn-vue.css'
 import './assets/main.css'
+import '@endge/shadcn-vue/shadcn-vue.css'
+import '@endge/vue/vue.css'
 import 'reflect-metadata'
 
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
-import { captureAppRenderFailure } from '@/features/endge-configurator/model/app-render-guard.ts'
-import { EndgeConfigurator } from '@/features/endge-configurator/model/endge-configurator.ts'
+import { bootstrapEndgeIDE } from '@/features/endge-ide/model/bootstrap/endge-ide-bootstrap'
+import { captureEndgeIDERenderFailure } from '@/features/endge-ide/model/error/endge-ide-render-guard'
 import { installEndgeChromeBridge } from '@/features/endge-ide/tools/chrome-bridge'
-/* eslint-enable perfectionist/sort-imports */
 
 // В dev приложение само отдаёт домен в Vite-плагин для кодогенерации в src/gen
 if (import.meta.env.DEV) {
@@ -26,7 +22,7 @@ function isIgnorableBrowserError(raw: unknown): boolean {
 }
 
 async function bootstrap(): Promise<void> {
-  await EndgeConfigurator.init()
+  await bootstrapEndgeIDE()
 
   const [appModule, routerModule, i18nModule, brandingModule] = await Promise.all([
     import('./App.vue'),
@@ -50,11 +46,12 @@ async function bootstrap(): Promise<void> {
       current = current.$parent
     }
 
-    captureAppRenderFailure({
+    captureEndgeIDERenderFailure({
       err,
       errorInfo: String(info ?? ''),
       componentName,
       routePath: router.currentRoute.value.path,
+      isEndgeIDE: router.currentRoute.value.meta.layoutScope === 'endge-ide',
     })
 
     console.error('[Vue errorHandler]', err, info, instance)
@@ -66,11 +63,12 @@ async function bootstrap(): Promise<void> {
       return
     }
 
-    captureAppRenderFailure({
+    captureEndgeIDERenderFailure({
       err: event.error ?? new Error(event.message),
       errorInfo: 'window.error',
       componentName: 'Window',
       routePath: router.currentRoute.value.path,
+      isEndgeIDE: router.currentRoute.value.meta.layoutScope === 'endge-ide',
     })
   })
 
@@ -81,11 +79,12 @@ async function bootstrap(): Promise<void> {
       return
     }
 
-    captureAppRenderFailure({
+    captureEndgeIDERenderFailure({
       err: event.reason,
       errorInfo: 'window.unhandledrejection',
       componentName: 'Promise',
       routePath: router.currentRoute.value.path,
+      isEndgeIDE: router.currentRoute.value.meta.layoutScope === 'endge-ide',
     })
   })
 
