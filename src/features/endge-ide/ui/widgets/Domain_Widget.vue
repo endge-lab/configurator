@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type {
+  DomainWorkingSetFilterState,
+  DomainWorkingSetRef,
+} from '@/features/endge-ide/domain/types/domain-working-set.type'
 import type { DragPayloadItem } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
@@ -8,14 +12,14 @@ import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import {
   ArrowLeftRight,
-  Building2,
   BookOpen,
   Braces,
   Briefcase,
-  ChevronsDown,
-  ChevronsUp,
+  Building2,
   ChevronDown,
   ChevronRight,
+  ChevronsDown,
+  ChevronsUp,
   Columns,
   Copy,
   Database,
@@ -28,8 +32,9 @@ import {
   FormInput,
   GitBranch,
   KeyRound,
-  Layout,
   Languages,
+  Layout,
+  ListFilter,
   Loader2,
   Network,
   Palette,
@@ -79,14 +84,20 @@ import {
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
 import {
   buildDomainTree,
-  getDomainTreeRootBlocks,
-
   flattenTree,
+  getDomainTreeRootBlocks,
   getRootFolderOrder,
   getSoftDeletedItems,
   ROOT_FOLDER_LABELS,
   withoutDeleted,
 } from '@/features/endge-ide/model/domain/domain-tree'
+import {
+  domainFileNodeToWorkingSetRef,
+  projectDomainWorkingSetFiles,
+} from '@/features/endge-ide/model/domain/domain-tree-working-set'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
+import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -121,6 +132,16 @@ const showRootHierarchyBackgrounds = useSafeLocalStorage(
   'endge-editor-domain-tree-root-backgrounds',
   true,
 )
+
+const persistedWorkingSetFilter = useSafeLocalStorage<DomainWorkingSetFilterState>(
+  'endge-editor-domain-working-set-filter',
+  { enabled: false, roots: [] },
+)
+const workingSetFilterEnabled = ref(false)
+const workingSetRoots = ref<DomainWorkingSetRef[]>([])
+const workingSetFilterTooltip = computed(() => workingSetFilterEnabled.value
+  ? 'Показать все файлы'
+  : 'Показать зависимости выбранных файлов')
 
 const expandedFolders = computed<Set<string>>({
   get(): Set<string> {
@@ -610,12 +631,34 @@ const fsTree = computed<FsNode[]>(() => {
   return tree
 })
 
-const flatFs = computed<FlatFsItem[]>(() =>
-  flattenTree(fsTree.value, expandedFolders.value),
-)
+const workingSetResult = computed(() => {
+  // Дерево служит reactive boundary для обновлённых документов и program artifacts.
+  void fsTree.value
+  return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
+})
 
-const groupedFlatFs = computed(() =>
-  ROOT_BLOCKS.value
+const flatFs = computed<FlatFsItem[]>(() => {
+  if (workingSetFilterEnabled.value) {
+    return projectDomainWorkingSetFiles(fsTree.value, workingSetResult.value)
+  }
+  return flattenTree(fsTree.value, expandedFolders.value)
+})
+
+const groupedFlatFs = computed(() => {
+  if (workingSetFilterEnabled.value) {
+    return [{
+      id: 'working-set',
+      title: '',
+      rootIds: ['working-set'],
+      showTitle: false,
+      roots: [{
+        rootId: 'working-set',
+        items: flatFs.value,
+      }],
+    }]
+  }
+
+  return ROOT_BLOCKS.value
     .map(block => ({
       ...block,
       roots: block.rootIds
@@ -625,8 +668,8 @@ const groupedFlatFs = computed(() =>
         }))
         .filter(root => root.items.length > 0),
     }))
-    .filter(block => block.roots.length > 0),
-)
+    .filter(block => block.roots.length > 0)
+})
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
   const out: string[] = []
@@ -649,6 +692,15 @@ function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
 
 const allExpandablePaths = computed(() => collectExpandablePaths(fsTree.value))
 
+const allDomainFileItems = computed(() =>
+  flattenTree(fsTree.value, new Set(allExpandablePaths.value))
+    .filter(item => item.node.type === 'file' && !(item.node as FsFileNode).isTableColumn),
+)
+
+const availableWorkingSetRefs = computed(() =>
+  allDomainFileItems.value.map(item => domainFileNodeToWorkingSetRef(item.node as FsFileNode)),
+)
+
 function expandAll(): void {
   expandedFolders.value = new Set(allExpandablePaths.value)
 }
@@ -669,12 +721,58 @@ const selectedFileIds = ref<Set<string>>(new Set())
 const lastClickedPath = ref<string | null>(null)
 
 const selectedExportNodes = computed<FsFileNode[]>(() =>
-  flattenTree(fsTree.value, new Set(allExpandablePaths.value))
-    .filter(item => item.node.type === 'file'
-      && !(item.node as FsFileNode).isTableColumn
-      && selectedFileIds.value.has(getSelectionKey(item)))
+  allDomainFileItems.value
+    .filter(item => selectedFileIds.value.has(getSelectionKey(item)))
     .map(item => item.node as FsFileNode),
 )
+
+function resetWorkingSetFilter(): void {
+  workingSetFilterEnabled.value = false
+  workingSetRoots.value = []
+  persistedWorkingSetFilter.value = { enabled: false, roots: [] }
+}
+
+function applyWorkingSetFilter(roots: readonly DomainWorkingSetRef[]): void {
+  const nextRoots = roots.map(root => ({ ...root }))
+  workingSetRoots.value = nextRoots
+  workingSetFilterEnabled.value = true
+  persistedWorkingSetFilter.value = {
+    enabled: true,
+    roots: nextRoots,
+  }
+}
+
+let workingSetFilterInitialized = false
+watch(availableWorkingSetRefs, (available) => {
+  const source = workingSetFilterInitialized
+    ? { enabled: workingSetFilterEnabled.value, roots: workingSetRoots.value }
+    : persistedWorkingSetFilter.value
+  const restored = restoreDomainWorkingSetFilter(source, available)
+
+  if (restored) {
+    applyWorkingSetFilter(restored.roots)
+  }
+  else if (source?.enabled === true) {
+    resetWorkingSetFilter()
+  }
+
+  workingSetFilterInitialized = true
+}, { immediate: true })
+
+function toggleWorkingSetFilter(): void {
+  if (workingSetFilterEnabled.value) {
+    resetWorkingSetFilter()
+    return
+  }
+
+  const roots = selectedExportNodes.value.map(domainFileNodeToWorkingSetRef)
+  if (roots.length === 0) {
+    toast.info('Выберите хотя бы один файл')
+    return
+  }
+
+  applyWorkingSetFilter(roots)
+}
 
 function getFileItemsInRoot(rootId: string): FlatFsItem[] {
   return flatFs.value.filter(it => it.node.type === 'file' && it.rootId === rootId)
@@ -1138,7 +1236,28 @@ function rowClasses(item: FlatFsItem): string {
             </Tooltip>
           </div>
 
-          <div class="flex items-center gap-0.5">
+          <div class="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="workingSetFilterEnabled
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="workingSetFilterTooltip"
+                  :aria-pressed="workingSetFilterEnabled"
+                  @click="toggleWorkingSetFilter"
+                >
+                  <ListFilter class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ workingSetFilterTooltip }}
+              </TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
@@ -1205,7 +1324,7 @@ function rowClasses(item: FlatFsItem): string {
               class="domain-root-hierarchy mb-1 last:mb-0"
               :class="[
                 getRootHierarchyColorClass(root.rootId),
-                showRootHierarchyBackgrounds ? 'domain-root-hierarchy--highlighted' : '',
+                showRootHierarchyBackgrounds && !workingSetFilterEnabled ? 'domain-root-hierarchy--highlighted' : '',
               ]"
             >
               <div
