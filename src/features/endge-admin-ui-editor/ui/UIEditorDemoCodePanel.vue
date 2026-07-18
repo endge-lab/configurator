@@ -4,6 +4,7 @@ import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entitie
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { createUIEditorSourceSelectionExtension } from '@/features/endge-admin-ui-editor/entities/ui-editor-source-selection'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 const props = defineProps<{
@@ -12,6 +13,7 @@ const props = defineProps<{
 
 const draftSource = ref(props.state.toSFCSource())
 const sourceLinesCount = computed(() => draftSource.value.replace(/\n$/, '').split('\n').length)
+const editorExtensions = [createUIEditorSourceSelectionExtension(props.state)]
 let sourceApplyTimer: number | null = null
 
 watch(
@@ -50,6 +52,7 @@ onBeforeUnmount(() => {
       language="html"
       format-language="vue"
       :min-height="0"
+      :extensions="editorExtensions"
       class="min-h-0 flex-1"
       @update:model-value="updateSource"
     />
@@ -67,3 +70,10 @@ onBeforeUnmount(() => {
     </div>
   </aside>
 </template>
+
+<style scoped>
+:deep(.endge-ui-editor-source-selection) {
+  background: linear-gradient(90deg, rgb(14 165 233 / 16%), rgb(14 165 233 / 5%));
+  box-shadow: inset 2px 0 0 rgb(56 189 248 / 90%);
+}
+</style>

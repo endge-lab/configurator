@@ -11,6 +11,9 @@ import type {
   UIEditorPanelLayoutKey,
   UIEditorPanelLayouts,
   UIEditorPanelVisibility,
+  UIEditorSelectionOrigin,
+  UIEditorSourceNodeLocation,
+  UIEditorSourceNodeLocations,
   UIEditorTreeNode,
 } from '@/features/endge-admin-ui-editor/types'
 import type { UIPrimitiveKind } from '@endge/core'
@@ -23,7 +26,7 @@ import { reactive } from 'vue'
 import { printUIEditorDocumentSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
 import { hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
-import { patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
+import { findUIEditorSourceNodeAtOffset, patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
 const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v11'
@@ -635,10 +638,12 @@ export class UIEditorDemoState {
   public visiblePanels: UIEditorPanelVisibility = { ...DEFAULT_PANEL_VISIBILITY }
   public panelLayouts: UIEditorPanelLayouts = clonePanelLayouts()
   public selectedNodeId: string | null = this.document.rootId
+  public selectionOrigin: UIEditorSelectionOrigin = 'visual'
   public editingNodeId: string | null = null
   public inlineEditDraft = ''
   public source = printUIEditorDocumentSFC(this.document)
   public sourceDiagnostics: string[] = []
+  public sourceLocations: UIEditorSourceNodeLocations = {}
   public isGridInteractionActive = false
   public gridInteractionMode: 'idle' | 'drag' | 'resize' = 'idle'
   public interactionNodeId: string | null = null
@@ -649,6 +654,12 @@ export class UIEditorDemoState {
 
   public constructor() {
     this.restorePersistedState()
+    const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
+    this.sourceDiagnostics = projection.diagnostics
+    this.sourceLocations = projection.sourceLocations
+    if (projection.document) {
+      this.document = projection.document
+    }
   }
 
   public reset(): void {
@@ -657,10 +668,13 @@ export class UIEditorDemoState {
     this.visiblePanels = { ...DEFAULT_PANEL_VISIBILITY }
     this.panelLayouts = clonePanelLayouts()
     this.selectedNodeId = this.document.rootId
+    this.selectionOrigin = 'visual'
     this.editingNodeId = null
     this.inlineEditDraft = ''
     this.source = printUIEditorDocumentSFC(this.document)
     this.sourceDiagnostics = []
+    const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
+    this.sourceLocations = projection.sourceLocations
     this.isGridInteractionActive = false
     this.gridInteractionMode = 'idle'
     this.interactionNodeId = null
@@ -836,6 +850,7 @@ export class UIEditorDemoState {
       targetIndex: originIndex,
     }
     this.selectedNodeId = nodeId
+    this.selectionOrigin = 'visual'
     this.closeContextMenu()
     return true
   }
@@ -909,6 +924,7 @@ export class UIEditorDemoState {
     const targetIndex = Math.max(0, Math.min(session.targetIndex, targetParent.children.length))
     targetParent.children.splice(targetIndex, 0, session.nodeId)
     this.selectedNodeId = session.nodeId
+    this.selectionOrigin = 'visual'
     this.persistDocumentState()
     return true
   }
@@ -925,14 +941,29 @@ export class UIEditorDemoState {
     return this.getNode(this.findParentId(nodeId))
   }
 
-  public selectNode(nodeId: string): void {
+  public selectNode(nodeId: string, origin: UIEditorSelectionOrigin = 'visual'): void {
     if (this.document.nodes[nodeId]) {
       if (this.editingNodeId && this.editingNodeId !== nodeId) {
         this.commitInlineEdit()
       }
+      const selectionChanged = this.selectedNodeId !== nodeId
       this.selectedNodeId = nodeId
-      this.persistState()
+      this.selectionOrigin = origin
+      if (selectionChanged) {
+        this.persistState()
+      }
     }
+  }
+
+  public getSourceLocation(nodeId: string | null | undefined): UIEditorSourceNodeLocation | null {
+    if (!nodeId) {
+      return null
+    }
+    return this.sourceLocations[nodeId] ?? null
+  }
+
+  public findSourceNodeAtOffset(offset: number): string | null {
+    return findUIEditorSourceNodeAtOffset(this.sourceLocations, offset)
   }
 
   public beginInlineEdit(nodeId: string): boolean {
@@ -952,6 +983,7 @@ export class UIEditorDemoState {
       this.commitInlineEdit()
     }
     this.selectedNodeId = nodeId
+    this.selectionOrigin = 'visual'
     this.editingNodeId = nodeId
     this.inlineEditDraft = node.kind === 'text' ? node.props.text : node.props.label
     return true
@@ -989,6 +1021,7 @@ export class UIEditorDemoState {
     }
     this.cancelInlineEdit()
     this.selectedNodeId = null
+    this.selectionOrigin = 'visual'
     this.persistState()
   }
 
@@ -1048,6 +1081,7 @@ export class UIEditorDemoState {
     const targetIndex = Number.isInteger(index) ? Math.max(0, Math.min(Number(index), parent.children.length)) : parent.children.length
     parent.children.splice(targetIndex, 0, node.id)
     this.selectedNodeId = node.id
+    this.selectionOrigin = 'visual'
     this.persistDocumentState()
     return node
   }
@@ -1142,6 +1176,7 @@ export class UIEditorDemoState {
     currentParent.children = currentParent.children.filter(childId => childId !== nodeId)
     targetParent.children.splice(effectiveTargetIndex, 0, nodeId)
     this.selectedNodeId = nodeId
+    this.selectionOrigin = 'visual'
     this.persistDocumentState()
     return true
   }
@@ -1171,6 +1206,7 @@ export class UIEditorDemoState {
 
     this.removeNodeRecursive(nodeId)
     this.selectedNodeId = parentId ?? this.document.rootId
+    this.selectionOrigin = 'visual'
     this.persistDocumentState()
   }
 
@@ -1255,6 +1291,7 @@ export class UIEditorDemoState {
     this.source = source
     const projection = projectUIEditorDocumentFromSFC(source, this.document)
     this.sourceDiagnostics = projection.diagnostics
+    this.sourceLocations = projection.sourceLocations
 
     if (projection.document) {
       this.document = projection.document
@@ -1353,10 +1390,12 @@ export class UIEditorDemoState {
     this.visiblePanels = persistedState.visiblePanels
     this.panelLayouts = persistedState.panelLayouts
     this.selectedNodeId = persistedState.selectedNodeId
+    this.selectionOrigin = 'visual'
     this.showGridOverlay = persistedState.showGridOverlay
     this.source = persistedState.source
     const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
     this.sourceDiagnostics = projection.diagnostics
+    this.sourceLocations = projection.sourceLocations
     if (projection.document) {
       this.document = projection.document
       if (this.selectedNodeId && !this.document.nodes[this.selectedNodeId]) {
@@ -1367,7 +1406,9 @@ export class UIEditorDemoState {
 
   private persistDocumentState(): void {
     this.source = patchUIEditorSFCTemplate(this.source, this.document)
-    this.sourceDiagnostics = []
+    const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
+    this.sourceDiagnostics = projection.diagnostics
+    this.sourceLocations = projection.sourceLocations
     this.persistState()
   }
 
@@ -1436,6 +1477,7 @@ export class UIEditorDemoState {
     const targetIndex = Number.isInteger(index) ? Math.max(0, Math.min(Number(index), parent.children.length)) : parent.children.length
     parent.children.splice(targetIndex, 0, rootNode.id)
     this.selectedNodeId = rootNode.id
+    this.selectionOrigin = 'visual'
     this.persistDocumentState()
     return rootNode
   }

@@ -54,6 +54,7 @@ interface UIEditorPageLayoutRect {
 
 const isDropHovered = ref(false)
 const inlineEditorRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
+const nodeRootRef = ref<HTMLElement | null>(null)
 
 const node = computed<UIEditorNode | null>(() => props.state.getNode(props.nodeId))
 const parentNode = computed<UIEditorNode | null>(() => props.parentId ? props.state.getNode(props.parentId) : null)
@@ -292,6 +293,17 @@ watch(isInlineEditing, async (editing) => {
   const caret = editor.value.length
   editor.setSelectionRange(caret, caret)
 }, { immediate: true })
+
+watch(
+  () => [isSelected.value, props.state.selectionOrigin] as const,
+  async ([selected, origin]) => {
+    if (!selected || origin !== 'source') {
+      return
+    }
+    await nextTick()
+    nodeRootRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+  },
+)
 
 function getNodeTypeLabel(targetNode: UIEditorNode): string {
   if (targetNode.kind === 'page') {
@@ -1584,6 +1596,7 @@ function getInsertStyle(): Record<string, string> | undefined {
 <template>
   <div
     v-if="node"
+    ref="nodeRootRef"
     class="group/ui-editor-node relative"
     :class="node.kind === 'page' ? 'w-full' : ''"
   >

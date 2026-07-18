@@ -61,6 +61,28 @@ describe('ui editor SFC source projection', () => {
     expect(second.nodes[firstTextId]!.props).toMatchObject({ text: 'Updated' })
   })
 
+  it('maps nested visual nodes to precise source ranges in both directions', () => {
+    const state = new UIEditorDemoState()
+    expect(state.applySFCSource(SOURCE)).toBe(true)
+
+    const root = state.document.nodes[state.document.rootId]!
+    const row = state.document.nodes[root.children[1]!]!
+    const inputId = row.children[0]!
+    const inputOffset = SOURCE.indexOf('<Input') + 2
+    const inputLocation = state.getSourceLocation(inputId)
+
+    expect(inputLocation).not.toBeNull()
+    expect(SOURCE.slice(inputLocation!.openingTagRange.start, inputLocation!.openingTagRange.end)).toBe('<Input />')
+    expect(state.findSourceNodeAtOffset(inputOffset)).toBe(inputId)
+
+    state.selectNode(inputId, 'source')
+    expect(state.selectedNodeId).toBe(inputId)
+    expect(state.selectionOrigin).toBe('source')
+
+    state.selectNode(root.id)
+    expect(state.selectionOrigin).toBe('visual')
+  })
+
   it('keeps Flex children in flow and drops stale hidden grid placement', () => {
     const first = projectUIEditorDocumentFromSFC(SOURCE).document!
     const textId = first.nodes[first.rootId]!.children[0]!

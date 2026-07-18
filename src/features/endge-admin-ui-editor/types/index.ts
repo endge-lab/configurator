@@ -1,4 +1,5 @@
 import type {
+  RComponentSFC_SourceRange,
   UIAstDocument,
   UIAstNodeBase,
   UIAstNodeLayout,
@@ -150,6 +151,15 @@ export interface UIEditorNodeDragSession {
   targetParentId: string
   targetIndex: number
 }
+
+export type UIEditorSelectionOrigin = 'visual' | 'source'
+
+export interface UIEditorSourceNodeLocation {
+  range: RComponentSFC_SourceRange
+  openingTagRange: RComponentSFC_SourceRange
+}
+
+export type UIEditorSourceNodeLocations = Record<string, UIEditorSourceNodeLocation>
 
 export interface UIEditorLibraryItem extends UIEditorPaletteItem {
   id: string

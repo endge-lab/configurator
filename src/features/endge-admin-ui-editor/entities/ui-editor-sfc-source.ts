@@ -4,6 +4,7 @@ import type {
   UIEditorNodeLayout,
   UIEditorSFCAttributeBinding,
   UIEditorSFCTextSegment,
+  UIEditorSourceNodeLocations,
 } from '@/features/endge-admin-ui-editor/types'
 import type {
   ComponentSFCPreviewProps,
@@ -30,6 +31,22 @@ import {
 export interface UIEditorSFCSourceProjection {
   document: UIEditorDocument | null
   diagnostics: string[]
+  sourceLocations: UIEditorSourceNodeLocations
+}
+
+export function findUIEditorSourceNodeAtOffset(
+  sourceLocations: UIEditorSourceNodeLocations,
+  offset: number,
+): string | null {
+  if (!Number.isFinite(offset) || offset < 0) {
+    return null
+  }
+
+  return Object.entries(sourceLocations)
+    .filter(([, location]) => offset >= location.range.start && offset < location.range.end)
+    .sort(([, left], [, right]) =>
+      (left.range.end - left.range.start) - (right.range.end - right.range.start),
+    )[0]?.[0] ?? null
 }
 
 interface ProjectionContext {
@@ -37,6 +54,8 @@ interface ProjectionContext {
   nodes: Record<string, UIEditorNode>
   previousByPath: Map<string, UIEditorNode>
   previewContext: SFCVueRenderContext
+  source: string
+  sourceLocations: UIEditorSourceNodeLocations
 }
 
 const DOCUMENT_VERSION = 6
@@ -56,6 +75,7 @@ export function projectUIEditorDocumentFromSFC(
     return {
       document: null,
       diagnostics: parserErrors.length > 0 ? parserErrors : ['SFC source должен содержать корректный <template>.'],
+      sourceLocations: {},
     }
   }
 
@@ -64,12 +84,14 @@ export function projectUIEditorDocumentFromSFC(
     return {
       document: null,
       diagnostics: ['Visual editor поддерживает ровно один корневой элемент template.'],
+      sourceLocations: {},
     }
   }
   if (roots[0].tag !== 'Flex' && roots[0].tag !== 'Grid') {
     return {
       document: null,
       diagnostics: ['Корневым элементом visual editor должен быть <Flex> или <Grid>.'],
+      sourceLocations: {},
     }
   }
 
@@ -78,6 +100,8 @@ export function projectUIEditorDocumentFromSFC(
     nodes: {},
     previousByPath: indexDocumentByPath(previousDocument),
     previewContext: createPreviewRenderContext(compiled.previewProps),
+    source,
+    sourceLocations: {},
   }
   const root = projectElement(roots[0], '0', context, true)
 
@@ -85,6 +109,7 @@ export function projectUIEditorDocumentFromSFC(
     return {
       document: null,
       diagnostics: context.diagnostics,
+      sourceLocations: {},
     }
   }
 
@@ -96,6 +121,7 @@ export function projectUIEditorDocumentFromSFC(
       nodes: context.nodes,
     },
     diagnostics: [],
+    sourceLocations: context.sourceLocations,
   }
 }
 
@@ -168,6 +194,10 @@ function projectElement(
   const id = canReusePrevious
     ? previous.id
     : isRoot ? 'ui-page-root' : createSourceNodeId()
+  context.sourceLocations[id] = {
+    range: { ...ast.range },
+    openingTagRange: getOpeningTagRange(context.source, ast),
+  }
   const layout = isRoot
     ? undefined
     : parentTag === 'Grid'
@@ -253,6 +283,29 @@ function projectElement(
   }
 
   return node
+}
+
+function getOpeningTagRange(
+  source: string,
+  node: RComponentSFC_AST_ElementNode,
+): RComponentSFC_AST_ElementNode['range'] {
+  let quote: '"' | '\'' | null = null
+  for (let offset = node.range.start; offset < node.range.end; offset += 1) {
+    const character = source[offset]
+    if ((character === '"' || character === '\'') && source[offset - 1] !== '\\') {
+      quote = quote === character ? null : quote ?? character
+      continue
+    }
+    if (character === '>' && quote == null) {
+      return {
+        start: node.range.start,
+        end: offset + 1,
+        startLine: node.range.startLine,
+        startColumn: node.range.startColumn,
+      }
+    }
+  }
+  return { ...node.range }
 }
 
 function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEditorNode {
