@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { LogNode } from '@endge/core'
-
 import { ComponentType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import { computed, ref } from 'vue'
@@ -10,10 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { useDebugStore } from '@/features/endge-ide/store/debug.ts'
+import type { DiagnosticsTreeNode } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
+import { useDiagnosticsStore } from '@/features/endge-ide/store/diagnostics.ts'
 import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
 
-const debugStore = useDebugStore()
+const diagnosticsStore = useDiagnosticsStore()
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
 
@@ -52,22 +51,10 @@ function openComponentTab(componentId: string, label: string): void {
   tabs.openDocument(componentId, ComponentType.DSL)
 }
 
-function formatNodeMessage(n: LogNode): string {
-  switch (n.kind) {
-    case 'span': {
-      const dur
-        = typeof n.durMs === 'number'
-          ? ` (${n.durMs} ms)`
-          : n.endTs
-            ? ` (${(n.endTs - n.ts)} ms)`
-            : ''
-      return `${n.name ?? 'span'}${dur}`
-    }
-    case 'event':
-      return n.msg || n.name || 'event'
-    default:
-      return 'log'
-  }
+function formatNodeMessage(node: DiagnosticsTreeNode): string {
+  return node.kind === 'span'
+    ? `${node.name} (${node.durationMs} ms)`
+    : node.body
 }
 </script>
 
@@ -127,14 +114,14 @@ function formatNodeMessage(n: LogNode): string {
             </h3>
             <LogTree
               ref="logTreeRef"
-              :nodes="debugStore.nodes"
+              :nodes="diagnosticsStore.nodes"
               :row-message="formatNodeMessage"
             />
             <Button
               variant="ghost"
               size="sm"
               class="mt-2 text-xs text-muted-foreground hover:text-foreground"
-              @click="debugStore.clear"
+              @click="diagnosticsStore.clear"
             >
               очистить
             </Button>

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { LogNode, SpanNode, EventNode } from '@endge/core'
-
 import { Endge } from '@endge/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -13,6 +11,11 @@ import {
   CANVAS_DEBUG_ID,
   useTimelineDebugStore,
 } from '@/features/endge-ide/model/timeline-debug/store.ts'
+import type {
+  DiagnosticsLogTreeNode,
+  DiagnosticsSpanTreeNode,
+  DiagnosticsTreeNode,
+} from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 
 // -------------------- store --------------------
 const tlStore = useTimelineDebugStore()
@@ -44,8 +47,8 @@ function fmtMs(ms: number): string {
 // -------------------- tree model --------------------
 type RowData = {
   name: string
-  kind: 'span' | 'event'
-  lane?: string
+  kind: 'span' | 'log'
+  scope?: string
   durationMs?: number | null
   message?: string
 }
@@ -56,45 +59,41 @@ type TreeNode = {
   children?: TreeNode[]
 }
 
-function nodeKey(n: LogNode, idx?: number): string {
-  const trace = n.corr?.traceId ?? ''
-  const span = n.corr?.spanId ?? ''
-  const name = n.name ?? ''
+/** Создаёт стабильный ключ строки presentation tree. */
+function nodeKey(n: DiagnosticsTreeNode, idx?: number): string {
+  const trace = n.traceId ?? ''
+  const span = n.spanId ?? ''
+  const name = n.kind === 'span' ? n.name : n.body
   const suffix = idx != null ? `:${idx}` : ''
-  return `${n.kind}:${trace}:${span}:${n.ts}:${name}${suffix}`
+  return `${n.kind}:${trace}:${span}:${n.timestamp}:${name}${suffix}`
 }
 
-function toTreeNode(node: LogNode, idx?: number): TreeNode {
+/** Проецирует diagnostics UI node в локальную модель таблицы. */
+function toTreeNode(node: DiagnosticsTreeNode, idx?: number): TreeNode {
   if (node.kind === 'span') {
-    const s = node as SpanNode
-    const dur =
-      typeof s.durMs === 'number'
-        ? s.durMs
-        : s.endTs
-          ? s.endTs - s.ts
-          : null
+    const span = node as DiagnosticsSpanTreeNode
 
     return {
       key: nodeKey(node, idx),
       data: {
-        name: s.name,
+        name: span.name,
         kind: 'span',
-        lane: s.lane,
-        durationMs: dur,
+        scope: span.scope,
+        durationMs: span.durationMs,
       },
-      children: (s.children ?? []).map((c, i) => toTreeNode(c, i)),
+      children: span.children.map((child, index) => toTreeNode(child, index)),
     }
   }
 
-  const e = node as EventNode
+  const log = node as DiagnosticsLogTreeNode
   return {
     key: nodeKey(node, idx),
     data: {
-      name: e.name ?? 'event',
-      kind: 'event',
-      lane: e.lane,
+      name: log.record.eventName ?? 'log',
+      kind: 'log',
+      scope: log.scope,
       durationMs: null,
-      message: e.msg,
+      message: log.body,
     },
   }
 }
@@ -255,17 +254,17 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
                       {{ node.data.kind }}
                     </span>
 
-                    <!-- name/lane/msg -->
+                    <!-- name/scope/message -->
                     <span class="truncate font-medium text-sm">
                       {{ node.data.name }}
                     </span>
 
-                    <span v-if="node.data.lane" class="text-xs text-muted-foreground truncate">
-                      - {{ node.data.lane }}
+                    <span v-if="node.data.scope" class="text-xs text-muted-foreground truncate">
+                      - {{ node.data.scope }}
                     </span>
 
                     <span
-                      v-if="node.data.kind === 'event' && node.data.message"
+                      v-if="node.data.kind === 'log' && node.data.message"
                       class="text-xs text-muted-foreground truncate"
                     >
                       · {{ node.data.message }}

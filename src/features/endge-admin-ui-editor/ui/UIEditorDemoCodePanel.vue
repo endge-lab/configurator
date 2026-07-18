@@ -12,7 +12,7 @@ const props = defineProps<{
 
 const draftSource = ref(props.state.toSFCSource())
 const sourceLinesCount = computed(() => draftSource.value.replace(/\n$/, '').split('\n').length)
-let sourceApplyTimer: ReturnType<typeof window.setTimeout> | null = null
+let sourceApplyTimer: number | null = null
 
 watch(
   () => props.state.source,

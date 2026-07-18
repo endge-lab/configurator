@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const rootDropHovered = ref(false)
 
-const breakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0])
+const breakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0]!)
 const isPreviewMode = computed(() => props.state.canvasMode === 'preview')
 const canvasShellStyle = computed<Record<string, string>>(() => {
   if (breakpoint.value.id === 'desktop') {

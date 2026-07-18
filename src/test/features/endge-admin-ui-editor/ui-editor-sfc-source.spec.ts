@@ -54,6 +54,58 @@ describe('ui editor SFC source projection', () => {
     expect(second.nodes[firstTextId]!.props).toMatchObject({ text: 'Updated' })
   })
 
+  it('keeps Flex children in flow and drops stale hidden grid placement', () => {
+    const first = projectUIEditorDocumentFromSFC(SOURCE).document!
+    const textId = first.nodes[first.rootId]!.children[0]!
+    first.nodes[textId]!.layout = {
+      colStart: 3,
+      rowStart: 4,
+      span: 5,
+      rowSpan: 2,
+    }
+
+    const projected = projectUIEditorDocumentFromSFC(SOURCE, first).document!
+    const root = projected.nodes[projected.rootId]!
+    const text = projected.nodes[root.children[0]!]!
+    const patched = patchUIEditorSFCTemplate(SOURCE, projected)
+
+    expect(root.kind).toBe('page')
+    expect(root.props).toMatchObject({ layoutMode: 'flex' })
+    expect(text.layout).toMatchObject({ colStart: 1, rowStart: 1, span: 12 })
+    expect(patched).not.toContain('colStart=')
+    expect(patched).not.toContain('colSpan=')
+  })
+
+  it('round-trips Grid container and child placement through Source', () => {
+    const source = `<template>
+  <Grid columns="12" gap="10px" p="10px" autoRows="28px">
+    <Text colStart="2" colSpan="5" rowStart="3" rowSpan="2">Placed</Text>
+  </Grid>
+</template>
+`
+    const projected = projectUIEditorDocumentFromSFC(source)
+
+    expect(projected.diagnostics).toEqual([])
+    const document = projected.document!
+    const root = document.nodes[document.rootId]!
+    const text = document.nodes[root.children[0]!]!
+    expect(root.props).toMatchObject({
+      layoutMode: 'grid',
+      columns: 12,
+      gap: 10,
+      padding: 10,
+      rowHeight: 28,
+    })
+    expect(text.layout).toEqual({ colStart: 2, rowStart: 3, span: 5, rowSpan: 2 })
+
+    text.layout = { colStart: 1, rowStart: 1, span: 7, rowSpan: 3 }
+    const patched = patchUIEditorSFCTemplate(source, document)
+
+    expect(patched).toContain('<Grid columns="12" gap="10px" p="10px" autoRows="28px">')
+    expect(patched).toContain('<Text colStart="1" colSpan="7" rowStart="1" rowSpan="3">Placed</Text>')
+    expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
+  })
+
   it('patches only template content and preserves script and style', () => {
     const document = projectUIEditorDocumentFromSFC(SOURCE).document!
     const textId = document.nodes[document.rootId]!.children[0]!

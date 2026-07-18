@@ -1,15 +1,19 @@
 import { TimelineChart, TimelineEvents } from '@endge/timeline-chart'
 import { addMinutes, addSeconds } from 'date-fns'
 import { defineStore } from 'pinia'
-import { markRaw } from 'vue'
+import { markRaw, ref } from 'vue'
 import { TimelineChartTemplatesDebug } from '@/features/@endge-admin/app/timeline-debug/templates'
 import type {
   TimelineDebugGroup,
   TimelineDebugTask,
 } from '@/features/@endge-admin/app/timeline-debug/types'
 import { Endge } from '@endge/core'
-import type { LogRecord, SpanEnd, SpanStart } from '@endge/core'
-import type { LogNode } from '@endge/core'
+import type { DiagnosticsSpanRecord } from '@endge/core'
+import type { DiagnosticsSpanTreeNode } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
+import {
+  buildDiagnosticsTree,
+  findDiagnosticsSpanNode,
+} from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
 
 export const CANVAS_DEBUG_ID = 'endge-timeline-debug-id'
 
@@ -21,7 +25,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
   const offIntervals: NodeJS.Timeout[] = []
 
   // При выбранном элементе подгружается детали логов
-  const details = ref<LogNode | null>(null)
+  const details = ref<DiagnosticsSpanTreeNode | null>(null)
 
   async function init(): Promise<void> {
     timeline = markRaw(new TimelineChart())
@@ -175,14 +179,14 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
   }
 
   function setupEvents(): void {
-    timeline.on(TimelineEvents.Click, (payload) => {
+    timeline.on(TimelineEvents.Click, (payload: { task?: { id?: string } }) => {
       const spanId = payload?.task?.id
       if (!spanId) {
         return
       }
 
-      details.value = Endge.debug.getSpanSubtree(spanId)
-      console.log(details.value)
+      const tree = buildDiagnosticsTree(Endge.diagnostics.query())
+      details.value = findDiagnosticsSpanNode(tree, spanId)
     })
   }
 
@@ -277,63 +281,41 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
   }
 
   /**
-   * Загружает текущий журнал из Endge.debug и проецирует верхнеуровневые спаны на таймлайн.
-   * Группы = lanes, Задачи = только root-spans (parentSpanId отсутствует).
+   * Загружает spans из Endge.diagnostics и проецирует root spans на timeline.
+   * Группы строятся по compiler group attribute или instrumentation scope.
    */
   function applyCurrentJournal(): void {
-    const records: LogRecord[] = Endge.debug.toPlain()
-    console.log(records)
+    const rootSpans = Endge.diagnostics
+      .query({ signals: ['span'] })
+      .filter((record): record is DiagnosticsSpanRecord => record.signal === 'span' && !record.parentSpanId)
 
-    // 2) Соберём пары start/end по spanId
-    const spanStarts = new Map<string, SpanStart>()
-    const spanEnds = new Map<string, SpanEnd>()
-    for (const r of records) {
-      if (r.kind === 'span_start' && r.corr?.spanId) {
-        spanStarts.set(r.corr.spanId, r as SpanStart)
-      } else if (r.kind === 'span_end' && r.corr?.spanId) {
-        spanEnds.set(r.corr.spanId, r as SpanEnd)
-      }
+    // Строим группы по compiler group или instrumentation scope.
+    const groupOf = (span: DiagnosticsSpanRecord): string => {
+      const group = span.attributes['endge.compiler.group']
+      return typeof group === 'string' && group ? group : span.scope.name
     }
-
-    // 3) Берём только верхнеуровневые спаны (без parentSpanId)
-    const rootSpans: Array<{ start: SpanStart; end?: SpanEnd }> = []
-    for (const [spanId, start] of spanStarts) {
-      if (!start.corr?.parentSpanId) {
-        const end = spanEnds.get(spanId)
-        rootSpans.push({ start, end })
-      }
-    }
-
-    // 4) Строим группы по lane (только у тех, у кого lane задан)
     const laneIds = Array.from(
-      new Set(rootSpans.map((s) => s.start.lane).filter(Boolean) as string[]),
+      new Set(rootSpans.map(groupOf)),
     )
     const groups: TimelineDebugGroup[] = laneIds.map((lane) => ({
       id: lane,
       displayName: lane,
     }))
 
-    // 5) Строим задачи (range) по спанам
+    // Строим timeline tasks по завершённым spans.
     const tasks: TimelineDebugTask[] = []
     let minTs = Number.POSITIVE_INFINITY
     let maxTs = Number.NEGATIVE_INFINITY
 
-    for (const { start, end } of rootSpans) {
-      const lane = start.lane || 'default'
-      const t0 = start.ts
-      const t1 = end?.ts ?? ((start.ts + (start as any).durMs ?? 0) || start.ts)
-
-      let endTime = t1 >= t0 ? t1 : t0 + 1 // минимальная длина
-      const id = start.corr?.spanId || `${lane}:${start.name}:${t0}`
-
-      if (t1 === t0) {
-        endTime = t1 + 5
-      }
+    for (const span of rootSpans) {
+      const lane = groupOf(span)
+      const t0 = span.startTimestamp
+      const endTime = span.endTimestamp > t0 ? span.endTimestamp : t0 + 1
 
       tasks.push({
-        id,
+        id: span.spanId,
         type: 'range',
-        displayName: start.name,
+        displayName: span.name,
         groupId: lane,
         startTime: t0,
         endTime,
@@ -350,7 +332,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
       return
     }
 
-    // 6) Настроим окно времени под данные
+    // Настраиваем окно времени под данные.
     const pad = 50 // мс
     const tsMin = Math.max(0, minTs - pad)
     const tsMax = maxTs + pad
@@ -362,7 +344,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
       tsEndTime: tsMax,
     })
 
-    // 7) Применяем данные
+    // Применяем данные.
     timeline.data({ groups, tasks })
   }
 

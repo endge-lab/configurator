@@ -29,6 +29,14 @@ function pixelAttribute(name: string, value: unknown): string {
 
 function printAttributes(node: UIEditorNode): string[] {
   if (node.kind === 'page') {
+    if (node.props.layoutMode === 'grid') {
+      return [
+        `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
+        pixelAttribute('gap', node.props.gap),
+        pixelAttribute('p', node.props.padding),
+        pixelAttribute('autoRows', node.props.rowHeight),
+      ].filter(Boolean)
+    }
     return [
       'direction="column"',
       pixelAttribute('gap', node.props.gap),
@@ -48,12 +56,38 @@ function printAttributes(node: UIEditorNode): string[] {
     return [pixelAttribute('p', node.props.padding)].filter(Boolean)
   }
 
+  if (node.kind === 'grid') {
+    return [
+      `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
+      pixelAttribute('gap', node.props.gap),
+      pixelAttribute('p', node.props.padding),
+    ].filter(Boolean)
+  }
+
   return []
 }
 
-function printChildren(document: UIEditorDocument, node: UIEditorNode, depth: number): string[] {
+function printPlacementAttributes(node: UIEditorNode, parentTag: UIEditorSFCBaseTag | null): string[] {
+  if (parentTag !== 'Grid' || !node.layout) {
+    return []
+  }
+
+  return [
+    `colStart="${node.layout.colStart}"`,
+    `colSpan="${node.layout.span}"`,
+    `rowStart="${node.layout.rowStart}"`,
+    `rowSpan="${node.layout.rowSpan}"`,
+  ]
+}
+
+function printChildren(
+  document: UIEditorDocument,
+  node: UIEditorNode,
+  depth: number,
+  parentTag: UIEditorSFCBaseTag,
+): string[] {
   return node.children
-    .map(childId => printNode(document, childId, depth))
+    .map(childId => printNode(document, childId, depth, parentTag))
     .filter(Boolean)
 }
 
@@ -62,23 +96,28 @@ function printElement(
   node: UIEditorNode,
   tag: UIEditorSFCBaseTag,
   depth: number,
+  parentTag: UIEditorSFCBaseTag | null,
 ): string {
+  const attrs = [
+    ...printAttributes(node),
+    ...printPlacementAttributes(node, parentTag),
+  ]
+  const serializedAttrs = attrs.length ? ` ${attrs.join(' ')}` : ''
   if (tag === 'Text') {
     const content = node.kind === 'text'
       ? node.props.text
       : node.kind === 'button'
         ? node.props.label
         : node.name
-    return `${indent(depth)}<Text>${escapeText(content)}</Text>`
+    return `${indent(depth)}<Text${serializedAttrs}>${escapeText(content)}</Text>`
   }
 
-  if (tag !== 'Box' && tag !== 'Flex') {
-    return `${indent(depth)}<${tag} />`
+  if (tag !== 'Box' && tag !== 'Flex' && tag !== 'Grid') {
+    return `${indent(depth)}<${tag}${serializedAttrs} />`
   }
 
-  const attrs = printAttributes(node)
-  const openTag = `${indent(depth)}<${tag}${attrs.length ? ` ${attrs.join(' ')}` : ''}`
-  const children = printChildren(document, node, depth + 1)
+  const openTag = `${indent(depth)}<${tag}${serializedAttrs}`
+  const children = printChildren(document, node, depth + 1, tag)
 
   if (children.length === 0) {
     return `${openTag} />`
@@ -91,19 +130,24 @@ function printElement(
   ].join('\n')
 }
 
-function printNode(document: UIEditorDocument, nodeId: string, depth: number): string {
+function printNode(
+  document: UIEditorDocument,
+  nodeId: string,
+  depth: number,
+  parentTag: UIEditorSFCBaseTag | null = null,
+): string {
   const node = document.nodes[nodeId]
   if (!node) {
     return ''
   }
 
   if (node.kind === 'page') {
-    return printElement(document, node, 'Flex', depth)
+    return printElement(document, node, node.props.layoutMode === 'grid' ? 'Grid' : 'Flex', depth, parentTag)
   }
 
   const contract = getUIEditorSFCDefinitionContract(node.definitionRef)
   if (contract) {
-    return printElement(document, node, contract.tag, depth)
+    return printElement(document, node, contract.tag, depth, parentTag)
   }
 
   const label = escapeComment(`${node.name || node.kind} · ${node.definitionRef}`)

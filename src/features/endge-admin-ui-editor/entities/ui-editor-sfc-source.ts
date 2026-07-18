@@ -50,10 +50,10 @@ export function projectUIEditorDocumentFromSFC(
       diagnostics: ['Visual editor поддерживает ровно один корневой элемент template.'],
     }
   }
-  if (roots[0].tag !== 'Flex') {
+  if (roots[0].tag !== 'Flex' && roots[0].tag !== 'Grid') {
     return {
       document: null,
-      diagnostics: ['Корневым элементом visual editor должен быть <Flex>.'],
+      diagnostics: ['Корневым элементом visual editor должен быть <Flex> или <Grid>.'],
     }
   }
 
@@ -99,6 +99,7 @@ function projectElement(
   context: ProjectionContext,
   isRoot: boolean,
   suggestedRowStart = 1,
+  parentTag: string | null = null,
 ): UIEditorNode | null {
   const direction = readAttribute(ast.attributes, 'direction') ?? 'column'
   const contract = isRoot
@@ -114,11 +115,19 @@ function projectElement(
     return null
   }
 
-  const allowedAttributes = isRoot || ast.tag === 'Flex'
+  const allowedAttributes = ast.tag === 'Flex'
     ? new Set(['direction', 'gap', 'p'])
-    : ast.tag === 'Box'
-      ? new Set(['p'])
-      : new Set<string>()
+    : ast.tag === 'Grid'
+      ? new Set(['columns', 'gap', 'p', 'autoRows'])
+      : ast.tag === 'Box'
+        ? new Set(['p'])
+        : new Set<string>()
+  if (parentTag === 'Grid') {
+    allowedAttributes.add('colStart')
+    allowedAttributes.add('colSpan')
+    allowedAttributes.add('rowStart')
+    allowedAttributes.add('rowSpan')
+  }
   const unsupportedAttribute = ast.attributes.find(attribute => !allowedAttributes.has(attribute.name))
   if (unsupportedAttribute) {
     context.diagnostics.push(`Атрибут "${unsupportedAttribute.name}" тега <${ast.tag}> пока не поддерживается visual editor.`)
@@ -132,11 +141,12 @@ function projectElement(
     : isRoot ? 'ui-page-root' : createSourceNodeId()
   const layout = isRoot
     ? undefined
-    : previous?.layout
-      ? { ...previous.layout }
+    : parentTag === 'Grid'
+      ? readGridPlacement(ast.attributes, contract?.defaultLayout ?? defaultLayout(), suggestedRowStart)
       : {
           ...(contract?.defaultLayout ?? defaultLayout()),
-          rowStart: suggestedRowStart,
+          colStart: 1,
+          rowStart: 1,
         }
 
   const node = isRoot
@@ -172,13 +182,14 @@ function projectElement(
       `${path}.${index}`,
       context,
       false,
-      isRoot ? nextPageRow : 1,
+      ast.tag === 'Grid' ? nextPageRow : 1,
+      ast.tag,
     )
     if (!childNode) {
       continue
     }
     node.children.push(childNode.id)
-    if (isRoot && childNode.layout) {
+    if (ast.tag === 'Grid' && childNode.layout) {
       nextPageRow = childNode.layout.rowStart + childNode.layout.rowSpan
     }
   }
@@ -187,6 +198,7 @@ function projectElement(
 }
 
 function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEditorNode {
+  const layoutMode = ast.tag === 'Grid' ? 'grid' : 'flex'
   return {
     id,
     kind: 'page',
@@ -197,11 +209,15 @@ function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEdito
     children: [],
     props: {
       title: 'SFC Page',
+      layoutMode,
+      columns: layoutMode === 'grid' ? readNumberAttribute(ast.attributes, 'columns', 12) : 12,
       gap: readPixelAttribute(ast.attributes, 'gap', 10),
       padding: readPixelAttribute(ast.attributes, 'p', 10),
-      rowHeight: DEFAULT_PAGE_ROW_HEIGHT,
+      rowHeight: layoutMode === 'grid'
+        ? readPixelAttribute(ast.attributes, 'autoRows', DEFAULT_PAGE_ROW_HEIGHT)
+        : DEFAULT_PAGE_ROW_HEIGHT,
     },
-  } as UIEditorNode
+  } as unknown as UIEditorNode
 }
 
 function createContractNode(
@@ -223,6 +239,13 @@ function createContractNode(
       padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
     })
   }
+  if (contract.kind === 'grid') {
+    Object.assign(props, {
+      columns: readNumberAttribute(ast.attributes, 'columns', Number(props.columns ?? 12)),
+      gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
+      padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
+    })
+  }
 
   return {
     id,
@@ -234,7 +257,7 @@ function createContractNode(
     children: [],
     props,
     layout,
-  } as UIEditorNode
+  } as unknown as UIEditorNode
 }
 
 function resolveContract(tag: string, direction: string) {
@@ -276,9 +299,37 @@ function readPixelAttribute(
   return Number.isFinite(numeric) ? numeric : fallback
 }
 
+function readNumberAttribute(
+  attributes: RComponentSFC_AST_Attribute[],
+  name: string,
+  fallback: number,
+): number {
+  const raw = readAttribute(attributes, name)
+  if (raw == null || raw.trim() === '') {
+    return fallback
+  }
+  const numeric = Number(raw)
+  return Number.isFinite(numeric) ? numeric : fallback
+}
+
+function readGridPlacement(
+  attributes: RComponentSFC_AST_Attribute[],
+  fallback: UIEditorNodeLayout,
+  suggestedRowStart: number,
+): UIEditorNodeLayout {
+  const colSpan = Math.max(1, Math.min(12, readNumberAttribute(attributes, 'colSpan', fallback.span)))
+  const colStart = Math.max(1, Math.min(Math.max(1, 13 - colSpan), readNumberAttribute(attributes, 'colStart', fallback.colStart)))
+  return {
+    colStart,
+    rowStart: Math.max(1, readNumberAttribute(attributes, 'rowStart', suggestedRowStart)),
+    span: colSpan,
+    rowSpan: Math.max(1, Math.min(40, readNumberAttribute(attributes, 'rowSpan', fallback.rowSpan))),
+  }
+}
+
 function nodeTag(node: UIEditorNode): string | null {
   if (node.kind === 'page') {
-    return 'Flex'
+    return node.props.layoutMode === 'grid' ? 'Grid' : 'Flex'
   }
   return getUIEditorSFCDefinitionContract(node.definitionRef)?.tag ?? null
 }

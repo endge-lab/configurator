@@ -2,6 +2,7 @@
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 import type { UIPresentationSurface } from '@endge/core'
+import type { CSSProperties } from 'vue'
 
 import { Endge, UI_COMPONENT_HOST_DEFINITION_ID } from '@endge/core'
 import { Blocks } from 'lucide-vue-next'
@@ -33,6 +34,7 @@ interface UIEditorPagePlacementPreview {
 }
 interface UIEditorPageGridGeometry {
   rect: DOMRect
+  columns: number
   gap: number
   rowHeight: number
   rowStep: number
@@ -54,7 +56,13 @@ const node = computed<UIEditorNode | null>(() => props.state.getNode(props.nodeI
 const parentNode = computed<UIEditorNode | null>(() => props.parentId ? props.state.getNode(props.parentId) : null)
 const isContainer = computed<boolean>(() => node.value != null && isUIEditorContainer(node.value.kind))
 const isSelected = computed<boolean>(() => !props.preview && props.state.selectedNodeId === props.nodeId)
-const isPagePlacedNode = computed<boolean>(() => parentNode.value?.kind === 'page')
+const isGridPlacedNode = computed<boolean>(() => parentNode.value?.kind === 'grid'
+  || (parentNode.value?.kind === 'page' && parentNode.value.props.layoutMode === 'grid'))
+const isPageGrid = computed<boolean>(() => node.value?.kind === 'page' && node.value.props.layoutMode === 'grid')
+const isGridLayoutContainer = computed<boolean>(() => node.value?.kind === 'grid' || isPageGrid.value)
+const pageColumnCount = computed<number>(() => node.value?.kind === 'page'
+  ? Math.max(1, Math.min(12, Math.round(Number(node.value.props.columns) || 12)))
+  : 12)
 const children = computed(() => props.state.getChildren(props.nodeId))
 const definition = computed(() => node.value ? Endge.uiRegistry.getDefinition(node.value.definitionRef) : null)
 const renderSurface = computed<UIPresentationSurface>(() => props.preview ? 'runtime' : 'admin')
@@ -78,7 +86,7 @@ const pageGridRef = ref<HTMLElement | null>(null)
 const pageChildRefs = ref<Record<string, HTMLElement | null>>({})
 const pagePlacementPreview = ref<UIEditorPagePlacementPreview | null>(null)
 const pageResizePreview = ref<UIEditorPagePlacementPreview | null>(null)
-const cardStyle = computed<Record<string, string> | undefined>(() => {
+const cardStyle = computed<CSSProperties | undefined>(() => {
   if (!node.value || node.value.kind === 'page') {
     return node.value?.kind === 'page'
       ? {
@@ -106,12 +114,12 @@ const pageGridMetrics = computed(() => {
 const isPageGridVisible = computed(() =>
   !props.preview
   && node.value?.kind === 'page'
-  && (props.state.showGridOverlay || props.state.isGridInteractionActive),
+  && (props.state.showGridOverlay || (isPageGrid.value && props.state.isGridInteractionActive)),
 )
 
 const isPageDragSurfaceActive = computed(() =>
   !props.preview
-  && node.value?.kind === 'page'
+  && isPageGrid.value
   && props.state.gridInteractionMode === 'drag',
 )
 
@@ -136,10 +144,10 @@ const pageGridOverlayCellCount = computed(() => {
     return 0
   }
 
-  return pageGridRowCount.value * 12
+  return pageGridRowCount.value * pageColumnCount.value
 })
 
-const containerStyle = computed<Record<string, string | number> | undefined>(() => {
+const containerStyle = computed<CSSProperties | undefined>(() => {
   const value = node.value
   if (!value || !isContainer.value) {
     return undefined
@@ -160,15 +168,29 @@ const containerStyle = computed<Record<string, string | number> | undefined>(() 
       flexDirection: value.props.direction,
       gap: `${value.props.gap}px`,
       padding: `${value.props.padding}px`,
+      alignItems: 'stretch',
+      minWidth: 0,
+      width: '100%',
     }
   }
   if (value.kind === 'page') {
+    if (value.props.layoutMode !== 'grid') {
+      return {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: `${Math.max(0, Number(value.props.gap ?? 0))}px`,
+        alignItems: 'stretch',
+        minWidth: 0,
+        minHeight: '100%',
+        width: '100%',
+      }
+    }
     const rowHeight = Math.max(20, value.props.rowHeight)
     const gap = Math.max(0, Number(value.props.gap ?? 0))
     const trackCount = Math.max(10, pageGridRowCount.value)
     return {
       display: 'grid',
-      gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+      gridTemplateColumns: `repeat(${pageColumnCount.value}, minmax(0, 1fr))`,
       gridAutoRows: `${rowHeight}px`,
       gridAutoFlow: 'row',
       gap: `${gap}px`,
@@ -202,7 +224,7 @@ const pageGridOverlayStyle = computed<Record<string, string> | undefined>(() => 
 
   return {
     display: 'grid',
-    gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+    gridTemplateColumns: `repeat(${pageColumnCount.value}, minmax(0, 1fr))`,
     gridAutoRows: `${pageGridMetrics.value.rowHeight}px`,
     gap: `${pageGridMetrics.value.gap}px`,
     height: '100%',
@@ -300,16 +322,18 @@ function clearInteractionPreviews(): void {
 }
 
 function getPageGridGeometry(): UIEditorPageGridGeometry | null {
-  if (node.value?.kind !== 'page' || !pageGridRef.value || !pageGridMetrics.value) {
+  if (!isPageGrid.value || !pageGridRef.value || !pageGridMetrics.value) {
     return null
   }
 
   const rect = pageGridRef.value.getBoundingClientRect()
   const gap = pageGridMetrics.value.gap
-  const columnWidth = (rect.width - gap * 11) / 12
+  const columns = pageColumnCount.value
+  const columnWidth = (rect.width - gap * Math.max(0, columns - 1)) / columns
 
   return {
     rect,
+    columns,
     gap,
     rowHeight: pageGridMetrics.value.rowHeight,
     rowStep: pageGridMetrics.value.rowHeight + gap,
@@ -327,9 +351,10 @@ function getGridTopForRowStart(rowStart: number, geometry: UIEditorPageGridGeome
 }
 
 function getGridRightForColEnd(colEnd: number, geometry: UIEditorPageGridGeometry): number {
-  const safeColEnd = Math.max(2, Math.min(13, colEnd))
-  const startOffset = getGridLeftForColumnStart(Math.min(safeColEnd, 12), geometry)
-  return safeColEnd === 13
+  const finalLine = geometry.columns + 1
+  const safeColEnd = Math.max(2, Math.min(finalLine, colEnd))
+  const startOffset = getGridLeftForColumnStart(Math.min(safeColEnd, geometry.columns), geometry)
+  return safeColEnd === finalLine
     ? geometry.rect.width
     : Math.max(geometry.columnWidth, startOffset - geometry.gap)
 }
@@ -341,7 +366,7 @@ function getGridBottomForRowEnd(rowEnd: number, geometry: UIEditorPageGridGeomet
 }
 
 function getGridWidthForSpan(span: number, geometry: UIEditorPageGridGeometry): number {
-  const safeSpan = Math.max(1, Math.min(12, span))
+  const safeSpan = Math.max(1, Math.min(geometry.columns, span))
   return geometry.columnWidth * safeSpan + geometry.gap * Math.max(0, safeSpan - 1)
 }
 
@@ -370,8 +395,8 @@ function createPageLayoutRect(
 }
 
 function snapColStartFromLeft(leftOffset: number, span: number, geometry: UIEditorPageGridGeometry): number {
-  const safeSpan = Math.max(1, Math.min(12, span))
-  const maxStart = Math.max(1, 13 - safeSpan)
+  const safeSpan = Math.max(1, Math.min(geometry.columns, span))
+  const maxStart = Math.max(1, geometry.columns + 1 - safeSpan)
   const maxLeft = Math.max(0, geometry.rect.width - getGridWidthForSpan(safeSpan, geometry))
   const normalizedLeft = Math.max(0, Math.min(maxLeft, leftOffset))
 
@@ -455,7 +480,7 @@ function snapColEndFromRight(rightOffset: number, startCol: number, geometry: UI
   let bestEnd = minEnd
   let bestDistance = Number.POSITIVE_INFINITY
 
-  for (let colEnd = minEnd; colEnd <= 13; colEnd += 1) {
+  for (let colEnd = minEnd; colEnd <= geometry.columns + 1; colEnd += 1) {
     const distance = Math.abs(normalizedRight - getGridRightForColEnd(colEnd, geometry))
     if (distance < bestDistance) {
       bestDistance = distance
@@ -495,7 +520,7 @@ function onSelect(): void {
 }
 
 function onDragstart(event: DragEvent): void {
-  if (props.preview || !node.value || node.value.kind === 'page' || isPagePlacedNode.value) {
+  if (props.preview || !node.value || node.value.kind === 'page' || isGridPlacedNode.value) {
     return
   }
 
@@ -527,7 +552,7 @@ function onDragover(event: DragEvent): void {
   event.stopPropagation()
   isDropHovered.value = true
 
-  if (node.value?.kind === 'page') {
+  if (isPageGrid.value) {
     const payload = parseDropPayload(event)
     if (!payload) {
       return
@@ -541,7 +566,7 @@ function onDragover(event: DragEvent): void {
 
 function onDragleave(): void {
   isDropHovered.value = false
-  if (node.value?.kind === 'page') {
+  if (isPageGrid.value) {
     clearInteractionPreviews()
   }
 }
@@ -669,7 +694,7 @@ function resolvePagePlacement(
   event: DragEvent,
   payload: UIEditorDragPayload,
 ): UIEditorPagePlacementPreview | null {
-  if (node.value?.kind !== 'page') {
+  if (!isPageGrid.value) {
     return null
   }
 
@@ -687,10 +712,12 @@ function resolvePagePlacement(
   const anchorOffsetY = dragRect ? event.clientY - dragRect.top : geometry.rowHeight / 2
   const candidateLeft = event.clientX - geometry.rect.left - anchorOffsetX
   const candidateTop = event.clientY - geometry.rect.top - anchorOffsetY
+  const span = Math.max(1, Math.min(geometry.columns, draggedLayout.span))
 
   return resolvePageCollisions({
     ...draggedLayout,
-    colStart: snapColStartFromLeft(candidateLeft, draggedLayout.span, geometry),
+    span,
+    colStart: snapColStartFromLeft(candidateLeft, span, geometry),
     rowStart: snapRowStartFromTop(candidateTop, geometry),
   }, payload.source === 'node' ? payload.nodeId : undefined)
 }
@@ -710,7 +737,7 @@ function onDrop(event: DragEvent): void {
     return
   }
 
-  if (node.value?.kind === 'page' && pagePlacementPreview.value) {
+  if (isPageGrid.value && pagePlacementPreview.value) {
     const previewLayout = pagePlacementPreview.value
     clearInteractionPreviews()
 
@@ -802,18 +829,20 @@ function getSnappedSizeForRowSpan(rowSpan: number): number {
 }
 
 function createPagePreviewFromNode(child: UIEditorNode): UIEditorPagePlacementPreview {
+  const columns = pageColumnCount.value
+  const span = Math.max(1, Math.min(columns, Number(child.layout?.span ?? columns)))
   return {
     nodeId: child.id,
     label: child.name,
-    colStart: Math.max(1, Math.min(12, Number(child.layout?.colStart ?? 1))),
+    colStart: Math.max(1, Math.min(Math.max(1, columns + 1 - span), Number(child.layout?.colStart ?? 1))),
     rowStart: Math.max(1, Number(child.layout?.rowStart ?? 1)),
-    span: Math.max(1, Math.min(12, Number(child.layout?.span ?? 12))),
+    span,
     rowSpan: Math.max(1, Math.min(40, Number(child.layout?.rowSpan ?? 4))),
   }
 }
 
 function startPageChildMove(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -872,7 +901,7 @@ function startPageChildMove(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -918,7 +947,7 @@ function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function startPageChildWidthResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -978,7 +1007,7 @@ function startPageChildWidthResize(child: UIEditorNode, event: MouseEvent): void
 }
 
 function startPageChildHeightResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -1037,7 +1066,7 @@ function startPageChildHeightResize(child: UIEditorNode, event: MouseEvent): voi
 }
 
 function startPageChildTopResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -1098,7 +1127,7 @@ function startPageChildTopResize(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function startPageChildLeftResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -1163,7 +1192,7 @@ function startPageChildCornerResize(
   event: MouseEvent,
   handle: Extract<UIEditorChromeHandle, 'north-west' | 'north-east' | 'south-west' | 'south-east'>,
 ): void {
-  if (props.preview || node.value?.kind !== 'page') {
+  if (props.preview || !isPageGrid.value) {
     return
   }
 
@@ -1258,7 +1287,7 @@ function startPageChildCornerResize(
 }
 
 function getNodeSizeBadge(targetNode: UIEditorNode): string {
-  if (targetNode.kind === 'page') {
+  if (targetNode.kind === 'page' || (!isGridPlacedNode.value && !isGridLayoutContainer.value)) {
     return ''
   }
 
@@ -1268,7 +1297,7 @@ function getNodeSizeBadge(targetNode: UIEditorNode): string {
 }
 
 function onPageChildSelectionChromeResize(child: UIEditorNode, handle: UIEditorChromeHandle, event: MouseEvent): void {
-  if (node.value?.kind !== 'page') {
+  if (!isPageGrid.value) {
     return
   }
 
@@ -1298,25 +1327,46 @@ function onPageChildSelectionChromeResize(child: UIEditorNode, handle: UIEditorC
 }
 
 function getChildWrapperStyle(child: UIEditorNode): Record<string, string> | undefined {
-  if (node.value?.kind !== 'page') {
+  const container = node.value
+  if (!container) {
     return undefined
   }
 
-  const colStart = Math.max(1, Math.min(12, Number(child.layout?.colStart ?? 1)))
+  if (container.kind === 'page' && container.props.layoutMode === 'flex') {
+    return { width: '100%', minWidth: '0' }
+  }
+
+  if (container.kind === 'flex') {
+    return container.props.direction === 'row'
+      ? { flex: '1 1 0', minWidth: '0' }
+      : { width: '100%', minWidth: '0' }
+  }
+
+  if (!isGridLayoutContainer.value) {
+    return undefined
+  }
+
+  const columns = container.kind === 'grid'
+    ? Math.max(1, Number(container.props.columns) || 12)
+    : pageColumnCount.value
+  const colStart = Math.max(1, Math.min(columns, Number(child.layout?.colStart ?? 1)))
   const rowStart = Math.max(1, Number(child.layout?.rowStart ?? 1))
-  const span = Math.max(1, Math.min(12, Number(child.layout?.span ?? 12)))
+  const span = Math.max(1, Math.min(columns, Number(child.layout?.span ?? columns)))
   const rowSpan = Math.max(1, Math.min(40, Number(child.layout?.rowSpan ?? 4)))
-  return {
+  const style: Record<string, string> = {
     gridColumn: `${colStart} / span ${span}`,
     gridRow: `${rowStart} / span ${rowSpan}`,
-    height: `${getSnappedSizeForRowSpan(rowSpan)}px`,
-    minHeight: `${getSnappedSizeForRowSpan(rowSpan)}px`,
-    visibility: isNodeInGridInteraction(child.id) ? 'hidden' : 'visible',
   }
+  if (container.kind === 'page') {
+    style.height = `${getSnappedSizeForRowSpan(rowSpan)}px`
+    style.minHeight = `${getSnappedSizeForRowSpan(rowSpan)}px`
+    style.visibility = isNodeInGridInteraction(child.id) ? 'hidden' : 'visible'
+  }
+  return style
 }
 
 function getInsertStyle(): Record<string, string> | undefined {
-  if (node.value?.kind !== 'page') {
+  if (!isGridLayoutContainer.value) {
     return undefined
   }
   return {
@@ -1354,13 +1404,13 @@ function getInsertStyle(): Record<string, string> | undefined {
         !props.preview && !isSelected ? 'hover:border-foreground/15' : '',
       ]"
       :style="cardStyle"
-      :draggable="!props.preview && node.kind !== 'page' && !isPagePlacedNode"
+      :draggable="!props.preview && node.kind !== 'page' && !isGridPlacedNode"
       @click.stop="onSelect"
       @dragstart="onDragstart"
       @dragend="onDragend"
     >
       <UIEditorDemoSelectionChrome
-        v-if="!props.preview && isSelected && (!isPagePlacedNode || node.kind === 'page')"
+        v-if="!props.preview && isSelected && (!isGridPlacedNode || node.kind === 'page')"
         :label="node.name"
         :size-label="getNodeSizeBadge(node)"
         :show-delete="node.kind !== 'page'"
@@ -1452,7 +1502,7 @@ function getInsertStyle(): Record<string, string> | undefined {
                 />
 
                 <UIEditorDemoSelectionChrome
-                  v-if="!props.preview && node.kind === 'page' && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
+                  v-if="!props.preview && isPageGrid && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
                   :label="child.name"
                   :size-label="getNodeSizeBadge(child)"
                   :show-delete="true"

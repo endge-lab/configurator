@@ -11,41 +11,43 @@ export type UIEditorWorkspaceMode = 'visual' | 'split' | 'source'
 
 export type UIEditorNodeKind = UIPrimitiveKind
 
-export interface UIEditorPageProps {
+export interface UIEditorPageProps extends Record<string, unknown> {
   title: string
+  layoutMode: 'flex' | 'grid'
+  columns: number
   gap: number
   padding: number
   rowHeight: number
 }
 
-export interface UIEditorFlexProps {
+export interface UIEditorFlexProps extends Record<string, unknown> {
   direction: 'row' | 'column'
   gap: number
   padding: number
 }
 
-export interface UIEditorGridProps {
+export interface UIEditorGridProps extends Record<string, unknown> {
   columns: number
   gap: number
   padding: number
   minHeight: number
 }
 
-export interface UIEditorBoxProps {
+export interface UIEditorBoxProps extends Record<string, unknown> {
   title: string
   padding: number
 }
 
-export interface UIEditorCustomComponentProps {
+export interface UIEditorCustomComponentProps extends Record<string, unknown> {
   title: string
   rendererRef: string
 }
 
-export interface UIEditorTextProps {
+export interface UIEditorTextProps extends Record<string, unknown> {
   text: string
 }
 
-export interface UIEditorButtonProps {
+export interface UIEditorButtonProps extends Record<string, unknown> {
   label: string
 }
 

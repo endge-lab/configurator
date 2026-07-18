@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { LogLevel } from '@endge/core'
-import type { LogNode, SpanNode } from '@endge/core'
+import type { DiagnosticsSeverityNumber } from '@endge/core'
+import type {
+  DiagnosticsSpanTreeNode,
+  DiagnosticsTreeNode,
+} from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 
 defineOptions({ name: 'LogTree' })
 
 const props = defineProps<{
-  nodes?: LogNode[]
+  nodes?: DiagnosticsTreeNode[]
   level?: number
-  rowMessage?: (n: LogNode) => string
+  rowMessage?: (node: DiagnosticsTreeNode) => string
 }>()
 
-const safeNodes = computed<LogNode[]>(() =>
+const safeNodes = computed<DiagnosticsTreeNode[]>(() =>
   Array.isArray(props.nodes) ? props.nodes! : [],
 )
 const currentLevel = props.level ?? 0
@@ -25,47 +28,36 @@ function fmtTime(ts: number): string {
   return `${hh}:${mm}:${ss}.${ms}`
 }
 
-function levelClass(level: LogLevel | undefined): string {
+function levelClass(level: DiagnosticsSeverityNumber | undefined): string {
   switch (level) {
-    case 'trace':
-    case 'debug':
+    case 1:
+    case 5:
       return 'text-muted'
-    case 'info':
+    case 9:
       return 'text-info'
-    case 'warn':
+    case 13:
       return 'text-warning'
-    case 'error':
-    case 'fatal':
+    case 17:
+    case 21:
       return 'text-danger'
     default:
       return ''
   }
 }
 
-function defaultRowMessage(n: LogNode): string {
-  if (n.kind === 'span') {
-    const base = n.name ?? 'span'
-    const dur =
-      typeof n.durMs === 'number'
-        ? ` (${n.durMs} ms)`
-        : n.endTs
-          ? ` (${n.endTs - n.ts} ms)`
-          : ''
-    return `${base}${dur}`
-  }
-  return n.msg || n.name || 'event'
+function defaultRowMessage(node: DiagnosticsTreeNode): string {
+  return node.kind === 'span'
+    ? `${node.name} (${node.durationMs} ms)`
+    : node.body
 }
 
-const rowMsg = (n: LogNode) =>
-  props.rowMessage ? props.rowMessage(n) : defaultRowMessage(n)
+const rowMsg = (node: DiagnosticsTreeNode) =>
+  props.rowMessage ? props.rowMessage(node) : defaultRowMessage(node)
 
 const openStates = ref<Record<string, boolean>>({})
 
-function nodeKey(n: LogNode, idx: number): string {
-  const trace = n.corr?.traceId ?? ''
-  const span = n.corr?.spanId ?? ''
-  const name = n.name ?? ''
-  return `${currentLevel}:${n.kind}:${trace}:${span}:${n.ts}:${name}:${idx}`
+function nodeKey(node: DiagnosticsTreeNode, idx: number): string {
+  return `${currentLevel}:${node.id}:${idx}`
 }
 
 watch(
@@ -82,20 +74,20 @@ watch(
   { immediate: true, deep: true },
 )
 
-function traverse(nodes: LogNode[], lvl: number, isOpen: boolean) {
-  nodes.forEach((n, idx) => {
-    const key = `${lvl}:${n.kind}:${n.corr?.traceId ?? ''}:${n.corr?.spanId ?? ''}:${n.ts}:${n.name ?? ''}:${idx}`
+function traverse(nodes: DiagnosticsTreeNode[], lvl: number, isOpen: boolean): void {
+  nodes.forEach((node, idx) => {
+    const key = `${lvl}:${node.id}:${idx}`
     openStates.value[key] = isOpen
-    if (n.kind === 'span' && (n as SpanNode).children?.length) {
-      traverse((n as SpanNode).children, lvl + 1, isOpen)
+    if (node.kind === 'span' && (node as DiagnosticsSpanTreeNode).children.length) {
+      traverse((node as DiagnosticsSpanTreeNode).children, lvl + 1, isOpen)
     }
   })
 }
 
-function expandAll() {
+function expandAll(): void {
   traverse(safeNodes.value, currentLevel, true)
 }
-function collapseAll() {
+function collapseAll(): void {
   traverse(safeNodes.value, currentLevel, false)
 }
 defineExpose({ expandAll, collapseAll })
@@ -113,21 +105,19 @@ defineExpose({ expandAll, collapseAll })
         >
           <summary
             class="cursor-pointer px-2 py-1 text-xs font-medium hover:bg-hover flex items-center justify-between"
-            :class="levelClass(node.level)"
+            :class="levelClass(node.severityNumber)"
             @click.prevent="
               openStates[nodeKey(node, idx)] = !openStates[nodeKey(node, idx)]
             "
           >
             <div class="flex items-center gap-2">
               <span>▶</span>
-              <span>[{{ fmtTime(node.ts) }}]</span>
+              <span>[{{ fmtTime(node.timestamp) }}]</span>
               <span>{{ rowMsg(node) }}</span>
-              <span v-if="node.lane" class="text-muted">- {{ node.lane }}</span>
+              <span class="text-muted">- {{ node.scope }}</span>
             </div>
             <div class="text-muted">
-              <span v-if="typeof node.durMs === 'number'"
-                >{{ node.durMs }} ms</span
-              >
+              <span>{{ node.durationMs }} ms</span>
             </div>
           </summary>
 
@@ -145,13 +135,13 @@ defineExpose({ expandAll, collapseAll })
         <div
           v-else
           class="flex items-center text-xs hover:bg-layer transition-colors relative px-2 py-1"
-          :class="levelClass(node.level)"
+          :class="levelClass(node.severityNumber)"
         >
           <div class="flex items-center gap-2">
             <span>•</span>
-            <span>[{{ fmtTime(node.ts) }}]</span>
+            <span>[{{ fmtTime(node.timestamp) }}]</span>
             <span>{{ rowMsg(node) }}</span>
-            <span v-if="node.lane" class="text-muted">- {{ node.lane }}</span>
+            <span class="text-muted">- {{ node.scope }}</span>
           </div>
         </div>
       </template>

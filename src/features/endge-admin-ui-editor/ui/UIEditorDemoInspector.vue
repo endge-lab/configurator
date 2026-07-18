@@ -2,6 +2,7 @@
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 
+import { Endge } from '@endge/core'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Endge } from '@endge/core'
+
 import { uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
 const props = defineProps<{
@@ -20,6 +21,10 @@ const props = defineProps<{
 const state = computed<UIEditorDemoState>(() => props.state ?? uiEditorDemoState)
 
 const selectedNode = computed<UIEditorNode | null>(() => state.value.getSelectedNode())
+const selectedNodeId = computed<string>(() => selectedNode.value?.id ?? '')
+const selectedParent = computed<UIEditorNode | null>(() => selectedNode.value ? state.value.getParentNode(selectedNode.value.id) : null)
+const hasGridPlacement = computed<boolean>(() => selectedParent.value?.kind === 'grid'
+  || (selectedParent.value?.kind === 'page' && selectedParent.value.props.layoutMode === 'grid'))
 const selectedProps = computed<Record<string, any>>(() => ((selectedNode.value?.props as Record<string, any> | undefined) ?? {}))
 const selectedDefinition = computed(() => selectedNode.value ? Endge.uiRegistry.getDefinition(selectedNode.value.definitionRef) : null)
 const canEditRendererRef = computed(() => selectedDefinition.value?.allowsRendererRefOverride === true)
@@ -58,7 +63,6 @@ function updateNumeric(field: string, value: string | number): void {
   }
   state.value.patchNodeProps(node.id, { [field]: numericValue })
 }
-
 </script>
 
 <template>
@@ -89,7 +93,7 @@ function updateNumeric(field: string, value: string | number): void {
             </div>
           </div>
 
-          <div v-if="selectedNode.kind !== 'page'" class="space-y-3 border border-border/70 bg-muted/15 p-3">
+          <div v-if="selectedNode.kind !== 'page' && hasGridPlacement" class="space-y-3 border border-border/70 bg-muted/15 p-3">
             <div class="space-y-2">
               <Label>Width span</Label>
               <Input
@@ -97,7 +101,7 @@ function updateNumeric(field: string, value: string | number): void {
                 min="1"
                 max="12"
                 :model-value="selectedNode.layout?.span ?? 12"
-                @update:model-value="value => state.patchNodeLayout(selectedNode.id, { span: Number(value) })"
+                @update:model-value="value => state.patchNodeLayout(selectedNodeId, { span: Number(value) })"
               />
             </div>
             <div class="space-y-2">
@@ -107,7 +111,7 @@ function updateNumeric(field: string, value: string | number): void {
                 min="1"
                 max="40"
                 :model-value="selectedNode.layout?.rowSpan ?? 4"
-                @update:model-value="value => state.patchNodeLayout(selectedNode.id, { rowSpan: Number(value) })"
+                @update:model-value="value => state.patchNodeLayout(selectedNodeId, { rowSpan: Number(value) })"
               />
             </div>
           </div>
@@ -117,10 +121,39 @@ function updateNumeric(field: string, value: string | number): void {
             class="space-y-3"
           >
             <div class="space-y-2">
+              <Label>Layout</Label>
+              <Select
+                :model-value="selectedProps.layoutMode"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { layoutMode: value === 'grid' ? 'grid' : 'flex' })"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите layout" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flex">
+                    Flex · Column
+                  </SelectItem>
+                  <SelectItem value="grid">
+                    Grid
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-2">
               <Label>Title</Label>
               <Input
                 :model-value="selectedProps.title"
-                @update:model-value="value => state.patchNodeProps(selectedNode.id, { title: String(value ?? '') })"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { title: String(value ?? '') })"
+              />
+            </div>
+            <div v-if="selectedProps.layoutMode === 'grid'" class="space-y-2">
+              <Label>Columns</Label>
+              <Input
+                type="number"
+                min="1"
+                max="12"
+                :model-value="selectedProps.columns"
+                @update:model-value="value => updateNumeric('columns', value as string)"
               />
             </div>
             <div class="space-y-2">
@@ -139,7 +172,7 @@ function updateNumeric(field: string, value: string | number): void {
                 @update:model-value="value => updateNumeric('padding', value as string)"
               />
             </div>
-            <div class="space-y-2">
+            <div v-if="selectedProps.layoutMode === 'grid'" class="space-y-2">
               <Label>Row height</Label>
               <Input
                 type="number"
@@ -178,7 +211,7 @@ function updateNumeric(field: string, value: string | number): void {
               <Label>Direction</Label>
               <Select
                 :model-value="selectedProps.direction"
-                @update:model-value="value => state.patchNodeProps(selectedNode.id, { direction: value === 'row' ? 'row' : 'column' })"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { direction: value === 'row' ? 'row' : 'column' })"
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите направление" />
@@ -257,7 +290,7 @@ function updateNumeric(field: string, value: string | number): void {
               <Label>Title</Label>
               <Input
                 :model-value="selectedProps.title"
-                @update:model-value="value => state.patchNodeProps(selectedNode.id, { title: String(value ?? '') })"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { title: String(value ?? '') })"
               />
             </div>
             <div class="space-y-2">
@@ -278,7 +311,7 @@ function updateNumeric(field: string, value: string | number): void {
               <Label>Title</Label>
               <Input
                 :model-value="selectedProps.title"
-                @update:model-value="value => state.patchNodeProps(selectedNode.id, { title: String(value ?? '') })"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { title: String(value ?? '') })"
               />
             </div>
             <div v-if="canEditRendererRef" class="space-y-2">
@@ -286,7 +319,7 @@ function updateNumeric(field: string, value: string | number): void {
               <Input
                 :model-value="selectedProps.rendererRef"
                 placeholder="repo.custom.component"
-                @update:model-value="value => state.patchNodeProps(selectedNode.id, { rendererRef: String(value ?? '') })"
+                @update:model-value="value => state.patchNodeProps(selectedNodeId, { rendererRef: String(value ?? '') })"
               />
             </div>
             <div class="rounded-md border border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
@@ -302,7 +335,7 @@ function updateNumeric(field: string, value: string | number): void {
             <Textarea
               :model-value="selectedProps.text"
               :rows="4"
-              @update:model-value="value => state.patchNodeProps(selectedNode.id, { text: String(value ?? '') })"
+              @update:model-value="value => state.patchNodeProps(selectedNodeId, { text: String(value ?? '') })"
             />
           </div>
 
@@ -313,7 +346,7 @@ function updateNumeric(field: string, value: string | number): void {
             <Label>Label</Label>
             <Input
               :model-value="selectedProps.label"
-              @update:model-value="value => state.patchNodeProps(selectedNode.id, { label: String(value ?? '') })"
+              @update:model-value="value => state.patchNodeProps(selectedNodeId, { label: String(value ?? '') })"
             />
           </div>
         </div>

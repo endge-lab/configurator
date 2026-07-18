@@ -4,6 +4,7 @@
  */
 import { Activity, BarChart3, ChevronDown, ChevronRight, List, Play, Square, Table } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref } from 'vue'
+import type { DiagnosticsSeverityNumber } from '@endge/core'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,7 @@ const MAX_RECORDS = 800
 
 type Level = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 const ALL_LEVELS: Level[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal']
-const ALL_KINDS = ['trace-start', 'trace-end', 'span-start', 'span-end', 'event', 'measurement', 'snapshot']
+const ALL_KINDS = ['log', 'span']
 const ALL_CHANNELS = ['runtime', 'domain', 'query', 'events']
 
 interface DisplayRecord {
@@ -49,22 +50,48 @@ interface DisplayRecord {
   tabId?: string
 }
 
+/** Преобразует OTel severity number в компактный уровень presentation layer. */
+function severityLevel(severityNumber: DiagnosticsSeverityNumber): Level {
+  const levels: Record<DiagnosticsSeverityNumber, Level> = {
+    1: 'trace',
+    5: 'debug',
+    9: 'info',
+    13: 'warn',
+    17: 'error',
+    21: 'fatal',
+  }
+  return levels[severityNumber]
+}
+
+/** Проецирует core record из подключённой вкладки в локальную UI-модель. */
 function entryToDisplayRecord(entry: DiagnosticsRegisterEntry): DisplayRecord {
   const r = entry.record
+  if (r.signal === 'log') {
+    return {
+      id: r.id,
+      ts: r.timestamp,
+      level: severityLevel(r.severityNumber),
+      kind: 'log',
+      channel: r.scope.name,
+      name: r.eventName ?? r.body,
+      traceId: r.traceId ?? '',
+      spanId: r.spanId,
+      message: r.body,
+      tabId: entry.tabId,
+    }
+  }
   return {
     id: r.id,
-    ts: r.ts,
-    level: (r.level as Level) ?? 'info',
-    kind: r.kind ?? 'event',
-    channel: r.channel ?? '',
-    name: r.name ?? '',
-    traceId: r.corr?.traceId ?? '',
-    spanId: r.corr?.spanId,
-    parentSpanId: r.corr?.parentSpanId,
-    durMs: r.durMs,
-    message: r.message,
-    value: r.value,
-    unit: r.unit,
+    ts: r.startTimestamp,
+    level: r.status.code === 'error' ? 'error' : 'info',
+    kind: 'span',
+    channel: r.scope.name,
+    name: r.name,
+    traceId: r.traceId,
+    spanId: r.spanId,
+    parentSpanId: r.parentSpanId,
+    durMs: r.durationMs,
+    message: r.status.message,
     tabId: entry.tabId,
   }
 }
@@ -81,40 +108,29 @@ const isFromRegister = computed(() => diagnosticsRegisterEntries.value.length > 
 
 const nextId = ref(14)
 const mockRecords = ref<DisplayRecord[]>([
-  { id: 1, ts: 1000, level: 'info', kind: 'trace-start', channel: 'runtime', name: 'domain.compile', traceId: 'tr-1' },
-  { id: 3, ts: 1020, level: 'debug', kind: 'event', channel: 'domain', name: 'binding.resolved', message: 'Query flights bound', traceId: 'tr-1', spanId: 'sp-1' },
-  { id: 5, ts: 1050, level: 'info', kind: 'span-start', channel: 'query', name: 'build-request', traceId: 'tr-1', spanId: 'sp-2' },
-  { id: 6, ts: 1080, level: 'info', kind: 'measurement', channel: 'query', name: 'request.size', value: 256, unit: 'bytes', traceId: 'tr-1', spanId: 'sp-2' },
-  { id: 7, ts: 1120, level: 'info', kind: 'span-end', channel: 'query', name: 'build-request', traceId: 'tr-1', spanId: 'sp-2', durMs: 70 },
-  { id: 8, ts: 1150, level: 'info', kind: 'trace-end', channel: 'runtime', name: 'domain.compile', traceId: 'tr-1', durMs: 150 },
-  { id: 9, ts: 1200, level: 'info', kind: 'trace-start', channel: 'runtime', name: 'query.run', traceId: 'tr-2' },
-  { id: 10, ts: 1210, level: 'info', kind: 'span-start', channel: 'query', name: 'execute', traceId: 'tr-2', spanId: 'sp-3' },
-  { id: 11, ts: 1350, level: 'info', kind: 'span-end', channel: 'query', name: 'execute', traceId: 'tr-2', spanId: 'sp-3', durMs: 140 },
-  { id: 12, ts: 1360, level: 'info', kind: 'trace-end', channel: 'runtime', name: 'query.run', traceId: 'tr-2', durMs: 160 },
-  { id: 13, ts: 1400, level: 'warn', kind: 'event', channel: 'events', name: 'slow-render', message: 'Render > 100ms', traceId: 'tr-3' },
+  { id: 1, ts: 1000, level: 'info', kind: 'span', channel: 'runtime', name: 'domain.compile', traceId: 'tr-1', spanId: 'sp-1', durMs: 150 },
+  { id: 2, ts: 1020, level: 'debug', kind: 'log', channel: 'domain', name: 'binding.resolved', message: 'Query flights bound', traceId: 'tr-1', spanId: 'sp-1' },
+  { id: 3, ts: 1050, level: 'info', kind: 'span', channel: 'query', name: 'build-request', traceId: 'tr-1', spanId: 'sp-2', parentSpanId: 'sp-1', durMs: 70 },
+  { id: 4, ts: 1200, level: 'info', kind: 'span', channel: 'runtime', name: 'query.run', traceId: 'tr-2', spanId: 'sp-3', durMs: 160 },
+  { id: 5, ts: 1210, level: 'info', kind: 'span', channel: 'query', name: 'execute', traceId: 'tr-2', spanId: 'sp-4', parentSpanId: 'sp-3', durMs: 140 },
+  { id: 6, ts: 1400, level: 'warn', kind: 'log', channel: 'events', name: 'slow-render', message: 'Render > 100ms', traceId: 'tr-3' },
 ])
 
 const mockCounters = computed(() => {
   const records = sourceRecords.value
   const byKind: Record<string, number> = {}
   const byChannel: Record<string, number> = {}
-  const traceStarted = new Set<string>()
-  const spanStarted = new Set<string>()
   for (const r of records) {
     byKind[r.kind] = (byKind[r.kind] ?? 0) + 1
     if (r.channel) byChannel[r.channel] = (byChannel[r.channel] ?? 0) + 1
-    if (r.kind === 'trace-start' && r.traceId) traceStarted.add(r.traceId)
-    if (r.kind === 'trace-end' && r.traceId) traceStarted.delete(r.traceId)
-    if (r.kind === 'span-start' && r.spanId) spanStarted.add(r.spanId)
-    if (r.kind === 'span-end' && r.spanId) spanStarted.delete(r.spanId)
   }
   return {
     totalRecords: records.length,
     droppedByPolicy: 0,
     droppedByCapacity: 0,
     activeExporters: 0,
-    openTraces: traceStarted.size,
-    openSpans: spanStarted.size,
+    openTraces: 0,
+    openSpans: 0,
     recordsByKind: byKind,
     recordsByChannel: byChannel,
   }
@@ -132,7 +148,8 @@ const EVENT_NAMES = ['binding.resolved', 'request.sent', 'response.received', 'c
 const EVENT_MESSAGES = ['OK', 'Completed', 'Render > 50ms', 'Cache miss', 'Retry']
 const LEVELS: DisplayRecord['level'][] = ['trace', 'debug', 'info', 'warn', 'error']
 
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+/** Возвращает случайный элемент непустого mock-массива. */
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]! }
 function rndId(): string { return Math.random().toString(36).slice(2, 10) }
 
 function appendRecord(record: DisplayRecord): void {
@@ -149,19 +166,17 @@ function emitRandomEvent(): void {
   const channel = pick(CHANNELS)
   const level = pick(LEVELS)
   const traceName = pick(TRACE_NAMES)
-  appendRecord({ id: 0, ts: 0, level, kind: 'trace-start', channel, name: traceName, traceId })
+  const rootSpanId = `sp-${rndId()}`
   const numSpans = Math.floor(Math.random() * 3) + 1
-  let parentSpanId: string | undefined
+  let parentSpanId: string | undefined = rootSpanId
   for (let i = 0; i < numSpans; i++) {
     const spanId = `sp-${rndId()}`
     const spanName = pick(SPAN_NAMES)
-    appendRecord({ id: 0, ts: 0, level, kind: 'span-start', channel, name: spanName, traceId, spanId, parentSpanId })
-    if (Math.random() > 0.5) appendRecord({ id: 0, ts: 0, level: 'debug', kind: 'event', channel, name: pick(EVENT_NAMES), message: pick(EVENT_MESSAGES), traceId, spanId })
-    if (Math.random() > 0.4) appendRecord({ id: 0, ts: 0, level, kind: 'measurement', channel, name: 'duration', value: Math.round(Math.random() * 200), unit: 'ms', traceId, spanId })
-    appendRecord({ id: 0, ts: 0, level, kind: 'span-end', channel, name: spanName, traceId, spanId, parentSpanId, durMs: Math.round(20 + Math.random() * 150) })
+    if (Math.random() > 0.5) appendRecord({ id: 0, ts: 0, level: 'debug', kind: 'log', channel, name: pick(EVENT_NAMES), message: pick(EVENT_MESSAGES), traceId, spanId })
+    appendRecord({ id: 0, ts: 0, level, kind: 'span', channel, name: spanName, traceId, spanId, parentSpanId, durMs: Math.round(20 + Math.random() * 150) })
     parentSpanId = spanId
   }
-  appendRecord({ id: 0, ts: 0, level, kind: 'trace-end', channel, name: traceName, traceId, durMs: Math.round(50 + Math.random() * 200) })
+  appendRecord({ id: 0, ts: 0, level, kind: 'span', channel, name: traceName, traceId, spanId: rootSpanId, durMs: Math.round(50 + Math.random() * 200) })
 }
 
 function startStream(): void {
@@ -260,13 +275,16 @@ const mockTraces = computed(() => {
   const byTrace = new Map<string, { traceId: string; name: string; startTs: number; endTs: number; durMs: number; recordCount: number }>()
   const records = sourceRecords.value
   for (const r of records) {
-    if (r.kind === 'trace-start' && r.traceId) {
+    if (r.kind === 'span' && !r.parentSpanId && r.traceId) {
       const recs = records.filter(x => x.traceId === r.traceId)
-      byTrace.set(r.traceId, { traceId: r.traceId, name: r.name, startTs: r.ts, endTs: r.ts, durMs: 0, recordCount: recs.length })
-    }
-    if (r.kind === 'trace-end' && r.traceId && r.durMs != null) {
-      const t = byTrace.get(r.traceId)
-      if (t) { t.endTs = r.ts; t.durMs = r.durMs }
+      byTrace.set(r.traceId, {
+        traceId: r.traceId,
+        name: r.name,
+        startTs: r.ts,
+        endTs: r.ts + (r.durMs ?? 0),
+        durMs: r.durMs ?? 0,
+        recordCount: recs.length,
+      })
     }
   }
   return Array.from(byTrace.values()).sort((a, b) => b.startTs - a.startTs)
@@ -314,7 +332,7 @@ function levelColor(level: string): string {
 }
 
 function kindLabel(kind: string): string {
-  const labels: Record<string, string> = { 'trace-start': 'trace-start', 'trace-end': 'trace-end', 'span-start': 'span-start', 'span-end': 'span-end', event: 'event', measurement: 'measurement', snapshot: 'snapshot' }
+  const labels: Record<string, string> = { log: 'log', span: 'span' }
   return labels[kind] ?? kind
 }
 </script>
@@ -372,7 +390,7 @@ function kindLabel(kind: string): string {
           <span class="text-[10px] text-muted-foreground">level:</span>
           <div class="flex flex-wrap gap-1">
             <label v-for="lev in ALL_LEVELS" :key="lev" class="flex items-center gap-1 cursor-pointer">
-              <Checkbox :checked="filterLevels.length === 0 || filterLevels.includes(lev)" @update:checked="(v) => toggleLevel(lev, !!v)" />
+              <Checkbox :checked="filterLevels.length === 0 || filterLevels.includes(lev)" @update:checked="toggleLevel(lev, $event === true)" />
               <span class="text-[10px]">{{ lev }}</span>
             </label>
           </div>
@@ -381,7 +399,7 @@ function kindLabel(kind: string): string {
           <span class="text-[10px] text-muted-foreground">kind:</span>
           <div class="flex flex-wrap gap-1">
             <label v-for="k in ALL_KINDS" :key="k" class="flex items-center gap-1 cursor-pointer">
-              <Checkbox :checked="filterKinds.length === 0 || filterKinds.includes(k)" @update:checked="(v) => toggleKind(k, !!v)" />
+              <Checkbox :checked="filterKinds.length === 0 || filterKinds.includes(k)" @update:checked="toggleKind(k, $event === true)" />
               <span class="text-[10px] truncate max-w-20">{{ k }}</span>
             </label>
           </div>
@@ -390,7 +408,7 @@ function kindLabel(kind: string): string {
           <span class="text-[10px] text-muted-foreground">channel:</span>
           <div class="flex flex-wrap gap-1">
             <label v-for="ch in ALL_CHANNELS" :key="ch" class="flex items-center gap-1 cursor-pointer">
-              <Checkbox :checked="filterChannels.length === 0 || filterChannels.includes(ch)" @update:checked="(v) => toggleChannel(ch, !!v)" />
+              <Checkbox :checked="filterChannels.length === 0 || filterChannels.includes(ch)" @update:checked="toggleChannel(ch, $event === true)" />
               <span class="text-[10px]">{{ ch }}</span>
             </label>
           </div>

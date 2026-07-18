@@ -38,7 +38,7 @@ const props = defineProps<{
 
 const isPreviewMode = computed(() => props.state.canvasMode === 'preview')
 const isGridOverlayEnabled = computed(() => props.state.showGridOverlay)
-const activeBreakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0])
+const activeBreakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0]!)
 const workspaceModes: Array<{
   id: UIEditorWorkspaceMode
   label: string

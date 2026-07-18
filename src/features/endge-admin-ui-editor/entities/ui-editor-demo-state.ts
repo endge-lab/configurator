@@ -22,9 +22,10 @@ import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-edit
 import { patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
-const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v8'
+const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v9'
 const UI_EDITOR_DEMO_STORAGE_KEYS = [
   UI_EDITOR_DEMO_STORAGE_KEY,
+  'endge-admin-ui-editor-demo-state:v8',
   'endge-admin-ui-editor-demo-state:v7',
   'endge-admin-ui-editor-demo-state:v6',
   'endge-admin-ui-editor-demo-state:v5',
@@ -199,6 +200,8 @@ function createDefaultDocument(): UIEditorDocument {
     id: 'ui-page-root',
     propsPatch: {
       title: 'Demo UI Page',
+      layoutMode: 'flex',
+      columns: 12,
       gap: DEFAULT_PAGE_GAP,
       padding: DEFAULT_PAGE_PADDING,
       rowHeight: DEFAULT_PAGE_ROW_HEIGHT,
@@ -216,6 +219,10 @@ function createDefaultDocument(): UIEditorDocument {
 
 export function isUIEditorContainer(kind: UIEditorNodeKind): boolean {
   return kind === 'page' || kind === 'flex' || kind === 'grid' || kind === 'box'
+}
+
+function isUIEditorGridContainer(node: UIEditorNode): boolean {
+  return node.kind === 'grid' || (node.kind === 'page' && node.props.layoutMode === 'grid')
 }
 
 function clampSpan(value: unknown): number {
@@ -346,6 +353,8 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
     case 'page':
       return {
         title: String(node.props.title ?? 'Demo UI Page'),
+        layoutMode: node.props.layoutMode === 'grid' ? 'grid' : 'flex',
+        columns: Math.max(1, Math.min(12, Math.round(Number(node.props.columns ?? 12)) || 12)),
         gap: clampSpacing(node.props.gap, DEFAULT_PAGE_GAP),
         padding: clampSpacing(node.props.padding, DEFAULT_PAGE_PADDING),
         rowHeight: clampRowHeight((node.props as Partial<typeof node.props>).rowHeight),
@@ -358,7 +367,7 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
       }
     case 'grid':
       return {
-        columns: Math.max(1, Math.min(6, Math.round(Number(node.props.columns ?? 2)) || 2)),
+        columns: Math.max(1, Math.min(12, Math.round(Number(node.props.columns ?? 12)) || 12)),
         gap: clampSpacing(node.props.gap, 8),
         padding: clampSpacing(node.props.padding, 8),
         minHeight: clampGridMinHeight(node.props.minHeight),
@@ -381,9 +390,9 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
       return {
         text: String(node.props.text ?? 'Новый текст'),
       }
-    default:
-      return node.props
   }
+
+  throw new Error(`Unsupported UI editor node kind: ${(node as UIEditorNode).kind}`)
 }
 
 function normalizeDocument(document: UIEditorDocument): UIEditorDocument {
@@ -399,7 +408,7 @@ function normalizeDocument(document: UIEditorDocument): UIEditorDocument {
         ...normalizedRawNode,
         props: normalizeNodeProps(normalizedRawNode),
         layout: normalizeNodeLayout(normalizedRawNode.kind, normalizedRawNode.layout),
-      } satisfies UIEditorNode
+      } as UIEditorNode
 
       return [nodeId, normalizedNode]
     }),
@@ -418,7 +427,7 @@ function normalizePageChildrenPositions(
   sourceNodes: Record<string, UIEditorNode>,
 ): Record<string, UIEditorNode> {
   for (const node of Object.values(nodes)) {
-    if (node.kind !== 'page') {
+    if (node.kind !== 'page' || node.props.layoutMode !== 'grid') {
       continue
     }
 
@@ -610,6 +619,10 @@ export class UIEditorDemoState {
       .filter((child): child is UIEditorNode => child != null)
   }
 
+  public getParentNode(nodeId: string): UIEditorNode | null {
+    return this.getNode(this.findParentId(nodeId))
+  }
+
   public selectNode(nodeId: string): void {
     if (this.document.nodes[nodeId]) {
       this.selectedNodeId = nodeId
@@ -650,11 +663,11 @@ export class UIEditorDemoState {
     }
 
     const node = applyNodeSourceMeta(createNode(definitionRef), source)
-    if (parent.kind === 'page' && node.layout) {
+    if (isUIEditorGridContainer(parent) && node.layout) {
       node.layout = {
         ...node.layout,
         colStart: 1,
-        rowStart: this.getNextPageRowStart(parent.id),
+        rowStart: this.getNextGridRowStart(parent.id),
       }
     }
     this.document.nodes[node.id] = node
@@ -930,13 +943,13 @@ export class UIEditorDemoState {
     }
   }
 
-  private getNextPageRowStart(pageNodeId: string): number {
-    const pageNode = this.getNode(pageNodeId)
-    if (!pageNode || pageNode.kind !== 'page') {
+  private getNextGridRowStart(containerNodeId: string): number {
+    const containerNode = this.getNode(containerNodeId)
+    if (!containerNode || !isUIEditorGridContainer(containerNode)) {
       return 1
     }
 
-    return pageNode.children.reduce((maxRow, childId) => {
+    return containerNode.children.reduce((maxRow, childId) => {
       const childNode = this.getNode(childId)
       if (!childNode || !childNode.layout) {
         return maxRow
@@ -1015,21 +1028,25 @@ export class UIEditorDemoState {
       return null
     }
 
-    const rootNode = this.cloneJsxSubtree(component.ast.rootId, component.ast.nodes, {
-      sourceType: 'jsx',
-      sourceLabel: component.title,
-      itemId: component.id,
-      isRoot: true,
-    })
+    const rootNode = this.cloneJsxSubtree(
+      component.ast.rootId,
+      component.ast.nodes as unknown as Record<string, UIEditorNode>,
+      {
+        sourceType: 'jsx',
+        sourceLabel: component.title,
+        itemId: component.id,
+        isRoot: true,
+      },
+    )
     if (!rootNode) {
       return null
     }
 
-    if (parent.kind === 'page' && rootNode.layout) {
+    if (isUIEditorGridContainer(parent) && rootNode.layout) {
       rootNode.layout = {
         ...rootNode.layout,
         colStart: 1,
-        rowStart: this.getNextPageRowStart(parent.id),
+        rowStart: this.getNextGridRowStart(parent.id),
       }
     }
 

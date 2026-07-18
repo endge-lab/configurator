@@ -3,7 +3,7 @@ import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
 
 defineProps<{
-  node: UIEditorNode
+  node: UIEditorNode<'text'>
   definition: UIComponentDefinition | null
   surface: UIPresentationSurface
   preview?: boolean

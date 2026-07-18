@@ -9,6 +9,7 @@ export type UIEditorSFCBaseTag
     | 'Dot'
     | 'Box'
     | 'Flex'
+    | 'Grid'
     | 'Divider'
     | 'Input'
     | 'Textarea'
@@ -116,6 +117,21 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     keywords: ['status', 'indicator'],
     layout: { span: 2, rowSpan: 1 },
   }),
+  {
+    definitionRef: 'ui.grid',
+    tag: 'Grid',
+    label: 'Grid',
+    description: 'Двенадцатиколоночный SFC-контейнер с явным placement дочерних элементов.',
+    groupId: 'layout',
+    groupTitle: 'Layout',
+    groupDescription: 'Renderer-neutral layout primitives Endge SFC.',
+    kind: 'grid',
+    supportsChildren: true,
+    accentClass: 'from-violet-400/35 to-purple-500/15',
+    defaultProps: { columns: 12, gap: 8, padding: 8, minHeight: 160 },
+    defaultLayout: { ...DEFAULT_LEAF_LAYOUT, span: 12, rowSpan: 6 },
+    keywords: ['grid', 'columns', 'span', 'layout'],
+  },
   {
     definitionRef: 'ui.box',
     tag: 'Box',
