@@ -23,8 +23,10 @@ const props = defineProps<{
 }>()
 
 const editor = computed<RNavigationEditor | null>(() => props.tabContext?.editor ?? null)
-const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { isSystem?: boolean } | null)
-const isSystem = computed(() => documentModel.value?.isSystem === true)
+const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null)
+const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
+const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
+const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
 const selectedNodeId = ref<string | null>(null)
 const collapsedGroupIds = ref<Set<string>>(new Set())
 const draggedNodeId = ref<string | null>(null)
@@ -404,7 +406,7 @@ async function save(): Promise<void> {
         </div>
 
         <div class="flex items-center gap-2">
-          <SaveDocumentButton :loading="isBusy" :disabled="isSystem" @click="save" />
+          <SaveDocumentButton :loading="isBusy" :disabled="externallyManaged" @click="save" />
         </div>
       </div>
     </div>
@@ -415,16 +417,16 @@ async function save(): Promise<void> {
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label>Идентификатор</Label>
-            <Input v-model="editor.identity" :disabled="isSystem" />
+            <Input v-model="editor.identity" :disabled="externallyManaged" />
           </div>
           <div class="space-y-2">
             <Label>Название</Label>
-            <Input v-model="editor.displayName" :disabled="isSystem" />
+            <Input v-model="editor.displayName" :disabled="externallyManaged" />
           </div>
         </div>
         <div class="mt-4 space-y-2">
           <Label>Описание</Label>
-          <Textarea v-model="editor.description" :disabled="isSystem" :rows="2" />
+          <Textarea v-model="editor.description" :disabled="externallyManaged" :rows="2" />
         </div>
       </Card>
       <div class="grid min-h-full items-start gap-3 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)]">

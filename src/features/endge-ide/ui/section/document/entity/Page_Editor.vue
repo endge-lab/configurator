@@ -22,8 +22,8 @@ const props = defineProps<{
 }>()
 
 const editor = computed<RPageEditor | null>(() => props.tabContext?.editor ?? null)
-const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { isSystem?: boolean } | null)
-const isSystem = computed(() => documentModel.value?.isSystem === true)
+const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null)
+const externallyManaged = computed(() => documentModel.value?.managedBy === 'system' || documentModel.value?.managedBy === 'integration')
 
 const domainStore = useDomainStore()
 
@@ -270,7 +270,7 @@ const previewAreaLabels = computed(() =>
         Страница - {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
-        <SaveDocumentButton :loading="EndgeIDE.busy.value" :disabled="isSystem" @click="save" />
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" :disabled="externallyManaged" @click="save" />
       </div>
     </div>
 
@@ -281,31 +281,31 @@ const previewAreaLabels = computed(() =>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
               <Label>Identity</Label>
-              <Input v-model="editor!.identity" :disabled="isSystem" placeholder="page.schedule" />
+              <Input v-model="editor!.identity" :disabled="externallyManaged" placeholder="page.schedule" />
             </div>
             <div class="space-y-2">
               <Label>Название</Label>
-              <Input v-model="editor!.displayName" :disabled="isSystem" placeholder="Расписание" />
+              <Input v-model="editor!.displayName" :disabled="externallyManaged" placeholder="Расписание" />
             </div>
             <div class="space-y-2">
               <Label>routeName</Label>
-              <Input v-model="editor!.routeName" :disabled="isSystem" placeholder="schedule" />
+              <Input v-model="editor!.routeName" :disabled="externallyManaged" placeholder="schedule" />
             </div>
             <div class="space-y-2">
               <Label>routePath</Label>
-              <Input v-model="editor!.routePath" :disabled="isSystem" placeholder="/schedule" />
+              <Input v-model="editor!.routePath" :disabled="externallyManaged" placeholder="/schedule" />
             </div>
           </div>
           <div class="space-y-2">
             <Label>Описание</Label>
-            <Textarea v-model="editor!.description" :disabled="isSystem" :rows="2" />
+            <Textarea v-model="editor!.description" :disabled="externallyManaged" :rows="2" />
           </div>
           <div class="space-y-2">
             <Label>Шаблон страницы</Label>
             <SearchableSelect
               :model-value="editor?.templateId != null ? String(editor.templateId) : null"
               :options="templateOptions"
-              :disabled="isSystem"
+              :disabled="externallyManaged"
               placeholder="Выберите шаблон страницы"
               trigger-class="w-full h-9"
               @update:model-value="value => setTemplate(value != null ? String(value) : null)"
@@ -315,7 +315,7 @@ const previewAreaLabels = computed(() =>
             <Label>Включена</Label>
             <Switch
               :checked="editor?.enabled ?? true"
-              :disabled="isSystem"
+              :disabled="externallyManaged"
               @update:checked="value => editor && (editor.enabled = !!value)"
             />
           </div>

@@ -9,7 +9,7 @@ import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/en
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
 import type { DomainDocumentType, RCompositionKind } from '@endge/core'
 
-import { ComponentType, DomainSectionType, Endge, QueryType } from '@endge/core'
+import { ComponentType, DomainSectionType, Endge, QueryType, isExternallyManaged } from '@endge/core'
 import { useDomainStore } from '@endge/vue'
 import {
   ArrowLeftRight,
@@ -274,7 +274,7 @@ const contextMenu = ref<{
 
 function openContextMenu(e: MouseEvent, node: FsNode, path: string): void {
   const folderNode = node.type === 'folder' ? (node as FsFolderNode) : null
-  if (folderNode && isSystemTypeFolder(folderNode) && !folderNode.isRoot)
+  if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot)
     return
   if (getMenuActions(node, path).length === 0)
     return
@@ -343,6 +343,13 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     ? flatFs.value.filter(it => it.node.type === 'file' && selectedFileIds.value.has(getSelectionKey(it)))
     : [item]
   const sources = sourceItems.map(it => it.node as FsFileNode)
+  if (sources.some(source => isExternallyManaged(source))) {
+    dragSources.value = []
+    clearDomainDrag()
+    e.dataTransfer.effectAllowed = 'none'
+    toast.error('Управляемые извне документы нельзя перемещать')
+    return
+  }
   if (
     item.rootId === DROP_TARGET_SOFT_DELETED
     || sources.some(n => n.isInDeletedFolder === true)
@@ -421,7 +428,9 @@ function onDragOver(e: DragEvent, item: FlatFsItem): void {
   if (item.node.type !== 'folder')
     return
   const folderNode = item.node as FsFolderNode
-  if (isSystemTypeFolder(folderNode) && !folderNode.isRoot)
+  if (folderNode.sectionType === DomainSectionType.Integration)
+    return
+  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot)
     return
   e.preventDefault()
   if (e.dataTransfer)
@@ -445,7 +454,13 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   if (dropNode.type !== 'folder')
     return
   const folderNode = dropNode as FsFolderNode
-  if (isSystemTypeFolder(folderNode) && !folderNode.isRoot) {
+  if (folderNode.sectionType === DomainSectionType.Integration) {
+    clearDragSources()
+    dragOverPath.value = null
+    toast.error('Глобальный реестр интеграций не поддерживает папки')
+    return
+  }
+  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
     dragSources.value = []
     dragOverPath.value = null
     clearDomainDrag()
@@ -636,13 +651,8 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   'auth-profile',
 ])
 
-const SYSTEM_TYPE_FOLDER_IDENTITIES = new Set([
-  'types-primitives',
-  'types-references',
-])
-
-function isSystemTypeFolder(node: FsFolderNode): boolean {
-  return node.isSystem === true || SYSTEM_TYPE_FOLDER_IDENTITIES.has(String(node.identity ?? ''))
+function isManagedTypeFolder(node: FsFolderNode): boolean {
+  return isExternallyManaged(node)
 }
 
 function getFolderIcon(node: FsFolderNode): any {
@@ -1086,7 +1096,8 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
 
   if (node.type === 'folder') {
     const isRoot = node.isRoot === true
-    if (isSystemTypeFolder(node) && !isRoot)
+    const supportsFolders = node.sectionType !== DomainSectionType.Integration
+    if (isManagedTypeFolder(node) && !isRoot)
       return items
 
     const isSoftDeletedRoot = isRoot && node.id === 'soft-deleted'
@@ -1101,7 +1112,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       })
     }
 
-    if (!isRoot && node.folderId) {
+    if (supportsFolders && !isRoot && node.folderId) {
       if (isInSoftDeletedBranch) {
         items.push({
           label: 'Восстановить папку',
@@ -1125,11 +1136,13 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
     }
 
     if (!isSoftDeletedRoot && !isInSoftDeletedBranch) {
-      items.push({
-        label: 'Создать папку',
-        icon: FolderPlus,
-        action: { type: 'create-folder', node },
-      })
+      if (supportsFolders) {
+        items.push({
+          label: 'Создать папку',
+          icon: FolderPlus,
+          action: { type: 'create-folder', node },
+        })
+      }
       items.push({
         label: 'Добавить сущность',
         icon: Plus,
@@ -1170,13 +1183,13 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       })
     }
 
-    const isSystemDoc = fileNode.isSystem === true
+    const externallyManagedDoc = isExternallyManaged(fileNode)
     const isInDeleted = fileNode.isInDeletedFolder === true
     const canRestoreDoc = canRestore(fileNode.docType)
     const canSoftDeleteDoc = canSoftDelete(fileNode.sectionType, fileNode.docType)
     const canHardDeleteDoc = canHardDelete(fileNode.docType)
 
-    if (!isSystemDoc && !isInDeleted && fileNode.sectionType === DomainSectionType.Project) {
+    if (!externallyManagedDoc && !isInDeleted && fileNode.sectionType === DomainSectionType.Project) {
       items.push({
         label: 'Создать композицию',
         icon: Network,
@@ -1192,7 +1205,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       })
     }
 
-    if (!isSystemDoc && !isInDeleted && DUPLICATABLE_DOC_TYPES.has(fileNode.docType)) {
+    if (!externallyManagedDoc && !isInDeleted && DUPLICATABLE_DOC_TYPES.has(fileNode.docType)) {
       items.push({
         label: 'Дублировать',
         icon: Copy,
@@ -1200,7 +1213,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       })
     }
 
-    if (!isSystemDoc && ((!isInDeleted && canSoftDeleteDoc) || (isInDeleted && canHardDeleteDoc))) {
+    if (!externallyManagedDoc && ((!isInDeleted && canSoftDeleteDoc) || (isInDeleted && canHardDeleteDoc))) {
       items.push({
         label: isInDeleted ? 'Удалить навсегда' : 'Удалить',
         icon: Trash2,
@@ -1319,7 +1332,7 @@ function rowClasses(item: FlatFsItem): string {
   const selected = isSelected(item)
   const isMutedSystemFolder
     = item.node.type === 'folder'
-      && isSystemTypeFolder(item.node as FsFolderNode)
+      && isManagedTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
   return [
     'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
@@ -1527,6 +1540,14 @@ function rowClasses(item: FlatFsItem): string {
                 </template>
 
                 <span class="truncate">{{ it.node.name }}</span>
+                <span
+                  v-if="it.node.managedBy === 'system'"
+                  class="shrink-0 rounded border border-amber-300/60 bg-amber-500/10 px-1 text-[9px] leading-4 text-amber-700 dark:text-amber-300"
+                >system</span>
+                <span
+                  v-else-if="it.node.managedBy === 'integration'"
+                  class="shrink-0 rounded border border-violet-300/60 bg-violet-500/10 px-1 text-[9px] leading-4 text-violet-700 dark:text-violet-300"
+                >integration</span>
               </div>
             </div>
           </div>

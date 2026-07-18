@@ -3,7 +3,7 @@
  * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
  */
 
-import type { DomainDocumentType, RComponentTable, RCompositionKind } from '@endge/core'
+import type { DomainDocumentType, ManagedBy, RComponentTable, RCompositionKind } from '@endge/core'
 
 import {
   ComponentType,
@@ -30,7 +30,8 @@ export interface FsFolderNode extends FsNodeBase {
   identity?: string
   sectionType: DomainSectionType
   isRoot?: boolean
-  isSystem?: boolean
+  managedBy?: ManagedBy
+  managedById?: string | null
   folderId?: string | number
   children?: FsNode[]
 }
@@ -41,7 +42,8 @@ export interface FsFileNode extends FsNodeBase {
   identity?: string
   docType: DomainDocumentType
   sectionType: DomainSectionType
-  isSystem?: boolean
+  managedBy?: ManagedBy
+  managedById?: string | null
   isInDeletedFolder?: boolean
   children?: FsNode[]
   isTableColumn?: boolean
@@ -335,11 +337,6 @@ export function getRootFolderOrder(keys: string[]): string[] {
   return ordered
 }
 
-const SYSTEM_TYPE_FOLDER_IDENTITIES = new Set([
-  'types-primitives',
-  'types-references',
-])
-
 export function normalizeDocType(
   sectionType: DomainSectionType,
   raw?: DomainDocumentType,
@@ -444,7 +441,7 @@ function getFolderTraversalKey(folder: { id?: string | number, identity?: string
 }
 
 function createFolderTreeNode(
-  folder: { id: string | number, name?: string, identity?: string, isSystem?: boolean },
+  folder: { id: string | number, name?: string, identity?: string, managedBy?: ManagedBy, managedById?: string | null },
   sectionType: DomainSectionType,
   folderId: string | number,
   folderIdentity: string,
@@ -459,16 +456,17 @@ function createFolderTreeNode(
     type: 'folder',
     sectionType,
     isRoot: !!isRoot,
-    isSystem: folder.isSystem === true || SYSTEM_TYPE_FOLDER_IDENTITIES.has(folderIdentity),
+    managedBy: folder.managedBy ?? 'user',
+    managedById: folder.managedBy === 'integration' ? folder.managedById ?? null : null,
     folderId: isRoot ? undefined : folderId,
     children,
   }
 }
 
 function buildFolderNode(
-  folder: { id: string | number, name?: string, identity?: string, isSystem?: boolean },
+  folder: { id: string | number, name?: string, identity?: string, managedBy?: ManagedBy, managedById?: string | null },
   sectionType: DomainSectionType,
-  allSectionItems: { id: string, name: string, folderId?: string | number | null, folder?: string | number | null, group?: string | number | null, type?: DomainDocumentType, isSystem?: boolean }[],
+  allSectionItems: { id: string, name: string, folderId?: string | number | null, folder?: string | number | null, group?: string | number | null, type?: DomainDocumentType, managedBy?: ManagedBy, managedById?: string | null }[],
   allFolders: any[],
   isRoot = true,
   isVirtualRoot = false,
@@ -547,10 +545,8 @@ function buildFolderNode(
         type: 'file',
         docType: isPrimitiveType ? ('primitive' as DomainDocumentType) : normalizeDocType(itemSectionType, c.type)!,
         sectionType: itemSectionType,
-        isSystem:
-          (c as { isSystem?: boolean, type?: string }).isSystem === true
-          || (c as { type?: string }).type === 'system'
-          || SYSTEM_TYPE_FOLDER_IDENTITIES.has(folderIdentity),
+        managedBy: (c as { managedBy?: ManagedBy }).managedBy ?? 'user',
+        managedById: (c as { managedById?: string | null }).managedById ?? null,
         isInDeletedFolder: currentInDeletedBranch,
         ...((c as { presentationKind?: unknown }).presentationKind != null
           && { presentationKind: String((c as { presentationKind?: unknown }).presentationKind) as CompositionPresentationKind }),

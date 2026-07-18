@@ -40,4 +40,26 @@ describe('rStyleEditor', () => {
 
     expect(editor.diagnostics).toEqual([])
   })
+
+  it('keeps system identity protected while allowing source updates', () => {
+    const style = RStyle.fromPlain({
+      id: 1,
+      identity: 'default',
+      displayName: 'Default',
+      source: 'old',
+      managedBy: 'system',
+      managedById: null,
+    })
+    const editor = new RStyleEditor()
+    editor.fillFromSource(style)
+    editor.identity = 'changed'
+    editor.name = 'Changed'
+    editor.source = 'new'
+
+    editor.updateSource(style)
+
+    expect(style.identity).toBe('default')
+    expect(style.displayName).toBe('Default')
+    expect(style.source).toBe('new')
+  })
 })

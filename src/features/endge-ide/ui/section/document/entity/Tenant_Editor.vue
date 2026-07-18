@@ -35,9 +35,11 @@ const editor = computed(
     } | null) ?? null,
 )
 const documentModel = computed(
-  () => (tabs.documentModel.value as { isSystem?: boolean } | null) ?? null,
+  () => (tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null) ?? null,
 )
-const isSystem = computed(() => documentModel.value?.isSystem === true)
+const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
+const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
+const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
 const activeTab = ref<'general' | 'configuration'>('general')
 const tabButtons = [
   { value: 'general', icon: Settings2, label: 'Основное' },
@@ -67,9 +69,9 @@ async function save(): Promise<void> {
     :identity="editor.identity"
   >
     <template #metadata-after>
-      <div v-if="isSystem" class="flex min-w-0 items-center gap-1.5">
+      <div v-if="externallyManaged" class="flex min-w-0 items-center gap-1.5">
         <span class="shrink-0 text-muted-foreground">kind:</span>
-        <span class="min-w-0 truncate font-mono text-foreground/80">system</span>
+        <span class="min-w-0 truncate font-mono text-foreground/80">{{ systemManaged ? 'system' : 'integration' }}</span>
       </div>
     </template>
 
@@ -106,7 +108,7 @@ async function save(): Promise<void> {
                 size="icon"
                 class="h-7 w-7"
                 aria-label="Сохранить"
-                :disabled="isSystem || EndgeIDE.busy.value"
+                :disabled="externallyManaged || EndgeIDE.busy.value"
                 @click="save"
               >
                 <Loader2
@@ -132,7 +134,7 @@ async function save(): Promise<void> {
                 <Input
                   id="tenant-identity"
                   v-model="editor.identity"
-                  :disabled="isSystem"
+                  :disabled="externallyManaged"
                   placeholder="tenant-default"
                 />
               </div>
@@ -141,7 +143,7 @@ async function save(): Promise<void> {
                 <Input
                   id="tenant-display-name"
                   v-model="editor.displayName"
-                  :disabled="isSystem"
+                  :disabled="externallyManaged"
                   placeholder="Основной тенант"
                 />
               </div>
@@ -150,7 +152,7 @@ async function save(): Promise<void> {
                 <Input
                   id="tenant-code"
                   v-model="editor.code"
-                  :disabled="isSystem"
+                  :disabled="externallyManaged"
                   placeholder="TENANT_DEFAULT"
                 />
               </div>
@@ -159,7 +161,7 @@ async function save(): Promise<void> {
                 <Textarea
                   id="tenant-description"
                   v-model="editor.description"
-                  :disabled="isSystem"
+                  :disabled="externallyManaged"
                   :rows="4"
                   placeholder="Описание тенанта"
                 />
@@ -174,7 +176,7 @@ async function save(): Promise<void> {
             class="min-h-0"
             variant="contribution"
             :upstream="upstreamConfiguration"
-            :disabled="isSystem"
+            :disabled="externallyManaged"
           />
         </div>
       </div>

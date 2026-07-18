@@ -18,6 +18,7 @@ import {
   ParameterType,
   QueryType,
   RFolder,
+  isExternallyManaged,
 } from '@endge/core'
 import { randomString } from '@endge/utils'
 
@@ -76,11 +77,6 @@ interface FolderRestoreState {
 }
 
 const folderRestoreState = new Map<string, FolderRestoreState>()
-
-const SYSTEM_TYPE_FOLDER_IDENTITIES = new Set([
-  'types-primitives',
-  'types-references',
-])
 
 const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Primitive]: 'root-primitives',
@@ -144,7 +140,6 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
   ...SCHEMA_SOFT_DELETE_TYPES,
   'action',
   'converter',
-  'integration',
   'environment',
   'tenant',
   'policy',
@@ -185,8 +180,8 @@ export function getDropFolderId(dropNode: FsFolderNode): string | number | null 
   return dropNode.isRoot ? null : (dropNode.folderId ?? null)
 }
 
-function isSystemFolderNode(node: FsFolderNode): boolean {
-  return node.isSystem === true || SYSTEM_TYPE_FOLDER_IDENTITIES.has(String(node.identity ?? ''))
+function isManagedFolderNode(node: FsFolderNode): boolean {
+  return isExternallyManaged(node)
 }
 
 /**
@@ -194,8 +189,10 @@ function isSystemFolderNode(node: FsFolderNode): boolean {
  * В корневой (в т.ч. системной) папке создание дочерней разрешено — мы только задаём parent.
  */
 export async function createSubfolder(targetFolder: FsFolderNode): Promise<RFolder> {
-  if (isSystemFolderNode(targetFolder) && !targetFolder.isRoot)
-    throw new Error('Системная папка недоступна для редактирования')
+  if (targetFolder.sectionType === DomainSectionType.Integration)
+    throw new Error('Глобальный реестр интеграций не поддерживает папки')
+  if (isManagedFolderNode(targetFolder) && !targetFolder.isRoot)
+    throw new Error('Управляемая извне папка недоступна для редактирования')
 
   const parentId = resolveParentIdForNewFolder(targetFolder)
   let newId = `folder-${randomString(5)}`
@@ -221,8 +218,8 @@ export async function createSubfolder(targetFolder: FsFolderNode): Promise<RFold
  * Мягко удаляет папку: переносит её под корень `soft-deleted`.
  */
 export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
-  if (isSystemFolderNode(node))
-    throw new Error('Системную папку нельзя удалить')
+  if (isManagedFolderNode(node))
+    throw new Error('Управляемую извне папку нельзя удалить')
 
   const folder = getMutableFolder(node)
   const softRoot = Endge.domain.getFolderByIdentity(SOFT_DELETED_IDENTITY)
@@ -271,6 +268,9 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
  * - `permanent = true`: жёсткое удаление (разрешено только для сущности в `soft-deleted`).
  */
 export async function deleteEntity(node: FsFileNode, permanent = false): Promise<DeleteEntityResult> {
+  const entity = getEntityBySection(node.id, node.sectionType)
+  if (isExternallyManaged(node) || isExternallyManaged(entity))
+    throw new Error('Управляемый извне документ нельзя удалить')
   if (permanent)
     return hardDeleteEntity(node)
   await softDeleteEntity(node)
@@ -390,17 +390,30 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
   const result: DropResult = { moved: 0, skipped: 0, errors: [] }
   const isDropToDeleted = dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED
 
+  if (dropTarget.targetRootId === 'root-integrations') {
+    result.errors.push('Глобальный реестр интеграций не поддерживает папки')
+    result.skipped = payload.length
+    return result
+  }
+
   if (dropTarget.dropFolderId != null) {
     const folder = Endge.domain.getFolder(dropTarget.dropFolderId)
     const identity = String((folder as any)?.identity ?? '')
-    if (folder?.isSystem === true || SYSTEM_TYPE_FOLDER_IDENTITIES.has(identity)) {
-      result.errors.push('Системные папки типов недоступны для перетаскивания')
+    if (isExternallyManaged(folder)) {
+      result.errors.push('Управляемые извне папки недоступны для перетаскивания')
       result.skipped = payload.length
       return result
     }
   }
 
   for (const item of payload) {
+    const entity = getEntityBySection(item.id, item.sectionType)
+    if (isExternallyManaged(entity)) {
+      result.skipped++
+      result.errors.push(`«${item.id}»: управляемый извне документ нельзя перемещать`)
+      continue
+    }
+
     if (item.rootId === DROP_TARGET_SOFT_DELETED) {
       result.skipped++
       result.errors.push(`«${item.id}»: перетаскивание из «Удалённые» запрещено`)
@@ -579,8 +592,8 @@ function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | nu
 function getMutableFolder(node: FsFolderNode): RFolder {
   if (node.isRoot)
     throw new Error('Нельзя выполнить операцию с корневой папкой')
-  if (isSystemFolderNode(node))
-    throw new Error('Системная папка недоступна для редактирования')
+  if (isManagedFolderNode(node))
+    throw new Error('Управляемая извне папка недоступна для редактирования')
   if (node.folderId == null)
     throw new Error('Не удалось определить id папки')
 

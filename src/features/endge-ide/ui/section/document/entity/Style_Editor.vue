@@ -55,7 +55,7 @@ async function save(): Promise<void> {
 <template>
   <SourceDocumentEditorShell v-if="editor" :document-id="editor.id" :identity="editor.identity">
     <template #metadata-after>
-      <div v-if="editor.isSystem" class="flex min-w-0 items-center gap-1.5">
+      <div v-if="editor.systemManaged" class="flex min-w-0 items-center gap-1.5">
         <span class="shrink-0 text-muted-foreground">kind:</span>
         <span class="min-w-0 truncate font-mono text-foreground/80">system</span>
       </div>
@@ -99,11 +99,11 @@ async function save(): Promise<void> {
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="style-name">Название</Label>
-            <Input id="style-name" v-model="editor.name" :disabled="editor.isSystem" />
+            <Input id="style-name" v-model="editor.name" :disabled="editor.systemManaged" />
           </div>
           <div class="space-y-2">
             <Label for="style-identity">Identity</Label>
-            <Input id="style-identity" v-model="editor.identity" :disabled="editor.isSystem" spellcheck="false" />
+            <Input id="style-identity" v-model="editor.identity" :disabled="editor.systemManaged" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">

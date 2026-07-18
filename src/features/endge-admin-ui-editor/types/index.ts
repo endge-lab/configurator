@@ -191,5 +191,6 @@ export interface UIEditorLibraryTreeItem {
   fileId?: string
   itemKind?: Exclude<UIEditorNodeKind, 'page'>
   isRoot?: boolean
-  isSystem?: boolean
+  managedBy?: import('@endge/core').ManagedBy
+  managedById?: string | null
 }

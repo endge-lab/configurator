@@ -12,8 +12,10 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string; description: string } | null ?? null)
-const documentModel = computed(() => tabs.documentModel.value as { isSystem?: boolean } | null ?? null)
-const isSystem = computed(() => documentModel.value?.isSystem === true)
+const documentModel = computed(() => tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null ?? null)
+const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
+const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
+const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -33,14 +35,17 @@ async function save(): Promise<void> {
         <div class="text-xs text-muted-foreground truncate">
           id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
         </div>
-        <Badge v-if="isSystem" variant="outline" class="rounded-full border-orange-200 bg-amber-500/10 text-amber-700 font-normal dark:border-orange-300/50 dark:bg-amber-500/15 dark:text-amber-600">
+        <Badge v-if="systemManaged" variant="outline" class="rounded-full border-orange-200 bg-amber-500/10 text-amber-700 font-normal dark:border-orange-300/50 dark:bg-amber-500/15 dark:text-amber-600">
           Системный
+        </Badge>
+        <Badge v-if="integrationManaged" variant="outline" class="rounded-full border-violet-200 bg-violet-500/10 text-violet-700 font-normal dark:border-violet-300/50 dark:bg-violet-500/15 dark:text-violet-300">
+          Управляется интеграцией
         </Badge>
       </div>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger as-child>
-            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="isSystem || EndgeIDE.busy.value" @click="save">
+            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="externallyManaged || EndgeIDE.busy.value" @click="save">
               <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
               <Save v-else class="size-4" />
             </Button>
@@ -55,17 +60,17 @@ async function save(): Promise<void> {
         <div class="text-sm font-semibold">Основное</div>
         <div class="space-y-2">
           <Label>Идентификатор</Label>
-          <Input v-model="editor!.identity" :disabled="isSystem" />
+          <Input v-model="editor!.identity" :disabled="externallyManaged" />
         </div>
         <div class="space-y-2">
           <Label>Название</Label>
-          <Input v-model="editor!.displayName" :disabled="isSystem" />
+          <Input v-model="editor!.displayName" :disabled="externallyManaged" />
         </div>
         <div class="space-y-2">
           <Label>Описание</Label>
           <textarea
             :value="editor?.description ?? ''"
-            :disabled="isSystem"
+            :disabled="externallyManaged"
             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Краткое описание и пример (1–2 строки)"
             @input="editor && (editor.description = (($event.target as HTMLTextAreaElement).value ?? ''))"

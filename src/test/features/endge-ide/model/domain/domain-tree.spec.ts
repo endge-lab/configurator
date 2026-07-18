@@ -33,6 +33,35 @@ describe('buildDomainTree', () => {
     expect(tree[0]?.name).toBe('Представления')
   })
 
+  it('projects system and integration management without identity fallbacks', () => {
+    const tree = buildDomainTree({
+      rootToSection: {
+        'root-integrations': {
+          section: DomainSectionType.Integration,
+          items: () => [{
+            id: 7,
+            identity: 'example.operations',
+            displayName: 'Operations',
+            managedBy: 'integration',
+            managedById: 'installation-1',
+          }],
+        },
+      },
+      rootOrder: ['root-integrations'],
+      rootLabels: { 'root-integrations': 'Интеграции' },
+      allFolders: [
+        { id: 'root-integrations', identity: 'root-integrations', name: 'Integrations', parent: null, managedBy: 'system' },
+      ],
+      softDeletedFolderId: null,
+    })
+
+    expect(tree[0]).toMatchObject({ managedBy: 'system', managedById: null })
+    expect(tree[0]?.children?.[0]).toMatchObject({
+      managedBy: 'integration',
+      managedById: 'installation-1',
+    })
+  })
+
   it('keeps query Composition canonical while applying its query presentation', () => {
     const tree = buildDomainTree({
       rootToSection: {

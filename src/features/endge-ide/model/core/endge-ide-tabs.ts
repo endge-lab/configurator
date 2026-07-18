@@ -17,7 +17,7 @@ import type {
 } from '@endge/core'
 import type { Component } from 'vue'
 
-import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
+import { ComponentType, Endge, FilterType, ParameterType, QueryType, isExternallyManaged, isSystemManaged } from '@endge/core'
 import { markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid'
@@ -278,13 +278,17 @@ export class EndgeIDETabs {
       if (!documentId || !documentType)
         return
       const session = this._sessionByTabId.get(activeTab.id)
-      const model = session?.model as { isSystem?: boolean } | null | undefined
-      if (model?.isSystem === true && documentType !== 'style') {
-        if (!session?.syncSystemBeforeSave) {
-          toast.info('Системный документ нельзя изменить')
+      const model = session?.model as { managedBy?: 'system' | 'integration' | 'user', managedById?: string | null } | null | undefined
+      if (isExternallyManaged(model)) {
+        if (documentType === 'style' && isSystemManaged(model) && session?.syncSystemBeforeSave) {
+          session.syncSystemBeforeSave()
+        }
+        else {
+          toast.info(model?.managedBy === 'integration'
+            ? 'Документ управляется интеграцией и не может быть изменён'
+            : 'Системный документ нельзя изменить')
           return
         }
-        session.syncSystemBeforeSave()
       }
       else {
         session?.syncBeforeSave?.()

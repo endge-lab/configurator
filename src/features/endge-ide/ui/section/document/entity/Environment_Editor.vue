@@ -32,9 +32,11 @@ const editor = computed(
     } | null) ?? null,
 )
 const documentModel = computed(
-  () => (tabs.documentModel.value as { isSystem?: boolean } | null) ?? null,
+  () => (tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null) ?? null,
 )
-const isSystem = computed(() => documentModel.value?.isSystem === true)
+const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
+const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
+const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
   set: (value) => {
@@ -59,9 +61,9 @@ async function save(): Promise<void> {
     :identity="editor.identity"
   >
     <template #metadata-after>
-      <div v-if="isSystem" class="flex min-w-0 items-center gap-1.5">
+      <div v-if="externallyManaged" class="flex min-w-0 items-center gap-1.5">
         <span class="shrink-0 text-muted-foreground">kind:</span>
-        <span class="min-w-0 truncate font-mono text-foreground/80">system</span>
+        <span class="min-w-0 truncate font-mono text-foreground/80">{{ systemManaged ? 'system' : 'integration' }}</span>
       </div>
     </template>
 
@@ -92,7 +94,7 @@ async function save(): Promise<void> {
                 size="icon"
                 class="h-7 w-7"
                 aria-label="Сохранить"
-                :disabled="isSystem || EndgeIDE.busy.value"
+                :disabled="externallyManaged || EndgeIDE.busy.value"
                 @click="save"
               >
                 <Loader2
@@ -116,7 +118,7 @@ async function save(): Promise<void> {
             <Input
               id="environment-identity"
               v-model="editor.identity"
-              :disabled="isSystem"
+              :disabled="externallyManaged"
               placeholder="dev"
             />
           </div>
@@ -125,7 +127,7 @@ async function save(): Promise<void> {
             <Input
               id="environment-display-name"
               v-model="editor.displayName"
-              :disabled="isSystem"
+              :disabled="externallyManaged"
               placeholder="Development"
             />
           </div>
@@ -147,7 +149,7 @@ async function save(): Promise<void> {
             class="min-h-0 flex-1"
             variant="contribution"
             :upstream="upstreamConfiguration"
-            :disabled="isSystem"
+            :disabled="externallyManaged"
           />
         </section>
       </div>

@@ -1,4 +1,5 @@
-import type { RStyle } from '@endge/core'
+import type { ManagedBy, RStyle } from '@endge/core'
+import { isSystemManaged } from '@endge/core'
 
 /** Editor state for a persisted source-first EndgeCSS document. */
 export class RStyleEditor {
@@ -8,7 +9,8 @@ export class RStyleEditor {
   description: string = ''
   source: string = ''
   sourceVersion: number = 1
-  isSystem: boolean = false
+  managedBy: ManagedBy = 'user'
+  managedById: string | null = null
   diagnostics: string[] = []
 
   fillFromSource(source: RStyle): void {
@@ -18,13 +20,14 @@ export class RStyleEditor {
     this.description = String(source.description ?? '')
     this.source = String(source.source ?? '')
     this.sourceVersion = Math.max(1, Number(source.sourceVersion ?? 1) || 1)
-    this.isSystem = source.isSystem === true
+    this.managedBy = source.managedBy
+    this.managedById = source.managedById
     this.refreshDiagnostics()
   }
 
   updateSource(target: RStyle): void {
     target.id = this.id as any
-    if (!target.isSystem) {
+    if (!isSystemManaged(target)) {
       target.identity = this.identity.trim()
       target.name = this.name.trim() || target.identity
       target.displayName = target.name
@@ -32,6 +35,10 @@ export class RStyleEditor {
     target.description = this.description.trim() || null
     target.source = this.source
     target.sourceVersion = Math.max(1, Number(this.sourceVersion) || 1)
+  }
+
+  get systemManaged(): boolean {
+    return this.managedBy === 'system'
   }
 
   applySourceText(value: string): void {

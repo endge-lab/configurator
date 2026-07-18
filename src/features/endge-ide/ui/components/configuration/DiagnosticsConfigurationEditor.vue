@@ -36,6 +36,7 @@ import {
 
 type DiagnosticsSeverity = 'TRACE' | 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL'
 type DiagnosticsRoutePhase = 'any' | DiagnosticsPhase
+type DiagnosticsAdapterType = 'console' | 'sentry'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -201,6 +202,27 @@ function addOutput(): void {
   feedback.value = `Добавлен ${id}`
 }
 
+/** Переключает тип output и применяет минимальные options выбранного adapter. */
+function setOutputAdapterType(output: EndgeDiagnosticsOutputConfiguration, value: unknown): void {
+  const adapterType: DiagnosticsAdapterType = value === 'sentry' ? 'sentry' : 'console'
+  output.adapterType = adapterType
+  output.options = adapterType === 'sentry'
+    ? {
+        dsn: '{{ SENTRY_DSN }}',
+        environment: '{{ SENTRY_ENVIRONMENT }}',
+        release: '{{ SENTRY_RELEASE }}',
+        sendSnapshots: true,
+        requestTimeoutMs: 10_000,
+      }
+    : {
+        format: 'pretty',
+        groupByTrace: false,
+        includeTimestamp: true,
+        includeScope: true,
+        includeAttributes: false,
+      }
+}
+
 /** Удаляет output и переводит связанные routes на первый доступный канал. */
 function removeOutput(outputId: string): void {
   draft.value.telemetry.outputs = outputs.value.filter(output => output.id !== outputId)
@@ -265,7 +287,7 @@ function outputOption(output: EndgeDiagnosticsOutputConfiguration, key: string):
 }
 
 /** Обновляет JSON-safe option выбранного output. */
-function setOutputOption(output: EndgeDiagnosticsOutputConfiguration, key: string, value: string | boolean): void {
+function setOutputOption(output: EndgeDiagnosticsOutputConfiguration, key: string, value: string | number | boolean): void {
   output.options[key] = value
 }
 
@@ -451,7 +473,19 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               <div class="flex items-center gap-3 border-b px-4 py-3">
                 <Switch v-model:checked="output.enabled" :disabled="disabled" :aria-label="`Включить ${output.name}`" />
                 <Input v-model="output.name" class="h-8 min-w-0 flex-1 border-transparent bg-transparent px-1 font-medium shadow-none" :disabled="disabled" />
-                <span class="hidden font-mono text-[10px] text-muted-foreground sm:inline">{{ output.adapterType }}</span>
+                <Select :model-value="output.adapterType" :disabled="disabled" @update:model-value="setOutputAdapterType(output, $event)">
+                  <SelectTrigger class="h-8 w-32 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="console">
+                      Console
+                    </SelectItem>
+                    <SelectItem value="sentry">
+                      Sentry
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button size="sm" variant="ghost" :disabled="disabled || !output.enabled" @click="testOutput(output)">
                   Проверить
                 </Button>
@@ -460,7 +494,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </Button>
               </div>
 
-              <div class="grid gap-5 p-4 md:grid-cols-[12rem_1fr]">
+              <div v-if="output.adapterType === 'console'" class="grid gap-5 p-4 md:grid-cols-[12rem_1fr]">
                 <div>
                   <Label class="text-xs">Формат</Label>
                   <Select :model-value="String(outputOption(output, 'format') ?? 'pretty')" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'format', String($event))">
@@ -486,6 +520,58 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                     <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'groupByTrace') === true" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'groupByTrace', $event === true)" />Группировать по trace</label>
                   </div>
                 </div>
+              </div>
+
+              <div v-else-if="output.adapterType === 'sentry'" class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
+                <div class="md:col-span-2 xl:col-span-2">
+                  <Label class="text-xs">DSN</Label>
+                  <Input
+                    :model-value="String(outputOption(output, 'dsn') ?? '')"
+                    class="mt-2 font-mono text-xs"
+                    :placeholder="'{{ SENTRY_DSN }}'"
+                    :disabled="disabled || !output.enabled"
+                    @update:model-value="setOutputOption(output, 'dsn', String($event))"
+                  />
+                </div>
+                <div>
+                  <Label class="text-xs">Environment</Label>
+                  <Input
+                    :model-value="String(outputOption(output, 'environment') ?? '')"
+                    class="mt-2 font-mono text-xs"
+                    :placeholder="'{{ SENTRY_ENVIRONMENT }}'"
+                    :disabled="disabled || !output.enabled"
+                    @update:model-value="setOutputOption(output, 'environment', String($event))"
+                  />
+                </div>
+                <div>
+                  <Label class="text-xs">Release</Label>
+                  <Input
+                    :model-value="String(outputOption(output, 'release') ?? '')"
+                    class="mt-2 font-mono text-xs"
+                    :placeholder="'{{ SENTRY_RELEASE }}'"
+                    :disabled="disabled || !output.enabled"
+                    @update:model-value="setOutputOption(output, 'release', String($event))"
+                  />
+                </div>
+                <div>
+                  <Label class="text-xs">Timeout, мс</Label>
+                  <Input
+                    :model-value="Number(outputOption(output, 'requestTimeoutMs') ?? 10000)"
+                    type="number"
+                    min="1"
+                    class="mt-2"
+                    :disabled="disabled || !output.enabled"
+                    @update:model-value="setOutputOption(output, 'requestTimeoutMs', Math.max(1, Number($event) || 10000))"
+                  />
+                </div>
+                <label class="flex items-end gap-2 pb-2 text-xs md:col-span-1 xl:col-span-3">
+                  <Checkbox
+                    :checked="outputOption(output, 'sendSnapshots') !== false"
+                    :disabled="disabled || !output.enabled"
+                    @update:checked="setOutputOption(output, 'sendSnapshots', $event === true)"
+                  />
+                  Отправлять снимки как JSON attachment
+                </label>
               </div>
             </article>
           </div>

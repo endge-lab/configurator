@@ -19,7 +19,8 @@ describe('system context configuration editors', () => {
       identity: 'dev',
       name: 'Development',
       displayName: 'Development',
-      isSystem: true,
+      managedBy: 'system',
+      managedById: null,
       configuration: { mode: 'inherit', patch: {} },
     } as unknown as REnvironment
     const editor = new REnvironmentEditor()
@@ -44,7 +45,8 @@ describe('system context configuration editors', () => {
       displayName: 'Default tenant',
       code: 'DEFAULT',
       description: 'System tenant',
-      isSystem: true,
+      managedBy: 'system',
+      managedById: null,
       configuration: { mode: 'inherit', patch: {} },
     } as unknown as RTenant
     const editor = new RTenantEditor()
