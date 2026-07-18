@@ -46,6 +46,10 @@ function handleEditorKeydown(event: KeyboardEvent): void {
   }
 
   if (event.key === 'Escape') {
+    if (uiEditorDemoState.nodeDragSession) {
+      uiEditorDemoState.cancelNodeDrag()
+      return
+    }
     if (uiEditorDemoState.contextMenu) {
       uiEditorDemoState.closeContextMenu()
       return

@@ -1,35 +1,24 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorBreakpoint, UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 
 import {
   Braces,
   FileCode2,
   LayoutGrid,
-  Monitor,
   MonitorPlay,
-  MonitorSmartphone,
   PanelsTopLeft,
-  Smartphone,
-  Tablet,
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { UI_EDITOR_BREAKPOINTS } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
 const props = defineProps<{
   state: UIEditorDemoState
@@ -37,7 +26,6 @@ const props = defineProps<{
 
 const isGridOverlayEnabled = computed(() => props.state.showGridOverlay)
 const isVisualPanelVisible = computed(() => props.state.isPanelVisible('visual'))
-const activeBreakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0]!)
 const panelToggles: Array<{
   id: UIEditorPanel
   label: string
@@ -50,16 +38,6 @@ const panelToggles: Array<{
 
 function logAst(): void {
   props.state.logTree()
-}
-
-function getBreakpointIcon(breakpointId: UIEditorBreakpoint) {
-  if (breakpointId === 'desktop') {
-    return Monitor
-  }
-  if (breakpointId === 'tablet') {
-    return Tablet
-  }
-  return Smartphone
 }
 </script>
 
@@ -122,36 +100,6 @@ function getBreakpointIcon(breakpointId: UIEditorBreakpoint) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>{{ isGridOverlayEnabled ? 'Скрыть постоянную сетку' : 'Всегда показывать сетку' }}</TooltipContent>
-        </Tooltip>
-
-        <div class="mx-1 h-5 w-px bg-border/80" />
-
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon" class="size-8 rounded-md">
-                    <component :is="getBreakpointIcon(activeBreakpoint.id)" class="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end" class="min-w-36">
-                  <DropdownMenuItem
-                    v-for="breakpoint in UI_EDITOR_BREAKPOINTS"
-                    :key="breakpoint.id"
-                    class="gap-2"
-                    @click="props.state.setBreakpoint(breakpoint.id)"
-                  >
-                    <component :is="getBreakpointIcon(breakpoint.id)" class="size-4" />
-                    <span class="flex-1">{{ breakpoint.label }}</span>
-                    <MonitorSmartphone v-if="props.state.activeBreakpoint === breakpoint.id" class="size-3.5 text-sky-600 dark:text-sky-400" />
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>Выбрать viewport</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

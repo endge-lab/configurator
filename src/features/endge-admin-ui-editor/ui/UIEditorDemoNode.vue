@@ -4,14 +4,14 @@ import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-u
 import type { UIPresentationSurface } from '@endge/core'
 import type { CSSProperties } from 'vue'
 
-import { Endge, UI_COMPONENT_HOST_DEFINITION_ID } from '@endge/core'
-import { Blocks } from 'lucide-vue-next'
+import { Endge } from '@endge/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { Card } from '@/components/ui/card'
 import { getUIEditorDefaultLayout, isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { hasUIEditorSFCBinding, hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
+import UIEditorNodeRendererSFCPrimitive from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererSFCPrimitive.vue'
 import UIEditorDemoSelectionChrome from '@/features/endge-admin-ui-editor/ui/UIEditorDemoSelectionChrome.vue'
 
 defineOptions({
@@ -63,9 +63,12 @@ const isGridPlacedNode = computed<boolean>(() => parentNode.value?.kind === 'gri
   || (parentNode.value?.kind === 'page' && parentNode.value.props.layoutMode === 'grid'))
 const isPageGrid = computed<boolean>(() => node.value?.kind === 'page' && node.value.props.layoutMode === 'grid')
 const isGridLayoutContainer = computed<boolean>(() => node.value?.kind === 'grid' || isPageGrid.value)
-const pageColumnCount = computed<number>(() => node.value?.kind === 'page'
-  ? Math.max(1, Math.min(12, Math.round(Number(node.value.props.columns) || 12)))
-  : 12)
+const pageColumnCount = computed<number>(() => {
+  if (node.value?.kind === 'page' || node.value?.kind === 'grid') {
+    return Math.max(1, Math.min(12, Math.round(Number(node.value.props.columns) || 12)))
+  }
+  return 12
+})
 const children = computed(() => props.state.getChildren(props.nodeId))
 const definition = computed(() => node.value ? Endge.uiRegistry.getDefinition(node.value.definitionRef) : null)
 const isSourceBoundText = computed<boolean>(() => node.value?.kind === 'text' && hasUIEditorSFCTextBinding(node.value))
@@ -89,6 +92,15 @@ const nodeRenderer = computed(() => {
   })
 })
 const nodeRendererComponent = computed(() => nodeRenderer.value?.component ?? null)
+const visualNodeRendererComponent = computed(() => {
+  if (
+    node.value?.kind === 'custom-component'
+    && getUIEditorSFCDefinitionContract(node.value.definitionRef)
+  ) {
+    return UIEditorNodeRendererSFCPrimitive
+  }
+  return nodeRendererComponent.value
+})
 const insertHoverIndex = ref<number | null>(null)
 const pageGridRef = ref<HTMLElement | null>(null)
 const pageChildRefs = ref<Record<string, HTMLElement | null>>({})
@@ -109,25 +121,25 @@ const cardStyle = computed<CSSProperties | undefined>(() => {
 })
 
 const pageGridMetrics = computed(() => {
-  if (node.value?.kind !== 'page') {
+  if (!node.value || !isGridLayoutContainer.value) {
     return null
   }
 
   return {
     gap: Math.max(0, Number(node.value.props.gap ?? 0)),
-    rowHeight: Math.max(20, Number(node.value.props.rowHeight ?? 28)),
+    rowHeight: Math.max(20, Number('rowHeight' in node.value.props ? node.value.props.rowHeight : 28)),
   }
 })
 
 const isPageGridVisible = computed(() =>
   !props.preview
-  && node.value?.kind === 'page'
-  && (props.state.showGridOverlay || (isPageGrid.value && props.state.isGridInteractionActive)),
+  && isGridLayoutContainer.value
+  && (props.state.showGridOverlay || props.state.isGridInteractionActive),
 )
 
 const isPageDragSurfaceActive = computed(() =>
   !props.preview
-  && isPageGrid.value
+  && isGridLayoutContainer.value
   && props.state.gridInteractionMode === 'drag',
 )
 
@@ -136,7 +148,7 @@ const activePagePreview = computed<UIEditorPagePlacementPreview | null>(() =>
 )
 
 const pageGridRowCount = computed(() => {
-  if (node.value?.kind !== 'page') {
+  if (!node.value || !isGridLayoutContainer.value) {
     return 0
   }
 
@@ -153,11 +165,14 @@ const containerStyle = computed<CSSProperties | undefined>(() => {
     return undefined
   }
   if (value.kind === 'grid') {
+    const rowHeight = Math.max(20, Number(value.props.rowHeight ?? 28))
+    const trackCount = Math.max(1, pageGridRowCount.value)
     return {
       display: 'grid',
       gridTemplateColumns: `repeat(${Math.max(1, value.props.columns)}, minmax(0, 1fr))`,
+      gridAutoRows: `${rowHeight}px`,
       gap: `${value.props.gap}px`,
-      minHeight: `${value.props.minHeight}px`,
+      minHeight: `${Math.max(value.props.minHeight, trackCount * rowHeight + Math.max(0, trackCount - 1) * value.props.gap)}px`,
       padding: `${value.props.padding}px`,
       alignContent: 'start',
     }
@@ -222,7 +237,7 @@ const bodyStyle = computed<Record<string, string> | undefined>(() => {
 })
 
 const pageGridGuideStyle = computed<Record<string, string> | undefined>(() => {
-  if (node.value?.kind !== 'page' || !pageGridMetrics.value) {
+  if (!isGridLayoutContainer.value || !pageGridMetrics.value) {
     return undefined
   }
 
@@ -251,50 +266,6 @@ const pagePlacementPreviewStyle = computed<Record<string, string> | undefined>((
 
 const textPreview = computed<string>(() => node.value?.kind === 'text' ? node.value.props.text : '')
 const buttonLabel = computed<string>(() => node.value?.kind === 'button' ? node.value.props.label : '')
-const customComponentTitle = computed<string>(() => node.value?.kind === 'custom-component' ? node.value.props.title : '')
-const customComponentHeadline = computed<string>(() =>
-  definition.value?.title
-  || customComponentTitle.value
-  || 'Component',
-)
-const customComponentMeta = computed<string>(() => {
-  if (node.value?.kind !== 'custom-component') {
-    return ''
-  }
-
-  const sourceLabel = String(node.value.meta?.sourceLabel ?? '').trim()
-  if (sourceLabel) {
-    return sourceLabel
-  }
-  const sourceType = String(node.value.meta?.sourceType ?? '').trim()
-  if (sourceType === 'preset') {
-    return 'Preset component'
-  }
-  if (sourceType === 'jsx') {
-    return 'JSX component'
-  }
-  if (node.value.props.rendererRef) {
-    return String(node.value.props.rendererRef)
-  }
-  return node.value.definitionRef
-})
-const customComponentBadge = computed<string>(() => {
-  if (!definition.value) {
-    return 'Component'
-  }
-
-  if (definition.value.id === UI_COMPONENT_HOST_DEFINITION_ID) {
-    return 'Component Host'
-  }
-
-  return definition.value.configKind
-    ? `Definition · ${definition.value.configKind}`
-    : 'Definition'
-})
-const customComponentDescription = computed<string>(() =>
-  definition.value?.stubDescription
-  ?? 'Definition-placeholder для будущего renderer слоя.',
-)
 const nodeRendererProps = computed(() => {
   if (!node.value) {
     return {}
@@ -363,13 +334,6 @@ function getSelectionLabel(targetNode: UIEditorNode): string {
     : typeLabel
 }
 
-function createTransparentDragImage(): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = 1
-  canvas.height = 1
-  return canvas
-}
-
 function isNodeInGridInteraction(targetNodeId: string): boolean {
   return props.state.interactionNodeId === targetNodeId && props.state.isGridInteractionActive
 }
@@ -380,7 +344,7 @@ function clearInteractionPreviews(): void {
 }
 
 function getPageGridGeometry(): UIEditorPageGridGeometry | null {
-  if (!isPageGrid.value || !pageGridRef.value || !pageGridMetrics.value) {
+  if (!isGridLayoutContainer.value || !pageGridRef.value || !pageGridMetrics.value) {
     return null
   }
 
@@ -627,29 +591,158 @@ function onInlineEditKeydown(event: KeyboardEvent): void {
   }
 }
 
-function onDragstart(event: DragEvent): void {
-  if (props.preview || !node.value || node.value.kind === 'page' || isGridPlacedNode.value) {
+function isOrderedDropContainer(targetNode: UIEditorNode | null): targetNode is UIEditorNode {
+  return targetNode != null
+    && isUIEditorContainer(targetNode.kind)
+    && targetNode.kind !== 'grid'
+    && !(targetNode.kind === 'page' && targetNode.props.layoutMode === 'grid')
+}
+
+function getOrderedContainerDirection(targetNode: UIEditorNode): 'row' | 'column' {
+  if (targetNode.kind === 'flex' || targetNode.kind === 'page') {
+    return targetNode.props.direction
+  }
+  return 'column'
+}
+
+function updateNodeDragTarget(event: PointerEvent): void {
+  const target = document.elementFromPoint(event.clientX, event.clientY)
+  if (!(target instanceof HTMLElement)) {
     return
   }
 
-  const payload: UIEditorDragPayload = {
-    source: 'node',
-    nodeId: props.nodeId,
+  const emptyContainer = target.closest<HTMLElement>('[data-ui-editor-empty-container-id]')
+  const emptyContainerId = emptyContainer?.dataset.uiEditorEmptyContainerId
+  const emptyContainerNode = emptyContainerId ? props.state.getNode(emptyContainerId) : null
+  if (emptyContainerId && isOrderedDropContainer(emptyContainerNode)) {
+    props.state.previewNodeDrag(emptyContainerId, 0)
+    return
   }
 
-  props.state.selectNode(props.nodeId)
-  props.state.beginGridDrag(payload, props.nodeId)
-  event.dataTransfer?.setData(UI_EDITOR_DND_MIME, JSON.stringify(payload))
-  event.dataTransfer?.setData('text/plain', node.value.name)
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setDragImage(createTransparentDragImage(), 0, 0)
+  const childWrapper = target.closest<HTMLElement>('[data-ui-editor-child-wrapper="true"]')
+  const siblingId = childWrapper?.dataset.uiEditorNodeId
+  const parentId = childWrapper?.dataset.uiEditorParentId
+  const targetParent = parentId ? props.state.getNode(parentId) : null
+
+  if (childWrapper && siblingId && parentId && isOrderedDropContainer(targetParent)) {
+    const rect = childWrapper.getBoundingClientRect()
+    const direction = getOrderedContainerDirection(targetParent)
+    const after = direction === 'row'
+      ? Math.abs(event.clientY - (rect.top + rect.height / 2)) > rect.height * 0.45
+        ? event.clientY > rect.top + rect.height / 2
+        : event.clientX > rect.left + rect.width / 2
+      : event.clientY > rect.top + rect.height / 2
+    props.state.previewNodeDragAround(parentId, siblingId, after)
+    return
+  }
+
+  const container = target.closest<HTMLElement>('[data-ui-editor-container-id]')
+  const containerId = container?.dataset.uiEditorContainerId
+  const containerNode = containerId ? props.state.getNode(containerId) : null
+  if (containerId && isOrderedDropContainer(containerNode)) {
+    props.state.previewNodeDrag(containerId, containerNode.children.length)
   }
 }
 
-function onDragend(): void {
-  props.state.endGridInteraction()
-  clearInteractionPreviews()
+function onNodePointerDown(event: PointerEvent): void {
+  if (
+    props.preview
+    || event.button !== 0
+    || !node.value
+    || node.value.kind === 'page'
+    || isGridPlacedNode.value
+    || isInlineEditing.value
+  ) {
+    return
+  }
+
+  const target = event.target
+  if (
+    target instanceof HTMLElement
+    && target.closest('input, textarea, select, button, [contenteditable="true"], [data-ui-editor-chrome="true"]')
+  ) {
+    return
+  }
+
+  event.stopPropagation()
+  props.state.selectNode(props.nodeId)
+
+  const pointerId = event.pointerId
+  const startX = event.clientX
+  const startY = event.clientY
+  const previousUserSelect = document.body.style.userSelect
+  const previousCursor = document.body.style.cursor
+  const listeners = new AbortController()
+  let started = false
+
+  const cleanup = () => {
+    document.body.style.userSelect = previousUserSelect
+    document.body.style.cursor = previousCursor
+    listeners.abort()
+  }
+
+  const onPointerMove = (moveEvent: PointerEvent) => {
+    if (moveEvent.pointerId !== pointerId) {
+      return
+    }
+
+    if (!started) {
+      const distance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY)
+      if (distance < 5) {
+        return
+      }
+      if (!props.state.beginNodeDrag(props.nodeId)) {
+        cleanup()
+        return
+      }
+      started = true
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'grabbing'
+    }
+
+    moveEvent.preventDefault()
+    updateNodeDragTarget(moveEvent)
+  }
+
+  const onPointerUp = (upEvent: PointerEvent) => {
+    if (upEvent.pointerId !== pointerId) {
+      return
+    }
+    if (started) {
+      updateNodeDragTarget(upEvent)
+      props.state.commitNodeDrag()
+      upEvent.preventDefault()
+    }
+    cleanup()
+  }
+
+  const onPointerCancel = (cancelEvent: PointerEvent) => {
+    if (cancelEvent.pointerId !== pointerId) {
+      return
+    }
+    props.state.cancelNodeDrag()
+    cleanup()
+  }
+
+  const onKeydown = (keyboardEvent: KeyboardEvent) => {
+    if (keyboardEvent.key !== 'Escape' || !started) {
+      return
+    }
+    keyboardEvent.preventDefault()
+    props.state.cancelNodeDrag()
+    cleanup()
+  }
+
+  window.addEventListener('pointermove', onPointerMove, { passive: false, signal: listeners.signal })
+  window.addEventListener('pointerup', onPointerUp, { signal: listeners.signal })
+  window.addEventListener('pointercancel', onPointerCancel, { signal: listeners.signal })
+  window.addEventListener('keydown', onKeydown, { signal: listeners.signal })
+}
+
+function onNodeMousedown(event: MouseEvent): void {
+  if (!props.preview && node.value?.kind !== 'page' && !isGridPlacedNode.value) {
+    event.stopPropagation()
+  }
 }
 
 function onDragover(event: DragEvent): void {
@@ -660,7 +753,7 @@ function onDragover(event: DragEvent): void {
   event.stopPropagation()
   isDropHovered.value = true
 
-  if (isPageGrid.value) {
+  if (isGridLayoutContainer.value) {
     const payload = parseDropPayload(event)
     if (!payload) {
       return
@@ -674,7 +767,7 @@ function onDragover(event: DragEvent): void {
 
 function onDragleave(): void {
   isDropHovered.value = false
-  if (isPageGrid.value) {
+  if (isGridLayoutContainer.value) {
     clearInteractionPreviews()
   }
 }
@@ -802,7 +895,7 @@ function resolvePagePlacement(
   event: DragEvent,
   payload: UIEditorDragPayload,
 ): UIEditorPagePlacementPreview | null {
-  if (!isPageGrid.value) {
+  if (!isGridLayoutContainer.value) {
     return null
   }
 
@@ -845,7 +938,7 @@ function onDrop(event: DragEvent): void {
     return
   }
 
-  if (isPageGrid.value && pagePlacementPreview.value) {
+  if (isGridLayoutContainer.value && pagePlacementPreview.value) {
     const previewLayout = pagePlacementPreview.value
     clearInteractionPreviews()
 
@@ -950,7 +1043,7 @@ function createPagePreviewFromNode(child: UIEditorNode): UIEditorPagePlacementPr
 }
 
 function startPageChildMove(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1009,7 +1102,7 @@ function startPageChildMove(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1017,7 +1110,6 @@ function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
     event.button !== 0
     || event.detail > 1
     || props.state.editingNodeId === child.id
-    || props.state.selectedNodeId !== child.id
     || isNodeInGridInteraction(child.id)
   ) {
     return
@@ -1061,7 +1153,7 @@ function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function startPageChildWidthResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1121,7 +1213,7 @@ function startPageChildWidthResize(child: UIEditorNode, event: MouseEvent): void
 }
 
 function startPageChildHeightResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1180,7 +1272,7 @@ function startPageChildHeightResize(child: UIEditorNode, event: MouseEvent): voi
 }
 
 function startPageChildTopResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1241,7 +1333,7 @@ function startPageChildTopResize(child: UIEditorNode, event: MouseEvent): void {
 }
 
 function startPageChildLeftResize(child: UIEditorNode, event: MouseEvent): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1306,7 +1398,7 @@ function startPageChildCornerResize(
   event: MouseEvent,
   handle: Extract<UIEditorChromeHandle, 'north-west' | 'north-east' | 'south-west' | 'south-east'>,
 ): void {
-  if (props.preview || !isPageGrid.value) {
+  if (props.preview || !isGridLayoutContainer.value) {
     return
   }
 
@@ -1411,7 +1503,7 @@ function getNodeSizeBadge(targetNode: UIEditorNode): string {
 }
 
 function onPageChildSelectionChromeResize(child: UIEditorNode, handle: UIEditorChromeHandle, event: MouseEvent): void {
-  if (!isPageGrid.value) {
+  if (!isGridLayoutContainer.value) {
     return
   }
 
@@ -1473,11 +1565,9 @@ function getChildWrapperStyle(child: UIEditorNode): Record<string, string> | und
     gridColumn: `${colStart} / span ${span}`,
     gridRow: `${rowStart} / span ${rowSpan}`,
   }
-  if (container.kind === 'page') {
-    style.height = `${getSnappedSizeForRowSpan(rowSpan)}px`
-    style.minHeight = `${getSnappedSizeForRowSpan(rowSpan)}px`
-    style.visibility = isNodeInGridInteraction(child.id) ? 'hidden' : 'visible'
-  }
+  style.height = `${getSnappedSizeForRowSpan(rowSpan)}px`
+  style.minHeight = `${getSnappedSizeForRowSpan(rowSpan)}px`
+  style.visibility = isNodeInGridInteraction(child.id) ? 'hidden' : 'visible'
   return style
 }
 
@@ -1518,14 +1608,14 @@ function getInsertStyle(): Record<string, string> | undefined {
             : 'h-full border border-transparent bg-transparent shadow-none',
         !props.preview && isContainer && isDropHovered ? 'border-sky-400 bg-sky-50/40 dark:border-sky-400 dark:bg-sky-950/35' : '',
         !props.preview && !isSelected ? 'hover:border-slate-400/60 dark:hover:border-slate-500/60' : '',
+        !props.preview && node.kind !== 'page' && !isGridPlacedNode && !isInlineEditing ? 'cursor-grab active:cursor-grabbing' : '',
       ]"
       :style="cardStyle"
-      :draggable="!props.preview && !isInlineEditing && node.kind !== 'page' && !isGridPlacedNode"
       @click.stop="onSelect"
       @dblclick.stop="onDoubleClick"
       @contextmenu="onContextMenu"
-      @dragstart="onDragstart"
-      @dragend="onDragend"
+      @pointerdown="onNodePointerDown"
+      @mousedown="onNodeMousedown"
     >
       <UIEditorDemoSelectionChrome
         v-if="!props.preview && isSelected && (!isGridPlacedNode || node.kind === 'page')"
@@ -1555,6 +1645,7 @@ function getInsertStyle(): Record<string, string> | undefined {
             ref="pageGridRef"
             class="relative grid w-full gap-1.5"
             :style="containerStyle"
+            :data-ui-editor-container-id="node.id"
           >
             <div
               v-if="isPageGridVisible"
@@ -1579,7 +1670,7 @@ function getInsertStyle(): Record<string, string> | undefined {
             />
 
             <div
-              v-if="node.kind === 'page' && activePagePreview && pagePlacementPreviewStyle"
+              v-if="isGridLayoutContainer && activePagePreview && pagePlacementPreviewStyle"
               class="pointer-events-none relative z-40 border border-sky-500/90"
               :style="pagePlacementPreviewStyle"
             >
@@ -1606,6 +1697,7 @@ function getInsertStyle(): Record<string, string> | undefined {
               class="relative z-10 border border-dashed border-border/80 px-3 py-5 text-center text-xs text-muted-foreground"
               :class="props.preview ? 'bg-slate-50/80 dark:bg-slate-900/75' : 'bg-background/70'"
               :style="getInsertStyle()"
+              :data-ui-editor-empty-container-id="node.id"
             >
               {{ props.preview ? 'Пустой контейнер' : 'Контейнер пока пуст. Перетащи блок из палитры слева.' }}
             </div>
@@ -1614,8 +1706,14 @@ function getInsertStyle(): Record<string, string> | undefined {
               <div
                 :ref="element => setPageChildRef(child.id, element as Element | null)"
                 class="relative z-10 overflow-visible"
-                :class="!props.preview && isPageGrid ? 'ui-editor-grid-item-surface' : ''"
+                :class="[
+                  !props.preview && isGridLayoutContainer ? 'ui-editor-grid-item-surface' : '',
+                  !props.preview && props.state.isNodeDragPreview(child.id) ? 'pointer-events-none opacity-35 ring-1 ring-sky-400/80 transition-[opacity,transform]' : '',
+                ]"
                 :style="getChildWrapperStyle(child)"
+                data-ui-editor-child-wrapper="true"
+                :data-ui-editor-node-id="child.id"
+                :data-ui-editor-parent-id="node.id"
                 @mousedown="onPageChildPointerDown(child, $event)"
               >
                 <UIEditorDemoNode
@@ -1627,7 +1725,7 @@ function getInsertStyle(): Record<string, string> | undefined {
                 />
 
                 <UIEditorDemoSelectionChrome
-                  v-if="!props.preview && isPageGrid && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
+                  v-if="!props.preview && isGridLayoutContainer && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
                   :label="getSelectionLabel(child)"
                   :size-label="getNodeSizeBadge(child)"
                   :show-handles="props.state.editingNodeId !== child.id"
@@ -1686,8 +1784,8 @@ function getInsertStyle(): Record<string, string> | undefined {
         >
 
         <component
-          :is="nodeRendererComponent"
-          v-if="nodeRendererComponent && !isInlineEditing"
+          :is="visualNodeRendererComponent"
+          v-if="visualNodeRendererComponent && !isInlineEditing"
           v-bind="nodeRendererProps"
         />
 
@@ -1700,28 +1798,9 @@ function getInsertStyle(): Record<string, string> | undefined {
 
         <div
           v-else-if="node.kind === 'custom-component'"
-          class="border border-dashed border-border/70 bg-muted/10 px-3 py-2.5"
+          class="flex min-h-8 w-full items-center px-2 text-xs text-muted-foreground"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1 space-y-1.5">
-              <div class="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                <Blocks class="size-3" />
-                <span>{{ customComponentBadge }}</span>
-              </div>
-
-              <div class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {{ customComponentHeadline }}
-              </div>
-
-              <div class="truncate font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                {{ customComponentMeta || 'definitionRef is not set yet' }}
-              </div>
-
-              <div class="text-xs text-slate-600/90 dark:text-slate-400">
-                {{ customComponentDescription }}
-              </div>
-            </div>
-          </div>
+          {{ nodeTypeLabel }}
         </div>
 
         <div

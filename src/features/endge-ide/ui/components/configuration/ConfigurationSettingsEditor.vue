@@ -3,6 +3,8 @@ import type {
   EndgeConfiguration,
   EndgeConfigurationContribution,
   EndgeConfigurationPatch,
+  EndgeDiagnosticsConfiguration,
+  EndgeDiagnosticsConfigurationPatch,
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
@@ -23,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
-import DiagnosticsConfigurationMock from './DiagnosticsConfigurationMock.vue'
+import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'sfcAdapterIds'
@@ -286,6 +288,100 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
   else entry.value = value
   notifyRootMutation()
 }
+
+/** Применяет полную diagnostics model к root/replace или переводит её в минимальный inherit patch. */
+function setDiagnosticsConfiguration(value: EndgeDiagnosticsConfiguration): void {
+  if (isInherit.value) {
+    const diagnosticsPatch = createDiagnosticsPatch(props.upstream!.diagnostics, value)
+    if (diagnosticsPatch) {
+      patch.value!.diagnostics = diagnosticsPatch
+    }
+    else {
+      delete patch.value!.diagnostics
+    }
+  }
+  else {
+    editableConfiguration.value.diagnostics = clone(value)
+  }
+  notifyRootMutation()
+}
+
+/** Строит diagnostics contribution относительно upstream configuration. */
+function createDiagnosticsPatch(
+  upstream: EndgeDiagnosticsConfiguration,
+  value: EndgeDiagnosticsConfiguration,
+): EndgeDiagnosticsConfigurationPatch | undefined {
+  const collection = compactObject({
+    enabled: scalarPatch(upstream.telemetry.collection.enabled, value.telemetry.collection.enabled),
+    signals: collectionPatch(upstream.telemetry.collection.signals, value.telemetry.collection.signals, item => item),
+    minSeverity: scalarPatch(upstream.telemetry.collection.minSeverity, value.telemetry.collection.minSeverity),
+    maxRecords: scalarPatch(upstream.telemetry.collection.maxRecords, value.telemetry.collection.maxRecords),
+  })
+  const telemetry = compactObject({
+    collection: hasKeys(collection) ? collection : undefined,
+    outputs: collectionPatch(upstream.telemetry.outputs, value.telemetry.outputs, item => item.id),
+    routes: collectionPatch(upstream.telemetry.routes, value.telemetry.routes, item => item.id),
+  })
+  const content = compactObject({
+    telemetry: scalarPatch(upstream.snapshots.content.telemetry, value.snapshots.content.telemetry),
+    problems: scalarPatch(upstream.snapshots.content.problems, value.snapshots.content.problems),
+    configuration: scalarPatch(upstream.snapshots.content.configuration, value.snapshots.content.configuration),
+  })
+  const automatic = compactObject({
+    enabled: scalarPatch(upstream.snapshots.automatic.enabled, value.snapshots.automatic.enabled),
+    errorCount: scalarPatch(upstream.snapshots.automatic.errorCount, value.snapshots.automatic.errorCount),
+    windowSeconds: scalarPatch(upstream.snapshots.automatic.windowSeconds, value.snapshots.automatic.windowSeconds),
+    cooldownSeconds: scalarPatch(upstream.snapshots.automatic.cooldownSeconds, value.snapshots.automatic.cooldownSeconds),
+    outputIds: collectionPatch(upstream.snapshots.automatic.outputIds, value.snapshots.automatic.outputIds, item => item),
+  })
+  const snapshots = compactObject({
+    content: hasKeys(content) ? content : undefined,
+    automatic: hasKeys(automatic) ? automatic : undefined,
+  })
+  const result = compactObject({
+    telemetry: hasKeys(telemetry) ? telemetry : undefined,
+    snapshots: hasKeys(snapshots) ? snapshots : undefined,
+  }) as EndgeDiagnosticsConfigurationPatch
+  return hasKeys(result) ? result : undefined
+}
+
+/** Создаёт required scalar override только при фактическом отличии. */
+function scalarPatch<T>(upstream: T, value: T): { op: 'set', value: T } | undefined {
+  return isEqual(upstream, value) ? undefined : { op: 'set', value: clone(value) }
+}
+
+/** Строит keyed upsert/remove operations относительно upstream collection. */
+function collectionPatch<T>(upstream: T[], value: T[], getKey: (item: T) => string): { entries: any[] } | undefined {
+  const upstreamByKey = new Map(upstream.map(item => [getKey(item), item]))
+  const valueByKey = new Map(value.map(item => [getKey(item), item]))
+  const entries: any[] = []
+  for (const [key] of upstreamByKey) {
+    if (!valueByKey.has(key)) {
+      entries.push({ key, op: 'remove' })
+    }
+  }
+  for (const [key, item] of valueByKey) {
+    if (!isEqual(upstreamByKey.get(key), item)) {
+      entries.push({ key, op: 'upsert', value: clone(item) })
+    }
+  }
+  return entries.length ? { entries } : undefined
+}
+
+/** Удаляет отсутствующие поля из вложенного diagnostics patch. */
+function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined)) as Partial<T>
+}
+
+/** Проверяет, содержит ли patch хотя бы одну операцию. */
+function hasKeys(value: object): boolean {
+  return Object.keys(value).length > 0
+}
+
+/** Сравнивает JSON-safe configuration values. */
+function isEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
 </script>
 
 <template>
@@ -480,7 +576,12 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
           </TabsContent>
 
           <TabsContent value="diagnostics" class="m-0 min-h-full p-0 outline-none">
-            <DiagnosticsConfigurationMock :variant="variant" :disabled="disabled" />
+            <DiagnosticsConfigurationEditor
+              :model-value="effective.diagnostics"
+              :variant="variant"
+              :disabled="disabled"
+              @update:model-value="setDiagnosticsConfiguration"
+            />
           </TabsContent>
         </div>
       </main>

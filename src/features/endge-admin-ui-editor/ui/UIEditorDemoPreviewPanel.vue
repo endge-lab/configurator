@@ -7,7 +7,6 @@ import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import { UI_EDITOR_BREAKPOINTS } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
 
 const props = defineProps<{
@@ -16,10 +15,6 @@ const props = defineProps<{
 
 const session = new UIEditorRuntimePreviewSession()
 const refreshTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-const breakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0]!)
-const surfaceStyle = computed(() => breakpoint.value.id === 'desktop'
-  ? { width: '100%', minHeight: '100%' }
-  : { width: `${breakpoint.value.width}px`, minHeight: '100%' })
 const statusLabel = computed(() => {
   if (session.status.value === 'preparing') {
     return 'Preparing runtime'
@@ -110,8 +105,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="session.runtime.value"
-        class="mx-auto min-h-full"
-        :style="surfaceStyle"
+        class="mx-auto min-h-full w-full"
       >
         <SFC_RuntimeRenderer
           :host="session.runtime.value"

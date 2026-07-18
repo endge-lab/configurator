@@ -4,6 +4,7 @@ import type {
   UIEditorDocument,
   UIEditorDragPayload,
   UIEditorNode,
+  UIEditorNodeDragSession,
   UIEditorNodeKind,
   UIEditorNodeLayout,
   UIEditorPanel,
@@ -456,6 +457,7 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
         gap: clampSpacing(node.props.gap, 8),
         padding: clampSpacing(node.props.padding, 8),
         minHeight: clampGridMinHeight(node.props.minHeight),
+        rowHeight: clampRowHeight(node.props.rowHeight),
       }
     case 'box':
       return {
@@ -641,6 +643,7 @@ export class UIEditorDemoState {
   public gridInteractionMode: 'idle' | 'drag' | 'resize' = 'idle'
   public interactionNodeId: string | null = null
   public dragPayload: UIEditorDragPayload | null = null
+  public nodeDragSession: UIEditorNodeDragSession | null = null
   public showGridOverlay = false
   public contextMenu: { nodeId: string, x: number, y: number } | null = null
 
@@ -662,6 +665,7 @@ export class UIEditorDemoState {
     this.gridInteractionMode = 'idle'
     this.interactionNodeId = null
     this.dragPayload = null
+    this.nodeDragSession = null
     this.showGridOverlay = false
     this.contextMenu = null
     this.persistState()
@@ -749,6 +753,7 @@ export class UIEditorDemoState {
   }
 
   public beginGridDrag(payload: UIEditorDragPayload, nodeId?: string | null): void {
+    this.cancelNodeDrag()
     this.isGridInteractionActive = true
     this.gridInteractionMode = 'drag'
     this.dragPayload = payload
@@ -784,9 +789,136 @@ export class UIEditorDemoState {
     if (!node) {
       return []
     }
-    return node.children
+
+    const childIds = [...node.children]
+    const session = this.nodeDragSession
+    if (session) {
+      const currentIndex = childIds.indexOf(session.nodeId)
+      if (currentIndex !== -1) {
+        childIds.splice(currentIndex, 1)
+      }
+      if (nodeId === session.targetParentId) {
+        const targetIndex = Math.max(0, Math.min(session.targetIndex, childIds.length))
+        childIds.splice(targetIndex, 0, session.nodeId)
+      }
+    }
+
+    return childIds
       .map(childId => this.getNode(childId))
       .filter((child): child is UIEditorNode => child != null)
+  }
+
+  public beginNodeDrag(nodeId: string): boolean {
+    if (this.sourceDiagnostics.length > 0 || nodeId === this.document.rootId) {
+      return false
+    }
+
+    const parentId = this.findParentId(nodeId)
+    if (!parentId) {
+      return false
+    }
+    const parent = this.getNode(parentId)
+    if (!parent || !isUIEditorContainer(parent.kind)) {
+      return false
+    }
+
+    const originIndex = parent.children.indexOf(nodeId)
+    if (originIndex < 0) {
+      return false
+    }
+
+    this.endGridInteraction()
+    this.nodeDragSession = {
+      nodeId,
+      originParentId: parentId,
+      originIndex,
+      targetParentId: parentId,
+      targetIndex: originIndex,
+    }
+    this.selectedNodeId = nodeId
+    this.closeContextMenu()
+    return true
+  }
+
+  public previewNodeDrag(targetParentId: string, targetIndex: number): boolean {
+    const session = this.nodeDragSession
+    const targetParent = this.getNode(targetParentId)
+    if (
+      !session
+      || !targetParent
+      || !isUIEditorContainer(targetParent.kind)
+      || session.nodeId === targetParentId
+      || this.isDescendant(session.nodeId, targetParentId)
+    ) {
+      return false
+    }
+
+    const availableChildren = targetParent.children.filter(childId => childId !== session.nodeId)
+    const normalizedIndex = Math.max(0, Math.min(Math.round(targetIndex), availableChildren.length))
+    if (
+      session.targetParentId === targetParentId
+      && session.targetIndex === normalizedIndex
+    ) {
+      return true
+    }
+
+    this.nodeDragSession = {
+      ...session,
+      targetParentId,
+      targetIndex: normalizedIndex,
+    }
+    return true
+  }
+
+  public previewNodeDragAround(targetParentId: string, siblingId: string, after: boolean): boolean {
+    const session = this.nodeDragSession
+    const targetParent = this.getNode(targetParentId)
+    if (!session || !targetParent) {
+      return false
+    }
+
+    const availableChildren = targetParent.children.filter(childId => childId !== session.nodeId)
+    const siblingIndex = availableChildren.indexOf(siblingId)
+    if (siblingIndex < 0) {
+      return false
+    }
+
+    return this.previewNodeDrag(targetParentId, siblingIndex + (after ? 1 : 0))
+  }
+
+  public commitNodeDrag(): boolean {
+    const session = this.nodeDragSession
+    if (!session) {
+      return false
+    }
+
+    this.nodeDragSession = null
+    const node = this.getNode(session.nodeId)
+    const currentParent = this.getNode(this.findParentId(session.nodeId))
+    const targetParent = this.getNode(session.targetParentId)
+    if (!node || !currentParent || !targetParent || !isUIEditorContainer(targetParent.kind)) {
+      return false
+    }
+
+    if (session.nodeId === targetParent.id || this.isDescendant(session.nodeId, targetParent.id)) {
+      return false
+    }
+
+    currentParent.children = currentParent.children.filter(childId => childId !== session.nodeId)
+    targetParent.children = targetParent.children.filter(childId => childId !== session.nodeId)
+    const targetIndex = Math.max(0, Math.min(session.targetIndex, targetParent.children.length))
+    targetParent.children.splice(targetIndex, 0, session.nodeId)
+    this.selectedNodeId = session.nodeId
+    this.persistDocumentState()
+    return true
+  }
+
+  public cancelNodeDrag(): void {
+    this.nodeDragSession = null
+  }
+
+  public isNodeDragPreview(nodeId: string): boolean {
+    return this.nodeDragSession?.nodeId === nodeId
   }
 
   public getParentNode(nodeId: string): UIEditorNode | null {
@@ -1023,6 +1155,7 @@ export class UIEditorDemoState {
     }
 
     this.closeContextMenu()
+    this.cancelNodeDrag()
 
     if (this.editingNodeId === nodeId) {
       this.cancelInlineEdit()
@@ -1118,6 +1251,7 @@ export class UIEditorDemoState {
 
   public applySFCSource(source: string): boolean {
     this.cancelInlineEdit()
+    this.cancelNodeDrag()
     this.source = source
     const projection = projectUIEditorDocumentFromSFC(source, this.document)
     this.sourceDiagnostics = projection.diagnostics

@@ -88,6 +88,7 @@ function printAttributes(node: UIEditorNode): string[] {
       `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
       pixelAttribute('gap', node.props.gap),
       pixelAttribute('p', node.props.padding),
+      pixelAttribute('autoRows', node.props.rowHeight),
     ].filter(Boolean).concat(bindings)
   }
 

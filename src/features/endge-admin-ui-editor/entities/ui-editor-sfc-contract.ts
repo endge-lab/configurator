@@ -138,7 +138,7 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     kind: 'grid',
     supportsChildren: true,
     accentClass: 'from-violet-400/35 to-purple-500/15',
-    defaultProps: { columns: 12, gap: 8, padding: 8, minHeight: 160 },
+    defaultProps: { columns: 12, gap: 8, padding: 8, minHeight: 160, rowHeight: 28 },
     defaultLayout: { ...DEFAULT_LEAF_LAYOUT, span: 12, rowSpan: 6 },
     keywords: ['grid', 'columns', 'span', 'layout'],
   },

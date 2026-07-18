@@ -309,6 +309,7 @@ function createContractNode(
       columns: readNumberAttribute(ast.attributes, 'columns', Number(props.columns ?? 12)),
       gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
       padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
+      rowHeight: readPixelAttribute(ast.attributes, 'autoRows', Number(props.rowHeight ?? DEFAULT_PAGE_ROW_HEIGHT)),
     })
   }
 

@@ -359,6 +359,39 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.source).toContain('<Text>Hello</Text>')
   })
 
+  it('previews node reordering without changing Source and commits it atomically', () => {
+    const state = new UIEditorDemoState()
+    expect(state.applySFCSource(`<template>
+  <Flex direction="column">
+    <Text>First</Text>
+    <Text>Second</Text>
+    <Text>Third</Text>
+  </Flex>
+</template>`)).toBe(true)
+
+    const root = state.document.nodes[state.document.rootId]!
+    const [firstId, secondId, thirdId] = root.children
+    const sourceBeforeDrag = state.source
+
+    expect(state.beginNodeDrag(firstId!)).toBe(true)
+    expect(state.previewNodeDragAround(root.id, thirdId!, true)).toBe(true)
+    expect(state.getChildren(root.id).map(node => node.id)).toEqual([secondId, thirdId, firstId])
+    expect(root.children).toEqual([firstId, secondId, thirdId])
+    expect(state.source).toBe(sourceBeforeDrag)
+
+    state.cancelNodeDrag()
+    expect(state.getChildren(root.id).map(node => node.id)).toEqual([firstId, secondId, thirdId])
+    expect(state.source).toBe(sourceBeforeDrag)
+
+    expect(state.beginNodeDrag(firstId!)).toBe(true)
+    expect(state.previewNodeDragAround(root.id, thirdId!, true)).toBe(true)
+    expect(state.commitNodeDrag()).toBe(true)
+    expect(root.children).toEqual([secondId, thirdId, firstId])
+    expect(state.nodeDragSession).toBeNull()
+    expect(state.source.indexOf('<Text>Second</Text>')).toBeLessThan(state.source.indexOf('<Text>First</Text>'))
+    expect(state.source.indexOf('<Text>Third</Text>')).toBeLessThan(state.source.indexOf('<Text>First</Text>'))
+  })
+
   it('keeps the last valid visual tree while source is temporarily invalid', () => {
     const state = new UIEditorDemoState()
     expect(state.applySFCSource(SOURCE)).toBe(true)

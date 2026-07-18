@@ -48,6 +48,7 @@ export interface UIEditorGridProps extends Record<string, unknown> {
   gap: number
   padding: number
   minHeight: number
+  rowHeight: number
 }
 
 export interface UIEditorBoxProps extends Record<string, unknown> {
@@ -140,6 +141,14 @@ export interface UIEditorDragPayload {
   assetRef?: string
   layoutPatch?: Partial<UIEditorNodeLayout>
   propsPatch?: Record<string, unknown>
+}
+
+export interface UIEditorNodeDragSession {
+  nodeId: string
+  originParentId: string
+  originIndex: number
+  targetParentId: string
+  targetIndex: number
 }
 
 export interface UIEditorLibraryItem extends UIEditorPaletteItem {
