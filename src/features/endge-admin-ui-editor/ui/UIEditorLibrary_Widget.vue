@@ -1,15 +1,18 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { UIEditorSFCExample } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
 import type {
   UIEditorLibraryGroup,
   UIEditorLibraryItem,
 } from '@/features/endge-admin-ui-editor/types'
 
 import {
+  BookOpenText,
   ChevronDown,
   ChevronRight,
   ChevronsDown,
   ChevronsUp,
+  FileCode2,
   Layout,
   Rows3,
   Search,
@@ -24,9 +27,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { UI_EDITOR_DND_MIME, uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { buildUIEditorLibraryGroups } from '@/features/endge-admin-ui-editor/entities/ui-editor-library-catalog'
+import { UI_EDITOR_SFC_EXAMPLES } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY = 'endge-admin-ui-editor-library-expanded-groups'
+const UI_EDITOR_EXAMPLES_GROUP_ID = 'examples'
 const EXPAND_ALL_LABEL = 'Развернуть все блоки'
 const COLLAPSE_ALL_LABEL = 'Свернуть все блоки'
 
@@ -74,8 +79,26 @@ const expandedGroupIds = computed<Set<string>>({
 })
 
 const baseGroups = computed<UIEditorLibraryGroup[]>(() => filterGroups(buildUIEditorLibraryGroups()))
+const filteredExamples = computed<readonly UIEditorSFCExample[]>(() => {
+  const needle = query.value.trim().toLowerCase()
+  if (!needle) {
+    return UI_EDITOR_SFC_EXAMPLES
+  }
+  return UI_EDITOR_SFC_EXAMPLES.filter(example =>
+    example.title.toLowerCase().includes(needle)
+    || example.description.toLowerCase().includes(needle)
+    || example.tag.toLowerCase().includes(needle)
+    || example.keywords.some(keyword => keyword.toLowerCase().includes(needle)),
+  )
+})
+const activeExampleId = computed(() =>
+  UI_EDITOR_SFC_EXAMPLES.find(example => example.source === uiEditorDemoState.source)?.id ?? null,
+)
 
-const allGroupIds = computed<string[]>(() => buildUIEditorLibraryGroups().map(group => group.id))
+const allGroupIds = computed<string[]>(() => [
+  ...buildUIEditorLibraryGroups().map(group => group.id),
+  UI_EDITOR_EXAMPLES_GROUP_ID,
+])
 
 const isEverythingExpanded = computed<boolean>(() =>
   allGroupIds.value.every(groupId => expandedGroupIds.value.has(groupId)),
@@ -151,6 +174,10 @@ function onDragend(): void {
   uiEditorDemoState.endGridInteraction()
 }
 
+function loadExample(example: UIEditorSFCExample): void {
+  uiEditorDemoState.applySFCSource(example.source)
+}
+
 function getGroupIcon(groupId: string) {
   if (groupId === 'layout') {
     return Layout
@@ -179,6 +206,15 @@ function itemRowClasses(): string {
   return 'flex w-full cursor-grab items-center gap-1 rounded px-1 py-0.5 text-left text-sm select-none transition hover:bg-primary/25 active:cursor-grabbing'
 }
 
+function exampleRowClasses(isActive: boolean): string {
+  return [
+    'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition',
+    isActive
+      ? 'bg-sky-500/12 text-sky-700 ring-1 ring-inset ring-sky-500/20 dark:text-sky-300'
+      : 'text-foreground/85 hover:bg-primary/20',
+  ].join(' ')
+}
+
 function filterRowClasses(): string {
   return 'relative rounded-md border border-border/60 bg-background/70'
 }
@@ -201,7 +237,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
           <Input
             v-model="query"
             class="h-8 border-0 bg-transparent pl-7 shadow-none focus-visible:ring-0"
-            placeholder="Фильтр по SFC primitives"
+            placeholder="Примитивы и примеры"
           />
         </div>
 
@@ -260,6 +296,49 @@ function getItemTitle(item: UIEditorLibraryItem): string {
 
                 <span class="min-w-0 flex-1 truncate">
                   {{ item.label }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="filteredExamples.length > 0"
+            class="mt-3 border-t border-border/55 pt-2"
+          >
+            <button
+              type="button"
+              :class="rowClasses()"
+              class="w-full text-left"
+              @click="toggleGroup(UI_EDITOR_EXAMPLES_GROUP_ID)"
+            >
+              <ChevronDown v-if="isExpanded(UI_EDITOR_EXAMPLES_GROUP_ID)" class="size-4 shrink-0" />
+              <ChevronRight v-else class="size-4 shrink-0" />
+              <BookOpenText class="size-4 shrink-0 text-sky-500" />
+              <span class="min-w-0 flex-1 truncate font-medium">
+                Примеры
+              </span>
+              <span class="pr-1 font-mono text-[9px] text-muted-foreground/70">
+                {{ filteredExamples.length }}
+              </span>
+            </button>
+
+            <div v-if="isExpanded(UI_EDITOR_EXAMPLES_GROUP_ID)" class="mt-1 space-y-0.5 pl-5">
+              <button
+                v-for="example in filteredExamples"
+                :key="example.id"
+                type="button"
+                :class="exampleRowClasses(activeExampleId === example.id)"
+                :title="`${example.description}\nЗагрузить пример в Source`"
+                @click="loadExample(example)"
+              >
+                <span class="inline-flex size-5 shrink-0 items-center justify-center rounded border border-sky-500/20 bg-sky-500/8 text-sky-600 dark:text-sky-300">
+                  <FileCode2 class="size-3" />
+                </span>
+                <span class="min-w-0 flex-1 truncate">
+                  {{ example.title }}
+                </span>
+                <span class="hidden font-mono text-[8px] uppercase tracking-wide text-muted-foreground/55 group-hover:inline">
+                  {{ example.tag }}
                 </span>
               </button>
             </div>

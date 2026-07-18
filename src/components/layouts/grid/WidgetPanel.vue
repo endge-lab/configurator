@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { isEditorTabSurfaceVisible } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
 
 const props = withDefaults(defineProps<{
   position: 'left' | 'right'
@@ -86,7 +87,10 @@ const topWidgets = computed(() =>
   ),
 )
 
-const workspaceSettingsActive = computed(() => EndgeIDE.tabs.activeTabId.value === 'workspace-settings')
+const workspaceSettingsActive = computed(() => {
+  return EndgeIDE.tabs.activeTabId.value === 'workspace-settings'
+    && isEditorTabSurfaceVisible(widgetsState.value)
+})
 const workspaceSettingsAnchorId = computed(() => {
   return topWidgets.value.some(widget => widget.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
     ? ENDGE_IDE_RUNTIME_TREE_WIDGET_ID

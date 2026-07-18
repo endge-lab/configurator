@@ -406,4 +406,22 @@ definePreviewProps({ label: 'Preview label' })
     state.togglePanel('preview')
     expect(state.getActivePanelSizes()[0]).toBeCloseTo(0.8)
   })
+
+  it('opens one delete context menu for non-root nodes and closes it after removal', () => {
+    const state = new UIEditorDemoState()
+    expect(state.applySFCSource(SOURCE)).toBe(true)
+    const rootId = state.document.rootId
+    const childId = state.document.nodes[rootId]!.children[0]!
+
+    expect(state.openContextMenu(rootId, 40, 60)).toBe(false)
+    expect(state.contextMenu).toBeNull()
+
+    expect(state.openContextMenu(childId, 40, 60)).toBe(true)
+    expect(state.selectedNodeId).toBe(childId)
+    expect(state.contextMenu).toEqual({ nodeId: childId, x: 40, y: 60 })
+
+    state.removeNode(childId)
+    expect(state.contextMenu).toBeNull()
+    expect(state.document.nodes[childId]).toBeUndefined()
+  })
 })

@@ -99,16 +99,19 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     tag: 'DateTime',
     description: 'Renderer-neutral вывод даты и времени.',
     keywords: ['date', 'time'],
+    dynamicAttributes: ['value'],
   }),
   leafContract({
     tag: 'Number',
     description: 'Renderer-neutral вывод числового значения.',
     keywords: ['numeric', 'value'],
+    dynamicAttributes: ['value'],
   }),
   leafContract({
     tag: 'Icon',
     description: 'Базовый icon primitive.',
     keywords: ['symbol', 'glyph'],
+    dynamicAttributes: ['name', 'icon'],
   }),
   leafContract({
     tag: 'Badge',
@@ -122,6 +125,7 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     description: 'Минимальный status dot primitive.',
     keywords: ['status', 'indicator'],
     layout: { span: 2, rowSpan: 1 },
+    dynamicAttributes: ['tone', 'size'],
   }),
   {
     definitionRef: 'ui.grid',
@@ -194,6 +198,7 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     groupId: 'forms',
     description: 'Однострочное поле ввода.',
     keywords: ['field', 'control'],
+    dynamicAttributes: ['value', 'placeholder', 'type', 'min', 'max', 'step', 'readonly', 'disabled'],
   }),
   leafContract({
     tag: 'Textarea',
@@ -201,18 +206,21 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     description: 'Многострочное поле ввода.',
     keywords: ['field', 'multiline'],
     layout: { span: 12, rowSpan: 4 },
+    dynamicAttributes: ['value', 'placeholder', 'rows', 'readonly', 'disabled'],
   }),
   leafContract({
     tag: 'Checkbox',
     groupId: 'forms',
     description: 'Булево поле выбора.',
     keywords: ['field', 'boolean', 'toggle'],
+    dynamicAttributes: ['checked', 'label', 'readonly', 'disabled'],
   }),
   leafContract({
     tag: 'Select',
     groupId: 'forms',
     description: 'Поле выбора одного значения.',
     keywords: ['field', 'options', 'choice'],
+    dynamicAttributes: ['value', 'options', 'placeholder', 'multiple', 'readonly', 'disabled'],
   }),
 ]
 

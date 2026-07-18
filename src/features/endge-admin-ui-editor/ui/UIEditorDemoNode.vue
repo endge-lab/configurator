@@ -586,6 +586,19 @@ function onDoubleClick(event: MouseEvent): void {
   props.state.beginInlineEdit(props.nodeId)
 }
 
+function onContextMenu(event: MouseEvent): void {
+  if (props.preview || isInlineEditing.value) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  if (node.value?.kind === 'page') {
+    props.state.closeContextMenu()
+    return
+  }
+  props.state.openContextMenu(props.nodeId, event.clientX, event.clientY)
+}
+
 function onInlineEditInput(event: Event): void {
   const target = event.target
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -1510,6 +1523,7 @@ function getInsertStyle(): Record<string, string> | undefined {
       :draggable="!props.preview && !isInlineEditing && node.kind !== 'page' && !isGridPlacedNode"
       @click.stop="onSelect"
       @dblclick.stop="onDoubleClick"
+      @contextmenu="onContextMenu"
       @dragstart="onDragstart"
       @dragend="onDragend"
     >
@@ -1517,13 +1531,11 @@ function getInsertStyle(): Record<string, string> | undefined {
         v-if="!props.preview && isSelected && (!isGridPlacedNode || node.kind === 'page')"
         :label="selectionLabel"
         :size-label="getNodeSizeBadge(node)"
-        :show-delete="node.kind !== 'page' && !isInlineEditing"
         :show-handles="false"
         :label-placement="node.kind === 'page' ? 'inside' : 'outside'"
         :highlight-surface="node.kind === 'page'"
         :editing="isInlineEditing"
         :interactive-handles="[]"
-        @delete="props.state.removeNode(node.id)"
       />
 
       <div
@@ -1618,13 +1630,11 @@ function getInsertStyle(): Record<string, string> | undefined {
                   v-if="!props.preview && isPageGrid && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
                   :label="getSelectionLabel(child)"
                   :size-label="getNodeSizeBadge(child)"
-                  :show-delete="props.state.editingNodeId !== child.id"
                   :show-handles="props.state.editingNodeId !== child.id"
                   label-placement="outside"
                   :editing="props.state.editingNodeId === child.id"
                   :interactive-handles="['north-west', 'north', 'north-east', 'west', 'east', 'south-west', 'south', 'south-east']"
                   :drag-handles="[]"
-                  @delete="props.state.removeNode(child.id)"
                   @resize-handle="(handle, resizeEvent) => onPageChildSelectionChromeResize(child, handle, resizeEvent)"
                 />
               </div>

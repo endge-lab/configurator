@@ -20,7 +20,7 @@ import type { Component } from 'vue'
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 import { markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-import { showWidget } from '@/components/layouts/grid'
+import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid'
 
 import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
@@ -28,6 +28,7 @@ import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
+import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor.ts'
 import { RComponentTableEditor } from '@/features/endge-ide/domain/entities/RComponentTableEditor.ts'
@@ -380,6 +381,14 @@ export class EndgeIDETabs {
       meta: { icon: 'ti ti-world text-sky-500 text-xl' },
     }
     this.openTab(tabRef)
+    showWidget('project')
+
+    const widgets = getLayoutState().widgets.value
+    ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS.forEach((widgetId) => {
+      if (isStandaloneWorkspaceWidgetActive(widgets, widgetId)) {
+        hideWidget(widgetId)
+      }
+    })
   }
 
   /** Вкладка версий в единственном экземпляре; при повторном вызове - обновление payload и активация. */

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 import type { Component, CSSProperties } from 'vue'
 
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Trash2 } from 'lucide-vue-next'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { ensureUIEditorDemoCoreRenderersRegistered } from '@/features/endge-admin-ui-editor/entities/ui-editor-core-renderers'
 import { uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
@@ -19,6 +21,19 @@ const SPLIT_KEYBOARD_STEP = 0.02
 const activeDividerIndex = ref<number | null>(null)
 const activePanels = computed(() => uiEditorDemoState.activePanels)
 const panelSizes = computed(() => uiEditorDemoState.getActivePanelSizes())
+const contextMenuButtonRef = ref<HTMLButtonElement | null>(null)
+const contextMenuStyle = computed<CSSProperties>(() => {
+  const menu = uiEditorDemoState.contextMenu
+  if (!menu) {
+    return {}
+  }
+  const maxX = typeof window === 'undefined' ? menu.x : Math.max(8, window.innerWidth - 168)
+  const maxY = typeof window === 'undefined' ? menu.y : Math.max(8, window.innerHeight - 52)
+  return {
+    left: `${Math.min(menu.x, maxX)}px`,
+    top: `${Math.min(menu.y, maxY)}px`,
+  }
+})
 
 function isEditableTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement
@@ -31,6 +46,10 @@ function handleEditorKeydown(event: KeyboardEvent): void {
   }
 
   if (event.key === 'Escape') {
+    if (uiEditorDemoState.contextMenu) {
+      uiEditorDemoState.closeContextMenu()
+      return
+    }
     if (uiEditorDemoState.editingNodeId) {
       uiEditorDemoState.cancelInlineEdit()
       return
@@ -46,7 +65,7 @@ function handleEditorKeydown(event: KeyboardEvent): void {
     return
   }
 
-  if (event.key !== 'Delete' && event.key !== 'Backspace') {
+  if (event.key !== 'Backspace') {
     return
   }
   if (event.repeat) {
@@ -61,6 +80,24 @@ function handleEditorKeydown(event: KeyboardEvent): void {
   event.preventDefault()
   uiEditorDemoState.removeNode(selectedNodeId)
 }
+
+function removeContextNode(): void {
+  const nodeId = uiEditorDemoState.contextMenu?.nodeId
+  if (nodeId) {
+    uiEditorDemoState.removeNode(nodeId)
+  }
+}
+
+watch(
+  () => uiEditorDemoState.contextMenu,
+  async (menu) => {
+    if (!menu) {
+      return
+    }
+    await nextTick()
+    contextMenuButtonRef.value?.focus()
+  },
+)
 
 function updatePanelBoundary(clientX: number, persist: boolean): void {
   const container = splitContainerRef.value
@@ -155,6 +192,7 @@ function panelStyle(index: number): CSSProperties {
 onMounted(() => window.addEventListener('keydown', handleEditorKeydown))
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEditorKeydown)
+  uiEditorDemoState.closeContextMenu()
   endSplitResize()
 })
 </script>
@@ -196,6 +234,36 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="uiEditorDemoState.contextMenu"
+        class="fixed inset-0 z-[120]"
+        @pointerdown="uiEditorDemoState.closeContextMenu()"
+        @contextmenu.prevent="uiEditorDemoState.closeContextMenu()"
+      >
+        <div
+          role="menu"
+          aria-label="Действия элемента"
+          class="fixed w-40 border border-border/75 bg-popover p-1 text-popover-foreground shadow-lg"
+          :style="contextMenuStyle"
+          @pointerdown.stop
+          @contextmenu.stop.prevent
+        >
+          <button
+            ref="contextMenuButtonRef"
+            type="button"
+            role="menuitem"
+            class="flex h-8 w-full items-center gap-2 px-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none"
+            @click="removeContextNode"
+          >
+            <Trash2 class="size-3.5" />
+            <span>Удалить</span>
+            <kbd class="ml-auto font-mono text-[9px] text-muted-foreground">⌫</kbd>
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 

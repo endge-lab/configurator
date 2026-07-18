@@ -3,8 +3,8 @@
 import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { Loader2, Save, Settings2 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { Loader2, Save, Settings2, SlidersHorizontal } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,6 +38,11 @@ const documentModel = computed(
   () => (tabs.documentModel.value as { isSystem?: boolean } | null) ?? null,
 )
 const isSystem = computed(() => documentModel.value?.isSystem === true)
+const activeTab = ref<'general' | 'configuration'>('general')
+const tabButtons = [
+  { value: 'general', icon: Settings2, label: 'Основное' },
+  { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
+] as const
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
   set: (value) => {
@@ -71,18 +76,24 @@ async function save(): Promise<void> {
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip>
+          <Tooltip v-for="item in tabButtons" :key="item.value">
             <TooltipTrigger as-child>
               <Button
                 size="icon"
                 variant="ghost"
-                class="h-7 w-7 bg-background shadow-sm"
-                aria-label="Основное"
+                class="h-7 w-7"
+                :class="
+                  activeTab === item.value
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                :aria-label="item.label"
+                @click="activeTab = item.value"
               >
-                <Settings2 class="size-4" />
+                <component :is="item.icon" class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ item.label }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -111,68 +122,62 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <ScrollArea class="min-h-0 flex-1">
-      <div class="mx-auto max-w-3xl space-y-8 p-6">
-        <section class="space-y-4">
-          <div class="space-y-2">
-            <Label for="tenant-identity">Identity</Label>
-            <Input
-              id="tenant-identity"
-              v-model="editor.identity"
-              :disabled="isSystem"
-              placeholder="tenant-default"
-            />
+    <div class="min-h-0 flex-1 bg-muted/25 p-4">
+      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-[#2D324A]">
+        <ScrollArea v-if="activeTab === 'general'" class="h-full">
+          <div class="w-full p-6 lg:p-8">
+            <section class="max-w-2xl space-y-4">
+              <div class="space-y-2">
+                <Label for="tenant-identity">Identity</Label>
+                <Input
+                  id="tenant-identity"
+                  v-model="editor.identity"
+                  :disabled="isSystem"
+                  placeholder="tenant-default"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label for="tenant-display-name">Display name</Label>
+                <Input
+                  id="tenant-display-name"
+                  v-model="editor.displayName"
+                  :disabled="isSystem"
+                  placeholder="Основной тенант"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label for="tenant-code">Код</Label>
+                <Input
+                  id="tenant-code"
+                  v-model="editor.code"
+                  :disabled="isSystem"
+                  placeholder="TENANT_DEFAULT"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label for="tenant-description">Описание</Label>
+                <Textarea
+                  id="tenant-description"
+                  v-model="editor.description"
+                  :disabled="isSystem"
+                  :rows="4"
+                  placeholder="Описание тенанта"
+                />
+              </div>
+            </section>
           </div>
-          <div class="space-y-2">
-            <Label for="tenant-display-name">Display name</Label>
-            <Input
-              id="tenant-display-name"
-              v-model="editor.displayName"
-              :disabled="isSystem"
-              placeholder="Основной тенант"
-            />
-          </div>
-          <div class="space-y-2">
-            <Label for="tenant-code">Код</Label>
-            <Input
-              id="tenant-code"
-              v-model="editor.code"
-              :disabled="isSystem"
-              placeholder="TENANT_DEFAULT"
-            />
-          </div>
-          <div class="space-y-2">
-            <Label for="tenant-description">Описание</Label>
-            <Textarea
-              id="tenant-description"
-              v-model="editor.description"
-              :disabled="isSystem"
-              :rows="4"
-              placeholder="Описание тенанта"
-            />
-          </div>
-        </section>
+        </ScrollArea>
 
-        <Separator />
-
-        <section class="flex h-[42rem] min-h-[32rem] flex-col gap-3">
-          <div>
-            <h2 class="text-sm font-semibold">
-              Конфигурация
-            </h2>
-            <p class="text-xs text-muted-foreground">
-              Переопределения конфигурации для этого тенанта.
-            </p>
-          </div>
+        <div v-else class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor
             v-model="configuration"
-            class="min-h-0 flex-1"
+            class="min-h-0"
             variant="contribution"
             :upstream="upstreamConfiguration"
             :disabled="isSystem"
           />
-        </section>
+        </div>
       </div>
-    </ScrollArea>
+    </div>
   </SourceDocumentEditorShell>
 </template>

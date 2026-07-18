@@ -642,6 +642,7 @@ export class UIEditorDemoState {
   public interactionNodeId: string | null = null
   public dragPayload: UIEditorDragPayload | null = null
   public showGridOverlay = false
+  public contextMenu: { nodeId: string, x: number, y: number } | null = null
 
   public constructor() {
     this.restorePersistedState()
@@ -662,6 +663,7 @@ export class UIEditorDemoState {
     this.interactionNodeId = null
     this.dragPayload = null
     this.showGridOverlay = false
+    this.contextMenu = null
     this.persistState()
   }
 
@@ -858,6 +860,26 @@ export class UIEditorDemoState {
     this.persistState()
   }
 
+  public openContextMenu(nodeId: string, clientX: number, clientY: number): boolean {
+    const node = this.getNode(nodeId)
+    if (!node || nodeId === this.document.rootId || this.sourceDiagnostics.length > 0) {
+      this.contextMenu = null
+      return false
+    }
+
+    this.selectNode(nodeId)
+    this.contextMenu = {
+      nodeId,
+      x: Math.max(8, clientX),
+      y: Math.max(8, clientY),
+    }
+    return true
+  }
+
+  public closeContextMenu(): void {
+    this.contextMenu = null
+  }
+
   public addNode(
     definitionRef: string,
     parentId?: string,
@@ -999,6 +1021,8 @@ export class UIEditorDemoState {
     if (!nodeId || nodeId === this.document.rootId) {
       return
     }
+
+    this.closeContextMenu()
 
     if (this.editingNodeId === nodeId) {
       this.cancelInlineEdit()
