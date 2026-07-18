@@ -6,14 +6,28 @@ import type {
 } from '@endge/core'
 
 export type UIEditorBreakpoint = 'desktop' | 'tablet' | 'mobile'
-export type UIEditorCanvasMode = 'editor' | 'preview'
-export type UIEditorWorkspaceMode = 'visual' | 'split' | 'source'
+export type UIEditorPanel = 'visual' | 'source' | 'preview'
+export type UIEditorPanelLayoutKey
+  = | 'visual'
+    | 'source'
+    | 'preview'
+    | 'visual-source'
+    | 'visual-preview'
+    | 'source-preview'
+    | 'visual-source-preview'
+
+export type UIEditorPanelVisibility = Record<UIEditorPanel, boolean>
+export type UIEditorPanelLayouts = Record<UIEditorPanelLayoutKey, number[]>
 
 export type UIEditorNodeKind = UIPrimitiveKind
 
 export interface UIEditorPageProps extends Record<string, unknown> {
   title: string
   layoutMode: 'flex' | 'grid'
+  direction: 'row' | 'column'
+  align: string | null
+  justify: string | null
+  wrap: boolean
   columns: number
   gap: number
   padding: number
@@ -22,6 +36,9 @@ export interface UIEditorPageProps extends Record<string, unknown> {
 
 export interface UIEditorFlexProps extends Record<string, unknown> {
   direction: 'row' | 'column'
+  align: string | null
+  justify: string | null
+  wrap: boolean
   gap: number
   padding: number
 }
@@ -49,6 +66,17 @@ export interface UIEditorTextProps extends Record<string, unknown> {
 
 export interface UIEditorButtonProps extends Record<string, unknown> {
   label: string
+}
+
+export type UIEditorSFCTextSegment
+  = | { kind: 'text', value: string }
+    | { kind: 'expression', expression: string }
+
+export interface UIEditorSFCAttributeBinding {
+  name: string
+  expression: string
+  resolved: boolean
+  previewValue?: unknown
 }
 
 export interface UIEditorNodePropsMap {

@@ -4,12 +4,12 @@ import { markRaw } from 'vue'
 
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
 import Domain_Widget from '@/features/endge-ide/ui/widgets/Domain_Widget.vue'
-import Errors_Widget from '@/features/endge-ide/ui/widgets/Errors_Widget.vue'
 import Events_Widget from '@/features/endge-ide/ui/widgets/Events_Widget.vue'
-import Inspector_Widget from '@/features/endge-ide/ui/widgets/Inspector_Widget.vue'
+import Problems_Widget from '@/features/endge-ide/ui/widgets/Problems_Widget.vue'
 import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
@@ -45,24 +45,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     permanent: true,
     defaultPosition: 'left',
     allowedPositions: ['left'],
-  },
-  {
-    id: 'inspector',
-    title: 'Инспектор',
-    icon: 'Glasses',
-    content: 'component',
-    defaultComponent: markRaw(Inspector_Widget),
-    singleton: true,
-    defaultPosition: 'right',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 300,
-      maxWidth: 600,
-      minHeight: 400,
-      maxHeight: 800,
-      defaultWidth: 400,
-      defaultHeight: 600,
-    },
   },
   {
     id: 'versions',
@@ -101,22 +83,15 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     },
   },
   {
-    id: 'errors',
-    title: 'Ошибки',
+    id: ENDGE_IDE_PROBLEMS_WIDGET_ID,
+    title: 'Problems',
     icon: 'ShieldAlert',
     content: 'component',
-    defaultComponent: markRaw(Errors_Widget),
+    defaultComponent: markRaw(Problems_Widget),
     singleton: true,
-    defaultPosition: 'bottom',
-    allowedPositions: ['bottom', 'left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 300,
-      maxWidth: 800,
-      minHeight: 200,
-      maxHeight: 500,
-      defaultWidth: 600,
-      defaultHeight: 300,
-    },
+    permanent: true,
+    defaultPosition: 'left',
+    allowedPositions: ['left'],
   },
   // {
   //   id: 'terminal',

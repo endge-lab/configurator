@@ -14,7 +14,9 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 interface ScriptEditorHandle {
@@ -24,6 +26,7 @@ interface ScriptEditorHandle {
 const props = defineProps<{ tabContext?: { editor?: RComputationEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = ref<'general' | 'implementation' | 'diagnostics'>('implementation')
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('computation', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
 function applySourceText(value: string): void {
@@ -146,15 +149,10 @@ async function save(): Promise<void> {
       <ComputationSourceEditor ref="sourceEditorRef" :model-value="editor.source" @update:model-value="applySourceText" />
     </div>
 
-    <div v-else class="min-h-0 flex-1 overflow-auto bg-muted/20 p-5">
-      <div v-if="editor.diagnostics.length" class="max-w-3xl space-y-2">
-        <div v-for="message in editor.diagnostics" :key="message" class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
-          {{ message }}
-        </div>
-      </div>
-      <div v-else class="text-sm text-muted-foreground">
-        Ошибок нет.
-      </div>
-    </div>
+    <EntityProblemsPanel
+      v-else-if="diagnosticsEntityRef"
+      :entity-ref="diagnosticsEntityRef"
+      class="min-h-0 flex-1"
+    />
   </SourceDocumentEditorShell>
 </template>

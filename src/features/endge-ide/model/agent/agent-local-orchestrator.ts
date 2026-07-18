@@ -95,11 +95,6 @@ const WIDGET_ALIASES: Array<{
   summary: string;
 }> = [
   {
-    widgetId: "inspector",
-    patterns: [/\bинспектор\b/i, /\binspector\b/i],
-    summary: "Открываю виджет Инспектор.",
-  },
-  {
     widgetId: "versions",
     patterns: [/\bверс(и|и)и\b/i, /\bversions?\b/i],
     summary: "Открываю виджет Версии.",

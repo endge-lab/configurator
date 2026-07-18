@@ -31,7 +31,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import DataViewSourceEditor from '@/features/endge-ide/ui/components/DataViewSourceEditor.vue'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 
@@ -76,7 +78,6 @@ const previewInput = ref(`{
   ]
 }`)
 const previewOutput = ref('')
-const previewDiagnostics = ref<unknown[]>([])
 const runningPreview = ref(false)
 const sourceEditorRef = ref<DataViewSourceEditorHandle | null>(null)
 const outputState = ref<DataViewOutputState>({
@@ -107,13 +108,7 @@ const artifactJson = computed(() => {
   return JSON.stringify(result.artifact ?? null, null, 2)
 })
 
-const diagnosticsJson = computed(() => {
-  const diagnostics = [
-    ...(editor.value?.diagnostics ?? []),
-    ...previewDiagnostics.value,
-  ]
-  return JSON.stringify(diagnostics, null, 2)
-})
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('data-view', editor.value))
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -138,7 +133,6 @@ async function runPreview(): Promise<void> {
   }
 
   runningPreview.value = true
-  previewDiagnostics.value = []
   try {
     const input = JSON.parse(previewInput.value || '{}')
     const dataView = Endge.domain.getDataView(current.id ?? current.identity)
@@ -152,7 +146,6 @@ async function runPreview(): Promise<void> {
     const artifact = Endge.program.getDataViewArtifact(
       dataView.id ?? dataView.identity,
     )
-    previewDiagnostics.value = artifact?.diagnostics ?? []
     if (!artifact || artifact.status === 'error') {
       const message
         = artifact?.diagnostics[0]?.message ?? 'DataView source содержит ошибки'
@@ -414,10 +407,11 @@ async function runPreview(): Promise<void> {
         v-else-if="activeTab === 'artifact'"
         class="min-h-0 flex-1 overflow-auto bg-muted/30 p-4 text-xs"
       >{{ artifactJson }}</pre>
-      <pre
-        v-else
-        class="min-h-0 flex-1 overflow-auto bg-muted/30 p-4 text-xs"
-      >{{ diagnosticsJson }}</pre>
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        class="min-h-0 flex-1"
+      />
     </div>
   </SourceDocumentEditorShell>
 </template>

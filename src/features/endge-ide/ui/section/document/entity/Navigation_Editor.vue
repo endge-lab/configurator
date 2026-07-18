@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
@@ -22,6 +23,8 @@ const props = defineProps<{
 }>()
 
 const editor = computed<RNavigationEditor | null>(() => props.tabContext?.editor ?? null)
+const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { isSystem?: boolean } | null)
+const isSystem = computed(() => documentModel.value?.isSystem === true)
 const selectedNodeId = ref<string | null>(null)
 const collapsedGroupIds = ref<Set<string>>(new Set())
 const draggedNodeId = ref<string | null>(null)
@@ -401,12 +404,29 @@ async function save(): Promise<void> {
         </div>
 
         <div class="flex items-center gap-2">
-          <SaveDocumentButton :loading="isBusy" @click="save" />
+          <SaveDocumentButton :loading="isBusy" :disabled="isSystem" @click="save" />
         </div>
       </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto p-3">
+      <Card class="mb-3 p-4">
+        <div class="mb-3 text-sm font-semibold">Основное</div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="space-y-2">
+            <Label>Идентификатор</Label>
+            <Input v-model="editor.identity" :disabled="isSystem" />
+          </div>
+          <div class="space-y-2">
+            <Label>Название</Label>
+            <Input v-model="editor.displayName" :disabled="isSystem" />
+          </div>
+        </div>
+        <div class="mt-4 space-y-2">
+          <Label>Описание</Label>
+          <Textarea v-model="editor.description" :disabled="isSystem" :rows="2" />
+        </div>
+      </Card>
       <div class="grid min-h-full items-start gap-3 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)]">
         <Card class="flex min-h-0 overflow-visible py-0">
           <div class="flex h-full min-h-0 flex-col">

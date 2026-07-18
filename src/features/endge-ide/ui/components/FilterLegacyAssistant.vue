@@ -2,11 +2,10 @@
 import type { FilterFieldItemSchema } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { FileJson, Loader2 } from 'lucide-vue-next'
+import { FileJson } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -18,15 +17,10 @@ import {
 } from '@/components/ui/select'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 
-const props = defineProps<{
-  tabContext?: { document?: { editor?: any; previewModel?: any; component?: any } }
-}>()
-
-const filter = computed(() => props.tabContext?.document?.previewModel ?? props.tabContext?.document?.component ?? null)
-const editor = computed(() => props.tabContext?.document?.editor ?? null)
+const editor = computed<any>(() => EndgeIDE.tabs.documentEditorModel.value ?? null)
 
 /** Источник полей: редактор (реактивный выбор словаря) или модель */
-const fieldsSource = computed(() => editor.value ?? filter.value)
+const fieldsSource = computed(() => editor.value)
 
 /** Список полей из источника */
 const fieldsList = computed<FilterFieldItemSchema[]>(() => {
@@ -69,7 +63,7 @@ const LS_FILTERS_KEY = 'endge:filters'
 
 /** Пространства, в которых этот фильтр есть в localStorage (ключи вида identity.space) */
 const usedInSpaces = computed(() => {
-  const id = filter.value?.identity ?? filter.value?.id
+  const id = editor.value?.identity ?? editor.value?.id
   if (!id) return []
   try {
     const raw = localStorage.getItem(LS_FILTERS_KEY)
@@ -261,31 +255,15 @@ const samplePaths = computed(() => {
   return collectPaths(data).filter(p => p.path !== '')
 })
 
-async function save(): Promise<void> {
-  await EndgeIDE.tabs.save()
-}
 </script>
 
 <template>
-  <div v-if="!filter" class="flex items-center justify-center h-full text-sm text-muted-foreground">
+  <div v-if="!editor" class="flex items-center justify-center h-full text-sm text-muted-foreground">
     Выберите документ
   </div>
   <div v-else class="flex flex-col h-full">
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
-        <p class="text-xs text-muted-foreground">
-          Основные поля фильтра. Поля (key, label, словари и т.д.) редактируются в основной панели.
-        </p>
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Идентификатор</label>
-          <Input v-model="filter.identity" placeholder="например: schedule-filter" />
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Название</label>
-          <Input v-model="filter.displayName" placeholder="Отображаемое имя" />
-        </div>
-
-
         <!-- Пример сущности словаря: только если выбрано поле, оно - словарь и заданы набор + словарь -->
         <div
           v-if="currentVocabField"
@@ -387,11 +365,7 @@ async function save(): Promise<void> {
           </ul>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <Button class="flex-1 min-w-0" :disabled="EndgeIDE.busy.value" @click="save">
-          <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin mr-2" />
-          {{ EndgeIDE.busy.value ? 'Сохранение…' : 'Сохранить' }}
-        </Button>
+      <div class="flex items-center justify-end gap-2">
         <TooltipProvider :delay-duration="300">
           <Tooltip>
             <TooltipTrigger as-child>

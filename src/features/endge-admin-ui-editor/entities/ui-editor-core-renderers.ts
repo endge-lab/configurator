@@ -1,5 +1,6 @@
 import { Endge } from '@endge/core'
 
+import UIEditorNodeRendererBadge from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererBadge.vue'
 import UIEditorNodeRendererButton from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererButton.vue'
 import UIEditorNodeRendererContainer from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererContainer.vue'
 import UIEditorNodeRendererHost from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererHost.vue'
@@ -48,6 +49,7 @@ export function ensureUIEditorDemoCoreRenderersRegistered(): void {
   })
 
   registerRendererPair('ui.button', 'ui.button.admin.main', 'ui.button.runtime.main', UIEditorNodeRendererButton)
+  registerRendererPair('sfc.badge', 'sfc.badge.admin.main', 'sfc.badge.runtime.main', UIEditorNodeRendererBadge)
 
   for (const definitionRef of ['ui.box', 'ui.stack', 'ui.inline', 'ui.grid', 'ui.form', 'ui.nav-panel']) {
     registerRendererPair(definitionRef, `${definitionRef}.admin.main`, `${definitionRef}.runtime.main`, UIEditorNodeRendererContainer)

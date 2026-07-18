@@ -1,13 +1,27 @@
-import type { UIEditorDocument, UIEditorNode, UIEditorNodeLayout } from '@/features/endge-admin-ui-editor/types'
 import type {
+  UIEditorDocument,
+  UIEditorNode,
+  UIEditorNodeLayout,
+  UIEditorSFCAttributeBinding,
+  UIEditorSFCTextSegment,
+} from '@/features/endge-admin-ui-editor/types'
+import type {
+  ComponentSFCPreviewProps,
   RComponentSFC_AST_Attribute,
   RComponentSFC_AST_ElementNode,
   RComponentSFC_AST_TemplateNode,
 } from '@endge/core'
+import type { SFCVueRenderContext } from '@endge/vue'
 
-import { parseComponentSFC } from '@endge/core'
+import { compileComponentSFC, parseComponentSFC } from '@endge/core'
+import { evaluateSFCExpression } from '@endge/vue'
 
 import { printUIEditorDocumentSFC, printUIEditorDocumentTemplate } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
+import {
+  UI_EDITOR_SFC_ATTRIBUTE_BINDINGS_META_KEY,
+  UI_EDITOR_SFC_CONTENT_PREVIEW_META_KEY,
+  UI_EDITOR_SFC_TEXT_SEGMENTS_META_KEY,
+} from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import {
   getUIEditorSFCDefinitionContract,
   UI_EDITOR_SFC_DEFINITION_CONTRACTS,
@@ -22,6 +36,7 @@ interface ProjectionContext {
   diagnostics: string[]
   nodes: Record<string, UIEditorNode>
   previousByPath: Map<string, UIEditorNode>
+  previewContext: SFCVueRenderContext
 }
 
 const DOCUMENT_VERSION = 6
@@ -32,6 +47,7 @@ export function projectUIEditorDocumentFromSFC(
   previousDocument?: UIEditorDocument,
 ): UIEditorSFCSourceProjection {
   const parsed = parseComponentSFC(source)
+  const compiled = compileComponentSFC(source)
   const parserErrors = parsed.diagnostics
     .filter(diagnostic => diagnostic.severity === 'error')
     .map(diagnostic => diagnostic.message)
@@ -61,6 +77,7 @@ export function projectUIEditorDocumentFromSFC(
     diagnostics: [],
     nodes: {},
     previousByPath: indexDocumentByPath(previousDocument),
+    previewContext: createPreviewRenderContext(compiled.previewProps),
   }
   const root = projectElement(roots[0], '0', context, true)
 
@@ -101,7 +118,7 @@ function projectElement(
   suggestedRowStart = 1,
   parentTag: string | null = null,
 ): UIEditorNode | null {
-  const direction = readAttribute(ast.attributes, 'direction') ?? 'column'
+  const direction = readAttribute(ast.attributes, 'direction') ?? 'row'
   const contract = isRoot
     ? null
     : resolveContract(ast.tag, direction)
@@ -110,13 +127,13 @@ function projectElement(
     context.diagnostics.push(`Тег <${ast.tag}> пока не поддерживается visual editor.`)
     return null
   }
-  if (ast.directives.length > 0 || ast.attributes.some(attribute => attribute.dynamic)) {
-    context.diagnostics.push(`<${ast.tag}> содержит dynamic binding или directive, недоступную visual editor.`)
+  if (ast.directives.length > 0) {
+    context.diagnostics.push(`<${ast.tag}> содержит directive, недоступную visual editor.`)
     return null
   }
 
   const allowedAttributes = ast.tag === 'Flex'
-    ? new Set(['direction', 'gap', 'p'])
+    ? new Set(['direction', 'gap', 'p', 'align', 'justify', 'wrap'])
     : ast.tag === 'Grid'
       ? new Set(['columns', 'gap', 'p', 'autoRows'])
       : ast.tag === 'Box'
@@ -128,7 +145,19 @@ function projectElement(
     allowedAttributes.add('rowStart')
     allowedAttributes.add('rowSpan')
   }
-  const unsupportedAttribute = ast.attributes.find(attribute => !allowedAttributes.has(attribute.name))
+  const dynamicAttributes = new Set(contract?.dynamicAttributes ?? [])
+  const unsupportedDynamicAttribute = ast.attributes.find(
+    attribute => attribute.dynamic && !dynamicAttributes.has(attribute.name),
+  )
+  if (unsupportedDynamicAttribute) {
+    context.diagnostics.push(
+      `<${ast.tag}> содержит dynamic binding :${unsupportedDynamicAttribute.name}, недоступную visual editor.`,
+    )
+    return null
+  }
+  const unsupportedAttribute = ast.attributes.find(
+    attribute => !attribute.dynamic && !allowedAttributes.has(attribute.name),
+  )
   if (unsupportedAttribute) {
     context.diagnostics.push(`Атрибут "${unsupportedAttribute.name}" тега <${ast.tag}> пока не поддерживается visual editor.`)
     return null
@@ -154,13 +183,42 @@ function projectElement(
     : createContractNode(id, ast, contract!, layout!)
   context.nodes[id] = node
 
+  const attributeBindings = projectAttributeBindings(ast.attributes, context)
+  if (attributeBindings.length > 0) {
+    node.meta = {
+      ...(node.meta ?? {}),
+      [UI_EDITOR_SFC_ATTRIBUTE_BINDINGS_META_KEY]: attributeBindings,
+    }
+  }
+
   if (ast.tag === 'Text') {
-    const text = readStaticText(ast.children, context)
-    if (text == null) {
+    const textContent = readTextContent(ast.tag, ast.children, context)
+    if (!textContent) {
       return null
     }
     if (node.kind === 'text') {
-      node.props.text = text
+      node.props.text = textContent.preview
+      if (textContent.segments.some(segment => segment.kind === 'expression')) {
+        node.meta = {
+          ...(node.meta ?? {}),
+          [UI_EDITOR_SFC_TEXT_SEGMENTS_META_KEY]: textContent.segments,
+        }
+      }
+    }
+    return node
+  }
+
+  if (ast.tag === 'Badge') {
+    const content = readTextContent(ast.tag, ast.children, context)
+    if (!content) {
+      return null
+    }
+    node.meta = {
+      ...(node.meta ?? {}),
+      [UI_EDITOR_SFC_CONTENT_PREVIEW_META_KEY]: content.preview,
+      ...(content.segments.some(segment => segment.kind === 'expression')
+        ? { [UI_EDITOR_SFC_TEXT_SEGMENTS_META_KEY]: content.segments }
+        : {}),
     }
     return node
   }
@@ -210,6 +268,10 @@ function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEdito
     props: {
       title: 'SFC Page',
       layoutMode,
+      direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
+      align: readAttribute(ast.attributes, 'align'),
+      justify: readAttribute(ast.attributes, 'justify'),
+      wrap: hasAttribute(ast.attributes, 'wrap'),
       columns: layoutMode === 'grid' ? readNumberAttribute(ast.attributes, 'columns', 12) : 12,
       gap: readPixelAttribute(ast.attributes, 'gap', 10),
       padding: readPixelAttribute(ast.attributes, 'p', 10),
@@ -229,7 +291,10 @@ function createContractNode(
   const props = { ...contract.defaultProps }
   if (contract.kind === 'flex') {
     Object.assign(props, {
-      direction: readAttribute(ast.attributes, 'direction') === 'row' ? 'row' : 'column',
+      direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
+      align: readAttribute(ast.attributes, 'align'),
+      justify: readAttribute(ast.attributes, 'justify'),
+      wrap: hasAttribute(ast.attributes, 'wrap'),
       gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
       padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
     })
@@ -267,15 +332,115 @@ function resolveContract(tag: string, direction: string) {
   return UI_EDITOR_SFC_DEFINITION_CONTRACTS.find(contract => contract.tag === tag) ?? null
 }
 
-function readStaticText(
+function readTextContent(
+  tag: string,
   children: RComponentSFC_AST_TemplateNode[],
   context: ProjectionContext,
-): string | null {
-  if (children.some(child => child.kind !== 'text')) {
-    context.diagnostics.push('<Text> поддерживает только статический текст без interpolation.')
+): { preview: string, segments: UIEditorSFCTextSegment[] } | null {
+  if (children.some(child => child.kind === 'element')) {
+    context.diagnostics.push(`<${tag}> поддерживает только текст и interpolation без вложенных элементов.`)
     return null
   }
-  return children.map(child => child.kind === 'text' ? child.content : '').join('').trim()
+
+  const segments = children.map<UIEditorSFCTextSegment>((child) => {
+    if (child.kind === 'interpolation') {
+      return { kind: 'expression', expression: child.expression.trim() }
+    }
+    return { kind: 'text', value: child.kind === 'text' ? child.content : '' }
+  })
+  trimTextSegmentEdges(segments)
+  const normalizedSegments = segments.filter(segment => segment.kind === 'expression' || segment.value.length > 0)
+  const preview = normalizedSegments.map((segment) => {
+    if (segment.kind === 'text') {
+      return segment.value
+    }
+    const value = evaluateSFCExpression(segment.expression, context.previewContext)
+    return value === undefined
+      ? `{{ ${segment.expression} }}`
+      : formatPreviewValue(value)
+  }).join('')
+
+  return { preview, segments: normalizedSegments }
+}
+
+function projectAttributeBindings(
+  attributes: RComponentSFC_AST_Attribute[],
+  context: ProjectionContext,
+): UIEditorSFCAttributeBinding[] {
+  return attributes
+    .filter(attribute => attribute.dynamic)
+    .map((attribute) => {
+      const expression = (attribute.value ?? '').trim()
+      const previewValue = evaluateSFCExpression(expression, context.previewContext)
+      return {
+        name: attribute.name,
+        expression,
+        resolved: previewValue !== undefined,
+        ...(previewValue !== undefined ? { previewValue } : {}),
+      }
+    })
+}
+
+function trimTextSegmentEdges(segments: UIEditorSFCTextSegment[]): void {
+  const first = segments[0]
+  if (first?.kind === 'text') {
+    first.value = first.value.trimStart()
+  }
+  const last = segments[segments.length - 1]
+  if (last?.kind === 'text') {
+    last.value = last.value.trimEnd()
+  }
+}
+
+function formatPreviewValue(value: unknown): string {
+  if (value == null) {
+    return ''
+  }
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    }
+    catch {
+      return String(value)
+    }
+  }
+  return String(value)
+}
+
+function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | null): SFCVueRenderContext {
+  return {
+    props: materializeLiteralPreviewProps(previewProps),
+    locals: {},
+    iteration: null,
+    renderVersion: 0,
+    host: null,
+    runtimeState: null,
+    componentStack: [],
+    consumerScope: 'ui-editor-preview',
+    styleArtifacts: [],
+    styleParent: undefined,
+    styleSiblings: [],
+    styleSiblingCount: 0,
+    styleOwnerScopeId: undefined,
+    runtimeScopeIds: [],
+  }
+}
+
+function materializeLiteralPreviewProps(previewProps: ComponentSFCPreviewProps | null): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(previewProps ?? {}).filter(([, value]) => !isPreviewRuntimeReference(value)),
+  )
+}
+
+function isPreviewRuntimeReference(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+  const type = (value as { type?: unknown }).type
+  return type === 'store' || type === 'data'
 }
 
 function semanticChildren(nodes: RComponentSFC_AST_TemplateNode[]): RComponentSFC_AST_TemplateNode[] {
@@ -284,6 +449,10 @@ function semanticChildren(nodes: RComponentSFC_AST_TemplateNode[]): RComponentSF
 
 function readAttribute(attributes: RComponentSFC_AST_Attribute[], name: string): string | null {
   return attributes.find(attribute => attribute.name === name)?.value ?? null
+}
+
+function hasAttribute(attributes: RComponentSFC_AST_Attribute[], name: string): boolean {
+  return attributes.some(attribute => attribute.name === name)
 }
 
 function readPixelAttribute(

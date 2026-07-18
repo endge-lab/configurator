@@ -34,6 +34,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -47,6 +49,7 @@ const props = defineProps<{
 
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = ref<'general' | 'content' | 'diagnostics'>('content')
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('mock', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 const monacoLanguage = computed(() =>
   editor.value?.contentType === 'text/plain' ? 'plaintext' : 'json',
@@ -176,15 +179,13 @@ async function save(): Promise<void> {
                     ? 'bg-background shadow-sm'
                     : 'text-muted-foreground'
                 "
-                :aria-label="`Диагностика: ${editor.diagnostics.length}`"
+                aria-label="Диагностика"
                 @click="activeTab = 'diagnostics'"
               >
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              Диагностика: {{ editor.diagnostics.length }}
-            </TooltipContent>
+            <TooltipContent>Диагностика</TooltipContent>
           </Tooltip>
         </div>
 
@@ -356,19 +357,10 @@ async function save(): Promise<void> {
       </div>
     </div>
 
-    <div v-else class="min-h-0 flex-1 overflow-auto bg-muted/20 p-5">
-      <div v-if="editor.diagnostics.length" class="max-w-3xl space-y-2">
-        <div
-          v-for="message in editor.diagnostics"
-          :key="message"
-          class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm"
-        >
-          {{ message }}
-        </div>
-      </div>
-      <div v-else class="text-sm text-muted-foreground">
-        Ошибок нет.
-      </div>
-    </div>
+    <EntityProblemsPanel
+      v-else-if="diagnosticsEntityRef"
+      :entity-ref="diagnosticsEntityRef"
+      class="min-h-0 flex-1"
+    />
   </SourceDocumentEditorShell>
 </template>

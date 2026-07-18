@@ -26,6 +26,7 @@ export interface UIEditorSFCDefinitionContract {
   groupDescription: string
   kind: Exclude<UIEditorNodeKind, 'page'>
   supportsChildren: boolean
+  dynamicAttributes?: readonly string[]
   accentClass: string
   defaultProps: Record<string, unknown>
   defaultLayout: UIEditorNodeLayout
@@ -45,6 +46,8 @@ function leafContract(input: {
   description: string
   keywords: string[]
   layout?: Partial<UIEditorNodeLayout>
+  supportsChildren?: boolean
+  dynamicAttributes?: readonly string[]
 }): UIEditorSFCDefinitionContract {
   const groupId = input.groupId ?? 'content'
   return {
@@ -58,7 +61,8 @@ function leafContract(input: {
       ? 'Базовые renderer-neutral поля Endge SFC.'
       : 'Базовые renderer-neutral элементы содержимого Endge SFC.',
     kind: 'custom-component',
-    supportsChildren: false,
+    supportsChildren: input.supportsChildren ?? false,
+    dynamicAttributes: input.dynamicAttributes,
     accentClass: groupId === 'forms'
       ? 'from-cyan-400/35 to-sky-500/15'
       : 'from-amber-400/35 to-orange-500/15',
@@ -110,6 +114,8 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     tag: 'Badge',
     description: 'Компактный badge для статуса или категории.',
     keywords: ['status', 'label'],
+    supportsChildren: true,
+    dynamicAttributes: ['tone'],
   }),
   leafContract({
     tag: 'Dot',
@@ -158,7 +164,7 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     kind: 'flex',
     supportsChildren: true,
     accentClass: 'from-fuchsia-400/35 to-pink-500/15',
-    defaultProps: { direction: 'column', gap: 8, padding: 8 },
+    defaultProps: { direction: 'column', align: null, justify: null, wrap: false, gap: 8, padding: 8 },
     defaultLayout: { ...DEFAULT_LEAF_LAYOUT, span: 12, rowSpan: 6 },
     keywords: ['flex', 'column', 'stack', 'layout'],
   },
@@ -173,7 +179,7 @@ export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionC
     kind: 'flex',
     supportsChildren: true,
     accentClass: 'from-fuchsia-400/35 to-pink-500/15',
-    defaultProps: { direction: 'row', gap: 8, padding: 8 },
+    defaultProps: { direction: 'row', align: null, justify: null, wrap: false, gap: 8, padding: 8 },
     defaultLayout: { ...DEFAULT_LEAF_LAYOUT, span: 12, rowSpan: 4 },
     keywords: ['flex', 'row', 'inline', 'layout'],
   },

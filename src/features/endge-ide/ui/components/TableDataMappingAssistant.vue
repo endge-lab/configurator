@@ -5,7 +5,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -35,14 +34,8 @@ import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent
 const assistanceApiUrl =
   (import.meta.env.VITE_ASSISTANCE_API_URL as string | undefined)?.trim() ?? "";
 
-const props = defineProps<{
-  tabContext?: {
-    document?: { editor?: any; previewModel?: any; component?: any };
-  };
-}>();
-
 const domainStore = useDomainStore();
-const editor = computed(() => props.tabContext?.document?.editor ?? null);
+const editor = computed<any>(() => EndgeIDE.tabs.documentEditorModel.value ?? null);
 const componentId = computed(() => normalizeText(editor.value?.id));
 
 function normalizeText(value: unknown): string {
@@ -281,10 +274,6 @@ function getQueryValueLsKey(): string | null {
   const id = componentId.value;
   if (!id) return null;
   return `endge:admin:${id}.help-query-value`;
-}
-
-async function save(): Promise<void> {
-  await EndgeIDE.tabs.save();
 }
 
 function persistQuerySelectionAndSample(): void {
@@ -703,7 +692,7 @@ ${converterSummary}
     model: "deepseek-v3.1:671b-cloud",
   };
   console.log(
-    "[Table_Inspector autoFillCurrentColumnViaLLM] Запрос к агенту:",
+    "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Запрос к агенту:",
     requestBody,
   );
 
@@ -717,7 +706,7 @@ ${converterSummary}
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     const msg = data.message ?? "";
     console.log(
-      "[Table_Inspector autoFillCurrentColumnViaLLM] Ответ агента (сырой):",
+      "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Ответ агента (сырой):",
       msg,
     );
     if (!res.ok) {
@@ -727,12 +716,12 @@ ${converterSummary}
     const mapping = extractJsonFromMessage(msg);
     if (mapping && Object.keys(mapping).length)
       console.log(
-        "[Table_Inspector autoFillCurrentColumnViaLLM] Распарсенный маппинг:",
+        "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Распарсенный маппинг:",
         mapping,
       );
     else
       console.warn(
-        "[Table_Inspector autoFillCurrentColumnViaLLM] Не удалось распарсить маппинг из ответа, msg:",
+        "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Не удалось распарсить маппинг из ответа, msg:",
         msg,
       );
     if (!mapping || !Object.keys(mapping).length) {
@@ -876,7 +865,7 @@ ${converterSummary}
     model: "deepseek-v3.1:671b-cloud",
   };
   console.log(
-    "[Table_Inspector autoFillAllColumnsViaLLM] Запрос к агенту:",
+    "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Запрос к агенту:",
     requestBody,
   );
 
@@ -890,7 +879,7 @@ ${converterSummary}
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     const msg = data.message ?? "";
     console.log(
-      "[Table_Inspector autoFillAllColumnsViaLLM] Ответ агента (сырой):",
+      "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Ответ агента (сырой):",
       msg,
     );
     if (!res.ok) {
@@ -904,7 +893,7 @@ ${converterSummary}
     }
     if (Object.keys(mappingAll).length)
       console.log(
-        "[Table_Inspector autoFillAllColumnsViaLLM] Распарсенный маппинг по колонкам:",
+        "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Распарсенный маппинг по колонкам:",
         mappingAll,
       );
 
@@ -974,20 +963,9 @@ watch(
   >
     Выберите документ
   </div>
-  <div v-else class="flex flex-col h-full">
+  <div v-else class="flex flex-col h-full min-h-0">
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
-        <div class="space-y-2">
-          <label class="text-sm font-medium">ID компонента</label>
-          <Input :model-value="editor.id" readonly />
-        </div>
-
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Название компонента</label>
-          <Input v-model="editor.name" />
-        </div>
-
-
         <!-- Панель проверки запроса: выбор запроса, Выполнить, JSON первого элемента -->
         <div class="space-y-2 border-t pt-4">
           <button
@@ -1309,14 +1287,5 @@ watch(
       </div>
     </ScrollArea>
 
-    <div class="border-t p-4">
-      <Button class="w-full" :disabled="EndgeIDE.busy.value" @click="save">
-        <Loader2
-          v-if="EndgeIDE.busy.value"
-          class="size-4 animate-spin mr-2"
-        />
-        {{ EndgeIDE.busy.value ? "Сохранение…" : "Сохранить" }}
-      </Button>
-    </div>
   </div>
 </template>

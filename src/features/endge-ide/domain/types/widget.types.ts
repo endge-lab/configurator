@@ -6,7 +6,6 @@ export enum WidgetKey {
   Raph = 'raph',
   Storage = 'storage',
   Terminal = 'terminal',
-  Inspector = 'inspector',
   Versions = 'versions',
   Help = 'help',
   Events = 'events',

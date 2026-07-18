@@ -6,10 +6,10 @@ import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/e
 import { EndgeIDEDemonstration } from '@/features/endge-ide/model/core/endge-ide-demonstration.ts'
 import { EndgeIDEFlowCatalog } from '@/features/endge-ide/model/core/endge-ide-flow-catalog.ts'
 import { EndgeIDEHotkeys } from '@/features/endge-ide/model/core/endge-ide-hotkeys.ts'
-import { EndgeIDEInspector } from '@/features/endge-ide/model/core/endge-ide-inspector.ts'
 import { EndgeIDEModals } from '@/features/endge-ide/model/core/endge-ide-modals.ts'
 import { EndgeIDETabs } from '@/features/endge-ide/model/core/endge-ide-tabs.ts'
 import { EndgeIDEWidgets } from '@/features/endge-ide/model/core/endge-ide-widgets.ts'
+import { EndgeIDEProblems } from '@/features/endge-ide/model/diagnostics/endge-ide-problems'
 import { startDiagnosticsChannelListener } from '@/features/endge-ide/model/pulse/diagnostics-register.ts'
 import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
 
@@ -26,10 +26,10 @@ export class EndgeIDE extends EndgeModuleController {
   private _modals: EndgeIDEModals = new EndgeIDEModals()
   private _tabs: EndgeIDETabs = new EndgeIDETabs()
   private _widgets: EndgeIDEWidgets = new EndgeIDEWidgets()
-  private _inspector: EndgeIDEInspector = new EndgeIDEInspector()
   private _hotkeys: EndgeIDEHotkeys = new EndgeIDEHotkeys()
   private _flowCatalog: EndgeIDEFlowCatalog = new EndgeIDEFlowCatalog()
   private _runtimePreview: EndgeIDERuntimePreview = new EndgeIDERuntimePreview()
+  private _problems: EndgeIDEProblems = new EndgeIDEProblems()
 
   public static init(): void {
     const host = EndgeIDE._host
@@ -46,10 +46,10 @@ export class EndgeIDE extends EndgeModuleController {
     host.registerModule('modals', host._modals)
     host.registerModule('widgets', widgetsDisabled ? noopModule : host._widgets)
     host.registerModule('tabs', host._tabs)
-    host.registerModule('inspector', host._inspector)
     host.registerModule('hotkeys', host._hotkeys)
     host.registerModule('flowCatalog', host._flowCatalog)
     host.registerModule('runtimePreview', host._runtimePreview)
+    host.registerModule('problems', host._problems)
     host._hotkeys.setSaveHandler(() => {
       EndgeIDE.tabs.save()
     })
@@ -70,7 +70,9 @@ export class EndgeIDE extends EndgeModuleController {
       void EndgeIDE.runtimePreview.launchEditor(editor)
       return true
     })
-    host._hotkeys.setReturnToProjectHandler(() => EndgeIDE.runtimePreview.returnToProject())
+    host._hotkeys.setReturnToProjectHandler(() => {
+      return EndgeIDE.problems.returnToProject() || EndgeIDE.runtimePreview.returnToProject()
+    })
     host.init()
     if (!runtimeDebuggerDisabled) {
       Endge.runtimeDebugger.startListening()
@@ -102,10 +104,6 @@ export class EndgeIDE extends EndgeModuleController {
     return EndgeIDE._host._widgets
   }
 
-  public static get inspector(): EndgeIDEInspector {
-    return EndgeIDE._host._inspector
-  }
-
   public static get hotkeys(): EndgeIDEHotkeys {
     return EndgeIDE._host._hotkeys
   }
@@ -116,6 +114,11 @@ export class EndgeIDE extends EndgeModuleController {
 
   public static get runtimePreview(): EndgeIDERuntimePreview {
     return EndgeIDE._host._runtimePreview
+  }
+
+  /** Presentation controller самостоятельной рабочей области Problems. */
+  public static get problems(): EndgeIDEProblems {
+    return EndgeIDE._host._problems
   }
 
   /** Единый флаг занятости (оверлей при сохранении/удалении/переименовании/перемещении). */

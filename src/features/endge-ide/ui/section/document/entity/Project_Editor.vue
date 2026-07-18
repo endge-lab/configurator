@@ -115,7 +115,7 @@ function launchRuntimePreview(): void {
           <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
             <div class="border-b px-3 py-2">
               <TabsList class="grid w-full grid-cols-3">
-                <TabsTrigger value="project">Проект</TabsTrigger>
+                <TabsTrigger value="project">Основное</TabsTrigger>
                 <TabsTrigger value="navigation">Навигация</TabsTrigger>
                 <TabsTrigger value="configuration">Конфигурация</TabsTrigger>
               </TabsList>

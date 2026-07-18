@@ -13,6 +13,7 @@ import {
   unregisterAllWidgets,
 } from '@/components/layouts/grid'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import {
   ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
   LEGACY_ENDGE_PREVIEW_WIDGET_ID,
@@ -44,10 +45,12 @@ export class EndgeIDEWidgets {
 
     migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
     removePersistedWidgetId('help')
+    removePersistedWidgetId('inspector')
+    removePersistedWidgetId('errors')
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     this._widgetDefinitions.forEach(def => registerWidget(def))
-    this._ensureRuntimePreviewDefaultOrder()
+    this._ensureWorkspaceDefaultOrder()
 
     // 2) Снимаем persisted-состояния ДО создания инстансов
     const persistedActive: Record<DockablePosition, string | null> = {
@@ -106,17 +109,26 @@ export class EndgeIDEWidgets {
     this._isInitialized = true
   }
 
-  /** Places a newly appended Preview widget after Project without overwriting a custom order. */
-  private _ensureRuntimePreviewDefaultOrder(): void {
+  /** Оставляет Runtime Tree рядом с Project, а Problems — последним левым widget. */
+  private _ensureWorkspaceDefaultOrder(): void {
     const order = getWidgetOrder('left')
     const projectIndex = order.indexOf('project')
     const previewIndex = order.indexOf(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
-    if (projectIndex < 0 || previewIndex === projectIndex + 1 || previewIndex !== order.length - 1) {
+    if (projectIndex >= 0 && previewIndex !== projectIndex + 1 && previewIndex === order.length - 1) {
+      const nextWidgetId = order[projectIndex + 1]
+      if (nextWidgetId) {
+        reorderWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
+      }
+    }
+
+    const normalizedOrder = getWidgetOrder('left')
+    const problemsIndex = normalizedOrder.indexOf(ENDGE_IDE_PROBLEMS_WIDGET_ID)
+    if (problemsIndex < 0 || problemsIndex === normalizedOrder.length - 1) {
       return
     }
-    const nextWidgetId = order[projectIndex + 1]
-    if (nextWidgetId) {
-      reorderWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
+
+    for (const widgetId of normalizedOrder.slice(problemsIndex + 1)) {
+      reorderWidget(widgetId, ENDGE_IDE_PROBLEMS_WIDGET_ID, 'left')
     }
   }
 

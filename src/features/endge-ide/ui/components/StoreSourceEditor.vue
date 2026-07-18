@@ -4,7 +4,7 @@ import type { StoreRuntimeHost } from '@endge/core'
 import { ref, watch } from 'vue'
 
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
-import StoreRuntimeInspector from '@/features/endge-ide/ui/components/StoreRuntimeInspector.vue'
+import StoreRuntimePreview from '@/features/endge-ide/ui/components/StoreRuntimePreview.vue'
 
 const props = defineProps<{
   modelValue: string
@@ -32,7 +32,7 @@ watch(() => props.modelValue, (value) => {
   <div class="flex h-full min-h-0 flex-col">
     <div class="relative flex min-h-0 flex-1 overflow-hidden bg-[#1e1e1e]">
       <div ref="container" class="min-h-0 flex-1" />
-      <StoreRuntimeInspector :runtime="runtime ?? null" />
+      <StoreRuntimePreview :runtime="runtime ?? null" />
     </div>
   </div>
 </template>

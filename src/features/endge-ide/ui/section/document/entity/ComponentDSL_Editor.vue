@@ -26,7 +26,7 @@ import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-const tab = ref('0')
+const tab = ref('general')
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -77,6 +77,9 @@ function addInputField(): void {
         <Tabs v-model="tab" class="h-full flex flex-col min-h-0">
           <div class="border-b px-3 py-2">
             <TabsList class="flex flex-wrap gap-1">
+              <TabsTrigger value="general">
+                Основное
+              </TabsTrigger>
               <TabsTrigger value="0">
                 JSX шаблон
               </TabsTrigger>
@@ -88,6 +91,21 @@ function addInputField(): void {
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="general" class="flex-1 min-h-0 p-0 m-0">
+            <ScrollArea class="h-full">
+              <div class="p-4 space-y-4 max-w-2xl">
+                <div class="space-y-2">
+                  <Label>ID компонента</Label>
+                  <Input :model-value="editor.id" readonly />
+                </div>
+                <div class="space-y-2">
+                  <Label>Название компонента</Label>
+                  <Input v-model="editor.name" />
+                </div>
+              </div>
+            </ScrollArea>
+          </TabsContent>
 
           <TabsContent value="0" class="flex-1 min-h-0 p-0 m-0">
             <ScrollArea class="h-full">

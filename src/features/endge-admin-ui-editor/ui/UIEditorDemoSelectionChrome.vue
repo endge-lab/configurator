@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
   showDelete?: boolean
   showHandles?: boolean
   labelPlacement?: 'inside' | 'outside'
+  highlightSurface?: boolean
+  editing?: boolean
   interactiveHandles?: UIEditorChromeHandle[]
   dragHandles?: UIEditorChromeHandle[]
 }>(), {
@@ -24,6 +26,8 @@ const props = withDefaults(defineProps<{
   showDelete: false,
   showHandles: true,
   labelPlacement: 'inside',
+  highlightSurface: false,
+  editing: false,
   interactiveHandles: () => [],
   dragHandles: () => [],
 })
@@ -73,11 +77,16 @@ function onHandleMouseDown(handle: UIEditorChromeHandle, event: MouseEvent): voi
 
 <template>
   <div data-ui-editor-chrome="true" class="pointer-events-none absolute inset-0 z-30">
-    <div class="absolute inset-0 border border-sky-500/90 bg-transparent shadow-[0_0_0_1px_rgba(59,130,246,0.12)]" />
+    <div
+      class="absolute inset-0 shadow-[0_0_0_1px_rgba(59,130,246,0.12)]"
+      :class="highlightSurface
+        ? 'border-2 border-sky-500/95 bg-sky-500/[0.035]'
+        : 'border border-sky-500/90 bg-transparent'"
+    />
 
     <div
-      class="absolute inline-flex items-center rounded bg-sky-500 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white shadow-sm"
-      :class="labelClasses"
+      class="absolute inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none text-white shadow-sm"
+      :class="[labelClasses, editing ? 'bg-indigo-600' : 'bg-sky-500']"
     >
       {{ label }}
     </div>

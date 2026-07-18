@@ -8,6 +8,7 @@ import { getLayoutState, useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditorDemo_Singleton.vue'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { triggerEndgeIDERenderGuardTest } from '@/features/endge-ide/model/error/endge-ide-render-guard'
@@ -17,6 +18,7 @@ import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_
 import CreateVersion_Modal from '@/features/endge-ide/ui/modals/CreateVersion_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
+import Problems_View from '@/features/endge-ide/ui/section/problems/Problems_View.vue'
 import RuntimePreview_View from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreview_View.vue'
 
 const tabs = EndgeIDE.tabs
@@ -69,6 +71,10 @@ const isRuntimePreviewActive = computed(() => {
   const area = widgets.value.areas.left
   return area.expanded && area.activeWidget === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID
 })
+const isProblemsActive = computed(() => {
+  const area = widgets.value.areas.left
+  return area.expanded && area.activeWidget === ENDGE_IDE_PROBLEMS_WIDGET_ID
+})
 const isUIEditorActive = computed(() => {
   const position = widgets.value.definitions[ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID]?.position
   if (position !== 'left' && position !== 'right' && position !== 'bottom') {
@@ -112,6 +118,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
     <RuntimePreview_View v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
+    <Problems_View v-else-if="isProblemsActive" class="min-h-0 flex-1" />
     <UIEditorDemo_Singleton v-else-if="isUIEditorActive" class="min-h-0 flex-1" />
 
     <div v-else class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">

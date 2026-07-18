@@ -447,14 +447,14 @@ function applyFilter(): void {
 </script>
 
 <template>
-  <div v-if="!filter" class="p-4 text-sm text-muted-foreground">
+  <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
     Нет данных для вкладки
   </div>
   <div v-else class="w-full h-full flex flex-col">
     <div class="flex items-center justify-between gap-3 px-4 py-3 border-b bg-card">
       <div class="flex flex-col gap-1 min-w-0 flex-1">
         <div class="text-lg font-semibold truncate">
-          {{ filter?.displayName || filter?.name || 'Без названия' }}
+          {{ editor?.displayName || 'Без названия' }}
         </div>
       </div>
       <TooltipProvider>
@@ -476,11 +476,31 @@ function applyFilter(): void {
     <div class="flex-1 min-h-0 flex flex-col">
       <Tabs class="flex-1 flex flex-col min-h-0" default-value="form">
         <div class="border-b px-3 py-2">
-          <TabsList class="grid w-full grid-cols-2">
+          <TabsList class="grid w-full grid-cols-3">
+            <TabsTrigger value="general">Основное</TabsTrigger>
             <TabsTrigger value="form">Форма</TabsTrigger>
             <TabsTrigger value="json">JSON</TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="general" class="flex-1 min-h-0 p-0 m-0">
+          <ScrollArea class="h-full">
+            <div class="p-4 space-y-4 max-w-2xl">
+              <div class="space-y-2">
+                <Label>Identity</Label>
+                <Input v-model="editor.identity" />
+              </div>
+              <div class="space-y-2">
+                <Label>Название</Label>
+                <Input v-model="editor.displayName" />
+              </div>
+              <div class="space-y-2">
+                <Label>Описание</Label>
+                <Textarea v-model="editor.description" />
+              </div>
+            </div>
+          </ScrollArea>
+        </TabsContent>
 
         <TabsContent value="form" class="flex-1 min-h-0 p-0 m-0">
           <ScrollArea class="h-full">

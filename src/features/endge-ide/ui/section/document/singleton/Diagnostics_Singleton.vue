@@ -4,18 +4,28 @@
  * Компонент не меняет core records и отвечает только за presentation layer.
  */
 import { Activity, Eraser } from 'lucide-vue-next'
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { Endge } from '@endge/core'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
-import { useDiagnosticsStore } from '@/features/endge-ide/store/diagnostics'
+import { buildDiagnosticsTree } from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
+import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 
-const diagnosticsStore = useDiagnosticsStore()
-const { records, nodes } = storeToRefs(diagnosticsStore)
+const telemetryRef = useSubscribableModuleRef(Endge.diagnostics.telemetry)
+const problemsRef = useSubscribableModuleRef(Endge.diagnostics.problems)
+const records = computed(() => {
+  void telemetryRef.value
+  return Endge.diagnostics.telemetry.query()
+})
+const nodes = computed(() => buildDiagnosticsTree(records.value))
+const problemCount = computed(() => {
+  void problemsRef.value
+  return Endge.diagnostics.problems.query().length
+})
 
 /** Считает количество records каждого core signal для краткой сводки. */
 const signalCounters = computed(() => {
@@ -32,7 +42,7 @@ const signalCounters = computed(() => {
 
 /** Очищает локальную diagnostics history текущей Endge session. */
 function clearDiagnostics(): void {
-  diagnosticsStore.clear()
+  Endge.diagnostics.telemetry.clear()
 }
 </script>
 
@@ -50,6 +60,9 @@ function clearDiagnostics(): void {
         </Badge>
         <Badge variant="outline" class="font-mono text-xs">
           spans: {{ signalCounters.spans }}
+        </Badge>
+        <Badge variant="outline" class="font-mono text-xs">
+          problems: {{ problemCount }}
         </Badge>
         <Button
           variant="outline"

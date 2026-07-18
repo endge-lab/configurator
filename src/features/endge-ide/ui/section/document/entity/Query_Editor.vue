@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
+
 import { Endge } from '@endge/core'
-import { Loader2, Play, RotateCcw, Save } from 'lucide-vue-next'
+import { Code2, Loader2, Play, RotateCcw, Save, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -14,6 +15,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -21,6 +24,8 @@ const tabs = EndgeIDE.tabs
 const editor = computed<RQueryEditor | null>(
   () => tabs.documentEditorModel.value as RQueryEditor | null,
 )
+const activeTab = ref<'source' | 'diagnostics'>('source')
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('query', editor.value))
 const runQueryLoading = ref(false)
 
 async function save(): Promise<void> {
@@ -114,6 +119,42 @@ async function buildQueryArtifact(
                 variant="ghost"
                 size="icon"
                 class="h-7 w-7"
+                :class="activeTab === 'source' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+                aria-label="Source"
+                @click="activeTab = 'source'"
+              >
+                <Code2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Source</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="activeTab === 'diagnostics' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Диагностика</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
                 aria-label="Выполнить запрос"
                 :disabled="runQueryLoading"
                 @click="runQuery"
@@ -143,7 +184,7 @@ async function buildQueryArtifact(
 
     <template #right>
       <TooltipProvider>
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -163,14 +204,18 @@ async function buildQueryArtifact(
     </template>
 
     <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <div v-if="activeTab === 'source'" class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
         <QuerySourceEditor
           :model-value="editor.source"
           class="min-h-0 flex-1"
           @update:model-value="(value) => editor?.applySourceText(value)"
         />
       </div>
-
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        class="min-h-0 flex-1"
+      />
     </div>
   </SourceDocumentEditorShell>
 </template>

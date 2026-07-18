@@ -26,6 +26,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
 
@@ -42,9 +44,7 @@ const compiled = computed(() =>
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),
 )
-const diagnosticsJson = computed(() =>
-  JSON.stringify(compiled.value?.diagnostics ?? [], null, 2),
-)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('store', editor.value))
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
 }
@@ -268,9 +268,11 @@ async function launchPreview(): Promise<void> {
         v-else-if="activeTab === 'artifact'"
         class="h-full overflow-auto bg-muted/30 p-4 text-xs"
       >{{ artifactJson }}</pre>
-      <pre v-else class="h-full overflow-auto bg-muted/30 p-4 text-xs">{{
-        diagnosticsJson
-      }}</pre>
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        class="h-full"
+      />
     </div>
   </SourceDocumentEditorShell>
 </template>

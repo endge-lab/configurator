@@ -18,7 +18,7 @@ export const REGISTERED_HOTKEYS: readonly EndgeIDEHotkeyItem[] = [
   { label: 'Закрыть вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
   { label: 'Создать документ', keys: ['ctrl+n', 'meta+n'], keysLabel: 'Ctrl+N / ⌘ N', action: 'createDocument' },
   { label: 'Запустить Runtime Preview', keys: ['ctrl+enter', 'meta+enter'], keysLabel: 'Ctrl+Enter / ⌘ Enter', action: 'runRuntime' },
-  { label: 'Вернуться из Runtime Preview', keys: 'escape', keysLabel: 'Esc', action: 'returnToProject' },
+  { label: 'Вернуться к Project', keys: 'escape', keysLabel: 'Esc', action: 'returnToProject' },
 ]
 
 /**

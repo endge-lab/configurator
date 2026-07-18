@@ -49,7 +49,7 @@ async function save(): Promise<void> {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger as-child>
-            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
+            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="isSystem || EndgeIDE.busy.value" @click="save">
               <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
               <Save v-else class="size-4" />
             </Button>
@@ -61,7 +61,7 @@ async function save(): Promise<void> {
 
     <Tabs v-model="activeTab" class="flex min-h-0 flex-1 flex-col p-4">
         <TabsList class="grid w-full shrink-0 grid-cols-2">
-          <TabsTrigger value="general">Окружение</TabsTrigger>
+          <TabsTrigger value="general">Основное</TabsTrigger>
           <TabsTrigger value="configuration">Конфигурация</TabsTrigger>
         </TabsList>
         <TabsContent value="general" class="mt-4 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">

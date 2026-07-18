@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -51,6 +52,15 @@ async function save(): Promise<void> {
 
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
+        <div class="text-sm font-semibold">Основное</div>
+        <div class="space-y-2">
+          <Label>Идентификатор</Label>
+          <Input v-model="editor!.identity" :disabled="isSystem" />
+        </div>
+        <div class="space-y-2">
+          <Label>Название</Label>
+          <Input v-model="editor!.displayName" :disabled="isSystem" />
+        </div>
         <div class="space-y-2">
           <Label>Описание</Label>
           <textarea

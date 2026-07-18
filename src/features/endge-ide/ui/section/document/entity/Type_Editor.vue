@@ -170,6 +170,14 @@ function openTypeDocument(typeId: string): void {
         </TooltipProvider>
       </div>
 
+      <Card class="shrink-0 p-4">
+        <div class="mb-3 text-sm font-semibold">Основное</div>
+        <div class="max-w-xl space-y-2">
+          <Label>Название типа</Label>
+          <Input v-model="editor!.name" />
+        </div>
+      </Card>
+
       <Card class="flex-1 min-h-0">
         <div class="flex flex-col h-full min-h-0">
           <div class="border-b px-3 py-2 flex items-center justify-between gap-2">

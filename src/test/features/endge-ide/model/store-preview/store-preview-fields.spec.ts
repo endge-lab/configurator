@@ -2,9 +2,9 @@ import type { StoreRuntimeHost } from '@endge/core'
 
 import { describe, expect, it } from 'vitest'
 
-import { readStorePreviewFields } from '../../../../../features/endge-ide/model/store-preview/store-preview-inspector'
+import { readStorePreviewFields } from '../../../../../features/endge-ide/model/store-preview/store-preview-fields'
 
-describe('store preview inspector', () => {
+describe('store preview fields', () => {
   it('projects value and derived fields with their canonical Raph paths', () => {
     const runtime = {
       getDataSnapshot: () => ({

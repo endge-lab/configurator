@@ -25,7 +25,7 @@ const props = defineProps<{
 const uiText = {
   titleFallback: 'Новое действие',
   save: 'Сохранить',
-  tabAction: 'Action',
+  tabAction: 'Основное',
   tabFlow: 'Flow',
   identity: 'Идентификатор',
   displayName: 'Название',
@@ -36,6 +36,7 @@ const uiText = {
   isArray: 'Массив',
   optional: 'Опционально',
   active: 'Активно',
+  steps: 'Количество шагов',
   headerMetaFallback: '-',
   headerMetaSeparator: ' | ',
 }
@@ -50,6 +51,7 @@ const flowEditorModel = computed<RActionEditor>({
 })
 const domainStore = useDomainStore()
 const activeTab = ref<'action' | 'flow'>('action')
+const stepsCount = computed(() => editor.value?.definition?.nodes?.length ?? 0)
 
 const typeOptions = computed(() => {
   const primitives = (domainStore.typesPrimitives ?? []).map((type: { id?: string | number, name?: string }) => ({
@@ -294,6 +296,10 @@ function updateFieldOptional(which: 'input' | 'output', checked: boolean): void 
                   <Label class="text-sm">
                     {{ uiText.active }}
                   </Label>
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ uiText.steps }}</Label>
+                  <Input :model-value="String(stepsCount)" disabled />
                 </div>
               </div>
             </ScrollArea>

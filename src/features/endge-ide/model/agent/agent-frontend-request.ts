@@ -612,7 +612,6 @@ export function getRequestEntitiesFilter(
 /** Допустимые widgetId (см. config/widgets.ts). */
 const ALLOWED_WIDGET_IDS = new Set([
   "project",
-  "inspector",
   "versions",
   "errors",
   "storage",
@@ -625,7 +624,7 @@ const ALLOWED_WIDGET_IDS = new Set([
   "agent",
 ]);
 
-/** documentType для openDocument (как в endge-admin-inspector). */
+/** documentType для openDocument. */
 const ALLOWED_DOCUMENT_TYPES = new Set([
   "query-gql",
   "query-rest",

@@ -11,11 +11,15 @@ import {
   PanelRightOpen,
   RotateCcw,
   Save,
+  Settings2,
   TriangleAlert,
+  WandSparkles,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
@@ -24,6 +28,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import FilterLegacyAssistant from '@/features/endge-ide/ui/components/FilterLegacyAssistant.vue'
 import FilterLegacyFieldsEditor from '@/features/endge-ide/ui/components/FilterLegacyFieldsEditor.vue'
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -44,7 +51,7 @@ interface FilterOutputState {
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RFilterEditor | null,
 )
-const activeTab = ref<'ui' | 'source' | 'artifact' | 'diagnostics'>('source')
+const activeTab = ref<'general' | 'ui' | 'legacy-assistant' | 'source' | 'artifact' | 'diagnostics'>('source')
 const sourceEditorRef = ref<FilterSourceEditorHandle | null>(null)
 const outputState = ref<FilterOutputState>({
   available: false,
@@ -53,7 +60,9 @@ const outputState = ref<FilterOutputState>({
 })
 const tabGroups = [
   [
+    { value: 'general', label: 'Основное', icon: Settings2 },
     { value: 'ui', label: 'UI', icon: LayoutPanelTop },
+    { value: 'legacy-assistant', label: 'Legacy help', icon: WandSparkles },
     { value: 'source', label: 'Source', icon: Code2 },
   ],
   [
@@ -67,9 +76,7 @@ const compiled = computed(() =>
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),
 )
-const diagnosticsJson = computed(() =>
-  JSON.stringify(compiled.value?.diagnostics ?? [], null, 2),
-)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('filter', editor.value))
 
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
@@ -181,7 +188,19 @@ function updateOutputState(value: FilterOutputState): void {
     </template>
 
     <div class="min-h-0 flex-1 overflow-hidden">
-      <div v-if="activeTab === 'ui'" class="flex h-full min-h-0 flex-col">
+      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+        <div class="max-w-xl space-y-5">
+          <div class="space-y-2">
+            <Label for="filter-identity">Identity</Label>
+            <Input id="filter-identity" v-model="editor.identity" placeholder="schedule-filter" />
+          </div>
+          <div class="space-y-2">
+            <Label for="filter-display-name">Название</Label>
+            <Input id="filter-display-name" v-model="editor.displayName" placeholder="Фильтр расписания" />
+          </div>
+        </div>
+      </div>
+      <div v-else-if="activeTab === 'ui'" class="flex h-full min-h-0 flex-col">
         <div
           class="shrink-0 border-b bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-300"
         >
@@ -190,6 +209,10 @@ function updateOutputState(value: FilterOutputState): void {
         </div>
         <FilterLegacyFieldsEditor class="min-h-0 flex-1" />
       </div>
+      <FilterLegacyAssistant
+        v-else-if="activeTab === 'legacy-assistant'"
+        class="h-full min-h-0"
+      />
       <FilterSourceEditor
         v-else-if="activeTab === 'source'"
         ref="sourceEditorRef"
@@ -201,9 +224,11 @@ function updateOutputState(value: FilterOutputState): void {
         v-else-if="activeTab === 'artifact'"
         class="h-full overflow-auto bg-muted/30 p-4 text-xs"
       >{{ artifactJson }}</pre>
-      <pre v-else class="h-full overflow-auto bg-muted/30 p-4 text-xs">{{
-        diagnosticsJson
-      }}</pre>
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        class="h-full"
+      />
     </div>
   </SourceDocumentEditorShell>
 </template>

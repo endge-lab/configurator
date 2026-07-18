@@ -1,5 +1,6 @@
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/components/ui/smart-tabs/types.ts'
 import type {
+  DiagnosticsEntityRef,
   DomainDocumentType,
   RAction,
   RComponentDSL,
@@ -24,6 +25,7 @@ import { showWidget } from '@/components/layouts/grid'
 import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
+import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
@@ -325,6 +327,25 @@ export class EndgeIDETabs {
       },
     }
     this.openTab(tabRef)
+  }
+
+  /** Разрешает diagnostics entity reference и открывает исходный authoring document. */
+  public openDiagnosticsEntity(reference: DiagnosticsEntityRef): boolean {
+    const target = resolveDiagnosticsDocumentTarget(reference)
+    if (!target) {
+      toast.warning('Сущность не найдена', {
+        description: `${reference.entityType} "${reference.identity || String(reference.id)}" отсутствует в текущем домене.`,
+      })
+      return false
+    }
+    if (!this._getDocResolver(target.documentType)) {
+      toast.warning('Сущность пока нельзя открыть', {
+        description: `Редактор для типа "${String(target.documentType)}" не зарегистрирован.`,
+      })
+      return false
+    }
+    this.openDocument(target.documentId, target.documentType)
+    return true
   }
 
   /** Открывает внешний документ из semantic source reference. */

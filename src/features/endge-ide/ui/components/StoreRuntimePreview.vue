@@ -5,7 +5,7 @@ import { Raph } from '@endge/raph'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { readStorePreviewFields } from '@/features/endge-ide/model/store-preview/store-preview-inspector'
+import { readStorePreviewFields } from '@/features/endge-ide/model/store-preview/store-preview-fields'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
@@ -108,16 +108,16 @@ function setExpandedFieldTree(instance: unknown): void {
       {{ copy.empty }}
     </div>
 
-    <div v-else class="store-runtime-inspector__fields">
+    <div v-else class="store-runtime-preview__fields">
       <section
         v-for="field in fields"
         :key="field.key"
-        class="store-runtime-inspector__field"
+        class="store-runtime-preview__field"
         :data-expanded="expandedFieldKey === field.key"
       >
         <button
           type="button"
-          class="store-runtime-inspector__field-header"
+          class="store-runtime-preview__field-header"
           :aria-expanded="expandedFieldKey === field.key"
           @click="toggleField(field.key)"
         >
@@ -126,12 +126,12 @@ function setExpandedFieldTree(instance: unknown): void {
 
           <span class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <span class="font-mono text-xs font-semibold text-slate-100">{{ field.key }}</span>
-            <span class="store-runtime-inspector__kind" :data-kind="field.kind">{{ field.kind }}</span>
+            <span class="store-runtime-preview__kind" :data-kind="field.kind">{{ field.kind }}</span>
           </span>
         </button>
 
-        <div v-if="expandedFieldKey === field.key" class="store-runtime-inspector__field-body">
-          <div v-if="field.kind === 'derived'" class="store-runtime-inspector__data-views">
+        <div v-if="expandedFieldKey === field.key" class="store-runtime-preview__field-body">
+          <div v-if="field.kind === 'derived'" class="store-runtime-preview__data-views">
             <span>{{ field.source }}</span>
             <template v-for="dataView in field.dataViews" :key="dataView">
               <span>{{ copy.flow }}</span>
@@ -151,7 +151,7 @@ function setExpandedFieldTree(instance: unknown): void {
 </template>
 
 <style scoped>
-.store-runtime-inspector__fields {
+.store-runtime-preview__fields {
   height: 100%;
   min-height: 0;
   display: flex;
@@ -159,20 +159,20 @@ function setExpandedFieldTree(instance: unknown): void {
   overflow: hidden;
 }
 
-.store-runtime-inspector__field {
+.store-runtime-preview__field {
   min-height: 0;
   flex: 0 0 auto;
   border-bottom: 1px solid rgb(51 65 85 / 0.72);
 }
 
-.store-runtime-inspector__field[data-expanded='true'] {
+.store-runtime-preview__field[data-expanded='true'] {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.store-runtime-inspector__field-header {
+.store-runtime-preview__field-header {
   width: 100%;
   flex: 0 0 auto;
   padding: 10px 12px;
@@ -186,16 +186,16 @@ function setExpandedFieldTree(instance: unknown): void {
   cursor: pointer;
 }
 
-.store-runtime-inspector__field-header:hover {
+.store-runtime-preview__field-header:hover {
   background: rgb(30 41 59 / 0.44);
 }
 
-.store-runtime-inspector__field-header:focus-visible {
+.store-runtime-preview__field-header:focus-visible {
   outline: 1px solid rgb(56 189 248 / 0.7);
   outline-offset: -2px;
 }
 
-.store-runtime-inspector__field-body {
+.store-runtime-preview__field-body {
   min-height: 0;
   flex: 1 1 auto;
   display: flex;
@@ -205,7 +205,7 @@ function setExpandedFieldTree(instance: unknown): void {
   background: rgb(2 6 23 / 0.34);
 }
 
-.store-runtime-inspector__data-views {
+.store-runtime-preview__data-views {
   flex: 0 0 auto;
   padding: 7px 12px;
   display: flex;
@@ -217,7 +217,7 @@ function setExpandedFieldTree(instance: unknown): void {
   font-size: 10px;
 }
 
-.store-runtime-inspector__kind {
+.store-runtime-preview__kind {
   border: 1px solid rgb(71 85 105 / 0.9);
   border-radius: 999px;
   padding: 1px 6px;
@@ -228,7 +228,7 @@ function setExpandedFieldTree(instance: unknown): void {
   text-transform: uppercase;
 }
 
-.store-runtime-inspector__kind[data-kind='derived'] {
+.store-runtime-preview__kind[data-kind='derived'] {
   border-color: rgb(8 145 178 / 0.55);
   background: rgb(8 145 178 / 0.1);
   color: #67e8f9;

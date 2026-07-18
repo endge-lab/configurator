@@ -3,7 +3,7 @@
 import type { RComponentSFC } from '@endge/core'
 
 import { Endge, inspectComponentSFCVisual } from '@endge/core'
-import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2 } from 'lucide-vue-next'
+import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -18,8 +18,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
@@ -30,8 +32,10 @@ interface ScriptEditorHandle {
 
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
+const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
 const launchLoading = ref(false)
-const activeTab = ref<'general' | 'visual' | 'source'>('source')
+const activeTab = ref<'general' | 'visual' | 'source' | 'diagnostics'>('source')
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 const visualInspection = computed(() => {
   const current = editor.value
@@ -158,6 +162,25 @@ async function launchPreview(): Promise<void> {
             </TooltipTrigger>
             <TooltipContent>Source</TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Диагностика</TooltipContent>
+          </Tooltip>
         </div>
 
         <Separator orientation="vertical" class="mx-0.5 h-5" />
@@ -252,6 +275,11 @@ async function launchPreview(): Promise<void> {
             :rows="5"
           />
         </div>
+        <div class="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+          <div>modelVersion: {{ documentModel?.modelVersion ?? 1 }}</div>
+          <div>targets: {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+          <div>source: {{ String(editor.source ?? '').length }} chars</div>
+        </div>
       </div>
     </div>
 
@@ -266,7 +294,7 @@ async function launchPreview(): Promise<void> {
       @open-source="activeTab = 'source'"
     />
 
-    <div v-else class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div v-else-if="activeTab === 'source'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScriptEditor
         ref="sourceEditorRef"
         v-model="editor.source"
@@ -278,5 +306,11 @@ async function launchPreview(): Promise<void> {
         @blur="editor.parseSource()"
       />
     </div>
+
+    <EntityProblemsPanel
+      v-else-if="diagnosticsEntityRef"
+      :entity-ref="diagnosticsEntityRef"
+      class="min-h-0 flex-1"
+    />
   </SourceDocumentEditorShell>
 </template>

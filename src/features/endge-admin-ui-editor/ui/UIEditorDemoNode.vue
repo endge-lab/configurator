@@ -6,10 +6,12 @@ import type { CSSProperties } from 'vue'
 
 import { Endge, UI_COMPONENT_HOST_DEFINITION_ID } from '@endge/core'
 import { Blocks } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { Card } from '@/components/ui/card'
 import { getUIEditorDefaultLayout, isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
+import { hasUIEditorSFCBinding, hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
+import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 import UIEditorDemoSelectionChrome from '@/features/endge-admin-ui-editor/ui/UIEditorDemoSelectionChrome.vue'
 
 defineOptions({
@@ -51,6 +53,7 @@ interface UIEditorPageLayoutRect {
 }
 
 const isDropHovered = ref(false)
+const inlineEditorRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
 const node = computed<UIEditorNode | null>(() => props.state.getNode(props.nodeId))
 const parentNode = computed<UIEditorNode | null>(() => props.parentId ? props.state.getNode(props.parentId) : null)
@@ -65,6 +68,11 @@ const pageColumnCount = computed<number>(() => node.value?.kind === 'page'
   : 12)
 const children = computed(() => props.state.getChildren(props.nodeId))
 const definition = computed(() => node.value ? Endge.uiRegistry.getDefinition(node.value.definitionRef) : null)
+const isSourceBoundText = computed<boolean>(() => node.value?.kind === 'text' && hasUIEditorSFCTextBinding(node.value))
+const isInlineEditable = computed<boolean>(() => node.value?.kind === 'button' || (node.value?.kind === 'text' && !isSourceBoundText.value))
+const isInlineEditing = computed<boolean>(() => isInlineEditable.value && props.state.editingNodeId === props.nodeId)
+const nodeTypeLabel = computed<string>(() => node.value ? getNodeTypeLabel(node.value) : '')
+const selectionLabel = computed<string>(() => node.value ? getSelectionLabel(node.value) : '')
 const renderSurface = computed<UIPresentationSurface>(() => props.preview ? 'runtime' : 'admin')
 const nodeRenderer = computed(() => {
   if (!node.value || node.value.kind === 'page') {
@@ -139,14 +147,6 @@ const pageGridRowCount = computed(() => {
   }, 10), activePagePreview.value ? activePagePreview.value.rowStart + activePagePreview.value.rowSpan + 2 : 10)
 })
 
-const pageGridOverlayCellCount = computed(() => {
-  if (!isPageGridVisible.value) {
-    return 0
-  }
-
-  return pageGridRowCount.value * pageColumnCount.value
-})
-
 const containerStyle = computed<CSSProperties | undefined>(() => {
   const value = node.value
   if (!value || !isContainer.value) {
@@ -168,7 +168,9 @@ const containerStyle = computed<CSSProperties | undefined>(() => {
       flexDirection: value.props.direction,
       gap: `${value.props.gap}px`,
       padding: `${value.props.padding}px`,
-      alignItems: 'stretch',
+      alignItems: value.props.align ?? undefined,
+      justifyContent: value.props.justify ?? undefined,
+      flexWrap: value.props.wrap ? 'wrap' : undefined,
       minWidth: 0,
       width: '100%',
     }
@@ -177,9 +179,11 @@ const containerStyle = computed<CSSProperties | undefined>(() => {
     if (value.props.layoutMode !== 'grid') {
       return {
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: value.props.direction,
         gap: `${Math.max(0, Number(value.props.gap ?? 0))}px`,
-        alignItems: 'stretch',
+        alignItems: value.props.align ?? undefined,
+        justifyContent: value.props.justify ?? undefined,
+        flexWrap: value.props.wrap ? 'wrap' : undefined,
         minWidth: 0,
         minHeight: '100%',
         width: '100%',
@@ -217,19 +221,18 @@ const bodyStyle = computed<Record<string, string> | undefined>(() => {
   }
 })
 
-const pageGridOverlayStyle = computed<Record<string, string> | undefined>(() => {
+const pageGridGuideStyle = computed<Record<string, string> | undefined>(() => {
   if (node.value?.kind !== 'page' || !pageGridMetrics.value) {
     return undefined
   }
 
   return {
-    display: 'grid',
-    gridTemplateColumns: `repeat(${pageColumnCount.value}, minmax(0, 1fr))`,
-    gridAutoRows: `${pageGridMetrics.value.rowHeight}px`,
-    gap: `${pageGridMetrics.value.gap}px`,
-    height: '100%',
-    alignContent: 'start',
-    overflow: 'hidden',
+    'display': 'grid',
+    'gridTemplateColumns': `repeat(${pageColumnCount.value}, minmax(0, 1fr))`,
+    'columnGap': `${pageGridMetrics.value.gap}px`,
+    '--ui-editor-grid-row-step': `${pageGridMetrics.value.rowHeight + pageGridMetrics.value.gap}px`,
+    'height': '100%',
+    'overflow': 'hidden',
   }
 })
 
@@ -304,6 +307,61 @@ const nodeRendererProps = computed(() => {
     preview: props.preview,
   }
 })
+
+watch(isInlineEditing, async (editing) => {
+  if (!editing) {
+    return
+  }
+  await nextTick()
+  const editor = inlineEditorRef.value
+  if (!editor) {
+    return
+  }
+  editor.focus()
+  const caret = editor.value.length
+  editor.setSelectionRange(caret, caret)
+}, { immediate: true })
+
+function getNodeTypeLabel(targetNode: UIEditorNode): string {
+  if (targetNode.kind === 'page') {
+    return targetNode.props.layoutMode === 'grid'
+      ? `Template · Grid ${targetNode.props.columns}`
+      : 'Template · Flex Column'
+  }
+
+  if (targetNode.kind === 'flex') {
+    return targetNode.props.direction === 'row' ? 'Flex · Row' : 'Flex · Column'
+  }
+  if (targetNode.kind === 'grid') {
+    return `Grid · ${targetNode.props.columns} cols`
+  }
+
+  const contract = getUIEditorSFCDefinitionContract(targetNode.definitionRef)
+  if (contract) {
+    return contract.tag
+  }
+  if (targetNode.kind === 'text') {
+    return 'Text'
+  }
+  if (targetNode.kind === 'button') {
+    return 'Button'
+  }
+  if (targetNode.kind === 'custom-component') {
+    const targetDefinition = Endge.uiRegistry.getDefinition(targetNode.definitionRef)
+    return `Component · ${targetDefinition?.title ?? targetNode.name}`
+  }
+  return targetNode.name
+}
+
+function getSelectionLabel(targetNode: UIEditorNode): string {
+  const typeLabel = getNodeTypeLabel(targetNode)
+  if (hasUIEditorSFCBinding(targetNode)) {
+    return `${typeLabel} · Bound`
+  }
+  return props.state.editingNodeId === targetNode.id
+    ? `${typeLabel} · Editing`
+    : typeLabel
+}
 
 function createTransparentDragImage(): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
@@ -517,6 +575,43 @@ function onSelect(): void {
     return
   }
   props.state.selectNode(props.nodeId)
+}
+
+function onDoubleClick(event: MouseEvent): void {
+  if (props.preview || !isInlineEditable.value) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  props.state.beginInlineEdit(props.nodeId)
+}
+
+function onInlineEditInput(event: Event): void {
+  const target = event.target
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    props.state.updateInlineEditDraft(target.value)
+  }
+}
+
+function onInlineEditBlur(): void {
+  if (props.state.editingNodeId === props.nodeId) {
+    props.state.commitInlineEdit()
+  }
+}
+
+function onInlineEditKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    props.state.cancelInlineEdit()
+    return
+  }
+
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault()
+    event.stopPropagation()
+    props.state.commitInlineEdit()
+  }
 }
 
 function onDragstart(event: DragEvent): void {
@@ -833,7 +928,7 @@ function createPagePreviewFromNode(child: UIEditorNode): UIEditorPagePlacementPr
   const span = Math.max(1, Math.min(columns, Number(child.layout?.span ?? columns)))
   return {
     nodeId: child.id,
-    label: child.name,
+    label: getNodeTypeLabel(child),
     colStart: Math.max(1, Math.min(Math.max(1, columns + 1 - span), Number(child.layout?.colStart ?? 1))),
     rowStart: Math.max(1, Number(child.layout?.rowStart ?? 1)),
     span,
@@ -905,7 +1000,13 @@ function onPageChildPointerDown(child: UIEditorNode, event: MouseEvent): void {
     return
   }
 
-  if (event.button !== 0 || props.state.selectedNodeId !== child.id || isNodeInGridInteraction(child.id)) {
+  if (
+    event.button !== 0
+    || event.detail > 1
+    || props.state.editingNodeId === child.id
+    || props.state.selectedNodeId !== child.id
+    || isNodeInGridInteraction(child.id)
+  ) {
     return
   }
 
@@ -1333,12 +1434,14 @@ function getChildWrapperStyle(child: UIEditorNode): Record<string, string> | und
   }
 
   if (container.kind === 'page' && container.props.layoutMode === 'flex') {
-    return { width: '100%', minWidth: '0' }
+    return container.props.direction === 'row'
+      ? { flex: '0 1 auto', minWidth: '0', width: 'auto' }
+      : { width: '100%', minWidth: '0' }
   }
 
   if (container.kind === 'flex') {
     return container.props.direction === 'row'
-      ? { flex: '1 1 0', minWidth: '0' }
+      ? { flex: '0 1 auto', minWidth: '0', width: 'auto' }
       : { width: '100%', minWidth: '0' }
   }
 
@@ -1378,14 +1481,14 @@ function getInsertStyle(): Record<string, string> | undefined {
 <template>
   <div
     v-if="node"
-    class="relative"
+    class="group/ui-editor-node relative"
     :class="node.kind === 'page' ? 'w-full' : ''"
   >
     <div
-      v-if="!props.preview && isContainer && !isSelected"
-      class="pointer-events-none absolute left-2 -top-3 z-10 inline-flex items-center text-[9px] font-medium text-sky-700/75 dark:text-sky-300/80"
+      v-if="!props.preview && !isSelected"
+      class="pointer-events-none absolute -top-5 left-0 z-20 inline-flex items-center rounded bg-slate-950/90 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white opacity-0 shadow-sm transition-opacity group-hover/ui-editor-node:opacity-100 dark:bg-slate-100 dark:text-slate-950"
     >
-      {{ node.name }}
+      {{ nodeTypeLabel }}
     </div>
 
     <Card
@@ -1399,23 +1502,26 @@ function getInsertStyle(): Record<string, string> | undefined {
               : 'h-full border-0 bg-transparent shadow-none'
           : node.kind === 'page'
             ? 'min-h-full w-full border border-white/60 bg-white/90 shadow-none dark:border-slate-700/60 dark:bg-slate-950/90'
-            : 'h-full border border-border/80 bg-card/90 shadow-none',
+            : 'h-full border border-transparent bg-transparent shadow-none',
         !props.preview && isContainer && isDropHovered ? 'border-sky-400 bg-sky-50/40 dark:border-sky-400 dark:bg-sky-950/35' : '',
-        !props.preview && !isSelected ? 'hover:border-foreground/15' : '',
+        !props.preview && !isSelected ? 'hover:border-slate-400/60 dark:hover:border-slate-500/60' : '',
       ]"
       :style="cardStyle"
-      :draggable="!props.preview && node.kind !== 'page' && !isGridPlacedNode"
+      :draggable="!props.preview && !isInlineEditing && node.kind !== 'page' && !isGridPlacedNode"
       @click.stop="onSelect"
+      @dblclick.stop="onDoubleClick"
       @dragstart="onDragstart"
       @dragend="onDragend"
     >
       <UIEditorDemoSelectionChrome
         v-if="!props.preview && isSelected && (!isGridPlacedNode || node.kind === 'page')"
-        :label="node.name"
+        :label="selectionLabel"
         :size-label="getNodeSizeBadge(node)"
-        :show-delete="node.kind !== 'page'"
+        :show-delete="node.kind !== 'page' && !isInlineEditing"
         :show-handles="false"
         :label-placement="node.kind === 'page' ? 'inside' : 'outside'"
+        :highlight-surface="node.kind === 'page'"
+        :editing="isInlineEditing"
         :interactive-handles="[]"
         @delete="props.state.removeNode(node.id)"
       />
@@ -1440,19 +1546,25 @@ function getInsertStyle(): Record<string, string> | undefined {
           >
             <div
               v-if="isPageGridVisible"
+              class="ui-editor-layout-guides pointer-events-none absolute inset-0 z-0"
+              :class="props.state.isGridInteractionActive ? 'ui-editor-layout-guides--active' : ''"
+              :style="pageGridGuideStyle"
+              aria-hidden="true"
+            >
+              <span
+                v-for="columnIndex in pageColumnCount"
+                :key="columnIndex"
+                class="ui-editor-layout-guide-column"
+              />
+            </div>
+
+            <div
+              v-if="isPageDragSurfaceActive"
               class="absolute inset-0 z-20"
-              :class="isPageDragSurfaceActive ? 'pointer-events-auto' : 'pointer-events-none'"
-              :style="pageGridOverlayStyle"
               @dragover="isPageDragSurfaceActive ? onDragover($event) : undefined"
               @dragleave="isPageDragSurfaceActive ? onDragleave() : undefined"
               @drop="isPageDragSurfaceActive ? onDrop($event) : undefined"
-            >
-              <div
-                v-for="cellIndex in pageGridOverlayCellCount"
-                :key="cellIndex"
-                class="pointer-events-none border border-slate-300/35 bg-transparent dark:border-slate-600/35"
-              />
-            </div>
+            />
 
             <div
               v-if="node.kind === 'page' && activePagePreview && pagePlacementPreviewStyle"
@@ -1490,6 +1602,7 @@ function getInsertStyle(): Record<string, string> | undefined {
               <div
                 :ref="element => setPageChildRef(child.id, element as Element | null)"
                 class="relative z-10 overflow-visible"
+                :class="!props.preview && isPageGrid ? 'ui-editor-grid-item-surface' : ''"
                 :style="getChildWrapperStyle(child)"
                 @mousedown="onPageChildPointerDown(child, $event)"
               >
@@ -1503,11 +1616,12 @@ function getInsertStyle(): Record<string, string> | undefined {
 
                 <UIEditorDemoSelectionChrome
                   v-if="!props.preview && isPageGrid && props.state.selectedNodeId === child.id && !isNodeInGridInteraction(child.id)"
-                  :label="child.name"
+                  :label="getSelectionLabel(child)"
                   :size-label="getNodeSizeBadge(child)"
-                  :show-delete="true"
-                  :show-handles="true"
+                  :show-delete="props.state.editingNodeId !== child.id"
+                  :show-handles="props.state.editingNodeId !== child.id"
                   label-placement="outside"
+                  :editing="props.state.editingNodeId === child.id"
                   :interactive-handles="['north-west', 'north', 'north-east', 'west', 'east', 'south-west', 'south', 'south-east']"
                   :drag-handles="[]"
                   @delete="props.state.removeNode(child.id)"
@@ -1531,30 +1645,56 @@ function getInsertStyle(): Record<string, string> | undefined {
 
       <div
         v-else
-        :class="props.preview ? 'py-0.5' : 'p-1.5'"
+        class="relative h-full min-h-8"
       >
+        <textarea
+          v-if="isInlineEditing && node.kind === 'text'"
+          ref="inlineEditorRef"
+          :value="props.state.inlineEditDraft"
+          aria-label="Edit text"
+          class="relative z-40 h-full min-h-8 w-full resize-none overflow-auto border-0 bg-transparent px-2 py-1.5 text-sm leading-5 text-foreground outline-none ring-2 ring-inset ring-indigo-500/70"
+          @input="onInlineEditInput"
+          @blur="onInlineEditBlur"
+          @keydown="onInlineEditKeydown"
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        />
+
+        <input
+          v-else-if="isInlineEditing && node.kind === 'button'"
+          ref="inlineEditorRef"
+          :value="props.state.inlineEditDraft"
+          aria-label="Edit button label"
+          class="relative z-40 m-1 h-8 min-w-24 rounded-sm border border-indigo-400 bg-sky-600 px-3 text-xs font-semibold text-white outline-none ring-2 ring-indigo-500/60"
+          @input="onInlineEditInput"
+          @blur="onInlineEditBlur"
+          @keydown="onInlineEditKeydown"
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        >
+
         <component
           :is="nodeRendererComponent"
-          v-if="nodeRendererComponent"
+          v-if="nodeRendererComponent && !isInlineEditing"
           v-bind="nodeRendererProps"
         />
 
         <div
-          v-else-if="node.kind === 'text'"
-          class="border px-2 py-1.5 text-xs font-medium text-amber-950 dark:text-amber-100"
-          :class="props.preview ? 'border border-amber-200/80 bg-amber-50/80 dark:border-amber-700/60 dark:bg-amber-950/35' : 'border border-border/70 bg-amber-50 dark:bg-amber-950/30'"
+          v-else-if="node.kind === 'text' && !isInlineEditing"
+          class="flex min-h-8 w-full items-center whitespace-pre-wrap px-2 py-1.5 text-sm leading-5 text-foreground"
         >
-          {{ textPreview }}
+          {{ textPreview || 'Empty text' }}
         </div>
 
         <div
           v-else-if="node.kind === 'custom-component'"
-          class="border border-dashed px-3 py-2.5"
-          :class="props.preview ? 'border-cyan-200/90 bg-cyan-50/70 dark:border-cyan-700/60 dark:bg-cyan-950/30' : 'border-cyan-300/80 bg-cyan-50/90 dark:border-cyan-700/70 dark:bg-cyan-950/35'"
+          class="border border-dashed border-border/70 bg-muted/10 px-3 py-2.5"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1 space-y-1.5">
-              <div class="inline-flex items-center gap-1 rounded bg-cyan-600/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-800 dark:bg-cyan-400/10 dark:text-cyan-300">
+              <div class="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                 <Blocks class="size-3" />
                 <span>{{ customComponentBadge }}</span>
               </div>
@@ -1579,7 +1719,7 @@ function getInsertStyle(): Record<string, string> | undefined {
           class="flex items-start justify-between gap-2"
         >
           <button
-            v-if="node.kind === 'button'"
+            v-if="node.kind === 'button' && !isInlineEditing"
             type="button"
             class="inline-flex items-center bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm"
           >
@@ -1590,6 +1730,53 @@ function getInsertStyle(): Record<string, string> | undefined {
     </Card>
   </div>
 </template>
+
+<style scoped>
+.ui-editor-layout-guides {
+  --ui-editor-grid-line: rgb(100 116 139 / 0.11);
+
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--ui-editor-grid-line) 0,
+    var(--ui-editor-grid-line) 1px,
+    transparent 1px,
+    transparent var(--ui-editor-grid-row-step)
+  );
+  opacity: 0.82;
+  transition: opacity 120ms ease, background-image 120ms ease;
+}
+
+.ui-editor-layout-guides--active {
+  --ui-editor-grid-line: rgb(14 165 233 / 0.24);
+
+  opacity: 1;
+}
+
+.ui-editor-layout-guide-column {
+  min-width: 0;
+  border-left: 1px solid var(--ui-editor-grid-line);
+}
+
+.ui-editor-layout-guide-column:last-child {
+  border-right: 1px solid var(--ui-editor-grid-line);
+}
+
+.ui-editor-grid-item-surface {
+  background-color: rgb(255 255 255);
+}
+
+:global(.dark) .ui-editor-layout-guides {
+  --ui-editor-grid-line: rgb(148 163 184 / 0.10);
+}
+
+:global(.dark) .ui-editor-layout-guides--active {
+  --ui-editor-grid-line: rgb(56 189 248 / 0.24);
+}
+
+:global(.dark) .ui-editor-grid-item-surface {
+  background-color: rgb(2 6 23);
+}
+</style>
 
 <style scoped>
 .ui-editor-node {

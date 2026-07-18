@@ -9,6 +9,7 @@ import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -24,6 +25,10 @@ const props = defineProps<{
 
 const editor = computed<RVocabsEditor | null>(() => props.tabContext?.editor ?? null)
 const vocabsRef = useSubscribableRefAuto(Endge.vocabs)
+const activeModel = computed<boolean>({
+  get: () => editor.value?.active !== false,
+  set: value => { if (editor.value) editor.value.active = value === true },
+})
 
 const modeModel = computed<'external_payload' | 'internal'>({
   get: () => editor.value?.mode ?? 'internal',
@@ -111,6 +116,11 @@ async function save(): Promise<void> {
     <ScrollArea class="flex-1 px-4 py-3">
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
+          <div class="font-semibold">Основное</div>
+          <label class="flex items-center gap-2 text-sm font-medium">
+            <Checkbox v-model:checked="activeModel" />
+            Активен
+          </label>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">identity</Label>

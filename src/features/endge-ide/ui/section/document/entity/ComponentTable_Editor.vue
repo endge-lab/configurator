@@ -50,6 +50,7 @@ import {
 import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
+import TableDataMappingAssistant from "@/features/endge-ide/ui/components/TableDataMappingAssistant.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
 import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
@@ -375,7 +376,7 @@ function removeEventHandler(
 }
 
 const columnDetailTab = ref<"interface" | "data" | "events">("interface");
-const mainTab = ref<"columns" | "data" | "settings" | "events">("columns");
+const mainTab = ref<"general" | "columns" | "data" | "settings" | "assistant">("columns");
 
 /** Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора */
 const accessorInputRefs = ref<Record<number, HTMLInputElement | null>>({});
@@ -450,11 +451,37 @@ watch(
 
       <div class="flex-1 min-h-0 flex flex-col gap-3 p-3 overflow-hidden">
         <Tabs v-model="mainTab" class="flex-1 min-h-0 flex flex-col">
-          <TabsList class="grid grid-cols-3 w-full max-w-[360px] shrink-0">
+          <TabsList class="grid grid-cols-5 w-full max-w-[560px] shrink-0">
+            <TabsTrigger value="general"> Основное </TabsTrigger>
             <TabsTrigger value="columns"> Колонки </TabsTrigger>
             <TabsTrigger value="data"> Данные </TabsTrigger>
             <TabsTrigger value="settings"> Таблица </TabsTrigger>
+            <TabsTrigger value="assistant"> Помощь </TabsTrigger>
           </TabsList>
+
+          <TabsContent
+            value="general"
+            class="flex-1 min-h-0 mt-3 data-[state=inactive]:hidden"
+          >
+            <Card class="h-full flex flex-col overflow-hidden">
+              <ScrollArea class="flex-1">
+                <div class="p-4 space-y-4 max-w-2xl">
+                  <div class="space-y-2">
+                    <Label>ID компонента</Label>
+                    <Input :model-value="editor.id" readonly />
+                  </div>
+                  <div class="space-y-2">
+                    <Label>Identity</Label>
+                    <Input v-model="editor.identity" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label>Название компонента</Label>
+                    <Input v-model="editor.name" />
+                  </div>
+                </div>
+              </ScrollArea>
+            </Card>
+          </TabsContent>
 
           <TabsContent
             value="columns"
@@ -1013,6 +1040,15 @@ watch(
                   </div>
                 </div>
               </ScrollArea>
+            </Card>
+          </TabsContent>
+
+          <TabsContent
+            value="assistant"
+            class="flex-1 min-h-0 mt-3 data-[state=inactive]:hidden"
+          >
+            <Card class="h-full min-h-0 overflow-hidden py-0">
+              <TableDataMappingAssistant />
             </Card>
           </TabsContent>
 

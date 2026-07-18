@@ -1,14 +1,16 @@
 import type {
   UIEditorBreakpoint,
   UIEditorBreakpointConfig,
-  UIEditorCanvasMode,
   UIEditorDocument,
   UIEditorDragPayload,
   UIEditorNode,
   UIEditorNodeKind,
   UIEditorNodeLayout,
+  UIEditorPanel,
+  UIEditorPanelLayoutKey,
+  UIEditorPanelLayouts,
+  UIEditorPanelVisibility,
   UIEditorTreeNode,
-  UIEditorWorkspaceMode,
 } from '@/features/endge-admin-ui-editor/types'
 import type { UIPrimitiveKind } from '@endge/core'
 
@@ -18,13 +20,16 @@ import {
 import { reactive } from 'vue'
 
 import { printUIEditorDocumentSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
+import { hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 import { patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
-const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v9'
+const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v11'
 const UI_EDITOR_DEMO_STORAGE_KEYS = [
   UI_EDITOR_DEMO_STORAGE_KEY,
+  'endge-admin-ui-editor-demo-state:v10',
+  'endge-admin-ui-editor-demo-state:v9',
   'endge-admin-ui-editor-demo-state:v8',
   'endge-admin-ui-editor-demo-state:v7',
   'endge-admin-ui-editor-demo-state:v6',
@@ -36,6 +41,24 @@ const UI_EDITOR_DEMO_STORAGE_KEYS = [
 const DEFAULT_PAGE_GAP = 10
 const DEFAULT_PAGE_PADDING = 10
 const DEFAULT_PAGE_ROW_HEIGHT = 28
+const UI_EDITOR_PANEL_ORDER: readonly UIEditorPanel[] = ['visual', 'source', 'preview']
+const MIN_PANEL_RATIO = 0.18
+
+const DEFAULT_PANEL_VISIBILITY: UIEditorPanelVisibility = {
+  visual: true,
+  source: false,
+  preview: false,
+}
+
+const DEFAULT_PANEL_LAYOUTS: UIEditorPanelLayouts = {
+  'visual': [1],
+  'source': [1],
+  'preview': [1],
+  'visual-source': [0.58, 0.42],
+  'visual-preview': [0.5, 0.5],
+  'source-preview': [0.46, 0.54],
+  'visual-source-preview': [0.32, 0.34, 0.34],
+}
 
 export const UI_EDITOR_BREAKPOINTS: UIEditorBreakpointConfig[] = [
   {
@@ -60,6 +83,60 @@ export const UI_EDITOR_BREAKPOINTS: UIEditorBreakpointConfig[] = [
 
 function createNodeId(): string {
   return `ui-node-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function clonePanelLayouts(): UIEditorPanelLayouts {
+  return Object.fromEntries(
+    Object.entries(DEFAULT_PANEL_LAYOUTS).map(([key, sizes]) => [key, [...sizes]]),
+  ) as UIEditorPanelLayouts
+}
+
+function panelLayoutKey(panels: readonly UIEditorPanel[]): UIEditorPanelLayoutKey {
+  return panels.join('-') as UIEditorPanelLayoutKey
+}
+
+function normalizePanelSizes(value: unknown, fallback: readonly number[]): number[] {
+  if (!Array.isArray(value) || value.length !== fallback.length) {
+    return [...fallback]
+  }
+  const numeric = value.map(Number)
+  if (numeric.some(size => !Number.isFinite(size) || size <= 0)) {
+    return [...fallback]
+  }
+  const total = numeric.reduce((sum, size) => sum + size, 0)
+  if (total <= 0) {
+    return [...fallback]
+  }
+  const normalized = numeric.map(size => size / total)
+  if (normalized.some(size => size < MIN_PANEL_RATIO)) {
+    return [...fallback]
+  }
+  return normalized
+}
+
+function normalizePanelLayouts(value: unknown): UIEditorPanelLayouts {
+  const candidate = value && typeof value === 'object'
+    ? value as Partial<Record<UIEditorPanelLayoutKey, unknown>>
+    : {}
+  return Object.fromEntries(
+    Object.entries(DEFAULT_PANEL_LAYOUTS).map(([key, fallback]) => [
+      key,
+      normalizePanelSizes(candidate[key as UIEditorPanelLayoutKey], fallback),
+    ]),
+  ) as UIEditorPanelLayouts
+}
+
+function normalizePanelVisibility(value: unknown): UIEditorPanelVisibility | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const candidate = value as Partial<Record<UIEditorPanel, unknown>>
+  const visibility = {
+    visual: candidate.visual === true,
+    source: candidate.source === true,
+    preview: candidate.preview === true,
+  }
+  return Object.values(visibility).some(Boolean) ? visibility : null
 }
 
 function resolveNodeDefinitionRef(input: string): string {
@@ -201,6 +278,10 @@ function createDefaultDocument(): UIEditorDocument {
     propsPatch: {
       title: 'Demo UI Page',
       layoutMode: 'flex',
+      direction: 'column',
+      align: null,
+      justify: null,
+      wrap: false,
       columns: 12,
       gap: DEFAULT_PAGE_GAP,
       padding: DEFAULT_PAGE_PADDING,
@@ -274,6 +355,11 @@ function clampSpacing(value: unknown, fallback: number): number {
   return Math.max(0, Math.min(64, Math.round(numeric)))
 }
 
+function normalizeOptionalLayoutValue(value: unknown): string | null {
+  const normalized = String(value ?? '').trim()
+  return normalized || null
+}
+
 function clampGridMinHeight(value: unknown): number {
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) {
@@ -293,14 +379,6 @@ function toLegacyRowSpan(value: unknown): number {
 
 function isBreakpoint(value: unknown): value is UIEditorBreakpoint {
   return value === 'desktop' || value === 'tablet' || value === 'mobile'
-}
-
-function isCanvasMode(value: unknown): value is UIEditorCanvasMode {
-  return value === 'editor' || value === 'preview'
-}
-
-function isWorkspaceMode(value: unknown): value is UIEditorWorkspaceMode {
-  return value === 'visual' || value === 'split' || value === 'source'
 }
 
 function hasBrowserStorage(): boolean {
@@ -354,6 +432,10 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
       return {
         title: String(node.props.title ?? 'Demo UI Page'),
         layoutMode: node.props.layoutMode === 'grid' ? 'grid' : 'flex',
+        direction: node.props.direction === 'column' ? 'column' : 'row',
+        align: normalizeOptionalLayoutValue(node.props.align),
+        justify: normalizeOptionalLayoutValue(node.props.justify),
+        wrap: node.props.wrap === true,
         columns: Math.max(1, Math.min(12, Math.round(Number(node.props.columns ?? 12)) || 12)),
         gap: clampSpacing(node.props.gap, DEFAULT_PAGE_GAP),
         padding: clampSpacing(node.props.padding, DEFAULT_PAGE_PADDING),
@@ -361,7 +443,10 @@ function normalizeNodeProps(node: UIEditorNode): UIEditorNode['props'] {
       }
     case 'flex':
       return {
-        direction: node.props.direction === 'row' ? 'row' : 'column',
+        direction: node.props.direction === 'column' ? 'column' : 'row',
+        align: normalizeOptionalLayoutValue(node.props.align),
+        justify: normalizeOptionalLayoutValue(node.props.justify),
+        wrap: node.props.wrap === true,
         gap: clampSpacing(node.props.gap, 8),
         padding: clampSpacing(node.props.padding, 8),
       }
@@ -462,8 +547,8 @@ function normalizePageChildrenPositions(
 function readPersistedState(): {
   document: UIEditorDocument
   activeBreakpoint: UIEditorBreakpoint
-  canvasMode: UIEditorCanvasMode
-  workspaceMode: UIEditorWorkspaceMode
+  visiblePanels: UIEditorPanelVisibility
+  panelLayouts: UIEditorPanelLayouts
   selectedNodeId: string | null
   showGridOverlay: boolean
   source: string
@@ -483,8 +568,11 @@ function readPersistedState(): {
     const parsed = JSON.parse(raw) as {
       document?: UIEditorDocument
       activeBreakpoint?: UIEditorBreakpoint
-      canvasMode?: UIEditorCanvasMode
-      workspaceMode?: UIEditorWorkspaceMode
+      visiblePanels?: UIEditorPanelVisibility
+      panelLayouts?: Partial<UIEditorPanelLayouts>
+      canvasMode?: 'editor' | 'preview'
+      workspaceMode?: 'visual' | 'split' | 'source'
+      splitRatio?: number
       selectedNodeId?: string | null
       showGridOverlay?: boolean
       source?: string
@@ -504,13 +592,28 @@ function readPersistedState(): {
         ? parsed.selectedNodeId
         : normalizedDocument.rootId
 
+    const legacyVisibility: UIEditorPanelVisibility = parsed.workspaceMode === 'source'
+      ? { visual: false, source: true, preview: false }
+      : parsed.workspaceMode === 'split' || parsed.showGeneratedCode === true
+        ? { visual: true, source: true, preview: false }
+        : { ...DEFAULT_PANEL_VISIBILITY }
+    if (parsed.canvasMode === 'preview' && legacyVisibility.visual) {
+      legacyVisibility.visual = false
+      legacyVisibility.preview = true
+    }
+    const visiblePanels = normalizePanelVisibility(parsed.visiblePanels) ?? legacyVisibility
+    const panelLayouts = normalizePanelLayouts(parsed.panelLayouts)
+    const legacySplitRatio = Number(parsed.splitRatio)
+    if (!parsed.panelLayouts && Number.isFinite(legacySplitRatio)) {
+      const ratio = Math.max(0.25, Math.min(0.75, legacySplitRatio))
+      panelLayouts['visual-source'] = [ratio, 1 - ratio]
+    }
+
     return {
       document: normalizedDocument,
       activeBreakpoint: isBreakpoint(parsed.activeBreakpoint) ? parsed.activeBreakpoint : 'desktop',
-      canvasMode: isCanvasMode(parsed.canvasMode) ? parsed.canvasMode : 'editor',
-      workspaceMode: isWorkspaceMode(parsed.workspaceMode)
-        ? parsed.workspaceMode
-        : parsed.showGeneratedCode === true ? 'split' : 'visual',
+      visiblePanels,
+      panelLayouts,
       selectedNodeId,
       showGridOverlay: parsed.showGridOverlay === true,
       source: typeof parsed.source === 'string'
@@ -527,9 +630,11 @@ function readPersistedState(): {
 export class UIEditorDemoState {
   public document: UIEditorDocument = createDefaultDocument()
   public activeBreakpoint: UIEditorBreakpoint = 'desktop'
-  public canvasMode: UIEditorCanvasMode = 'editor'
-  public workspaceMode: UIEditorWorkspaceMode = 'visual'
+  public visiblePanels: UIEditorPanelVisibility = { ...DEFAULT_PANEL_VISIBILITY }
+  public panelLayouts: UIEditorPanelLayouts = clonePanelLayouts()
   public selectedNodeId: string | null = this.document.rootId
+  public editingNodeId: string | null = null
+  public inlineEditDraft = ''
   public source = printUIEditorDocumentSFC(this.document)
   public sourceDiagnostics: string[] = []
   public isGridInteractionActive = false
@@ -545,9 +650,11 @@ export class UIEditorDemoState {
   public reset(): void {
     this.document = createDefaultDocument()
     this.activeBreakpoint = 'desktop'
-    this.canvasMode = 'editor'
-    this.workspaceMode = 'visual'
+    this.visiblePanels = { ...DEFAULT_PANEL_VISIBILITY }
+    this.panelLayouts = clonePanelLayouts()
     this.selectedNodeId = this.document.rootId
+    this.editingNodeId = null
+    this.inlineEditDraft = ''
     this.source = printUIEditorDocumentSFC(this.document)
     this.sourceDiagnostics = []
     this.isGridInteractionActive = false
@@ -563,13 +670,74 @@ export class UIEditorDemoState {
     this.persistState()
   }
 
-  public setCanvasMode(mode: UIEditorCanvasMode): void {
-    this.canvasMode = mode
-    this.persistState()
+  public get activePanels(): UIEditorPanel[] {
+    return UI_EDITOR_PANEL_ORDER.filter(panel => this.visiblePanels[panel])
   }
 
-  public setWorkspaceMode(mode: UIEditorWorkspaceMode): void {
-    this.workspaceMode = mode
+  public get activePanelLayoutKey(): UIEditorPanelLayoutKey {
+    return panelLayoutKey(this.activePanels)
+  }
+
+  public isPanelVisible(panel: UIEditorPanel): boolean {
+    return this.visiblePanels[panel]
+  }
+
+  public togglePanel(panel: UIEditorPanel): boolean {
+    if (this.visiblePanels[panel] && this.activePanels.length === 1) {
+      return false
+    }
+    this.commitInlineEdit()
+    this.visiblePanels = {
+      ...this.visiblePanels,
+      [panel]: !this.visiblePanels[panel],
+    }
+    this.persistState()
+    return true
+  }
+
+  public getActivePanelSizes(): number[] {
+    return [...this.panelLayouts[this.activePanelLayoutKey]]
+  }
+
+  public getPanelDividerBoundary(dividerIndex: number): number {
+    return this.getActivePanelSizes()
+      .slice(0, dividerIndex + 1)
+      .reduce((sum, size) => sum + size, 0)
+  }
+
+  public setPanelDividerBoundary(dividerIndex: number, boundary: number, persist = true): void {
+    const key = this.activePanelLayoutKey
+    const sizes = [...this.panelLayouts[key]]
+    if (dividerIndex < 0 || dividerIndex >= sizes.length - 1) {
+      return
+    }
+    const before = sizes.slice(0, dividerIndex).reduce((sum, size) => sum + size, 0)
+    const adjacentTotal = sizes[dividerIndex]! + sizes[dividerIndex + 1]!
+    const left = Math.max(MIN_PANEL_RATIO, Math.min(adjacentTotal - MIN_PANEL_RATIO, boundary - before))
+    sizes[dividerIndex] = left
+    sizes[dividerIndex + 1] = adjacentTotal - left
+    this.panelLayouts = {
+      ...this.panelLayouts,
+      [key]: sizes,
+    }
+    if (persist) {
+      this.persistState()
+    }
+  }
+
+  public resizePanelDivider(dividerIndex: number, delta: number): void {
+    this.setPanelDividerBoundary(
+      dividerIndex,
+      this.getPanelDividerBoundary(dividerIndex) + delta,
+    )
+  }
+
+  public resetActivePanelLayout(): void {
+    const key = this.activePanelLayoutKey
+    this.panelLayouts = {
+      ...this.panelLayouts,
+      [key]: [...DEFAULT_PANEL_LAYOUTS[key]],
+    }
     this.persistState()
   }
 
@@ -625,15 +793,67 @@ export class UIEditorDemoState {
 
   public selectNode(nodeId: string): void {
     if (this.document.nodes[nodeId]) {
+      if (this.editingNodeId && this.editingNodeId !== nodeId) {
+        this.commitInlineEdit()
+      }
       this.selectedNodeId = nodeId
       this.persistState()
     }
+  }
+
+  public beginInlineEdit(nodeId: string): boolean {
+    if (this.sourceDiagnostics.length > 0) {
+      return false
+    }
+    const node = this.getNode(nodeId)
+    if (
+      !node
+      || (node.kind !== 'text' && node.kind !== 'button')
+      || (node.kind === 'text' && hasUIEditorSFCTextBinding(node))
+    ) {
+      return false
+    }
+
+    if (this.editingNodeId && this.editingNodeId !== nodeId) {
+      this.commitInlineEdit()
+    }
+    this.selectedNodeId = nodeId
+    this.editingNodeId = nodeId
+    this.inlineEditDraft = node.kind === 'text' ? node.props.text : node.props.label
+    return true
+  }
+
+  public updateInlineEditDraft(value: string): void {
+    if (!this.editingNodeId) {
+      return
+    }
+    this.inlineEditDraft = value
+  }
+
+  public commitInlineEdit(): void {
+    const node = this.getNode(this.editingNodeId)
+    if (!node || (node.kind !== 'text' && node.kind !== 'button')) {
+      this.editingNodeId = null
+      this.inlineEditDraft = ''
+      return
+    }
+
+    const value = this.inlineEditDraft
+    this.editingNodeId = null
+    this.inlineEditDraft = ''
+    this.patchNodeProps(node.id, node.kind === 'text' ? { text: value } : { label: value })
+  }
+
+  public cancelInlineEdit(): void {
+    this.editingNodeId = null
+    this.inlineEditDraft = ''
   }
 
   public clearSelection(): void {
     if (this.selectedNodeId === null) {
       return
     }
+    this.cancelInlineEdit()
     this.selectedNodeId = null
     this.persistState()
   }
@@ -780,6 +1000,10 @@ export class UIEditorDemoState {
       return
     }
 
+    if (this.editingNodeId === nodeId) {
+      this.cancelInlineEdit()
+    }
+
     const parentId = this.findParentId(nodeId)
     if (parentId) {
       const parent = this.getNode(parentId)
@@ -869,6 +1093,7 @@ export class UIEditorDemoState {
   }
 
   public applySFCSource(source: string): boolean {
+    this.cancelInlineEdit()
     this.source = source
     const projection = projectUIEditorDocumentFromSFC(source, this.document)
     this.sourceDiagnostics = projection.diagnostics
@@ -967,8 +1192,8 @@ export class UIEditorDemoState {
 
     this.document = normalizeDocument(persistedState.document)
     this.activeBreakpoint = persistedState.activeBreakpoint
-    this.canvasMode = persistedState.canvasMode
-    this.workspaceMode = persistedState.workspaceMode
+    this.visiblePanels = persistedState.visiblePanels
+    this.panelLayouts = persistedState.panelLayouts
     this.selectedNodeId = persistedState.selectedNodeId
     this.showGridOverlay = persistedState.showGridOverlay
     this.source = persistedState.source
@@ -997,8 +1222,8 @@ export class UIEditorDemoState {
       window.localStorage.setItem(UI_EDITOR_DEMO_STORAGE_KEY, JSON.stringify({
         document: this.document,
         activeBreakpoint: this.activeBreakpoint,
-        canvasMode: this.canvasMode,
-        workspaceMode: this.workspaceMode,
+        visiblePanels: this.visiblePanels,
+        panelLayouts: this.panelLayouts,
         selectedNodeId: this.selectedNodeId,
         showGridOverlay: this.showGridOverlay,
         source: this.source,

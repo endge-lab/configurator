@@ -1,15 +1,14 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorBreakpoint, UIEditorWorkspaceMode } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorBreakpoint, UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 
 import {
   Braces,
-  Columns2,
-  Eye,
   FileCode2,
   LayoutGrid,
   Monitor,
+  MonitorPlay,
   MonitorSmartphone,
   PanelsTopLeft,
   Smartphone,
@@ -36,22 +35,18 @@ const props = defineProps<{
   state: UIEditorDemoState
 }>()
 
-const isPreviewMode = computed(() => props.state.canvasMode === 'preview')
 const isGridOverlayEnabled = computed(() => props.state.showGridOverlay)
+const isVisualPanelVisible = computed(() => props.state.isPanelVisible('visual'))
 const activeBreakpoint = computed(() => UI_EDITOR_BREAKPOINTS.find(item => item.id === props.state.activeBreakpoint) ?? UI_EDITOR_BREAKPOINTS[0]!)
-const workspaceModes: Array<{
-  id: UIEditorWorkspaceMode
+const panelToggles: Array<{
+  id: UIEditorPanel
   label: string
   icon: typeof PanelsTopLeft
 }> = [
-  { id: 'visual', label: 'Только визуальный редактор', icon: PanelsTopLeft },
-  { id: 'split', label: 'Визуальный редактор и SFC source', icon: Columns2 },
-  { id: 'source', label: 'Только SFC source', icon: FileCode2 },
+  { id: 'visual', label: 'Визуальный UI-редактор', icon: PanelsTopLeft },
+  { id: 'source', label: 'SFC Source', icon: FileCode2 },
+  { id: 'preview', label: 'Runtime Preview', icon: MonitorPlay },
 ]
-
-function togglePreview(): void {
-  props.state.setCanvasMode(isPreviewMode.value ? 'editor' : 'preview')
-}
 
 function logAst(): void {
   props.state.logTree()
@@ -73,48 +68,32 @@ function getBreakpointIcon(breakpointId: UIEditorBreakpoint) {
     <TooltipProvider :delay-duration="120">
       <div
         role="group"
-        aria-label="Режим отображения редактора"
+        aria-label="Видимые панели UI-редактора"
         class="pointer-events-auto inline-flex items-center gap-0.5 rounded-lg border border-border/70 bg-background/92 p-1 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur"
       >
         <Tooltip
-          v-for="mode in workspaceModes"
-          :key="mode.id"
+          v-for="panel in panelToggles"
+          :key="panel.id"
         >
           <TooltipTrigger as-child>
             <Button
               variant="ghost"
               size="icon"
               class="size-8 rounded-md"
-              :class="props.state.workspaceMode === mode.id ? 'bg-foreground text-background shadow-sm hover:bg-foreground/90 hover:text-background' : 'text-muted-foreground hover:text-foreground'"
-              :aria-label="mode.label"
-              :aria-pressed="props.state.workspaceMode === mode.id"
-              @click="props.state.setWorkspaceMode(mode.id)"
+              :class="props.state.isPanelVisible(panel.id) ? 'bg-foreground text-background shadow-sm hover:bg-foreground/90 hover:text-background' : 'text-muted-foreground hover:text-foreground'"
+              :aria-label="panel.label"
+              :aria-pressed="props.state.isPanelVisible(panel.id)"
+              :disabled="props.state.isPanelVisible(panel.id) && props.state.activePanels.length === 1"
+              @click="props.state.togglePanel(panel.id)"
             >
-              <component :is="mode.icon" class="size-4" />
+              <component :is="panel.icon" class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{{ mode.label }}</TooltipContent>
+          <TooltipContent>{{ panel.label }}</TooltipContent>
         </Tooltip>
       </div>
 
       <div class="pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background/92 p-1 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur">
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-8 rounded-md"
-              :class="isPreviewMode ? 'bg-sky-600 text-white hover:bg-sky-600 hover:text-white' : ''"
-              @click="togglePreview"
-            >
-              <Eye class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {{ isPreviewMode ? 'Вернуться в редактор' : 'Запустить превью' }}
-          </TooltipContent>
-        </Tooltip>
-
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
@@ -136,6 +115,7 @@ function getBreakpointIcon(breakpointId: UIEditorBreakpoint) {
               size="icon"
               class="size-8 rounded-md"
               :class="isGridOverlayEnabled ? 'bg-sky-100 text-sky-700 hover:bg-sky-100 hover:text-sky-700 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-950 dark:hover:text-sky-300' : ''"
+              :disabled="!isVisualPanelVisible"
               @click="props.state.toggleGridOverlay()"
             >
               <LayoutGrid class="size-4" />

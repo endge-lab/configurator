@@ -7,7 +7,12 @@ import { computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
@@ -17,6 +22,8 @@ const props = defineProps<{
 }>()
 
 const editor = computed<RPageEditor | null>(() => props.tabContext?.editor ?? null)
+const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { isSystem?: boolean } | null)
+const isSystem = computed(() => documentModel.value?.isSystem === true)
 
 const domainStore = useDomainStore()
 
@@ -28,6 +35,23 @@ const pageTemplate = computed(() => {
   const list = domainStore.pageTemplates ?? []
   return list.find((t: any) => t?.id === templateId) ?? null
 })
+const templateOptions = computed(() =>
+  (domainStore.pageTemplates ?? [])
+    .map((template: any) => ({
+      value: template?.id != null ? String(template.id) : '',
+      label: String(template?.name ?? template?.displayName ?? template?.identity ?? template?.id ?? ''),
+    }))
+    .filter((option: { value: string, label: string }) => option.value),
+)
+
+function setTemplate(value: string | null): void {
+  if (!editor.value)
+    return
+  const normalized = String(value ?? '').trim()
+  editor.value.templateId = normalized && Number.isFinite(Number(normalized))
+    ? Number(normalized)
+    : null
+}
 
 /** Синхронизация областей редактора с областями шаблона при смене шаблона или загрузке. */
 watch(
@@ -246,18 +270,62 @@ const previewAreaLabels = computed(() =>
         Страница - {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
-        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
+        <SaveDocumentButton :loading="EndgeIDE.busy.value" :disabled="isSystem" @click="save" />
       </div>
     </div>
 
     <ScrollArea class="flex-1 px-4 py-3">
       <div class="max-w-3xl">
+        <Card class="mb-4 p-4 space-y-4">
+          <div class="font-semibold">Основное</div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="space-y-2">
+              <Label>Identity</Label>
+              <Input v-model="editor!.identity" :disabled="isSystem" placeholder="page.schedule" />
+            </div>
+            <div class="space-y-2">
+              <Label>Название</Label>
+              <Input v-model="editor!.displayName" :disabled="isSystem" placeholder="Расписание" />
+            </div>
+            <div class="space-y-2">
+              <Label>routeName</Label>
+              <Input v-model="editor!.routeName" :disabled="isSystem" placeholder="schedule" />
+            </div>
+            <div class="space-y-2">
+              <Label>routePath</Label>
+              <Input v-model="editor!.routePath" :disabled="isSystem" placeholder="/schedule" />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label>Описание</Label>
+            <Textarea v-model="editor!.description" :disabled="isSystem" :rows="2" />
+          </div>
+          <div class="space-y-2">
+            <Label>Шаблон страницы</Label>
+            <SearchableSelect
+              :model-value="editor?.templateId != null ? String(editor.templateId) : null"
+              :options="templateOptions"
+              :disabled="isSystem"
+              placeholder="Выберите шаблон страницы"
+              trigger-class="w-full h-9"
+              @update:model-value="value => setTemplate(value != null ? String(value) : null)"
+            />
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <Label>Включена</Label>
+            <Switch
+              :checked="editor?.enabled ?? true"
+              :disabled="isSystem"
+              @update:checked="value => editor && (editor.enabled = !!value)"
+            />
+          </div>
+        </Card>
         <Card class="p-4 space-y-3">
           <div class="font-semibold">
             Превью шаблона
           </div>
           <p v-if="!editor?.templateId" class="text-xs text-muted-foreground">
-            Выберите шаблон страницы в инспекторе, чтобы отобразить превью.
+            Выберите шаблон страницы во вкладке «Основное», чтобы отобразить превью.
           </p>
           <p v-else-if="!pageTemplate?.preview?.rows?.length" class="text-xs text-muted-foreground">
             У выбранного шаблона нет настроенного превью.
