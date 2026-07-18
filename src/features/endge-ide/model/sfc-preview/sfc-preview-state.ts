@@ -1,27 +1,28 @@
+import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import type {
-  ComponentSFCPreviewOptions,
-  ComponentSFCPreviewProps,
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
-  CompositionRuntimeHost,
+  EndgeStyleSheetArtifact,
   ProgramArtifact,
   RuntimeHostInputSource,
-  EndgeStyleSheetArtifact,
 } from '@endge/core'
 
 import {
+  analyzeComponentSFCScript,
   compileComponentSFC,
   Endge,
-  RComponentSFC,
-  RComposition,
-  RComputation,
-  analyzeComponentSFCScript,
   parseComponentSFC,
+  RComponentSFC,
+  RComputation,
 } from '@endge/core'
-import { Raph } from '@endge/raph'
 import { materializeEndgeCSSForDOM } from '@endge/vue'
 import { computed, reactive, shallowRef } from 'vue'
 
+import {
+  destroyComponentPreviewContext,
+  prepareComponentPreviewContext,
+  resolveComponentPreviewInput,
+} from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import {
   configuratorPreviewAppScope,
   configuratorPreviewMeta,
@@ -46,13 +47,8 @@ export const sfcPreviewTitle = shallowRef('SFC preview')
 export const hasSFCPreviewRuntime = computed(() => Boolean(sfcPreviewRuntime.value))
 
 let runtimeCounter = 0
-let previewComposition: PreviewCompositionContext | null = null
+let previewComposition: ComponentPreviewContext | null = null
 let previewStyleElement: HTMLStyleElement | null = null
-
-interface PreviewCompositionContext {
-  host: CompositionRuntimeHost
-  dataAliases: Map<string, string>
-}
 
 export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<void> {
   await serializePreviewLifecycle('component-sfc', async () => {
@@ -83,9 +79,18 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
     await disposeSFCPreviewRuntime()
     applyPreviewStyle(artifact.payload.ir?.style ?? null)
     await destroyPreviewRuntime('component-sfc', identity)
-    const composition = await applyPreviewOptions(artifact.payload.previewOptions, previewProps, input)
+    const composition = await prepareComponentPreviewContext(
+      artifact.payload.previewOptions,
+      previewProps,
+      input,
+      {
+        appScope: configuratorPreviewAppScope,
+        meta: configuratorPreviewMeta(),
+        resolveStoreRuntime: identity => resolvePreviewRuntime<{ id: string, entityType: string }>('store', identity),
+      },
+    )
     try {
-      const runtimeInput = resolvePreviewInput(previewProps, composition)
+      const runtimeInput = resolveComponentPreviewInput(previewProps, composition)
       sfcPreviewInput.value = runtimeInput
       const artifactReader = {
         getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
@@ -106,7 +111,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
       sfcPreviewRuntime.value = runtime
     }
     catch (error) {
-      await destroyPreviewComposition(composition)
+      await destroyComponentPreviewContext(composition)
       throw error
     }
   })
@@ -120,7 +125,7 @@ async function disposeSFCPreviewRuntime(): Promise<void> {
   const runtimeId = sfcPreviewRuntime.value?.id
   try {
     if (previewComposition) {
-      await destroyPreviewComposition(previewComposition)
+      await destroyComponentPreviewContext(previewComposition)
     }
     else if (runtimeId) {
       await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
@@ -168,10 +173,14 @@ function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<ComponentS
 }
 
 function applyPreviewStyle(style: EndgeStyleSheetArtifact | null): void {
-  if (typeof document === 'undefined') return
+  if (typeof document === 'undefined') {
+    return
+  }
   previewStyleElement ??= document.createElement('style')
   previewStyleElement.dataset.endgePreviewStyles = ''
-  if (!previewStyleElement.isConnected) document.head.append(previewStyleElement)
+  if (!previewStyleElement.isConnected) {
+    document.head.append(previewStyleElement)
+  }
   previewStyleElement.textContent = style ? materializeEndgeCSSForDOM([style]).css : ''
 }
 
@@ -207,246 +216,31 @@ function ensurePreviewPortArtifacts(
   visited = new Set<string>(),
 ): void {
   for (const dependency of payload.dependencies.computations) {
-    if (Endge.program.getComputationArtifact(dependency.id)) continue
+    if (Endge.program.getComputationArtifact(dependency.id)) {
+      continue
+    }
     const model = Endge.domain.getComputation(dependency.id)
-    if (model) Endge.compiler.buildComputation(model)
+    if (model) {
+      Endge.compiler.buildComputation(model)
+    }
   }
 
   for (const dependency of payload.dependencies.components) {
     const identity = String(dependency.id)
-    if (visited.has(identity)) continue
+    if (visited.has(identity)) {
+      continue
+    }
     visited.add(identity)
     let artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
     if (!artifact) {
       const model = Endge.domain.getComponentSFC(identity)
-      if (model) artifact = Endge.compiler.buildComponentSFC(model)
+      if (model) {
+        artifact = Endge.compiler.buildComponentSFC(model)
+      }
     }
-    if (artifact && artifact.status !== 'error')
+    if (artifact && artifact.status !== 'error') {
       ensurePreviewPortArtifacts(artifact.payload, visited)
-  }
-}
-
-async function applyPreviewOptions(
-  options: ComponentSFCPreviewOptions | null,
-  props: ComponentSFCPreviewProps,
-  input: SFCPreviewLaunchInput,
-): Promise<PreviewCompositionContext | null> {
-  for (const [path, value] of Object.entries(options?.seed ?? {})) {
-    Raph.set(path, clonePreviewValue(value))
-  }
-
-  await ensurePreviewQueryArtifacts(options)
-
-  const storeIdentities = new Set<string>()
-  for (const value of Object.values(props)) {
-    if (isDataPreviewProp(value)) {
-      storeIdentities.add(value.store)
     }
-  }
-  for (const target of options?.run ?? []) {
-    if (target.storeTo) {
-      storeIdentities.add(target.storeTo.store)
-    }
-  }
-  const targets = options?.run ?? []
-  if (!storeIdentities.size && !targets.length) {
-    return null
-  }
-
-  const dataAliases = new Map<string, string>()
-  Array.from(storeIdentities).forEach((identity, index) => dataAliases.set(identity, `store${index}`))
-  const model = createPreviewComposition(input, dataAliases, targets)
-  const artifact = Endge.compiler.buildComposition(model)
-  if (artifact.status === 'error') {
-    const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
-      ?? 'Не удалось собрать preview composition.'
-    throw new Error(message)
-  }
-
-  const host = configuratorPreviewAppScope.execute(model, {
-    meta: {
-      ...configuratorPreviewMeta(),
-      dataRuntimes: resolvePreviewStoreRuntimes(dataAliases),
-    },
-  }) as CompositionRuntimeHost | null
-  if (!host || host.entityType !== 'composition') {
-    throw new Error('Не удалось создать preview composition runtime.')
-  }
-  try {
-    await host.mountGraph()
-  }
-  catch (error) {
-    Endge.runtime.destroyRuntimeTree(host.id)
-    throw error
-  }
-  return { host, dataAliases }
-}
-
-function resolvePreviewStoreRuntimes(dataAliases: Map<string, string>): Record<string, string> {
-  const runtimes: Record<string, string> = {}
-  for (const [identity, alias] of dataAliases) {
-    const runtime = resolvePreviewRuntime<{ id: string, entityType: string }>('store', identity)
-    if (runtime?.entityType === 'store') {
-      runtimes[alias] = runtime.id
-    }
-  }
-  return runtimes
-}
-
-async function ensurePreviewQueryArtifacts(options: ComponentSFCPreviewOptions | null): Promise<void> {
-  const queryTargets = options?.run?.filter(target => target.type === 'query') ?? []
-  if (!queryTargets.length) {
-    return
-  }
-
-  try {
-    await Endge.build()
-  }
-  catch {
-    // Preview still tries to compile the requested queries directly below.
-  }
-
-  for (const target of queryTargets) {
-    const query = Endge.domain.getQuery(target.identity)
-    if (!query) {
-      throw new Error(`Preview query not found: "${target.identity}".`)
-    }
-
-    const idOrIdentity = query.id ?? query.identity
-    if (Endge.program.getQueryArtifact(idOrIdentity)) {
-      continue
-    }
-
-    Endge.compiler.buildQuery(query)
-  }
-}
-
-function resolvePreviewInput(
-  previewProps: ComponentSFCPreviewProps,
-  composition: PreviewCompositionContext | null,
-): RuntimeHostInputSource {
-  const bindings: Record<string, { path: string, wildcardDynamic: true }> = {}
-  const localProps: Record<string, unknown> = {}
-
-  for (const [key, value] of Object.entries(previewProps)) {
-    if (isStorePreviewProp(value)) {
-      bindings[key] = {
-        path: value.path,
-        wildcardDynamic: true,
-      }
-      continue
-    }
-    if (isDataPreviewProp(value)) {
-      const alias = composition?.dataAliases.get(value.store)
-      if (!alias || !composition) {
-        throw new Error(`Preview Store not mounted: "${value.store}".`)
-      }
-      bindings[key] = {
-        path: composition.host.getDataPath(alias, value.path),
-        wildcardDynamic: true,
-      }
-      continue
-    }
-
-    localProps[key] = clonePreviewValue(value)
-  }
-
-  if (Object.keys(bindings).length === 0) {
-    return { kind: 'local', props: localProps }
-  }
-
-  for (const [key, value] of Object.entries(localProps)) {
-    const path = `preview.sfc.props.${key}`
-    Raph.set(path, value)
-    bindings[key] = {
-      path,
-      wildcardDynamic: true,
-    }
-  }
-
-  return {
-    kind: 'raph',
-    bindings,
-  }
-}
-
-function createPreviewComposition(
-  input: SFCPreviewLaunchInput,
-  dataAliases: Map<string, string>,
-  targets: NonNullable<ComponentSFCPreviewOptions['run']>,
-): RComposition {
-  const data = Array.from(dataAliases.entries())
-    .map(([identity, alias]) => `${alias}: store(${JSON.stringify(identity)})`)
-    .join(',\n    ')
-  const runtimes = targets.map((target, index) => {
-    const publication = target.storeTo
-      ? `.storeTo(data(${JSON.stringify(dataAliases.get(target.storeTo.store))}), ${serializeStoreMapping(target.storeTo.fields)})`
-      : ''
-    return `query${index}: query(${JSON.stringify(target.identity)})${publication}`
-  }).join(',\n    ')
-  const hooks = targets.map((_, index) => `onMount().run('query${index}')`).join(',\n    ')
-  const model = new RComposition()
-  model.id = `${resolvePreviewIdentity(input)}-sfc-context-model` as any
-  model.identity = `${resolvePreviewIdentity(input)}-sfc-context`
-  model.name = 'SFC preview composition'
-  model.displayName = 'SFC preview composition'
-  model.source = `defineComposition({
-  data: {
-    ${data}
-  },
-  runtimes: {
-    ${runtimes}
-  },
-  hooks: [
-    ${hooks}
-  ],
-})`
-  return model
-}
-
-function serializeStoreMapping(fields: Record<string, string>): string {
-  return `{ ${Object.entries(fields)
-    .map(([target, output]) => `${JSON.stringify(target)}: output(${JSON.stringify(output)})`)
-    .join(', ')} }`
-}
-
-async function destroyPreviewComposition(context: PreviewCompositionContext | null): Promise<void> {
-  if (context && Endge.runtime.getRuntimeById(context.host.id)) {
-    await Endge.runtime.destroyRuntimeTreeAsync(context.host.id)
-  }
-}
-
-function isStorePreviewProp(value: unknown): value is { type: 'store', path: string } {
-  return Boolean(
-    value
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && (value as { type?: unknown }).type === 'store'
-    && typeof (value as { path?: unknown }).path === 'string',
-  )
-}
-
-function isDataPreviewProp(value: unknown): value is { type: 'data', store: string, path: string } {
-  return Boolean(
-    value
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && (value as { type?: unknown }).type === 'data'
-    && typeof (value as { store?: unknown }).store === 'string'
-    && typeof (value as { path?: unknown }).path === 'string',
-  )
-}
-
-function clonePreviewValue(value: unknown): unknown {
-  if (value == null) {
-    return value
-  }
-
-  try {
-    return JSON.parse(JSON.stringify(value))
-  }
-  catch {
-    return value
   }
 }
 

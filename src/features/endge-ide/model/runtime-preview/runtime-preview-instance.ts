@@ -6,6 +6,7 @@ import type {
   RuntimePreviewTarget,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import type {
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
@@ -20,6 +21,11 @@ import { Endge } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 
 import { runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import {
+  destroyComponentPreviewContext,
+  prepareComponentPreviewContext,
+  resolveComponentPreviewInput,
+} from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import { buildRuntimePreviewTree } from '@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder'
 
 /** Owns one explicitly launched preview root and all runtime resources below it. */
@@ -42,6 +48,7 @@ export class RuntimePreviewInstance {
   private _project: ProjectRuntimeSession | null = null
   private _composition: CompositionSession | null = null
   private _component: ComponentSFCRuntimeHost | null = null
+  private _componentContext: ComponentPreviewContext | null = null
   private _store: StoreRuntimeHost | null = null
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
@@ -257,12 +264,35 @@ export class RuntimePreviewInstance {
     const model = Endge.domain.getComponentSFC(identity)
     const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
     if (!model || !artifact || artifact.status === 'error') { throw new Error(`[RuntimePreview] Component SFC "${identity}" is unavailable.`) }
-    const runtime = Endge.runtime.execute(model, {
-      persistence: 'disabled',
-      meta: { target: 'dom', input: { kind: 'local', props: artifact.payload.previewProps ?? {} } },
-    }) as ComponentSFCRuntimeHost | null
-    if (!runtime) { throw new Error(`[RuntimePreview] Component SFC "${identity}" cannot be mounted.`) }
-    return runtime
+    const previewProps = artifact.payload.previewProps ?? {}
+    const context = await prepareComponentPreviewContext(
+      artifact.payload.previewOptions,
+      previewProps,
+      model,
+      {
+        contextSuffix: 'debug-sfc-context',
+        meta: { mode: 'debug-preview' },
+      },
+    )
+    try {
+      const input = resolveComponentPreviewInput(
+        previewProps,
+        context,
+        `runtime-preview.sfc.${encodeURIComponent(identity)}.props`,
+      )
+      const runtime = Endge.runtime.execute(model, {
+        parent: context?.host ?? null,
+        persistence: 'disabled',
+        meta: { mode: 'debug-preview', target: 'dom', input },
+      }) as ComponentSFCRuntimeHost | null
+      if (!runtime) { throw new Error(`[RuntimePreview] Component SFC "${identity}" cannot be mounted.`) }
+      this._componentContext = context
+      return runtime
+    }
+    catch (error) {
+      await destroyComponentPreviewContext(context)
+      throw error
+    }
   }
 
   private async mountStore(identity: string): Promise<StoreRuntimeHost> {
@@ -448,14 +478,17 @@ export class RuntimePreviewInstance {
     const project = this._project
     const composition = this._composition
     const component = this._component
+    const componentContext = this._componentContext
     const store = this._store
     this._project = null
     this._composition = null
     this._component = null
+    this._componentContext = null
     this._store = null
     this.renderables.value = []
     if (project) { await project.unmount().catch(() => {}) }
     if (composition) { await composition.unmount().catch(() => {}) }
+    if (componentContext) { await destroyComponentPreviewContext(componentContext).catch(() => {}) }
     if (component && Endge.runtime.getRuntimeById(component.id)) { await Endge.runtime.destroyRuntimeTreeAsync(component.id).catch(() => {}) }
     if (store && Endge.runtime.getRuntimeById(store.id)) { await Endge.runtime.destroyRuntimeTreeAsync(store.id).catch(() => {}) }
   }
