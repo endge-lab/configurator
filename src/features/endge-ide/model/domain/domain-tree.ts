@@ -53,6 +53,11 @@ export interface FsFileNode extends FsNodeBase {
   parentComponentId?: string
   presentationKind?: CompositionPresentationKind
   origin?: EntityOrigin
+  /** Persisted authoring document represented by this virtual projection. */
+  sourceDocument?: {
+    identity: string
+    docType: DomainDocumentType
+  }
 }
 
 export type FsNode = FsFolderNode | FsFileNode
@@ -752,6 +757,12 @@ export function attachResolvedActionTree(
       docType,
       sectionType: DomainSectionType.Component,
       virtual: true,
+      ...(kind === 'derived' && {
+        sourceDocument: {
+          identity: ownerIdentity,
+          docType,
+        },
+      }),
       children: [],
     }
     ;(parent.children ??= []).push(owner)

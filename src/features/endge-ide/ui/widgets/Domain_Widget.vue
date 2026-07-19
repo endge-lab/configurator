@@ -925,6 +925,14 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
 
   const node = item.node as FsFileNode
   if (node.virtual) {
+    if (node.sourceDocument) {
+      const { identity, docType } = node.sourceDocument
+      const source = docType === COMPONENT_SFC_TYPE
+        ? Endge.domain.getComponentSFC(identity)
+        : Endge.domain.getComponent(identity)
+      EndgeIDE.tabs.openDocument(source?.id ?? identity, docType)
+      return
+    }
     toast.info('Runtime Action доступен только для выбора и выполнения', {
       description: 'Built-in, local и provided Actions не имеют persisted editor.',
     })
