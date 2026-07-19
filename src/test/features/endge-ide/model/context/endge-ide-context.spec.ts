@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   executionContext: {} as Record<string, unknown>,
   boot: vi.fn(),
   reset: vi.fn(),
-  requireActive: vi.fn(() => ({ id: 'vue-shadcn' })),
+  requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'vue-shadcn' })),
 }))
 
 vi.mock('@endge/core', () => ({
@@ -77,7 +77,13 @@ describe('endgeIDE context', () => {
         SENTRY_RELEASE: 'endge-local@1',
       },
     }))
-    expect(mocks.requireActive).toHaveBeenCalledOnce()
+    expect(mocks.requireActive).toHaveBeenCalledWith({
+      protocol: 'endge.sfc-render-adapter',
+      protocolVersion: 1,
+      requiredRendererKeys: [],
+      requiredRootKeys: ['shell', 'sfc', 'sfc-runtime', 'filter-view'],
+    })
+    expect(mocks.requireActive.mock.calls[0]?.[0]).not.toHaveProperty('renderer')
   })
 
   it('disposes registered surfaces before a project context reboot', async () => {

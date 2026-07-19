@@ -2,10 +2,10 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 
-import { RField } from '@endge/core'
+import { Endge, RField } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
-import { Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { Loader2, Plus, Save, Settings2, Trash2, Workflow } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -56,11 +56,30 @@ const flowEditorModel = computed<RActionEditor>({
 })
 const domainStore = useDomainStore()
 const activeTab = ref<'general' | 'flow'>('general')
+const overrideVersion = ref(0)
+const unsubscribeActions = Endge.actions.subscribe(() => {
+  overrideVersion.value += 1
+  const effective = Endge.actions.listResolved().find(action => action.identity === editor.value?.identity)
+  if (!editor.value) return
+  editor.value.overridden = effective?.overridden === true
+  editor.value.effectiveProviderKey = effective?.effectiveProviderKey ?? null
+  editor.value.effectiveProviderOrigin = effective?.effectiveProviderOrigin?.kind ?? null
+  editor.value.bindingScope = effective?.bindingScope ?? null
+  if (editor.value.overridden && activeTab.value === 'flow')
+    activeTab.value = 'general'
+})
+onBeforeUnmount(unsubscribeActions)
+const isOverridden = computed(() => {
+  void overrideVersion.value
+  return editor.value?.overridden === true
+})
 const stepsCount = computed(() => editor.value?.definition?.nodes?.length ?? 0)
-const tabButtons = [
-  { value: 'general', icon: Settings2, label: uiText.tabGeneral },
-  { value: 'flow', icon: Workflow, label: uiText.tabFlow },
-] as const
+const tabButtons = computed(() => [
+  { value: 'general' as const, icon: Settings2, label: uiText.tabGeneral },
+  ...(!isOverridden.value
+    ? [{ value: 'flow' as const, icon: Workflow, label: uiText.tabFlow }]
+    : []),
+])
 
 const typeOptions = computed(() => {
   const primitives: Array<{ value: string, label: string }> = (
@@ -151,6 +170,18 @@ function updateFieldOptional(
   }
   field.optional = checked
 }
+
+function addTarget(): void {
+  if (!editor.value || isOverridden.value) return
+  editor.value.target = [...(editor.value.target ?? []), { type: '' }]
+}
+
+function removeTarget(index: number): void {
+  if (!editor.value || isOverridden.value) return
+  const next = [...(editor.value.target ?? [])]
+  next.splice(index, 1)
+  editor.value.target = next.length ? next : null
+}
 </script>
 
 <template>
@@ -213,10 +244,26 @@ function updateFieldOptional(
     <template v-if="activeTab === 'general'">
       <ScrollArea class="h-full min-h-0 flex-1">
         <div class="mx-auto max-w-3xl space-y-4 p-6">
+          <div
+            v-if="isOverridden"
+            class="rounded-md border border-violet-300/60 bg-violet-500/10 p-3 text-sm"
+          >
+            <div class="font-medium">Логика Action переопределена локальным provider</div>
+            <div class="mt-1 text-muted-foreground">
+              {{ editor.effectiveProviderKey }} · {{ editor.effectiveProviderOrigin }} · {{ editor.bindingScope }}
+            </div>
+            <div class="mt-1 text-muted-foreground">
+              Default: {{ JSON.stringify(editor.defaultImplementation) }}
+            </div>
+            <div class="mt-1 text-muted-foreground">
+              Identity, target, input/output и сохранённый Flow доступны только для чтения.
+            </div>
+          </div>
           <div class="space-y-2">
             <Label>{{ uiText.identity }}</Label>
             <Input
               v-model="editor!.identity"
+              :disabled="isOverridden"
               placeholder="app.configurator.ready"
             />
           </div>
@@ -252,6 +299,7 @@ function updateFieldOptional(
                   <select
                     :value="editor?.input?.type ?? ''"
                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    :disabled="isOverridden"
                     @change="
                       (event) =>
                         updateFieldType(
@@ -273,6 +321,7 @@ function updateFieldOptional(
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :checked="editor?.input?.isArray ?? false"
+                    :disabled="isOverridden"
                     @update:checked="
                       (value: boolean) => updateFieldArray('input', value)
                     "
@@ -283,6 +332,7 @@ function updateFieldOptional(
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :checked="editor?.input?.optional ?? false"
+                    :disabled="isOverridden"
                     @update:checked="
                       (value: boolean) => updateFieldOptional('input', value)
                     "
@@ -302,6 +352,7 @@ function updateFieldOptional(
                   <select
                     :value="editor?.output?.type ?? ''"
                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    :disabled="isOverridden"
                     @change="
                       (event) =>
                         updateFieldType(
@@ -323,6 +374,7 @@ function updateFieldOptional(
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :checked="editor?.output?.isArray ?? false"
+                    :disabled="isOverridden"
                     @update:checked="
                       (value: boolean) => updateFieldArray('output', value)
                     "
@@ -333,6 +385,7 @@ function updateFieldOptional(
                 <div class="flex items-center gap-2">
                   <Checkbox
                     :checked="editor?.output?.optional ?? false"
+                    :disabled="isOverridden"
                     @update:checked="
                       (value: boolean) => updateFieldOptional('output', value)
                     "
@@ -340,6 +393,26 @@ function updateFieldOptional(
                   <Label class="text-sm">{{ uiText.optional }}</Label>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 rounded-lg border p-3">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <Label>Runtime target</Label>
+                <p class="text-xs text-muted-foreground">Селекторы являются альтернативами; один запуск получает одну цель.</p>
+              </div>
+              <Button v-if="!isOverridden" type="button" size="sm" variant="outline" @click="addTarget">
+                <Plus class="mr-1 size-3.5" /> Добавить
+              </Button>
+            </div>
+            <div v-if="!editor.target?.length" class="text-sm text-muted-foreground">Target не требуется</div>
+            <div v-for="(target, index) in editor.target ?? []" :key="index" class="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+              <Input v-model="target.type" :disabled="isOverridden" placeholder="component.table" />
+              <Input v-model="target.identity" :disabled="isOverridden" placeholder="identity (optional)" />
+              <Button v-if="!isOverridden" type="button" size="icon" variant="ghost" @click="removeTarget(index)">
+                <Trash2 class="size-4" />
+              </Button>
             </div>
           </div>
 

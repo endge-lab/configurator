@@ -193,8 +193,8 @@ export class EndgeIDEContext {
     const adapter = Endge.uiRegistry.adapters.requireActive({
       protocol: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
       protocolVersion: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
-      renderer: 'vue',
       requiredRendererKeys: ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+      requiredRootKeys: ['shell', 'sfc', 'sfc-runtime', 'filter-view'],
     })
 
     if (adapter.id !== Endge.workspace.defaultSfcAdapterId) {

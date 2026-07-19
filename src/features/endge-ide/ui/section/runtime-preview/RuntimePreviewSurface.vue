@@ -3,12 +3,12 @@
 import type { RuntimePreviewRenderable, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Raph } from '@endge/raph'
-import { EndgeFilterRenderer, SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { Boxes, Braces, CircleAlert, LoaderCircle, Pause, Play, RefreshCw, Square, SquareStack } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
+import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
@@ -268,9 +268,14 @@ onBeforeUnmount(() => {
             :key="item.key"
             class="runtime-preview-surface__renderable border-b border-border/70 pb-5 last:border-b-0 last:pb-0"
           >
-            <EndgeFilterRenderer v-if="item.kind === 'filter-view'" :runtime="item.runtime" />
-            <SFC_RuntimeRenderer
+            <EndgeAdapterRoot
+              v-if="item.kind === 'filter-view'"
+              root-key="filter-view"
+              :runtime="item.runtime"
+            />
+            <EndgeAdapterRoot
               v-else-if="item.kind === 'component-sfc'"
+              root-key="sfc-runtime"
               :host="item.runtime"
               :input="item.input"
             />

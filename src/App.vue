@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import 'vue-sonner/style.css'
 
-import { EndgeShell } from '@endge/ui-vue'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
@@ -79,7 +79,7 @@ onErrorCaptured((err, instance, info) => {
 </script>
 
 <template>
-  <EndgeShell project="configurator" env="dev">
+  <EndgeAdapterRoot root-key="shell" project="configurator" env="dev">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>
       <div class="fixed inset-0 z-[220] flex flex-col items-center justify-center gap-4 bg-slate-50/70 backdrop-blur-sm">
@@ -100,7 +100,7 @@ onErrorCaptured((err, instance, info) => {
       />
       <RouterView v-else />
     </component>
-  </EndgeShell>
+  </EndgeAdapterRoot>
 
   <Toaster
     position="top-right"

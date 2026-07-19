@@ -9,7 +9,7 @@ import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/en
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
 import type { DomainDocumentType, RCompositionKind } from '@endge/core'
 
-import { ComponentType, DomainSectionType, Endge, QueryType, isExternallyManaged } from '@endge/core'
+import { ComponentType, DomainSectionType, Endge, isExternallyManaged, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
   ArrowLeftRight,
@@ -66,11 +66,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
 } from '@/features/endge-ide/model/domain/domain-document-presentation'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
@@ -89,6 +89,7 @@ import {
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
 import {
+  attachResolvedActionTree,
   buildDomainTree,
   flattenTree,
   getDomainTreeRootBlocks,
@@ -126,6 +127,10 @@ type MenuAction
     | { type: 'clear-soft-deleted' }
 
 const domainStore = useDomainStore()
+const actionRegistryVersion = ref(0)
+const unsubscribeActions = Endge.actions.subscribe(() => {
+  actionRegistryVersion.value += 1
+})
 
 /** Id папки «Удалённые» для дерева и пометки сущностей. */
 const softDeletedFolderId = computed(() => Endge.domain.getFolderByIdentity('soft-deleted')?.id ?? null)
@@ -325,6 +330,7 @@ watch(() => contextMenu.value.open, (open) => {
   window.addEventListener('scroll', onWindowChange, { passive: true, capture: true })
 })
 onBeforeUnmount(() => {
+  unsubscribeActions()
   document.removeEventListener('mousedown', onContextMenuClickOutside)
   document.removeEventListener('keydown', onContextMenuKeydown)
   window.removeEventListener('resize', onWindowChange)
@@ -336,7 +342,7 @@ const dragSources = ref<FsFileNode[]>([])
 const dragOverPath = ref<string | null>(null)
 
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
-  if (!e.dataTransfer || item.node.type !== 'file')
+  if (!e.dataTransfer || item.node.type !== 'file' || item.node.virtual)
     return
   const itemKey = getSelectionKey(item)
   const sourceItems = selectedFileIds.value.has(itemKey)
@@ -664,6 +670,9 @@ function getFolderIcon(node: FsFolderNode): any {
 function getFolderColorClass(node: FsFolderNode): string {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
+  if (node.virtualOrigin === 'builtin') {
+    return 'fill-sky-500/30 text-sky-600 dark:text-sky-400'
+  }
   return 'fill-current text-yellow-500 dark:text-slate-400'
 }
 
@@ -691,6 +700,7 @@ function getRootDocumentBadgeIcon(node: FsFileNode): any | null {
 
 // ---------- дерево ----------
 const fsTree = computed<FsNode[]>(() => {
+  void actionRegistryVersion.value
   const allFolders = Array.isArray(domainStore.folders) ? domainStore.folders : []
   const tree = buildDomainTree({
     rootToSection: ROOT_TO_SECTION.value,
@@ -711,6 +721,8 @@ const fsTree = computed<FsNode[]>(() => {
       folderId?: string | number | null
     }>,
   })
+
+  attachResolvedActionTree(tree, Endge.actions.listResolved())
 
   return tree
 })
@@ -820,7 +832,7 @@ const lastClickedPath = ref<string | null>(null)
 
 const selectedExportNodes = computed<FsFileNode[]>(() =>
   allDomainFileItems.value
-    .filter(item => selectedFileIds.value.has(getSelectionKey(item)))
+    .filter(item => !item.node.virtual && selectedFileIds.value.has(getSelectionKey(item)))
     .map(item => item.node as FsFileNode),
 )
 
@@ -908,6 +920,12 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   }
 
   const node = item.node as FsFileNode
+  if (node.virtual) {
+    toast.info('Runtime Action доступен только для выбора и выполнения', {
+      description: 'Built-in, local и provided Actions не имеют persisted editor.',
+    })
+    return
+  }
   const isShift = (e as MouseEvent & { shiftKey?: boolean }).shiftKey
   const isMulti = (e as MouseEvent & { ctrlKey?: boolean, metaKey?: boolean }).ctrlKey || (e as MouseEvent & { metaKey?: boolean }).metaKey
 
@@ -1093,6 +1111,8 @@ function getContextFileNodes(node: FsFileNode, path?: string | null): FsFileNode
 /** Формирует контекстные действия для узла дерева домена. */
 function getMenuActions(node: FsNode, path?: string | null): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
+  if (node.virtual)
+    return items
 
   if (node.type === 'folder') {
     const isRoot = node.isRoot === true
@@ -1330,13 +1350,20 @@ function getRootHierarchyColorClass(rootId: string): string {
 function rowClasses(item: FlatFsItem): string {
   const isOver = dragOverPath.value === item.path && item.node.type === 'folder'
   const selected = isSelected(item)
+  const isBuiltinOriginGroup
+    = item.node.type === 'folder'
+      && (item.node as FsFolderNode).virtualOrigin === 'builtin'
   const isMutedSystemFolder
     = item.node.type === 'folder'
       && isManagedTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
   return [
     'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
-    isMutedSystemFolder ? 'text-slate-600' : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
+    isBuiltinOriginGroup
+      ? 'bg-sky-500/15 text-sky-800 hover:bg-sky-500/25 dark:bg-sky-500/20 dark:text-sky-100'
+      : isMutedSystemFolder
+        ? 'text-slate-600'
+        : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
   ].filter(Boolean).join(' ')
@@ -1481,7 +1508,7 @@ function rowClasses(item: FlatFsItem): string {
                 :key="it.path"
                 :class="rowClasses(it)"
                 :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
-                :draggable="it.node.type === 'file' && !(it.node as FsFileNode).isTableColumn"
+                :draggable="it.node.type === 'file' && !it.node.virtual && !(it.node as FsFileNode).isTableColumn"
                 @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
                 @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
                 @dragstart="(e) => onDragStart(e, it)"
@@ -1541,7 +1568,12 @@ function rowClasses(item: FlatFsItem): string {
 
                 <span class="truncate">{{ it.node.name }}</span>
                 <span
-                  v-if="it.node.managedBy === 'system'"
+                  v-for="badge in it.node.badges ?? []"
+                  :key="badge"
+                  class="shrink-0 rounded border border-sky-300/60 bg-sky-500/10 px-1 text-[9px] leading-4 text-sky-700 dark:text-sky-300"
+                >{{ badge }}</span>
+                <span
+                  v-if="it.node.managedBy === 'system' && !(it.node.badges ?? []).includes('system')"
                   class="shrink-0 rounded border border-amber-300/60 bg-amber-500/10 px-1 text-[9px] leading-4 text-amber-700 dark:text-amber-300"
                 >system</span>
                 <span

@@ -1,5 +1,5 @@
 import './assets/main.css'
-import '@endge/ui-vue-shadcn/shadcn-vue.css'
+import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 import 'reflect-metadata'
 

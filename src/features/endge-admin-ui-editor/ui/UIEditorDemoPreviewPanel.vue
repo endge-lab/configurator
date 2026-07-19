@@ -2,11 +2,11 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
-import { SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
 
 const props = defineProps<{
@@ -107,7 +107,8 @@ onBeforeUnmount(() => {
         v-if="session.runtime.value"
         class="mx-auto min-h-full w-full"
       >
-        <SFC_RuntimeRenderer
+        <EndgeAdapterRoot
+          root-key="sfc-runtime"
           :host="session.runtime.value"
           :input="session.input.value"
         />

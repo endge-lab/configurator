@@ -3,7 +3,8 @@
  * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
  */
 
-import type { DomainDocumentType, ManagedBy, RComponentTable, RCompositionKind } from '@endge/core'
+import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
+import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor } from '@endge/core'
 
 import {
   ComponentType,
@@ -13,8 +14,6 @@ import {
   ParameterType,
 } from '@endge/core'
 
-import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
-
 export type CompositionPresentationKind = RCompositionKind | typeof QUERY_COMPOSITION_PRESENTATION_KIND
 
 export type FsNodeType = 'file' | 'folder'
@@ -22,6 +21,8 @@ export type FsNodeType = 'file' | 'folder'
 export interface FsNodeBase {
   name: string
   type: FsNodeType
+  virtual?: boolean
+  badges?: string[]
 }
 
 export interface FsFolderNode extends FsNodeBase {
@@ -29,6 +30,8 @@ export interface FsFolderNode extends FsNodeBase {
   id: string
   identity?: string
   sectionType: DomainSectionType
+  /** Runtime-only origin group. Built-in groups are projected before persisted children. */
+  virtualOrigin?: 'builtin' | 'derived' | 'local'
   isRoot?: boolean
   managedBy?: ManagedBy
   managedById?: string | null
@@ -49,6 +52,7 @@ export interface FsFileNode extends FsNodeBase {
   isTableColumn?: boolean
   parentComponentId?: string
   presentationKind?: CompositionPresentationKind
+  origin?: EntityOrigin
 }
 
 export type FsNode = FsFolderNode | FsFileNode
@@ -606,6 +610,148 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
 
   attachContextualCompositions(tree, params.contextualCompositions ?? [])
   return tree
+}
+
+/** Adds effective non-persisted Actions and annotates persisted overrides. */
+export function attachResolvedActionTree(
+  tree: FsNode[],
+  actions: readonly ResolvedActionDescriptor[],
+): void {
+  const root = tree.find(node => node.type === 'folder' && node.id === 'root-actions') as FsFolderNode | undefined
+  if (!root) {
+    return
+  }
+
+  const findPersisted = (nodes: FsNode[], identity: string): FsFileNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'file' && node.identity === identity) {
+        return node
+      }
+      const nested = findPersisted(node.children ?? [], identity)
+      if (nested) {
+        return nested
+      }
+    }
+    return null
+  }
+  for (const action of actions.filter(action => action.origin.kind === 'storage')) {
+    const node = findPersisted(root.children ?? [], action.identity)
+    if (!node) {
+      continue
+    }
+    node.origin = action.origin
+    node.badges = [
+      ...(node.managedBy === 'system' ? ['system'] : []),
+      ...(action.overridden ? ['overridden'] : []),
+      ...(action.overridden && action.effectiveProviderOrigin?.kind ? [action.effectiveProviderOrigin.kind] : []),
+    ]
+  }
+
+  const groups = new Map<string, FsFolderNode>()
+  const componentOwners = new Map<string, FsFileNode>()
+  const ensureFolder = (
+    parent: FsFolderNode,
+    id: string,
+    name: string,
+    virtualOrigin?: FsFolderNode['virtualOrigin'],
+  ): FsFolderNode => {
+    const key = `${parent.id}/${id}`
+    const existing = groups.get(key)
+    if (existing) {
+      return existing
+    }
+    const folder: FsFolderNode = {
+      id,
+      identity: id,
+      name,
+      type: 'folder',
+      sectionType: DomainSectionType.Action,
+      virtual: true,
+      virtualOrigin,
+      children: [],
+    }
+    const children = parent.children ??= []
+    if (virtualOrigin === 'builtin') {
+      children.unshift(folder)
+    }
+    else {
+      children.push(folder)
+    }
+    groups.set(key, folder)
+    return folder
+  }
+
+  const componentOwnerDocumentType = (action: ResolvedActionDescriptor): DomainDocumentType | null => {
+    if (action.origin.kind === 'derived') {
+      return action.origin.source.type as DomainDocumentType
+    }
+    const componentTarget = action.target?.find(selector => selector.type.startsWith('component.'))
+    if (!componentTarget) {
+      return null
+    }
+    if (componentTarget.type === 'component.table') {
+      return ComponentType.Table
+    }
+    return ComponentType.SFC
+  }
+
+  const ensureComponentOwner = (
+    parent: FsFolderNode,
+    kind: 'derived' | 'builtin' | 'local',
+    ownerIdentity: string,
+    docType: DomainDocumentType,
+  ): FsFileNode => {
+    const id = `virtual:actions:${kind}:${ownerIdentity}`
+    const key = `${parent.id}/${id}`
+    const existing = componentOwners.get(key)
+    if (existing) {
+      return existing
+    }
+    const owner: FsFileNode = {
+      id,
+      identity: ownerIdentity,
+      name: ownerIdentity,
+      type: 'file',
+      docType,
+      sectionType: DomainSectionType.Component,
+      virtual: true,
+      children: [],
+    }
+    ;(parent.children ??= []).push(owner)
+    componentOwners.set(key, owner)
+    return owner
+  }
+
+  for (const kind of ['builtin', 'derived', 'local'] as const) {
+    for (const action of actions.filter(action => action.origin.kind === kind)) {
+      const groupName = kind === 'derived' ? 'Components' : kind === 'builtin' ? 'Built-in' : 'Local'
+      const group = ensureFolder(root, `virtual:actions:${kind}`, groupName, kind)
+      const ownerIdentity = action.origin.kind === 'derived'
+        ? action.origin.source.identity
+        : action.origin.kind === 'builtin' || action.origin.kind === 'local'
+          ? action.origin.owner
+          : 'storage'
+      const componentDocType = componentOwnerDocumentType(action)
+      const owner = componentDocType
+        ? ensureComponentOwner(group, kind, ownerIdentity, componentDocType)
+        : ensureFolder(group, `virtual:actions:${kind}:${ownerIdentity}`, ownerIdentity)
+      ;(owner.children ??= []).push({
+        id: `virtual:${kind}:action:${action.identity}`,
+        identity: action.identity,
+        name: action.displayName,
+        type: 'file',
+        docType: 'action',
+        sectionType: DomainSectionType.Action,
+        virtual: true,
+        origin: action.origin,
+        badges: kind === 'derived'
+          ? ['provided']
+          : kind === 'builtin'
+            ? ['system', 'built-in']
+            : ['local'],
+      })
+    }
+  }
 }
 
 const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {

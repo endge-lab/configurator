@@ -1,9 +1,9 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup lang="ts">
 import { compileComponentSFC } from '@endge/core'
-import { SFC_Renderer } from '@endge/ui-vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -510,7 +510,8 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
                     v-else
                     class="sfc-preview-surface"
                   >
-                    <SFC_Renderer
+                    <EndgeAdapterRoot
+                      root-key="sfc"
                       :ir="compileResult.ir"
                       :props="previewContext"
                     />

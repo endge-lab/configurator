@@ -2,9 +2,9 @@
 import type { ComponentSFCRuntimeHost, CompositionSession } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
 
+import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import { ensureCompositionRuntimeArtifacts } from '@/features/endge-ide/model/composition-preview/composition-preview-state'
 
 const IDENTITY = 'groundhandling-control-page'
@@ -29,8 +29,9 @@ onBeforeUnmount(() => session?.unmount())
 
 <template>
   <main class="h-screen min-h-0 w-screen overflow-hidden">
-    <SFC_RuntimeRenderer
+    <EndgeAdapterRoot
       v-if="table"
+      root-key="sfc-runtime"
       :host="table"
       :input="table.getInputSource() ?? { kind: 'local', props: {} }"
     />

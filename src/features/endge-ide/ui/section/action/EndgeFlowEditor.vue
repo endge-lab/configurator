@@ -136,6 +136,7 @@ const bottomPanelHeight = useSafeLocalStorage<number>(bottomPanelHeightStorageKe
 const isBottomPanelResizing = ref(false)
 
 const { refObj: runtimeModule } = useSubscribableRef(Endge.runtime)
+const { refObj: actionsModule } = useSubscribableRef(Endge.actions)
 const domainStore = useDomainStore()
 
 const nodes = ref<Node<FlowNodeData>[]>([])
@@ -489,10 +490,10 @@ function getVariantBadgeMeta(variant: PlaygroundNodeVariant): VariantBadgeMeta {
 const flowBlockSpecs = computed<EndgeIDEFlowBlockSpec[]>(() => EndgeIDE.flowCatalog.listBlockSpecs())
 
 const actionOptions = computed<ActionOption[]>(() =>
-  (domainStore.actions ?? [])
+  (void actionsModule.value, Endge.actions.listResolved())
     .map(action => ({
-      id: String(action.id ?? '').trim(),
-      documentId: String(action.id ?? '').trim(),
+      id: String(action.identity ?? '').trim(),
+      documentId: String(action.identity ?? '').trim(),
       identity: String(action.identity ?? '').trim(),
       title: getActionDisplayTitle(action),
       description: String(action.description ?? '').trim(),
@@ -668,8 +669,8 @@ const selectedActionModel = computed(() => {
   if (!option)
     return null
 
-  return (domainStore.actions ?? []).find(action =>
-    String(action.id ?? '').trim() === option.documentId,
+  return (void actionsModule.value, Endge.actions.listResolved()).find(action =>
+    action.identity === option.identity,
   ) ?? null
 })
 

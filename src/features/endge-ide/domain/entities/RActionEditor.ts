@@ -1,6 +1,6 @@
-import type { ActionDefinition, EndgeFlowDefinition, RAction } from '@endge/core'
+import type { ActionDefinition, ActionImplementation, ActionTargetSelector, EndgeFlowDefinition, ImplementationBindingScope, RAction } from '@endge/core'
 
-import { RField } from '@endge/core'
+import { Endge, RField } from '@endge/core'
 
 import { EndgeFlowEditorModel } from '@/features/endge-ide/domain/action-flow/EndgeFlowEditorModel'
 
@@ -49,6 +49,12 @@ export class RActionEditor {
   input: RField | null = null
   output: RField | null = null
   active: boolean = true
+  target: ActionTargetSelector[] | null = null
+  defaultImplementation: ActionImplementation = { kind: 'flow' }
+  overridden = false
+  effectiveProviderKey: string | null = null
+  effectiveProviderOrigin: string | null = null
+  bindingScope: ImplementationBindingScope | null = null
   definition: ActionDefinition = {
     version: 1,
     entrypoint: 'flow-entry',
@@ -66,21 +72,32 @@ export class RActionEditor {
     this.input = cloneActionField(source.input, 'input')
     this.output = cloneActionField(source.output, 'output')
     this.active = source.active !== false
+    this.target = source.target?.map(selector => ({ ...selector })) ?? null
+    this.defaultImplementation = { ...source.defaultImplementation }
+    const resolved = Endge.actions.listResolved().find(action => action.identity === source.identity)
+    this.overridden = resolved?.overridden === true
+    this.effectiveProviderKey = resolved?.effectiveProviderKey ?? null
+    this.effectiveProviderOrigin = resolved?.effectiveProviderOrigin?.kind ?? null
+    this.bindingScope = resolved?.bindingScope ?? null
     this.definition = normalizeFlowDefinition(source.definition)
     this.rebuildFlowEditorFromDefinition()
   }
 
   updateSource(source: RAction): void {
-    this.syncDefinitionFromFlowEditor()
+    if (!this.overridden)
+      this.syncDefinitionFromFlowEditor()
     source.id = this.id
     source.identity = this.identity
     source.name = this.displayName
     source.displayName = this.displayName
     source.description = this.description ?? null
-    source.input = cloneActionField(this.input, 'input')
-    source.output = cloneActionField(this.output, 'output')
+    if (!this.overridden) {
+      source.input = cloneActionField(this.input, 'input')
+      source.output = cloneActionField(this.output, 'output')
+      source.target = this.target?.map(selector => ({ ...selector })) ?? null
+      source.definition = normalizeFlowDefinition(this.definition)
+    }
     source.active = this.active
-    source.definition = normalizeFlowDefinition(this.definition)
   }
 
   rebuildFlowEditorFromDefinition(): void {
