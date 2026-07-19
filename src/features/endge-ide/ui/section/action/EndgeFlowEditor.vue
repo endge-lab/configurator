@@ -8,7 +8,7 @@ import type { Component } from 'vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
-import { DomainSectionType, Endge, RAction, RField } from '@endge/core'
+import { BUILTIN_ACTION_IDS, DomainSectionType, Endge, RAction, RField } from '@endge/core'
 import type { FlowConditionSpec, FlowSwitchBranchConfig } from '@endge/core'
 import { useSubscribableRef } from '@endge/utils'
 import { useDomainStore } from '@endge/ui-vue'
@@ -521,12 +521,12 @@ const querySelectOptions = computed(() =>
 )
 
 const consoleLogShortcutBlock: PlaygroundPaletteBlock = {
-  id: 'shortcut.console-log',
+  id: `shortcut.${BUILTIN_ACTION_IDS.consoleLog}`,
   title: 'Вывод в консоль',
   section: 'Общие команды',
   category: 'action',
   kind: 'action',
-  description: 'Быстрый shortcut для действия console-log.',
+  description: `Быстрый shortcut для Action ${BUILTIN_ACTION_IDS.consoleLog}.`,
   variant: 'action',
   inputPorts: [createPort('in', 'вход')],
   outputPorts: [createPort('success', '')],
@@ -2494,13 +2494,13 @@ function onCanvasDrop(event: DragEvent): void {
   if (!block)
     return
 
-  if (block.id === 'shortcut.console-log') {
-    const runtimeActionBlock = getPaletteBlock('core.runtime-action')
-    if (!runtimeActionBlock)
+  if (block.id === `shortcut.${BUILTIN_ACTION_IDS.consoleLog}`) {
+    const actionBlock = getPrimaryActionBlock()
+    if (!actionBlock)
       return
 
-    addNodeFromResolvedBlock(runtimeActionBlock, position, {
-      initialRuntimeId: 'console-log',
+    addNodeFromResolvedBlock(actionBlock, position, {
+      initialActionId: BUILTIN_ACTION_IDS.consoleLog,
       initialTitle: 'Вывод в консоль',
     })
     return

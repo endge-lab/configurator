@@ -2744,53 +2744,6 @@
     ],
     "actions": [
       {
-        "id": 5,
-        "identity": "console-log",
-        "displayName": "Вывод в консоль",
-        "name": "Вывод в консоль",
-        "description": "Системное действие для вывода входной строки в консоль.",
-        "folderId": 37,
-        "project": null,
-        "managedBy": "user",
-        "managedById": null,
-        "meta": {},
-        "definition": {
-          "version": 1,
-          "entrypoint": "flow-entry",
-          "nodes": [
-            {
-              "id": "step-1",
-              "title": "Console Log",
-              "blockId": "core.runtime-action",
-              "kind": "runtimeAction",
-              "params": {},
-              "meta": {
-                "stepKind": "runtime",
-                "runtimeId": "console-log"
-              }
-            }
-          ],
-          "edges": [
-            {
-              "id": "edge-flow-entry-step-1",
-              "sourceNodeId": "flow-entry",
-              "sourcePortId": "out",
-              "targetNodeId": "step-1",
-              "targetPortId": "in",
-              "label": "dependsOn"
-            }
-          ]
-        },
-        "input": {
-          "name": "input",
-          "type": "String",
-          "isArray": false,
-          "optional": false,
-          "params": []
-        },
-        "output": null
-      },
-      {
         "id": 7,
         "identity": "init-base-vocabs",
         "displayName": "Init - Базовые справочники",

@@ -670,7 +670,7 @@ function getFolderIcon(node: FsFolderNode): any {
 function getFolderColorClass(node: FsFolderNode): string {
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
-  if (node.virtualOrigin === 'builtin') {
+  if (node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived') {
     return 'fill-sky-500/30 text-sky-600 dark:text-sky-400'
   }
   return 'fill-current text-yellow-500 dark:text-slate-400'
@@ -680,7 +680,9 @@ function getTreeDocumentIconClass(node: FsFileNode): string[] {
   const iconClass = EndgeIDE.tabs.getDocumentIcon(node.docType, node.presentationKind)
     .split(/\s+/)
     .filter(token => token && !token.startsWith('text-') && !token.startsWith('dark:text-'))
-  const colorClass = getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
+  const colorClass = node.origin?.kind === 'derived'
+    ? 'text-sky-500'
+    : getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
   return [...iconClass, colorClass, 'text-base']
 }
 
@@ -690,6 +692,8 @@ function getRootDocumentIcon(node: FsFileNode): any | null {
 }
 
 function getRootDocumentIconColor(node: FsFileNode): string {
+  if (node.origin?.kind === 'derived')
+    return 'text-sky-500'
   return getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
 }
 
@@ -1350,20 +1354,15 @@ function getRootHierarchyColorClass(rootId: string): string {
 function rowClasses(item: FlatFsItem): string {
   const isOver = dragOverPath.value === item.path && item.node.type === 'folder'
   const selected = isSelected(item)
-  const isBuiltinOriginGroup
-    = item.node.type === 'folder'
-      && (item.node as FsFolderNode).virtualOrigin === 'builtin'
   const isMutedSystemFolder
     = item.node.type === 'folder'
       && isManagedTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
   return [
     'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
-    isBuiltinOriginGroup
-      ? 'bg-sky-500/15 text-sky-800 hover:bg-sky-500/25 dark:bg-sky-500/20 dark:text-sky-100'
-      : isMutedSystemFolder
-        ? 'text-slate-600'
-        : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
+    isMutedSystemFolder
+      ? 'text-slate-600'
+      : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
   ].filter(Boolean).join(' ')

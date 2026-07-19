@@ -7,25 +7,46 @@ import { attachResolvedActionTree } from '@/features/endge-ide/model/domain/doma
 
 describe('domain resolved Actions tree', () => {
   it('keeps persisted Actions in place and groups virtual origins', () => {
-    const tree: FsNode[] = [{
-      id: 'root-actions',
-      identity: 'root-actions',
-      name: 'Actions',
-      type: 'folder',
-      sectionType: DomainSectionType.Action,
-      children: [{
-        id: '12',
-        identity: 'orders.refresh',
-        name: 'Refresh',
-        type: 'file',
-        docType: 'action',
+    const tree: FsNode[] = [
+      {
+        id: 'root-components',
+        identity: 'root-components',
+        name: 'Компоненты',
+        type: 'folder',
+        sectionType: DomainSectionType.Component,
+        children: [{
+          id: '21',
+          identity: 'orders-table',
+          name: 'Таблица заказов',
+          type: 'file',
+          docType: 'component-sfc',
+          sectionType: DomainSectionType.Component,
+        }],
+      },
+      {
+        id: 'root-actions',
+        identity: 'root-actions',
+        name: 'Actions',
+        type: 'folder',
         sectionType: DomainSectionType.Action,
-      }],
-    }]
+        children: [{
+          id: '12',
+          identity: 'orders.refresh',
+          name: 'Refresh',
+          type: 'file',
+          docType: 'action',
+          sectionType: DomainSectionType.Action,
+        }],
+      },
+    ]
 
     attachResolvedActionTree(tree, [
       descriptor('orders.refresh', { kind: 'storage' }, true),
       descriptor('table.column.pinLeft', { kind: 'builtin', owner: 'Table' }),
+      {
+        ...descriptor('built-in-console-log', { kind: 'builtin', owner: '@endge/core' }),
+        catalogPath: ['Debug'],
+      },
       descriptor('app.debug', { kind: 'local', owner: 'app' }),
       descriptor('orders-table.refresh', {
         kind: 'derived',
@@ -33,12 +54,12 @@ describe('domain resolved Actions tree', () => {
       }),
     ])
 
-    const root = tree[0] as FsFolderNode
+    const root = tree.find(node => node.type === 'folder' && node.id === 'root-actions') as FsFolderNode
     expect(root.children?.find(node => node.identity === 'orders.refresh')?.badges).toContain('overridden')
     expect(root.children?.map(node => node.name)).toEqual([
       'Built-in',
+      'Provided',
       'Refresh',
-      'Components',
       'Local',
     ])
     const builtIn = root.children?.[0] as FsFolderNode
@@ -50,8 +71,25 @@ describe('domain resolved Actions tree', () => {
       sectionType: DomainSectionType.Component,
       virtual: true,
     })
+    const debugFolder = builtIn.children?.find(node => node.name === 'Debug') as FsFolderNode
+    expect(debugFolder.children?.[0]).toMatchObject({
+      type: 'file',
+      identity: 'built-in-console-log',
+      docType: 'action',
+    })
+    const provided = root.children?.[1] as FsFolderNode
+    expect(provided.virtualOrigin).toBe('derived')
+    const components = provided.children?.[0] as FsFolderNode
+    expect(components.name).toBe('Компоненты')
+    expect(components.children?.[0]).toMatchObject({
+      type: 'file',
+      identity: 'orders-table',
+      name: 'Таблица заказов',
+      docType: 'component-sfc',
+      virtual: true,
+    })
     const virtualActions = flatten(root).filter(node => node.type === 'file' && node.virtual && node.docType === 'action')
-    expect(virtualActions).toHaveLength(3)
+    expect(virtualActions).toHaveLength(4)
     expect(virtualActions.find(node => node.identity === 'table.column.pinLeft')?.badges).toEqual(['system', 'built-in'])
     expect(virtualActions.find(node => node.identity === 'orders-table.refresh')?.badges).toEqual(['provided'])
   })

@@ -30,7 +30,7 @@ export interface FsFolderNode extends FsNodeBase {
   id: string
   identity?: string
   sectionType: DomainSectionType
-  /** Runtime-only origin group. Built-in groups are projected before persisted children. */
+  /** Runtime-only origin group. Built-in and provided groups precede persisted children. */
   virtualOrigin?: 'builtin' | 'derived' | 'local'
   isRoot?: boolean
   managedBy?: ManagedBy
@@ -649,6 +649,37 @@ export function attachResolvedActionTree(
 
   const groups = new Map<string, FsFolderNode>()
   const componentOwners = new Map<string, FsFileNode>()
+  const findComponentDocument = (
+    nodes: readonly FsNode[],
+    identity: string,
+    docType: DomainDocumentType,
+  ): FsFileNode | null => {
+    for (const node of nodes) {
+      if (
+        node.type === 'file'
+        && !node.virtual
+        && node.identity === identity
+        && node.docType === docType
+      ) {
+        return node
+      }
+      const nested = findComponentDocument(node.children ?? [], identity, docType)
+      if (nested) {
+        return nested
+      }
+    }
+    return null
+  }
+  const resolveComponentOwnerName = (identity: string, docType: DomainDocumentType): string => {
+    const treeDocument = findComponentDocument(tree, identity, docType)
+    if (treeDocument?.name?.trim()) {
+      return treeDocument.name
+    }
+    const component = docType === ComponentType.SFC
+      ? Endge.domain.getComponentSFC(identity)
+      : Endge.domain.getComponent(identity)
+    return component?.displayName?.trim() || component?.name?.trim() || identity
+  }
   const ensureFolder = (
     parent: FsFolderNode,
     id: string,
@@ -673,6 +704,12 @@ export function attachResolvedActionTree(
     const children = parent.children ??= []
     if (virtualOrigin === 'builtin') {
       children.unshift(folder)
+    }
+    else if (virtualOrigin === 'derived') {
+      const builtInIndex = children.findIndex(node =>
+        node.type === 'folder' && node.virtualOrigin === 'builtin',
+      )
+      children.splice(builtInIndex >= 0 ? builtInIndex + 1 : 0, 0, folder)
     }
     else {
       children.push(folder)
@@ -710,7 +747,7 @@ export function attachResolvedActionTree(
     const owner: FsFileNode = {
       id,
       identity: ownerIdentity,
-      name: ownerIdentity,
+      name: resolveComponentOwnerName(ownerIdentity, docType),
       type: 'file',
       docType,
       sectionType: DomainSectionType.Component,
@@ -724,17 +761,30 @@ export function attachResolvedActionTree(
 
   for (const kind of ['builtin', 'derived', 'local'] as const) {
     for (const action of actions.filter(action => action.origin.kind === kind)) {
-      const groupName = kind === 'derived' ? 'Components' : kind === 'builtin' ? 'Built-in' : 'Local'
+      const groupName = kind === 'derived' ? 'Provided' : kind === 'builtin' ? 'Built-in' : 'Local'
       const group = ensureFolder(root, `virtual:actions:${kind}`, groupName, kind)
+      const componentGroup = kind === 'derived'
+        ? ensureFolder(group, 'virtual:actions:derived:components', 'Компоненты')
+        : group
       const ownerIdentity = action.origin.kind === 'derived'
         ? action.origin.source.identity
         : action.origin.kind === 'builtin' || action.origin.kind === 'local'
           ? action.origin.owner
           : 'storage'
       const componentDocType = componentOwnerDocumentType(action)
-      const owner = componentDocType
-        ? ensureComponentOwner(group, kind, ownerIdentity, componentDocType)
-        : ensureFolder(group, `virtual:actions:${kind}:${ownerIdentity}`, ownerIdentity)
+      let owner: FsFolderNode | FsFileNode
+      if (componentDocType) {
+        owner = ensureComponentOwner(componentGroup, kind, ownerIdentity, componentDocType)
+      }
+      else if (action.catalogPath?.length) {
+        owner = action.catalogPath.reduce<FsFolderNode>((parent, segment, index) => {
+          const normalized = String(segment ?? '').trim()
+          return ensureFolder(parent, `virtual:actions:${kind}:catalog:${index}:${normalized}`, normalized)
+        }, group)
+      }
+      else {
+        owner = ensureFolder(group, `virtual:actions:${kind}:${ownerIdentity}`, ownerIdentity)
+      }
       ;(owner.children ??= []).push({
         id: `virtual:${kind}:action:${action.identity}`,
         identity: action.identity,
