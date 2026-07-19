@@ -9,6 +9,7 @@ import { defineConfig, loadEnv } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import pkg from './package.json'
 import { endgeCodegen } from './plugins/vite-plugin-endge-codegen'
+import { endgeTestIntegrations } from './plugins/vite-plugin-endge-test-integrations'
 
 process.env.VITE_VERSION = process.env.npm_package_version
 process.env.VITE_GIT_SHA = execSync('git rev-parse --short=8 HEAD').toString().trim()
@@ -18,6 +19,9 @@ export default defineConfig(({ mode, command }) => {
   const cwd = dirname(fileURLToPath(import.meta.url)) // same as process.cwd()
   const env = loadEnv(mode, cwd)
   const isDevServer = command === 'serve'
+  const testIntegrationsEnabled = isDevServer || mode === 'test-integrations'
+  const testIntegrationsRoot = fileURLToPath(new URL('../integrations/test', import.meta.url))
+  const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
   const codegenEnabled =
     isDevServer &&
     (env.VITE_ENDGE_CODEGEN_ENABLED === 'true' || env.VITE_ENDGE_CODEGEN_ENABLED === '1')
@@ -29,7 +33,16 @@ export default defineConfig(({ mode, command }) => {
       vueDevTools(),
       tailwindcss(),
       endgeCodegen({ enabled: codegenEnabled }),
+      endgeTestIntegrations({
+        enabled: testIntegrationsEnabled,
+        registryPath: fileURLToPath(new URL('../integrations/test/index.ts', import.meta.url)),
+      }),
     ],
+    server: {
+      fs: {
+        allow: [cwd, testIntegrationsRoot, packagesRoot],
+      },
+    },
     resolve: {
       // Endge runtime packages and class-transformer share singleton state.
       // Without dedupe, optimizeDeps can resolve nested published copies:
@@ -39,6 +52,9 @@ export default defineConfig(({ mode, command }) => {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),
+        '@endge/integration-api': fileURLToPath(
+          new URL('../../packages/egorkozelskij-integration-api/src/index.ts', import.meta.url),
+        ),
       },
     },
     define: {

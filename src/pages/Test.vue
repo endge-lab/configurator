@@ -1,46 +1,36 @@
 <script setup lang="ts">
-import type { ComponentSFCRuntimeHost, CompositionSession } from '@endge/core'
-
 import { Endge } from '@endge/core'
-import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
-import { ensureCompositionRuntimeArtifacts } from '@/features/endge-ide/model/composition-preview/composition-preview-state'
+import {
+  destroySFCPreviewRuntime,
+  launchSFCPreview,
+  sfcPreviewInput,
+  sfcPreviewRuntime,
+} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
-const IDENTITY = 'groundhandling-control-page'
-const table = shallowRef<ComponentSFCRuntimeHost>()
-let session: CompositionSession | undefined
+const IDENTITY = 'schedule-sandbox'
 
 onMounted(async () => {
-  await Endge.build()
-  const composition = Endge.domain.getComposition(IDENTITY)
-  if (!composition) {
-    throw new Error(`Composition "${IDENTITY}" is missing.`)
+  const component = Endge.domain.getComponentSFC(IDENTITY)
+  if (!component) {
+    throw new Error(`Component "${IDENTITY}" is missing.`)
   }
 
-  ensureCompositionRuntimeArtifacts(composition.source, new Set([IDENTITY]))
-  Endge.compiler.buildComposition(composition)
-  session = await Endge.runtime.composition.mount(IDENTITY)
-  table.value = session.host.getChild('table') as ComponentSFCRuntimeHost
+  await launchSFCPreview(component)
 })
 
-onBeforeUnmount(() => session?.unmount())
+onBeforeUnmount(() => destroySFCPreviewRuntime())
 </script>
 
 <template>
   <main class="h-screen min-h-0 w-screen overflow-hidden">
     <EndgeAdapterRoot
-      v-if="table"
+      v-if="sfcPreviewRuntime"
       root-key="sfc-runtime"
-      :host="table"
-      :input="table.getInputSource() ?? { kind: 'local', props: {} }"
+      :host="sfcPreviewRuntime"
+      :input="sfcPreviewInput"
     />
   </main>
 </template>
-
-<style scoped>
-main :deep(.endge-sfc-table) {
-  height: 100% !important;
-  min-height: 0;
-}
-</style>

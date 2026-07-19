@@ -13,7 +13,8 @@
     "module": "esnext",
     "moduleResolution": "node",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@endge/integration-api": ["../../packages/egorkozelskij-integration-api/src/index.ts"]
     },
     "resolveJsonModule": true,
     "strict": true,
