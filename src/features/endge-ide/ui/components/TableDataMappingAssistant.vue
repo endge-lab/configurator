@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DomainSectionType, Endge } from "@endge/core";
-import { useDomainStore } from "@endge/vue";
+import { useDomainStore } from "@endge/ui-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { toast } from "vue-sonner";
 

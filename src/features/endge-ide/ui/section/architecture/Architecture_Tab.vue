@@ -47,7 +47,7 @@ const federationMetaByNodeId: Record<string, DiagramMeta> = {
   },
   'f-endge-vue': {
     title: 'Федерация ENDGE VUE',
-    description: 'Интеграционный слой @endge/vue: привязка рендеров и реактивных фаз к ядру Endge.',
+    description: 'Интеграционный слой @endge/ui-vue: привязка рендеров и реактивных фаз к ядру Endge.',
     kind: 'federation',
   },
   'f-appcore': {

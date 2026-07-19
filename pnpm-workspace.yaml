@@ -4,8 +4,8 @@ packages:
   - '../../packages/@endge-computation-sandbox'
   - '../../packages/@endge-raph'
   - '../../packages/@endge-utils'
-  - '../../packages/@endge-vue'
-  - '../../packages/@endge-shadcn-vue'
+  - '../../packages/@endge-ui-vue'
+  - '../../packages/@endge-ui-vue-shadcn'
 allowBuilds:
   '@parcel/watcher': set this to true or false
   esbuild: set this to true or false

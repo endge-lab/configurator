@@ -21,7 +21,7 @@ import type {
 } from '@endge/core'
 
 import { Endge, RComponentSFC } from '@endge/core'
-import { materializeEndgeCSSForDOM } from '@endge/vue'
+import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, ref, shallowRef } from 'vue'
 
 import { runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
@@ -136,7 +136,7 @@ export class RuntimePreviewInstance {
     if (!node) { return }
     this.selectedNodeId.value = node.id
     this.error.value = null
-    if (this.status.value === 'stopped' || this.status.value === 'error' || this.status.value === 'preparing') {
+    if (this.status.value === 'inactive' || this.status.value === 'stopped' || this.status.value === 'error' || this.status.value === 'preparing') {
       this.refresh()
       return
     }

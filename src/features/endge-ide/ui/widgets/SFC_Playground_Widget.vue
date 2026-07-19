@@ -1,7 +1,7 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup lang="ts">
 import { compileComponentSFC } from '@endge/core'
-import { SFC_Renderer } from '@endge/vue'
+import { SFC_Renderer } from '@endge/ui-vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { Badge } from '@/components/ui/badge'

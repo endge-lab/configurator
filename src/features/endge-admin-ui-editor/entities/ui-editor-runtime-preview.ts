@@ -9,7 +9,7 @@ import type {
 } from '@endge/core'
 
 import { Endge, RComponentSFC } from '@endge/core'
-import { materializeEndgeCSSForDOM } from '@endge/vue'
+import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { ref, shallowRef } from 'vue'
 
 import {

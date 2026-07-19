@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getSoftDeletedItems as getSoftDeletedFromTree } from '@/features/endge-ide/model/domain/domain-tree'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 

@@ -8,7 +8,13 @@ const mocks = vi.hoisted(() => ({
   showWidget: vi.fn(),
   toastError: vi.fn(),
   instances: [] as any[],
-  surfaceLifecycle: null as { beforeContextReset?: () => Promise<void> | void } | null,
+  rememberedTargets: [] as Array<{ entityType: string, identity: string }>,
+  readHistory: vi.fn(),
+  writeHistory: vi.fn(),
+  surfaceLifecycle: null as {
+    beforeContextReset?: () => Promise<void> | void
+    afterContextBoot?: () => Promise<void> | void
+  } | null,
   leftArea: { expanded: true, activeWidget: 'runtime-tree' },
 }))
 
@@ -33,6 +39,10 @@ vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
       return vi.fn()
     }),
   },
+}))
+vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-history', () => ({
+  readRuntimePreviewHistory: mocks.readHistory,
+  writeRuntimePreviewHistory: mocks.writeHistory,
 }))
 vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard', () => ({
   validateRuntimePreviewContext: () => mocks.valid
@@ -64,9 +74,12 @@ vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-instance', (
     public refresh = vi.fn()
 
     public constructor(target: { entityType: string, identity: string }) {
+      this.target = target
       this.key = `${target.entityType}:${target.identity}`
       mocks.instances.push(this)
     }
+
+    public target: { entityType: string, identity: string }
   },
 }))
 
@@ -76,6 +89,10 @@ describe('endgeIDE Runtime Preview manager', () => {
     mocks.showWidget.mockReset()
     mocks.toastError.mockReset()
     mocks.instances.splice(0)
+    mocks.rememberedTargets = []
+    mocks.readHistory.mockReset()
+    mocks.readHistory.mockImplementation(() => [...mocks.rememberedTargets])
+    mocks.writeHistory.mockReset()
     mocks.surfaceLifecycle = null
     mocks.leftArea.expanded = true
     mocks.leftArea.activeWidget = 'runtime-tree'
@@ -113,6 +130,44 @@ describe('endgeIDE Runtime Preview manager', () => {
     ])
     expect(manager.selectedEntryKey.value).toBe('component-sfc:table')
     expect(mocks.showWidget).toHaveBeenCalledTimes(2)
+  })
+
+  it('restores remembered roots as inactive entries without launching them', () => {
+    mocks.rememberedTargets = [
+      { entityType: 'composition', identity: 'entry' },
+      { entityType: 'store', identity: 'flights' },
+    ]
+    const manager = new EndgeIDERuntimePreview()
+
+    manager.init()
+
+    expect(manager.entries.value.map(item => item.key)).toEqual([
+      'composition:entry',
+      'store:flights',
+    ])
+    expect(mocks.instances.every(instance => instance.status.value === 'inactive')).toBe(true)
+    expect(mocks.instances.every(instance => instance.launch.mock.calls.length === 0)).toBe(true)
+    manager.reset()
+  })
+
+  it('keeps restored inactive roots when another entity is launched explicitly', async () => {
+    mocks.rememberedTargets = [{ entityType: 'composition', identity: 'remembered' }]
+    const manager = new EndgeIDERuntimePreview()
+    manager.init()
+
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    expect(manager.entries.value.map(item => item.key)).toEqual([
+      'composition:remembered',
+      'store:flights',
+    ])
+    expect(mocks.instances[0].launch).not.toHaveBeenCalled()
+    expect(mocks.instances[1].launch).toHaveBeenCalledOnce()
+    expect(mocks.writeHistory).toHaveBeenLastCalledWith([
+      { entityType: 'composition', identity: 'remembered' },
+      { entityType: 'store', identity: 'flights' },
+    ])
+    manager.reset()
   })
 
   it('launches a document batch in order, deduplicates targets, and reveals the tree once', async () => {
@@ -164,10 +219,13 @@ describe('endgeIDE Runtime Preview manager', () => {
     expect(mocks.toastError).toHaveBeenCalledOnce()
   })
 
-  it('stops all roots without removing them and disposes everything on reset', async () => {
+  it('pauses and stops all roots without removing them and disposes everything on reset', async () => {
     const manager = new EndgeIDERuntimePreview()
     await manager.launch({ entityType: 'composition', identity: 'entry' })
     await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    await manager.pauseAll()
+    expect(mocks.instances.every(instance => instance.pause.mock.calls.length === 1)).toBe(true)
 
     await manager.stopAll()
     expect(mocks.instances.every(instance => instance.stop.mock.calls.length === 1)).toBe(true)
@@ -177,6 +235,43 @@ describe('endgeIDE Runtime Preview manager', () => {
     expect(mocks.instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true)
     expect(manager.entries.value).toEqual([])
     expect(manager.selectedEntryKey.value).toBeNull()
+  })
+
+  it('starts inactive, stopped, and failed roots while resuming paused roots', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    const statuses = ['inactive', 'paused', 'stopped', 'error', 'active', 'preparing'] as const
+
+    for (const [index, status] of statuses.entries()) {
+      await manager.launch({ entityType: 'store', identity: `store-${index}` })
+      mocks.instances[index].status.value = status
+      mocks.instances[index].resume.mockClear()
+      mocks.instances[index].restart.mockClear()
+    }
+
+    await manager.startAll()
+
+    expect(mocks.instances[0].restart).toHaveBeenCalledOnce()
+    expect(mocks.instances[1].resume).toHaveBeenCalledOnce()
+    expect(mocks.instances[2].restart).toHaveBeenCalledOnce()
+    expect(mocks.instances[3].restart).toHaveBeenCalledOnce()
+    expect(mocks.instances[4].resume).not.toHaveBeenCalled()
+    expect(mocks.instances[4].restart).not.toHaveBeenCalled()
+    expect(mocks.instances[5].resume).not.toHaveBeenCalled()
+    expect(mocks.instances[5].restart).not.toHaveBeenCalled()
+  })
+
+  it('removes every root and clears remembered history only on explicit remove-all', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    await manager.launch({ entityType: 'composition', identity: 'entry' })
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+    mocks.writeHistory.mockClear()
+
+    await manager.removeAll()
+
+    expect(manager.entries.value).toEqual([])
+    expect(mocks.instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true)
+    expect(mocks.writeHistory).toHaveBeenCalledOnce()
+    expect(mocks.writeHistory).toHaveBeenCalledWith([])
   })
 
   it('clears every runtime before a context reset', async () => {
@@ -189,6 +284,12 @@ describe('endgeIDE Runtime Preview manager', () => {
 
     expect(manager.entries.value).toEqual([])
     expect(mocks.instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true)
+    expect(mocks.writeHistory).not.toHaveBeenLastCalledWith([])
+
+    mocks.rememberedTargets = [{ entityType: 'store', identity: 'remembered' }]
+    await mocks.surfaceLifecycle?.afterContextBoot?.()
+    expect(manager.entries.value.map(item => item.key)).toEqual(['store:remembered'])
+    expect(mocks.instances.at(-1).launch).not.toHaveBeenCalled()
     manager.reset()
   })
 })

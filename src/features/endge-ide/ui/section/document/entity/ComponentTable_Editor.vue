@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RComponentTableColumnEditor } from "@/features/endge-ide/domain/entities/RComponentTableColumnEditor";
 import { DomainSectionType, Endge } from "@endge/core";
-import { useDomainStore } from "@endge/vue";
+import { useDomainStore } from "@endge/ui-vue";
 import {
   Eraser,
   GripVertical,

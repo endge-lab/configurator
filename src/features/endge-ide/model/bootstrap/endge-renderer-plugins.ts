@@ -1,6 +1,6 @@
 import { Endge } from '@endge/core'
-import { EndgeShadcnVuePlugin } from '@endge/shadcn-vue'
-import { EndgeVuePlugin } from '@endge/vue'
+import { EndgeShadcnVuePlugin } from '@endge/ui-vue-shadcn'
+import { EndgeVuePlugin } from '@endge/ui-vue'
 
 const REQUIRED_RENDERER_MODULE_KEYS = ['vue', 'shadcnVue'] as const
 

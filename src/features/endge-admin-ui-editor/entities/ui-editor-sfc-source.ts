@@ -12,10 +12,10 @@ import type {
   RComponentSFC_AST_ElementNode,
   RComponentSFC_AST_TemplateNode,
 } from '@endge/core'
-import type { SFCVueRenderContext } from '@endge/vue'
+import type { SFCVueRenderContext } from '@endge/ui-vue'
 
 import { compileComponentSFC, parseComponentSFC } from '@endge/core'
-import { evaluateSFCExpression } from '@endge/vue'
+import { evaluateSFCExpression } from '@endge/ui-vue'
 
 import { printUIEditorDocumentSFC, printUIEditorDocumentTemplate } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
 import {

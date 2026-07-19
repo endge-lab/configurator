@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useCurrentProjectFilter, useDomainStore } from '@endge/vue'
+import { useCurrentProjectFilter, useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'
 
 const domainStore = useDomainStore()

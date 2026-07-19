@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDatetime } from '@endge/utils'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'
 
 type UiEventItem = {

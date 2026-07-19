@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { Building2, ChevronsUpDown, Loader2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'

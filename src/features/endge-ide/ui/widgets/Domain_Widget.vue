@@ -10,7 +10,7 @@ import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/mod
 import type { DomainDocumentType, RCompositionKind } from '@endge/core'
 
 import { ComponentType, DomainSectionType, Endge, QueryType, isExternallyManaged } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import {
   ArrowLeftRight,
   BookOpen,

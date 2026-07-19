@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import 'vue-sonner/style.css'
 
-import { EndgeShell } from '@endge/vue'
+import { EndgeShell } from '@endge/ui-vue'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 

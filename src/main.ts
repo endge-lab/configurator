@@ -1,6 +1,6 @@
 import './assets/main.css'
-import '@endge/shadcn-vue/shadcn-vue.css'
-import '@endge/vue/vue.css'
+import '@endge/ui-vue-shadcn/shadcn-vue.css'
+import '@endge/ui-vue/vue.css'
 import 'reflect-metadata'
 
 import { createPinia } from 'pinia'

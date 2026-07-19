@@ -2,7 +2,7 @@
 import type { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
 
 import { ComponentType, DomainSectionType, FilterType } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { computed, watch } from 'vue'
 import { toast } from 'vue-sonner'
 

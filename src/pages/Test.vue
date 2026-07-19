@@ -2,7 +2,7 @@
 import type { ComponentSFCRuntimeHost, CompositionSession } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { SFC_RuntimeRenderer } from '@endge/vue'
+import { SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
 
 import { ensureCompositionRuntimeArtifacts } from '@/features/endge-ide/model/composition-preview/composition-preview-state'

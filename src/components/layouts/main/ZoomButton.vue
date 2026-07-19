@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useUI } from '@endge/vue'
+import { useUI } from '@endge/ui-vue'
 import { Minus, Plus, RefreshCw, ZoomIn } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'

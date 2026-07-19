@@ -2,7 +2,7 @@
 import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 

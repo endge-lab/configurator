@@ -3,7 +3,7 @@
 import type { RuntimePreviewRenderable, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Raph } from '@endge/raph'
-import { EndgeFilterRenderer, SFC_RuntimeRenderer } from '@endge/vue'
+import { EndgeFilterRenderer, SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { Boxes, Braces, CircleAlert, LoaderCircle, Pause, Play, RefreshCw, Square, SquareStack } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -262,11 +262,11 @@ onBeforeUnmount(() => {
 
     <div v-else-if="instance" ref="body" class="runtime-preview-surface__body">
       <div class="runtime-preview-surface__canvas">
-        <div v-if="renderables.length" class="grid gap-5 p-4">
+        <div v-if="renderables.length" class="runtime-preview-surface__renderables">
           <section
             v-for="item in renderables"
             :key="item.key"
-            class="min-w-0 border-b border-border/70 pb-5 last:border-b-0 last:pb-0"
+            class="runtime-preview-surface__renderable border-b border-border/70 pb-5 last:border-b-0 last:pb-0"
           >
             <EndgeFilterRenderer v-if="item.kind === 'filter-view'" :runtime="item.runtime" />
             <SFC_RuntimeRenderer
@@ -437,7 +437,40 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
+}
+
+.runtime-preview-surface__renderables {
+  min-height: 100%;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem;
+}
+
+.runtime-preview-surface__renderable {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.runtime-preview-surface__renderable:has(:deep([data-endge-layout-fill-height])) {
+  min-height: 0;
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+}
+
+.runtime-preview-surface__renderable:has(:deep([data-endge-layout-fill-height])) > :deep(*) {
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+.runtime-preview-surface__renderable:has(:deep([data-endge-layout-fill-height])) :deep(.endge-sfc-flex:has([data-endge-layout-fill-height])) {
+  min-height: 0;
+  flex: 1 1 0%;
 }
 
 .runtime-preview-surface__props {

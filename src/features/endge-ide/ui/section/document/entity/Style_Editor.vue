@@ -3,7 +3,7 @@
 import type { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor'
 
 import { compileEndgeCSS } from '@endge/core'
-import { materializeEndgeCSSForDOM } from '@endge/vue'
+import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { Code2, Loader2, Save, Settings2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'

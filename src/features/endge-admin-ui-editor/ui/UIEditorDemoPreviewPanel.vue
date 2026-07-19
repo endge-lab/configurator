@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
-import { SFC_RuntimeRenderer } from '@endge/vue'
+import { SFC_RuntimeRenderer } from '@endge/ui-vue'
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 

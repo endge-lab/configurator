@@ -4,7 +4,7 @@ import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProje
 import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { DomainSectionType, Endge } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import {
   Loader2,
   Map,

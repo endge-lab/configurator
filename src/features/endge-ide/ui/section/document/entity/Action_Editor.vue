@@ -3,7 +3,7 @@
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 
 import { RField } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RType } from '@endge/core'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Save, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
-import { useUI } from '@endge/vue'
+import { useUI } from '@endge/ui-vue'
 import { ChevronsUpDown, Palette } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
 

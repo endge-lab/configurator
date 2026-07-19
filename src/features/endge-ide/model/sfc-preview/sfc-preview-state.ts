@@ -15,7 +15,7 @@ import {
   RComponentSFC,
   RComputation,
 } from '@endge/core'
-import { materializeEndgeCSSForDOM } from '@endge/vue'
+import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {

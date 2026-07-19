@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
-import { useCurrentLocale } from '@endge/vue'
+import { useCurrentLocale } from '@endge/ui-vue'
 import { ChevronsUpDown } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
 

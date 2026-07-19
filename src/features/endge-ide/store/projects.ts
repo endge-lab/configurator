@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { ProjectTab } from '@endge/core/domain/types/types'
-import { useDomainStore } from '@endge/vue'
+import { useDomainStore } from '@endge/ui-vue'
 
 export const useProjectsStore = defineStore('endge-project-store', () => {
   const domainStore = useDomainStore()
