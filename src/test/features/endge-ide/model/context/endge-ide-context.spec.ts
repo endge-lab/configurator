@@ -41,6 +41,9 @@ describe('endgeIDE context', () => {
     vi.stubEnv('VITE_ENDGE_TENANT_IDENTITY', 'tenant')
     vi.stubEnv('VITE_ENDGE_PROJECT_IDENTITY', 'project')
     vi.stubEnv('VITE_ENDGE_ENVIRONMENT_IDENTITY', 'dev')
+    vi.stubEnv('VITE_SENTRY_DSN', 'http://public@sentry.test/2')
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'local')
+    vi.stubEnv('VITE_SENTRY_RELEASE', 'endge-local@1')
     mocks.executionContext = {}
     mocks.boot.mockReset()
     mocks.reset.mockReset()
@@ -66,6 +69,12 @@ describe('endgeIDE context', () => {
       payload: {
         baseAPI: 'https://payload.test',
         secret: 'secret',
+      },
+      vars: {
+        ENDPOINT_AUTH: undefined,
+        SENTRY_DSN: 'http://public@sentry.test/2',
+        SENTRY_ENVIRONMENT: 'local',
+        SENTRY_RELEASE: 'endge-local@1',
       },
     }))
     expect(mocks.requireActive).toHaveBeenCalledOnce()

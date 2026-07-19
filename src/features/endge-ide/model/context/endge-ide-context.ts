@@ -113,6 +113,11 @@ export class EndgeIDEContext {
       },
       vars: {
         ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
+        // Application env передаётся в ядро явно: @endge/core собирается отдельно
+        // и не должен читать import.meta.env приложения из своего library bundle.
+        SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN,
+        SENTRY_ENVIRONMENT: import.meta.env.VITE_SENTRY_ENVIRONMENT,
+        SENTRY_RELEASE: import.meta.env.VITE_SENTRY_RELEASE,
       },
       payload: { baseAPI, secret },
     }
