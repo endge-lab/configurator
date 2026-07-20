@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: hsl(var(--background));
+  background: var(--editor-surface);
 }
 
 .data-view-source-editor__monaco {
@@ -166,6 +166,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   height: 100%;
   width: 100%;
-  background: #1e1e1e;
+  background: var(--editor-surface);
 }
 </style>

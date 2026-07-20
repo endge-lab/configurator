@@ -39,7 +39,11 @@ const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('co
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 const visualInspection = computed(() => {
   const current = editor.value
-  return current ? inspectComponentSFCVisual(current.source ?? '') : null
+  return current
+    ? inspectComponentSFCVisual(current.source ?? '', {
+        resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
+      })
+    : null
 })
 const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
 const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)

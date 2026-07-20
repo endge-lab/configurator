@@ -9,6 +9,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
+import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
 
@@ -49,26 +50,28 @@ const editorMinHeight = computed(() => {
   return props.minHeight
 })
 
-const palenightTheme: monaco.editor.IStandaloneThemeData = {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [
-    { token: '', foreground: 'bfc7d5', background: '292d3e' },
-    { token: 'keyword', foreground: 'c792ea' },
-    { token: 'identifier', foreground: 'f07178' },
-    { token: 'number', foreground: 'ffcb6b' },
-    { token: 'string', foreground: 'c3e88d' },
-    { token: 'comment', foreground: '717cb4', fontStyle: 'italic' },
-  ],
-  colors: {
-    'editor.background': '#292d3e',
-    'editor.foreground': '#bfc7d5',
-    'editor.lineHighlightBackground': '#2e3b4e',
-    'editorCursor.foreground': '#ffcc00',
-    'editorWhitespace.foreground': '#3b4048',
-    'editorIndentGuide.background': '#3b4048',
-    'editorLineNumber.foreground': '#546e7a',
-  },
+function createPalenightTheme(): monaco.editor.IStandaloneThemeData {
+  return {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'bfc7d5', background: resolveEditorSurfaceColor().slice(1) },
+      { token: 'keyword', foreground: 'c792ea' },
+      { token: 'identifier', foreground: 'f07178' },
+      { token: 'number', foreground: 'ffcb6b' },
+      { token: 'string', foreground: 'c3e88d' },
+      { token: 'comment', foreground: '717cb4', fontStyle: 'italic' },
+    ],
+    colors: {
+      'editor.background': resolveEditorSurfaceColor(),
+      'editor.foreground': '#bfc7d5',
+      'editor.lineHighlightBackground': '#1c2b44',
+      'editorCursor.foreground': '#ffcc00',
+      'editorWhitespace.foreground': '#334155',
+      'editorIndentGuide.background': '#334155',
+      'editorLineNumber.foreground': '#64748b',
+    },
+  }
 }
 
 async function formatDocument(): Promise<void> {
@@ -105,7 +108,7 @@ async function formatDocument(): Promise<void> {
 defineExpose({ formatDocument })
 
 onMounted(() => {
-  monaco.editor.defineTheme('palenight', palenightTheme)
+  monaco.editor.defineTheme('palenight', createPalenightTheme())
 
   if (container.value) {
     editor = monaco.editor.create(container.value, {
@@ -225,7 +228,7 @@ onBeforeUnmount(() => {
 .editor-wrapper--framed {
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: #292d3e;
+  background: var(--editor-surface);
 }
 
 .editor-toolbar {
@@ -235,7 +238,7 @@ onBeforeUnmount(() => {
   min-height: 40px;
   padding: 4px 8px;
   border-bottom: 1px solid rgb(255 255 255 / 8%);
-  background: #25293a;
+  background: color-mix(in srgb, var(--editor-surface), white 5%);
 }
 
 .editor-toolbar-button {

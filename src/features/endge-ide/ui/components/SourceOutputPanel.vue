@@ -84,7 +84,7 @@ const emit = defineEmits<{
   overflow: hidden;
   border: 1px solid rgb(71 85 105 / 0.75);
   border-radius: 8px;
-  background: rgb(15 23 42 / 0.94);
+  background: color-mix(in srgb, var(--editor-surface) 94%, transparent);
   color: #e5e7eb;
   box-shadow: 0 18px 40px rgb(0 0 0 / 0.38);
 }
@@ -95,7 +95,7 @@ const emit = defineEmits<{
   max-height: none;
   border-width: 0 0 0 1px;
   border-radius: 0;
-  background: rgb(15 23 42 / 0.97);
+  background: color-mix(in srgb, var(--editor-surface) 97%, transparent);
   box-shadow: -20px 0 44px rgb(0 0 0 / 0.32);
   backdrop-filter: blur(14px);
 }
@@ -109,7 +109,7 @@ const emit = defineEmits<{
   max-height: none;
   border: 0;
   border-radius: 0;
-  background: rgb(15 23 42);
+  background: var(--editor-surface);
   box-shadow: none;
 }
 
@@ -121,7 +121,7 @@ const emit = defineEmits<{
   max-width: min(420px, calc(100% - 36px));
   gap: 7px;
   border-color: rgb(71 85 105 / 0.75);
-  background: rgb(15 23 42 / 0.94);
+  background: color-mix(in srgb, var(--editor-surface) 94%, transparent);
   color: #bfdbfe;
   box-shadow: 0 12px 28px rgb(0 0 0 / 0.28);
 }

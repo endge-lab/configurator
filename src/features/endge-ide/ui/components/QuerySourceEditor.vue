@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: hsl(var(--background));
+  background: var(--editor-surface);
 }
 
 .query-source-editor__monaco {
@@ -187,6 +187,6 @@ onBeforeUnmount(() => {
   min-height: 280px;
   height: 100%;
   width: 100%;
-  background: #1e1e1e;
+  background: var(--editor-surface);
 }
 </style>

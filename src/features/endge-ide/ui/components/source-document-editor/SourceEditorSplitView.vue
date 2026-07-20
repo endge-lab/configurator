@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  background: #1e1e1e;
+  background: var(--editor-surface);
 }
 
 .source-editor-split-view__primary {
@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: ew-resize;
-  background: rgb(15 23 42);
+  background: var(--editor-surface);
   outline: none;
 }
 
@@ -166,6 +166,6 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   flex-direction: column;
   overflow: hidden;
-  background: rgb(15 23 42);
+  background: var(--editor-surface);
 }
 </style>

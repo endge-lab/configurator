@@ -30,7 +30,7 @@ watch(() => props.modelValue, (value) => {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="relative flex min-h-0 flex-1 overflow-hidden bg-[#1e1e1e]">
+    <div class="relative flex min-h-0 flex-1 overflow-hidden bg-editor-surface">
       <div ref="container" class="min-h-0 flex-1" />
       <StoreRuntimePreview :runtime="runtime ?? null" />
     </div>

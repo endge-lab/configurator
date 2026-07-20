@@ -17,6 +17,7 @@ const testState = vi.hoisted(() => {
   return {
     integrations,
     workspace,
+    registerMenuItem: vi.fn(() => vi.fn()),
     registerWidget: vi.fn(() => vi.fn()),
     removeSurface: vi.fn(),
   }
@@ -48,10 +49,17 @@ vi.mock('@/features/endge-ide/model/integrations/configurator-widget-registry', 
   },
 }))
 
+vi.mock('@/features/endge-ide/model/integrations/configurator-menu-registry', () => ({
+  ConfiguratorMenuRegistry: class ConfiguratorMenuRegistry {
+    add = testState.registerMenuItem
+  },
+}))
+
 describe('configurator integration host', () => {
   beforeEach(() => {
     testState.integrations.clear()
     testState.workspace.installedIntegrations.splice(0)
+    testState.registerMenuItem.mockClear()
     testState.registerWidget.mockClear()
     testState.removeSurface.mockClear()
   })
@@ -66,11 +74,16 @@ describe('configurator integration host', () => {
         apiVersion: '1',
       },
       configurator({ configurator }) {
-        return configurator.widgets.register({
+        configurator.widgets.register({
           id: 'hello-world',
           title: 'Тестовый виджет',
           placement: 'sidebar',
           visual,
+        })
+        configurator.menu.add({
+          id: 'hello-world-menu',
+          title: 'Hello integration',
+          action: () => {},
         })
       },
     }
@@ -94,6 +107,16 @@ describe('configurator integration host', () => {
         workspaceId: 'workspace-test',
       }),
       expect.objectContaining({ id: 'hello-world', visual }),
+    )
+    expect(testState.registerMenuItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        integrationIdentity: 'test-hello-world',
+        workspaceId: 'workspace-test',
+      }),
+      expect.objectContaining({
+        id: 'hello-world-menu',
+        title: 'Hello integration',
+      }),
     )
 
     await stop()

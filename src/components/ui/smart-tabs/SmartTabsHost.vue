@@ -374,7 +374,7 @@ watch(contextMenu, (v) => {
       </Teleport>
 
       <!-- CONTENT: прокрутка только здесь, вкладки остаются сверху -->
-      <div class="min-h-0 min-w-0 flex-1 overflow-auto">
+      <div class="min-h-0 min-w-0 flex-1 overflow-auto bg-editor-surface">
         <div v-if="tabs.length === 0" class="h-full min-h-0" aria-hidden="true" />
 
         <TabsContent

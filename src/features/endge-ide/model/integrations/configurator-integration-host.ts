@@ -9,6 +9,7 @@ import type {
 import { Endge, RIntegration } from '@endge/core'
 
 import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
+import { ConfiguratorMenuRegistry } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 import { ConfiguratorWidgetRegistry } from '@/features/endge-ide/model/integrations/configurator-widget-registry'
 
 const LOCAL_OWNER = 'configurator:test-integrations'
@@ -34,6 +35,7 @@ interface ActiveIntegration {
 
 /** Runs configurator-only integration entrypoints against the current workspace. */
 export class ConfiguratorIntegrationHost {
+  private readonly _menu = new ConfiguratorMenuRegistry()
   private readonly _widgets = new ConfiguratorWidgetRegistry()
   private readonly _modules: IntegrationModule[]
   private readonly _active: ActiveIntegration[] = []
@@ -112,7 +114,11 @@ export class ConfiguratorIntegrationHost {
           open: async () => unavailable('configurator.workspaceViews.open'),
         },
         menu: {
-          add: () => unavailable('configurator.menu.add'),
+          add: (item) => {
+            const disposer = this._menu.add(context, item)
+            disposers.push(disposer)
+            return disposer
+          },
         },
       },
     }

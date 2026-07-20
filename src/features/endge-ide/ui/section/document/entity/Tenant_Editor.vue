@@ -125,7 +125,7 @@ async function save(): Promise<void> {
     </template>
 
     <div class="min-h-0 flex-1 bg-muted/25 p-4">
-      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-[#2D324A]">
+      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
         <ScrollArea v-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">

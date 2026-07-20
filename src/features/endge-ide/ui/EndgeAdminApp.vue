@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
+
 import { HeartPulse } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { showWidget } from '@/components/layouts/grid'
+import { getIconComponent, showWidget } from '@/components/layouts/grid'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { configuratorMenuItems } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
@@ -61,6 +64,18 @@ function openPulseFromHeader(): void {
 
 function openArchitecture(): void {
   EndgeIDE.tabs.openArchitecture()
+}
+
+async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): Promise<void> {
+  try {
+    await entry.item.action?.()
+  }
+  catch (error) {
+    console.error(
+      `[ConfiguratorIntegrationHost] Menu action "${entry.id}" failed.`,
+      error,
+    )
+  }
 }
 </script>
 
@@ -185,6 +200,28 @@ function openArchitecture(): void {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <span
+        v-if="configuratorMenuItems.length"
+        class="mx-1 h-4 w-px bg-border"
+        aria-hidden="true"
+      />
+      <button
+        v-for="entry in configuratorMenuItems"
+        :key="entry.id"
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        :disabled="!entry.item.action"
+        :title="`${entry.item.title} · ${entry.integrationIdentity}`"
+        @click="runIntegrationMenuAction(entry)"
+      >
+        <component
+          :is="getIconComponent(entry.item.icon)"
+          v-if="getIconComponent(entry.item.icon)"
+          class="size-3.5"
+        />
+        {{ entry.item.title }}
+      </button>
     </nav>
   </Teleport>
 

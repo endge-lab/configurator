@@ -33,6 +33,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-editor-surface: var(--editor-surface);
+  --color-editor-panel: var(--editor-panel);
+  --color-editor-control: var(--editor-control);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -66,6 +69,18 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+}
+
+:root {
+  --editor-surface: var(--background);
+  --editor-panel: var(--card);
+  --editor-control: var(--input);
+}
+
+.dark {
+  --editor-surface: #142137;
+  --editor-panel: color-mix(in srgb, var(--editor-surface) 92%, black);
+  --editor-control: color-mix(in srgb, var(--editor-surface) 76%, black);
 }
 
 @layer base {

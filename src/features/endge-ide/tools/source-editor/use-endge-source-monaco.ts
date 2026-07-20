@@ -1,6 +1,6 @@
+import type { SourceKind, SourceLanguageSyntaxDefinition } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { Ref } from 'vue'
-import type { SourceKind, SourceLanguageSyntaxDefinition } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import * as monaco from 'monaco-editor'
@@ -8,6 +8,9 @@ import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+
+const ENDGE_SOURCE_DARK_THEME = 'endge-source-dark'
 
 interface EndgeSourceDiagnostic {
   severity?: string
@@ -64,6 +67,14 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   onMounted(() => {
     if (!options.container.value)
       return
+    monaco.editor.defineTheme(ENDGE_SOURCE_DARK_THEME, {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': resolveEditorSurfaceColor(),
+      },
+    })
     registerLanguage(languageId, syntax)
     completionDisposable = monaco.languages.registerCompletionItemProvider(languageId, {
       triggerCharacters: syntax.triggerCharacters,
@@ -90,7 +101,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     editor.value = monaco.editor.create(options.container.value, {
       value: options.value(),
       language: languageId,
-      theme: 'vs-dark',
+      theme: ENDGE_SOURCE_DARK_THEME,
       minimap: { enabled: false },
       automaticLayout: true,
       fontSize: 14,
