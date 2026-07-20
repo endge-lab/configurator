@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
@@ -205,7 +206,11 @@ const source = useSafeLocalStorage('sfc-playground-source', DEFAULT_SOURCE)
 const contextJson = useSafeLocalStorage('sfc-playground-context', DEFAULT_CONTEXT)
 const splitRatio = useSafeLocalStorage('sfc-playground-split', SPLIT_DEFAULT)
 const selectedDemoId = ref('')
-const activeTab = ref('preview')
+const activeTab = useSmartTabSelection(
+  'sfc-playground.active-tab',
+  'preview',
+  ['preview', 'diagnostics', 'ir', 'ast', 'contract'] as const,
+)
 const splitContainerRef = ref<HTMLElement | null>(null)
 const isDragging = ref(false)
 

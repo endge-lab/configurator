@@ -213,7 +213,7 @@ function normalizeErrorMessage(error: unknown): string {
 
 <template>
   <div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-muted/20">
-    <div class="flex shrink-0 items-center justify-between gap-3 border-b bg-background px-5 py-3">
+    <div class="flex shrink-0 items-center justify-between gap-3 border-b bg-editor-surface px-5 py-3">
       <div class="flex items-center gap-2 min-w-0">
         <KeyRound class="size-5 text-sky-500 shrink-0" />
         <div class="text-lg font-semibold truncate">

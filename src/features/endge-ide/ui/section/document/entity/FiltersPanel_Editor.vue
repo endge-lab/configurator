@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
@@ -250,6 +251,11 @@ const fields = computed<RuntimeFilterField[]>(() => {
 // -------------------- form --------------------
 
 const form = ref<Record<string, any>>({})
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'form',
+  ['general', 'form', 'json'] as const,
+)
 
 function initFormDefaults(fs: RuntimeFilterField[]): Record<string, any> {
   const next: Record<string, any> = {}
@@ -451,7 +457,7 @@ function applyFilter(): void {
     Нет данных для вкладки
   </div>
   <div v-else class="w-full h-full flex flex-col">
-    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b bg-card">
+    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b bg-editor-panel">
       <div class="flex flex-col gap-1 min-w-0 flex-1">
         <div class="text-lg font-semibold truncate">
           {{ editor?.displayName || 'Без названия' }}
@@ -474,7 +480,7 @@ function applyFilter(): void {
     </div>
 
     <div class="flex-1 min-h-0 flex flex-col">
-      <Tabs class="flex-1 flex flex-col min-h-0" default-value="form">
+      <Tabs v-model="activeTab" class="flex-1 flex flex-col min-h-0">
         <div class="border-b px-3 py-2">
           <TabsList class="grid w-full grid-cols-3">
             <TabsTrigger value="general">Основное</TabsTrigger>

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -35,7 +36,11 @@ const tabs = EndgeIDE.tabs
 const editor = computed<RQueryEditor | null>(
   () => tabs.documentEditorModel.value as RQueryEditor | null,
 )
-const activeTab = ref<'general' | 'source' | 'diagnostics'>('source')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'source', 'diagnostics'] as const,
+)
 const diagnosticsEntityRef = computed(() =>
   createEditorDiagnosticsEntityRef('query', editor.value),
 )
@@ -138,7 +143,7 @@ async function buildQueryArtifact(
                 class="h-7 w-7"
                 :class="
                   activeTab === 'general'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Основное"
@@ -158,7 +163,7 @@ async function buildQueryArtifact(
                 class="h-7 w-7"
                 :class="
                   activeTab === 'source'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Source"
@@ -178,7 +183,7 @@ async function buildQueryArtifact(
                 class="h-7 w-7"
                 :class="
                   activeTab === 'diagnostics'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Диагностика"

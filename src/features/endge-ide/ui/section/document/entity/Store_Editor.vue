@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -34,8 +35,10 @@ import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEdi
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
 )
-const activeTab = ref<'general' | 'source' | 'artifact' | 'diagnostics'>(
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
   'source',
+  ['general', 'source', 'artifact', 'diagnostics'] as const,
 )
 const launchLoading = ref(false)
 const compiled = computed(() =>
@@ -107,7 +110,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'general'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Основное"
@@ -126,7 +129,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'source'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Source"
@@ -165,7 +168,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'artifact'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Артифакт"
@@ -184,7 +187,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'diagnostics'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Диагностика"

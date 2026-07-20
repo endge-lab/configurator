@@ -23,6 +23,7 @@ import {
 import { computed, ref, watch } from 'vue'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 
 const props = defineProps<{
@@ -31,7 +32,11 @@ const props = defineProps<{
 }>()
 
 const problemsRevision = useSubscribableModuleRef(Endge.diagnostics.problems)
-const activePhase = ref<DiagnosticsProblemPhase>('build')
+const activePhase = useSmartTabSelection<DiagnosticsProblemPhase>(
+  'diagnostics.active-phase',
+  'build',
+  ['authoring', 'build', 'runtime'],
+)
 const selectedProblemId = ref<string | null>(null)
 
 const phaseLabels: Record<DiagnosticsProblemPhase, string> = {

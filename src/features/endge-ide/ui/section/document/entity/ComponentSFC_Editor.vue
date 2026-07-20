@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { RComponentSFC } from '@endge/core'
 
-import { Endge, inspectComponentSFCVisual } from '@endge/core'
+import { compileComponentSFC, Endge, inspectComponentSFCVisual } from '@endge/core'
 import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -27,6 +29,7 @@ import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
 
 interface ScriptEditorHandle {
+  focusOffset: (offset: number) => void
   formatDocument: () => Promise<void>
 }
 
@@ -34,7 +37,11 @@ const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
 const launchLoading = ref(false)
-const activeTab = ref<'general' | 'visual' | 'source' | 'diagnostics'>('source')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'visual', 'source', 'diagnostics'] as const,
+)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 const visualInspection = computed(() => {
@@ -47,11 +54,12 @@ const visualInspection = computed(() => {
 })
 const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
 const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)
-const tableComponentOptions = computed(() => Endge.domain.getComponentSFCs()
+const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.domain.getComponentSFCs()
   .filter((component: RComponentSFC) => component.id !== editor.value?.id && Boolean(component.identity?.trim()))
   .map((component: RComponentSFC) => ({
     value: component.identity,
     label: component.displayName || component.name || component.identity,
+    inputs: compileComponentSFC(component.source ?? '').contract.inputs,
   })))
 const sourceEditorExtensions = [
   createSFCStyleEndgeCSSContribution(),
@@ -62,10 +70,14 @@ const sourceEditorExtensions = [
 ]
 
 watch(hasTableVisual, (supported) => {
+  if (supported && activeTab.value === 'general') {
+    activeTab.value = 'visual'
+    return
+  }
   if (!supported && activeTab.value === 'visual') {
     activeTab.value = 'source'
   }
-})
+}, { immediate: true })
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -78,6 +90,12 @@ function updateVisualSource(source: string): void {
   }
   current.source = source
   current.parseSource?.()
+}
+
+async function openSourceAt(offset: number): Promise<void> {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset(offset)
 }
 
 async function launchPreview(): Promise<void> {
@@ -109,7 +127,7 @@ async function launchPreview(): Promise<void> {
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip>
+          <Tooltip v-if="!hasTableVisual">
             <TooltipTrigger as-child>
               <Button
                 size="icon"
@@ -117,7 +135,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'general'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Основное"
@@ -136,7 +154,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'visual'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Visual Table"
@@ -155,7 +173,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'source'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Source"
@@ -174,7 +192,7 @@ async function launchPreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'diagnostics'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Диагностика"
@@ -295,8 +313,52 @@ async function launchPreview(): Promise<void> {
       :diagnostics="visualInspection?.diagnostics"
       class="min-h-0 flex-1"
       @update:source="updateVisualSource"
-      @open-source="activeTab = 'source'"
-    />
+      @open-source="openSourceAt"
+    >
+      <template #general>
+        <div class="max-w-2xl space-y-5">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="component-sfc-display-name-visual">Название</Label>
+              <Input
+                id="component-sfc-display-name-visual"
+                v-model="editor.displayName"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="component-sfc-identity-visual">Identity</Label>
+              <Input
+                id="component-sfc-identity-visual"
+                v-model="editor.identity"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-tag-visual">Tag</Label>
+            <Input
+              id="component-sfc-tag-visual"
+              v-model="editor.tag"
+              placeholder="Tail или Module.SomeTag"
+              spellcheck="false"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-description-visual">Описание</Label>
+            <Textarea
+              id="component-sfc-description-visual"
+              v-model="editor.description"
+              :rows="5"
+            />
+          </div>
+          <div class="space-y-1 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+            <div>modelVersion: {{ documentModel?.modelVersion ?? 1 }}</div>
+            <div>targets: {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+            <div>source: {{ String(editor.source ?? '').length }} chars</div>
+          </div>
+        </div>
+      </template>
+    </ComponentSFCTableVisualEditor>
 
     <div v-else-if="activeTab === 'source'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ScriptEditor

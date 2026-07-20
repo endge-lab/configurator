@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSmartTabViewState } from "@/components/ui/smart-tabs";
 import {
   autoFillAllColumns,
   autoFillColumn,
@@ -92,7 +93,10 @@ const resultKeys = computed(() => Object.keys(resultByKey.value));
 /** subField запроса при последнем запуске (для построения пути) */
 const runQuerySubField = ref<string>("");
 /** Активная вкладка по ключу */
-const activeTabKey = ref<string>("");
+const activeTabKey = useSmartTabViewState<string>("component-table.mapping-result-tab", {
+  defaultValue: () => "",
+  validate: (value) => typeof value === "string",
+});
 
 /** Ответ в виде массива: пример первого элемента (без ключей) */
 const arraySample = ref<unknown | null>(null);
@@ -335,7 +339,8 @@ function restoreFromLocalStorage(): void {
     resultByKey.value = out;
     arraySample.value = restoredArray;
     const keys = Object.keys(out);
-    if (keys.length && !activeTabKey.value) activeTabKey.value = keys[0] ?? "";
+    if (keys.length && !keys.includes(activeTabKey.value))
+      activeTabKey.value = keys[0] ?? "";
 
     const qId = normalizeText(selectedQueryId.value);
     if (qId) {

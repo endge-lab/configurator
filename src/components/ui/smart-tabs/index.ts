@@ -10,6 +10,9 @@ export type {
   SmartTabsPersistedState,
   SmartTabsState,
   SmartTabViewFactory,
+  SmartTabViewState,
+  SmartTabViewStateSlice,
 } from '@/components/ui/smart-tabs/types'
 
 export { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
+export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState } from '@/components/ui/smart-tabs/useSmartTabViewState'

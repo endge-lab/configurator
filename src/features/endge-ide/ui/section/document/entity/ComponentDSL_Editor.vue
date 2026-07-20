@@ -2,7 +2,7 @@
 import type { RType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Save, Trash2 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
@@ -26,7 +27,7 @@ import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-const tab = ref('general')
+const tab = useSmartTabSelection('editor.active-tab', 'general', ['general', '0', '2', 'parameters'] as const)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()

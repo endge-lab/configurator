@@ -9,6 +9,7 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 
 interface DiagramMeta {
   title: string
@@ -244,7 +245,11 @@ const selectedMeta = computed<DiagramMeta | null>(() => {
   return diagramMetaByNodeId[selectedNodeId.value] ?? null
 })
 
-const activeTab = ref<'federation' | 'communication' | 'events' | 'dispatch' | 'example' | 'landscape' | 'raph' | 'nova'>('federation')
+const activeTab = useSmartTabSelection(
+  'architecture.active-tab',
+  'federation',
+  ['federation', 'communication', 'events', 'dispatch', 'example', 'landscape', 'raph', 'nova'] as const,
+)
 
 function createFlowNode(
   id: string,

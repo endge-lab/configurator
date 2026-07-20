@@ -83,6 +83,31 @@
   --editor-control: color-mix(in srgb, var(--editor-surface) 76%, black);
 }
 
+/*
+ * Entity editors share one semantic surface hierarchy. Keeping this cascade on
+ * the editor host avoids per-editor dark-theme overrides and leaves cards and
+ * form controls outside the IDE unchanged.
+ */
+.endge-editor-surface [data-slot='card'] {
+  background-color: var(--editor-panel);
+}
+
+.endge-editor-surface [data-slot='input'],
+.endge-editor-surface [data-slot='textarea'],
+.endge-editor-surface [data-slot='select-trigger'],
+.endge-editor-surface select,
+.endge-editor-surface textarea {
+  background-color: var(--editor-control);
+}
+
+.endge-editor-surface [data-slot='tabs-list'] {
+  background-color: var(--editor-panel);
+}
+
+.endge-editor-surface [data-slot='tabs-trigger'][data-state='active'] {
+  background-color: var(--editor-control);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSmartTabSelection } from "@/components/ui/smart-tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -375,8 +376,16 @@ function removeEventHandler(
   col.eventBindings.splice(idx, 1);
 }
 
-const columnDetailTab = ref<"interface" | "data" | "events">("interface");
-const mainTab = ref<"general" | "columns" | "data" | "settings" | "assistant">("columns");
+const columnDetailTab = useSmartTabSelection(
+  "component-table.column-detail-tab",
+  "interface",
+  ["interface", "data", "events"] as const,
+);
+const mainTab = useSmartTabSelection(
+  "editor.active-tab",
+  "columns",
+  ["general", "columns", "data", "settings", "assistant"] as const,
+);
 
 /** Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора */
 const accessorInputRefs = ref<Record<number, HTMLInputElement | null>>({});

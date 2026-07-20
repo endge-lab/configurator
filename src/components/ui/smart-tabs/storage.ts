@@ -1,6 +1,6 @@
 import type { SmartTabsPersistedState } from './types'
 
-const VERSION = 1
+const VERSION = 2
 
 interface StoredPayload {
   v: number
@@ -8,8 +8,9 @@ interface StoredPayload {
 }
 
 function safeParse<T>(raw: string | null): T | null {
-  if (!raw)
+  if (!raw) {
     return null
+  }
   try {
     return JSON.parse(raw) as T
   }
@@ -19,37 +20,55 @@ function safeParse<T>(raw: string | null): T | null {
 }
 
 export function loadSmartTabs(key: string): SmartTabsPersistedState | null {
-  if (typeof window === 'undefined')
-    return null
-
-  const raw = localStorage.getItem(key)
-  console.log('[storage] Загрузка из localStorage', { key, raw })
-  
-  const parsed = safeParse<StoredPayload>(raw)
-  console.log('[storage] Распарсено', { parsed, version: parsed?.v, expectedVersion: VERSION })
-  
-  if (!parsed || parsed.v !== VERSION) {
-    console.log('[storage] Версия не совпадает или данные отсутствуют')
+  if (typeof window === 'undefined') {
     return null
   }
 
-  console.log('[storage] Загружено состояние', parsed.state)
+  let parsed: StoredPayload | null
+  try {
+    parsed = safeParse<StoredPayload>(localStorage.getItem(key))
+  }
+  catch (error) {
+    console.warn('[SmartTabs] Failed to restore tab state.', { key, error })
+    return null
+  }
+  if (!parsed || (parsed.v !== 1 && parsed.v !== VERSION)) {
+    return null
+  }
+
+  if (parsed.v === 1) {
+    return {
+      openTabs: Array.isArray(parsed.state?.openTabs) ? parsed.state.openTabs : [],
+      activeTabId: parsed.state?.activeTabId ?? null,
+      viewStateByTabId: {},
+    }
+  }
+
   return parsed.state
 }
 
 export function saveSmartTabs(key: string, state: SmartTabsPersistedState): void {
-  if (typeof window === 'undefined')
+  if (typeof window === 'undefined') {
     return
+  }
 
-  const payload: StoredPayload = { v: VERSION, state }
-  const serialized = JSON.stringify(payload)
-  console.log('[storage] Сохранение в localStorage', { key, state, serialized })
-  localStorage.setItem(key, serialized)
-  console.log('[storage] Сохранено успешно')
+  try {
+    const payload: StoredPayload = { v: VERSION, state }
+    localStorage.setItem(key, JSON.stringify(payload))
+  }
+  catch (error) {
+    console.warn('[SmartTabs] Failed to persist tab state.', { key, error })
+  }
 }
 
 export function clearSmartTabs(key: string): void {
-  if (typeof window === 'undefined')
+  if (typeof window === 'undefined') {
     return
-  localStorage.removeItem(key)
+  }
+  try {
+    localStorage.removeItem(key)
+  }
+  catch (error) {
+    console.warn('[SmartTabs] Failed to clear tab state.', { key, error })
+  }
 }

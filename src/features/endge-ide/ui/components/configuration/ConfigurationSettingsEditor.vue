@@ -9,7 +9,7 @@ import type {
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
 import { Braces, HeartPulse, Languages, Palette, PanelsTopLeft, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
@@ -45,7 +46,11 @@ const emit = defineEmits<{
 
 const EXCLUDED_VALUE_LABEL = 'Исключено из наследования'
 const excludedRowDrafts = new WeakMap<object, unknown>()
-const activeSection = ref<ConfigurationSection>('general')
+const activeSection = useSmartTabSelection<ConfigurationSection>(
+  'configuration.active-section',
+  'general',
+  ['general', 'environment', 'ui', 'auth', 'locales', 'themes', 'diagnostics'],
+)
 const sections = [
   {
     id: 'general',

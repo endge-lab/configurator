@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
@@ -25,7 +26,11 @@ interface ScriptEditorHandle {
 
 const props = defineProps<{ tabContext?: { editor?: RComputationEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
-const activeTab = ref<'general' | 'implementation' | 'diagnostics'>('implementation')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'implementation',
+  ['general', 'implementation', 'diagnostics'] as const,
+)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('computation', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
@@ -57,7 +62,7 @@ async function save(): Promise<void> {
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-background shadow-sm' : 'text-muted-foreground'" aria-label="Основное" @click="activeTab = 'general'">
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Основное" @click="activeTab = 'general'">
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -65,7 +70,7 @@ async function save(): Promise<void> {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'implementation' ? 'bg-background shadow-sm' : 'text-muted-foreground'" aria-label="Реализация" @click="activeTab = 'implementation'">
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'implementation' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Реализация" @click="activeTab = 'implementation'">
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -73,7 +78,7 @@ async function save(): Promise<void> {
           </Tooltip>
         </div>
         <Separator orientation="vertical" class="mx-0.5 h-5" />
-        <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'diagnostics' ? 'bg-background shadow-sm' : 'text-muted-foreground'" aria-label="Диагностика" @click="activeTab = 'diagnostics'">
+        <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'diagnostics' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Диагностика" @click="activeTab = 'diagnostics'">
           <TriangleAlert class="size-4" />
         </Button>
         <Separator orientation="vertical" class="mx-0.5 h-5" />

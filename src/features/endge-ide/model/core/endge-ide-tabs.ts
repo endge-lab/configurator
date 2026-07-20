@@ -225,6 +225,9 @@ export class EndgeIDETabs {
   public closeAllToLeft(id: string): void { this._tabsApi.closeAllToLeft(id) }
   public closeAllToRight(id: string): void { this._tabsApi.closeAllToRight(id) }
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
+  public getTabViewState(tabId: string, key: string) { return this._tabsApi.getTabViewState(tabId, key) }
+  public setTabViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabViewState']>[2]): void { this._tabsApi.setTabViewState(tabId, key, slice) }
+  public clearTabViewState(tabId: string, key?: string): void { this._tabsApi.clearTabViewState(tabId, key) }
   public clearStorage(): void { this._tabsApi.clearStorage() }
 
   public getCurrentContext(): { document: Record<string, unknown> } | null {
@@ -662,6 +665,12 @@ export class EndgeIDETabs {
       const entity = Endge.domain.getFilter(reference.identity)
       return entity ? { documentId: entity.identity, documentType: entity.type } : null
     }
+    if (reference.target === 'type') {
+      const entity = Endge.domain.getType(reference.identity)
+      return entity && !entity.isPrimitive
+        ? { documentId: entity.name, documentType: 'type' }
+        : null
+    }
 
     const fixedTargets = {
       'auth-profile': { documentType: 'auth-profile', resolve: () => Endge.domain.getAuthProfile(reference.identity) },
@@ -674,7 +683,7 @@ export class EndgeIDETabs {
       'style': { documentType: 'style', resolve: () => Endge.domain.getStyle(reference.identity) },
       'vocabs': { documentType: 'vocabs', resolve: () => Endge.domain.getVocab(reference.identity) },
     } satisfies Record<
-      Exclude<SourceDocumentReference['target'], 'query' | 'component' | 'filter'>,
+      Exclude<SourceDocumentReference['target'], 'query' | 'component' | 'filter' | 'type'>,
       { documentType: DomainDocumentType; resolve: () => { identity?: unknown } | null }
     >
     const target = fixedTargets[reference.target]
@@ -700,6 +709,7 @@ export class EndgeIDETabs {
       'query': 'Query',
       'store': 'Store',
       'style': 'Style',
+      'type': 'Type',
       'vocabs': 'Vocab',
     }[target]
   }

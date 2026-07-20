@@ -8,6 +8,7 @@ import { showWidget } from '@/components/layouts/grid'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { pulseActiveTab, pulseSelectedHost, startPulseRuntimeSync, stopPulseRuntimeSync } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import PulseDetailsPanel from '@/features/endge-ide/ui/section/pulse/PulseDetailsPanel.vue'
@@ -47,6 +48,21 @@ function downloadSnapshot(): void {
 }
 
 const hasDetails = computed(() => pulseSelectedHost.value != null)
+const restoredActiveTab = useSmartTabSelection(
+  'pulse.active-tab',
+  'overview',
+  ['overview', 'details', 'diagnostics'] as const,
+)
+
+watch(restoredActiveTab, (value) => {
+  if (pulseActiveTab.value !== value)
+    pulseActiveTab.value = value
+}, { immediate: true })
+
+watch(pulseActiveTab, (value) => {
+  if (restoredActiveTab.value !== value)
+    restoredActiveTab.value = value
+})
 
 watch(hasDetails, (value) => {
   if (!value && pulseActiveTab.value === 'details')

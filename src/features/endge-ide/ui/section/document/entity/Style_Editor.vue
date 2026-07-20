@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
@@ -21,7 +22,7 @@ import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-doc
 
 const props = defineProps<{ tabContext?: { editor?: RStyleEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
-const activeTab = ref<'general' | 'source'>('source')
+const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const splitRatio = ref(0.68)
 const compilation = computed(() => compileEndgeCSS(editor.value?.source ?? '', {
   identity: editor.value?.identity || 'draft-style',
@@ -66,7 +67,7 @@ async function save(): Promise<void> {
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-background shadow-sm' : 'text-muted-foreground'" aria-label="Основное" @click="activeTab = 'general'">
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Основное" @click="activeTab = 'general'">
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
@@ -74,7 +75,7 @@ async function save(): Promise<void> {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'source' ? 'bg-background shadow-sm' : 'text-muted-foreground'" aria-label="Source" @click="activeTab = 'source'">
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'source' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Source" @click="activeTab = 'source'">
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>

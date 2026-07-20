@@ -32,7 +32,7 @@ interface DocTypeOption {
   section: DomainSectionType
 }
 
-/** Типы документов, которые можно создать через фабрику (без типов/примитивов - для них не выбираем папку). */
+/** Типы документов, которые можно создать через фабрику. Примитивы остаются системными. */
 const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: ComponentType.DSL, label: 'DSL', defaultName: 'Без названия', section: DomainSectionType.Component },
   { type: ComponentType.Table, label: 'Table', defaultName: 'Новая таблица', section: DomainSectionType.Component },
@@ -43,6 +43,7 @@ const CREATABLE_DOC_TYPES: DocTypeOption[] = [
   { type: 'composition' as DomainDocumentType, label: 'Композиция', defaultName: 'Новая композиция', section: DomainSectionType.Composition },
   { type: 'store' as DomainDocumentType, label: 'Хранилище', defaultName: 'Без названия', section: DomainSectionType.Store },
   { type: 'mock' as DomainDocumentType, label: 'Mock', defaultName: 'Новый Mock', section: DomainSectionType.Mock },
+  { type: 'type' as DomainDocumentType, label: 'Тип', defaultName: 'Новый тип', section: DomainSectionType.Type },
   { type: FilterType.DefaultFilter, label: 'Фильтр', defaultName: 'Новый фильтр', section: DomainSectionType.Filters },
   { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
   { type: 'computation' as DomainDocumentType, label: 'Вычисление', defaultName: 'Новое вычисление', section: DomainSectionType.Computation },
@@ -154,7 +155,7 @@ const compositionOwner = computed(() =>
 )
 const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
 
-/** Показывать выбор папки только для доменных сущностей, не для типов. */
+/** Показывать выбор папки для секций, которые поддерживают folder placement. */
 const showFolderSelect = computed(() => {
   if (compositionOwner.value)
     return false
@@ -165,6 +166,7 @@ const showFolderSelect = computed(() => {
     || s === DomainSectionType.Composition
     || s === DomainSectionType.Store
     || s === DomainSectionType.Mock
+    || s === DomainSectionType.Type
     || s === DomainSectionType.Filters
     || s === DomainSectionType.Action
     || s === DomainSectionType.Computation
@@ -347,6 +349,22 @@ function buildPayloadTemplate(): Record<string, unknown> {
       contentType: 'application/json',
       source: '{}',
       codeRef: null,
+      meta: {},
+    }
+  }
+
+  if (activeType.value === 'type') {
+    return {
+      ...base,
+      schema: {
+        identity: id,
+        name: displayName,
+        isPrimitive: false,
+        fields: {},
+      },
+      source: Endge.source.createDefault('type'),
+      sourceVersion: 1,
+      isPrimitive: false,
       meta: {},
     }
   }

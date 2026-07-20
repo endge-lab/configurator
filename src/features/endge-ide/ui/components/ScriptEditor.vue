@@ -105,7 +105,19 @@ async function formatDocument(): Promise<void> {
   }
 }
 
-defineExpose({ formatDocument })
+function focusOffset(offset: number): void {
+  const model = editor?.getModel()
+  if (!editor || !model) {
+    return
+  }
+
+  const position = model.getPositionAt(Math.max(0, Math.min(offset, model.getValueLength())))
+  editor.setPosition(position)
+  editor.revealLineInCenter(position.lineNumber)
+  editor.focus()
+}
+
+defineExpose({ focusOffset, formatDocument })
 
 onMounted(() => {
   monaco.editor.defineTheme('palenight', createPalenightTheme())

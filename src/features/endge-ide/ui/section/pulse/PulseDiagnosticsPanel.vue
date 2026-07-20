@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Select,
   SelectContent,
@@ -295,7 +296,11 @@ const filteredTraces = computed(() => {
   return mockTraces.value.filter(t => traceIds.has(t.traceId))
 })
 
-const diagnosticsSubTab = ref<'traces' | 'table' | 'timeline'>('traces')
+const diagnosticsSubTab = useSmartTabSelection(
+  'pulse.diagnostics.active-tab',
+  'traces',
+  ['traces', 'table', 'timeline'] as const,
+)
 const selectedTraceId = ref<string | null>(null)
 
 function getTraceRecords(traceId: string): DisplayRecord[] {

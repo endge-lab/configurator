@@ -129,6 +129,9 @@ export class EndgeIDEHotkeys {
       if (!e.ctrlKey && !e.metaKey) {
         return
       }
+      if (document.querySelector('[data-editor-shortcut-scope][data-shortcuts-active="true"]')) {
+        return
+      }
       const target = e.target as HTMLElement | null
       if (target?.closest?.('input, textarea, [contenteditable="true"]')) {
         return

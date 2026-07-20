@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { getEndgeFlowPaletteGroupByKind, groupEndgeFlowPalette, shouldShowEndgeFlowPaletteKind } from '@/features/endge-ide/model/action-flow-editor/endge-flow-palette'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
@@ -131,7 +132,11 @@ const isCanvasDragOver = ref(false)
 const isHydrating = ref(false)
 const showGeneratedCode = ref(false)
 const isPaletteCollapsed = useSafeLocalStorage<boolean>(paletteCollapsedStorageKey, false)
-const bottomPanelTab = ref<'block' | 'context'>('context')
+const bottomPanelTab = useSmartTabSelection(
+  'flow.bottom-panel.active-tab',
+  'context',
+  ['block', 'context'] as const,
+)
 const bottomPanelHeight = useSafeLocalStorage<number>(bottomPanelHeightStorageKey, 220)
 const isBottomPanelResizing = ref(false)
 

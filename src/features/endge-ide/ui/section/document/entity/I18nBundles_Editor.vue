@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -78,11 +79,11 @@ const localeCodes = computed(() => {
 
 const currentLocale = ref<string>(Endge.workspace.defaultLocale)
 
-const activePanel = ref<'general' | 'source'>('source')
+const activePanel = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
 /** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ→значение */
-const editMode = ref<'json' | 'table'>('table')
+const editMode = useSmartTabSelection('i18n.edit-mode', 'table', ['json', 'table'] as const)
 
 const panelButtons = [
   { value: 'general', icon: Settings2, label: 'Основное' },
@@ -364,7 +365,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                 class="h-7 w-7"
                 :class="
                   activePanel === item.value
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 :aria-label="item.label"

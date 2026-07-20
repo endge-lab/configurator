@@ -1,186 +1,361 @@
 <script setup lang="ts">
-import type { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
+import type { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor'
 import type { DomainDocumentType } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { Box, ExternalLink, Loader2, Plus, Save } from 'lucide-vue-next'
+import { Code2, ExternalLink, Eye, FileJson2, FilePenLine, ListTree, Loader2, Plus, RotateCcw, Save, Settings2 } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection, useSmartTabSharedViewState } from '@/components/ui/smart-tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { RFieldEditor as RFieldEditorClass } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { RFieldEditor as RFieldEditorClass } from '@/features/endge-ide/domain/entities/RFieldEditor'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
+import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
 
 const PRIMITIVE_TYPES = ['Any', 'ID', 'String', 'Number', 'Boolean', 'Null', 'DateTime', 'Time'] as const
+type TypeVisualLayoutKey = 'schema' | 'schema-preview' | 'schema-example' | 'schema-preview-example'
 
-const tabs = EndgeIDE.tabs
-
-async function save(): Promise<void> {
-  await EndgeIDE.tabs.save()
+interface TypeVisualWorkspaceState {
+  showPreview: boolean
+  showExample: boolean
+  layouts: Record<TypeVisualLayoutKey, number[]>
 }
 
-/** Примитивы + пользовательские типы домена для выбора типа поля */
+const TYPE_VISUAL_DEFAULT_LAYOUTS: TypeVisualWorkspaceState['layouts'] = {
+  'schema': [1],
+  'schema-preview': [0.48, 0.52],
+  'schema-example': [0.58, 0.42],
+  'schema-preview-example': [0.42, 0.36, 0.22],
+}
+
+function createTypeVisualWorkspaceState(): TypeVisualWorkspaceState {
+  return {
+    showPreview: true,
+    showExample: true,
+    layouts: Object.fromEntries(
+      Object.entries(TYPE_VISUAL_DEFAULT_LAYOUTS).map(([key, sizes]) => [key, [...sizes]]),
+    ) as TypeVisualWorkspaceState['layouts'],
+  }
+}
+
+function isTypeVisualWorkspaceState(value: unknown): value is TypeVisualWorkspaceState {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const state = value as Partial<TypeVisualWorkspaceState>
+  if (typeof state.showPreview !== 'boolean' || typeof state.showExample !== 'boolean' || !state.layouts) {
+    return false
+  }
+  return Object.entries(TYPE_VISUAL_DEFAULT_LAYOUTS).every(([key, fallback]) => {
+    const sizes = state.layouts?.[key as TypeVisualLayoutKey]
+    return Array.isArray(sizes)
+      && sizes.length === fallback.length
+      && sizes.every(size => Number.isFinite(size) && size > 0)
+  })
+}
+
+const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEditor | null)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'legacy', 'visual', 'source'] as const,
+)
+const tabs = [
+  { value: 'general', label: 'Основное', icon: Settings2 },
+  { value: 'legacy', label: 'Legacy Form', icon: FilePenLine },
+  { value: 'visual', label: 'Visual', icon: ListTree },
+  { value: 'source', label: 'Source', icon: Code2 },
+] as const
+
 const availableTypes = computed(() => {
-  const primitives = PRIMITIVE_TYPES.map(t => ({ value: t, label: t, isPrimitive: true }))
+  const primitives = PRIMITIVE_TYPES.map(type => ({ value: type, label: type }))
   const domainTypes = Endge.domain
     .getTypes()
-    .filter(t => !t.isPrimitive)
-    .map(t => ({ value: t.name, label: t.name, isPrimitive: false }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .filter(type => !type.isPrimitive)
+    .map(type => ({ value: type.name, label: type.name }))
+    .sort((left, right) => left.label.localeCompare(right.label))
   return [...primitives, ...domainTypes]
 })
-
-function isCustomType(typeName: string): boolean {
-  return typeName != null && typeName !== '' && !PRIMITIVE_TYPES.includes(typeName as (typeof PRIMITIVE_TYPES)[number])
-}
-
-interface TypeEditorModel {
-  name?: string
-  fields?: RFieldEditor[]
-}
-
-const editor = computed(() => tabs.documentEditorModel.value ?? null)
+const visualTypes = computed(() => Endge.domain
+  .getTypes()
+  .map(type => ({
+    identity: String(type.identity || type.name),
+    label: String(type.displayName || type.name || type.identity),
+    category: type.meta?.primitiveKind === 'reference'
+      ? 'reference' as const
+      : type.isPrimitive
+        ? 'primitive' as const
+        : 'user' as const,
+    source: String(type.source ?? ''),
+  }))
+  .filter(type => type.identity !== '')
+  .sort((left, right) => {
+    const order = { primitive: 0, reference: 1, user: 2 }
+    return order[left.category] - order[right.category] || left.label.localeCompare(right.label)
+  }))
 const fieldRows = computed(() => editor.value?.fields ?? [])
-
 const selectedIndices = ref<Set<number>>(new Set())
-
+const visualWorkspaceState = useSmartTabSharedViewState<TypeVisualWorkspaceState>(
+  'type-editor.visual-workspace',
+  {
+    version: 1,
+    defaultValue: createTypeVisualWorkspaceState,
+    validate: isTypeVisualWorkspaceState,
+  },
+)
+const visualShowPreview = computed({
+  get: () => visualWorkspaceState.value.showPreview,
+  set: (value) => {
+    visualWorkspaceState.value.showPreview = value
+  },
+})
+const visualShowExample = computed({
+  get: () => visualWorkspaceState.value.showExample,
+  set: (value) => {
+    visualWorkspaceState.value.showExample = value
+  },
+})
+const visualLayoutKey = computed<TypeVisualLayoutKey>(() => {
+  if (visualShowPreview.value && visualShowExample.value) {
+    return 'schema-preview-example'
+  }
+  if (visualShowPreview.value) {
+    return 'schema-preview'
+  }
+  if (visualShowExample.value) {
+    return 'schema-example'
+  }
+  return 'schema'
+})
+const visualPanelSizes = computed(() => visualWorkspaceState.value.layouts[visualLayoutKey.value])
 const allSelected = computed<boolean>({
   get: () => fieldRows.value.length > 0 && selectedIndices.value.size === fieldRows.value.length,
-  set: (v: boolean) => {
-    if (v)
-      selectedIndices.value = new Set(fieldRows.value.map((_: RFieldEditor, i: number) => i))
-    else selectedIndices.value = new Set()
+  set: (value) => {
+    selectedIndices.value = value
+      ? new Set(fieldRows.value.map((_, index) => index))
+      : new Set()
   },
 })
 
+function isCustomType(typeName: string): boolean {
+  return typeName !== '' && !PRIMITIVE_TYPES.includes(typeName as (typeof PRIMITIVE_TYPES)[number])
+}
+
 function toggleRow(index: number): void {
   const next = new Set(selectedIndices.value)
-  if (next.has(index))
+  if (next.has(index)) {
     next.delete(index)
-  else next.add(index)
+  }
+  else {
+    next.add(index)
+  }
   selectedIndices.value = next
 }
 
 function removeSelected(): void {
-  const ed = editor.value
-  if (!ed?.fields?.length)
+  if (!editor.value?.fields.length) {
     return
-  const indices = [...selectedIndices.value].sort((a, b) => b - a)
-  for (const i of indices) {
-    if (i >= 0 && i < ed.fields.length)
-      ed.fields.splice(i, 1)
+  }
+  for (const index of [...selectedIndices.value].sort((left, right) => right - left)) {
+    if (index >= 0 && index < editor.value.fields.length) {
+      editor.value.fields.splice(index, 1)
+    }
   }
   selectedIndices.value = new Set()
 }
 
-function getUniqueFieldName(ed: TypeEditorModel, baseName = 'field'): string {
-  const fields = ed.fields
-  if (!fields?.length)
-    return baseName
+function getUniqueFieldName(baseName = 'field'): string {
+  const fields = editor.value?.fields ?? []
   let name = baseName
-  let n = 0
-  while (fields.some((f: RFieldEditor) => f.name === name)) {
-    n += 1
-    name = `${baseName}${n}`
+  let suffix = 0
+  while (fields.some(field => field.name === name)) {
+    suffix += 1
+    name = `${baseName}${suffix}`
   }
   return name
 }
 
 function addField(): void {
-  const ed = editor.value
-  if (!ed?.fields)
+  if (!editor.value) {
     return
+  }
   const field = reactive(RFieldEditorClass.createDefault()) as RFieldEditor
-  field.name = getUniqueFieldName(ed, 'field')
-  ed.fields.push(field)
+  field.name = getUniqueFieldName()
+  editor.value.fields.push(field)
 }
 
 function renameField(row: RFieldEditor, nextRaw: string): void {
-  const ed = editor.value
-  if (!ed?.fields)
+  if (!editor.value) {
     return
+  }
   const nextName = String(nextRaw ?? '').trim()
-  if (!nextName || nextName === row.name)
+  if (!nextName || nextName === row.name) {
     return
-  if (ed.fields.some((f: RFieldEditor) => f !== row && f.name === nextName)) {
+  }
+  if (editor.value.fields.some(field => field !== row && field.name === nextName)) {
     toast.warning('Имя уже занято', { description: nextName })
     return
   }
   row.name = nextName
 }
 
-function changeRowField<K extends keyof RFieldEditor>(row: RFieldEditor, field: K, v: RFieldEditor[K]): void {
-  row[field] = v
+function changeRowField<K extends keyof RFieldEditor>(row: RFieldEditor, field: K, value: RFieldEditor[K]): void {
+  row[field] = value
 }
 
 function openTypeDocument(typeId: string): void {
   const id = String(typeId).trim()
-  if (id === '') {
+  if (!id) {
     toast.warning('Не указан тип')
     return
   }
-
-  const rType = Endge.domain.getType(id)
-  if (rType?.isPrimitive) {
+  const type = Endge.domain.getType(id)
+  if (type?.isPrimitive) {
     toast.info('Это примитивный тип')
     return
   }
-
   EndgeIDE.tabs.openDocument(id, 'type' as DomainDocumentType)
+}
+
+function updateTypeSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+function updateVisualPanelSizes(sizes: number[]): void {
+  visualWorkspaceState.value.layouts[visualLayoutKey.value] = [...sizes]
 }
 </script>
 
 <template>
-  <div class="w-full h-full">
-    <div class="p-5 flex flex-col gap-5 h-full min-h-0">
-      <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <div class="size-10 rounded-lg bg-rose-500/10 flex items-center justify-center shrink-0">
-          <Box class="size-5 text-rose-500" />
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity || editor.name"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-for="tab in tabs" :key="tab.value">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="activeTab === tab.value ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                :aria-label="tab.label"
+                @click="activeTab = tab.value"
+              >
+                <component :is="tab.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ tab.label }}</TooltipContent>
+          </Tooltip>
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="text-lg font-semibold truncate">
-            Тип - {{ editor?.name ?? 'Нет документа' }}
-          </div>
-          <div class="text-xs text-muted-foreground truncate">
-            {{ editor?.name ?? '-' }}
-          </div>
-        </div>
-        <TooltipProvider>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value"
+                aria-label="Сохранить"
+                @click="EndgeIDE.tabs.save()"
+              >
                 <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>Сохранить оба независимых формата</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider v-if="activeTab === 'source'">
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Сбросить Type Source"
+                @click="editor.resetSource()"
+              >
+                <RotateCcw class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Заменить source базовым примером</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
+      <TooltipProvider v-else-if="activeTab === 'visual'">
+        <div class="flex items-center justify-end gap-1">
+          <div class="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Visual editor display options">
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1.5 px-2 text-[11px]"
+              :class="visualShowPreview ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+              :aria-pressed="visualShowPreview"
+              @click="visualShowPreview = !visualShowPreview"
+            >
+              <Eye class="size-3.5" />
+              Preview
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1.5 px-2 text-[11px]"
+              :class="visualShowExample ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+              :aria-pressed="visualShowExample"
+              @click="visualShowExample = !visualShowExample"
+            >
+              <FileJson2 class="size-3.5" />
+              Example
+            </Button>
+          </div>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <div class="min-h-0 flex-1 overflow-hidden">
+      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+        <div class="max-w-xl space-y-5">
+          <div class="space-y-2">
+            <Label for="type-name">Название типа</Label>
+            <Input id="type-name" v-model="editor.name" />
+          </div>
+          <div class="space-y-2">
+            <Label for="type-source-version">Версия Type Source</Label>
+            <Input id="type-source-version" :model-value="String(editor.sourceVersion)" disabled />
+          </div>
+        </div>
       </div>
 
-      <Card class="shrink-0 p-4">
-        <div class="mb-3 text-sm font-semibold">Основное</div>
-        <div class="max-w-xl space-y-2">
-          <Label>Название типа</Label>
-          <Input v-model="editor!.name" />
+      <div v-else-if="activeTab === 'legacy'" class="flex h-full min-h-0 flex-col">
+        <div class="shrink-0 border-b bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-300">
+          Legacy Form и новый Source сохраняются независимо. Изменения здесь не обновляют Source.
         </div>
-      </Card>
-
-      <Card class="flex-1 min-h-0">
-        <div class="flex flex-col h-full min-h-0">
-          <div class="border-b px-3 py-2 flex items-center justify-between gap-2">
+        <div class="flex min-h-0 flex-1 flex-col">
+          <div class="flex items-center justify-between gap-2 border-b px-3 py-2">
             <button
               v-if="selectedIndices.size > 0"
               type="button"
@@ -195,16 +370,16 @@ function openTypeDocument(typeId: string): void {
             </Button>
           </div>
 
-          <ScrollArea class="flex-1 min-h-0">
+          <ScrollArea class="min-h-0 flex-1">
             <div class="p-4">
-              <div class="rounded-lg border overflow-hidden">
-                <div class="bg-muted/40 border-b">
+              <div class="overflow-hidden rounded-lg border">
+                <div class="border-b bg-muted/40">
                   <div class="grid grid-cols-[40px_1fr_1fr_80px_100px_56px] gap-0 text-xs font-medium text-muted-foreground">
-                    <div class="px-2 py-2 flex items-center justify-center">
+                    <div class="flex items-center justify-center px-2 py-2">
                       <Checkbox
                         :model-value="allSelected"
                         :indeterminate="selectedIndices.size > 0 && !allSelected"
-                        @update:model-value="(v) => (allSelected = v === true)"
+                        @update:model-value="value => (allSelected = value === true)"
                       />
                     </div>
                     <div class="px-3 py-2">
@@ -231,35 +406,29 @@ function openTypeDocument(typeId: string): void {
                     :key="index"
                     class="grid grid-cols-[40px_1fr_1fr_80px_100px_56px] items-center"
                   >
-                    <div class="px-2 py-2 flex items-center justify-center">
+                    <div class="flex items-center justify-center px-2 py-2">
                       <Checkbox
                         :model-value="selectedIndices.has(Number(index))"
                         @update:model-value="() => toggleRow(Number(index))"
                       />
                     </div>
-
                     <div class="px-3 py-2">
                       <Input
                         :model-value="String(row.name ?? '')"
-                        @update:model-value="(v) => renameField(row, String(v))"
+                        @update:model-value="value => renameField(row, String(value))"
                       />
                     </div>
-
-                    <div class="px-3 py-2 flex items-center gap-1">
+                    <div class="flex items-center gap-1 px-3 py-2">
                       <Select
                         :model-value="row.type ?? 'Any'"
-                        @update:model-value="(v) => changeRowField(row, 'type', v != null ? String(v) : 'Any')"
+                        @update:model-value="value => changeRowField(row, 'type', value != null ? String(value) : 'Any')"
                       >
-                        <SelectTrigger class="h-8 flex-1 min-w-0">
+                        <SelectTrigger class="h-8 min-w-0 flex-1">
                           <SelectValue placeholder="Any" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem
-                            v-for="opt in availableTypes"
-                            :key="opt.value"
-                            :value="opt.value"
-                          >
-                            {{ opt.label }}
+                          <SelectItem v-for="option in availableTypes" :key="option.value" :value="option.value">
+                            {{ option.label }}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -268,33 +437,29 @@ function openTypeDocument(typeId: string): void {
                         variant="ghost"
                         size="icon"
                         class="size-8 shrink-0 text-muted-foreground hover:text-primary"
-                        :title="'Открыть тип ' + String(row.type)"
+                        :title="`Открыть тип ${String(row.type)}`"
                         @click="openTypeDocument(String(row.type))"
                       >
                         <ExternalLink class="size-4" />
                       </Button>
                     </div>
-
-                    <div class="px-3 py-2 flex justify-center">
+                    <div class="flex justify-center px-3 py-2">
                       <Checkbox
                         :model-value="row.isArray"
-                        @update:model-value="(v) => changeRowField(row, 'isArray', v === true)"
+                        @update:model-value="value => changeRowField(row, 'isArray', value === true)"
                       />
                     </div>
-
-                    <div class="px-3 py-2 flex justify-center">
+                    <div class="flex justify-center px-3 py-2">
                       <Checkbox
                         :model-value="row.optional"
-                        @update:model-value="(v) => changeRowField(row, 'optional', v === true)"
+                        @update:model-value="value => changeRowField(row, 'optional', value === true)"
                       />
                     </div>
-
-                    <div class="px-3 py-2 flex justify-center">
+                    <div class="flex justify-center px-3 py-2">
                       <i v-if="(row as any).params?.size > 0" class="ti ti-code text-blue-600" />
                       <span v-else class="text-muted-foreground">-</span>
                     </div>
                   </div>
-
                   <div v-if="fieldRows.length === 0" class="p-6 text-sm text-muted-foreground">
                     Полей пока нет.
                   </div>
@@ -303,7 +468,26 @@ function openTypeDocument(typeId: string): void {
             </div>
           </ScrollArea>
         </div>
-      </Card>
+      </div>
+
+      <TypeVisualEditor
+        v-else-if="activeTab === 'visual'"
+        :model-value="editor.source"
+        :identity="editor.identity || editor.name"
+        :types="visualTypes"
+        :show-preview="visualShowPreview"
+        :show-example="visualShowExample"
+        :panel-sizes="visualPanelSizes"
+        @update:panel-sizes="updateVisualPanelSizes"
+        @update:model-value="updateTypeSource"
+        @open:type="openTypeDocument"
+      />
+
+      <TypeSourceEditor
+        v-else
+        :model-value="editor.source"
+        @update:model-value="updateTypeSource"
+      />
     </div>
-  </div>
+  </SourceDocumentEditorShell>
 </template>

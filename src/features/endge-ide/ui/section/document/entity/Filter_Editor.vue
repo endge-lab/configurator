@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -50,8 +51,10 @@ interface FilterOutputState {
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RFilterEditor | null,
 )
-const activeTab = ref<'general' | 'ui' | 'source' | 'artifact' | 'diagnostics'>(
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
   'source',
+  ['general', 'ui', 'source', 'artifact', 'diagnostics'] as const,
 )
 const sourceEditorRef = ref<FilterSourceEditorHandle | null>(null)
 const outputState = ref<FilterOutputState>({
@@ -112,7 +115,7 @@ function updateOutputState(value: FilterOutputState): void {
                   class="h-7 w-7"
                   :class="
                     activeTab === tab.value
-                      ? 'bg-background shadow-sm'
+                      ? 'bg-editor-control shadow-sm'
                       : 'text-muted-foreground'
                   "
                   :aria-label="tab.label"

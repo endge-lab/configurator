@@ -1,18 +1,18 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { HTMLAttributes } from 'vue'
 
-import { computed, ref, watch } from 'vue'
-
 import { Check, ChevronDown } from 'lucide-vue-next'
-
-import { cn } from '@/lib/utils.ts'
+import { computed, ref, watch } from 'vue'
 
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils.ts'
 
 export interface SearchableSelectOption {
   value: string
   label: string
+  group?: string
 }
 
 const props = withDefaults(
@@ -45,13 +45,17 @@ const open = ref(false)
 const searchQuery = ref('')
 
 watch(open, (v) => {
-  if (!v) searchQuery.value = ''
+  if (!v) { searchQuery.value = '' }
 })
 
 const filteredOptions = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return props.options
-  return props.options.filter(o => o.label.toLowerCase().includes(q))
+  if (!q) { return props.options }
+  return props.options.filter(o => (
+    o.label.toLowerCase().includes(q)
+    || o.value.toLowerCase().includes(q)
+    || o.group?.toLowerCase().includes(q)
+  ))
 })
 
 const optionsToShow = computed(() => {
@@ -61,18 +65,29 @@ const optionsToShow = computed(() => {
   return filteredOptions.value
 })
 
+const optionGroups = computed(() => {
+  const groups = new Map<string, SearchableSelectOption[]>()
+  for (const option of optionsToShow.value) {
+    const group = option.group ?? ''
+    const items = groups.get(group) ?? []
+    items.push(option)
+    groups.set(group, items)
+  }
+  return [...groups].map(([label, options]) => ({ label, options }))
+})
+
 const selectedSet = computed(() => {
   const v = props.modelValue
-  if (Array.isArray(v)) return new Set(v.map(String))
-  if (v != null && v !== '') return new Set([String(v)])
+  if (Array.isArray(v)) { return new Set(v.map(String)) }
+  if (v != null && v !== '') { return new Set([String(v)]) }
   return new Set<string>()
 })
 
 const triggerLabel = computed(() => {
   const v = props.modelValue
   if (Array.isArray(v)) {
-    if (!v.length) return props.placeholder
-    if (v.length === 1 && v[0] === '*') return props.allOption?.label ?? '*'
+    if (!v.length) { return props.placeholder }
+    if (v.length === 1 && v[0] === '*') { return props.allOption?.label ?? '*' }
     if (v.length === 1) {
       const o = props.options.find(op => op.value === v[0])
       return o?.label ?? v[0]
@@ -111,7 +126,7 @@ function toggleOption(value: string): void {
 }
 
 function onAllOptionClick(): void {
-  if (!props.multiple || !props.allOption) return
+  if (!props.multiple || !props.allOption) { return }
   emit('update:modelValue', [props.allOption.value])
   open.value = false
 }
@@ -161,23 +176,32 @@ const triggerCls = computed(() =>
           class="flex flex-col gap-0.5"
           role="listbox"
         >
-          <li
-            v-for="opt in optionsToShow"
-            :key="opt.value"
-            role="option"
-            :aria-selected="isSelected(opt.value)"
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
-            @click="multiple && allOption && opt.value === allOption.value ? onAllOptionClick() : toggleOption(opt.value)"
-          >
-            <span class="flex size-4 items-center justify-center">
-              <Check
-                v-if="isSelected(opt.value)"
-                class="size-4 text-primary"
-              />
-              <span v-else class="size-4" />
-            </span>
-            {{ opt.label }}
-          </li>
+          <template v-for="group in optionGroups" :key="group.label">
+            <li
+              v-if="group.label"
+              class="sticky top-0 z-10 bg-popover px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+              role="presentation"
+            >
+              {{ group.label }}
+            </li>
+            <li
+              v-for="opt in group.options"
+              :key="opt.value"
+              role="option"
+              :aria-selected="isSelected(opt.value)"
+              class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+              @click="multiple && allOption && opt.value === allOption.value ? onAllOptionClick() : toggleOption(opt.value)"
+            >
+              <span class="flex size-4 items-center justify-center">
+                <Check
+                  v-if="isSelected(opt.value)"
+                  class="size-4 text-primary"
+                />
+                <span v-else class="size-4" />
+              </span>
+              {{ opt.label }}
+            </li>
+          </template>
           <li
             v-if="!optionsToShow.length"
             class="px-2 py-3 text-center text-sm text-muted-foreground"

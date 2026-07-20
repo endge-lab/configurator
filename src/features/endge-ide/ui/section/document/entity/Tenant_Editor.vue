@@ -4,13 +4,14 @@ import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import { Loader2, Save, Settings2, SlidersHorizontal } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -40,7 +41,11 @@ const documentModel = computed(
 const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
 const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
 const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
-const activeTab = ref<'general' | 'configuration'>('general')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'general',
+  ['general', 'configuration'] as const,
+)
 const tabButtons = [
   { value: 'general', icon: Settings2, label: 'Основное' },
   { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
@@ -86,7 +91,7 @@ async function save(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === item.value
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 :aria-label="item.label"

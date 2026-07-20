@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +62,11 @@ const SEVERITY_TEXT = Object.fromEntries(
 ) as Record<DiagnosticsSeverityNumber, DiagnosticsSeverity>
 
 const severityOptions: DiagnosticsSeverity[] = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']
+const activeTab = useSmartTabSelection(
+  'configuration.diagnostics.active-tab',
+  'collection',
+  ['collection', 'outputs', 'routing', 'snapshots'] as const,
+)
 const draft = ref(clone(props.modelValue))
 const feedback = ref('Изменения сохраняются в документе')
 const diagnosticsRevision = ref(0)
@@ -324,7 +330,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
 <template>
   <TooltipProvider :delay-duration="200">
-    <Tabs default-value="collection" class="min-h-full">
+    <Tabs v-model="activeTab" class="min-h-full">
       <header class="border-b bg-background px-6 pt-5">
         <div class="flex items-start justify-between gap-4">
           <div>

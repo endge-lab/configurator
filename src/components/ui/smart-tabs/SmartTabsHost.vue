@@ -6,6 +6,7 @@ import { CircleX, CopyX, PanelLeftClose, PanelRightClose, X } from 'lucide-vue-n
 import { computed, defineAsyncComponent, h, ref, watch } from 'vue'
 
 import { getSmartTabView } from '@/components/ui/smart-tabs/registry'
+import SmartTabViewStateScope from '@/components/ui/smart-tabs/SmartTabViewStateScope.vue'
 import { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -273,12 +274,12 @@ watch(contextMenu, (v) => {
                 dragOverIndex === index && dragTabId !== tab.id ? 'border-l-2 border-l-primary bg-muted/50' : '',
               ]"
               style="min-width: fit-content; max-width: 200px;"
-              @dragstart="(e) => handleDragStart(e, tab.id, index)"
-              @dragover="(e) => handleDragOver(e, index)"
+              @dragstart="handleDragStart($event, tab.id, index)"
+              @dragover="handleDragOver($event, index)"
               @dragleave="handleDragLeave"
-              @drop="(e) => handleDrop(e, index)"
+              @drop="handleDrop($event, index)"
               @dragend="handleDragEnd"
-              @contextmenu="(e) => openContextMenu(e, tab.id)"
+              @contextmenu="openContextMenu($event, tab.id)"
             >
               <span
                 v-if="getIconComponent(tab)"
@@ -374,7 +375,7 @@ watch(contextMenu, (v) => {
       </Teleport>
 
       <!-- CONTENT: прокрутка только здесь, вкладки остаются сверху -->
-      <div class="min-h-0 min-w-0 flex-1 overflow-auto bg-editor-surface">
+      <div class="endge-editor-surface min-h-0 min-w-0 flex-1 overflow-auto bg-editor-surface">
         <div v-if="tabs.length === 0" class="h-full min-h-0" aria-hidden="true" />
 
         <TabsContent
@@ -387,13 +388,19 @@ watch(contextMenu, (v) => {
             v-if="activeId === tab.id"
             class="flex h-full min-h-0 flex-col"
           >
-            <component
-              :is="resolved.component"
+            <SmartTabViewStateScope
               v-if="resolved"
-              v-bind="resolved.props || {}"
-              :key="`${tab.id}-${activeId}`"
+              :api="tabsApi"
+              :tab-id="tab.id"
               class="min-h-0 flex-1"
-            />
+            >
+              <component
+                :is="resolved.component"
+                v-bind="resolved.props || {}"
+                :key="`${tab.id}-${activeId}`"
+                class="min-h-0 flex-1"
+              />
+            </SmartTabViewStateScope>
             <div v-else class="p-4 text-sm text-muted-foreground">
               Загрузка редактора...
             </div>

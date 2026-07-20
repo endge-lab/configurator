@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -54,9 +55,11 @@ const tabs = EndgeIDE.tabs
 const editor = computed<RDataViewEditor | null>(
   () => tabs.documentEditorModel.value as RDataViewEditor | null,
 )
-const activeTab = ref<
-  'general' | 'source' | 'preview' | 'artifact' | 'diagnostics'
->('source')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'source', 'preview', 'artifact', 'diagnostics'] as const,
+)
 const previewInput = ref(`{
   "legs": [
     {
@@ -198,7 +201,7 @@ async function runPreview(): Promise<void> {
                     class="h-7 w-7"
                     :class="
                       activeTab === item.value
-                        ? 'bg-background shadow-sm'
+                        ? 'bg-editor-control shadow-sm'
                         : 'text-muted-foreground'
                     "
                     :aria-label="item.label"

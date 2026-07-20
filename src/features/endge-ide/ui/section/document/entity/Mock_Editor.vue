@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -48,7 +49,11 @@ const props = defineProps<{
 }>()
 
 const editor = computed(() => props.tabContext?.editor ?? null)
-const activeTab = ref<'general' | 'content' | 'diagnostics'>('content')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'content',
+  ['general', 'content', 'diagnostics'] as const,
+)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('mock', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 const monacoLanguage = computed(() =>
@@ -134,7 +139,7 @@ async function save(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'general'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Основное"
@@ -153,7 +158,7 @@ async function save(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'content'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Данные"
@@ -176,7 +181,7 @@ async function save(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === 'diagnostics'
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 aria-label="Диагностика"

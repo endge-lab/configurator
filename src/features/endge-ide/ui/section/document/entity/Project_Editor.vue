@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
@@ -42,7 +43,11 @@ const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(
   () => props.tabContext?.editor ?? null,
 )
-const activeTab = ref<'general' | 'navigation' | 'configuration'>('general')
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'general',
+  ['general', 'navigation', 'configuration'] as const,
+)
 const launchLoading = ref(false)
 const tabButtons = [
   { value: 'general', icon: Settings2, label: 'Основное' },
@@ -161,7 +166,7 @@ async function launchRuntimePreview(): Promise<void> {
                 class="h-7 w-7"
                 :class="
                   activeTab === item.value
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 :aria-label="item.label"

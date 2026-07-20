@@ -75,7 +75,7 @@ async function save(): Promise<void> {
               <Button
                 size="icon"
                 variant="ghost"
-                class="h-7 w-7 bg-background shadow-sm"
+                class="h-7 w-7 bg-editor-control shadow-sm"
                 aria-label="Основное"
               >
                 <Settings2 class="size-4" />

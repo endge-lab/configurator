@@ -5,7 +5,7 @@ import type { RActionEditor } from '@/features/endge-ide/domain/entities/RAction
 import { Endge, RField } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Plus, Save, Settings2, Trash2, Workflow } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -55,7 +56,7 @@ const flowEditorModel = computed<RActionEditor>({
   },
 })
 const domainStore = useDomainStore()
-const activeTab = ref<'general' | 'flow'>('general')
+const activeTab = useSmartTabSelection('editor.active-tab', 'general', ['general', 'flow'] as const)
 const overrideVersion = ref(0)
 const unsubscribeActions = Endge.actions.subscribe(() => {
   overrideVersion.value += 1
@@ -73,6 +74,10 @@ const isOverridden = computed(() => {
   void overrideVersion.value
   return editor.value?.overridden === true
 })
+watch(isOverridden, (overridden) => {
+  if (overridden && activeTab.value === 'flow')
+    activeTab.value = 'general'
+}, { immediate: true })
 const stepsCount = computed(() => editor.value?.definition?.nodes?.length ?? 0)
 const tabButtons = computed(() => [
   { value: 'general' as const, icon: Settings2, label: uiText.tabGeneral },
@@ -202,7 +207,7 @@ function removeTarget(index: number): void {
                 class="h-7 w-7"
                 :class="
                   activeTab === item.value
-                    ? 'bg-background shadow-sm'
+                    ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
                 :aria-label="item.label"
@@ -298,7 +303,7 @@ function removeTarget(index: number): void {
                   }}</Label>
                   <select
                     :value="editor?.input?.type ?? ''"
-                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     :disabled="isOverridden"
                     @change="
                       (event) =>
@@ -351,7 +356,7 @@ function removeTarget(index: number): void {
                   }}</Label>
                   <select
                     :value="editor?.output?.type ?? ''"
-                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     :disabled="isOverridden"
                     @change="
                       (event) =>
