@@ -7,6 +7,7 @@ import type {
 } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { TableVisualColumnPinSide } from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
 import type { TableVisualColumnSortDirection } from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 import type {
   ComponentSFCTableCellBindingProjection,
   ComponentSFCTableColumnProjection,
@@ -30,6 +31,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Blocks,
+  Braces,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -39,6 +41,7 @@ import {
   Eye,
   EyeOff,
   FileCode2,
+  FileJson2,
   GripVertical,
   PanelLeft,
   PanelRight,
@@ -102,17 +105,26 @@ import {
   parseTableDefaultHidden,
   updateTableDefaultHidden,
 } from '@/features/endge-ide/model/component-sfc-editor/table-column-visibility-state'
+import {
+  createVisualSchemaWorkspaceState,
+  isVisualSchemaWorkspaceState,
+  visualSchemaLayoutKey,
+} from '@/features/endge-ide/model/visual-schema-workspace-state'
+import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
 
 const props = defineProps<{
   source: string
+  identity: string
   projection: ComponentSFCTableVisualProjection
   componentOptions: TableCellComponentOption[]
+  propTypes: VisualSchemaTypeOption[]
   diagnostics?: RComponentDiagnostic[]
 }>()
 
 const emit = defineEmits<{
   (event: 'update:source', source: string): void
   (event: 'openSource', offset: number): void
+  (event: 'open:type', identity: string): void
 }>()
 
 const PAGING_NOT_SET_VALUE = '__paging_not_set__'
@@ -141,15 +153,33 @@ const mainTab = useSmartTabSelection(
 const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
-  ['general', 'paging', 'visibility', 'pinning', 'sorting'] as const,
+  ['general', 'inputs', 'paging', 'visibility', 'pinning', 'sorting'] as const,
 )
 const tableSections = [
   { id: 'general', label: 'Основное', icon: Settings2 },
+  { id: 'inputs', label: 'Входные данные', icon: Braces },
   { id: 'paging', label: 'Paging', icon: Table2 },
   { id: 'visibility', label: 'Видимость', icon: Eye },
   { id: 'pinning', label: 'Закрепления', icon: Pin },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
 ] as const
+const inputWorkspaceState = useSmartTabViewState(
+  'component-sfc.visual.table-input-workspace',
+  {
+    defaultValue: () => createVisualSchemaWorkspaceState(false, false),
+    validate: isVisualSchemaWorkspaceState,
+  },
+)
+const inputShowPreview = computed({
+  get: () => inputWorkspaceState.value.showPreview,
+  set: value => inputWorkspaceState.value.showPreview = value,
+})
+const inputShowExample = computed({
+  get: () => inputWorkspaceState.value.showExample,
+  set: value => inputWorkspaceState.value.showExample = value,
+})
+const inputLayoutKey = computed(() => visualSchemaLayoutKey(inputShowPreview.value, inputShowExample.value))
+const inputPanelSizes = computed(() => inputWorkspaceState.value.layouts[inputLayoutKey.value])
 const dataSplitRatio = useSmartTabViewState<number>(
   'component-sfc.visual.table-data-split-ratio',
   {
@@ -372,6 +402,7 @@ function sourceValueText(value: ComponentSFCVisualSourceValue | null | undefined
 function tableSectionSummary(sectionId: typeof tableSections[number]['id']): string | null {
   switch (sectionId) {
     case 'general':
+    case 'inputs':
       return null
     case 'paging':
       if (pagingIsSourceOwned.value) {
@@ -400,6 +431,10 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
       }
       return defaultSortItems.value.length ? String(defaultSortItems.value.length) : null
   }
+}
+
+function updateInputPanelSizes(sizes: number[]): void {
+  inputWorkspaceState.value.layouts[inputLayoutKey.value] = [...sizes]
 }
 
 function updateTableSection(value: string | null): void {
@@ -1623,7 +1658,65 @@ onBeforeUnmount(() => {
               </Select>
             </div>
 
-            <ScrollArea class="min-h-0 flex-1">
+            <section v-if="tableSection === 'inputs'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <TooltipProvider :delay-duration="120">
+                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-3 py-2">
+                  <p class="text-[11px] leading-relaxed text-muted-foreground">
+                    Public props are generated directly in SFC <code>defineProps</code>.
+                  </p>
+                  <div class="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Input editor display options">
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 gap-1.5 px-2 text-[11px]"
+                          :class="inputShowPreview ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+                          :aria-pressed="inputShowPreview"
+                          @click="inputShowPreview = !inputShowPreview"
+                        >
+                          <Eye class="size-3.5" />
+                          Preview
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Показать документацию по входным полям</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 gap-1.5 px-2 text-[11px]"
+                          :class="inputShowExample ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+                          :aria-pressed="inputShowExample"
+                          @click="inputShowExample = !inputShowExample"
+                        >
+                          <FileJson2 class="size-3.5" />
+                          Example
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Показать автоматически сгенерированный JSON example</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </TooltipProvider>
+
+              <ComponentSFCPropsVisualEditor
+                class="min-h-0 flex-1"
+                :source="source"
+                :identity="`${identity || 'Table'}Props`"
+                :types="propTypes"
+                :show-preview="inputShowPreview"
+                :show-example="inputShowExample"
+                :panel-sizes="inputPanelSizes"
+                @update:source="value => emit('update:source', value)"
+                @update:panel-sizes="updateInputPanelSizes"
+                @open-source="offset => emit('openSource', offset)"
+                @open:type="identity => emit('open:type', identity)"
+              />
+            </section>
+
+            <ScrollArea v-else class="min-h-0 flex-1">
               <TooltipProvider :delay-duration="120">
                 <div class="p-5">
                   <section v-show="tableSection === 'general'">

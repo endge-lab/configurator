@@ -269,7 +269,7 @@ watch(contextMenu, (v) => {
               :value="tab.id"
               :data-smart-tab-id="tab.id"
               draggable="true"
-              class="group relative flex items-center justify-center gap-2 px-3 py-2 rounded-none border-r last:border-r-0 data-[state=active]:bg-background data-[state=active]:shadow-sm cursor-move transition-all shrink-0" :class="[
+              class="group relative flex items-center justify-center gap-2 px-3 py-2 rounded-none border-r last:border-r-0 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent after:transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:after:bg-primary cursor-move transition-all shrink-0" :class="[
                 dragTabId === tab.id ? 'opacity-50 scale-95' : '',
                 dragOverIndex === index && dragTabId !== tab.id ? 'border-l-2 border-l-primary bg-muted/50' : '',
               ]"

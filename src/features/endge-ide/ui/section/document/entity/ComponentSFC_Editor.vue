@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 import type { RComponentSFC } from '@endge/core'
 
 import { compileComponentSFC, Endge, inspectComponentSFCVisual } from '@endge/core'
+import { useDomainStore } from '@endge/ui-vue'
 import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -35,6 +37,7 @@ interface ScriptEditorHandle {
 }
 
 const tabs = EndgeIDE.tabs
+const domainStore = useDomainStore()
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
 const launchLoading = ref(false)
@@ -62,6 +65,25 @@ const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.d
     label: component.displayName || component.name || component.identity,
     inputs: compileComponentSFC(component.source ?? '').contract.inputs,
   })))
+const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
+  const primitives: VisualSchemaTypeOption[] = [
+    { identity: 'string', label: 'string', category: 'primitive' },
+    { identity: 'number', label: 'number', category: 'primitive' },
+    { identity: 'boolean', label: 'boolean', category: 'primitive' },
+    { identity: 'unknown', label: 'unknown', category: 'primitive' },
+    { identity: 'any', label: 'any', category: 'primitive' },
+    { identity: 'null', label: 'null', category: 'primitive' },
+  ]
+  const registered = domainStore.typeCatalog
+    .filter(type => type.category !== 'primitive' && Boolean(type.identity?.trim()))
+    .map(type => ({
+      identity: type.identity,
+      label: type.displayName || type.identity,
+      category: type.category,
+      source: String(Endge.domain.getType(type.identity)?.source ?? ''),
+    } satisfies VisualSchemaTypeOption))
+  return [...primitives, ...registered]
+})
 const sourceEditorExtensions = [
   createTypeRegistryContribution(),
   createSFCStyleEndgeCSSContribution(),
@@ -98,6 +120,18 @@ async function openSourceAt(offset: number): Promise<void> {
   activeTab.value = 'source'
   await nextTick()
   sourceEditorRef.value?.focusOffset(offset)
+}
+
+function openTypeDocument(identity: string): void {
+  const type = domainStore.typeCatalog.find(item => item.identity === identity)
+  if (!type || type.category === 'primitive') {
+    return
+  }
+  EndgeIDE.tabs.openSourceReference({
+    target: 'type',
+    identity,
+    range: { start: 0, end: 0 },
+  })
 }
 
 async function launchPreview(): Promise<void> {
@@ -310,12 +344,15 @@ async function launchPreview(): Promise<void> {
     <ComponentSFCTableVisualEditor
       v-else-if="activeTab === 'visual' && tableVisualProjection"
       :source="editor.source"
+      :identity="editor.identity"
       :projection="tableVisualProjection"
       :component-options="tableComponentOptions"
+      :prop-types="tablePropTypes"
       :diagnostics="visualInspection?.diagnostics"
       class="min-h-0 flex-1"
       @update:source="updateVisualSource"
       @open-source="openSourceAt"
+      @open:type="openTypeDocument"
     >
       <template #general>
         <div class="max-w-2xl space-y-5">

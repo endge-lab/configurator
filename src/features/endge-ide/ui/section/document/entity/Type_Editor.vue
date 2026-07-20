@@ -21,50 +21,14 @@ import { useSmartTabSelection, useSmartTabSharedViewState } from '@/components/u
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor as RFieldEditorClass } from '@/features/endge-ide/domain/entities/RFieldEditor'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import {
+  createVisualSchemaWorkspaceState,
+  isVisualSchemaWorkspaceState,
+  visualSchemaLayoutKey,
+} from '@/features/endge-ide/model/visual-schema-workspace-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
 import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
-
-type TypeVisualLayoutKey = 'schema' | 'schema-preview' | 'schema-example' | 'schema-preview-example'
-
-interface TypeVisualWorkspaceState {
-  showPreview: boolean
-  showExample: boolean
-  layouts: Record<TypeVisualLayoutKey, number[]>
-}
-
-const TYPE_VISUAL_DEFAULT_LAYOUTS: TypeVisualWorkspaceState['layouts'] = {
-  'schema': [1],
-  'schema-preview': [0.48, 0.52],
-  'schema-example': [0.58, 0.42],
-  'schema-preview-example': [0.42, 0.36, 0.22],
-}
-
-function createTypeVisualWorkspaceState(): TypeVisualWorkspaceState {
-  return {
-    showPreview: true,
-    showExample: true,
-    layouts: Object.fromEntries(
-      Object.entries(TYPE_VISUAL_DEFAULT_LAYOUTS).map(([key, sizes]) => [key, [...sizes]]),
-    ) as TypeVisualWorkspaceState['layouts'],
-  }
-}
-
-function isTypeVisualWorkspaceState(value: unknown): value is TypeVisualWorkspaceState {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-  const state = value as Partial<TypeVisualWorkspaceState>
-  if (typeof state.showPreview !== 'boolean' || typeof state.showExample !== 'boolean' || !state.layouts) {
-    return false
-  }
-  return Object.entries(TYPE_VISUAL_DEFAULT_LAYOUTS).every(([key, fallback]) => {
-    const sizes = state.layouts?.[key as TypeVisualLayoutKey]
-    return Array.isArray(sizes)
-      && sizes.length === fallback.length
-      && sizes.every(size => Number.isFinite(size) && size > 0)
-  })
-}
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEditor | null)
 const domainStore = useDomainStore()
@@ -99,12 +63,12 @@ const visualTypes = computed(() => domainStore.typeCatalog
   }))
 const fieldRows = computed(() => editor.value?.fields ?? [])
 const selectedIndices = ref<Set<number>>(new Set())
-const visualWorkspaceState = useSmartTabSharedViewState<TypeVisualWorkspaceState>(
+const visualWorkspaceState = useSmartTabSharedViewState(
   'type-editor.visual-workspace',
   {
     version: 1,
-    defaultValue: createTypeVisualWorkspaceState,
-    validate: isTypeVisualWorkspaceState,
+    defaultValue: () => createVisualSchemaWorkspaceState(true, true),
+    validate: isVisualSchemaWorkspaceState,
   },
 )
 const visualShowPreview = computed({
@@ -119,18 +83,7 @@ const visualShowExample = computed({
     visualWorkspaceState.value.showExample = value
   },
 })
-const visualLayoutKey = computed<TypeVisualLayoutKey>(() => {
-  if (visualShowPreview.value && visualShowExample.value) {
-    return 'schema-preview-example'
-  }
-  if (visualShowPreview.value) {
-    return 'schema-preview'
-  }
-  if (visualShowExample.value) {
-    return 'schema-example'
-  }
-  return 'schema'
-})
+const visualLayoutKey = computed(() => visualSchemaLayoutKey(visualShowPreview.value, visualShowExample.value))
 const visualPanelSizes = computed(() => visualWorkspaceState.value.layouts[visualLayoutKey.value])
 const allSelected = computed<boolean>({
   get: () => fieldRows.value.length > 0 && selectedIndices.value.size === fieldRows.value.length,

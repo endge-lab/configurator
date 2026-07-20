@@ -74,13 +74,23 @@
 :root {
   --editor-surface: var(--background);
   --editor-panel: var(--card);
-  --editor-control: var(--input);
+  /*
+   * Input is intentionally a stronger border token in light brand themes.
+   * Editor controls need a quieter fill, close to the surrounding surface.
+   */
+  --editor-control: color-mix(in oklab, var(--editor-surface) 88%, var(--input));
+  --editor-active-tab: var(--primary);
+  --editor-active-tab-foreground: var(--primary-foreground);
+  --editor-active-tab-border: var(--primary);
 }
 
 .dark {
   --editor-surface: #142137;
   --editor-panel: color-mix(in srgb, var(--editor-surface) 92%, black);
   --editor-control: color-mix(in srgb, var(--editor-surface) 76%, black);
+  --editor-active-tab: var(--editor-control);
+  --editor-active-tab-foreground: var(--foreground);
+  --editor-active-tab-border: var(--input);
 }
 
 /*
@@ -105,7 +115,14 @@
 }
 
 .endge-editor-surface [data-slot='tabs-trigger'][data-state='active'] {
-  background-color: var(--editor-control);
+  border-color: var(--editor-active-tab-border);
+  background-color: var(--editor-active-tab);
+  color: var(--editor-active-tab-foreground);
+}
+
+/* Some vertical editor tabs assign a primary color directly to their icon. */
+:root:not(.dark) .endge-editor-surface [data-slot='tabs-trigger'][data-state='active'] svg {
+  color: currentColor;
 }
 
 @layer base {
