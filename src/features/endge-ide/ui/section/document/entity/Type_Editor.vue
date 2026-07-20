@@ -5,6 +5,7 @@ import type { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEdit
 import type { DomainDocumentType } from '@endge/core'
 
 import { Endge } from '@endge/core'
+import { useDomainStore } from '@endge/ui-vue'
 import { Code2, ExternalLink, Eye, FileJson2, FilePenLine, ListTree, Loader2, Plus, RotateCcw, Save, Settings2 } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -24,7 +25,6 @@ import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source
 import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
 import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
 
-const PRIMITIVE_TYPES = ['Any', 'ID', 'String', 'Number', 'Boolean', 'Null', 'DateTime', 'Time'] as const
 type TypeVisualLayoutKey = 'schema' | 'schema-preview' | 'schema-example' | 'schema-preview-example'
 
 interface TypeVisualWorkspaceState {
@@ -67,6 +67,7 @@ function isTypeVisualWorkspaceState(value: unknown): value is TypeVisualWorkspac
 }
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEditor | null)
+const domainStore = useDomainStore()
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'source',
@@ -80,25 +81,16 @@ const tabs = [
 ] as const
 
 const availableTypes = computed(() => {
-  const primitives = PRIMITIVE_TYPES.map(type => ({ value: type, label: type }))
-  const domainTypes = Endge.domain
-    .getTypes()
-    .filter(type => !type.isPrimitive)
-    .map(type => ({ value: type.name, label: type.name }))
+  return domainStore.typeCatalog
+    .map(type => ({ value: type.identity, label: type.displayName || type.identity }))
     .sort((left, right) => left.label.localeCompare(right.label))
-  return [...primitives, ...domainTypes]
 })
-const visualTypes = computed(() => Endge.domain
-  .getTypes()
+const visualTypes = computed(() => domainStore.typeCatalog
   .map(type => ({
-    identity: String(type.identity || type.name),
-    label: String(type.displayName || type.name || type.identity),
-    category: type.meta?.primitiveKind === 'reference'
-      ? 'reference' as const
-      : type.isPrimitive
-        ? 'primitive' as const
-        : 'user' as const,
-    source: String(type.source ?? ''),
+    identity: type.identity,
+    label: type.displayName || type.identity,
+    category: type.category,
+    source: String(Endge.domain.getType(type.identity)?.source ?? ''),
   }))
   .filter(type => type.identity !== '')
   .sort((left, right) => {
@@ -150,7 +142,7 @@ const allSelected = computed<boolean>({
 })
 
 function isCustomType(typeName: string): boolean {
-  return typeName !== '' && !PRIMITIVE_TYPES.includes(typeName as (typeof PRIMITIVE_TYPES)[number])
+  return domainStore.typeCatalog.find(type => type.identity === typeName)?.category === 'user'
 }
 
 function toggleRow(index: number): void {
@@ -486,6 +478,7 @@ function updateVisualPanelSizes(sizes: number[]): void {
       <TypeSourceEditor
         v-else
         :model-value="editor.source"
+        :identity="editor.identity || editor.name"
         @update:model-value="updateTypeSource"
       />
     </div>

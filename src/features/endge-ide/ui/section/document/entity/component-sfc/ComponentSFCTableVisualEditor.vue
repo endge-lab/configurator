@@ -78,7 +78,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useSmartTabSelection, useSmartTabViewState } from '@/components/ui/smart-tabs'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
@@ -91,9 +90,12 @@ import {
   updateTableDefaultPin,
 } from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
 import {
+  isTableColumnSortPath,
   moveTableDefaultSort,
+  parseTableColumnSortPaths,
   parseTableDefaultSort,
   renameTableDefaultSortKey,
+  serializeTableColumnSortPaths,
   updateTableDefaultSort,
 } from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
 import {
@@ -119,15 +121,35 @@ const DATA_SPLIT_DEFAULT_RATIO = 30
 const DATA_SPLIT_MIN_RATIO = 20
 const DATA_SPLIT_MAX_RATIO = 55
 const DATA_SPLIT_KEYBOARD_STEP = 2
+const SORT_COMPARATOR_OPTIONS = [
+  { value: 'natural', label: 'Natural' },
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'time', label: 'Time' },
+  { value: 'boolean', label: 'Boolean' },
+] as const
 
 type EditableTableAttributeName
   = 'paging' | 'page-size' | 'page-sizes' | 'default-pin' | 'default-sort' | 'default-hidden'
 
 const mainTab = useSmartTabSelection(
   'component-sfc.visual.active-tab',
-  'general',
-  ['general', 'table', 'columns'] as const,
+  'table',
+  ['table', 'columns'] as const,
 )
+const tableSection = useSmartTabSelection(
+  'component-sfc.visual.table-section',
+  'general',
+  ['general', 'paging', 'visibility', 'pinning', 'sorting'] as const,
+)
+const tableSections = [
+  { id: 'general', label: 'Основное', icon: Settings2 },
+  { id: 'paging', label: 'Paging', icon: Table2 },
+  { id: 'visibility', label: 'Видимость', icon: Eye },
+  { id: 'pinning', label: 'Закрепления', icon: Pin },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
+] as const
 const dataSplitRatio = useSmartTabViewState<number>(
   'component-sfc.visual.table-data-split-ratio',
   {
@@ -155,6 +177,7 @@ const cellEditorMode = ref<'component' | 'tag' | 'source'>('tag')
 const cellBindingDrafts = ref<Record<string, string>>({})
 const cellBindingKinds = ref<Record<string, TableCellBindingValueKind>>({})
 const cellBindingErrors = ref<Record<string, string>>({})
+const sortPathDrafts = ref<string[]>([])
 
 watch(dataSplitRatio, (ratio) => {
   if (!isDataSplitResizing.value) {
@@ -245,6 +268,14 @@ const selectedComponentValue = computed(() => {
 const selectedTagValue = computed(() => selectedColumn.value?.cell.kind === 'tag'
   ? selectedColumn.value.cell.tag
   : null)
+const selectedColumnSortComparator = computed(() => {
+  const sort = selectedColumn.value?.sort
+  if (!sort || sort.kind === 'expression') {
+    return 'natural'
+  }
+  const value = sourceValueText(sort)
+  return SORT_COMPARATOR_OPTIONS.some(option => option.value === value) ? value : 'natural'
+})
 const selectedComponentOption = computed(() => props.componentOptions.find(
   option => option.value === selectedComponentValue.value,
 ) ?? null)
@@ -307,6 +338,7 @@ watch(
       : column?.cell.kind === 'tag'
         ? 'tag'
         : 'source'
+    sortPathDrafts.value = parseTableColumnSortPaths(sourceValueText(column?.sortBy))
     syncCellBindingDrafts(column)
   },
   { immediate: true },
@@ -335,6 +367,45 @@ function sourceValueText(value: ComponentSFCVisualSourceValue | null | undefined
     return value.value ? 'true' : 'false'
   }
   return value.value == null ? '' : String(value.value)
+}
+
+function tableSectionSummary(sectionId: typeof tableSections[number]['id']): string | null {
+  switch (sectionId) {
+    case 'general':
+      return null
+    case 'paging':
+      if (pagingIsSourceOwned.value) {
+        return 'Source'
+      }
+      return pagingModeValue.value === 'pages'
+        ? 'Pages'
+        : pagingModeValue.value === 'virtual'
+          ? 'Virtual'
+          : null
+    case 'visibility': {
+      if (props.projection.defaultHidden?.kind === 'expression') {
+        return 'Source'
+      }
+      const visibleCount = columns.value.filter(column => !isColumnHiddenByDefault(column)).length
+      return columns.value.length ? `${visibleCount}/${columns.value.length}` : null
+    }
+    case 'pinning':
+      if (props.projection.defaultPin?.kind === 'expression') {
+        return 'Source'
+      }
+      return defaultPinItems.value.length ? String(defaultPinItems.value.length) : null
+    case 'sorting':
+      if (props.projection.defaultSort?.kind === 'expression') {
+        return 'Source'
+      }
+      return defaultSortItems.value.length ? String(defaultSortItems.value.length) : null
+  }
+}
+
+function updateTableSection(value: string | null): void {
+  if (tableSections.some(section => section.id === value)) {
+    tableSection.value = value as typeof tableSection.value
+  }
 }
 
 function syncCellBindingDrafts(column: ComponentSFCTableColumnProjection | null): void {
@@ -483,6 +554,16 @@ function columnSortEditingHint(column: ComponentSFCTableColumnProjection): strin
 
 function canSetColumnSortDirection(column: ComponentSFCTableColumnProjection): boolean {
   return !columnSortDirectionEditingHint(column)
+}
+
+function columnSortDetailsEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  if (!canEdit(column.sort) || !canEdit(column.sortBy)) {
+    return 'Comparator или sort-by управляется динамическим выражением в Source.'
+  }
+  if (!isColumnSortable(column) && !canEdit(column.sortable)) {
+    return 'Атрибут sortable управляется динамическим выражением в Source.'
+  }
+  return null
 }
 
 function columnSortDirectionEditingHint(column: ComponentSFCTableColumnProjection): string | null {
@@ -863,12 +944,6 @@ function setColumnHiddenByDefault(index: number, hidden: boolean): void {
   }
 }
 
-function setSelectedColumnVisibleByDefault(visible: boolean): void {
-  if (selectedColumn.value) {
-    setColumnHiddenByDefault(selectedColumn.value.index, !visible)
-  }
-}
-
 function setColumnDefaultSort(
   index: number,
   direction: TableVisualColumnSortDirection | null,
@@ -892,7 +967,11 @@ function setColumnDefaultSort(
 
   const current = sourceValueText(props.projection.defaultSort)
   const next = updateTableDefaultSort(current, key, direction)
-  const patches: ComponentSFCTableSourcePatch[] = []
+  const sortPathPatches = collectSelectedColumnSortPathPreservationPatches(column)
+  if (!sortPathPatches) {
+    return
+  }
+  const patches: ComponentSFCTableSourcePatch[] = [...sortPathPatches]
   if (direction && !isColumnSortable(column)) {
     patches.push({
       type: 'set-column-attribute',
@@ -907,6 +986,138 @@ function setColumnDefaultSort(
   if (patches.length) {
     applyPatches(patches)
   }
+}
+
+function updateColumnSortComparator(value: string | null): void {
+  const column = selectedColumn.value
+  if (!column || !value || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  const sortPathPatches = collectSelectedColumnSortPathPreservationPatches(column)
+  if (!sortPathPatches) {
+    return
+  }
+  const patches: ComponentSFCTableSourcePatch[] = [...sortPathPatches]
+  if (!isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  patches.push({
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort',
+    value: value === 'natural' ? null : value,
+  })
+  applyPatches(patches)
+}
+
+/** Сохраняет незакоммиченные chains в той же Source transaction, что и adjacent sort controls. */
+function collectSelectedColumnSortPathPreservationPatches(
+  column: ComponentSFCTableColumnProjection,
+): ComponentSFCTableSourcePatch[] | null {
+  if (
+    mainTab.value !== 'columns'
+    || selectedColumn.value?.index !== column.index
+    || !canEdit(column.sortBy)
+  ) {
+    return []
+  }
+
+  const paths = sortPathDrafts.value.map(path => path.trim()).filter(Boolean)
+  if (paths.some(path => !isTableColumnSortPath(path))) {
+    toast.warning('Некорректная цепочка поля', {
+      description: 'Используйте простой dot path без row., пробелов, массивов и selectors.',
+    })
+    return null
+  }
+
+  const value = serializeTableColumnSortPaths(paths)
+  if ((value ?? '') === sourceValueText(column.sortBy)) {
+    return []
+  }
+
+  return [{
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort-by',
+    value,
+  }]
+}
+
+function applyColumnSortPaths(paths: readonly string[]): void {
+  const column = selectedColumn.value
+  if (!column || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  const normalizedPaths = paths.map(path => path.trim()).filter(Boolean)
+  const patches: ComponentSFCTableSourcePatch[] = []
+  if (normalizedPaths.length && !isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  patches.push({
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort-by',
+    value: serializeTableColumnSortPaths(normalizedPaths),
+  })
+  if (applyPatches(patches)) {
+    sortPathDrafts.value = normalizedPaths
+  }
+}
+
+function addColumnSortPath(): void {
+  const column = selectedColumn.value
+  if (!column || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  sortPathDrafts.value = [...sortPathDrafts.value, '']
+}
+
+function resetColumnSortPaths(): void {
+  sortPathDrafts.value = parseTableColumnSortPaths(sourceValueText(selectedColumn.value?.sortBy))
+}
+
+function commitColumnSortPath(index: number): void {
+  const value = sortPathDrafts.value[index]?.trim() ?? ''
+  if (!value) {
+    removeColumnSortPath(index)
+    return
+  }
+  if (!isTableColumnSortPath(value)) {
+    toast.warning('Некорректная цепочка поля', {
+      description: 'Используйте простой dot path без row., пробелов, массивов и selectors.',
+    })
+    resetColumnSortPaths()
+    return
+  }
+  const next = [...sortPathDrafts.value]
+  next[index] = value
+  applyColumnSortPaths(next)
+}
+
+function removeColumnSortPath(index: number): void {
+  const next = [...sortPathDrafts.value]
+  next.splice(index, 1)
+  applyColumnSortPaths(next)
+}
+
+function moveColumnSortPath(index: number, offset: -1 | 1): void {
+  const targetIndex = index + offset
+  if (targetIndex < 0 || targetIndex >= sortPathDrafts.value.length) {
+    return
+  }
+  const next = [...sortPathDrafts.value]
+  ;[next[index], next[targetIndex]] = [next[targetIndex]!, next[index]!]
+  applyColumnSortPaths(next)
 }
 
 function addDefaultSortRule(value: string | string[] | null): void {
@@ -1344,11 +1555,7 @@ onBeforeUnmount(() => {
   >
     <Tabs v-model="mainTab" class="flex min-h-0 flex-1 flex-col">
       <div class="mb-3 flex shrink-0 items-center justify-between gap-3">
-        <TabsList class="grid h-9 w-full max-w-[480px] grid-cols-3">
-          <TabsTrigger value="general" class="gap-1.5">
-            <Settings2 class="size-3.5" />
-            Основное
-          </TabsTrigger>
+        <TabsList class="grid h-9 w-full max-w-[360px] grid-cols-2">
           <TabsTrigger value="table" class="gap-1.5">
             <Table2 class="size-3.5" />
             Таблица
@@ -1375,51 +1582,60 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <TabsContent value="general" class="mt-0 min-h-0 flex-1 data-[state=inactive]:hidden">
-        <ScrollArea class="h-full">
-          <div class="space-y-3 pb-3 pr-2">
-            <Card class="editor-panel gap-0 overflow-hidden py-0">
-              <div class="p-5">
-                <slot name="general" />
-              </div>
-            </Card>
-          </div>
-        </ScrollArea>
-      </TabsContent>
+      <TabsContent value="table" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+        <Tabs
+          v-model="tableSection"
+          orientation="vertical"
+          class="editor-panel grid h-full min-h-0 overflow-hidden rounded-xl border border-border/80 lg:grid-cols-[12rem_minmax(0,1fr)]"
+        >
+          <aside class="hidden min-h-0 overflow-hidden border-r border-border/70 bg-muted/20 lg:flex lg:flex-col">
+            <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+              <TabsTrigger
+                v-for="section in tableSections"
+                :key="section.id"
+                :value="section.id"
+                class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              >
+                <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                <span class="truncate">{{ section.label }}</span>
+                <Badge
+                  v-if="tableSectionSummary(section.id)"
+                  variant="secondary"
+                  class="ml-auto h-5 min-w-5 justify-center px-1.5 text-[9px] font-normal"
+                >
+                  {{ tableSectionSummary(section.id) }}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </aside>
 
-      <TabsContent value="table" class="mt-0 min-h-0 flex-1 data-[state=inactive]:hidden">
-        <ScrollArea class="h-full">
-          <div class="space-y-3 pb-3 pr-2">
-            <Card class="editor-panel gap-0 overflow-hidden py-0">
+          <main class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background/35">
+            <div class="border-b border-border/70 p-3 lg:hidden">
+              <Select :model-value="tableSection" @update:model-value="value => updateTableSection(value == null ? null : String(value))">
+                <SelectTrigger class="editor-control w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="section in tableSections" :key="section.id" :value="section.id">
+                    {{ section.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <ScrollArea class="min-h-0 flex-1">
               <TooltipProvider :delay-duration="120">
-                <div class="divide-y">
-                  <section class="grid gap-4 px-5 py-5 lg:grid-cols-[280px_minmax(0,520px)]">
-                    <div class="flex items-start gap-3">
-                      <div class="editor-control flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70">
-                        <Table2 class="size-4 text-primary" />
-                      </div>
-                      <div class="flex min-w-0 items-center gap-1.5">
-                        <h3 class="whitespace-nowrap text-sm font-semibold">
-                          Paging
-                        </h3>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <button
-                              type="button"
-                              class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              aria-label="О настройке Paging"
-                            >
-                              <CircleHelp class="size-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" class="max-w-64">
-                            Способ отображения больших наборов строк.
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
+                <div class="p-5">
+                  <section v-show="tableSection === 'general'">
+                    <slot name="general" />
+                  </section>
 
-                    <div class="min-w-0 space-y-3">
+                  <section v-show="tableSection === 'paging'" class="space-y-3">
+                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
+                      Способ отображения больших наборов строк.
+                    </p>
+
+                    <div class="max-w-[720px] min-w-0 space-y-3">
                       <div class="max-w-sm space-y-1.5">
                         <Label for="sfc-table-paging">Режим</Label>
                         <Select
@@ -1492,33 +1708,12 @@ onBeforeUnmount(() => {
                     </div>
                   </section>
 
-                  <section class="grid gap-4 px-5 py-5 lg:grid-cols-[280px_minmax(0,520px)]">
-                    <div class="flex items-start gap-3">
-                      <div class="editor-control flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70">
-                        <Eye class="size-4 text-primary" />
-                      </div>
-                      <div class="flex min-w-0 items-center gap-1.5">
-                        <h3 class="whitespace-nowrap text-sm font-semibold">
-                          Видимость по умолчанию
-                        </h3>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <button
-                              type="button"
-                              class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              aria-label="О видимости колонок по умолчанию"
-                            >
-                              <CircleHelp class="size-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" class="max-w-80 leading-relaxed">
-                            Отмеченные колонки видны при первом открытии. Эту же настройку можно менять для каждой колонки на вкладке «Колонки».
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
+                  <section v-show="tableSection === 'visibility'" class="space-y-3">
+                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
+                      Отмеченные колонки видны при первом открытии. Эту же настройку можно менять для каждой колонки на вкладке «Колонки».
+                    </p>
 
-                    <div class="min-w-0">
+                    <div class="max-w-[720px] min-w-0">
                       <div
                         v-if="columns.length"
                         class="editor-control grid gap-1 rounded-lg border border-border/70 p-2 sm:grid-cols-2"
@@ -1552,33 +1747,12 @@ onBeforeUnmount(() => {
                     </div>
                   </section>
 
-                  <section class="grid gap-4 px-5 py-5 lg:grid-cols-[280px_minmax(0,520px)]">
-                    <div class="flex items-start gap-3">
-                      <div class="editor-control flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70">
-                        <Pin class="size-4 text-primary" />
-                      </div>
-                      <div class="flex min-w-0 items-center gap-1.5">
-                        <h3 class="whitespace-nowrap text-sm font-semibold">
-                          Закрепление по умолчанию
-                        </h3>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <button
-                              type="button"
-                              class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              aria-label="О закреплении колонок по умолчанию"
-                            >
-                              <CircleHelp class="size-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" class="max-w-80 leading-relaxed">
-                            Порядок закреплённых колонок определяется их порядком на вкладке «Колонки». Там же можно настроить каждую колонку отдельно.
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
+                  <section v-show="tableSection === 'pinning'" class="space-y-3">
+                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
+                      Порядок закреплённых колонок определяется их порядком на вкладке «Колонки». Там же можно настроить каждую колонку отдельно.
+                    </p>
 
-                    <div class="min-w-0 overflow-hidden rounded-lg border border-border/70">
+                    <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
                       <div
                         v-if="projection.defaultPin?.kind === 'expression'"
                         class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
@@ -1684,33 +1858,12 @@ onBeforeUnmount(() => {
                     </div>
                   </section>
 
-                  <section class="grid gap-4 px-5 py-5 lg:grid-cols-[280px_minmax(0,520px)]">
-                    <div class="flex items-start gap-3">
-                      <div class="editor-control flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70">
-                        <ArrowUpDown class="size-4 text-primary" />
-                      </div>
-                      <div class="flex min-w-0 items-center gap-1.5">
-                        <h3 class="whitespace-nowrap text-sm font-semibold">
-                          Сортировка по умолчанию
-                        </h3>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <button
-                              type="button"
-                              class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              aria-label="О сортировке по умолчанию"
-                            >
-                              <CircleHelp class="size-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" class="max-w-80 leading-relaxed">
-                            Строки идут в порядке приоритета. Поля и comparator каждой колонки настраиваются на вкладке «Колонки».
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
+                  <section v-show="tableSection === 'sorting'" class="space-y-3">
+                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
+                      Строки идут в порядке приоритета. Поля и comparator каждой колонки настраиваются на вкладке «Колонки».
+                    </p>
 
-                    <div class="min-w-0 overflow-hidden rounded-lg border border-border/70">
+                    <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
                       <div
                         v-if="projection.defaultSort?.kind === 'expression'"
                         class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
@@ -1835,9 +1988,9 @@ onBeforeUnmount(() => {
                   </section>
                 </div>
               </TooltipProvider>
-            </Card>
-          </div>
-        </ScrollArea>
+            </ScrollArea>
+          </main>
+        </Tabs>
       </TabsContent>
 
       <TabsContent value="columns" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
@@ -1888,18 +2041,13 @@ onBeforeUnmount(() => {
                       <GripVertical class="size-3.5 shrink-0 opacity-60" />
                       <span class="max-w-52 truncate">{{ columnTitle(column) }}</span>
                       <FileCode2 v-if="isSourceOwnedCell(column)" class="size-3.5 shrink-0 opacity-75" />
-                      <button
+                      <span
                         v-if="isColumnHiddenByDefault(column)"
-                        type="button"
-                        class="inline-flex size-5 shrink-0 items-center justify-center rounded text-current transition-colors hover:bg-background/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        :disabled="!canEditColumnVisibility(column)"
-                        :title="columnVisibilityEditingHint(column) ?? 'Показывать колонку по умолчанию'"
-                        :aria-label="`Показывать колонку «${columnTitle(column)}» по умолчанию`"
-                        @click.stop="setColumnHiddenByDefault(column.index, false)"
-                        @pointerdown.stop
+                        class="inline-flex size-5 shrink-0 items-center justify-center"
+                        title="Скрыта по умолчанию"
                       >
                         <EyeOff class="size-3.5" />
-                      </button>
+                      </span>
                       <span
                         v-if="columnPinSide(column) !== 'none'"
                         class="inline-flex shrink-0 items-center"
@@ -2105,220 +2253,6 @@ onBeforeUnmount(() => {
                       />
                     </div>
                   </div>
-                </section>
-
-                <section class="border-b bg-background/15 px-5 py-4">
-                  <TooltipProvider :delay-duration="120">
-                    <div class="overflow-x-auto rounded-lg border border-border/70">
-                      <table class="w-full min-w-[620px] table-fixed text-sm">
-                        <thead class="bg-muted/35 text-xs text-muted-foreground">
-                          <tr>
-                            <th scope="col" class="w-[30%] border-r px-3 py-2 text-left font-medium">
-                              Закрепление
-                            </th>
-                            <th scope="col" class="w-[28%] border-r px-3 py-2 text-left font-medium">
-                              Видимость
-                            </th>
-                            <th scope="col" class="w-[42%] px-3 py-2 text-left font-medium">
-                              Сортировка
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr class="bg-background/20 align-middle">
-                            <td class="border-r p-2.5">
-                              <div
-                                class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
-                                role="group"
-                                aria-label="Закрепление колонки"
-                              >
-                                <Tooltip>
-                                  <TooltipTrigger as-child>
-                                    <span>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        class="size-7"
-                                        :class="columnPinSide(selectedColumn) === 'left' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                        :disabled="!canEditColumnPin(selectedColumn)"
-                                        aria-label="Закрепить слева"
-                                        @click="setColumnPin(selectedColumn.index, 'left')"
-                                      >
-                                        <PanelLeft class="size-3.5" />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{{ columnPinEditingHint(selectedColumn) ?? 'Закрепить слева' }}</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger as-child>
-                                    <span>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        class="size-7"
-                                        :class="columnPinSide(selectedColumn) === 'none' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                        :disabled="!canEditColumnPin(selectedColumn)"
-                                        aria-label="Убрать закрепление"
-                                        @click="setColumnPin(selectedColumn.index, null)"
-                                      >
-                                        <PinOff class="size-3.5" />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{{ columnPinEditingHint(selectedColumn) ?? 'Без закрепления' }}</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger as-child>
-                                    <span>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        class="size-7"
-                                        :class="columnPinSide(selectedColumn) === 'right' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                        :disabled="!canEditColumnPin(selectedColumn)"
-                                        aria-label="Закрепить справа"
-                                        @click="setColumnPin(selectedColumn.index, 'right')"
-                                      >
-                                        <PanelRight class="size-3.5" />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{{ columnPinEditingHint(selectedColumn) ?? 'Закрепить справа' }}</TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </td>
-                            <td class="border-r p-2.5">
-                              <Tooltip>
-                                <TooltipTrigger as-child>
-                                  <div class="inline-flex items-center gap-2.5">
-                                    <Switch
-                                      :checked="!isColumnHiddenByDefault(selectedColumn)"
-                                      :disabled="!canEditColumnVisibility(selectedColumn)"
-                                      :aria-label="`Показывать колонку «${columnTitle(selectedColumn)}» по умолчанию`"
-                                      @update:checked="setSelectedColumnVisibleByDefault"
-                                    />
-                                    <span class="text-xs font-medium">
-                                      {{ isColumnHiddenByDefault(selectedColumn) ? 'Скрыта' : 'Видима' }}
-                                    </span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{{ columnVisibilityEditingHint(selectedColumn) ?? 'Показывать колонку при первом открытии таблицы' }}</TooltipContent>
-                              </Tooltip>
-                            </td>
-                            <td class="p-2.5">
-                              <div class="flex items-center gap-1.5">
-                                <div
-                                  class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
-                                  role="group"
-                                  aria-label="Сортировка колонки по умолчанию"
-                                >
-                                  <Tooltip>
-                                    <TooltipTrigger as-child>
-                                      <span>
-                                        <Button
-                                          type="button"
-                                          size="icon"
-                                          variant="ghost"
-                                          class="size-7"
-                                          :class="columnSortDirection(selectedColumn) == null ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                          :disabled="Boolean(columnSortEditingHint(selectedColumn))"
-                                          aria-label="Без сортировки по умолчанию"
-                                          @click="setColumnDefaultSort(selectedColumn.index, null)"
-                                        >
-                                          <span class="text-sm leading-none">—</span>
-                                        </Button>
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{{ columnSortEditingHint(selectedColumn) ?? 'Без сортировки по умолчанию' }}</TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger as-child>
-                                      <span>
-                                        <Button
-                                          type="button"
-                                          size="icon"
-                                          variant="ghost"
-                                          class="size-7"
-                                          :class="columnSortDirection(selectedColumn) === 'asc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                          :disabled="!canSetColumnSortDirection(selectedColumn)"
-                                          aria-label="По возрастанию"
-                                          @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
-                                        >
-                                          <ArrowUp class="size-3.5" />
-                                        </Button>
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По возрастанию' }}</TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger as-child>
-                                      <span>
-                                        <Button
-                                          type="button"
-                                          size="icon"
-                                          variant="ghost"
-                                          class="size-7"
-                                          :class="columnSortDirection(selectedColumn) === 'desc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                          :disabled="!canSetColumnSortDirection(selectedColumn)"
-                                          aria-label="По убыванию"
-                                          @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
-                                        >
-                                          <ArrowDown class="size-3.5" />
-                                        </Button>
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По убыванию' }}</TooltipContent>
-                                  </Tooltip>
-                                </div>
-
-                                <template v-if="columnSortPriority(selectedColumn) != null">
-                                  <Badge variant="outline" class="h-7 min-w-8 justify-center px-1.5 font-mono text-[11px]">
-                                    #{{ columnSortPriority(selectedColumn) }}
-                                  </Badge>
-                                  <Tooltip>
-                                    <TooltipTrigger as-child>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        class="size-7 text-muted-foreground"
-                                        :disabled="columnSortPriority(selectedColumn) === 1"
-                                        aria-label="Повысить приоритет сортировки"
-                                        @click="moveColumnSortPriority(selectedColumn.index, -1)"
-                                      >
-                                        <ChevronLeft class="size-3.5" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Повысить приоритет сортировки</TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger as-child>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        class="size-7 text-muted-foreground"
-                                        :disabled="columnSortPriority(selectedColumn) === defaultSortItems.length"
-                                        aria-label="Понизить приоритет сортировки"
-                                        @click="moveColumnSortPriority(selectedColumn.index, 1)"
-                                      >
-                                        <ChevronRight class="size-3.5" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Понизить приоритет сортировки</TooltipContent>
-                                  </Tooltip>
-                                </template>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </TooltipProvider>
                 </section>
 
                 <section class="border-b px-5 py-4">
@@ -2550,6 +2484,252 @@ onBeforeUnmount(() => {
                       Редактировать в Source
                       <ExternalLink class="size-3.5" />
                     </Button>
+                  </div>
+                </section>
+
+                <section class="border-b bg-background/15 px-5 py-4">
+                  <div class="mb-3 flex items-center gap-1.5">
+                    <h3 class="text-sm font-semibold">
+                      Сортировка
+                    </h3>
+                    <TooltipProvider :delay-duration="120">
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <button
+                            type="button"
+                            class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label="О сортировке колонки"
+                          >
+                            <CircleHelp class="size-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" class="max-w-80 leading-relaxed">
+                          Цепочки сравниваются последовательно. Используйте dot paths без префикса row. Если список пуст, сортировка использует key колонки.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  <div class="grid max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
+                    <div class="overflow-hidden rounded-lg border border-border/70">
+                      <div
+                        v-if="selectedColumn.sortBy?.kind === 'expression'"
+                        class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
+                      >
+                        <FileCode2 class="size-3.5 shrink-0" />
+                        Dynamic sort-by настраивается в Source.
+                      </div>
+                      <table v-else class="w-full table-fixed text-xs">
+                        <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th scope="col" class="w-9 px-1 py-1 text-center font-medium">
+                              #
+                            </th>
+                            <th scope="col" class="px-2 py-1 text-left font-medium">
+                              Цепочка поля
+                            </th>
+                            <th scope="col" class="w-[76px] px-1 py-1 text-center font-medium">
+                              Порядок
+                            </th>
+                            <th scope="col" class="w-8" />
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/60">
+                          <tr v-for="(path, index) in sortPathDrafts" :key="`sort-path-${index}`" class="bg-background/15">
+                            <td class="px-1 text-center font-mono text-[10px] text-muted-foreground">
+                              {{ index + 1 }}
+                            </td>
+                            <td class="p-1">
+                              <Input
+                                v-model="sortPathDrafts[index]"
+                                class="editor-control h-7 border-0 px-2 font-mono text-xs shadow-none focus-visible:ring-1"
+                                placeholder="departureLeg.aircraft.tail"
+                                spellcheck="false"
+                                :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                @blur="commitColumnSortPath(index)"
+                                @keydown.enter.prevent="commitColumnSortPath(index)"
+                                @keydown.esc.prevent="resetColumnSortPaths"
+                              />
+                            </td>
+                            <td class="p-1">
+                              <div class="flex items-center justify-center gap-0.5">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-6 text-muted-foreground"
+                                  :disabled="index === 0 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  aria-label="Переместить поле выше"
+                                  @click="moveColumnSortPath(index, -1)"
+                                >
+                                  <ArrowUp class="size-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-6 text-muted-foreground"
+                                  :disabled="index === sortPathDrafts.length - 1 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  aria-label="Переместить поле ниже"
+                                  @click="moveColumnSortPath(index, 1)"
+                                >
+                                  <ArrowDown class="size-3" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td class="p-1 text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                class="size-7 text-muted-foreground hover:text-destructive"
+                                :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                aria-label="Удалить цепочку"
+                                @click="removeColumnSortPath(index)"
+                              >
+                                <Trash2 class="size-3.5" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr v-if="!sortPathDrafts.length">
+                            <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
+                              Используется key колонки: <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div v-if="selectedColumn.sortBy?.kind !== 'expression'" class="border-t border-border/60 p-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 w-full justify-start gap-1.5 text-xs text-muted-foreground"
+                          :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                          @click="addColumnSortPath"
+                        >
+                          <Plus class="size-3.5" />
+                          Добавить цепочку
+                        </Button>
+                      </div>
+                    </div>
+
+                    <aside class="overflow-hidden rounded-lg border border-border/70 bg-muted/10">
+                      <div class="p-3">
+                        <Label class="text-xs">Направление</Label>
+                        <TooltipProvider :delay-duration="120">
+                          <div class="mt-2 space-y-2">
+                            <div
+                              class="editor-control inline-flex h-8 items-center rounded-md border border-border/70 p-0.5"
+                              role="group"
+                              aria-label="Сортировка колонки по умолчанию"
+                            >
+                              <Tooltip>
+                                <TooltipTrigger as-child>
+                                  <span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      class="h-7 min-w-9 px-2"
+                                      :class="columnSortDirection(selectedColumn) == null ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                      :disabled="Boolean(columnSortEditingHint(selectedColumn))"
+                                      aria-label="Без сортировки по умолчанию"
+                                      @click="setColumnDefaultSort(selectedColumn.index, null)"
+                                    >
+                                      —
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>{{ columnSortEditingHint(selectedColumn) ?? 'Без сортировки по умолчанию' }}</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger as-child>
+                                  <span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                      :class="columnSortDirection(selectedColumn) === 'asc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                      :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                      @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
+                                    >
+                                      ASC
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По возрастанию' }}</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger as-child>
+                                  <span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                      :class="columnSortDirection(selectedColumn) === 'desc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                      :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                      @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
+                                    >
+                                      DESC
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По убыванию' }}</TooltipContent>
+                              </Tooltip>
+                            </div>
+
+                            <div v-if="columnSortPriority(selectedColumn) != null" class="flex items-center gap-1">
+                              <span class="mr-auto text-[10px] text-muted-foreground">Приоритет</span>
+                              <Badge variant="outline" class="h-7 min-w-7 justify-center px-1 font-mono text-[10px]">
+                                #{{ columnSortPriority(selectedColumn) }}
+                              </Badge>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                class="size-7 text-muted-foreground"
+                                :disabled="columnSortPriority(selectedColumn) === 1"
+                                aria-label="Повысить приоритет сортировки"
+                                @click="moveColumnSortPriority(selectedColumn.index, -1)"
+                              >
+                                <ChevronLeft class="size-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                class="size-7 text-muted-foreground"
+                                :disabled="columnSortPriority(selectedColumn) === defaultSortItems.length"
+                                aria-label="Понизить приоритет сортировки"
+                                @click="moveColumnSortPriority(selectedColumn.index, 1)"
+                              >
+                                <ChevronRight class="size-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </TooltipProvider>
+                      </div>
+
+                      <div class="border-t border-border/70 p-3">
+                        <Label for="sfc-table-column-sort-comparator" class="text-xs">Сравнение</Label>
+                        <Select
+                          :model-value="selectedColumnSortComparator"
+                          :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                          @update:model-value="value => updateColumnSortComparator(value == null ? null : String(value))"
+                        >
+                          <SelectTrigger id="sfc-table-column-sort-comparator" class="editor-control mt-2 h-8 w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem v-for="option in SORT_COMPARATOR_OPTIONS" :key="option.value" :value="option.value">
+                              {{ option.label }}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </aside>
                   </div>
                 </section>
               </template>

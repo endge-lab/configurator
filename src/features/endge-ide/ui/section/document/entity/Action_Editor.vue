@@ -3,7 +3,6 @@
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 
 import { Endge, RField } from '@endge/core'
-import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Plus, Save, Settings2, Trash2, Workflow } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
 
 const props = defineProps<{
@@ -55,7 +55,6 @@ const flowEditorModel = computed<RActionEditor>({
     }
   },
 })
-const domainStore = useDomainStore()
 const activeTab = useSmartTabSelection('editor.active-tab', 'general', ['general', 'flow'] as const)
 const overrideVersion = ref(0)
 const unsubscribeActions = Endge.actions.subscribe(() => {
@@ -85,39 +84,6 @@ const tabButtons = computed(() => [
     ? [{ value: 'flow' as const, icon: Workflow, label: uiText.tabFlow }]
     : []),
 ])
-
-const typeOptions = computed(() => {
-  const primitives: Array<{ value: string, label: string }> = (
-    domainStore.typesPrimitives ?? []
-  ).map((type: { id?: string | number, name?: string }) => ({
-    value: type?.id != null ? String(type.id) : String(type?.name ?? ''),
-    label: String(type?.name ?? type?.id ?? ''),
-  }))
-
-  const custom: Array<{
-    value: string
-    label: string
-    isPrimitive: boolean
-  }> = (domainStore.typesComplex ?? domainStore.types ?? [])
-    .map(
-      (type: {
-        id?: string | number
-        name?: string
-        isPrimitive?: boolean
-      }) => ({
-        value: type?.id != null ? String(type.id) : String(type?.name ?? ''),
-        label: String(type?.name ?? type?.id ?? ''),
-        isPrimitive: Boolean(type?.isPrimitive),
-      }),
-    )
-    .filter((type: { isPrimitive: boolean }) => !type.isPrimitive)
-
-  return [
-    { value: '', label: '- не выбран -' },
-    ...primitives.filter((type: { value: string }) => type.value !== ''),
-    ...custom.filter((type: { value: string }) => type.value !== ''),
-  ]
-})
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -301,26 +267,12 @@ function removeTarget(index: number): void {
                   <Label class="text-xs text-muted-foreground">{{
                     uiText.type
                   }}</Label>
-                  <select
-                    :value="editor?.input?.type ?? ''"
-                    class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  <TypeRegistrySelect
+                    :model-value="editor?.input?.type ?? ''"
+                    placeholder="Тип не выбран"
                     :disabled="isOverridden"
-                    @change="
-                      (event) =>
-                        updateFieldType(
-                          'input',
-                          (event.target as HTMLSelectElement).value,
-                        )
-                    "
-                  >
-                    <option
-                      v-for="option in typeOptions"
-                      :key="`input-${option.value || 'none'}`"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
+                    @update:model-value="value => updateFieldType('input', String(value ?? ''))"
+                  />
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -354,26 +306,12 @@ function removeTarget(index: number): void {
                   <Label class="text-xs text-muted-foreground">{{
                     uiText.type
                   }}</Label>
-                  <select
-                    :value="editor?.output?.type ?? ''"
-                    class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  <TypeRegistrySelect
+                    :model-value="editor?.output?.type ?? ''"
+                    placeholder="Тип не выбран"
                     :disabled="isOverridden"
-                    @change="
-                      (event) =>
-                        updateFieldType(
-                          'output',
-                          (event.target as HTMLSelectElement).value,
-                        )
-                    "
-                  >
-                    <option
-                      v-for="option in typeOptions"
-                      :key="`output-${option.value || 'none'}`"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
+                    @update:model-value="value => updateFieldType('output', String(value ?? ''))"
+                  />
                 </div>
 
                 <div class="flex items-center gap-2">

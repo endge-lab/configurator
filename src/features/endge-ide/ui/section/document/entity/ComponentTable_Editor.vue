@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RComponentTableColumnEditor } from "@/features/endge-ide/domain/entities/RComponentTableColumnEditor";
 import { DomainSectionType, Endge } from "@endge/core";
-import { useDomainStore } from "@endge/ui-vue";
 import {
   Eraser,
   GripVertical,
@@ -54,9 +53,9 @@ import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 import TableDataMappingAssistant from "@/features/endge-ide/ui/components/TableDataMappingAssistant.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
+import TypeRegistrySelect from "@/features/endge-ide/ui/components/TypeRegistrySelect.vue";
 import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
 
-const domainStore = useDomainStore();
 const tabs = EndgeIDE.tabs;
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
 const previewModel = computed<any>(() => tabs.documentModel.value);
@@ -78,12 +77,6 @@ const componentsOptions = computed(() => {
     value: String(c.id),
     label: c.name ?? String(c.id),
   }));
-});
-
-/** Опции типов для входных переменных (с поиском) */
-const inputFieldTypeOptions = computed(() => {
-  const types = (domainStore.types || []) as { name: string; code?: string }[];
-  return types.map((t) => ({ value: t.name, label: t.name }));
 });
 
 const selectedColumnIndex = ref<number | null>(null);
@@ -951,8 +944,7 @@ watch(
                           <Input v-model="row.name" />
                         </div>
                         <div class="px-3 py-2">
-                          <SearchableSelect
-                            :options="inputFieldTypeOptions"
+                          <TypeRegistrySelect
                             :model-value="row.type ?? ''"
                             placeholder="Тип"
                             size="compact"

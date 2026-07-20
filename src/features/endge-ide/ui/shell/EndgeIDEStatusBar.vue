@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BellDot, Bug, Clock3, GitBranch, HelpCircle, RefreshCcw, Tag, Waypoints } from 'lucide-vue-next'
+import { BellDot, GitBranch, RefreshCcw, Tag } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
@@ -14,12 +14,6 @@ const leftItems = [
   { id: 'branch', label: 'main', icon: GitBranch },
   { id: 'version', label: 'latest', icon: Tag },
 ]
-const rightItems = [
-  { id: 'status', label: 'No queries running', icon: Waypoints },
-  { id: 'debug', label: 'Debug', icon: Bug },
-]
-const utilities = [Clock3, HelpCircle, BellDot]
-
 async function reloadDomain(): Promise<void> {
   try {
     await context.reloadCurrentContext()
@@ -48,14 +42,10 @@ async function reloadDomain(): Promise<void> {
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
-      <div v-for="item in rightItems" :key="item.id" class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5">
-        <component :is="item.icon" class="size-3.5 shrink-0" />
-        <span>{{ item.label }}</span>
-      </div>
       <button type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
         <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
       </button>
-      <component :is="icon" v-for="(icon, index) in utilities" :key="index" class="size-3.5 mx-1" />
+      <BellDot class="size-3.5 mx-1" />
     </div>
   </div>
 </template>

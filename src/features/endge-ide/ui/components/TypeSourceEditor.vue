@@ -5,6 +5,7 @@ import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/u
 
 const props = defineProps<{
   modelValue: string
+  identity?: string
 }>()
 
 const emit = defineEmits<{
@@ -23,6 +24,7 @@ const monacoAdapter = useEndgeSourceMonaco({
   value: () => source.value,
   onChange: (value) => { source.value = value },
   owner: 'endge-type-source',
+  ownerIdentity: () => props.identity,
 })
 
 watch(

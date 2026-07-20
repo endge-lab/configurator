@@ -19,6 +19,7 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/dia
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
@@ -131,7 +132,7 @@ async function save(): Promise<void> {
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-3 rounded-lg border p-3">
               <Label for="computation-input-type">Input type identity</Label>
-              <Input id="computation-input-type" v-model="editor.inputType" placeholder="app.ground-handling.input" spellcheck="false" />
+              <TypeRegistrySelect id="computation-input-type" v-model="editor.inputType" placeholder="Выберите входной тип" />
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.inputIsArray" />Массив</label>
                 <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.inputOptional" />Опционально</label>
@@ -139,7 +140,7 @@ async function save(): Promise<void> {
             </div>
             <div class="space-y-3 rounded-lg border p-3">
               <Label for="computation-output-type">Output type identity</Label>
-              <Input id="computation-output-type" v-model="editor.outputType" placeholder="app.ground-handling.cell-state" spellcheck="false" />
+              <TypeRegistrySelect id="computation-output-type" v-model="editor.outputType" placeholder="Выберите выходной тип" />
               <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.outputIsArray" />Массив</label>
                 <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.outputOptional" />Опционально</label>

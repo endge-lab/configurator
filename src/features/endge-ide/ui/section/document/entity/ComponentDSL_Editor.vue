@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { RType } from '@endge/core'
-import { useDomainStore } from '@endge/ui-vue'
 import { Loader2, Save, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -10,21 +8,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
-const domainStore = useDomainStore()
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const tab = useSmartTabSelection('editor.active-tab', 'general', ['general', '0', '2', 'parameters'] as const)
@@ -32,10 +23,6 @@ const tab = useSmartTabSelection('editor.active-tab', 'general', ['general', '0'
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
-
-const componentInputOptions = computed(() =>
-  domainStore.types.map((x: RType) => ({ name: x.name, code: x.name })),
-)
 
 function addInputField(): void {
   editor.value?.inputFields?.push(RFieldEditor.createDefault())
@@ -169,20 +156,7 @@ function addInputField(): void {
                         <Input v-model="row.name" />
                       </div>
                       <div class="px-3 py-2">
-                        <Select v-model="row.type">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Тип" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              v-for="opt in componentInputOptions"
-                              :key="opt.code"
-                              :value="opt.code"
-                            >
-                              {{ opt.name }}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <TypeRegistrySelect v-model="row.type" placeholder="Тип" />
                       </div>
                       <div class="px-3 py-2 flex justify-center">
                         <Checkbox

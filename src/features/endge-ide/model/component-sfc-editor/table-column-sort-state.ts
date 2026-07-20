@@ -7,6 +7,24 @@ export interface TableVisualColumnSortItem {
 
 const SORT_DIRECTIONS = new Set<TableVisualColumnSortDirection>(['asc', 'desc'])
 
+/** Читает ordered dot paths из Column sort-by. */
+export function parseTableColumnSortPaths(value: string): string[] {
+  return value.split(',').map(path => path.trim()).filter(Boolean)
+}
+
+/** Сериализует paths обратно в компактный Source attribute. */
+export function serializeTableColumnSortPaths(paths: readonly string[]): string | null {
+  const value = paths.map(path => path.trim()).filter(Boolean).join(',')
+  return value || null
+}
+
+/** Visual editor поддерживает только простые dot paths, совместимые с текущими render adapters. */
+export function isTableColumnSortPath(value: string): boolean {
+  const path = value.trim()
+  return Boolean(path)
+    && path.split('.').every(segment => Boolean(segment) && !/[\s,[\]]/.test(segment))
+}
+
 /** Читает default-sort в compiler order; позиция элемента является его sort priority. */
 export function parseTableDefaultSort(value: string): TableVisualColumnSortItem[] {
   return splitSortTokens(value)

@@ -699,18 +699,16 @@ const selectedInputTypeModel = computed(() => {
   if (!inputField?.type)
     return null
 
-  return (domainStore.types ?? []).find((type) => {
+  return domainStore.typeCatalog.find((type) => {
     const id = String(type.id ?? '').trim()
     const identity = String(type.identity ?? '').trim()
-    const name = String(type.name ?? '').trim()
-    return [id, identity, name].includes(String(inputField.type).trim())
+    return [id, identity].includes(String(inputField.type).trim())
   }) ?? null
 })
 
 const selectedInputResolvedType = computed(() =>
   String(
     selectedInputTypeModel.value?.identity
-    ?? selectedInputTypeModel.value?.name
     ?? selectedInputField.value?.type
     ?? '',
   ).trim(),
@@ -724,11 +722,11 @@ const selectedInputIsStringLike = computed(() =>
 
 const selectedInputReferenceTarget = computed<string | null>(() => {
   const type = selectedInputTypeModel.value
-  const metaTarget = String(type?.meta?.target ?? '').trim()
+  const metaTarget = String(type?.entityReference?.target ?? '').trim()
   if (metaTarget)
     return metaTarget
 
-  const rawName = String(type?.identity ?? type?.name ?? '').trim()
+  const rawName = String(type?.identity ?? '').trim()
   if (rawName.startsWith('Ref'))
     return rawName.slice(3).toLowerCase()
 

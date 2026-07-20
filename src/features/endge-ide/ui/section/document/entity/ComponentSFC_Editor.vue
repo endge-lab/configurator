@@ -23,6 +23,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -62,6 +63,7 @@ const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.d
     inputs: compileComponentSFC(component.source ?? '').contract.inputs,
   })))
 const sourceEditorExtensions = [
+  createTypeRegistryContribution(),
   createSFCStyleEndgeCSSContribution(),
   createExtractComponentContribution({
     getEditorModel: () => editor.value,
