@@ -96,6 +96,21 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
+  it('notifies the owner when tabs are physically closed', () => {
+    const onTabClosed = vi.fn()
+    const scope = effectScope()
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', onTabClosed }))!
+    api.openTab(createTab('type-order'))
+    api.openTab(createTab('query-orders'))
+
+    api.closeTab('query-orders')
+    api.closeAll()
+
+    expect(onTabClosed).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 'query-orders' }))
+    expect(onTabClosed).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'type-order' }))
+    scope.stop()
+  })
+
   it('isolates equal slice keys between outer tabs', () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!

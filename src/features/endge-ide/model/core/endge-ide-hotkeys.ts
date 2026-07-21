@@ -15,11 +15,20 @@ export interface EndgeIDEHotkeyItem {
 /** Единый реестр всех горячих клавиш редактора (источник правды для регистрации и документирования) */
 export const REGISTERED_HOTKEYS: readonly EndgeIDEHotkeyItem[] = [
   { label: 'Сохранить', keys: ['ctrl+s', 'meta+s'], keysLabel: 'Ctrl+S / ⌘ S', action: 'save' },
-  { label: 'Закрыть вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
+  { label: 'Закрыть сохранённую вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
   { label: 'Создать документ', keys: ['ctrl+n', 'meta+n'], keysLabel: 'Ctrl+N / ⌘ N', action: 'createDocument' },
   { label: 'Запустить Runtime Preview', keys: ['ctrl+enter', 'meta+enter'], keysLabel: 'Ctrl+Enter / ⌘ Enter', action: 'runRuntime' },
   { label: 'Вернуться к Project', keys: 'escape', keysLabel: 'Esc', action: 'returnToProject' },
 ]
+
+export function isCloseTabShortcut(event: Pick<KeyboardEvent, 'altKey' | 'code' | 'ctrlKey' | 'key' | 'metaKey' | 'shiftKey'>): boolean {
+  const isPhysicalW = event.code === 'KeyW'
+    || (!event.code && (event.key === 'w' || event.key === 'W'))
+  return isPhysicalW
+    && (event.ctrlKey || event.metaKey)
+    && !event.altKey
+    && !event.shiftKey
+}
 
 /**
  * Подмодуль горячих клавиш Endge IDE.
@@ -80,10 +89,8 @@ export class EndgeIDEHotkeys {
         })
       }
       else if (item.action === 'closeTab') {
-        this._manager.on(keys, (e) => {
-          e.preventDefault()
-          this._onCloseTab?.()
-        })
+        // Cmd/Ctrl+W is registered only in capture phase below, before the browser closes its tab.
+        continue
       }
       else if (item.action === 'createDocument') {
         this._manager.on(keys, (e) => {
@@ -109,14 +116,11 @@ export class EndgeIDEHotkeys {
 
     // Capture-фаза: перехватываем Cmd+W/Ctrl+W до браузера
     this._closeTabCaptureBound = (e: KeyboardEvent) => {
-      if (e.key !== 'w' && e.key !== 'W') {
-        return
-      }
-      if (!e.ctrlKey && !e.metaKey) {
+      if (!isCloseTabShortcut(e)) {
         return
       }
       e.preventDefault()
-      e.stopPropagation()
+      e.stopImmediatePropagation()
       this._onCloseTab?.()
     }
     window.addEventListener('keydown', this._closeTabCaptureBound, { capture: true })

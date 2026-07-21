@@ -1,4 +1,5 @@
 import './assets/main.css'
+import '@/features/endge-ide/source-editor/adapters/monaco/configure-monaco-workers'
 import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 import 'reflect-metadata'

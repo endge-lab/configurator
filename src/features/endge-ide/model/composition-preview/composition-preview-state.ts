@@ -1,5 +1,8 @@
 import type {
   ComponentSFCRuntimeHost,
+  CompositionPreviewLiteral,
+  CompositionPreviewPropValue,
+  CompositionProgramPayload,
   CompositionRuntimeHost,
   FilterViewRuntimeHost,
   RuntimeHostInputSource,
@@ -8,6 +11,9 @@ import type {
 import { Endge, materializeCompositionPreviewProps, RComposition } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 
+import {
+  generateCompositionRuntimePreviewSource,
+} from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
 import {
   configuratorPreviewAppScope,
   configuratorPreviewMeta,
@@ -92,7 +98,10 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
       new Set(input.identity ? [input.identity] : []),
     )
 
-    const model = createPreviewComposition(input)
+    const model = createPreviewComposition({
+      ...input,
+      source: materializeCompositionRuntimePreviewSource(input.source),
+    })
     const artifact = Endge.compiler.buildComposition(model)
     if (artifact.status === 'error') {
       const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
@@ -196,9 +205,60 @@ export function ensureCompositionRuntimeArtifacts(source: string, visiting = new
       visiting.delete(runtime.identity)
 
       const artifact = Endge.program.getCompositionArtifact(runtime.identity)
-      if (!artifact || artifact.status === 'error')
-        Endge.compiler.buildComposition(model)
+      if (!artifact || artifact.status === 'error') {
+        const previewSource = materializeCompositionRuntimePreviewSource(model.source)
+        Endge.compiler.buildComposition(previewSource === model.source
+          ? model
+          : createPreviewComposition({
+              id: model.id,
+              identity: model.identity,
+              name: model.name,
+              displayName: model.displayName,
+              source: previewSource,
+              sourceVersion: model.sourceVersion,
+            }))
+      }
     }
+  }
+}
+
+/** Подставляет child definePreviewProps только в transient source, используемый preview runtime. */
+export function materializeCompositionRuntimePreviewSource(source: string): string {
+  return generateCompositionRuntimePreviewSource(
+    source,
+    compileCompositionSource,
+    resolveCompositionContract,
+    materializePreviewValue,
+  )
+}
+
+function compileCompositionSource(source: string): CompositionProgramPayload | null {
+  return (Endge.source.compile('composition', source).artifact as CompositionProgramPayload | undefined) ?? null
+}
+
+function resolveCompositionContract(identity: string): CompositionProgramPayload | null {
+  const compiled = Endge.program.getCompositionArtifact(identity)?.payload
+  if (compiled) {
+    return compiled
+  }
+
+  const model = Endge.domain.getComposition(identity)
+  return model ? compileCompositionSource(model.source) : null
+}
+
+function materializePreviewValue(value: CompositionPreviewPropValue): CompositionPreviewLiteral | undefined {
+  if (value.kind === 'literal') {
+    return value.value
+  }
+  if (!Endge.mock.has(value.identity)) {
+    return undefined
+  }
+
+  try {
+    return Endge.mock.get<CompositionPreviewLiteral>(value.identity)
+  }
+  catch {
+    return undefined
   }
 }
 

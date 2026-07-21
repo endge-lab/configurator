@@ -28,6 +28,7 @@ import { runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-pre
 import {
   createPreviewComposition,
   ensureCompositionRuntimeArtifacts,
+  materializeCompositionRuntimePreviewSource,
   resolvePreviewStoreRuntimes,
 } from '@/features/endge-ide/model/composition-preview/composition-preview-state'
 import {
@@ -352,7 +353,11 @@ export class RuntimePreviewInstance {
   private async mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession> {
     await Endge.build()
     ensureCompositionRuntimeArtifacts(draft.source, new Set([this.target.identity]))
-    const model = createPreviewComposition({ ...draft, identity: this.target.identity })
+    const model = createPreviewComposition({
+      ...draft,
+      identity: this.target.identity,
+      source: materializeCompositionRuntimePreviewSource(draft.source),
+    })
     const artifact = Endge.compiler.buildComposition(model)
     if (artifact.status === 'error') {
       throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message

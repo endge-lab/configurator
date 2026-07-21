@@ -68,6 +68,8 @@ export interface SmartTabsOptions {
    * Максимальное количество открытых вкладок
    */
   maxTabs?: number
+  /** Lifecycle callback after a tab was physically removed from the tab state. */
+  onTabClosed?: (tab: SmartTabRef) => void
 }
 
 export interface SmartTabViewResolved {

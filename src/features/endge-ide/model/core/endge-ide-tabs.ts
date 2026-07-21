@@ -28,6 +28,7 @@ import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model/source-reference/source-reference-document-target'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
+import { createDocumentEditorSnapshot } from '@/features/endge-ide/model/core/document-editor-snapshot'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
@@ -145,6 +146,7 @@ interface EditorSession {
   editor: unknown | null
   model: unknown | null
   persistedIdentity?: string
+  savedSnapshot?: string
   syncBeforeSave?: () => void
   syncSystemBeforeSave?: () => void
 }
@@ -172,6 +174,7 @@ export class EndgeIDETabs {
     this._tabsApi = useSmartTabs({
       ...endgeIDETabsConfig,
       persist: !isIDETabStorageDisabled(),
+      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })
   }
 
@@ -208,6 +211,7 @@ export class EndgeIDETabs {
     this._tabsApi = useSmartTabs({
       ...endgeIDETabsConfig,
       persist: !isIDETabStorageDisabled(),
+      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })
     this._isRegistryBootstrapped = false
     this._sessionByTabId.clear()
@@ -230,6 +234,30 @@ export class EndgeIDETabs {
   public setTabViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabViewState']>[2]): void { this._tabsApi.setTabViewState(tabId, key, slice) }
   public clearTabViewState(tabId: string, key?: string): void { this._tabsApi.clearTabViewState(tabId, key) }
   public clearStorage(): void { this._tabsApi.clearStorage() }
+
+  /** Returns true when the active editor differs from its last successful save. */
+  public isTabDirty(id: string): boolean {
+    const session = this._sessionByTabId.get(id)
+    if (!session?.editor || session.savedSnapshot == null) {
+      return false
+    }
+    return createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot
+  }
+
+  /** Ctrl/Cmd+W guard. The regular close button intentionally bypasses this check. */
+  public closeActiveTabFromHotkey(): void {
+    const id = this.activeTabId.value
+    if (!id) {
+      return
+    }
+    if (this.isTabDirty(id)) {
+      toast.warning('Документ не сохранён', {
+        description: 'Сохраните изменения или закройте вкладку крестиком без сохранения.',
+      })
+      return
+    }
+    this.closeTab(id)
+  }
 
   public getCurrentContext(): { document: Record<string, unknown> } | null {
     const editor = this.documentEditorModel.value
@@ -316,6 +344,9 @@ export class EndgeIDETabs {
         }
       }
       const label = this.getDocumentLabel(effectiveDocumentId, documentType)
+      if (session?.editor) {
+        session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
+      }
       toast.success('Сохранено', { description: label })
     }
     catch (e) {
@@ -750,6 +781,9 @@ export class EndgeIDETabs {
     const session = resolver?.(documentId) ?? null
     if (!session)
       return null
+    if (session.editor) {
+      session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
+    }
     this._sessionByTabId.set(tab.id, session)
     this._setCurrentFromSession(session)
     return session.view

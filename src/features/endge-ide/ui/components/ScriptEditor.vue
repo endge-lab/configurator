@@ -138,6 +138,9 @@ onMounted(() => {
       autoClosingQuotes: 'always',
       autoClosingOvertype: 'always',
       autoIndent: 'full',
+      folding: true,
+      foldingStrategy: 'auto',
+      showFoldingControls: 'always',
       scrollBeyondLastLine: false,
       wordWrap: 'on',
     })

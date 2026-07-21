@@ -1,4 +1,5 @@
 /* eslint-disable style/max-statements-per-line */
+import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 import type { SourceKind, SourceLanguageSemanticHighlight, SourceLanguageSyntaxDefinition } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
@@ -38,6 +39,7 @@ export interface UseEndgeSourceMonacoOptions {
   ownerIdentity?: () => string | undefined
   formatLanguage?: SourceFormatLanguage
   onReady?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
+  extensions?: readonly ScriptEditorExtension[]
 }
 
 /** Общий browser adapter Endge source language → Monaco. */
@@ -54,6 +56,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   let referenceNavigationDisposable: Monaco.IDisposable | null = null
   let hoverDisposable: Monaco.IDisposable | null = null
   let semanticHighlights: Monaco.editor.IEditorDecorationsCollection | null = null
+  let extensionDisposables: Monaco.IDisposable[] = []
 
   const typeCatalog = () => {
     const compiled = Endge.program.getTypeCatalog()
@@ -186,6 +189,19 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       padding: { bottom: 10 },
     })
     semanticHighlights = editor.value.createDecorationsCollection()
+    const editorModel = editor.value.getModel()
+    if (editorModel) {
+      extensionDisposables = (options.extensions ?? []).flatMap((extension) => {
+        try {
+          const disposable = extension.install({ monaco, editor: editor.value!, model: editorModel })
+          return disposable ? [disposable] : []
+        }
+        catch (error) {
+          console.error(`[EndgeSourceMonaco] Failed to install extension "${extension.id}"`, error)
+          return []
+        }
+      })
+    }
     referenceNavigationDisposable = installMonacoReferenceNavigation({
       monaco,
       editor: editor.value,
@@ -240,6 +256,8 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     completionDisposable?.dispose()
     referenceNavigationDisposable?.dispose()
     hoverDisposable?.dispose()
+    extensionDisposables.forEach(disposable => disposable.dispose())
+    extensionDisposables = []
     semanticHighlights?.clear()
     semanticHighlights = null
     editor.value?.dispose()

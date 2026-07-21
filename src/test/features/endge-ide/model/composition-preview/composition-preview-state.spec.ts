@@ -1,3 +1,5 @@
+import type { CompositionRuntimeHost } from '@endge/core'
+
 import { Endge, RComposition, RQuery } from '@endge/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,7 +10,7 @@ import {
   launchCompositionPreview,
 } from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
 
-describe('Composition preview artifacts', () => {
+describe('composition preview artifacts', () => {
   beforeEach(() => prepareCompilerContext())
 
   afterEach(async () => {
@@ -112,6 +114,51 @@ defineComposition({
     expect(compositionPreviewRuntime.value?.getProps()).toEqual({
       label: 'Preview label',
     })
+  })
+
+  it('uses nested Composition preview props without changing the authored parent source', async () => {
+    vi.spyOn(Endge, 'build').mockResolvedValue(undefined)
+    const child = new RComposition()
+    child.id = 301
+    child.identity = 'groundhandling-query-general'
+    child.name = 'Ground handling query general'
+    child.source = `
+defineComposition({
+  props: defineProps({
+    requirements: field('Object'),
+  }),
+  previewProps: definePreviewProps({
+    requirements: {
+      arrival: { attributes: ['STA'] },
+      departure: { attributes: ['STD'] },
+    },
+  }),
+  runtimes: {},
+})
+`
+    Endge.domain.addComposition(child)
+    const parentSource = `
+defineComposition({
+  runtimes: {
+    requests: composition('groundhandling-query-general'),
+  },
+})
+`
+
+    await launchCompositionPreview({
+      identity: 'groundhandling-page',
+      source: parentSource,
+    })
+
+    const childRuntime = compositionPreviewRuntime.value?.getChild('requests') as CompositionRuntimeHost | null
+    expect(childRuntime?.getProps()).toEqual({
+      requirements: {
+        arrival: { attributes: ['STA'] },
+        departure: { attributes: ['STD'] },
+      },
+    })
+    expect(child.source).not.toContain('.withProps(')
+    expect(parentSource).not.toContain('.withProps(')
   })
 })
 

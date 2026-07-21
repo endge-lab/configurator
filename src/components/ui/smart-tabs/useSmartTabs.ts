@@ -135,7 +135,10 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
     const overflow = state.openTabs.length - maxTabs
     const removed = state.openTabs.splice(0, overflow)
-    removed.forEach(tab => delete state.viewStateByTabId[tab.id])
+    removed.forEach((tab) => {
+      delete state.viewStateByTabId[tab.id]
+      options.onTabClosed?.(tab)
+    })
 
     // если активная вкладка была среди удалённых - подхватим первую
     if (state.activeTabId && !state.openTabs.some(t => t.id === state.activeTabId)) {
@@ -190,9 +193,12 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
           tabId: tab.id,
         })
         const replacedTabId = state.openTabs[idx]!.id
+        const replacedTab = state.openTabs[idx]!
         state.openTabs.splice(idx, 1, tab)
-        if (replacedTabId !== tab.id)
+        if (replacedTabId !== tab.id) {
           delete state.viewStateByTabId[replacedTabId]
+          options.onTabClosed?.(replacedTab)
+        }
         state.activeTabId = activate ? tab.id : state.activeTabId
         enforceMax()
         return
@@ -240,51 +246,63 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       return
 
     const wasActive = state.activeTabId === id
+    const closedTab = state.openTabs[idx]!
 
     if (!wasActive) {
       state.openTabs.splice(idx, 1)
       delete state.viewStateByTabId[id]
+      options.onTabClosed?.(closedTab)
       return
     }
 
     state.openTabs.splice(idx, 1)
     delete state.viewStateByTabId[id]
+    options.onTabClosed?.(closedTab)
 
     const remainingTabs = state.openTabs
     if (remainingTabs.length > 0) {
       const nextIndex = idx < remainingTabs.length ? idx : remainingTabs.length - 1
       state.activeTabId = remainingTabs[nextIndex]?.id ?? null
-    } else {
+    }
+    else {
       state.activeTabId = null
     }
   }
 
   function closeAll(): void {
+    const closedTabs = state.openTabs.filter(t => t.closable !== false)
     state.openTabs = state.openTabs.filter(t => t.closable === false)
     pruneViewState()
     state.activeTabId = state.openTabs[0]?.id ?? null
+    closedTabs.forEach(tab => options.onTabClosed?.(tab))
   }
 
   function closeOthers(id: SmartTabId): void {
+    const closedTabs = state.openTabs.filter(t => t.id !== id && t.closable !== false)
     state.openTabs = state.openTabs.filter(t => t.id === id || t.closable === false)
     pruneViewState()
     state.activeTabId = state.openTabs.some(t => t.id === id) ? id : (state.openTabs[0]?.id ?? null)
+    closedTabs.forEach(tab => options.onTabClosed?.(tab))
   }
 
   function closeAllToLeft(id: SmartTabId): void {
     const idx = state.openTabs.findIndex(t => t.id === id)
     if (idx <= 0) return
+    const closedTabs = state.openTabs.filter((t, i) => i < idx && t.closable !== false)
     state.openTabs = state.openTabs.filter((t, i) => i >= idx || t.closable === false)
     pruneViewState()
     state.activeTabId = id
+    closedTabs.forEach(tab => options.onTabClosed?.(tab))
   }
 
   function closeAllToRight(id: SmartTabId): void {
     const idx = state.openTabs.findIndex(t => t.id === id)
     if (idx === -1 || idx >= state.openTabs.length - 1) return
+    const closedTabs = state.openTabs.filter((t, i) => i > idx && t.closable !== false)
     state.openTabs = state.openTabs.filter((t, i) => i <= idx || t.closable === false)
     pruneViewState()
     state.activeTabId = id
+    closedTabs.forEach(tab => options.onTabClosed?.(tab))
   }
 
   function moveTab(fromIndex: number, toIndex: number): void {

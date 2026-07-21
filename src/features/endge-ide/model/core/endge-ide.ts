@@ -51,10 +51,7 @@ export class EndgeIDE extends EndgeModuleController {
       EndgeIDE.tabs.save()
     })
     host._hotkeys.setCloseTabHandler(() => {
-      const id = EndgeIDE.tabs.activeTabId.value
-      if (id) {
-        EndgeIDE.tabs.closeTab(id)
-      }
+      EndgeIDE.tabs.closeActiveTabFromHotkey()
     })
     host._hotkeys.setCreateDocumentHandler(() => {
       EndgeIDE.modals.openCreateDocument()
