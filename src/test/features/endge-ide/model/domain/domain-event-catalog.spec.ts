@@ -1,4 +1,9 @@
-import { createEmptyComponentSFCPortManifest, createBuiltInComponentPortManifest, DomainSectionType } from '@endge/core'
+import {
+  createEmptyComponentSFCPortManifest,
+  createBuiltInComponentPortManifest,
+  DomainSectionType,
+  TABLE_EVENT_DEFINITIONS,
+} from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
 import { buildEventCatalogRoot } from '@/features/endge-ide/model/domain/domain-event-catalog'
@@ -24,7 +29,15 @@ describe('frontend Event catalog', () => {
     expect(root).toMatchObject({ id: 'root-events', sectionType: DomainSectionType.Event, virtual: true })
     expect(root.children?.map(node => node.name)).toEqual(['Built-in', 'Local'])
     const table = root.children?.[0]?.children?.[0]
-    expect(table?.children).toHaveLength(9)
+    expect(table?.children?.length).toBeGreaterThan(TABLE_EVENT_DEFINITIONS.length)
+    expect(table?.children?.find(node => node.identity === 'Table.click')).toMatchObject({
+      name: 'Нажатие',
+      badges: [],
+    })
+    expect(table?.children?.find(node => node.identity === 'Table.rowActivated')).toMatchObject({
+      name: 'Активация строки',
+      badges: [],
+    })
     const component = root.children?.[1]?.children?.[0]
     expect(component?.children?.map(node => node.name)).toEqual(['Собственные', 'Проброшенные'])
     expect(component?.children?.[0]?.children?.[0]).toMatchObject({

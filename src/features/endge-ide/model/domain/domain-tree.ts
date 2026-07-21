@@ -816,9 +816,9 @@ export function attachResolvedActionTree(
         origin: action.origin,
         badges: kind === 'derived'
           ? ['provided']
-          : kind === 'builtin'
-            ? ['system', 'built-in']
-            : ['local'],
+          : kind === 'local'
+            ? ['local']
+            : undefined,
       })
     }
   }

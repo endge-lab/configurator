@@ -89,12 +89,12 @@ function eventNode(
   return {
     id: `event:${identity}`,
     identity,
-    name: event.name,
+    name: event.displayName || event.name,
     type: 'file',
     docType: 'component-sfc' as DomainDocumentType,
     sectionType: DomainSectionType.Event,
     virtual: true,
-    badges: [event.payloadType, ...(event.action ? ['Action'] : [])],
+    badges: event.action ? ['Action'] : [],
     sourceDocument: ownerIdentity ? { identity: ownerIdentity, docType: 'component-sfc' as DomainDocumentType } : undefined,
     eventPort: {
       payloadType: event.payloadType,

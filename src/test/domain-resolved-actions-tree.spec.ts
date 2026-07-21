@@ -95,7 +95,7 @@ describe('domain resolved Actions tree', () => {
     expect(tableOwner).not.toHaveProperty('sourceDocument')
     const virtualActions = flatten(root).filter(node => node.type === 'file' && node.virtual && node.docType === 'action')
     expect(virtualActions).toHaveLength(4)
-    expect(virtualActions.find(node => node.identity === 'table.column.pinLeft')?.badges).toEqual(['system', 'built-in'])
+    expect(virtualActions.find(node => node.identity === 'table.column.pinLeft')?.badges).toBeUndefined()
     expect(virtualActions.find(node => node.identity === 'orders-table.refresh')?.badges).toEqual(['provided'])
   })
 })

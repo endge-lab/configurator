@@ -150,7 +150,7 @@ function beginHierarchyResize(event: PointerEvent): void {
 function resizeHierarchyPanel(event: PointerEvent): void {
   if (!isHierarchyResizing.value) { return }
   hierarchyPanelWidth.value = clampHierarchyPanelWidth(
-    hierarchyResizeStartWidth + event.clientX - hierarchyResizeStartX,
+    hierarchyResizeStartWidth + hierarchyResizeStartX - event.clientX,
   )
 }
 
@@ -164,7 +164,7 @@ function endHierarchyResize(): void {
 function resizeHierarchyPanelByKeyboard(event: KeyboardEvent): void {
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') { return }
   event.preventDefault()
-  const direction = event.key === 'ArrowRight' ? 1 : -1
+  const direction = event.key === 'ArrowLeft' ? 1 : -1
   hierarchyPanelWidth.value = clampHierarchyPanelWidth(Number(hierarchyPanelWidth.value) + direction * 24)
 }
 
@@ -569,6 +569,23 @@ onBeforeUnmount(() => {
 
       <div
         v-if="hierarchyPanelVisible && componentRenderables.length"
+        class="runtime-preview-surface__splitter runtime-preview-surface__splitter--hierarchy"
+        :data-resizing="isHierarchyResizing"
+        role="separator"
+        aria-label="Изменить ширину панели SFC hierarchy"
+        aria-orientation="vertical"
+        :aria-valuenow="Math.round(Number(hierarchyPanelWidth))"
+        :aria-valuemin="HIERARCHY_PANEL_MIN_WIDTH"
+        :aria-valuemax="Math.round(maxHierarchyPanelWidth())"
+        tabindex="0"
+        @pointerdown="beginHierarchyResize"
+        @keydown="resizeHierarchyPanelByKeyboard"
+      >
+        <span />
+      </div>
+
+      <div
+        v-if="hierarchyPanelVisible && componentRenderables.length"
         class="runtime-preview-surface__hierarchy"
         :style="{
           width: `${clampHierarchyPanelWidth(Number(hierarchyPanelWidth))}px`,
@@ -585,23 +602,6 @@ onBeforeUnmount(() => {
           @leave="clearInspectionHover"
           @unpin="unpinInspection"
         />
-      </div>
-
-      <div
-        v-if="hierarchyPanelVisible && componentRenderables.length"
-        class="runtime-preview-surface__splitter runtime-preview-surface__splitter--hierarchy"
-        :data-resizing="isHierarchyResizing"
-        role="separator"
-        aria-label="Изменить ширину панели SFC hierarchy"
-        aria-orientation="vertical"
-        :aria-valuenow="Math.round(Number(hierarchyPanelWidth))"
-        :aria-valuemin="HIERARCHY_PANEL_MIN_WIDTH"
-        :aria-valuemax="Math.round(maxHierarchyPanelWidth())"
-        tabindex="0"
-        @pointerdown="beginHierarchyResize"
-        @keydown="resizeHierarchyPanelByKeyboard"
-      >
-        <span />
       </div>
 
       <template v-if="propsPanelVisible && componentRenderables.length">
