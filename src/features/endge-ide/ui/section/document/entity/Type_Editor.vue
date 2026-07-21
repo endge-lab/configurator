@@ -27,8 +27,13 @@ import {
   visualSchemaLayoutKey,
 } from '@/features/endge-ide/model/visual-schema-workspace-state'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
 import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
 
 const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEditor | null)
 const domainStore = useDomainStore()
@@ -37,6 +42,7 @@ const activeTab = useSmartTabSelection(
   'source',
   ['general', 'legacy', 'visual', 'source'] as const,
 )
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const tabs = [
   { value: 'general', label: 'Основное', icon: Settings2 },
   { value: 'legacy', label: 'Legacy Form', icon: FilePenLine },
@@ -181,6 +187,23 @@ function updateTypeSource(value: string): void {
 function updateVisualPanelSizes(sizes: number[]): void {
   visualWorkspaceState.value.layouts[visualLayoutKey.value] = [...sizes]
 }
+
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  current.identity = current.identity.trim()
+  current.name = current.name.trim() || current.identity
+  if (!current.identity) {
+    toast.error('Identity типа не может быть пустым')
+    activeTab.value = 'general'
+    return
+  }
+
+  await EndgeIDE.tabs.save()
+}
 </script>
 
 <template>
@@ -219,7 +242,7 @@ function updateVisualPanelSizes(sizes: number[]): void {
                 class="h-7 w-7"
                 :disabled="EndgeIDE.busy.value"
                 aria-label="Сохранить"
-                @click="EndgeIDE.tabs.save()"
+                @click="save"
               >
                 <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
                 <Save v-else class="size-4" />
@@ -234,6 +257,7 @@ function updateVisualPanelSizes(sizes: number[]): void {
     <template #right>
       <TooltipProvider v-if="activeTab === 'source'">
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -284,6 +308,10 @@ function updateVisualPanelSizes(sizes: number[]): void {
     <div class="min-h-0 flex-1 overflow-hidden">
       <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
         <div class="max-w-xl space-y-5">
+          <div class="space-y-2">
+            <Label for="type-identity">Identity</Label>
+            <Input id="type-identity" v-model="editor.identity" class="font-mono" spellcheck="false" />
+          </div>
           <div class="space-y-2">
             <Label for="type-name">Название типа</Label>
             <Input id="type-name" v-model="editor.name" />
@@ -430,6 +458,7 @@ function updateVisualPanelSizes(sizes: number[]): void {
 
       <TypeSourceEditor
         v-else
+        ref="sourceEditorRef"
         :model-value="editor.source"
         :identity="editor.identity || editor.name"
         @update:model-value="updateTypeSource"

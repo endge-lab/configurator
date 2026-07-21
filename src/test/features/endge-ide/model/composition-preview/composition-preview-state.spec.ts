@@ -1,16 +1,23 @@
 import { Endge, RComposition, RQuery } from '@endge/core'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  compositionPreviewRuntime,
   destroyCompositionPreviewRuntime,
   ensureCompositionRuntimeArtifacts,
+  launchCompositionPreview,
 } from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
 
 describe('Composition preview artifacts', () => {
+  beforeEach(() => prepareCompilerContext())
+
   afterEach(async () => {
     await destroyCompositionPreviewRuntime()
+    Endge.configuration.reset()
     Endge.program.clear()
     Endge.domain.reset()
+    Endge.workspace.reset()
+    vi.restoreAllMocks()
   })
 
   it('builds nested Composition dependencies before the preview owner', () => {
@@ -62,4 +69,93 @@ defineComposition({
     expect(Endge.program.getQueryArtifact('groundhandling-query')?.status).toBe('valid')
     expect(Endge.program.getCompositionArtifact('groundhandling-default')?.status).toBe('valid')
   })
+
+  it('passes definePreviewProps literals to the preview Composition runtime', async () => {
+    vi.spyOn(Endge, 'build').mockResolvedValue(undefined)
+    const query = new RQuery()
+    query.id = 201
+    query.identity = 'preview-noop-query'
+    query.name = 'Preview noop query'
+    query.sourceVersion = 2
+    query.source = `
+defineQuery({
+  kind: 'rest',
+  request: {
+    endpoint: 'https://example.test',
+    path: '/noop',
+    method: 'GET',
+  },
+  outputs: {
+    raw: output().from(response()),
+  },
 })
+`
+    Endge.domain.addQuery(query)
+
+    await launchCompositionPreview({
+      identity: 'preview-props-composition',
+      source: `
+defineComposition({
+  props: defineProps({
+    label: field('String'),
+  }),
+  previewProps: definePreviewProps({
+    label: 'Preview label',
+  }),
+  runtimes: {
+    query: query('preview-noop-query'),
+  },
+})
+`,
+    })
+
+    expect(compositionPreviewRuntime.value?.getProps()).toEqual({
+      label: 'Preview label',
+    })
+  })
+})
+
+function prepareCompilerContext(): void {
+  Endge.workspace.apply({
+    identity: 'preview-workspace',
+    displayName: 'Preview Workspace',
+    configuration: {
+      vars: [],
+      locales: [{ code: 'en', displayName: 'English', shortLabel: 'EN', direction: 'ltr' }],
+      defaultLocale: 'en',
+      fallbackLocale: 'en',
+      themes: [{ identity: 'light', displayName: 'Light' }],
+      defaultTheme: 'light',
+      defaultAuthProfileIdentity: null,
+      sfcAdapterIds: ['native-vue'],
+      defaultSfcAdapterId: 'native-vue',
+    },
+  })
+  Endge.domain.addProject({
+    id: 101,
+    identity: 'preview-project',
+    allowedEnvironmentIds: [],
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.domain.addEnvironment({
+    id: 102,
+    identity: 'preview-environment',
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.domain.addTenant({
+    id: 103,
+    identity: 'preview-tenant',
+    code: 'preview-tenant',
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.configuration.build({
+    dataProvider: 'plain',
+    scope: {},
+    vars: {},
+    context: {
+      projectIdentity: 'preview-project',
+      environmentIdentity: 'preview-environment',
+      tenantIdentity: 'preview-tenant',
+    },
+  })
+}

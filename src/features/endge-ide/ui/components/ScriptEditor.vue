@@ -1,15 +1,14 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
+/* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
-import { AlignLeft } from 'lucide-vue-next'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
 
@@ -213,16 +212,9 @@ onBeforeUnmount(() => {
     :class="{ 'editor-wrapper--framed': showToolbar }"
   >
     <div v-if="showToolbar" class="editor-toolbar">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="editor-toolbar-button"
-        @click="formatDocument"
-      >
-        <AlignLeft class="size-4" />
-        Форматировать
-      </Button>
+      <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <SourceFormatButton :disabled="readOnly" @click="formatDocument" />
+      </div>
     </div>
     <div ref="container" class="editor" />
   </div>
@@ -251,11 +243,6 @@ onBeforeUnmount(() => {
   padding: 4px 8px;
   border-bottom: 1px solid rgb(255 255 255 / 8%);
   background: color-mix(in srgb, var(--editor-surface), white 5%);
-}
-
-.editor-toolbar-button {
-  gap: 6px;
-  color: #d7deea;
 }
 
 .editor {

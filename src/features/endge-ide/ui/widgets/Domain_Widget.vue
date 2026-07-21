@@ -58,7 +58,7 @@ import {
   Type,
   Zap,
 } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -130,6 +130,39 @@ const domainStore = useDomainStore()
 const actionRegistryVersion = ref(0)
 const unsubscribeActions = Endge.actions.subscribe(() => {
   actionRegistryVersion.value += 1
+})
+
+// ---------- temporary identity labels (Option/Alt) ----------
+const showIdentityLabels = ref(false)
+
+function onIdentityModifierKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Alt') {
+    showIdentityLabels.value = true
+  }
+}
+
+function onIdentityModifierKeyup(event: KeyboardEvent): void {
+  if (event.key === 'Alt') {
+    showIdentityLabels.value = false
+  }
+}
+
+function resetIdentityLabels(): void {
+  showIdentityLabels.value = false
+}
+
+function getNodeLabel(node: FsNode): string {
+  if (!showIdentityLabels.value || node.type !== 'file') {
+    return node.name
+  }
+
+  return node.identity?.trim() || node.name
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onIdentityModifierKeydown)
+  window.addEventListener('keyup', onIdentityModifierKeyup)
+  window.addEventListener('blur', resetIdentityLabels)
 })
 
 /** Id папки «Удалённые» для дерева и пометки сущностей. */
@@ -331,6 +364,9 @@ watch(() => contextMenu.value.open, (open) => {
 })
 onBeforeUnmount(() => {
   unsubscribeActions()
+  window.removeEventListener('keydown', onIdentityModifierKeydown)
+  window.removeEventListener('keyup', onIdentityModifierKeyup)
+  window.removeEventListener('blur', resetIdentityLabels)
   document.removeEventListener('mousedown', onContextMenuClickOutside)
   document.removeEventListener('keydown', onContextMenuKeydown)
   window.removeEventListener('resize', onWindowChange)
@@ -1573,7 +1609,7 @@ function rowClasses(item: FlatFsItem): string {
                   />
                 </template>
 
-                <span class="truncate">{{ it.node.name }}</span>
+                <span class="truncate">{{ getNodeLabel(it.node) }}</span>
                 <span
                   v-for="badge in it.node.badges ?? []"
                   :key="badge"

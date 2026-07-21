@@ -11,10 +11,10 @@ import {
 describe('type visual editor model', () => {
   it('round-trips an object Type Source through the semantic document', () => {
     const parsed = parseTypeVisualSource(`defineType({
-  identity: field('String')
+  identity: field(String)
     .description('Stable identifier'),
 
-  score: field('Number')
+  score: field(Number)
     .min(0)
     .max(1)
     .example(0.7)
@@ -44,8 +44,8 @@ describe('type visual editor model', () => {
   it('round-trips enum, union and array roots', () => {
     const sources = [
       'defineType(enumOf([\'draft\', \'active\']))',
-      'defineType(unionOf(type(\'String\'), type(\'Number\')))',
-      'defineType(arrayOf(type(\'Flight\')))',
+      'defineType(unionOf(String, Number))',
+      'defineType(arrayOf(Flight))',
     ]
 
     for (const source of sources) {
@@ -58,12 +58,12 @@ describe('type visual editor model', () => {
   it('round-trips recursive objectOf expressions without turning them into references', () => {
     const source = `defineType({
       order: field(objectOf({
-        customer: field('Customer'),
+        customer: field(Customer),
         delivery: field(objectOf({
-          city: field('String'),
+          city: field(String),
           point: field(arrayOf(objectOf({
-            x: field('Number'),
-            y: field('Number'),
+            x: field(Number),
+            y: field(Number),
           }))),
         })).optional(),
       })),
@@ -80,13 +80,16 @@ describe('type visual editor model', () => {
 
   it('round-trips inline union and array variants', () => {
     const source = `defineType(unionOf(
-      type('Known'),
-      objectOf({ value: field('String') }),
-      arrayOf(objectOf({ code: field('ID') })),
+      Known,
+      objectOf({ value: field(String) }),
+      arrayOf(objectOf({ code: field(ID) })),
     ))`
     const parsed = parseTypeVisualSource(source)
 
     expect(parsed.valid).toBe(true)
-    expect(parseTypeVisualSource(serializeTypeSourceDocument(parsed.document!)).document).toEqual(parsed.document)
+    const serialized = serializeTypeSourceDocument(parsed.document!)
+    expect(serialized).toContain('Known,')
+    expect(serialized).not.toContain(`type('Known')`)
+    expect(parseTypeVisualSource(serialized).document).toEqual(parsed.document)
   })
 })

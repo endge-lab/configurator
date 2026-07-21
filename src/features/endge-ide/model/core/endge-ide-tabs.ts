@@ -26,6 +26,7 @@ import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
+import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model/source-reference/source-reference-document-target'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
@@ -56,7 +57,6 @@ import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParamete
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
-import { resolveComponentDocument } from '@/features/endge-ide/tools/resolve-component-document'
 import TabContentWrapper from '@/features/endge-ide/ui/components/TabContentWrapper.vue'
 import ComponentDSL_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'
 import ComponentSFC_Editor from '@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'
@@ -144,6 +144,7 @@ interface EditorSession {
   view: ResolvedView
   editor: unknown | null
   model: unknown | null
+  persistedIdentity?: string
   syncBeforeSave?: () => void
   syncSystemBeforeSave?: () => void
 }
@@ -297,17 +298,24 @@ export class EndgeIDETabs {
         session?.syncBeforeSave?.()
       }
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
-      await Endge.schema.saveDocument(saveDocumentId, documentType, { model: session?.model ?? session?.editor ?? null })
-      if ((documentType === 'store' || documentType === 'mock') && session?.model && typeof session.model === 'object') {
+      await Endge.schema.saveDocument(saveDocumentId, documentType, {
+        model: session?.model ?? session?.editor ?? null,
+        previousIdentity: session?.persistedIdentity,
+      })
+      let effectiveDocumentId = saveDocumentId
+      if ((documentType === 'type' || documentType === 'store' || documentType === 'mock') && session?.model && typeof session.model === 'object') {
         const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
         if (identity) {
+          effectiveDocumentId = identity
+          if (documentType === 'type')
+            session.persistedIdentity = identity
           const tabPayload = this._getPayload<DocumentTabPayload>(activeTab.payload)
           if (tabPayload)
             tabPayload.documentId = identity
           activeTab.label = this.getDocumentLabel(identity, documentType)
         }
       }
-      const label = this.getDocumentLabel(saveDocumentId, documentType)
+      const label = this.getDocumentLabel(effectiveDocumentId, documentType)
       toast.success('Сохранено', { description: label })
     }
     catch (e) {
@@ -358,7 +366,7 @@ export class EndgeIDETabs {
 
   /** Открывает внешний документ из semantic source reference. */
   public openSourceReference(reference: SourceDocumentReference): boolean {
-    const target = this._resolveSourceReferenceTarget(reference)
+    const target = resolveSourceReferenceDocumentTarget(reference)
     if (!target) {
       toast.warning('Документ не найден', {
         description: `${this._sourceReferenceLabel(reference.target)} "${reference.identity}" не найден.`,
@@ -650,52 +658,6 @@ export class EndgeIDETabs {
     return String(composition.kind ?? 'library')
   }
 
-  private _resolveSourceReferenceTarget(reference: SourceDocumentReference): {
-    documentId: string
-    documentType: DomainDocumentType
-  } | null {
-    if (reference.target === 'query') {
-      const entity = Endge.domain.getQuery(reference.identity)
-      return entity ? { documentId: entity.identity, documentType: entity.type } : null
-    }
-    if (reference.target === 'component') {
-      return resolveComponentDocument(reference.identity)
-    }
-    if (reference.target === 'filter') {
-      const entity = Endge.domain.getFilter(reference.identity)
-      return entity ? { documentId: entity.identity, documentType: entity.type } : null
-    }
-    if (reference.target === 'type') {
-      const entity = Endge.domain.getType(reference.identity)
-      return entity && !entity.isPrimitive
-        ? { documentId: entity.name, documentType: 'type' }
-        : null
-    }
-
-    const fixedTargets = {
-      'auth-profile': { documentType: 'auth-profile', resolve: () => Endge.domain.getAuthProfile(reference.identity) },
-      'composition': { documentType: 'composition', resolve: () => Endge.domain.getComposition(reference.identity) },
-      'computation': { documentType: 'computation', resolve: () => Endge.domain.getComputation(reference.identity) },
-      'converter': { documentType: 'converter', resolve: () => Endge.domain.getConverter(reference.identity) },
-      'data-view': { documentType: 'data-view', resolve: () => Endge.domain.getDataView(reference.identity) },
-      'mock': { documentType: 'mock', resolve: () => Endge.domain.getMock(reference.identity) },
-      'store': { documentType: 'store', resolve: () => Endge.domain.getStore(reference.identity) },
-      'style': { documentType: 'style', resolve: () => Endge.domain.getStyle(reference.identity) },
-      'vocabs': { documentType: 'vocabs', resolve: () => Endge.domain.getVocab(reference.identity) },
-    } satisfies Record<
-      Exclude<SourceDocumentReference['target'], 'query' | 'component' | 'filter' | 'type'>,
-      { documentType: DomainDocumentType; resolve: () => { identity?: unknown } | null }
-    >
-    const target = fixedTargets[reference.target]
-    const entity = target.resolve()
-    if (!entity)
-      return null
-    return {
-      documentId: String(entity.identity ?? reference.identity),
-      documentType: target.documentType,
-    }
-  }
-
   private _sourceReferenceLabel(target: SourceDocumentReference['target']): string {
     return {
       'auth-profile': 'Auth profile',
@@ -913,6 +875,7 @@ export class EndgeIDETabs {
       view: { component: markRaw(Type_Editor), props: { tabContext: { editor } } },
       editor,
       model: rType,
+      persistedIdentity: rType.identity,
       syncBeforeSave: () => {
         if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
           (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(rType)

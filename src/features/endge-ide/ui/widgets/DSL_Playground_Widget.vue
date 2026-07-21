@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const DSL_DEMO_OPTIONS: { id: string, label: string, jsx: string }[] = [
@@ -28,8 +29,9 @@ const selectedDemoId = ref('')
 
 async function insertDemo(): Promise<void> {
   const option = DSL_DEMO_OPTIONS.find(item => item.id === selectedDemoId.value)
-  if (option)
+  if (option) {
     jsxScript.value = await formatJsx(option.jsx)
+  }
 }
 
 async function formatSource(): Promise<void> {
@@ -44,7 +46,9 @@ async function formatSource(): Promise<void> {
         <i class="ti ti-file-type-jsx text-orange-600 text-2xl" />
       </div>
       <div class="min-w-0 flex-1">
-        <div class="text-lg font-semibold">Legacy DSL source</div>
+        <div class="text-lg font-semibold">
+          Legacy DSL source
+        </div>
         <div class="text-xs text-muted-foreground">
           Документ доступен для просмотра и редактирования, runtime preview удалён.
         </div>
@@ -62,9 +66,9 @@ async function formatSource(): Promise<void> {
       <Button variant="outline" :disabled="!selectedDemoId" @click="insertDemo">
         Вставить
       </Button>
-      <Button variant="outline" @click="formatSource">
-        Форматировать
-      </Button>
+      <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <SourceFormatButton @click="formatSource" />
+      </div>
     </div>
 
     <Card class="flex-1 min-h-0 flex flex-col p-4">

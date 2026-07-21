@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{ modelValue: string }>()
@@ -23,14 +22,7 @@ watch(() => props.modelValue, (value) => {
   monaco.setValue(source.value)
 })
 
-async function formatDocument(): Promise<void> {
-  const formatted = await formatSource(source.value, 'typescript')
-  source.value = formatted
-  monaco.setValue(formatted)
-  emit('update:modelValue', formatted)
-}
-
-defineExpose({ formatDocument })
+defineExpose({ formatDocument: monaco.formatDocument })
 </script>
 
 <template>

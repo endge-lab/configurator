@@ -6,7 +6,7 @@ import type { RComponentSFC } from '@endge/core'
 
 import { compileComponentSFC, Endge, inspectComponentSFCVisual } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
-import { AlignLeft, Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
+import { Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,7 @@ import { createTypeRegistryContribution } from '@/features/endge-ide/source-edit
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
 
 interface ScriptEditorHandle {
@@ -288,20 +289,7 @@ async function launchPreview(): Promise<void> {
     <template #right>
       <TooltipProvider>
         <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7"
-                aria-label="Форматировать"
-                @click="sourceEditorRef?.formatDocument()"
-              >
-                <AlignLeft class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Форматировать</TooltipContent>
-          </Tooltip>
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
         </div>
       </TooltipProvider>
     </template>

@@ -6,6 +6,7 @@ export type SourceFormatLanguage
     | 'vue'
     | 'html'
     | 'css'
+    | 'scss'
     | 'json'
 
 const BASE_OPTIONS: Options = {
@@ -98,8 +99,9 @@ function exposeEndgeStylesToPrettier(source: string): ProtectedSource {
   const styles: Array<{ marker: string, hadLanguage: boolean }> = []
   let markerPrefix = 'data-endge-format-style-'
 
-  while (source.includes(markerPrefix))
+  while (source.includes(markerPrefix)) {
     markerPrefix = `x-${markerPrefix}`
+  }
 
   const protectedSource = source.replace(
     VUE_STYLE_OPEN_TAG_RE,
@@ -110,8 +112,9 @@ function exposeEndgeStylesToPrettier(source: string): ProtectedSource {
       ).trim().toLowerCase()
       const hadLanguage = languageMatch != null
 
-      if (hadLanguage && language !== 'endgecss')
+      if (hadLanguage && language !== 'endgecss') {
         return openTag
+      }
 
       const marker = `${markerPrefix}${styles.length}`
       styles.push({ marker, hadLanguage })
@@ -126,7 +129,7 @@ function exposeEndgeStylesToPrettier(source: string): ProtectedSource {
 
   return {
     source: protectedSource,
-    restore: (formatted) => styles.reduce((result, style) => {
+    restore: formatted => styles.reduce((result, style) => {
       const blockPattern = new RegExp(
         `<style\\b([^>]*?)\\s${escapeRegExp(style.marker)}(?:="")?([^>]*)>`
         + `([\\s\\S]*?)<\\/style\\s*>`,
@@ -301,6 +304,10 @@ async function loadPrettierConfig(
     case 'css': {
       const postcssPlugin = (await import('prettier/plugins/postcss')).default
       return { parser: 'css', plugins: [postcssPlugin] }
+    }
+    case 'scss': {
+      const postcssPlugin = (await import('prettier/plugins/postcss')).default
+      return { parser: 'scss', plugins: [postcssPlugin] }
     }
     case 'vue': {
       const [

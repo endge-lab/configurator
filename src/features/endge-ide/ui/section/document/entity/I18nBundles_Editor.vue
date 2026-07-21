@@ -4,7 +4,6 @@ import type { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI1
 
 import { Endge } from '@endge/core'
 import {
-  AlignLeft,
   Code2,
   Loader2,
   Plus,
@@ -43,6 +42,7 @@ import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-defaul
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
@@ -406,20 +406,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     <template #right>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip v-if="activePanel === 'source'">
-            <TooltipTrigger as-child>
-              <Button
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                aria-label="Форматировать"
-                @click="sourceEditorRef?.formatDocument()"
-              >
-                <AlignLeft class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Форматировать</TooltipContent>
-          </Tooltip>
+          <SourceFormatButton
+            v-if="activePanel === 'source'"
+            @click="sourceEditorRef?.formatDocument()"
+          />
           <Tooltip>
             <TooltipTrigger as-child>
               <Button

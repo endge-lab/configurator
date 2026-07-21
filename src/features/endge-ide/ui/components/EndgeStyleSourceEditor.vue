@@ -11,6 +11,7 @@ const monaco = useEndgeSourceMonaco({
   container,
   sourceKind: 'style',
   owner: 'endgecss',
+  formatLanguage: 'scss',
   value: () => source.value,
   onChange: (value) => {
     source.value = value
@@ -22,6 +23,8 @@ watch(() => props.modelValue, (value) => {
   source.value = value ?? ''
   monaco.setValue(source.value)
 })
+
+defineExpose({ formatDocument: monaco.formatDocument })
 </script>
 
 <template>

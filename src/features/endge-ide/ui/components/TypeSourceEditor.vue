@@ -31,6 +31,8 @@ watch(
   () => props.modelValue,
   value => monacoAdapter.setValue(value),
 )
+
+defineExpose({ formatDocument: monacoAdapter.formatDocument })
 </script>
 
 <template>
@@ -55,5 +57,15 @@ watch(
   height: 100%;
   min-height: 280px;
   background: var(--editor-surface);
+}
+</style>
+
+<style>
+.monaco-editor .endge-source-type-reference--resolved {
+  color: #4ade80 !important;
+}
+
+.monaco-editor .endge-source-type-reference--unresolved {
+  color: #f87171 !important;
 }
 </style>

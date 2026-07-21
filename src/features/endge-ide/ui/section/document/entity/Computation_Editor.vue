@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor'
 
-import { AlignLeft, Code2, Loader2, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
+import { Code2, Loader2, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -19,6 +19,7 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/dia
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
 interface ScriptEditorHandle {
@@ -97,9 +98,7 @@ async function save(): Promise<void> {
 
     <template #right>
       <div v-if="activeTab === 'implementation'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
-        <Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Форматировать" @click="sourceEditorRef?.formatDocument()">
-          <AlignLeft class="size-4" />
-        </Button>
+        <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
       </div>
     </template>
 

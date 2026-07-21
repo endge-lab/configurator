@@ -31,6 +31,11 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/dia
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
 
 const tabs = EndgeIDE.tabs
 const editor = computed<RQueryEditor | null>(
@@ -45,6 +50,7 @@ const diagnosticsEntityRef = computed(() =>
   createEditorDiagnosticsEntityRef('query', editor.value),
 )
 const runQueryLoading = ref(false)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -248,6 +254,7 @@ async function buildQueryArtifact(
           v-if="activeTab === 'source'"
           class="flex items-center rounded-md border bg-muted/40 p-0.5"
         >
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -299,6 +306,7 @@ async function buildQueryArtifact(
         class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0"
       >
         <QuerySourceEditor
+          ref="sourceEditorRef"
           :model-value="editor.source"
           class="min-h-0 flex-1"
           @update:model-value="(value) => editor?.applySourceText(value)"

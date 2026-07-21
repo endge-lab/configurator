@@ -1790,11 +1790,13 @@ onBeforeUnmount(() => {
                 :model-value="metadataDraft"
                 language="json"
                 format-language="json"
+                show-toolbar
                 class="min-h-0 flex-1"
                 min-height="100%"
                 :read-only="!metadataProjection.editable"
                 @update:model-value="updateMetadataDraft"
                 @blur="commitMetadata"
+                @format="commitMetadata"
               />
 
               <div

@@ -34,9 +34,11 @@ import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/
 import FilterLegacyFieldsEditor from '@/features/endge-ide/ui/components/FilterLegacyFieldsEditor.vue'
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 
 interface FilterSourceEditorHandle {
+  formatDocument: () => Promise<void>
   expandOutput: () => void
   collapseOutput: () => void
   toggleOutput: () => void
@@ -157,6 +159,10 @@ function updateOutputState(value: FilterOutputState): void {
     <template #right>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton
+            v-if="activeTab === 'source'"
+            @click="sourceEditorRef?.formatDocument()"
+          />
           <Tooltip>
             <TooltipTrigger as-child>
               <Button

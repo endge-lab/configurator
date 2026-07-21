@@ -30,6 +30,23 @@ defineProps<{ flight: { id: string } }>()
     ).resolves.toBe('const flight: { id: string } = { id: \'SU100\' }\n')
   })
 
+  it('formats standalone EndgeCSS with its SCSS-compatible grammar', async () => {
+    const source = `Table{&::part(cell){border-right:1px solid #355a82}}// Grid lines
+@theme dark{Table{color:#fff}}`
+
+    await expect(formatSource(source, 'scss')).resolves.toBe(`Table {
+  &::part(cell) {
+    border-right: 1px solid #355a82;
+  }
+} // Grid lines
+@theme dark {
+  Table {
+    color: #fff;
+  }
+}
+`)
+  })
+
   it('preserves Endge DataPath selectors instead of converting them to assignments', async () => {
     const source = `<template><Text :ACTail="row.arrivalLeg.attributes[name = 'ACTail']">{{ row.arrivalLeg.attributes[code='Arrival'].text }}</Text></template>`
 

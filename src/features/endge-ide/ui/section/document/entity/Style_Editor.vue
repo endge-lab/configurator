@@ -19,11 +19,17 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import EndgeStyleSourceEditor from '@/features/endge-ide/ui/components/EndgeStyleSourceEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
 
 const props = defineProps<{ tabContext?: { editor?: RStyleEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const splitRatio = ref(0.68)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compilation = computed(() => compileEndgeCSS(editor.value?.source ?? '', {
   identity: editor.value?.identity || 'draft-style',
 }))
@@ -59,6 +65,12 @@ async function save(): Promise<void> {
       <div v-if="editor.systemManaged" class="flex min-w-0 items-center gap-1.5">
         <span class="shrink-0 text-muted-foreground">kind:</span>
         <span class="min-w-0 truncate font-mono text-foreground/80">system</span>
+      </div>
+    </template>
+
+    <template #right>
+      <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
       </div>
     </template>
 
@@ -115,14 +127,16 @@ async function save(): Promise<void> {
           <Label for="style-source-version">Source version</Label>
           <Input id="style-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
         </div>
-        <p class="text-xs text-muted-foreground">Payload stores only source. AST, semantic artifact and DOM CSS are derived during compilation.</p>
+        <p class="text-xs text-muted-foreground">
+          Payload stores only source. AST, semantic artifact and DOM CSS are derived during compilation.
+        </p>
       </div>
     </div>
 
     <div v-else class="flex min-h-0 flex-1 flex-col">
       <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="true" separator-label="Изменить ширину EndgeCSS и CSS preview">
         <template #editor>
-          <EndgeStyleSourceEditor :model-value="editor.source" @update:model-value="applySourceText" />
+          <EndgeStyleSourceEditor ref="sourceEditorRef" :model-value="editor.source" @update:model-value="applySourceText" />
         </template>
         <template #output>
           <div class="flex h-full min-h-0 flex-col bg-slate-950 text-slate-200">

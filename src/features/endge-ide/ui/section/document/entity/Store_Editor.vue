@@ -30,7 +30,12 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
 
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
@@ -41,6 +46,7 @@ const activeTab = useSmartTabSelection(
   ['general', 'source', 'artifact', 'diagnostics'] as const,
 )
 const launchLoading = ref(false)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compiled = computed(() =>
   editor.value ? Endge.source.compile('store', editor.value.source) : null,
 )
@@ -218,6 +224,10 @@ async function launchPreview(): Promise<void> {
     <template #right>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton
+            v-if="activeTab === 'source'"
+            @click="sourceEditorRef?.formatDocument()"
+          />
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -264,6 +274,7 @@ async function launchPreview(): Promise<void> {
       </div>
       <StoreSourceEditor
         v-else-if="activeTab === 'source'"
+        ref="sourceEditorRef"
         :model-value="editor.source"
         @update:model-value="updateSource"
       />

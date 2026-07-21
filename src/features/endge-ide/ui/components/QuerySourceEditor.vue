@@ -26,7 +26,7 @@ const monacoAdapter = useEndgeSourceMonaco({
   container,
   sourceKind: 'query',
   value: () => source.value,
-  onChange: value => { source.value = value },
+  onChange: (value) => { source.value = value },
   owner: 'endge-query-source',
   onReady: (instance) => {
     editor = instance
@@ -157,6 +157,8 @@ watch(
     monacoAdapter.setValue(value)
   },
 )
+
+defineExpose({ formatDocument: monacoAdapter.formatDocument })
 
 onBeforeUnmount(() => {
   container.value?.removeEventListener('dragover', onEditorDragOver, true)

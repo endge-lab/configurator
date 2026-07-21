@@ -755,7 +755,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                     <span class="type-visual-editor__colon">:</span>
                     <div
                       v-if="row.local && !props.readonly && row.fieldPath && canSelectFieldType(row.field)"
-                      class="contents"
+                      class="type-visual-editor__type-control"
                       @click.capture="openTypeFromModifiedClick(row.field.type, $event)"
                     >
                       <SearchableSelect
@@ -789,7 +789,6 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                     <span v-if="row.field.array" class="type-visual-editor__modifier">[]</span>
                     <span v-if="row.field.optional" class="type-visual-editor__modifier">optional</span>
                     <span v-if="row.cycle" class="type-visual-editor__modifier">recursive</span>
-                    <div class="flex-1" />
                     <div class="type-visual-editor__row-actions">
                       <template v-if="row.local && !props.readonly">
                         <DropdownMenu>
@@ -1227,12 +1226,13 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__drag:active { cursor: grabbing; }
 .type-visual-editor__chevron { display: flex; height: 18px; width: 18px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__chevron:hover { background: var(--muted); color: var(--foreground); }
-.type-visual-editor__name-input { height: 25px; min-width: 88px; max-width: 180px; flex: 0 1 180px; border-color: transparent; background: transparent; padding: 0 3px; font-family: inherit; font-size: 10.5px; box-shadow: none; }
+.type-visual-editor__name-input { height: 25px; min-width: 88px; flex: 1 1 180px; border-color: transparent; background: transparent; padding: 0 3px; font-family: inherit; font-size: 10.5px; box-shadow: none; }
 .type-visual-editor__name-input:hover { border-color: var(--border); }
-.type-visual-editor__resolved-name { overflow: hidden; max-width: 180px; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; }
+.type-visual-editor__resolved-name { min-width: 0; flex: 1 1 180px; overflow: hidden; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; }
 .type-visual-editor__colon { color: var(--muted-foreground); }
+.type-visual-editor__type-control { min-width: 90px; max-width: 160px; flex: 0 1 160px; }
 .type-visual-editor__type-select { height: 25px; min-width: 90px; max-width: 160px; border-color: transparent; background: transparent; padding: 0 5px; font-family: inherit; font-size: 11px; font-weight: 500; box-shadow: none; }
-.type-visual-editor__type-link { overflow: hidden; max-width: 150px; text-overflow: ellipsis; white-space: nowrap; }
+.type-visual-editor__type-link { min-width: 0; max-width: 150px; flex: 0 1 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .type-visual-editor__type--string { color: #0b9a6d; }
 .type-visual-editor__type--number { color: #dc7625; }
 .type-visual-editor__type--boolean { color: #c74b86; }
@@ -1240,7 +1240,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__type--inline { color: #8b5cf6; font-weight: 600; }
 .type-visual-editor__type--neutral { color: var(--muted-foreground); }
 .type-visual-editor__modifier { border: 1px solid var(--border); padding: 2px 4px; color: var(--muted-foreground); font-size: 9px; line-height: 1; }
-.type-visual-editor__row-actions { display: flex; align-items: center; opacity: .4; }
+.type-visual-editor__row-actions { display: flex; flex-shrink: 0; align-items: center; margin-left: auto; opacity: .4; }
 .type-visual-editor__row-actions button { display: inline-flex; height: 25px; width: 25px; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__row-actions button:hover { background: var(--muted); color: var(--foreground); }
 .type-visual-editor__row-actions button:last-child:hover { color: var(--destructive); }

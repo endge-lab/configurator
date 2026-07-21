@@ -5,7 +5,7 @@ import type {
   RuntimeHostInputSource,
 } from '@endge/core'
 
-import { Endge, RComposition } from '@endge/core'
+import { Endge, materializeCompositionPreviewProps, RComposition } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 
 import {
@@ -103,10 +103,12 @@ export async function launchCompositionPreview(input: CompositionPreviewLaunchIn
     await disposeCompositionPreviewRuntime()
     await destroyPreviewRuntime('composition', model.identity)
     const dataRuntimes = resolvePreviewStoreRuntimes(artifact.payload.data)
+    const props = materializeCompositionPreviewProps(artifact.payload.previewProps)
     const runtime = configuratorPreviewAppScope.execute(model, {
       meta: {
         ...configuratorPreviewMeta(),
         dataRuntimes,
+        input: { kind: 'local', props },
       },
     }) as CompositionRuntimeHost | null
     if (!runtime || runtime.entityType !== 'composition') {

@@ -4,7 +4,6 @@ import type * as Monaco from 'monaco-editor'
 import { Endge } from '@endge/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
@@ -63,13 +62,12 @@ function toggleOutput(): void {
   inlinePreviewCollapsed.value = !inlinePreviewCollapsed.value
 }
 
-async function formatDocument(): Promise<void> {
-  const formatted = await formatSource(editor?.getValue() ?? source.value, 'typescript')
-  source.value = formatted
-  monacoAdapter.setValue(formatted)
-}
-
-defineExpose({ expandOutput, collapseOutput, toggleOutput, formatDocument })
+defineExpose({
+  expandOutput,
+  collapseOutput,
+  toggleOutput,
+  formatDocument: monacoAdapter.formatDocument,
+})
 
 /** Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ. */
 function scheduleInlinePreview(): void {

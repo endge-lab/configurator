@@ -1,5 +1,6 @@
 /* eslint-disable style/max-statements-per-line */
-import type { SourceKind, SourceLanguageSyntaxDefinition } from '@endge/core'
+import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
+import type { SourceKind, SourceLanguageSemanticHighlight, SourceLanguageSyntaxDefinition } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { Ref } from 'vue'
 
@@ -9,6 +10,8 @@ import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
+import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 
 const ENDGE_SOURCE_DARK_THEME = 'endge-source-dark'
@@ -33,6 +36,7 @@ export interface UseEndgeSourceMonacoOptions {
   onChange: (value: string) => void
   owner?: string
   ownerIdentity?: () => string | undefined
+  formatLanguage?: SourceFormatLanguage
   onReady?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
 }
 
@@ -47,29 +51,32 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const syntax = languageStrategy.syntax
   let completionDisposable: Monaco.IDisposable | null = null
   let contentDisposable: Monaco.IDisposable | null = null
-  let openReferenceDisposable: Monaco.IDisposable | null = null
-  let mouseDisposable: Monaco.IDisposable | null = null
+  let referenceNavigationDisposable: Monaco.IDisposable | null = null
   let hoverDisposable: Monaco.IDisposable | null = null
+  let semanticHighlights: Monaco.editor.IEditorDecorationsCollection | null = null
 
   const typeCatalog = () => {
     const compiled = Endge.program.getTypeCatalog()
-    if (compiled.length) { return compiled }
-    return Endge.domain.getTypes().map((type) => {
-      const primitiveKind = String(type.meta?.primitiveKind ?? '').trim()
-      return {
-        id: type.id,
-        identity: type.identity,
-        displayName: type.displayName || type.name || type.identity,
-        category: primitiveKind === 'reference'
-          ? 'reference' as const
-          : type.isPrimitive
-            ? 'primitive' as const
-            : 'user' as const,
-        sourceVersion: Number(type.sourceVersion ?? 1) || 1,
-        definition: null,
-        status: 'valid' as const,
-      }
-    })
+    const compiledIdentities = new Set(compiled.map(type => type.identity))
+    const domainFallback = Endge.domain.getTypes()
+      .filter(type => !compiledIdentities.has(type.identity))
+      .map((type) => {
+        const primitiveKind = String(type.meta?.primitiveKind ?? '').trim()
+        return {
+          id: type.id,
+          identity: type.identity,
+          displayName: type.displayName || type.name || type.identity,
+          category: primitiveKind === 'reference'
+            ? 'reference' as const
+            : type.isPrimitive
+              ? 'primitive' as const
+              : 'user' as const,
+          sourceVersion: Number(type.sourceVersion ?? 1) || 1,
+          definition: null,
+          status: 'valid' as const,
+        }
+      })
+    return [...compiled, ...domainFallback]
   }
 
   const languageContext = (source: string, position?: Monaco.Position) => ({
@@ -90,12 +97,43 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     const diagnostics = (Endge.source.validate(options.sourceKind, model.getValue(), context).diagnostics ?? []) as EndgeSourceDiagnostic[]
     diagnosticsCount.value = diagnostics.length
     monaco.editor.setModelMarkers(model, markerOwner, diagnostics.map(item => toMarker(model, item)))
+    semanticHighlights?.set(
+      Endge.source.semanticHighlights(options.sourceKind, context)
+        .map(item => toSemanticDecoration(model, item)),
+    )
   }
 
   const setValue = (value: string) => {
     if (editor.value && editor.value.getValue() !== value) {
       editor.value.setValue(value)
       validate()
+    }
+  }
+
+  const formatDocument = async (): Promise<void> => {
+    const instance = editor.value
+    const model = instance?.getModel()
+    if (!instance || !model) { return }
+
+    try {
+      const formatted = await formatSource(
+        Endge.source.normalize(options.sourceKind, model.getValue()),
+        options.formatLanguage ?? 'typescript',
+      )
+      if (formatted === model.getValue()) { return }
+
+      instance.pushUndoStop()
+      instance.executeEdits('format-document', [{
+        range: model.getFullModelRange(),
+        text: formatted,
+        forceMoveMarkers: true,
+      }])
+      instance.pushUndoStop()
+    }
+    catch (error) {
+      toast.error('Не удалось форматировать source', {
+        description: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 
@@ -147,28 +185,13 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       scrollBeyondLastLine: true,
       padding: { bottom: 10 },
     })
-    openReferenceDisposable = editor.value.addAction({
-      id: 'endge.open-source-reference',
-      label: 'Открыть связанный документ',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-      run(instance) {
-        const model = instance.getModel()
-        const position = instance.getPosition()
-        if (!model || !position) {
-          return
-        }
-        if (!openReference(model, position)) {
-          toast.info('Под курсором нет ссылки на документ')
-        }
-      },
-    })
-    mouseDisposable = editor.value.onMouseDown((event) => {
-      const position = event.target.position
-      if (!position || (!event.event.ctrlKey && !event.event.metaKey) || !event.event.leftButton) { return }
-      if (openReference(editor.value!.getModel(), position)) {
-        event.event.preventDefault()
-        event.event.stopPropagation()
-      }
+    semanticHighlights = editor.value.createDecorationsCollection()
+    referenceNavigationDisposable = installMonacoReferenceNavigation({
+      monaco,
+      editor: editor.value,
+      actionId: 'endge.open-source-reference',
+      openAt: position => openReference(editor.value?.getModel() ?? null, position),
+      onMissing: () => toast.info('Под курсором нет ссылки на документ'),
     })
     hoverDisposable = monaco.languages.registerHoverProvider(languageId, {
       provideHover(model, position) {
@@ -177,19 +200,28 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
           options.sourceKind,
           languageContext(model.getValue(), position),
         )
-        if (!reference || reference.target !== 'type') { return null }
-        const type = typeCatalog().find(item => item.identity === reference.identity)
-        if (!type) { return null }
+        if (!reference) { return null }
+        const type = reference.target === 'type'
+          ? typeCatalog().find(item => item.identity === reference.identity)
+          : null
+        if (reference.target === 'type' && !type) { return null }
+        const isOpenableType = type?.category === 'user'
         return {
           range: monaco.Range.fromPositions(
             model.getPositionAt(reference.range.start),
             model.getPositionAt(reference.range.end),
           ),
-          contents: [
-            { value: `**${type.identity}**` },
-            { value: `${type.category} type · ${type.displayName}` },
-            ...(type.category === 'user' ? [{ value: 'Cmd/Ctrl + click — open Type Source' }] : []),
-          ],
+          contents: type
+            ? [
+                { value: `**${type.identity}**` },
+                { value: `${type.category} type · ${type.displayName}` },
+                ...(isOpenableType ? [{ value: 'Cmd/Ctrl + click — open Type Source' }] : []),
+              ]
+            : [
+                { value: `**${reference.identity}**` },
+                { value: `${reference.target} document` },
+                { value: 'Cmd/Ctrl + click — open document' },
+              ],
         }
       },
     })
@@ -206,15 +238,16 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     if (model) { monaco.editor.setModelMarkers(model, markerOwner, []) }
     contentDisposable?.dispose()
     completionDisposable?.dispose()
-    openReferenceDisposable?.dispose()
-    mouseDisposable?.dispose()
+    referenceNavigationDisposable?.dispose()
     hoverDisposable?.dispose()
+    semanticHighlights?.clear()
+    semanticHighlights = null
     editor.value?.dispose()
     model?.dispose()
     editor.value = null
   })
 
-  return { editor, diagnosticsCount, setValue, validate, languageId }
+  return { editor, diagnosticsCount, setValue, validate, formatDocument, languageId }
 
   function openReference(model: Monaco.editor.ITextModel | null, position: Monaco.Position): boolean {
     if (!model) { return false }
@@ -291,5 +324,22 @@ function toMarker(model: Monaco.editor.ITextModel, diagnostic: EndgeSourceDiagno
     endColumn: endPosition.column === startPosition.column && endPosition.lineNumber === startPosition.lineNumber
       ? endPosition.column + 1
       : endPosition.column,
+  }
+}
+
+function toSemanticDecoration(
+  model: Monaco.editor.ITextModel,
+  highlight: SourceLanguageSemanticHighlight,
+): Monaco.editor.IModelDeltaDecoration {
+  return {
+    range: monaco.Range.fromPositions(
+      model.getPositionAt(highlight.range.start),
+      model.getPositionAt(highlight.range.end),
+    ),
+    options: {
+      inlineClassName: highlight.status === 'resolved'
+        ? 'endge-source-type-reference--resolved'
+        : 'endge-source-type-reference--unresolved',
+    },
   }
 }

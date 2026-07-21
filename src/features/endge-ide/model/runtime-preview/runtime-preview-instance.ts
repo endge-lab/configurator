@@ -20,7 +20,7 @@ import type {
   StoreRuntimeHost,
 } from '@endge/core'
 
-import { Endge, RComponentSFC } from '@endge/core'
+import { Endge, materializeCompositionPreviewProps, RComponentSFC } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -104,9 +104,14 @@ export class RuntimePreviewInstance {
         for (const handle of this._project.compositions.getAll()) { await handle.activate() }
       }
       else if (this.target.entityType === 'composition') {
-        this._composition = this._draft
-          ? await this.mountDraftComposition(this._draft)
-          : await Endge.runtime.composition.mount(this.target.identity)
+        if (this._draft) {
+          this._composition = await this.mountDraftComposition(this._draft)
+        }
+        else {
+          const artifact = Endge.program.getCompositionArtifact(this.target.identity)
+          const props = materializeCompositionPreviewProps(artifact?.payload.previewProps)
+          this._composition = await Endge.runtime.composition.mount(this.target.identity, { props })
+        }
       }
       else if (this.target.entityType === 'component-sfc') {
         this._component = await this.mountComponent(this.target.identity, this._draft)
@@ -358,6 +363,10 @@ export class RuntimePreviewInstance {
       meta: {
         mode: 'debug-preview',
         dataRuntimes: resolvePreviewStoreRuntimes(artifact.payload.data),
+        input: {
+          kind: 'local',
+          props: materializeCompositionPreviewProps(artifact.payload.previewProps),
+        },
       },
     }) as CompositionRuntimeHost | null
     if (!host) { throw new Error(`[RuntimePreview] Composition "${this.target.identity}" cannot be mounted.`) }

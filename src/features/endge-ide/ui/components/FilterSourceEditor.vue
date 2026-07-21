@@ -66,7 +66,12 @@ function toggleOutput(): void {
   inlinePreviewCollapsed.value = !inlinePreviewCollapsed.value
 }
 
-defineExpose({ expandOutput, collapseOutput, toggleOutput })
+defineExpose({
+  expandOutput,
+  collapseOutput,
+  toggleOutput,
+  formatDocument: monaco.formatDocument,
+})
 
 /** Обновляет preview после паузы ввода, не компилируя Filter на каждый символ. */
 function scheduleInlinePreview(): void {

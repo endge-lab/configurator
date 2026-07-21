@@ -4,7 +4,6 @@ import type { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEdit
 
 import { Endge } from '@endge/core'
 import {
-  AlignLeft,
   Cable,
   FileText,
   Loader2,
@@ -39,6 +38,7 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/dia
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>
@@ -230,20 +230,7 @@ async function save(): Promise<void> {
               </SelectContent>
             </Select>
 
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-7 w-7"
-                  aria-label="Форматировать"
-                  @click="sourceEditorRef?.formatDocument()"
-                >
-                  <AlignLeft class="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Форматировать</TooltipContent>
-            </Tooltip>
+            <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
           </div>
         </template>
       </TooltipProvider>

@@ -2,9 +2,11 @@
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
 import { compileComponentSFC, Endge } from '@endge/core'
+import { toast } from 'vue-sonner'
 
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
+import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 
 const BUILTINS = new Set([
   'Array',
@@ -131,16 +133,18 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
           }
         },
       })
-      const mouse = editor.onMouseDown((event) => {
-        const position = event.target.position
-        if (!position || (!event.event.ctrlKey && !event.event.metaKey) || !event.event.leftButton) { return }
-        const identity = model.getWordAtPosition(position)?.word
-        if (identity && localTypeDeclarations(model.getValue()).has(identity)) { return }
-        const type = identity ? catalog().find(item => item.identity === identity) : null
-        if (!type || type.category !== 'user') { return }
-        event.event.preventDefault()
-        event.event.stopPropagation()
-        EndgeIDE.tabs.openSourceReference({ target: 'type', identity: type.identity, range: { start: 0, end: 0 } })
+      const navigation = installMonacoReferenceNavigation({
+        monaco,
+        editor,
+        actionId: 'endge.open-type-reference',
+        openAt(position) {
+          const identity = model.getWordAtPosition(position)?.word
+          if (identity && localTypeDeclarations(model.getValue()).has(identity)) { return false }
+          const type = identity ? catalog().find(item => item.identity === identity) : null
+          if (!type || type.category !== 'user') { return false }
+          return EndgeIDE.tabs.openSourceReference({ target: 'type', identity: type.identity, range: { start: 0, end: 0 } })
+        },
+        onMissing: () => toast.info('Под курсором нет ссылки на документ'),
       })
       let validateTimer: ReturnType<typeof setTimeout> | null = null
       const content = model.onDidChangeContent(() => {
@@ -157,7 +161,7 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
           monaco.editor.setModelMarkers(model, 'endge-type-registry', [])
           completion.dispose()
           hover.dispose()
-          mouse.dispose()
+          navigation.dispose()
           content.dispose()
         },
       }
