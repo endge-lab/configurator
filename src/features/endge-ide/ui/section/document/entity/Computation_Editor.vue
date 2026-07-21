@@ -58,7 +58,15 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <SourceDocumentEditorShell v-if="editor" :document-id="editor.id" :identity="editor.identity">
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="computation"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">

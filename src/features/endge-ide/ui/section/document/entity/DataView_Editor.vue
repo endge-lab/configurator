@@ -180,6 +180,10 @@ async function runPreview(): Promise<void> {
     v-else
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="data-view"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>

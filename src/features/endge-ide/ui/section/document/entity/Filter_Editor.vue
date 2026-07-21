@@ -99,6 +99,10 @@ function updateOutputState(value: FilterOutputState): void {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.displayName"
+    document-type="default-filter"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>

@@ -127,6 +127,9 @@ async function save(): Promise<void> {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="mock"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>

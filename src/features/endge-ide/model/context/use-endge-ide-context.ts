@@ -20,6 +20,16 @@ export function useEndgeIDEContext() {
     },
     switchContext: (next: Partial<EndgeExecutionContext>) => EndgeIDEContext.switchContext(next),
     reloadCurrentContext: () => EndgeIDEContext.reloadCurrentContext(),
+    isMockEnabled: () => {
+      void version.value
+      return EndgeIDEContext.isMockEnabled
+    },
+    isDataModeOverridden: () => {
+      void version.value
+      return EndgeIDEContext.isDataModeOverridden
+    },
+    setMockEnabled: (enabled: boolean) => EndgeIDEContext.setMockEnabled(enabled),
+    clearDataModeOverride: () => EndgeIDEContext.clearDataModeOverride(),
     isSwitching: () => {
       void version.value
       return EndgeIDEContext.isSwitchingContext

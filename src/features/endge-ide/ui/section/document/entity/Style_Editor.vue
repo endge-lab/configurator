@@ -60,7 +60,15 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <SourceDocumentEditorShell v-if="editor" :document-id="editor.id" :identity="editor.identity">
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="style"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
     <template #metadata-after>
       <div v-if="editor.systemManaged" class="flex min-w-0 items-center gap-1.5">
         <span class="shrink-0 text-muted-foreground">kind:</span>

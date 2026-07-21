@@ -54,7 +54,7 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
 const sections = [
   {
     id: 'general',
-    label: 'Общие',
+    label: 'Основное',
     icon: Settings2,
   },
   {
@@ -447,6 +447,7 @@ function isEqual(left: unknown, right: unknown): boolean {
 
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
+            <slot name="general" />
             <ConfigurationOverrideField label="SSE endpoint" :uses-parent-value="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
               <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
                 <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />

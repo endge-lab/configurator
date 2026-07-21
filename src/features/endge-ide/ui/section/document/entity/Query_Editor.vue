@@ -136,6 +136,10 @@ async function buildQueryArtifact(
     v-else
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="query-rest"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>

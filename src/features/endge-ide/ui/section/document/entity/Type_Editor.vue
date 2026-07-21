@@ -211,6 +211,10 @@ async function save(): Promise<void> {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity || editor.name"
+    :display-name="editor.name"
+    document-type="type"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>

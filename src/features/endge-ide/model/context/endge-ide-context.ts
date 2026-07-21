@@ -8,6 +8,7 @@ import {
 } from '@endge/core'
 
 import { registerEndgeMockProviders } from '@/features/endge-ide/model/bootstrap/endge-mock-providers'
+import { configuratorDataModeRepository } from '@/features/endge-ide/model/context/configurator-data-mode-repository'
 
 export interface EndgeIDESurfaceLifecycle {
   beforeContextReset?: () => Promise<void> | void
@@ -39,6 +40,7 @@ export class EndgeIDEContext {
 
     registerEndgeMockProviders()
     await Endge.boot(ctx)
+    this._restoreDataModeOverride()
     this._assertWorkspaceRendererReady()
 
     this._isInitialized = true
@@ -189,6 +191,18 @@ export class EndgeIDEContext {
     }
   }
 
+  /** Restores the Configurator-only override after Workspace has been loaded by Endge.boot(). */
+  private static _restoreDataModeOverride(): void {
+    const workspaceIdentity = Endge.workspace.current.identity
+    const mode = configuratorDataModeRepository.read(workspaceIdentity)
+    if (mode) {
+      Endge.context.setDataMode(mode)
+    }
+    else {
+      Endge.context.clearDataModeOverride()
+    }
+  }
+
   private static _assertWorkspaceRendererReady(): void {
     const adapter = Endge.uiRegistry.adapters.requireActive({
       protocol: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
@@ -217,6 +231,31 @@ export class EndgeIDEContext {
 
   static get currentContext(): Readonly<Partial<EndgeExecutionContext>> {
     return this._currentContext
+  }
+
+  /** Returns the effective data mode used by Store fixtures and Query execution. */
+  static get isMockEnabled(): boolean {
+    return Endge.context.isMockEnabled
+  }
+
+  /** Shows whether the Configurator currently overrides the Workspace default. */
+  static get isDataModeOverridden(): boolean {
+    return Endge.context.isDataModeOverridden
+  }
+
+  /** Updates mock mode without rebuilding the immutable structural context. */
+  public static setMockEnabled(enabled: boolean): void {
+    const mode = enabled ? 'mock' : 'live'
+    configuratorDataModeRepository.write(Endge.workspace.current.identity, mode)
+    Endge.context.setDataMode(mode)
+    this._notify()
+  }
+
+  /** Returns data execution to the persisted Workspace default. */
+  public static clearDataModeOverride(): void {
+    configuratorDataModeRepository.clear(Endge.workspace.current.identity)
+    Endge.context.clearDataModeOverride()
+    this._notify()
   }
 }
 

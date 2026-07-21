@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RVocabsEditor }
@@ -86,11 +87,15 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col min-h-0">
-    <div class="p-3 border-b flex items-center justify-between gap-3 shrink-0">
-      <div class="text-lg font-semibold truncate">
-        Словарь - {{ editor?.displayName ?? '-' }}
-      </div>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.displayName"
+    document-type="vocabs"
+    :dependency-draft="editor"
+  >
+    <template #right>
       <div class="flex items-center gap-2">
         <TooltipProvider :delay-duration="300">
           <Tooltip>
@@ -111,7 +116,7 @@ async function save(): Promise<void> {
         </TooltipProvider>
         <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
       </div>
-    </div>
+    </template>
 
     <ScrollArea class="flex-1 px-4 py-3">
       <div class="max-w-3xl space-y-6">
@@ -184,5 +189,5 @@ async function save(): Promise<void> {
         </Card>
       </div>
     </ScrollArea>
-  </div>
+  </SourceDocumentEditorShell>
 </template>

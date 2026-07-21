@@ -4,8 +4,15 @@ import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-co
 
 const mocks = vi.hoisted(() => ({
   executionContext: {} as Record<string, unknown>,
+  mockEnabled: false,
+  dataModeOverridden: false,
   boot: vi.fn(),
   reset: vi.fn(),
+  setDataMode: vi.fn(),
+  clearDataModeOverride: vi.fn(),
+  readDataModeOverride: vi.fn(),
+  writeDataModeOverride: vi.fn(),
+  clearStoredDataModeOverride: vi.fn(),
   requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'vue-shadcn' })),
 }))
 
@@ -19,6 +26,14 @@ vi.mock('@endge/core', () => ({
     reset: mocks.reset,
     context: {
       getExecutionContext: () => ({ ...mocks.executionContext }),
+      get isMockEnabled() {
+        return mocks.mockEnabled
+      },
+      get isDataModeOverridden() {
+        return mocks.dataModeOverridden
+      },
+      setDataMode: mocks.setDataMode,
+      clearDataModeOverride: mocks.clearDataModeOverride,
     },
     mock: {
       listProviders: () => [],
@@ -28,8 +43,17 @@ vi.mock('@endge/core', () => ({
       adapters: { requireActive: mocks.requireActive },
     },
     workspace: {
+      current: { identity: 'workspace' },
       defaultSfcAdapterId: 'vue-shadcn',
     },
+  },
+}))
+
+vi.mock('@/features/endge-ide/model/context/configurator-data-mode-repository', () => ({
+  configuratorDataModeRepository: {
+    read: mocks.readDataModeOverride,
+    write: mocks.writeDataModeOverride,
+    clear: mocks.clearStoredDataModeOverride,
   },
 }))
 
@@ -45,8 +69,23 @@ describe('endgeIDE context', () => {
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'local')
     vi.stubEnv('VITE_SENTRY_RELEASE', 'endge-local@1')
     mocks.executionContext = {}
+    mocks.mockEnabled = false
+    mocks.dataModeOverridden = false
     mocks.boot.mockReset()
     mocks.reset.mockReset()
+    mocks.setDataMode.mockReset()
+    mocks.setDataMode.mockImplementation((mode: 'live' | 'mock') => {
+      mocks.mockEnabled = mode === 'mock'
+      mocks.dataModeOverridden = true
+    })
+    mocks.clearDataModeOverride.mockReset()
+    mocks.clearDataModeOverride.mockImplementation(() => {
+      mocks.dataModeOverridden = false
+    })
+    mocks.readDataModeOverride.mockReset()
+    mocks.readDataModeOverride.mockReturnValue(null)
+    mocks.writeDataModeOverride.mockReset()
+    mocks.clearStoredDataModeOverride.mockReset()
     mocks.requireActive.mockClear()
     mocks.boot.mockImplementation(async (ctx: { context: Record<string, unknown> }) => {
       mocks.executionContext = { ...ctx.context }
@@ -130,5 +169,28 @@ describe('endgeIDE context', () => {
       projectIdentity: 'project',
       environmentIdentity: 'dev',
     })
+  })
+
+  it('persists the Configurator override outside Core and applies it to EndgeContext', () => {
+    const listener = vi.fn()
+    const off = EndgeIDEContext.subscribe(listener)
+
+    EndgeIDEContext.setMockEnabled(true)
+
+    expect(mocks.writeDataModeOverride).toHaveBeenCalledWith('workspace', 'mock')
+    expect(mocks.setDataMode).toHaveBeenCalledWith('mock')
+    expect(EndgeIDEContext.isMockEnabled).toBe(true)
+    expect(EndgeIDEContext.isDataModeOverridden).toBe(true)
+    expect(listener).toHaveBeenCalledOnce()
+    off()
+  })
+
+  it('restores the Workspace-scoped Configurator override after boot', async () => {
+    mocks.readDataModeOverride.mockReturnValue('mock')
+
+    await EndgeIDEContext.init()
+
+    expect(mocks.readDataModeOverride).toHaveBeenCalledWith('workspace')
+    expect(mocks.setDataMode).toHaveBeenCalledWith('mock')
   })
 })

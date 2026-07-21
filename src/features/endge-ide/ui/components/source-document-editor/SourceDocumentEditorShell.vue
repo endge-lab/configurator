@@ -1,9 +1,36 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { DomainDocumentType } from '@endge/core'
+
+import { useSmartTabViewState } from '@/components/ui/smart-tabs'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import DocumentDependenciesPanel from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesPanel.vue'
+import DocumentDependenciesToggle from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesToggle.vue'
+import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
+
 defineProps<{
   documentId?: string | number | null
   identity?: string | null
+  displayName?: string | null
+  documentType?: DomainDocumentType | null
+  dependencySource?: string | null
+  dependencyDraft?: unknown
 }>()
+
+const dependenciesVisible = useSmartTabViewState<boolean>(
+  'document.dependencies.visible',
+  {
+    defaultValue: () => false,
+    validate: value => typeof value === 'boolean',
+  },
+)
+const dependencySplitRatio = useSmartTabViewState<number>(
+  'document.dependencies.split-ratio',
+  {
+    defaultValue: () => 0.7,
+    validate: value => typeof value === 'number' && value >= 0.4 && value <= 0.82,
+  },
+)
 </script>
 
 <template>
@@ -35,11 +62,39 @@ defineProps<{
 
       <div class="source-document-editor-shell__right">
         <slot name="right" />
+        <TooltipProvider v-if="documentType">
+          <div class="ml-2 flex items-center rounded-md border bg-muted/40 p-0.5">
+            <DocumentDependenciesToggle
+              :open="dependenciesVisible"
+              @toggle="dependenciesVisible = !dependenciesVisible"
+            />
+          </div>
+        </TooltipProvider>
       </div>
     </header>
 
     <main class="source-document-editor-shell__content">
-      <slot />
+      <SourceEditorSplitView
+        v-if="documentType && identity"
+        v-model:ratio="dependencySplitRatio"
+        :output-visible="dependenciesVisible"
+        separator-label="Изменить ширину редактора и панели зависимостей"
+      >
+        <template #editor>
+          <slot />
+        </template>
+        <template #output>
+          <DocumentDependenciesPanel
+            :id="documentId"
+            :document-type="documentType"
+            :identity="identity"
+            :display-name="displayName"
+            :source="dependencySource"
+            :draft="dependencyDraft"
+          />
+        </template>
+      </SourceEditorSplitView>
+      <slot v-else />
     </main>
   </div>
 </template>

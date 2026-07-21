@@ -260,6 +260,26 @@ describe('endgeIDE Runtime Preview manager', () => {
     expect(mocks.instances[5].restart).not.toHaveBeenCalled()
   })
 
+  it('restarts mounted roots after a data mode change and preserves paused state', async () => {
+    const manager = new EndgeIDERuntimePreview()
+    await manager.launch({ entityType: 'store', identity: 'active' })
+    await manager.launch({ entityType: 'composition', identity: 'paused' })
+    await manager.launch({ entityType: 'store', identity: 'inactive' })
+    mocks.instances[1].status.value = 'paused'
+    mocks.instances[2].status.value = 'inactive'
+    for (const instance of mocks.instances) {
+      instance.restart.mockClear()
+      instance.pause.mockClear()
+    }
+
+    await manager.restartForDataModeChange()
+
+    expect(mocks.instances[0].restart).toHaveBeenCalledOnce()
+    expect(mocks.instances[1].restart).toHaveBeenCalledOnce()
+    expect(mocks.instances[1].pause).toHaveBeenCalledOnce()
+    expect(mocks.instances[2].restart).not.toHaveBeenCalled()
+  })
+
   it('removes every root and clears remembered history only on explicit remove-all', async () => {
     const manager = new EndgeIDERuntimePreview()
     await manager.launch({ entityType: 'composition', identity: 'entry' })

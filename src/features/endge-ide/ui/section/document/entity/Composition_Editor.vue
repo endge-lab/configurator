@@ -41,11 +41,12 @@ interface SourceEditorHandle {
 const editor = computed(
   () => EndgeIDE.tabs.documentEditorModel.value as RCompositionEditor | null,
 )
-const activeTab = useSmartTabSelection(
-  'editor.active-tab',
+const activeTab = useSmartTabSelection('editor.active-tab', 'source', [
+  'general',
   'source',
-  ['general', 'source', 'artifact', 'diagnostics'] as const,
-)
+  'artifact',
+  'diagnostics',
+] as const)
 const launchLoading = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compiled = computed(() =>
@@ -85,6 +86,10 @@ async function launchPreview(): Promise<void> {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="composition"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>
@@ -239,7 +244,7 @@ async function launchPreview(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div class="min-h-0 flex-1 overflow-hidden">
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
         <div class="max-w-2xl space-y-5">
           <div class="grid grid-cols-2 gap-4">

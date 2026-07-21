@@ -181,6 +181,20 @@ export class EndgeIDERuntimePreview {
     await Promise.all(this.entries.value.map(instance => instance.stop()))
   }
 
+  /** Recreates mounted preview roots so Store initialization follows the new data mode. */
+  public async restartForDataModeChange(): Promise<void> {
+    const mounted = this.entries.value
+      .map(instance => ({ instance, state: instance.status.value }))
+      .filter(item => item.state === 'active' || item.state === 'paused' || item.state === 'preparing')
+
+    await Promise.all(mounted.map(async ({ instance, state }) => {
+      await instance.restart()
+      if (state === 'paused') {
+        await instance.pause()
+      }
+    }))
+  }
+
   /** Removes every remembered root and disposes any runtime still owned by it. */
   public async removeAll(): Promise<void> {
     await this.disposeAll()

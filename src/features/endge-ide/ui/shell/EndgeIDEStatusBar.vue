@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BellDot, GitBranch, RefreshCcw, Tag } from 'lucide-vue-next'
+import { BellDot, DatabaseZap, GitBranch, RefreshCcw, Tag } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
+import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
 import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'
@@ -10,6 +12,16 @@ import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 
 const context = useEndgeIDEContext()
+const isMockEnabled = computed(() => context.isMockEnabled())
+const isDataModeOverridden = computed(() => context.isDataModeOverridden())
+const isChangingDataMode = ref(false)
+const mockLabel = 'mock'
+const mockModeTitle = computed(() => {
+  const source = isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
+  return isMockEnabled.value
+    ? `Mock data enabled (${source}). External queries are not executed.`
+    : `Live data enabled (${source}). Queries may call real services.`
+})
 const leftItems = [
   { id: 'branch', label: 'main', icon: GitBranch },
   { id: 'version', label: 'latest', icon: Tag },
@@ -21,6 +33,37 @@ async function reloadDomain(): Promise<void> {
   }
   catch (error: any) {
     toast.error('Не удалось перезагрузить домен', { description: String(error?.message ?? error) })
+  }
+}
+
+async function toggleMockMode(): Promise<void> {
+  if (isChangingDataMode.value || context.isSwitching()) {
+    return
+  }
+
+  isChangingDataMode.value = true
+  if (isDataModeOverridden.value) {
+    context.clearDataModeOverride()
+  }
+  else {
+    context.setMockEnabled(!isMockEnabled.value)
+  }
+  const enabled = context.isMockEnabled()
+  try {
+    await EndgeIDE.runtimePreview.restartForDataModeChange()
+    toast.success(enabled ? 'Mock-данные включены' : 'Live-данные включены', {
+      description: isDataModeOverridden.value
+        ? 'Используется локальное переопределение конфигуратора.'
+        : 'Восстановлен режим данных из Workspace.',
+    })
+  }
+  catch (error) {
+    toast.error('Режим данных изменён, но preview не удалось перезапустить', {
+      description: String(error instanceof Error ? error.message : error),
+    })
+  }
+  finally {
+    isChangingDataMode.value = false
   }
 }
 </script>
@@ -42,6 +85,18 @@ async function reloadDomain(): Promise<void> {
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
+        :class="isMockEnabled && 'bg-primary/15 text-primary'"
+        :disabled="context.isSwitching() || isChangingDataMode"
+        :aria-pressed="isMockEnabled"
+        :title="mockModeTitle"
+        @click="toggleMockMode"
+      >
+        <DatabaseZap class="size-3.5 shrink-0" />
+        <span>{{ mockLabel }}</span>
+      </button>
       <button type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
         <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
       </button>

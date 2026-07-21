@@ -125,6 +125,28 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
+  it('persists dependency panel layout independently for every document tab', async () => {
+    const scope = effectScope()
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    api.openTab(createTab('store-arrival'))
+    api.openTab(createTab('store-departure'))
+
+    api.setTabViewState('store-arrival', 'document.dependencies.visible', { version: 1, value: true })
+    api.setTabViewState('store-arrival', 'document.dependencies.split-ratio', { version: 1, value: 0.64 })
+    api.setTabViewState('store-departure', 'document.dependencies.visible', { version: 1, value: false })
+    await nextTick()
+
+    const persisted = JSON.parse(values.get('tabs')!).state.viewStateByTabId
+    expect(persisted['store-arrival']).toMatchObject({
+      'document.dependencies.visible': { version: 1, value: true },
+      'document.dependencies.split-ratio': { version: 1, value: 0.64 },
+    })
+    expect(persisted['store-departure']).toMatchObject({
+      'document.dependencies.visible': { version: 1, value: false },
+    })
+    scope.stop()
+  })
+
   it('persists shared view state after its originating tab is closed', async () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!

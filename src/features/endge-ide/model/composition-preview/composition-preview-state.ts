@@ -250,6 +250,9 @@ function materializePreviewValue(value: CompositionPreviewPropValue): Compositio
   if (value.kind === 'literal') {
     return value.value
   }
+  if (!Endge.context.isMockEnabled) {
+    return undefined
+  }
   if (!Endge.mock.has(value.identity)) {
     return undefined
   }

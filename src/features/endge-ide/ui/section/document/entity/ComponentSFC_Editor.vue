@@ -169,6 +169,10 @@ async function launchPreview(): Promise<void> {
     v-else
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.displayName || editor.name"
+    document-type="component-sfc"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>
