@@ -4,6 +4,7 @@ import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/a
 import { compileComponentSFC, Endge } from '@endge/core'
 
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 
 const BUILTINS = new Set([
   'Array',
@@ -45,29 +46,36 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
     install({ monaco, editor, model }) {
       const catalog = () => {
         const compiled = Endge.program.getTypeCatalog()
-        if (compiled.length) { return compiled }
-        return Endge.domain.getTypes().map(type => ({
-          id: type.id,
-          identity: type.identity,
-          displayName: type.displayName || type.name || type.identity,
-          category: type.meta?.primitiveKind === 'reference'
-            ? 'reference' as const
-            : type.isPrimitive
-              ? 'primitive' as const
-              : 'user' as const,
-          sourceVersion: Number(type.sourceVersion ?? 1) || 1,
-          definition: null,
-          status: 'valid' as const,
-        }))
+        const compiledIdentities = new Set(compiled.map(type => type.identity))
+        const domainFallback = Endge.domain.getTypes()
+          .filter(type => !compiledIdentities.has(type.identity))
+          .map(type => ({
+            id: type.id,
+            identity: type.identity,
+            displayName: type.displayName || type.name || type.identity,
+            category: type.meta?.primitiveKind === 'reference'
+              ? 'reference' as const
+              : type.isPrimitive
+                ? 'primitive' as const
+                : 'user' as const,
+            sourceVersion: Number(type.sourceVersion ?? 1) || 1,
+            definition: null,
+            status: 'valid' as const,
+          }))
+        return [...compiled, ...domainFallback]
       }
 
       const validate = () => {
         const source = model.getValue()
-        const result = compileComponentSFC(source)
+        const result = compileComponentSFC(source, {
+          resolveTypeDefinition: resolveEndgeTypeDefinition,
+        })
         const expressions = [
+          result.ast?.script?.props?.source,
           ...result.contract.inputs.map(input => input.type),
           ...(result.ir?.script.ports.require.computations.flatMap(port => [port.inputType, port.outputType]) ?? []),
           ...(result.ir?.script.ports.require.actions.flatMap(port => [port.inputType, port.outputType]) ?? []),
+          ...(result.ir?.script.ports.require.components.map(port => port.propsType) ?? []),
           ...(result.ir?.script.ports.provides.actions.flatMap(port => [port.inputType, port.outputType]) ?? []),
           ...(result.ir?.script.ports.emits.events.map(port => port.payloadType) ?? []),
         ]
@@ -76,7 +84,7 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
           ...localTypeDeclarations(source),
         ])
         const markers: import('monaco-editor').editor.IMarkerData[] = []
-        for (const expression of expressions) {
+        for (const expression of expressions.filter((expression): expression is string => Boolean(expression))) {
           for (const match of String(expression).matchAll(/\b[A-Z_$][\w$]*\b/gi)) {
             const identity = match[0]
             if (identity === 'Any' || identity === 'any') {

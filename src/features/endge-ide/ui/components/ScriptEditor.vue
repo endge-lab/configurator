@@ -280,4 +280,27 @@ onBeforeUnmount(() => {
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
+
+:deep(.endge-source-inline-action) {
+  margin-left: 12px;
+  color: #8790a8 !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer !important;
+  user-select: none;
+  transition: color 120ms ease;
+}
+
+:deep(.endge-source-inline-action:hover) {
+  color: #c792ea !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:deep(.endge-source-inline-action--disabled) {
+  color: #697184 !important;
+  cursor: help !important;
+  text-decoration: none;
+}
 </style>

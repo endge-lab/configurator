@@ -30,6 +30,7 @@ import {
   resolvePreviewRuntime,
   serializePreviewLifecycle,
 } from '@/features/endge-ide/model/preview-runtime/preview-runtime'
+import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 
 export interface SFCPreviewLaunchInput {
   id?: string | number | null
@@ -154,6 +155,7 @@ export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<Com
     resolveComponentPortManifest: identity => Endge.program
       .getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
       ?.payload.ir?.script.ports ?? null,
+    resolveTypeDefinition: resolveEndgeTypeDefinition,
   })
   const { diagnostics, metadata, ...payload } = compiled
   const hasErrors = diagnostics.some(diagnostic => diagnostic.severity === 'error' && diagnostic.sourcePath !== 'style')

@@ -15,6 +15,7 @@ import type {
   ComponentSFCTableVisualCellTag,
   ComponentSFCTableVisualProjection,
   ComponentSFCVisualSourceValue,
+  ProgramMetadataMap,
   RComponentContractInput,
   RComponentDiagnostic,
 } from '@endge/core'
@@ -23,6 +24,8 @@ import {
   compileComponentSFCExpression,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
   getComponentSFCTagInputContract,
+  inspectComponentSFCMetadata,
+  patchComponentSFCMetadataSource,
   patchComponentSFCTableSource,
 } from '@endge/core'
 import {
@@ -111,6 +114,7 @@ import {
   visualSchemaLayoutKey,
 } from '@/features/endge-ide/model/visual-schema-workspace-state'
 import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 const props = defineProps<{
   source: string
@@ -153,7 +157,7 @@ const mainTab = useSmartTabSelection(
 const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
-  ['general', 'inputs', 'paging', 'visibility', 'pinning', 'sorting'] as const,
+  ['general', 'inputs', 'paging', 'visibility', 'pinning', 'sorting', 'metadata'] as const,
 )
 const tableSections = [
   { id: 'general', label: 'Основное', icon: Settings2 },
@@ -162,6 +166,7 @@ const tableSections = [
   { id: 'visibility', label: 'Видимость', icon: Eye },
   { id: 'pinning', label: 'Закрепления', icon: Pin },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
+  { id: 'metadata', label: 'Метаданные', icon: FileJson2 },
 ] as const
 const inputWorkspaceState = useSmartTabViewState(
   'component-sfc.visual.table-input-workspace',
@@ -208,6 +213,8 @@ const cellBindingDrafts = ref<Record<string, string>>({})
 const cellBindingKinds = ref<Record<string, TableCellBindingValueKind>>({})
 const cellBindingErrors = ref<Record<string, string>>({})
 const sortPathDrafts = ref<string[]>([])
+const metadataDraft = ref('{}')
+const metadataError = ref<string | null>(null)
 
 watch(dataSplitRatio, (ratio) => {
   if (!isDataSplitResizing.value) {
@@ -271,6 +278,7 @@ const contextMenuColumn = computed(() => {
 const relevantDiagnostics = computed(() => (
   props.diagnostics?.filter(item => item.sourcePath?.startsWith('template') || item.code.startsWith('sfc-table')) ?? []
 ))
+const metadataProjection = computed(() => inspectComponentSFCMetadata(props.source))
 const errorCount = computed(() => relevantDiagnostics.value.filter(item => item.severity === 'error').length)
 const pagingModeValue = computed(() => {
   const value = props.projection.paging
@@ -358,6 +366,15 @@ watch(
 )
 
 watch(
+  () => props.source,
+  () => {
+    metadataDraft.value = metadataProjection.value.json
+    metadataError.value = null
+  },
+  { immediate: true },
+)
+
+watch(
   selectedColumn,
   (column) => {
     titleDraft.value = sourceValueText(column?.title)
@@ -430,6 +447,50 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
         return 'Source'
       }
       return defaultSortItems.value.length ? String(defaultSortItems.value.length) : null
+    case 'metadata':
+      return null
+  }
+}
+
+function updateMetadataDraft(value: string): void {
+  metadataDraft.value = value
+  metadataError.value = validateMetadataJSON(value)
+}
+
+function commitMetadata(): void {
+  if (!metadataProjection.value.editable) {
+    return
+  }
+
+  const validationError = validateMetadataJSON(metadataDraft.value)
+  if (validationError) {
+    metadataError.value = validationError
+    return
+  }
+
+  const metadata = JSON.parse(metadataDraft.value) as ProgramMetadataMap
+  const result = patchComponentSFCMetadataSource(props.source, metadata)
+  if (!result.ok) {
+    metadataError.value = result.message ?? 'Не удалось обновить defineMetadata.'
+    return
+  }
+
+  metadataError.value = null
+  metadataDraft.value = result.projection.json
+  if (result.changed) {
+    emit('update:source', result.source)
+  }
+}
+
+function validateMetadataJSON(value: string): string | null {
+  try {
+    const parsed = JSON.parse(value)
+    return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? null
+      : 'Metadata должна быть JSON-объектом верхнего уровня.'
+  }
+  catch (error) {
+    return error instanceof Error ? error.message : 'Некорректный JSON.'
   }
 }
 
@@ -1714,6 +1775,35 @@ onBeforeUnmount(() => {
                 @open-source="offset => emit('openSource', offset)"
                 @open:type="identity => emit('open:type', identity)"
               />
+            </section>
+
+            <section v-else-if="tableSection === 'metadata'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div
+                v-if="metadataProjection.message"
+                class="flex shrink-0 items-start gap-2 border-b border-amber-500/25 bg-amber-500/5 px-4 py-2 text-[11px] text-amber-700 dark:text-amber-300"
+              >
+                <AlertCircle class="mt-0.5 size-3.5 shrink-0" />
+                <span>{{ metadataProjection.message }}</span>
+              </div>
+
+              <ScriptEditor
+                :model-value="metadataDraft"
+                language="json"
+                format-language="json"
+                class="min-h-0 flex-1"
+                min-height="100%"
+                :read-only="!metadataProjection.editable"
+                @update:model-value="updateMetadataDraft"
+                @blur="commitMetadata"
+              />
+
+              <div
+                v-if="metadataError"
+                class="flex shrink-0 items-start gap-2 border-t border-destructive/25 bg-destructive/5 px-4 py-2 text-[11px] text-destructive"
+              >
+                <AlertCircle class="mt-0.5 size-3.5 shrink-0" />
+                <span>{{ metadataError }}</span>
+              </div>
             </section>
 
             <ScrollArea v-else class="min-h-0 flex-1">

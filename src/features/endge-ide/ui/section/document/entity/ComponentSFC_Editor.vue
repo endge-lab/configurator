@@ -23,8 +23,10 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import { createExtractTypeContribution } from '@/features/endge-ide/source-editor/contributions/types/extract-type'
 import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
@@ -53,6 +55,7 @@ const visualInspection = computed(() => {
   return current
     ? inspectComponentSFCVisual(current.source ?? '', {
         resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
+        resolveTypeDefinition: resolveEndgeTypeDefinition,
       })
     : null
 })
@@ -63,7 +66,9 @@ const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.d
   .map((component: RComponentSFC) => ({
     value: component.identity,
     label: component.displayName || component.name || component.identity,
-    inputs: compileComponentSFC(component.source ?? '').contract.inputs,
+    inputs: compileComponentSFC(component.source ?? '', {
+      resolveTypeDefinition: resolveEndgeTypeDefinition,
+    }).contract.inputs,
   })))
 const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
   const primitives: VisualSchemaTypeOption[] = [
@@ -86,6 +91,10 @@ const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
 })
 const sourceEditorExtensions = [
   createTypeRegistryContribution(),
+  createExtractTypeContribution({
+    getEditorModel: () => editor.value,
+    getPersistedModel: () => tabs.documentModel.value as RComponentSFC | null,
+  }),
   createSFCStyleEndgeCSSContribution(),
   createExtractComponentContribution({
     getEditorModel: () => editor.value,
