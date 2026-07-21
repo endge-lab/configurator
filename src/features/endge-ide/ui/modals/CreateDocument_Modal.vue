@@ -70,6 +70,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Type]: 'root-types',
   [DomainSectionType.Primitive]: 'root-primitives',
   [DomainSectionType.Action]: 'root-actions',
+  [DomainSectionType.Event]: 'root-events',
   [DomainSectionType.Converter]: 'root-converters',
   [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',

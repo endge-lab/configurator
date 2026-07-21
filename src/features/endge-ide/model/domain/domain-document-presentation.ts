@@ -19,6 +19,7 @@ export const DOMAIN_SECTION_PRESENTATION: Record<DomainSectionType, DomainDocume
   [DomainSectionType.Mock]: { icon: 'Braces', colorClass: 'text-[#8B5A2B] dark:text-[#C08A52]' },
   [DomainSectionType.Component]: { icon: 'Puzzle', colorClass: 'text-blue-500' },
   [DomainSectionType.Action]: { icon: 'Zap', colorClass: 'text-amber-500' },
+  [DomainSectionType.Event]: { icon: 'Radio', colorClass: 'text-violet-500' },
   [DomainSectionType.Parameters]: { icon: 'FormInput', colorClass: 'text-slate-500' },
   [DomainSectionType.Converter]: { icon: 'ArrowLeftRight', colorClass: 'text-cyan-500' },
   [DomainSectionType.Computation]: { icon: 'SquareFunction', colorClass: 'text-orange-500' },

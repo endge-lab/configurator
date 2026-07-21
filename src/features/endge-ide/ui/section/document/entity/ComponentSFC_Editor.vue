@@ -132,6 +132,21 @@ async function openSourceAt(offset: number): Promise<void> {
   sourceEditorRef.value?.focusOffset(offset)
 }
 
+watch(
+  [
+    () => tabs.sourceNavigationRequest.value,
+    () => editor.value?.id,
+    () => editor.value?.identity,
+  ],
+  async ([request]) => {
+    if (!request || String(request.documentType) !== 'component-sfc') return
+    const current = editor.value
+    if (!current || ![current.id, current.identity].some(value => String(value ?? '') === request.documentId)) return
+    await openSourceAt(request.offset)
+  },
+  { immediate: true, flush: 'post' },
+)
+
 function openTypeDocument(identity: string): void {
   const type = domainStore.typeCatalog.find(item => item.identity === identity)
   if (!type || type.category === 'primitive') {

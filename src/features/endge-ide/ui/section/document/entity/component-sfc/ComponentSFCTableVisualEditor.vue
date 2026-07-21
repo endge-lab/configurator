@@ -51,10 +51,12 @@ import {
   Pin,
   PinOff,
   Plus,
+  Radio,
   Settings2,
   Table2,
   Tags,
   Trash2,
+  Unplug,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -115,6 +117,7 @@ import {
 } from '@/features/endge-ide/model/visual-schema-workspace-state'
 import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
 
 const props = defineProps<{
   source: string
@@ -157,12 +160,14 @@ const mainTab = useSmartTabSelection(
 const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
-  ['general', 'inputs', 'paging', 'visibility', 'pinning', 'sorting', 'metadata'] as const,
+  ['general', 'inputs', 'events', 'ports', 'paging', 'visibility', 'pinning', 'sorting', 'metadata'] as const,
 )
 const tableSections = [
   { id: 'general', label: 'Основное', icon: Settings2 },
   { id: 'inputs', label: 'Входные данные', icon: Braces },
-  { id: 'paging', label: 'Paging', icon: Table2 },
+  { id: 'events', label: 'События', icon: Radio },
+  { id: 'ports', label: 'Порты', icon: Unplug },
+  { id: 'paging', label: 'Пагинация', icon: Table2 },
   { id: 'visibility', label: 'Видимость', icon: Eye },
   { id: 'pinning', label: 'Закрепления', icon: Pin },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
@@ -420,6 +425,8 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
   switch (sectionId) {
     case 'general':
     case 'inputs':
+    case 'events':
+    case 'ports':
       return null
     case 'paging':
       if (pagingIsSourceOwned.value) {
@@ -1814,6 +1821,15 @@ onBeforeUnmount(() => {
                   <section v-show="tableSection === 'general'">
                     <slot name="general" />
                   </section>
+
+                  <ComponentSFCPortsVisualEditor
+                    v-if="tableSection === 'events' || tableSection === 'ports'"
+                    :source="source"
+                    :mode="tableSection"
+                    :table-ref="sourceValueText(projection.ref) || null"
+                    @update:source="value => emit('update:source', value)"
+                    @open-source="offset => emit('openSource', offset)"
+                  />
 
                   <section v-show="tableSection === 'paging'" class="space-y-3">
                     <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">

@@ -7,9 +7,9 @@ import type { DragPayloadItem } from '@/features/endge-ide/model/domain/domain-d
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
-import type { DomainDocumentType, RCompositionKind } from '@endge/core'
+import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
 
-import { ComponentType, DomainSectionType, Endge, isExternallyManaged, QueryType } from '@endge/core'
+import { ComponentType, DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
   ArrowLeftRight,
@@ -46,6 +46,7 @@ import {
   Plug,
   Plus,
   Puzzle,
+  Radio,
   RotateCcw,
   Route,
   Save,
@@ -98,6 +99,7 @@ import {
   ROOT_FOLDER_LABELS,
   withoutDeleted,
 } from '@/features/endge-ide/model/domain/domain-tree'
+import { buildEventCatalogRoot } from '@/features/endge-ide/model/domain/domain-event-catalog'
 import {
   domainFileNodeToWorkingSetRef,
   groupDomainWorkingSetItems,
@@ -566,6 +568,7 @@ const ROOT_TO_SECTION = computed(() => {
     'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? [], softId) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
+    'root-events': { section: DomainSectionType.Event, items: () => [] },
     'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters, softId) },
     'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters, softId) },
     'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations(), softId) },
@@ -629,6 +632,7 @@ const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
   Table2,
   Type,
   Zap,
+  Radio,
 }
 
 function createSectionPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } {
@@ -648,6 +652,7 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-stores': createSectionPresentation(DomainSectionType.Store),
   'root-components': createSectionPresentation(DomainSectionType.Component),
   'root-actions': createSectionPresentation(DomainSectionType.Action),
+  'root-events': createSectionPresentation(DomainSectionType.Event),
   'root-parameters': createSectionPresentation(DomainSectionType.Parameters),
   'root-converters': createSectionPresentation(DomainSectionType.Converter),
   'root-computations': createSectionPresentation(DomainSectionType.Computation),
@@ -763,6 +768,20 @@ const fsTree = computed<FsNode[]>(() => {
   })
 
   attachResolvedActionTree(tree, Endge.actions.listResolved())
+
+  const eventRoot = buildEventCatalogRoot(
+    listBuiltInComponentPortManifests(),
+    Endge.domain.getComponentSFCs().flatMap((component) => {
+      const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', component.identity)
+      const manifest = artifact?.payload?.ir?.script.ports
+      return manifest
+        ? [{ identity: component.identity, displayName: component.displayName || component.name || component.identity, manifest }]
+        : []
+    }),
+  )
+  const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
+  if (eventRootIndex >= 0) tree[eventRootIndex] = eventRoot
+  else tree.push(eventRoot)
 
   return tree
 })
@@ -966,7 +985,9 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
       const source = docType === COMPONENT_SFC_TYPE
         ? Endge.domain.getComponentSFC(identity)
         : Endge.domain.getComponent(identity)
-      EndgeIDE.tabs.openDocument(source?.id ?? identity, docType)
+      EndgeIDE.tabs.openDocument(source?.id ?? identity, docType, {
+        sourceOffset: node.eventPort?.sourceRange?.start,
+      })
       return
     }
     toast.info('Runtime Action доступен только для выбора и выполнения', {

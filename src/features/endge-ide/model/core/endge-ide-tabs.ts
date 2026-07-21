@@ -124,6 +124,13 @@ interface DocumentTabPayload {
   presentationKind?: string
 }
 
+interface DocumentSourceNavigationRequest {
+  documentId: string
+  documentType: DomainDocumentType
+  offset: number
+  token: number
+}
+
 interface VersionTabPayload {
   versionId: string
 }
@@ -163,12 +170,16 @@ export class EndgeIDETabs {
   private _tabsApi: SmartTabsApi
   private _isRegistryBootstrapped = false
   private _sessionByTabId = new Map<string, EditorSession>()
+  private _sourceNavigationToken = 0
 
   /** ACCESS */
   public readonly documentEditorModel = shallowRef<unknown | null>(null)
 
   /** ACCESS */
   public readonly documentModel = shallowRef<unknown | null>(null)
+
+  /** One-shot Source navigation consumed by document editors after their tab becomes active. */
+  public readonly sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
   public constructor() {
     this._tabsApi = useSmartTabs({
@@ -355,7 +366,7 @@ export class EndgeIDETabs {
     }
   }
 
-  public openDocument(id: string | number, docType: DomainDocumentType): void {
+  public openDocument(id: string | number, docType: DomainDocumentType, options: { sourceOffset?: number } = {}): void {
     const documentId = id != null && id !== '' ? String(id) : ''
     const presentationKind = this._getDocumentPresentationKind(documentId, docType)
     const presentation = getDomainDocumentPresentation(docType, presentationKind)
@@ -374,6 +385,14 @@ export class EndgeIDETabs {
       },
     }
     this.openTab(tabRef)
+    if (Number.isFinite(options.sourceOffset)) {
+      this.sourceNavigationRequest.value = {
+        documentId,
+        documentType: docType,
+        offset: Math.max(0, Number(options.sourceOffset)),
+        token: ++this._sourceNavigationToken,
+      }
+    }
   }
 
   /** Разрешает diagnostics entity reference и открывает исходный authoring document. */

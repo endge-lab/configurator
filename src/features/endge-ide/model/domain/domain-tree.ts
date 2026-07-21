@@ -58,6 +58,13 @@ export interface FsFileNode extends FsNodeBase {
     identity: string
     docType: DomainDocumentType
   }
+  /** Frontend-only Event catalog metadata. */
+  eventPort?: {
+    payloadType: string
+    origin: 'builtin' | 'own' | 'forwarded'
+    hasAction: boolean
+    sourceRange?: { start: number, end: number }
+  }
 }
 
 export type FsNode = FsFolderNode | FsFileNode
@@ -248,6 +255,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-auth-profiles': 'Аутентификация',
   'root-projects': 'Проекты',
   'root-computations': 'Вычисления',
+  'root-events': 'События',
   'soft-deleted': 'Удалённые',
 }
 
@@ -288,6 +296,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-compositions',
       'root-components',
       'root-actions',
+      'root-events',
       'root-filters',
       'root-converters',
       'root-computations',
