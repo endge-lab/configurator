@@ -6,16 +6,15 @@ import type * as Monaco from 'monaco-editor'
 import type { Ref } from 'vue'
 
 import { Endge } from '@endge/core'
+import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
-import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
-import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
-
-const ENDGE_SOURCE_DARK_THEME = 'endge-source-dark'
+import { applyEndgeMonacoTheme } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 
 interface EndgeSourceDiagnostic {
   severity?: string
@@ -44,6 +43,7 @@ export interface UseEndgeSourceMonacoOptions {
 
 /** Общий browser adapter Endge source language → Monaco. */
 export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
+  const ui = useUI()
   const editor = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
   const diagnosticsCount = ref(0)
   const languageId = `endge-${options.sourceKind}-source`
@@ -142,14 +142,6 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
 
   onMounted(() => {
     if (!options.container.value) { return }
-    monaco.editor.defineTheme(ENDGE_SOURCE_DARK_THEME, {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': resolveEditorSurfaceColor(),
-      },
-    })
     registerLanguage(languageId, syntax)
     completionDisposable = monaco.languages.registerCompletionItemProvider(languageId, {
       triggerCharacters: syntax.triggerCharacters,
@@ -176,7 +168,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     editor.value = monaco.editor.create(options.container.value, {
       value: options.value(),
       language: languageId,
-      theme: ENDGE_SOURCE_DARK_THEME,
+      theme: applyEndgeMonacoTheme(monaco, ui.value.isDark),
       minimap: { enabled: false },
       automaticLayout: true,
       fontSize: 14,
@@ -248,6 +240,11 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     })
     validate()
   })
+
+  watch(
+    () => ui.value.isDark,
+    isDark => applyEndgeMonacoTheme(monaco, isDark),
+  )
 
   onBeforeUnmount(() => {
     const model = editor.value?.getModel()

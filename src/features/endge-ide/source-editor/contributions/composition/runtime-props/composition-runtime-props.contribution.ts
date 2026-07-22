@@ -56,7 +56,7 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
           ...markerRange(model, issue.range),
         })))
         decorations.set(issues.filter(issue => issue.canGenerate).map((issue) => {
-          const position = model.getPositionAt(issue.actionAnchor)
+          const position = model.getPositionAt(compositionRuntimePropsActionAnchor(model.getValue(), issue.actionAnchor))
           return {
             range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
             options: {
@@ -110,6 +110,14 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
       }
     },
   }
+}
+
+/** Переносит inline action в конец строки, чтобы runtime modifiers не оказывались после кнопки. */
+export function compositionRuntimePropsActionAnchor(source: string, callAnchor: number): number {
+  const safeAnchor = Math.max(0, Math.min(callAnchor, source.length))
+  const lineFeedOffset = source.indexOf('\n', safeAnchor)
+  const lineEndOffset = lineFeedOffset === -1 ? source.length : lineFeedOffset
+  return source[lineEndOffset - 1] === '\r' ? lineEndOffset - 1 : lineEndOffset
 }
 
 function generateProps(

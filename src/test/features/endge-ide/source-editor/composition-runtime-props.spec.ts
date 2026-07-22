@@ -8,6 +8,7 @@ import {
   analyzeCompositionRuntimeProps,
   generateCompositionRuntimeProps,
 } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
+import { compositionRuntimePropsActionAnchor } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 
 const previewRequirements = {
   kind: 'literal' as const,
@@ -49,6 +50,27 @@ describe('composition runtime props authoring', () => {
       kind: 'literal',
       value: previewRequirements.value,
     })
+  })
+
+  it('places the generation action after same-line runtime modifiers', () => {
+    const source = `defineComposition({
+  data: {
+    db: store('groundhandling'),
+  },
+  runtimes: {
+    requests: composition('groundhandling-query-general').storeTo(data('db'), {
+      raw: output('raw'),
+    }),
+  },
+})`
+    const owner = compileOwner(source)
+    const issue = analyzeCompositionRuntimeProps(owner, () => contract({
+      requirements: previewRequirements,
+    }))[0]!
+    const actionAnchor = compositionRuntimePropsActionAnchor(source, issue.actionAnchor)
+
+    expect(source.slice(0, actionAnchor)).toMatch(/\.storeTo\(data\('db'\), \{$/)
+    expect(source[actionAnchor]).toBe('\n')
   })
 
   it('merges missing preview props into an existing withProps object', () => {

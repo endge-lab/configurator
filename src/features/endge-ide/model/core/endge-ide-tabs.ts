@@ -30,6 +30,7 @@ import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { createDocumentEditorSnapshot } from '@/features/endge-ide/model/core/document-editor-snapshot'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
+import { ENDGE_IDE_DOCUMENT_VIEW_ID, getMissingDocumentTabIds } from '@/features/endge-ide/model/core/endge-ide-restored-document-tabs'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor.ts'
@@ -99,7 +100,7 @@ import Runtime_Debug_Tab from '@/features/endge-ide/ui/section/runtime-debug/Run
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
-const VIEW_ID_DOCUMENT = 'endge-document-editor' as const
+const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
@@ -210,6 +211,7 @@ export class EndgeIDETabs {
       return
     this._tabsApi.closeTab('docs')
     this._tabsApi.closeTab('ui-editor-demo-singleton')
+    this._removeMissingDocumentTabs()
     this._registerSystemViews()
     this._refreshPersistedDocumentTabIcons()
     this._isRegistryBootstrapped = true
@@ -690,6 +692,13 @@ export class EndgeIDETabs {
         iconBadge: presentation.badgeIcon ?? null,
         iconBadgeClass: `size-2.5 ${presentation.colorClass}`,
       }
+    }
+  }
+
+  /** Удаляет восстановленные вкладки документов, которых больше нет в загруженном домене. */
+  private _removeMissingDocumentTabs(): void {
+    for (const tabId of getMissingDocumentTabIds(this.openTabs.value)) {
+      this._tabsApi.closeTab(tabId)
     }
   }
 

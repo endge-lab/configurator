@@ -3,11 +3,12 @@
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
+import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { formatSource } from '@/features/endge-ide/tools/format-source'
-import { resolveEditorSurfaceColor } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import { applyEndgeMonacoTheme } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
@@ -17,7 +18,6 @@ const props = withDefaults(
     modelValue: string
     language?: EditorLanguage
     formatLanguage?: SourceFormatLanguage
-    themeDark?: boolean
     minHeight?: number | string
     showToolbar?: boolean
     readOnly?: boolean
@@ -25,7 +25,6 @@ const props = withDefaults(
   }>(),
   {
     language: 'typescript',
-    themeDark: true,
     minHeight: 600,
     showToolbar: false,
     readOnly: false,
@@ -39,6 +38,7 @@ const emit = defineEmits<{
   (e: 'format'): void
 }>()
 
+const ui = useUI()
 const container = ref<HTMLDivElement | null>(null)
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let extensionDisposables: monaco.IDisposable[] = []
@@ -48,31 +48,6 @@ const editorMinHeight = computed(() => {
 
   return props.minHeight
 })
-
-function createPalenightTheme(): monaco.editor.IStandaloneThemeData {
-  return {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      { token: '', foreground: 'bfc7d5', background: resolveEditorSurfaceColor().slice(1) },
-      { token: 'keyword', foreground: 'c792ea' },
-      { token: 'identifier', foreground: 'f07178' },
-      { token: 'number', foreground: 'ffcb6b' },
-      { token: 'string', foreground: 'c3e88d' },
-      { token: 'comment', foreground: '717cb4', fontStyle: 'italic' },
-    ],
-    colors: {
-      'editor.background': resolveEditorSurfaceColor(),
-      'editor.foreground': '#bfc7d5',
-      'editor.lineHighlightBackground': '#1c2b44',
-      'editorCursor.foreground': '#ffcc00',
-      'editorWhitespace.foreground': '#334155',
-      'editorIndentGuide.background': '#334155',
-      'editorLineNumber.foreground': '#64748b',
-    },
-  }
-}
-
 async function formatDocument(): Promise<void> {
   if (!editor) { return }
 
@@ -119,13 +94,11 @@ function focusOffset(offset: number): void {
 defineExpose({ focusOffset, formatDocument })
 
 onMounted(() => {
-  monaco.editor.defineTheme('palenight', createPalenightTheme())
-
   if (container.value) {
     editor = monaco.editor.create(container.value, {
       value: props.modelValue,
       language: props.language || 'typescript',
-      theme: props.themeDark ? 'palenight' : 'vs-light',
+      theme: applyEndgeMonacoTheme(monaco, ui.value.isDark),
       minimap: { enabled: false },
       automaticLayout: true,
       fontSize: 14,
@@ -179,10 +152,10 @@ watch(
 )
 
 watch(
-  () => props.themeDark,
-  (dark) => {
+  () => ui.value.isDark,
+  (isDark) => {
     if (editor) {
-      monaco.editor.setTheme(dark ? 'palenight' : 'vs-light')
+      applyEndgeMonacoTheme(monaco, isDark)
     }
   },
 )

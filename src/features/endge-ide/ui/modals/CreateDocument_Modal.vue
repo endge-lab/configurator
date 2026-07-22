@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import type { DomainDocumentType } from '@endge/core'
+/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
+import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
+import type { DomainDocumentType, RComposition, RDocument } from '@endge/core'
 
 import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -11,8 +13,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { DOCUMENT_CREATE_DESCRIPTORS } from '@/features/endge-ide/model/config/document-create'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/model/domain/composition-create'
 import {
@@ -21,44 +25,17 @@ import {
   QUERY_COMPOSITION_PRESENTATION_KIND,
   setQueryCompositionRole,
 } from '@/features/endge-ide/model/domain/query-composition-presentation'
+import { suggestDocumentIdentity } from '@/features/endge-ide/tools/document-create'
+
+const props = defineProps<{
+  open: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+}>()
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
-type CreateDocumentKind = DomainDocumentType | typeof QUERY_COMPOSITION_CREATE_KIND
-
-interface DocTypeOption {
-  type: CreateDocumentKind
-  label: string
-  defaultName: string
-  section: DomainSectionType
-}
-
-/** Типы документов, которые можно создать через фабрику. Примитивы остаются системными. */
-const CREATABLE_DOC_TYPES: DocTypeOption[] = [
-  { type: ComponentType.DSL, label: 'DSL', defaultName: 'Без названия', section: DomainSectionType.Component },
-  { type: ComponentType.Table, label: 'Table', defaultName: 'Новая таблица', section: DomainSectionType.Component },
-  { type: COMPONENT_SFC_TYPE, label: 'SFC', defaultName: 'Новый SFC-компонент', section: DomainSectionType.Component },
-  { type: QueryType.REST, label: 'Запрос', defaultName: 'Новый запрос', section: DomainSectionType.Query },
-  { type: QUERY_COMPOSITION_CREATE_KIND, label: 'Композиция запросов', defaultName: 'Новая композиция', section: DomainSectionType.Query },
-  { type: 'data-view' as DomainDocumentType, label: 'Data View', defaultName: 'Новый Data View', section: DomainSectionType.DataView },
-  { type: 'composition' as DomainDocumentType, label: 'Композиция', defaultName: 'Новая композиция', section: DomainSectionType.Composition },
-  { type: 'store' as DomainDocumentType, label: 'Хранилище', defaultName: 'Без названия', section: DomainSectionType.Store },
-  { type: 'mock' as DomainDocumentType, label: 'Mock', defaultName: 'Новый Mock', section: DomainSectionType.Mock },
-  { type: 'type' as DomainDocumentType, label: 'Тип', defaultName: 'Новый тип', section: DomainSectionType.Type },
-  { type: FilterType.DefaultFilter, label: 'Фильтр', defaultName: 'Новый фильтр', section: DomainSectionType.Filters },
-  { type: 'action' as DomainDocumentType, label: 'Действие', defaultName: 'Новое действие', section: DomainSectionType.Action },
-  { type: 'computation' as DomainDocumentType, label: 'Вычисление', defaultName: 'Новое вычисление', section: DomainSectionType.Computation },
-  { type: 'integration' as DomainDocumentType, label: 'Интеграция', defaultName: 'Новая интеграция', section: DomainSectionType.Integration },
-  { type: 'environment' as DomainDocumentType, label: 'Окружение', defaultName: 'Новое окружение', section: DomainSectionType.Environment },
-  { type: 'tenant' as DomainDocumentType, label: 'Тенант', defaultName: 'Новый tenant', section: DomainSectionType.Tenant },
-  { type: 'policy' as DomainDocumentType, label: 'Политика', defaultName: 'Новая политика', section: DomainSectionType.Policy },
-  { type: 'style' as DomainDocumentType, label: 'Стиль', defaultName: 'Новый стиль', section: DomainSectionType.Style },
-  { type: 'page-template' as DomainDocumentType, label: 'Шаблон страницы', defaultName: 'Новый шаблон страницы', section: DomainSectionType.PageTemplate },
-  { type: 'page' as DomainDocumentType, label: 'Страница', defaultName: 'Новая страница', section: DomainSectionType.Page },
-  { type: 'navigation' as DomainDocumentType, label: 'Навигация', defaultName: 'Новая навигация', section: DomainSectionType.Navigation },
-  { type: 'vocabs' as DomainDocumentType, label: 'Словарь', defaultName: 'Новый словарь', section: DomainSectionType.Vocabs },
-  { type: 'i18n-bundles' as DomainDocumentType, label: 'Словарь переводов', defaultName: 'Новый словарь переводов', section: DomainSectionType.I18nBundles },
-  { type: 'auth-profile' as DomainDocumentType, label: 'Профиль авторизации', defaultName: 'Новый профиль авторизации', section: DomainSectionType.AuthProfile },
-]
 
 const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Component]: 'root-components',
@@ -117,20 +94,20 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Project]: 'projects',
 }
 
-const props = defineProps<{
-  open: boolean
-}>()
-
-const emit = defineEmits<{
-  'update:open': [value: boolean]
-}>()
-
 const domainStore = useDomainStore()
+const ROOT_FOLDER_VALUE = '__section_root__'
 
 const activeType = ref<CreateDocumentKind>(ComponentType.DSL)
 const identity = ref('')
 const name = ref('')
-const selectedFolderId = ref<string>('')
+const description = ref('')
+const selectedFolderId = ref<string>(ROOT_FOLDER_VALUE)
+const selectedPageTemplateId = ref<string>('')
+const typeSearch = ref('')
+const showAllTypes = ref(false)
+const identityTouched = ref(false)
+const identityConflict = ref(false)
+const identityChecking = ref(false)
 const createMode = ref<'form' | 'json'>('form')
 const jsonPayload = ref('')
 const jsonTouched = ref(false)
@@ -139,14 +116,15 @@ const jsonPlaceholder = `{
   "displayName": "New doc"
 }`
 const loading = ref(false)
+let identityValidationRequest = 0
 
 const openModel = computed({
   get: () => props.open,
   set: (v: boolean) => emit('update:open', v),
 })
 
-const activeOption = computed<DocTypeOption>(() =>
-  CREATABLE_DOC_TYPES.find(d => d.type === activeType.value) ?? CREATABLE_DOC_TYPES[0]!,
+const activeOption = computed<DocumentCreateDescriptor>(() =>
+  DOCUMENT_CREATE_DESCRIPTORS.find(d => d.type === activeType.value) ?? DOCUMENT_CREATE_DESCRIPTORS[0]!,
 )
 
 const createContext = computed(() => EndgeIDE.modals.createDocumentContext.value)
@@ -155,38 +133,57 @@ const compositionOwner = computed(() =>
   activeType.value === 'composition' ? createContext.value?.compositionOwner ?? null : null,
 )
 const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
+const documentType = computed<DomainDocumentType>(() =>
+  activeType.value === QUERY_COMPOSITION_CREATE_KIND
+    ? 'composition'
+    : activeType.value as DomainDocumentType,
+)
+
+const filteredTypeGroups = computed(() => {
+  const contextualSection = createContext.value?.sectionType ?? null
+  const query = typeSearch.value.trim().toLowerCase()
+  const descriptors = DOCUMENT_CREATE_DESCRIPTORS.filter((descriptor) => {
+    if (contextualSection && !showAllTypes.value && descriptor.section !== contextualSection) { return false }
+    if (!query) { return true }
+    return [descriptor.label, descriptor.description, descriptor.type, ...descriptor.keywords]
+      .some(value => String(value).toLowerCase().includes(query))
+  })
+  const groups = new Map<string, DocumentCreateDescriptor[]>()
+  for (const descriptor of descriptors) {
+    const items = groups.get(descriptor.group) ?? []
+    items.push(descriptor)
+    groups.set(descriptor.group, items)
+  }
+  return [...groups].map(([label, items]) => ({ label, items }))
+})
+
+const pageTemplateOptions = computed(() =>
+  (domainStore.pageTemplates ?? [])
+    .map((template: any) => ({
+      value: String(template?.id ?? ''),
+      label: String(template?.displayName ?? template?.name ?? template?.identity ?? template?.id ?? ''),
+    }))
+    .filter((option: { value: string, label: string }) => option.value && option.label),
+)
+
+const identityError = computed(() => {
+  if (!identity.value.trim()) { return 'Identity обязателен' }
+  if (identityConflict.value) { return `Документ «${identity.value.trim()}» уже существует` }
+  return null
+})
+
+const formError = computed(() => {
+  if (identityError.value) { return identityError.value }
+  if (activeType.value === 'page' && !selectedPageTemplateId.value) { return 'Для страницы выберите шаблон' }
+  return null
+})
 
 /** Показывать выбор папки для секций, которые поддерживают folder placement. */
-const showFolderSelect = computed(() => {
-  if (compositionOwner.value)
-    return false
-  const s = activeOption.value.section
-  return s === DomainSectionType.Component
-    || s === DomainSectionType.Query
-    || s === DomainSectionType.DataView
-    || s === DomainSectionType.Composition
-    || s === DomainSectionType.Store
-    || s === DomainSectionType.Mock
-    || s === DomainSectionType.Type
-    || s === DomainSectionType.Filters
-    || s === DomainSectionType.Action
-    || s === DomainSectionType.Computation
-    || s === DomainSectionType.Integration
-    || s === DomainSectionType.Environment
-    || s === DomainSectionType.Tenant
-    || s === DomainSectionType.Policy
-    || s === DomainSectionType.Style
-    || s === DomainSectionType.PageTemplate
-    || s === DomainSectionType.Page
-    || s === DomainSectionType.Navigation
-    || s === DomainSectionType.Vocabs
-    || s === DomainSectionType.I18nBundles
-    || s === DomainSectionType.AuthProfile
-})
+const showFolderSelect = computed(() => activeOption.value.supportsFolder && !compositionOwner.value)
 
 /** Папки только текущей секции (по entityType): корень + вложенные под этим root. */
 const folderOptions = computed(() => {
-  if (!showFolderSelect.value) return []
+  if (!showFolderSelect.value) { return [] }
   const section = activeOption.value.section
   const rootId = ROOT_IDS[section]
   const sectionEntityType = SECTION_FOLDER_ENTITY_TYPE[section]
@@ -194,19 +191,19 @@ const folderOptions = computed(() => {
   const folders = sectionEntityType
     ? allFolders.filter((f: any) => (f as any).entityType === sectionEntityType)
     : allFolders
-  const list: { id: string, name: string, depth: number }[] = [{ id: '', name: 'В корне секции', depth: 0 }]
+  const list: { value: string, label: string }[] = [{ value: ROOT_FOLDER_VALUE, label: 'В корне секции' }]
   const rootFolder = folders.find((f: any) => String(f.identity ?? f.id) === rootId)
   const rootFolderId = rootFolder != null ? (rootFolder.id ?? rootFolder.identity) : rootId
 
-  function collect(parentId: string | number, depth: number): { id: string, name: string, depth: number }[] {
-    const out: { id: string, name: string, depth: number }[] = []
+  function collect(parentId: string | number, depth: number): { value: string, label: string }[] {
+    const out: { value: string, label: string }[] = []
     for (const f of folders) {
       const p = (f as any).parent ?? (f as any).parentId ?? null
-      if (p == null) continue
-      if (String(p) !== String(parentId)) continue
+      if (p == null) { continue }
+      if (String(p) !== String(parentId)) { continue }
       const id = String((f as any).id ?? (f as any).identity ?? '')
       const name = String((f as any).displayName ?? (f as any).name ?? (f as any).identity ?? id)
-      out.push({ id, name, depth })
+      out.push({ value: id, label: `${'— '.repeat(depth)}${name}` })
       out.push(...collect((f as any).id ?? (f as any).identity, depth + 1))
     }
     return out
@@ -219,46 +216,59 @@ watch(() => props.open, (v) => {
   if (v) {
     const ctx = EndgeIDE.modals.createDocumentContext?.value ?? null
     if (ctx?.documentType != null) {
-      const requestedType = CREATABLE_DOC_TYPES.find(d => d.type === ctx.documentType)
-      if (requestedType)
-        activeType.value = requestedType.type
-      selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ''
+      const requestedType = DOCUMENT_CREATE_DESCRIPTORS.find(d => d.type === ctx.documentType)
+      if (requestedType) { activeType.value = requestedType.type }
+      selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ROOT_FOLDER_VALUE
     }
     else if (ctx?.sectionType != null) {
-      const firstOfSection = CREATABLE_DOC_TYPES.find(d => d.section === ctx.sectionType)
-      if (firstOfSection) activeType.value = firstOfSection.type
-      selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ''
-    } else {
-      selectedFolderId.value = ''
+      const firstOfSection = DOCUMENT_CREATE_DESCRIPTORS.find(d => d.section === ctx.sectionType)
+      if (firstOfSection) { activeType.value = firstOfSection.type }
+      selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ROOT_FOLDER_VALUE
+    }
+    else {
+      selectedFolderId.value = ROOT_FOLDER_VALUE
     }
     identity.value = ''
     name.value = ''
+    description.value = ''
+    selectedPageTemplateId.value = pageTemplateOptions.value[0]?.value ?? ''
+    typeSearch.value = ''
+    showAllTypes.value = false
+    identityTouched.value = false
+    identityConflict.value = false
     createMode.value = 'form'
     jsonTouched.value = false
     jsonPayload.value = JSON.stringify(buildPayloadTemplate(), null, 2)
+    void nextTick(() => document.getElementById('create-doc-type-search')?.focus())
   }
 })
 
 watch(activeType, () => {
   const opts = folderOptions.value
-  const valid = !selectedFolderId.value || opts.some((o: { id: string }) => o.id === selectedFolderId.value)
-  if (!valid) selectedFolderId.value = ''
+  const valid = opts.some((option: { value: string }) => option.value === selectedFolderId.value)
+  if (!valid) { selectedFolderId.value = ROOT_FOLDER_VALUE }
+  identityConflict.value = false
   jsonTouched.value = false
   jsonPayload.value = JSON.stringify(buildPayloadTemplate(), null, 2)
 })
 
-watch([identity, name, selectedFolderId], () => {
-  if (jsonTouched.value)
-    return
+watch(name, (value) => {
+  if (!identityTouched.value) { identity.value = suggestDocumentIdentity(value) }
+})
+
+watch([identity, name, description, selectedFolderId, selectedPageTemplateId], () => {
+  identityConflict.value = false
+  if (jsonTouched.value) { return }
   jsonPayload.value = JSON.stringify(buildPayloadTemplate(), null, 2)
 })
 
 function buildPayloadTemplate(): Record<string, unknown> {
   const id = identity.value.trim() || 'new-doc'
   const displayName = name.value.trim() || id
+  const normalizedDescription = description.value.trim() || null
   const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
   const owner = compositionOwner.value
-  const folder = showFolderSelect.value && selectedFolderId.value
+  const folder = showFolderSelect.value && selectedFolderId.value !== ROOT_FOLDER_VALUE
     ? selectedFolderId.value
     : isQueryComposition ? getQueryRootFolderId() : null
 
@@ -266,6 +276,7 @@ function buildPayloadTemplate(): Record<string, unknown> {
     identity: id,
     displayName,
     ...(folder != null && { folder }),
+    ...(activeOption.value.supportsDescription && { description: normalizedDescription }),
   }
 
   if (activeType.value === ComponentType.DSL) {
@@ -324,7 +335,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
     })
     return {
       ...base,
-      description: null,
       ...placement,
       source: Endge.source.createDefault('composition'),
       sourceVersion: 1,
@@ -335,7 +345,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'store') {
     return {
       ...base,
-      description: null,
       source: Endge.source.createDefault('store'),
       sourceVersion: 1,
       meta: {},
@@ -345,7 +354,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'mock') {
     return {
       ...base,
-      description: null,
       contentSource: 'document',
       contentType: 'application/json',
       source: '{}',
@@ -373,7 +381,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'computation') {
     return {
       ...base,
-      description: null,
       source: Endge.source.createDefault('computation'),
       sourceVersion: 1,
       contractVersion: 1,
@@ -396,7 +403,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'action') {
     return {
       ...base,
-      description: null,
       definition: {
         version: 1,
         entrypoint: 'flow-entry',
@@ -410,11 +416,14 @@ function buildPayloadTemplate(): Record<string, unknown> {
   }
 
   if (activeType.value === 'page') {
+    const template = selectedPageTemplateId.value && Number.isFinite(Number(selectedPageTemplateId.value))
+      ? Number(selectedPageTemplateId.value)
+      : selectedPageTemplateId.value || null
     return {
       ...base,
       routeName: id,
       routePath: `/${id}`,
-      template: null,
+      template,
       enabled: true,
       areas: [],
       meta: {},
@@ -424,7 +433,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'page-template') {
     return {
       ...base,
-      description: null,
       areas: [],
       preview: { rows: [] },
       meta: {},
@@ -434,7 +442,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'navigation') {
     return {
       ...base,
-      description: null,
       tree: [],
       meta: {},
     }
@@ -454,7 +461,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'i18n-bundles') {
     return {
       ...base,
-      description: null,
       locales: {},
       active: true,
     }
@@ -463,7 +469,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'style') {
     return {
       ...base,
-      description: null,
       source: ENDGE_STYLE_DEFAULT_SOURCE,
       sourceVersion: 1,
       meta: {},
@@ -475,7 +480,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       code: id,
-      description: null,
     }
   }
 
@@ -487,6 +491,38 @@ function onJsonInput(value: string): void {
   jsonPayload.value = value
 }
 
+function onIdentityInput(): void {
+  identityTouched.value = true
+  identityConflict.value = false
+}
+
+async function validateIdentityAvailability(): Promise<boolean> {
+  const normalizedIdentity = identity.value.trim()
+  if (!normalizedIdentity) { return false }
+
+  const requestId = ++identityValidationRequest
+  identityChecking.value = true
+  try {
+    const available = await Endge.schema.isDocumentIdentityAvailable(documentType.value, normalizedIdentity)
+    if (requestId === identityValidationRequest) { identityConflict.value = !available }
+    return available
+  }
+  finally {
+    if (requestId === identityValidationRequest) { identityChecking.value = false }
+  }
+}
+
+function applyFormFields(draft: RDocument): void {
+  if (activeOption.value.supportsDescription) { draft.description = description.value.trim() || null }
+
+  if (activeType.value === 'page') {
+    const templateId = selectedPageTemplateId.value
+    ;(draft as any).templateId = Number.isFinite(Number(templateId)) ? Number(templateId) : templateId
+    ;(draft as any).routeName = identity.value.trim()
+    ;(draft as any).routePath = `/${identity.value.trim()}`
+  }
+}
+
 async function onSubmit(): Promise<void> {
   loading.value = true
   try {
@@ -494,8 +530,7 @@ async function onSubmit(): Promise<void> {
       let parsed: Record<string, unknown>
       try {
         const raw = JSON.parse(jsonPayload.value)
-        if (!raw || typeof raw !== 'object' || Array.isArray(raw))
-          throw new Error('JSON должен быть объектом')
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) { throw new Error('JSON должен быть объектом') }
         parsed = raw as Record<string, unknown>
       }
       catch (e: any) {
@@ -503,10 +538,8 @@ async function onSubmit(): Promise<void> {
       }
 
       const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
-      const documentType = isQueryComposition
-        ? 'composition' as DomainDocumentType
-        : activeType.value as DomainDocumentType
-      if (documentType === 'composition') {
+      const targetDocumentType = documentType.value
+      if (targetDocumentType === 'composition') {
         Object.assign(parsed, resolveCompositionCreatePlacement({
           queryComposition: isQueryComposition,
           owner: compositionOwner.value,
@@ -523,56 +556,68 @@ async function onSubmit(): Promise<void> {
         }
       }
 
-      await Endge.schema.upsertPayloadDocumentRaw(documentType, parsed)
       const createdIdentity = String(parsed.identity ?? '').trim()
-      if (createdIdentity) {
-        EndgeIDE.tabs.openDocument(createdIdentity, documentType)
-      }
+      if (!createdIdentity) { throw new Error('В JSON обязательно поле "identity"') }
+
+      await Endge.schema.createDocument({
+        documentType: targetDocumentType,
+        identity: createdIdentity,
+        mode: 'payload',
+        payload: parsed,
+      })
+      EndgeIDE.tabs.openDocument(createdIdentity, targetDocumentType)
       toast.success('Документ создан из JSON', { description: createdIdentity || 'без identity' })
       openModel.value = false
       return
     }
 
     const id = identity.value.trim()
-    if (!id) {
-      toast.error('Введите идентификатор (identity)')
+    if (formError.value) {
+      toast.error(formError.value)
       return
     }
+    if (!(await validateIdentityAvailability())) { return }
+
     const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
-    const documentType = isQueryComposition
-      ? 'composition' as DomainDocumentType
-      : activeType.value as DomainDocumentType
+    const targetDocumentType = documentType.value
     const rootFolderId = isQueryComposition ? getQueryRootFolderId() : null
     if (isQueryComposition && rootFolderId == null) {
       throw new Error('Системная папка запросов не найдена')
     }
-    const draft = DocumentDraftFactory.create(documentType, {
+    const draft = DocumentDraftFactory.create(targetDocumentType, {
       identity: id,
       name: name.value.trim() || activeOption.value.defaultName,
-      folderId: showFolderSelect.value && selectedFolderId.value
+      folderId: showFolderSelect.value && selectedFolderId.value !== ROOT_FOLDER_VALUE
         ? selectedFolderId.value
         : rootFolderId ?? undefined,
     })
-    if (documentType === 'composition') {
+    applyFormFields(draft)
+    if (targetDocumentType === 'composition') {
       const placement = resolveCompositionCreatePlacement({
         queryComposition: isQueryComposition,
         owner: compositionOwner.value,
       })
-      draft.kind = placement.kind
-      draft.kindIdentity = placement.kindIdentity
+      const compositionDraft = draft as RComposition
+      compositionDraft.kind = placement.kind
+      compositionDraft.kindIdentity = placement.kindIdentity
     }
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)
     }
 
-    // Сохраняем новый документ в payload (tabs.save() сохраняет активную вкладку, а не созданный документ)
-    await Endge.schema.saveDocument(id, documentType, { model: draft })
+    await Endge.schema.createDocument({
+      documentType: targetDocumentType,
+      identity: id,
+      mode: 'model',
+      model: draft,
+    })
 
-    EndgeIDE.tabs.openDocument(id, documentType)
+    EndgeIDE.tabs.openDocument(id, targetDocumentType)
     toast.success('Документ создан', { description: id })
     openModel.value = false
   }
   catch (e: any) {
+    if (String(e?.message ?? '').includes('уже существует')) { identityConflict.value = true }
     toast.error('Ошибка создания документа', { description: e?.message ?? String(e) })
   }
   finally {
@@ -587,44 +632,91 @@ function onCancel(): void {
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent class="sm:max-w-2xl">
+    <DialogContent class="max-h-[90vh] overflow-hidden sm:max-w-5xl">
       <DialogHeader>
         <DialogTitle>{{ dialogTitle }}</DialogTitle>
       </DialogHeader>
 
       <div
-        class="grid gap-4 py-2"
-        :class="lockedDocumentType ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]'"
+        class="grid min-h-0 gap-4 py-2"
+        :class="lockedDocumentType ? 'grid-cols-1' : 'grid-cols-[minmax(260px,0.8fr)_minmax(0,1.35fr)]'"
       >
         <!-- Слева: список типов сущностей -->
-        <div v-if="!lockedDocumentType" class="flex flex-col gap-2">
-          <Label class="text-muted-foreground text-xs">Тип сущности</Label>
-          <ScrollArea class="h-[240px] rounded-md border p-1">
-            <div class="flex flex-col gap-0.5">
-              <button
-                v-for="doc in CREATABLE_DOC_TYPES"
-                :key="doc.type"
-                type="button"
-                class="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60"
-                :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
-                @click="activeType = doc.type"
-              >
-                <i
-                  :class="EndgeIDE.tabs.getDocumentIcon(
-                    doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
-                    doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
-                  )"
-                  class="text-lg shrink-0"
-                />
-                <span class="font-medium">{{ doc.label }}</span>
-              </button>
+        <div v-if="!lockedDocumentType" class="flex min-h-0 flex-col gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <Label class="text-muted-foreground text-xs">Тип документа</Label>
+            <Button
+              v-if="createContext?.sectionType"
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="h-6 px-2 text-xs"
+              @click="showAllTypes = !showAllTypes"
+            >
+              {{ showAllTypes ? 'Текущая секция' : 'Все типы' }}
+            </Button>
+          </div>
+          <Input
+            id="create-doc-type-search"
+            v-model="typeSearch"
+            placeholder="Найти тип документа..."
+            autocomplete="off"
+          />
+          <ScrollArea class="h-[500px] rounded-md border p-1">
+            <div v-if="filteredTypeGroups.length" class="flex flex-col gap-2">
+              <section v-for="group in filteredTypeGroups" :key="group.label">
+                <div class="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  {{ group.label }}
+                </div>
+                <button
+                  v-for="doc in group.items"
+                  :key="doc.type"
+                  type="button"
+                  class="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                  :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
+                  @click="activeType = doc.type"
+                >
+                  <i
+                    :class="EndgeIDE.tabs.getDocumentIcon(
+                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
+                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
+                    )"
+                    class="mt-0.5 shrink-0 text-lg"
+                  />
+                  <span class="min-w-0">
+                    <span class="block text-sm font-medium">{{ doc.label }}</span>
+                    <span class="mt-0.5 line-clamp-2 block text-xs leading-4 text-muted-foreground">{{ doc.description }}</span>
+                  </span>
+                </button>
+              </section>
+            </div>
+            <div v-else class="px-3 py-8 text-center text-sm text-muted-foreground">
+              Подходящие типы не найдены
             </div>
           </ScrollArea>
         </div>
 
         <!-- Справа: данные для создания -->
         <div class="flex min-h-0 flex-col gap-3">
-          <Label class="text-muted-foreground text-xs">Данные для создания</Label>
+          <div class="rounded-lg border bg-muted/20 p-3">
+            <div class="flex items-start gap-3">
+              <i
+                :class="EndgeIDE.tabs.getDocumentIcon(
+                  activeType === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : activeType,
+                  activeType === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
+                )"
+                class="mt-0.5 shrink-0 text-xl text-primary"
+              />
+              <div>
+                <div class="font-medium">
+                  {{ activeOption.label }}
+                </div>
+                <div class="mt-1 text-sm leading-5 text-muted-foreground">
+                  {{ activeOption.description }}
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div
             v-if="compositionOwner"
@@ -637,46 +729,79 @@ function onCancel(): void {
 
           <Tabs v-model="createMode" class="flex min-h-0 flex-1 flex-col">
             <TabsList class="grid w-full grid-cols-2">
-              <TabsTrigger value="form">Форма</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
+              <TabsTrigger value="form">
+                Форма
+              </TabsTrigger>
+              <TabsTrigger value="json">
+                JSON
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="form" class="m-0 mt-3">
               <div class="space-y-3 rounded-md border p-3">
                 <div class="grid gap-2">
-                  <Label for="create-doc-identity">Identity (id)</Label>
-                  <Input
-                    id="create-doc-identity"
-                    v-model="identity"
-                    placeholder="Уникальный идентификатор"
-                  />
-                </div>
-                <div class="grid gap-2">
                   <Label for="create-doc-name">Название</Label>
                   <Input
                     id="create-doc-name"
                     v-model="name"
-                    :placeholder="activeOption?.type === ComponentType.Table ? 'Новая таблица' : activeOption?.type === QueryType.REST ? 'Новый запрос' : 'Без названия'"
+                    :placeholder="activeOption.defaultName"
+                    @keydown.enter.prevent="onSubmit"
                   />
                 </div>
+                <div class="grid gap-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <Label for="create-doc-identity">Identity (id)</Label>
+                    <span class="text-xs text-muted-foreground">Уникален в соответствующей коллекции</span>
+                  </div>
+                  <Input
+                    id="create-doc-identity"
+                    v-model="identity"
+                    placeholder="my-document"
+                    :aria-invalid="identityError ? 'true' : undefined"
+                    @input="onIdentityInput"
+                    @blur="validateIdentityAvailability"
+                    @keydown.enter.prevent="onSubmit"
+                  />
+                  <span v-if="identityChecking" class="text-xs text-muted-foreground">Проверяем identity...</span>
+                  <span v-else-if="identityError" class="text-xs text-destructive">{{ identityError }}</span>
+                </div>
                 <div v-if="showFolderSelect" class="grid gap-2">
-                  <Label for="create-doc-folder">Папка</Label>
-                  <select
-                    id="create-doc-folder"
+                  <Label>Папка</Label>
+                  <SearchableSelect
                     v-model="selectedFolderId"
-                    class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option v-for="opt in folderOptions" :key="opt.id || 'root'" :value="opt.id">
-                      {{ opt.depth ? '\u00A0\u00A0'.repeat(opt.depth) : '' }}{{ opt.name }}
-                    </option>
-                  </select>
+                    :options="folderOptions"
+                    placeholder="В корне секции"
+                  />
+                </div>
+                <div v-if="activeType === 'page'" class="grid gap-2">
+                  <Label>Шаблон страницы</Label>
+                  <SearchableSelect
+                    v-model="selectedPageTemplateId"
+                    :options="pageTemplateOptions"
+                    placeholder="Выберите обязательный шаблон"
+                  />
+                  <span v-if="!pageTemplateOptions.length" class="text-xs text-destructive">
+                    Сначала создайте хотя бы один шаблон страницы
+                  </span>
+                </div>
+                <div v-if="activeOption.supportsDescription" class="grid gap-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <Label for="create-doc-description">Описание</Label>
+                    <span class="text-xs text-muted-foreground">Опционально</span>
+                  </div>
+                  <Textarea
+                    id="create-doc-description"
+                    v-model="description"
+                    :rows="3"
+                    placeholder="Кратко опишите назначение документа"
+                  />
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="json" class="m-0 mt-3 flex min-h-0 flex-1 flex-col">
               <div class="mb-2 text-xs text-muted-foreground">
-                Вставьте JSON документа в формате Payload. Обязательное поле: <span class="font-mono">identity</span>.
+                Advanced mode: JSON проходит тот же create-only check. Существующий identity не будет перезаписан.
               </div>
               <Textarea
                 :model-value="jsonPayload"
@@ -694,8 +819,11 @@ function onCancel(): void {
         <Button variant="outline" :disabled="loading" @click="onCancel">
           Отменить
         </Button>
-        <Button :disabled="loading" @click="onSubmit">
-          Создать
+        <Button
+          :disabled="loading || identityChecking || (createMode === 'form' && !!formError)"
+          @click="onSubmit"
+        >
+          {{ loading ? 'Создаём...' : 'Создать' }}
         </Button>
       </DialogFooter>
     </DialogContent>
