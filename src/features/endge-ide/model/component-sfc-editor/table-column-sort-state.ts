@@ -18,11 +18,15 @@ export function serializeTableColumnSortPaths(paths: readonly string[]): string 
   return value || null
 }
 
-/** Visual editor поддерживает только простые dot paths, совместимые с текущими render adapters. */
+/** Проверяет row-relative DataPath, поддерживаемый Table renderer. */
 export function isTableColumnSortPath(value: string): boolean {
   const path = value.trim()
-  return Boolean(path)
-    && path.split('.').every(segment => Boolean(segment) && !/[\s,[\]]/.test(segment))
+  const identifier = String.raw`[A-Za-z_$][\w$]*`
+  const selectorKey = String.raw`[A-Za-z_$][\w$-]*`
+  const selectorValue = String.raw`(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\d+)`
+  const segment = String.raw`${identifier}(?:\[\s*${selectorKey}\s*=\s*${selectorValue}\s*\]|\[\s*\d+\s*\])*`
+
+  return new RegExp(String.raw`^${segment}(?:\.${segment})*$`).test(path)
 }
 
 /** Читает default-sort в compiler order; позиция элемента является его sort priority. */
