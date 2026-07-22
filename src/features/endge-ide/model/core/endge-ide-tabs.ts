@@ -30,7 +30,11 @@ import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { createDocumentEditorSnapshot } from '@/features/endge-ide/model/core/document-editor-snapshot'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
-import { ENDGE_IDE_DOCUMENT_VIEW_ID, getMissingDocumentTabIds } from '@/features/endge-ide/model/core/endge-ide-restored-document-tabs'
+import {
+  ENDGE_IDE_DOCUMENT_VIEW_ID,
+  getMissingDocumentTabIds,
+  resolveEndgeIDEDocumentIdentity,
+} from '@/features/endge-ide/model/core/endge-ide-restored-document-tabs'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
 import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor.ts'
@@ -369,7 +373,7 @@ export class EndgeIDETabs {
   }
 
   public openDocument(id: string | number, docType: DomainDocumentType, options: { sourceOffset?: number } = {}): void {
-    const documentId = id != null && id !== '' ? String(id) : ''
+    const documentId = resolveEndgeIDEDocumentIdentity(id, docType)
     const presentationKind = this._getDocumentPresentationKind(documentId, docType)
     const presentation = getDomainDocumentPresentation(docType, presentationKind)
     const tabId = `${String(docType)}-${documentId || 'empty'}`

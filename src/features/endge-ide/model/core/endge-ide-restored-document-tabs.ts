@@ -1,4 +1,5 @@
 import type { SmartTabRef } from '@/components/ui/smart-tabs/types'
+import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 
@@ -39,6 +40,20 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['project', documentId => Endge.domain.getProject(documentId)],
   ['type', documentId => Endge.domain.getType(documentId)],
 ])
+
+/** Нормализует Payload id/identity документа в стабильный identity для ключа вкладки. */
+export function resolveEndgeIDEDocumentIdentity(
+  documentId: string | number,
+  documentType: DomainDocumentType,
+): string {
+  const normalizedId = String(documentId ?? '').trim()
+  if (!normalizedId)
+    return ''
+
+  const document = DOCUMENT_LOOKUPS.get(String(documentType))?.(normalizedId) as { identity?: unknown } | null | undefined
+  const identity = String(document?.identity ?? '').trim()
+  return identity || normalizedId
+}
 
 /** Возвращает id восстановленных document-вкладок, отсутствующих в загруженном домене. */
 export function getMissingDocumentTabIds(tabs: readonly SmartTabRef[]): string[] {

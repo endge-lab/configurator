@@ -43,6 +43,8 @@ export function getEntityByDocType(
       return domain.getStore(id)
     case 'action':
       return domain.getAction(id)
+    case 'computation':
+      return domain.getComputation(id)
     case 'integration':
       return domain.getIntegration(id)
     case 'environment':
@@ -103,6 +105,11 @@ export async function duplicateEntity(
     throw new Error(`Не удалось создать копию: ${sourceId}`)
   }
 
+  // duplicate() копирует persisted id исходного документа. Для create-flow
+  // модель должна быть отделена от исходной Payload-записи, иначе save path
+  // некоторых типов (Store, Mock, Computation, Style) выполнит PATCH по старому id.
+  delete (draft as { id?: string | number }).id
+
   if (docType === 'composition' && String(draft.kind ?? 'library') === 'query') {
     const rootFolderId = getQueryRootFolderId()
     if (rootFolderId == null) {
@@ -111,6 +118,11 @@ export async function duplicateEntity(
     draft.folderId = rootFolderId
   }
 
-  await Endge.schema.saveDocument(newIdentity, docType, { model: draft })
+  await Endge.schema.createDocument({
+    documentType: docType,
+    identity: newIdentity,
+    mode: 'model',
+    model: draft,
+  })
   Endge.domain.notify()
 }
