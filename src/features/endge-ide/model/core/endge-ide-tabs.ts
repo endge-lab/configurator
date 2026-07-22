@@ -348,12 +348,11 @@ export class EndgeIDETabs {
         previousIdentity: session?.persistedIdentity,
       })
       let effectiveDocumentId = saveDocumentId
-      if ((documentType === 'type' || documentType === 'store' || documentType === 'mock') && session?.model && typeof session.model === 'object') {
+      if (session?.model && typeof session.model === 'object') {
         const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
         if (identity) {
           effectiveDocumentId = identity
-          if (documentType === 'type')
-            session.persistedIdentity = identity
+          session.persistedIdentity = identity
           const tabPayload = this._getPayload<DocumentTabPayload>(activeTab.payload)
           if (tabPayload)
             tabPayload.documentId = identity
@@ -813,6 +812,10 @@ export class EndgeIDETabs {
     const session = resolver?.(documentId) ?? null
     if (!session)
       return null
+    if (session.model && typeof session.model === 'object') {
+      const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
+      session.persistedIdentity = identity || documentId
+    }
     if (session.editor) {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
     }
