@@ -26,7 +26,7 @@ const currentLabel = computed(() => Endge.workspace.getThemeLabel(currentTheme.v
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="sm" class="gap-2 px-2">
         <Palette class="size-4 text-muted-foreground" />
@@ -34,7 +34,7 @@ const currentLabel = computed(() => Endge.workspace.getThemeLabel(currentTheme.v
         <ChevronsUpDown class="size-4 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent class="w-44" align="end" side="bottom" :side-offset="4">
+    <DropdownMenuContent class="w-44" align="end" side="top" :side-offset="4">
       <DropdownMenuItem
         v-for="theme in availableThemes"
         :key="theme.identity"

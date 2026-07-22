@@ -4,7 +4,7 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 import type { Component } from 'vue'
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
@@ -16,13 +16,15 @@ const props = defineProps<{
   entryKey: string
   node: RuntimePreviewTreeNode
   depth?: number
+  expandAll?: boolean
+  expansionRevision?: number
 }>()
 
 const emit = defineEmits<{
   contextmenu: [payload: { entryKey: string, node: RuntimePreviewTreeNode, x: number, y: number }]
 }>()
 
-const expanded = ref(true)
+const expanded = ref(props.expandAll ?? true)
 const preview = EndgeIDE.runtimePreview
 const selected = computed(() => preview.selectedEntryKey.value === props.entryKey
   && preview.selectedNode.value?.id === props.node.id)
@@ -32,6 +34,10 @@ const leftPadding = computed(() => `${Math.max(0, props.depth ?? 0) * 14 + 8}px`
 const nodeIcon = computed<Component>(() => getIconComponent(props.node.presentation?.icon) as Component ?? Braces)
 const badgeIcon = computed<Component | null>(() => getIconComponent(props.node.presentation?.badgeIcon ?? undefined) as Component | null)
 const iconColorClass = computed(() => props.node.presentation?.colorClass ?? 'text-muted-foreground')
+
+watch(() => props.expansionRevision, () => {
+  expanded.value = props.expandAll ?? true
+})
 
 function select(): void {
   void preview.select(props.entryKey, props.node.id)
@@ -103,6 +109,8 @@ function openContextMenu(event: MouseEvent): void {
         :entry-key="entryKey"
         :node="child"
         :depth="(depth ?? 0) + 1"
+        :expand-all="expandAll"
+        :expansion-revision="expansionRevision"
         @contextmenu="emit('contextmenu', $event)"
       />
     </div>

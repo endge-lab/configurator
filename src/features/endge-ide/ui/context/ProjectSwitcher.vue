@@ -25,14 +25,14 @@ async function select(identity: string): Promise<void> {
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="sm" class="gap-2" :disabled="context.isSwitching()">
         <Loader2 v-if="context.isSwitching()" class="size-4 animate-spin" /><Briefcase v-else class="size-4" />
         <span>{{ currentLabel }}</span><ChevronsUpDown class="size-4 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent class="w-64" align="start">
+    <DropdownMenuContent class="w-64" align="start" side="top">
       <DropdownMenuItem v-for="project in domain.projects" :key="project.identity" :class="{ 'bg-accent': project.identity === current }" @select="select(project.identity)">
         {{ project.displayName ?? project.name ?? project.identity }}
       </DropdownMenuItem>

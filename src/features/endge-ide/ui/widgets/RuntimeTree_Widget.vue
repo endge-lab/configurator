@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
-import { Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
+import { ChevronsDownUp, ChevronsUpDown, Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -21,6 +21,8 @@ interface RuntimeContextMenu {
 const preview = EndgeIDE.runtimePreview
 const contextMenu = ref<RuntimeContextMenu | null>(null)
 const busy = ref(false)
+const expandAll = ref(true)
+const expansionRevision = ref(0)
 const hasEntries = computed(() => preview.entries.value.length > 0)
 const hasStartableEntries = computed(() => preview.entries.value.some(entry => ['inactive', 'paused', 'stopped', 'error'].includes(entry.status.value)))
 const hasActiveEntries = computed(() => preview.entries.value.some(entry => entry.status.value === 'active'))
@@ -96,6 +98,11 @@ async function runAll(operation: () => Promise<void>): Promise<void> {
   finally { busy.value = false }
 }
 
+function setAllExpanded(value: boolean): void {
+  expandAll.value = value
+  expansionRevision.value += 1
+}
+
 function pause(menu: RuntimeContextMenu): Promise<void> {
   return menu.node.parentId == null
     ? preview.pause(menu.entryKey)
@@ -125,79 +132,137 @@ onBeforeUnmount(closeContextMenu)
 
 <template>
   <div class="flex h-full min-h-0 flex-col bg-background">
-    <div class="flex h-9 shrink-0 items-center justify-end border-b px-1.5">
+    <div class="flex h-9 shrink-0 items-center justify-between border-b px-1.5">
       <TooltipProvider :delay-duration="150">
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
-              aria-label="Запустить все Runtime"
-              :disabled="busy || !hasStartableEntries"
-              @click="runAll(() => preview.startAll())"
-            >
-              <Play class="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Запустить все
-          </TooltipContent>
-        </Tooltip>
+        <div class="flex items-center">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Свернуть всё дерево Runtime"
+                :disabled="!hasEntries"
+                @click="setAllExpanded(false)"
+              >
+                <ChevronsDownUp class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Свернуть всё
+            </TooltipContent>
+          </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7"
-              aria-label="Поставить все Runtime на паузу"
-              :disabled="busy || !hasActiveEntries"
-              @click="runAll(() => preview.pauseAll())"
-            >
-              <Pause class="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Пауза всех
-          </TooltipContent>
-        </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Развернуть всё дерево Runtime"
+                :disabled="!hasEntries"
+                @click="setAllExpanded(true)"
+              >
+                <ChevronsUpDown class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Развернуть всё
+            </TooltipContent>
+          </Tooltip>
+        </div>
 
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7"
-              aria-label="Остановить все Runtime"
-              :disabled="busy || !hasRunningEntries"
-              @click="runAll(() => preview.stopAll())"
-            >
-              <Square class="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Остановить все
-          </TooltipContent>
-        </Tooltip>
+        <div class="flex items-center">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+                aria-label="Запустить все Runtime"
+                :disabled="busy || !hasStartableEntries"
+                @click="runAll(() => preview.startAll())"
+              >
+                <Play class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Запустить все
+            </TooltipContent>
+          </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              aria-label="Удалить все из Runtime Tree"
-              :disabled="busy || !hasEntries"
-              @click="runAll(() => preview.removeAll())"
-            >
-              <Trash2 class="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Удалить все
-          </TooltipContent>
-        </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Поставить все Runtime на паузу"
+                :disabled="busy || !hasActiveEntries"
+                @click="runAll(() => preview.pauseAll())"
+              >
+                <Pause class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Пауза всех
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Остановить все Runtime"
+                :disabled="busy || !hasRunningEntries"
+                @click="runAll(() => preview.stopAll())"
+              >
+                <Square class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Остановить все
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Обновить все Runtime"
+                :disabled="busy || !hasEntries"
+                @click="runAll(() => preview.restartAll())"
+              >
+                <RefreshCw class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Обновить все
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Удалить все из Runtime Tree"
+                :disabled="busy || !hasEntries"
+                @click="runAll(() => preview.removeAll())"
+              >
+                <Trash2 class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Удалить все
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </TooltipProvider>
     </div>
 
@@ -209,6 +274,8 @@ onBeforeUnmount(closeContextMenu)
           :entry-key="entry.key"
           :node="node"
           :depth="0"
+          :expand-all="expandAll"
+          :expansion-revision="expansionRevision"
           @contextmenu="openContextMenu"
         />
       </template>

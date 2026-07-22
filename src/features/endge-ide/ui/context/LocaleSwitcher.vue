@@ -36,7 +36,7 @@ function getLocaleDisplayLabel(localeCode: string): string {
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"
@@ -50,7 +50,7 @@ function getLocaleDisplayLabel(localeCode: string): string {
     <DropdownMenuContent
       class="w-40"
       align="end"
-      side="bottom"
+      side="top"
       :side-offset="4"
     >
       <DropdownMenuItem

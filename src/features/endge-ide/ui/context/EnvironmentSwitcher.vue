@@ -43,7 +43,7 @@ async function select(identity: string): Promise<void> {
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"
@@ -58,7 +58,7 @@ async function select(identity: string): Promise<void> {
     <DropdownMenuContent
       class="w-48"
       align="end"
-      side="bottom"
+      side="top"
       :side-offset="4"
     >
       <DropdownMenuItem

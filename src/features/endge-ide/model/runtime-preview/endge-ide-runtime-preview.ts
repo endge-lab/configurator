@@ -181,6 +181,11 @@ export class EndgeIDERuntimePreview {
     await Promise.all(this.entries.value.map(instance => instance.stop()))
   }
 
+  /** Recreates every remembered Runtime Preview root and its nested runtimes. */
+  public async restartAll(): Promise<void> {
+    await Promise.all(this.entries.value.map(instance => instance.restart()))
+  }
+
   /** Recreates mounted preview roots so Store initialization follows the new data mode. */
   public async restartForDataModeChange(): Promise<void> {
     const mounted = this.entries.value

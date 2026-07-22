@@ -26,14 +26,14 @@ async function select(identity: string): Promise<void> {
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="sm" class="gap-2" :disabled="disabled" :title="Endge.context.isTenantLockedBySession ? 'Тенант задан сессией' : 'Выбрать тенант'">
         <Loader2 v-if="context.isSwitching()" class="size-4 animate-spin" /><Building2 v-else class="size-4" />
         <span>{{ currentLabel }}</span><ChevronsUpDown class="size-4 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent class="w-56" align="start">
+    <DropdownMenuContent class="w-56" align="start" side="top">
       <DropdownMenuItem v-for="tenant in domain.tenants" :key="tenant.identity" :class="{ 'bg-accent': tenant.identity === current }" @select="select(tenant.identity)">
         {{ tenant.displayName ?? tenant.name ?? tenant.identity }}
       </DropdownMenuItem>
