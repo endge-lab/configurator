@@ -34,7 +34,7 @@ async function select(identity: string): Promise<void> {
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-56" align="start">
-      <DropdownMenuItem v-for="tenant in domain.tenants" :key="tenant.identity" :class="{ 'bg-accent': tenant.identity === current }" @click="select(tenant.identity)">
+      <DropdownMenuItem v-for="tenant in domain.tenants" :key="tenant.identity" :class="{ 'bg-accent': tenant.identity === current }" @select="select(tenant.identity)">
         {{ tenant.displayName ?? tenant.name ?? tenant.identity }}
       </DropdownMenuItem>
     </DropdownMenuContent>

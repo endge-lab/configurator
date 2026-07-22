@@ -65,7 +65,7 @@ async function select(identity: string): Promise<void> {
         v-for="e in environments"
         :key="e.identity"
         :class="{ 'bg-accent': currentEnv === e.identity }"
-        @click="select(e.identity)"
+        @select="select(e.identity)"
       >
         {{ e.displayName ?? e.name ?? e.identity }}
       </DropdownMenuItem>

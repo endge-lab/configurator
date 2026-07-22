@@ -39,7 +39,7 @@ const currentLabel = computed(() => Endge.workspace.getThemeLabel(currentTheme.v
         v-for="theme in availableThemes"
         :key="theme.identity"
         :class="{ 'bg-accent': currentTheme === theme.identity }"
-        @click="ui.setTheme(theme.identity)"
+        @select="ui.setTheme(theme.identity)"
       >
         {{ theme.displayName || theme.identity }}
       </DropdownMenuItem>

@@ -57,7 +57,7 @@ function getLocaleDisplayLabel(localeCode: string): string {
         v-for="loc in availableLocales"
         :key="loc.code"
         :class="{ 'bg-accent': Endge.workspace.normalizeLocale(current) === loc.code }"
-        @click="setCurrent(loc.code)"
+        @select="setCurrent(loc.code)"
       >
         {{ getLocaleDisplayLabel(loc.code) }}
       </DropdownMenuItem>
