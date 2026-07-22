@@ -228,99 +228,106 @@ async function launchRuntimePreview(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <ScrollArea v-if="activeTab === 'general'" class="min-h-0 flex-1">
-      <div class="mx-auto max-w-2xl space-y-4 p-6">
-        <div class="space-y-2">
-          <Label for="project-identity">Identity</Label>
-          <Input
-            id="project-identity"
-            v-model="editor.identity"
-            placeholder="my-project"
-          />
-        </div>
-        <div class="space-y-2">
-          <Label for="project-display-name">Display name</Label>
-          <Input
-            id="project-display-name"
-            v-model="editor.displayName"
-            placeholder="Мой проект"
-          />
-        </div>
-        <div class="space-y-2">
-          <Label>Slug (URL)</Label>
-          <Input
-            :model-value="editor?.slug ?? ''"
-            placeholder="my-project"
-            @update:model-value="
-              (value) =>
-                editor && (editor.slug = value == null ? null : String(value))
-            "
-          />
-        </div>
-        <div class="space-y-2">
-          <Label>Описание</Label>
-          <Textarea
-            :model-value="editor.description ?? ''"
-            :rows="4"
-            placeholder="Краткое описание проекта"
-            @update:model-value="
-              (value) =>
-                editor && (editor.description = String(value || '') || null)
-            "
-          />
-        </div>
-        <div class="space-y-2">
-          <Label>Порядок сортировки</Label>
-          <Input
-            type="number"
-            :model-value="editor?.order ?? ''"
-            placeholder="0"
-            @update:model-value="
-              (v) =>
-                editor
-                && (editor.order = v === '' || v == null ? null : Number(v))
-            "
-          />
-        </div>
-      </div>
-    </ScrollArea>
+    <div class="min-h-0 flex-1 bg-muted/25 p-4">
+      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
+        <ScrollArea v-if="activeTab === 'general'" class="h-full">
+          <div class="w-full p-6 lg:p-8">
+            <section class="max-w-2xl space-y-4">
+              <div class="space-y-2">
+                <Label for="project-identity">Identity</Label>
+                <Input
+                  id="project-identity"
+                  v-model="editor.identity"
+                  placeholder="my-project"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label for="project-display-name">Display name</Label>
+                <Input
+                  id="project-display-name"
+                  v-model="editor.displayName"
+                  placeholder="Мой проект"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input
+                  :model-value="editor?.slug ?? ''"
+                  placeholder="my-project"
+                  @update:model-value="
+                    (value) =>
+                      editor && (editor.slug = value == null ? null : String(value))
+                  "
+                />
+              </div>
+              <div class="space-y-2">
+                <Label>Описание</Label>
+                <Textarea
+                  :model-value="editor.description ?? ''"
+                  :rows="4"
+                  placeholder="Краткое описание проекта"
+                  @update:model-value="
+                    (value) =>
+                      editor && (editor.description = String(value || '') || null)
+                  "
+                />
+              </div>
+              <div class="space-y-2">
+                <Label>Порядок сортировки</Label>
+                <Input
+                  type="number"
+                  :model-value="editor?.order ?? ''"
+                  placeholder="0"
+                  @update:model-value="
+                    (v) =>
+                      editor
+                      && (editor.order = v === '' || v == null ? null : Number(v))
+                  "
+                />
+              </div>
+            </section>
+          </div>
+        </ScrollArea>
 
-    <ScrollArea v-else-if="activeTab === 'navigation'" class="min-h-0 flex-1">
-      <div class="mx-auto max-w-2xl space-y-4 p-6">
-        <div class="space-y-2">
-          <Label>Навигация проекта</Label>
-          <DomainEntityDropTarget
-            :accept-section-types="[DomainSectionType.Navigation]"
-            @update:model-value="onNavigationDrop"
-          >
-            <div class="flex items-center gap-1">
-              <SearchableSelect
-                :model-value="navigationIdForSelect()"
-                :options="navigationOptions"
-                placeholder="Выберите навигацию"
-                trigger-class="flex-1 min-w-0 h-9"
-                @update:model-value="onNavigationSelect"
-              />
-              <OpenEntityButton
-                :entity-id="editor?.navigationId ?? null"
-                :section-type="DomainSectionType.Navigation"
-              />
-            </div>
-          </DomainEntityDropTarget>
-          <p class="text-xs text-muted-foreground">
-            Главное меню / навигация приложения проекта.
-          </p>
-        </div>
-      </div>
-    </ScrollArea>
+        <ScrollArea v-else-if="activeTab === 'navigation'" class="h-full">
+          <div class="w-full p-6 lg:p-8">
+            <section class="max-w-2xl space-y-4">
+              <div class="space-y-2">
+                <Label>Навигация проекта</Label>
+                <DomainEntityDropTarget
+                  :accept-section-types="[DomainSectionType.Navigation]"
+                  @update:model-value="onNavigationDrop"
+                >
+                  <div class="flex items-center gap-1">
+                    <SearchableSelect
+                      :model-value="navigationIdForSelect()"
+                      :options="navigationOptions"
+                      placeholder="Выберите навигацию"
+                      trigger-class="flex-1 min-w-0 h-9"
+                      @update:model-value="onNavigationSelect"
+                    />
+                    <OpenEntityButton
+                      :entity-id="editor?.navigationId ?? null"
+                      :section-type="DomainSectionType.Navigation"
+                    />
+                  </div>
+                </DomainEntityDropTarget>
+                <p class="text-xs text-muted-foreground">
+                  Главное меню / навигация приложения проекта.
+                </p>
+              </div>
+            </section>
+          </div>
+        </ScrollArea>
 
-    <div v-else class="min-h-0 flex-1 overflow-auto p-6">
-      <div class="mx-auto h-full max-w-3xl">
-        <ConfigurationSettingsEditor
-          v-model="configuration"
-          variant="contribution"
-          :upstream="upstreamConfiguration"
-        />
+        <div v-else class="h-full min-h-0 p-4 lg:p-5">
+          <ConfigurationSettingsEditor
+            v-model="configuration"
+            class="min-h-0"
+            variant="contribution"
+            :upstream="upstreamConfiguration"
+          />
+        </div>
       </div>
     </div>
   </SourceDocumentEditorShell>

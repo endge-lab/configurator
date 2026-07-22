@@ -4,13 +4,25 @@ import { ComponentType, DomainSectionType, FilterType, QueryType } from '@endge/
 
 import { QUERY_COMPOSITION_CREATE_KIND } from '@/features/endge-ide/model/domain/query-composition-presentation'
 
+/** Source нового Table Component: тот же SFC-документ, но сразу с визуально редактируемым Table root. */
+export const COMPONENT_TABLE_SFC_DEFAULT_SOURCE = `<script setup lang="ts">
+</script>
+
+<template>
+  <Table />
+</template>
+
+<style lang="endgecss" scoped>
+</style>
+`
+
 export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
   {
-    type: ComponentType.DSL,
-    label: 'DSL',
-    description: 'Компонент с декларативной схемой, полями входа и JSX-логикой.',
-    keywords: ['component', 'schema', 'jsx'],
-    defaultName: 'Без названия',
+    type: ComponentType.SFC,
+    label: 'Компонент',
+    description: 'Source-first компонент с template, script и style в одном документе.',
+    keywords: ['component', 'source', 'template', 'sfc', 'компонент'],
+    defaultName: 'Новый компонент',
     section: DomainSectionType.Component,
     group: 'Компоненты',
     supportsFolder: true,
@@ -18,21 +30,10 @@ export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
   },
   {
     type: ComponentType.Table,
-    label: 'Table',
-    description: 'Табличный компонент с колонками, bindings и настройками отображения.',
-    keywords: ['component', 'table', 'columns', 'таблица'],
-    defaultName: 'Новая таблица',
-    section: DomainSectionType.Component,
-    group: 'Компоненты',
-    supportsFolder: true,
-    supportsDescription: false,
-  },
-  {
-    type: ComponentType.SFC,
-    label: 'SFC',
-    description: 'Source-first компонент с template, script и style в одном документе.',
-    keywords: ['component', 'source', 'template', 'tsx'],
-    defaultName: 'Новый SFC-компонент',
+    label: 'Table Component',
+    description: 'Single-file компонент с заранее добавленным корневым Table-тегом.',
+    keywords: ['component', 'table', 'columns', 'таблица', 'sfc'],
+    defaultName: 'Новый Table Component',
     section: DomainSectionType.Component,
     group: 'Компоненты',
     supportsFolder: true,

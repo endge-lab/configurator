@@ -88,5 +88,5 @@ function resolveBaseMessages(locale: string): MessageSchema {
   return baseMessages[locale]
     ?? baseMessages[Endge.workspace.fallbackLocale]
     ?? baseMessages[Endge.workspace.defaultLocale]
-    ?? ru
+    ?? en
 }

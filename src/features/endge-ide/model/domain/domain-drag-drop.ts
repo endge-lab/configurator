@@ -227,15 +227,24 @@ export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
     throw new Error('Папка «Удалённые» не найдена')
 
   const key = String(folder.id)
+  const previousParent = folder.parent ?? null
+
+  folder.parent = softRoot.id ?? softRoot.identity ?? SOFT_DELETED_IDENTITY
+  try {
+    await Endge.schema.saveFolder(String(folder.id))
+  }
+  catch (error) {
+    folder.parent = previousParent
+    Endge.domain.notify()
+    throw error
+  }
+
   if (!folderRestoreState.has(key)) {
     folderRestoreState.set(key, {
-      parent: folder.parent ?? null,
+      parent: previousParent,
       rootIdentity: getSectionRootIdentity(node.sectionType),
     })
   }
-
-  folder.parent = softRoot.id ?? softRoot.identity ?? SOFT_DELETED_IDENTITY
-  await Endge.schema.saveFolder(String(folder.id))
   Endge.domain.notify()
 }
 

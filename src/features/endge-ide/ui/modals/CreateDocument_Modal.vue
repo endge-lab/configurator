@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
-import type { DomainDocumentType, RComposition, RDocument } from '@endge/core'
+import type { DomainDocumentType, RComponentSFC, RComposition, RDocument } from '@endge/core'
 
 import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
@@ -16,7 +16,10 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { DOCUMENT_CREATE_DESCRIPTORS } from '@/features/endge-ide/model/config/document-create'
+import {
+  COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
+  DOCUMENT_CREATE_DESCRIPTORS,
+} from '@/features/endge-ide/model/config/document-create'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/model/domain/composition-create'
 import {
@@ -97,7 +100,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
 const domainStore = useDomainStore()
 const ROOT_FOLDER_VALUE = '__section_root__'
 
-const activeType = ref<CreateDocumentKind>(ComponentType.DSL)
+const activeType = ref<CreateDocumentKind>(ComponentType.SFC)
 const identity = ref('')
 const name = ref('')
 const description = ref('')
@@ -136,7 +139,9 @@ const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 
 const documentType = computed<DomainDocumentType>(() =>
   activeType.value === QUERY_COMPOSITION_CREATE_KIND
     ? 'composition'
-    : activeType.value as DomainDocumentType,
+    : activeType.value === ComponentType.Table
+      ? COMPONENT_SFC_TYPE
+      : activeType.value as DomainDocumentType,
 )
 
 const filteredTypeGroups = computed(() => {
@@ -279,23 +284,13 @@ function buildPayloadTemplate(): Record<string, unknown> {
     ...(activeOption.value.supportsDescription && { description: normalizedDescription }),
   }
 
-  if (activeType.value === ComponentType.DSL) {
-    return {
-      ...base,
-      componentType: ComponentType.DSL,
-      schema: {},
-      inputFields: [],
-      jsxScript: '',
-    }
-  }
-
   if (activeType.value === ComponentType.Table) {
     return {
       ...base,
-      componentType: ComponentType.Table,
-      schema: {},
-      inputFields: [],
-      columns: [],
+      source: COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
+      supportedTargets: ['dom', 'canvas'],
+      modelVersion: 1,
+      meta: {},
     }
   }
 
@@ -591,6 +586,9 @@ async function onSubmit(): Promise<void> {
         ? selectedFolderId.value
         : rootFolderId ?? undefined,
     })
+    if (activeType.value === ComponentType.Table) {
+      ;(draft as RComponentSFC).source = COMPONENT_TABLE_SFC_DEFAULT_SOURCE
+    }
     applyFormFields(draft)
     if (targetDocumentType === 'composition') {
       const placement = resolveCompositionCreatePlacement({

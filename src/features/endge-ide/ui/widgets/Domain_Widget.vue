@@ -9,7 +9,7 @@ import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/en
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
 import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
 
-import { ComponentType, DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
+import { DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
   ArrowLeftRight,
@@ -675,8 +675,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
 
 /** Типы документов, которые можно дублировать (те же, что в «Создать»). */
 const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
-  ComponentType.DSL,
-  ComponentType.Table,
   COMPONENT_SFC_TYPE,
   QueryType.REST,
   'data-view',
