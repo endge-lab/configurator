@@ -3,7 +3,7 @@ import type {
   DomainWorkingSetFilterState,
   DomainWorkingSetRef,
 } from '@/features/endge-ide/domain/types/domain-working-set.type'
-import type { DragPayloadItem } from '@/features/endge-ide/model/domain/domain-drag-drop'
+import type { DragPayloadItem, FolderDeletionPlan } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
@@ -78,7 +78,9 @@ import {
   canHardDelete,
   canRestore,
   canSoftDelete,
+  createFolderDeletionPlan,
   createSubfolder as createDomainSubfolder,
+  deleteFolderRecursively,
   deleteEntity,
   DROP_TARGET_SOFT_DELETED,
   executeDrop,
@@ -86,7 +88,6 @@ import {
   isFolderInSoftDeletedBranch,
   restoreEntity,
   restoreFolder,
-  softDeleteFolder,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
 import {
@@ -295,6 +296,21 @@ const renameDialog = ref<{
   folderId: '',
   newName: '',
 })
+
+const folderDeletionDialog = ref<{
+  open: boolean
+  loading: boolean
+  plan: FolderDeletionPlan | null
+}>({
+  open: false,
+  loading: false,
+  plan: null,
+})
+
+const folderDeletionEntityCount = computed(() => folderDeletionDialog.value.plan?.entities.length ?? 0)
+const folderDeletionNestedFolderCount = computed(() =>
+  Math.max(0, (folderDeletionDialog.value.plan?.folders.length ?? 1) - 1),
+)
 
 // ---------- context menu (single instance) ----------
 const contextMenuRef = ref<HTMLElement | null>(null)
@@ -1089,14 +1105,49 @@ async function createSubfolderUi(targetFolder: FsFolderNode, targetPath: string)
   setActiveExpandedFolders(s)
 }
 
-async function removeFolder(node: FsFolderNode): Promise<void> {
+function openFolderDeletionDialog(node: FsFolderNode): void {
+  folderDeletionDialog.value.plan = createFolderDeletionPlan(node)
+  folderDeletionDialog.value.open = true
+}
+
+function closeFolderDeletionDialog(): void {
+  if (folderDeletionDialog.value.loading)
+    return
+  folderDeletionDialog.value.open = false
+  folderDeletionDialog.value.plan = null
+}
+
+async function confirmFolderDeletion(): Promise<void> {
+  const plan = folderDeletionDialog.value.plan
+  if (!plan)
+    return
+
+  folderDeletionDialog.value.loading = true
   try {
-    await softDeleteFolder(node)
-    toast.success('Папка перемещена в «Удалённые»')
+    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan))
+    result.deletedEntities.forEach(entity => closeDocumentTabIfOpen(entity.id, entity.docType))
+
+    folderDeletionDialog.value.open = false
+    folderDeletionDialog.value.plan = null
+
+    if (result.failedEntities.length > 0) {
+      const firstFailure = result.failedEntities[0]
+      toast.error('Папка перемещена в «Удалённые», но удалены не все сущности', {
+        description: `Не удалось удалить: ${result.failedEntities.length}. ${firstFailure?.node.name}: ${firstFailure?.error.message}`,
+      })
+      return
+    }
+
+    toast.success('Папка и её содержимое перемещены в «Удалённые»', {
+      description: `Удалено сущностей: ${result.entityCount}`,
+    })
   }
   catch (e) {
     console.error('[Domain_Widget] Ошибка удаления папки:', e)
     toast.error('Не удалось удалить папку', { description: (e as Error)?.message })
+  }
+  finally {
+    folderDeletionDialog.value.loading = false
   }
 }
 
@@ -1315,7 +1366,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
 
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
   if (a.type === 'remove-folder') {
-    await EndgeIDE.runBusy(removeFolder(a.node))
+    openFolderDeletionDialog(a.node)
     return
   }
 
@@ -1678,6 +1729,42 @@ function rowClasses(item: FlatFsItem): string {
         </button>
       </div>
     </Teleport>
+
+    <!-- recursive folder deletion confirmation -->
+    <Dialog v-model:open="folderDeletionDialog.open">
+      <DialogContent
+        class="sm:max-w-md"
+        @pointer-down-outside="closeFolderDeletionDialog"
+        @escape-key-down="closeFolderDeletionDialog"
+      >
+        <DialogHeader>
+          <DialogTitle>Удалить папку «{{ folderDeletionDialog.plan?.root.name }}»?</DialogTitle>
+        </DialogHeader>
+
+        <div class="space-y-3 py-2 text-sm">
+          <p class="text-muted-foreground">
+            Папка и всё её содержимое будут перемещены в «Удалённые».
+          </p>
+          <div class="rounded-md border bg-muted/40 px-3 py-2">
+            <div>Будет удалено сущностей: <strong>{{ folderDeletionEntityCount }}</strong></div>
+            <div>Вложенных папок: <strong>{{ folderDeletionNestedFolderCount }}</strong></div>
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button variant="outline" :disabled="folderDeletionDialog.loading" @click="closeFolderDeletionDialog">
+            Отменить
+          </Button>
+          <Button
+            variant="destructive"
+            :disabled="folderDeletionDialog.loading"
+            @click="confirmFolderDeletion"
+          >
+            {{ folderDeletionDialog.loading ? 'Удаление…' : 'Удалить всё' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- rename folder dialog -->
     <Dialog v-model:open="renameDialog.open">

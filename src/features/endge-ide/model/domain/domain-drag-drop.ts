@@ -68,6 +68,21 @@ export interface DeleteEntityResult {
   deletedDocs: DeletedDocumentRef[]
 }
 
+/** Снимок реальных папок и документов, которые входят в удаляемую ветку. */
+export interface FolderDeletionPlan {
+  root: FsFolderNode
+  folders: FsFolderNode[]
+  entities: FsFileNode[]
+}
+
+/** Результат рекурсивного мягкого удаления папки. */
+export interface FolderDeletionResult {
+  folderCount: number
+  entityCount: number
+  deletedEntities: FsFileNode[]
+  failedEntities: Array<{ node: FsFileNode, error: Error }>
+}
+
 /** Корневой id виртуальной секции «Удалённые». */
 export const DROP_TARGET_SOFT_DELETED = SOFT_DELETED_IDENTITY as string
 
@@ -117,6 +132,7 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   'composition',
   'store',
   'mock',
+  'computation',
   ParameterType.DefaultParameter,
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
@@ -144,6 +160,8 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
   'tenant',
   'policy',
   'style',
+  'page-template',
+  'page',
   'navigation',
   'vocabs',
   'i18n-bundles',
@@ -246,6 +264,101 @@ export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
     })
   }
   Endge.domain.notify()
+}
+
+/**
+ * Собирает папку, все вложенные persisted-папки и реальные документы.
+ * Виртуальные проекции и колонки таблиц не являются самостоятельными сущностями.
+ */
+export function createFolderDeletionPlan(root: FsFolderNode): FolderDeletionPlan {
+  const folders: FsFolderNode[] = []
+  const entities: FsFileNode[] = []
+  const visitedFolders = new Set<string>()
+  const visitedEntities = new Set<string>()
+
+  const visit = (folder: FsFolderNode): void => {
+    if (folder.virtual)
+      return
+
+    const folderKey = String(folder.folderId ?? folder.id)
+    if (visitedFolders.has(folderKey))
+      return
+    visitedFolders.add(folderKey)
+    folders.push(folder)
+
+    for (const child of folder.children ?? []) {
+      if (child.type === 'folder') {
+        visit(child)
+        continue
+      }
+
+      const entity = child as FsFileNode
+      if (entity.virtual || entity.isTableColumn)
+        continue
+
+      const entityKey = `${entity.sectionType}:${entity.docType}:${entity.id}`
+      if (visitedEntities.has(entityKey))
+        continue
+      visitedEntities.add(entityKey)
+      entities.push(entity)
+    }
+  }
+
+  visit(root)
+  return { root, folders, entities }
+}
+
+function validateFolderDeletionPlan(plan: FolderDeletionPlan): void {
+  const managedFolder = plan.folders.find(isManagedFolderNode)
+  if (managedFolder)
+    throw new Error(`Управляемую извне папку «${managedFolder.name}» нельзя удалить`)
+
+  const managedEntity = plan.entities.find(isExternallyManaged)
+  if (managedEntity)
+    throw new Error(`Управляемый извне документ «${managedEntity.name}» нельзя удалить`)
+
+  const unsupportedEntity = plan.entities.find(entity => !canSoftDelete(entity.sectionType, entity.docType))
+  if (unsupportedEntity) {
+    throw new Error(
+      `Мягкое удаление не поддерживается для «${unsupportedEntity.name}» (${unsupportedEntity.docType})`,
+    )
+  }
+}
+
+/**
+ * Рекурсивно удаляет содержимое папки на стороне frontend:
+ * 1. переносит корень ветки в `soft-deleted`, сохраняя иерархию подпапок;
+ * 2. применяет штатное мягкое удаление к каждому persisted-документу ветки.
+ */
+export async function deleteFolderRecursively(plan: FolderDeletionPlan): Promise<FolderDeletionResult> {
+  validateFolderDeletionPlan(plan)
+
+  // Перенос корня сразу делает всю ветку недоступной в обычном дереве даже при
+  // частичной сетевой ошибке во время последующих запросов по документам.
+  await softDeleteFolder(plan.root)
+
+  const deletedEntities: FsFileNode[] = []
+  const failedEntities: Array<{ node: FsFileNode, error: Error }> = []
+  for (const entity of plan.entities) {
+    try {
+      await deleteEntity(entity)
+      deletedEntities.push(entity)
+    }
+    catch (error) {
+      failedEntities.push({
+        node: entity,
+        error: error instanceof Error ? error : new Error(String(error)),
+      })
+    }
+  }
+
+  Endge.domain.notify()
+  return {
+    folderCount: plan.folders.length,
+    entityCount: plan.entities.length,
+    deletedEntities,
+    failedEntities,
+  }
 }
 
 /**
@@ -800,6 +913,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType): any | n
     return (numId != null ? Endge.domain.getI18nBundleById(numId) : null) ?? Endge.domain.getI18nBundle(id)
   if (sectionType === DomainSectionType.AuthProfile)
     return (numId != null ? Endge.domain.getAuthProfileById(numId) : null) ?? Endge.domain.getAuthProfile(id)
+  if (sectionType === DomainSectionType.Project)
+    return (numId != null ? Endge.domain.getProjectById(numId) : null) ?? Endge.domain.getProject(id)
   return null
 }
 
