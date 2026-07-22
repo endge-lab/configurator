@@ -577,6 +577,7 @@ function expressionLabel(expression: TypeSourceExpression): string {
   if (expression.kind === 'object') { return 'object' }
   if (expression.kind === 'enum') { return 'enum' }
   if (expression.kind === 'union') { return 'union' }
+  if (expression.kind === 'record') { return `record[${expressionLabel(expression.values)}]` }
   return `array[${expressionLabel(expression.items)}]`
 }
 
@@ -620,6 +621,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
   if (expression.kind === 'enum') { return expression.values[0] ?? null }
   if (expression.kind === 'union') { return expression.variants[0] ? sampleForExpression(expression.variants[0], visited) : null }
   if (expression.kind === 'array') { return [sampleForExpression(expression.items, visited)] }
+  if (expression.kind === 'record') { return { key: sampleForExpression(expression.values, visited) } }
 
   const identity = expression.identity
   if (identity === 'String' || identity === 'string' || identity === 'ID') { return 'string' }

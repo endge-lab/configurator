@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NavigationTreeNodeEditor, NavigationTreeNodeType, RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor'
 
-import { FolderTree, Link2 } from 'lucide-vue-next'
+import { FolderTree, Link2, Loader2, Save, Settings2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -11,12 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { isBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RNavigationEditor }
@@ -27,6 +28,11 @@ const documentModel = computed(() => EndgeIDE.tabs.documentModel.value as { mana
 const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
 const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
 const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
+const activeTab = useSmartTabSelection('editor.active-tab', 'navigation', ['general', 'navigation'] as const)
+const tabs = [
+  { value: 'general', label: 'Основное', icon: Settings2 },
+  { value: 'navigation', label: 'Навигация', icon: FolderTree },
+] as const
 const selectedNodeId = ref<string | null>(null)
 const collapsedGroupIds = ref<Set<string>>(new Set())
 const draggedNodeId = ref<string | null>(null)
@@ -382,38 +388,57 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="editor" class="flex h-full min-h-0 flex-col overflow-hidden">
-    <div class="border-b px-4 py-3">
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0">
-          <div class="truncate text-lg font-semibold">
-            Navigation - {{ editor.displayName || 'Без названия' }}
-          </div>
-          <div class="mt-1 flex flex-wrap gap-2">
-            <Badge variant="outline">
-              {{ treeStats.sections }} sections
-            </Badge>
-            <Badge variant="outline">
-              {{ treeStats.groups }} groups
-            </Badge>
-            <Badge variant="outline">
-              {{ treeStats.links }} links
-            </Badge>
-            <Badge variant="outline">
-              {{ treeStats.total }} total
-            </Badge>
-          </div>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-for="tab in tabs" :key="tab.value">
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="activeTab === tab.value ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                :aria-label="tab.label"
+                @click="activeTab = tab.value"
+              >
+                <component :is="tab.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ tab.label }}</TooltipContent>
+          </Tooltip>
         </div>
 
-        <div class="flex items-center gap-2">
-          <SaveDocumentButton :loading="isBusy" :disabled="externallyManaged" @click="save" />
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value || externallyManaged"
+                aria-label="Сохранить"
+                @click="save"
+              >
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
         </div>
-      </div>
-    </div>
+      </TooltipProvider>
+    </template>
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-3">
-      <Card class="mb-3 p-4">
-        <div class="mb-3 text-sm font-semibold">Основное</div>
+    <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-y-auto p-6">
+      <div class="mx-auto max-w-3xl space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label>Идентификатор</Label>
@@ -428,7 +453,24 @@ async function save(): Promise<void> {
           <Label>Описание</Label>
           <Textarea v-model="editor.description" :disabled="externallyManaged" :rows="2" />
         </div>
-      </Card>
+      </div>
+    </div>
+
+    <div v-else class="min-h-0 flex-1 overflow-y-auto p-3">
+      <div class="mb-3 flex flex-wrap gap-2">
+        <Badge variant="outline">
+          {{ treeStats.sections }} sections
+        </Badge>
+        <Badge variant="outline">
+          {{ treeStats.groups }} groups
+        </Badge>
+        <Badge variant="outline">
+          {{ treeStats.links }} links
+        </Badge>
+        <Badge variant="outline">
+          {{ treeStats.total }} total
+        </Badge>
+      </div>
       <div class="grid min-h-full items-start gap-3 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)]">
         <Card class="flex min-h-0 overflow-visible py-0">
           <div class="flex h-full min-h-0 flex-col">
@@ -620,7 +662,7 @@ async function save(): Promise<void> {
         </Card>
       </div>
     </div>
-  </div>
+  </SourceDocumentEditorShell>
 
   <div v-else class="flex h-full items-center justify-center text-sm text-muted-foreground">
     Выберите navigation документ.

@@ -427,6 +427,7 @@ function extractArtifactDependencies(
     const query = payload as QueryProgramPayload
     for (const prop of query.props ?? []) {
       collectContractType(prop.type, dependencies)
+      collectTypeExpressionReferences(prop.typeExpression, dependencies)
       if (prop.vocab) {
         dependencies.push(makeDependency('vocabs', prop.vocab.identity, 'vocab'))
       }
@@ -519,6 +520,10 @@ function collectTypeExpressionReferences(expression: any, target: ProgramDepende
   }
   if (expression.kind === 'reference') {
     target.push(makeDependency('type', expression.identity, 'type-reference'))
+    return
+  }
+  if (expression.kind === 'record') {
+    collectTypeExpressionReferences(expression.values, target)
     return
   }
   collectTypeDefinitionReferences(expression, target)

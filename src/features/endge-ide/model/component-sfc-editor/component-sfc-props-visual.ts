@@ -90,6 +90,9 @@ function visualExpressionToTypeScript(expression: TypeSourceExpression): string 
   if (expression.kind === 'union') {
     return expression.variants.map(visualExpressionToTypeScript).join(' | ') || 'never'
   }
+  if (expression.kind === 'record') {
+    return `Record<string, ${visualExpressionToTypeScript(expression.values)}>`
+  }
   return `${parenthesizeArrayType(visualExpressionToTypeScript(expression.items))}[]`
 }
 
