@@ -23,9 +23,6 @@ importers:
       '@endge/ui-vue':
         specifier: ^0.23.2
         version: link:../../packages/@endge-ui-vue
-      '@endge/ui-vue-shadcn':
-        specifier: workspace:*
-        version: link:../../packages/@endge-ui-vue-shadcn
       '@endge/utils':
         specifier: ^0.24.2
         version: link:../../packages/@endge-utils
@@ -501,58 +498,6 @@ importers:
       vue-tsc:
         specifier: ^2.2.0
         version: 2.2.12(typescript@5.9.3)
-
-  ../../packages/@endge-ui-vue-shadcn:
-    dependencies:
-      '@lucide/vue':
-        specifier: ^1.14.0
-        version: 1.25.0(vue@3.5.38(typescript@5.9.3))
-      '@tanstack/vue-table':
-        specifier: ^8.21.3
-        version: 8.21.3(vue@3.5.38(typescript@5.9.3))
-      sortablejs:
-        specifier: ^1.15.7
-        version: 1.15.7
-    devDependencies:
-      '@endge/core':
-        specifier: link:../@endge-core
-        version: link:../@endge-core
-      '@endge/ui-vue':
-        specifier: link:../@endge-ui-vue
-        version: link:../@endge-ui-vue
-      '@endge/utils':
-        specifier: link:../@endge-utils
-        version: link:../@endge-utils
-      '@types/sortablejs':
-        specifier: ^1.15.9
-        version: 1.15.9
-      '@vitejs/plugin-vue':
-        specifier: ^6.0.1
-        version: 6.0.7(vite@7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0))(vue@3.5.38(typescript@5.9.3))
-      jsdom:
-        specifier: ^26.1.0
-        version: 26.1.0
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^7.2.2
-        version: 7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
-      vite-plugin-dts:
-        specifier: ^4.5.4
-        version: 4.5.4(@types/node@22.20.0)(rollup@4.62.2)(typescript@5.9.3)(vite@7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0))
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.6(@types/debug@4.1.13)(@types/node@22.20.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
-      vue:
-        specifier: 3.5.38
-        version: 3.5.38(typescript@5.9.3)
-      vue-tsc:
-        specifier: ^3.1.3
-        version: 3.3.5(typescript@5.9.3)
 
   ../../packages/@endge-utils:
     dependencies:
@@ -1535,11 +1480,6 @@ packages:
   '@lucide/lab@0.1.2':
     resolution: {integrity: sha512-VprF2BJa7ZuTGOhUd5cf8tHJXyL63wdxcGieAiVVoR9hO0YmPsnZO0AGqDiX2/br+/MC6n8BoJcmPilltOXIJA==}
 
-  '@lucide/vue@1.25.0':
-    resolution: {integrity: sha512-hkEetV+v48ScIn3uwqwWQ66sI8foeP2q6OMI09GzLFH4SfvBlfe3JHYlMBdBCqFC7WRlhFsndyDn/awRKRc2OQ==}
-    peerDependencies:
-      vue: '>=3.0.1'
-
   '@microsoft/api-extractor-model@7.33.8':
     resolution: {integrity: sha512-aIcoQggPyer3B6Ze3usz0YWC/oBwUHfRH5ETUsr+oT2BRA6SfTJl7IKPcPZkX4UR+PohowzW4uMxsvjrn8vm+w==}
 
@@ -1980,18 +1920,8 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@tanstack/table-core@8.21.3':
-    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
-    engines: {node: '>=12'}
-
   '@tanstack/virtual-core@3.17.1':
     resolution: {integrity: sha512-VZyW2Uiml5tmBZwPGrSD3Sz73OxzljQMCmzYHsUTPEuTsERf5xwa+uWb01xEzkz3ZSYTjj8NEb/mKHvgKxyZdA==}
-
-  '@tanstack/vue-table@8.21.3':
-    resolution: {integrity: sha512-rusRyd77c5tDPloPskctMyPLFEQUeBzxdQ+2Eow4F7gDPlPOB1UnnhzfpdvqZ8ZyX2rRNGmqNnQWm87OI2OQPw==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      vue: '>=3.2'
 
   '@tanstack/vue-virtual@3.13.29':
     resolution: {integrity: sha512-MWb9tNHjpar3sP34b8+3A4I5j9akveoPXIYqqp7/ipyWd49a/kso+1S1LqEmAVR/+g/k1WWTJC4ktvdCGWgXYQ==}
@@ -2040,9 +1970,6 @@ packages:
 
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
-
-  '@types/sortablejs@1.15.9':
-    resolution: {integrity: sha512-7HP+rZGE2p886PKV9c9OJzLBI6BBJu1O7lJGYnPyG3fS4/duUCcngkNCjsLwIMV+WMqANe3tt4irrXHSIe68OQ==}
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
@@ -6447,10 +6374,6 @@ snapshots:
 
   '@lucide/lab@0.1.2': {}
 
-  '@lucide/vue@1.25.0(vue@3.5.38(typescript@5.9.3))':
-    dependencies:
-      vue: 3.5.38(typescript@5.9.3)
-
   '@microsoft/api-extractor-model@7.33.8(@types/node@22.20.0)':
     dependencies:
       '@microsoft/tsdoc': 0.16.0
@@ -6840,14 +6763,7 @@ snapshots:
       tailwindcss: 4.3.1
       vite: 7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
 
-  '@tanstack/table-core@8.21.3': {}
-
   '@tanstack/virtual-core@3.17.1': {}
-
-  '@tanstack/vue-table@8.21.3(vue@3.5.38(typescript@5.9.3))':
-    dependencies:
-      '@tanstack/table-core': 8.21.3
-      vue: 3.5.38(typescript@5.9.3)
 
   '@tanstack/vue-virtual@3.13.29(vue@3.5.38(typescript@5.9.3))':
     dependencies:
@@ -6892,8 +6808,6 @@ snapshots:
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 22.20.0
-
-  '@types/sortablejs@1.15.9': {}
 
   '@types/trusted-types@2.0.7':
     optional: true
@@ -10211,7 +10125,8 @@ snapshots:
 
   sortablejs@1.14.0: {}
 
-  sortablejs@1.15.7: {}
+  sortablejs@1.15.7:
+    optional: true
 
   source-map-js@1.2.1: {}
 
@@ -10693,25 +10608,6 @@ snapshots:
       typescript: 5.9.3
     optionalDependencies:
       vite: 6.4.3(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
-    transitivePeerDependencies:
-      - '@types/node'
-      - rollup
-      - supports-color
-
-  vite-plugin-dts@4.5.4(@types/node@22.20.0)(rollup@4.62.2)(typescript@5.9.3)(vite@7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)):
-    dependencies:
-      '@microsoft/api-extractor': 7.58.9(@types/node@22.20.0)
-      '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
-      '@volar/typescript': 2.4.28
-      '@vue/language-core': 2.2.0(typescript@5.9.3)
-      compare-versions: 6.1.1
-      debug: 4.4.3
-      kolorist: 1.8.0
-      local-pkg: 1.2.1
-      magic-string: 0.30.21
-      typescript: 5.9.3
-    optionalDependencies:
-      vite: 7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
