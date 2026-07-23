@@ -3,7 +3,12 @@ import type {
   DomainWorkingSetFilterState,
   DomainWorkingSetRef,
 } from '@/features/endge-ide/domain/types/domain-working-set.type'
-import type { DragPayloadItem, FolderDeletionPlan } from '@/features/endge-ide/model/domain/domain-drag-drop'
+import type {
+  DomainDragPayloadItem,
+  DragPayloadItem,
+  FolderDeletionPlan,
+  FolderDragPayloadItem,
+} from '@/features/endge-ide/model/domain/domain-drag-drop'
 import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
@@ -393,11 +398,30 @@ onBeforeUnmount(() => {
 
 // ---------- DnD ----------
 const dragSources = ref<FsFileNode[]>([])
+const draggedFolder = ref<{ path: string, rootId: string } | null>(null)
 const dragOverPath = ref<string | null>(null)
 
+function canDragTreeItem(item: FlatFsItem): boolean {
+  if (item.node.virtual)
+    return false
+  if (item.node.type === 'file')
+    return !(item.node as FsFileNode).isTableColumn
+
+  const folder = item.node as FsFolderNode
+  return !folder.isRoot
+    && folder.folderId != null
+    && folder.sectionType !== DomainSectionType.Integration
+    && !isExternallyManaged(folder)
+    && !isFolderInSoftDeletedBranch(folder.folderId)
+}
+
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
-  if (!e.dataTransfer || item.node.type !== 'file' || item.node.virtual)
+  if (!e.dataTransfer || item.node.virtual)
     return
+  if (item.node.type === 'folder') {
+    onFolderDragStart(e, item, item.node as FsFolderNode)
+    return
+  }
   const itemKey = getSelectionKey(item)
   const sourceItems = selectedFileIds.value.has(itemKey)
     ? flatFs.value.filter(it => it.node.type === 'file' && selectedFileIds.value.has(getSelectionKey(it)))
@@ -484,6 +508,39 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
   setDomainDrag(sources.map(n => n.sectionType), tree)
 }
 
+function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode): void {
+  if (
+    folder.isRoot
+    || folder.folderId == null
+    || folder.sectionType === DomainSectionType.Integration
+    || isExternallyManaged(folder)
+    || isFolderInSoftDeletedBranch(folder.folderId)
+  ) {
+    draggedFolder.value = null
+    clearDomainDrag()
+    e.dataTransfer!.effectAllowed = 'none'
+    toast.error('Эту папку нельзя перемещать')
+    return
+  }
+
+  const payload: FolderDragPayloadItem[] = [{
+    kind: 'folder',
+    id: String(folder.folderId),
+    sectionType: folder.sectionType,
+    rootId: item.rootId,
+  }]
+  const json = JSON.stringify(payload)
+  draggedFolder.value = {
+    path: item.path,
+    rootId: item.rootId,
+  }
+  dragSources.value = []
+  clearDomainDrag()
+  e.dataTransfer!.effectAllowed = 'move'
+  e.dataTransfer!.setData('text/plain', json)
+  e.dataTransfer!.setData('application/x-endge-domain-entity', json)
+}
+
 function onDragOver(e: DragEvent, item: FlatFsItem): void {
   if (item.node.type !== 'folder')
     return
@@ -492,6 +549,17 @@ function onDragOver(e: DragEvent, item: FlatFsItem): void {
     return
   if (isManagedTypeFolder(folderNode) && !folderNode.isRoot)
     return
+  const folderSource = draggedFolder.value
+  if (
+    folderSource
+    && (
+      folderSource.rootId !== item.rootId
+      || item.path === folderSource.path
+      || item.path.startsWith(`${folderSource.path}/`)
+    )
+  ) {
+    return
+  }
   e.preventDefault()
   if (e.dataTransfer)
     e.dataTransfer.dropEffect = 'move'
@@ -505,6 +573,7 @@ function onDragLeave(item: FlatFsItem): void {
 
 function clearDragSources(): void {
   dragSources.value = []
+  draggedFolder.value = null
   clearDomainDrag()
 }
 
@@ -521,14 +590,13 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
     return
   }
   if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
-    dragSources.value = []
     dragOverPath.value = null
-    clearDomainDrag()
+    clearDragSources()
     toast.error('Системные папки типов недоступны для перетаскивания')
     return
   }
 
-  let payload: DragPayloadItem[] = []
+  let payload: DomainDragPayloadItem[] = []
   try {
     const raw = e.dataTransfer?.getData('text/plain')
     if (raw)
@@ -536,13 +604,13 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   }
   catch { /* ignore */ }
   if (!payload.length) {
-    dragSources.value = []
     dragOverPath.value = null
+    clearDragSources()
     return
   }
 
-  dragSources.value = []
   dragOverPath.value = null
+  clearDragSources()
 
   const dropTarget = {
     targetRootId: item.rootId,
@@ -1621,7 +1689,7 @@ function rowClasses(item: FlatFsItem): string {
                 :key="it.path"
                 :class="rowClasses(it)"
                 :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
-                :draggable="it.node.type === 'file' && !it.node.virtual && !(it.node as FsFileNode).isTableColumn"
+                :draggable="canDragTreeItem(it)"
                 @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
                 @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
                 @dragstart="(e) => onDragStart(e, it)"

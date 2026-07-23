@@ -36,31 +36,18 @@ describe('domain document presentation', () => {
     })
   })
 
-  it('inherits query color without losing the composition icon', () => {
-    expect(getDomainDocumentPresentation('composition')).toEqual({
+  it('keeps the composition violet in every presentation context', () => {
+    const compositionPresentation = {
       icon: 'Network',
       colorClass: 'text-violet-500',
-    })
-    expect(getDomainDocumentPresentation('composition', QUERY_COMPOSITION_PRESENTATION_KIND)).toEqual({
-      icon: 'Network',
-      colorClass: 'text-orange-500',
-    })
-    expect(getDomainDocumentPresentation('composition', 'query')).toEqual({
-      icon: 'Network',
-      colorClass: 'text-orange-500',
-    })
-    expect(getDomainDocumentPresentation('composition', 'project')).toEqual({
-      icon: 'Network',
-      colorClass: 'text-sky-500',
-    })
-    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual({
-      icon: 'Network',
-      colorClass: 'text-emerald-500',
-    })
-    expect(getDomainDocumentPresentation('composition', 'environment')).toEqual({
-      icon: 'Network',
-      colorClass: 'text-lime-500',
-    })
+    }
+
+    expect(getDomainDocumentPresentation('composition')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', QUERY_COMPOSITION_PRESENTATION_KIND)).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'query')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'project')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'environment')).toEqual(compositionPresentation)
   })
 
   it('keeps computation and filter presentations aligned with their sections', () => {

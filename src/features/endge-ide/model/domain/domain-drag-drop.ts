@@ -4,7 +4,7 @@
  * В модуле собраны все ключевые сценарии:
  * - создание/мягкое удаление/восстановление папок;
  * - мягкое/жёсткое удаление и восстановление сущностей;
- * - перенос сущностей между папками (drag-and-drop).
+ * - перенос папок и сущностей внутри доменного дерева (drag-and-drop).
  */
 
 import type { FsFileNode, FsFolderNode } from './domain-tree'
@@ -35,12 +35,23 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 /** Элемент payload при перетаскивании сущности. */
 export interface DragPayloadItem {
+  kind?: 'document'
   id: string
   identity?: string
   sectionType: DomainSectionType
   docType: DomainDocumentType
   rootId: string
 }
+
+/** Элемент payload при перетаскивании persisted-папки вместе с её веткой. */
+export interface FolderDragPayloadItem {
+  kind: 'folder'
+  id: string
+  sectionType: DomainSectionType
+  rootId: string
+}
+
+export type DomainDragPayloadItem = DragPayloadItem | FolderDragPayloadItem
 
 /** Цель drop-операции. */
 export interface DropTarget {
@@ -508,7 +519,7 @@ export function setEntityFolderInDomain(id: string, sectionType: DomainSectionTy
 /**
  * Выполняет DnD-перенос сущностей между папками/секциями.
  */
-export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTarget): Promise<DropResult> {
+export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: DropTarget): Promise<DropResult> {
   const result: DropResult = { moved: 0, skipped: 0, errors: [] }
   const isDropToDeleted = dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED
 
@@ -520,7 +531,6 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
 
   if (dropTarget.dropFolderId != null) {
     const folder = Endge.domain.getFolder(dropTarget.dropFolderId)
-    const identity = String((folder as any)?.identity ?? '')
     if (isExternallyManaged(folder)) {
       result.errors.push('Управляемые извне папки недоступны для перетаскивания')
       result.skipped = payload.length
@@ -529,6 +539,18 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
   }
 
   for (const item of payload) {
+    if (item.kind === 'folder') {
+      try {
+        const moved = await moveFolder(item, dropTarget)
+        moved ? result.moved++ : result.skipped++
+      }
+      catch (err) {
+        result.skipped++
+        result.errors.push(`Папка «${item.id}»: ${(err as Error)?.message ?? 'ошибка смены родительской папки'}`)
+      }
+      continue
+    }
+
     const entity = getEntityBySection(item.id, item.sectionType)
     if (isExternallyManaged(entity)) {
       result.skipped++
@@ -597,6 +619,80 @@ export async function executeDrop(payload: DragPayloadItem[], dropTarget: DropTa
 
   Endge.domain.notify()
   return result
+}
+
+/**
+ * Переносит persisted-папку целой веткой.
+ *
+ * Дочерние папки ссылаются на неё через `parent`, а документы — на свои
+ * непосредственные папки через `folderId`, поэтому изменение parent корня
+ * сохраняет всю вложенную структуру без каскада document PATCH-запросов.
+ */
+async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): Promise<boolean> {
+  if (item.rootId === DROP_TARGET_SOFT_DELETED)
+    throw new Error('перетаскивание из «Удалённые» запрещено')
+  if (dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED)
+    throw new Error('для удаления папки используйте действие «Удалить папку»')
+  if (item.rootId !== dropTarget.targetRootId)
+    throw new Error('перетаскивание между разными секциями запрещено')
+
+  const folder = Endge.domain.getFolder(item.id)
+  if (!folder)
+    throw new Error('папка не найдена')
+  if (String(folder.identity) === item.rootId)
+    throw new Error('корневую папку секции нельзя перемещать')
+  if (isExternallyManaged(folder))
+    throw new Error('управляемую извне папку нельзя перемещать')
+
+  const targetFolder = dropTarget.dropFolderId != null
+    ? Endge.domain.getFolder(dropTarget.dropFolderId)
+    : Endge.domain.getFolderByIdentity(dropTarget.targetRootId)
+  if (dropTarget.dropFolderId != null && !targetFolder)
+    throw new Error('папка назначения не найдена')
+  if (targetFolder && isExternallyManaged(targetFolder) && String(targetFolder.identity) !== dropTarget.targetRootId)
+    throw new Error('управляемая извне папка недоступна для перетаскивания')
+  if (targetFolder && isFolderInsideBranch(targetFolder, folder))
+    throw new Error('нельзя переместить папку в саму себя или в её подпапку')
+
+  const targetParent = targetFolder?.id ?? targetFolder?.identity ?? dropTarget.targetRootId
+  if (String(folder.parent ?? '') === String(targetParent ?? ''))
+    return false
+
+  const previousParent = folder.parent ?? null
+  folder.parent = targetParent
+  try {
+    await Endge.schema.saveFolder(String(folder.id))
+  }
+  catch (error) {
+    folder.parent = previousParent
+    Endge.domain.notify()
+    throw error
+  }
+  return true
+}
+
+function isFolderInsideBranch(target: RFolder, branchRoot: RFolder): boolean {
+  const branchIds = new Set([
+    String(branchRoot.id),
+    String(branchRoot.identity),
+  ])
+  const visited = new Set<string>()
+  let current: RFolder | null = target
+
+  while (current) {
+    if (branchIds.has(String(current.id)) || branchIds.has(String(current.identity)))
+      return true
+
+    const key = `${String(current.id)}:${String(current.identity)}`
+    if (visited.has(key))
+      return true
+    visited.add(key)
+
+    current = current.parent == null
+      ? null
+      : Endge.domain.getFolder(current.parent)
+  }
+  return false
 }
 
 /** Переносит Composition между обычной и query presentation-ролью. */

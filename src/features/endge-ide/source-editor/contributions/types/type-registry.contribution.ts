@@ -7,6 +7,7 @@ import { toast } from 'vue-sonner'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
+import { resolveComponentSFCTagReference } from '@/features/endge-ide/source-editor/contributions/component-sfc/component-tag-reference'
 
 const BUILTINS = new Set([
   'Array',
@@ -120,6 +121,24 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       const hover = monaco.languages.registerHoverProvider('html', {
         provideHover(currentModel, position) {
           if (currentModel !== model) { return null }
+          const componentReference = resolveComponentSFCTagReference(
+            model.getValue(),
+            model.getOffsetAt(position),
+          )
+          if (componentReference) {
+            const component = Endge.domain.getComponentSFC(componentReference.identity)
+            return {
+              range: monaco.Range.fromPositions(
+                model.getPositionAt(componentReference.range.start),
+                model.getPositionAt(componentReference.range.end),
+              ),
+              contents: [
+                { value: `**${component?.tag?.trim() || componentReference.identity}**` },
+                { value: `Component · ${component?.displayName || component?.name || componentReference.identity}` },
+                { value: 'Cmd/Ctrl + click — open Component Source' },
+              ],
+            }
+          }
           const word = model.getWordAtPosition(position)?.word
           if (word && localTypeDeclarations(model.getValue()).has(word)) { return null }
           const type = word ? catalog().find(item => item.identity === word) : null
@@ -136,8 +155,15 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       const navigation = installMonacoReferenceNavigation({
         monaco,
         editor,
-        actionId: 'endge.open-type-reference',
+        actionId: 'endge.open-sfc-reference',
         openAt(position) {
+          const componentReference = resolveComponentSFCTagReference(
+            model.getValue(),
+            model.getOffsetAt(position),
+          )
+          if (componentReference) {
+            return EndgeIDE.tabs.openSourceReference(componentReference)
+          }
           const identity = model.getWordAtPosition(position)?.word
           if (identity && localTypeDeclarations(model.getValue()).has(identity)) { return false }
           const type = identity ? catalog().find(item => item.identity === identity) : null
