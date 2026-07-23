@@ -337,7 +337,7 @@ function openContextMenu(e: MouseEvent, node: FsNode, path: string): void {
   const folderNode = node.type === 'folder' ? (node as FsFolderNode) : null
   if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot)
     return
-  if (getMenuActions(node, path).length === 0)
+  if (getMenuActions(node).length === 0)
     return
   e.preventDefault()
   e.stopPropagation()
@@ -423,8 +423,8 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     return
   }
   const itemKey = getSelectionKey(item)
-  const sourceItems = selectedFileIds.value.has(itemKey)
-    ? flatFs.value.filter(it => it.node.type === 'file' && selectedFileIds.value.has(getSelectionKey(it)))
+  const sourceItems = selectedFileKeys.value.has(itemKey)
+    ? flatFs.value.filter(it => it.node.type === 'file' && selectedFileKeys.value.has(getSelectionKey(it)))
     : [item]
   const sources = sourceItems.map(it => it.node as FsFileNode)
   if (sources.some(source => isExternallyManaged(source))) {
@@ -961,21 +961,42 @@ function collapseAll(): void {
 }
 
 // ---------- выделение (множественное: Ctrl/Meta, диапазон: Shift) ----------
-/** Ключ выделения: путь в дереве (уникален для узла), чтобы одна identity в разных видах не давала коллизию. */
+/** Стабильный ключ persisted-документа: document type + id. */
+function getFileSelectionKey(node: FsFileNode): string {
+  if (node.isTableColumn) {
+    return `table-column:${String(node.parentComponentId ?? '')}:${String(node.id)}`
+  }
+  const id = String(node.id ?? '').trim()
+  return id ? `${String(node.docType)}:${id}` : ''
+}
+
 function getSelectionKey(item: FlatFsItem): string {
   if (item.node.type !== 'file')
     return ''
-  return item.path
+  return getFileSelectionKey(item.node as FsFileNode)
 }
 
-const selectedFileIds = ref<Set<string>>(new Set())
-const lastClickedPath = ref<string | null>(null)
+function getTreeItemRenderKey(item: FlatFsItem): string {
+  if (item.node.type === 'file') {
+    return `file:${item.rootId}:${getSelectionKey(item)}:${item.path}`
+  }
+  const folder = item.node as FsFolderNode
+  return `folder:${item.rootId}:${String(folder.folderId ?? folder.id)}:${item.path}`
+}
 
-const selectedExportNodes = computed<FsFileNode[]>(() =>
-  allDomainFileItems.value
-    .filter(item => !item.node.virtual && selectedFileIds.value.has(getSelectionKey(item)))
-    .map(item => item.node as FsFileNode),
-)
+const selectedFileKeys = ref<Set<string>>(new Set())
+const lastClickedSelection = ref<{ key: string, rootId: string } | null>(null)
+
+const selectedExportNodes = computed<FsFileNode[]>(() => {
+  const selected = new Map<string, FsFileNode>()
+  for (const item of allDomainFileItems.value) {
+    const key = getSelectionKey(item)
+    if (!item.node.virtual && selectedFileKeys.value.has(key) && !selected.has(key)) {
+      selected.set(key, item.node as FsFileNode)
+    }
+  }
+  return [...selected.values()]
+})
 
 function resetWorkingSetFilter(): void {
   workingSetFilterEnabled.value = false
@@ -1034,22 +1055,22 @@ function getFileItemsInRoot(rootId: string): FlatFsItem[] {
   return flatFs.value.filter(it => it.node.type === 'file' && it.rootId === rootId)
 }
 
-function selectRange(anchorPath: string, targetPath: string, rootId: string): void {
+function selectRange(anchorKey: string, targetKey: string, rootId: string): void {
   const fileItems = getFileItemsInRoot(rootId)
-  const paths = fileItems.map(it => it.path)
-  const i = paths.indexOf(anchorPath)
-  const j = paths.indexOf(targetPath)
+  const keys = fileItems.map(getSelectionKey)
+  const i = keys.indexOf(anchorKey)
+  const j = keys.indexOf(targetKey)
   if (i === -1 || j === -1)
     return
   const [lo, hi] = i <= j ? [i, j] : [j, i]
-  const next = new Set(selectedFileIds.value)
+  const next = new Set(selectedFileKeys.value)
   for (let k = lo; k <= hi; k++) {
     const fi = fileItems[k]
     const key = fi ? getSelectionKey(fi) : ''
     if (key)
       next.add(key)
   }
-  selectedFileIds.value = next
+  selectedFileKeys.value = next
 }
 
 function onRowClick(e: MouseEvent, item: FlatFsItem): void {
@@ -1079,28 +1100,30 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   }
   const isShift = (e as MouseEvent & { shiftKey?: boolean }).shiftKey
   const isMulti = (e as MouseEvent & { ctrlKey?: boolean, metaKey?: boolean }).ctrlKey || (e as MouseEvent & { metaKey?: boolean }).metaKey
+  const selectionKey = getSelectionKey(item)
 
-  if (isShift && lastClickedPath.value) {
-    const anchorItem = flatFs.value.find(f => f.path === lastClickedPath.value)
-    const anchorRootId = anchorItem?.rootId ?? item.rootId
-    selectRange(lastClickedPath.value, item.path, anchorRootId)
+  if (isShift && lastClickedSelection.value) {
+    selectRange(lastClickedSelection.value.key, selectionKey, lastClickedSelection.value.rootId)
     return
   }
   if (isMulti) {
-    const next = new Set(selectedFileIds.value)
-    const key = getSelectionKey(item)
-    if (key) {
-      if (next.has(key))
-        next.delete(key)
-      else next.add(key)
+    const next = new Set(selectedFileKeys.value)
+    if (selectionKey) {
+      if (next.has(selectionKey))
+        next.delete(selectionKey)
+      else next.add(selectionKey)
     }
-    selectedFileIds.value = next
-    lastClickedPath.value = item.path
+    selectedFileKeys.value = next
+    lastClickedSelection.value = selectionKey
+      ? { key: selectionKey, rootId: item.rootId }
+      : null
     return
   }
 
-  selectedFileIds.value = getSelectionKey(item) ? new Set([getSelectionKey(item)]) : new Set()
-  lastClickedPath.value = item.path
+  selectedFileKeys.value = selectionKey ? new Set([selectionKey]) : new Set()
+  lastClickedSelection.value = selectionKey
+    ? { key: selectionKey, rootId: item.rootId }
+    : null
 
   if (node.docType === 'primitive') {
     toast.info('Это примитивный тип', {
@@ -1121,7 +1144,7 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
 }
 
 function isSelected(item: FlatFsItem): boolean {
-  return item.node.type === 'file' && selectedFileIds.value.has(getSelectionKey(item))
+  return item.node.type === 'file' && selectedFileKeys.value.has(getSelectionKey(item))
 }
 
 // ---------- actions ----------
@@ -1286,8 +1309,8 @@ async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void
   await EndgeIDE.runtimePreview.launchAll(requests)
 }
 
-function getContextFileNodes(node: FsFileNode, path?: string | null): FsFileNode[] {
-  if (path && selectedFileIds.value.has(path)) {
+function getContextFileNodes(node: FsFileNode): FsFileNode[] {
+  if (selectedFileKeys.value.has(getFileSelectionKey(node))) {
     return selectedExportNodes.value
   }
   return [node]
@@ -1295,7 +1318,7 @@ function getContextFileNodes(node: FsFileNode, path?: string | null): FsFileNode
 
 // ---------- context menu items ----------
 /** Формирует контекстные действия для узла дерева домена. */
-function getMenuActions(node: FsNode, path?: string | null): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
+function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
   if (node.virtual)
     return items
@@ -1361,7 +1384,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
     if (fileNode.isTableColumn)
       return items
 
-    const contextNodes = getContextFileNodes(fileNode, path)
+    const contextNodes = getContextFileNodes(fileNode)
     items.push({
       label: contextNodes.length > 1
         ? `Запустить в Runtime (${contextNodes.length})`
@@ -1370,8 +1393,8 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       action: { type: 'launch-runtime-previews', nodes: contextNodes },
     })
 
-    const isSingleSelectedFile = path != null
-      && selectedFileIds.value.has(path)
+    const isContextFileSelected = selectedFileKeys.value.has(getFileSelectionKey(fileNode))
+    const isSingleSelectedFile = isContextFileSelected
       && selectedExportNodes.value.length === 1
     if (isSingleSelectedFile) {
       items.push({
@@ -1381,7 +1404,7 @@ function getMenuActions(node: FsNode, path?: string | null): Array<{ label: stri
       })
     }
 
-    if (path && selectedFileIds.value.has(path) && selectedExportNodes.value.length > 1) {
+    if (isContextFileSelected && selectedExportNodes.value.length > 1) {
       items.push({
         label: `Скачать выбранные (${selectedExportNodes.value.length})`,
         icon: Download,
@@ -1686,7 +1709,7 @@ function rowClasses(item: FlatFsItem): string {
             >
               <div
                 v-for="it in root.items"
-                :key="it.path"
+                :key="getTreeItemRenderKey(it)"
                 :class="rowClasses(it)"
                 :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
                 :draggable="canDragTreeItem(it)"
@@ -1783,7 +1806,7 @@ function rowClasses(item: FlatFsItem): string {
         @click.stop
       >
         <button
-          v-for="(mi, idx) in getMenuActions(contextMenu.node, contextMenu.path)"
+          v-for="(mi, idx) in getMenuActions(contextMenu.node)"
           :key="idx"
           type="button"
           role="menuitem"
