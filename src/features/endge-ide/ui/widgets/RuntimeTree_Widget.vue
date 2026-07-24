@@ -1,14 +1,22 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 
-import { ChevronsDownUp, ChevronsUpDown, Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { ChevronsDownUp, ChevronsUpDown, ListCollapse, Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import {
+  collectRuntimeTreeExpansion,
+  createRuntimeTreeStructure,
+  readRuntimeTreeViewState,
+  runtimeTreeViewStorageKey,
+  writeRuntimeTreeViewState,
+} from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 import RuntimeTreeNode from '@/features/endge-ide/ui/widgets/components/RuntimeTreeNode.vue'
 
 interface RuntimeContextMenu {
@@ -21,8 +29,12 @@ interface RuntimeContextMenu {
 const preview = EndgeIDE.runtimePreview
 const contextMenu = ref<RuntimeContextMenu | null>(null)
 const busy = ref(false)
-const expandAll = ref(true)
-const expansionRevision = ref(0)
+const expandedNodeKeys = shallowRef<ReadonlySet<string>>(new Set())
+const treeEntries = computed(() => preview.entries.value.map(entry => ({
+  key: entry.key,
+  tree: entry.tree.value,
+})))
+const treeStructure = computed(() => createRuntimeTreeStructure(treeEntries.value))
 const hasEntries = computed(() => preview.entries.value.length > 0)
 const hasStartableEntries = computed(() => preview.entries.value.some(entry => ['inactive', 'paused', 'stopped', 'error'].includes(entry.status.value)))
 const hasActiveEntries = computed(() => preview.entries.value.some(entry => entry.status.value === 'active'))
@@ -45,6 +57,9 @@ const menuStyle = computed(() => ({
   left: `${Math.min(contextMenu.value?.x ?? 0, Math.max(8, window.innerWidth - 210))}px`,
   top: `${Math.min(contextMenu.value?.y ?? 0, Math.max(8, window.innerHeight - 230))}px`,
 }))
+let activeStorageKey = ''
+let activeStructure = ''
+let knownExpandableNodeKeys = new Set<string>()
 
 function openContextMenu(payload: RuntimeContextMenu): void {
   if (payload.node.kind === 'resource') { return }
@@ -98,9 +113,71 @@ async function runAll(operation: () => Promise<void>): Promise<void> {
   finally { busy.value = false }
 }
 
-function setAllExpanded(value: boolean): void {
-  expandAll.value = value
-  expansionRevision.value += 1
+function setExpansion(preset: RuntimeTreeExpansionPreset): void {
+  expandedNodeKeys.value = collectRuntimeTreeExpansion(
+    treeEntries.value,
+    preset,
+  )
+  persistExpansion()
+}
+
+function toggleExpanded(nodeKey: string, expanded: boolean): void {
+  const next = new Set(expandedNodeKeys.value)
+  if (expanded) {
+    next.add(nodeKey)
+  }
+  else {
+    next.delete(nodeKey)
+  }
+  expandedNodeKeys.value = next
+  persistExpansion()
+}
+
+function persistExpansion(): void {
+  if (!activeStructure || activeStructure !== treeStructure.value) {
+    return
+  }
+  writeRuntimeTreeViewState(
+    activeStructure,
+    expandedNodeKeys.value,
+    activeStorageKey,
+  )
+}
+
+function restoreOrReconcileExpansion(structure: string): void {
+  if (!structure) {
+    activeStorageKey = ''
+    activeStructure = ''
+    knownExpandableNodeKeys = new Set()
+    expandedNodeKeys.value = new Set()
+    return
+  }
+  const storageKey = runtimeTreeViewStorageKey()
+  const expandable = collectRuntimeTreeExpansion(treeEntries.value, 'expanded')
+  if (storageKey !== activeStorageKey || !activeStructure) {
+    const stored = readRuntimeTreeViewState(storageKey)
+    expandedNodeKeys.value
+      = stored?.structure === structure
+        ? new Set(
+            [...stored.expanded].filter(nodeKey => expandable.has(nodeKey)),
+          )
+        : expandable
+  }
+  else if (structure !== activeStructure) {
+    const next = new Set(
+      [...expandedNodeKeys.value].filter(nodeKey => expandable.has(nodeKey)),
+    )
+    for (const nodeKey of expandable) {
+      if (!knownExpandableNodeKeys.has(nodeKey)) {
+        next.add(nodeKey)
+      }
+    }
+    expandedNodeKeys.value = next
+  }
+  activeStorageKey = storageKey
+  activeStructure = structure
+  knownExpandableNodeKeys = expandable
+  persistExpansion()
 }
 
 function pause(menu: RuntimeContextMenu): Promise<void> {
@@ -127,6 +204,7 @@ function restart(menu: RuntimeContextMenu): Promise<void> {
     : preview.restartNode(menu.entryKey, menu.node.id)
 }
 
+watch(treeStructure, restoreOrReconcileExpansion, { immediate: true })
 onBeforeUnmount(closeContextMenu)
 </script>
 
@@ -143,7 +221,7 @@ onBeforeUnmount(closeContextMenu)
                 class="size-7"
                 aria-label="Свернуть всё дерево Runtime"
                 :disabled="!hasEntries"
-                @click="setAllExpanded(false)"
+                @click="setExpansion('collapsed')"
               >
                 <ChevronsDownUp class="size-3.5" />
               </Button>
@@ -159,9 +237,27 @@ onBeforeUnmount(closeContextMenu)
                 variant="ghost"
                 size="icon"
                 class="size-7"
+                aria-label="Показать содержимое композиций проекта"
+                :disabled="!hasEntries"
+                @click="setExpansion('project-compositions')"
+              >
+                <ListCollapse class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              До содержимого композиций
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
                 aria-label="Развернуть всё дерево Runtime"
                 :disabled="!hasEntries"
-                @click="setAllExpanded(true)"
+                @click="setExpansion('expanded')"
               >
                 <ChevronsUpDown class="size-3.5" />
               </Button>
@@ -274,9 +370,9 @@ onBeforeUnmount(closeContextMenu)
           :entry-key="entry.key"
           :node="node"
           :depth="0"
-          :expand-all="expandAll"
-          :expansion-revision="expansionRevision"
+          :expanded-node-keys="expandedNodeKeys"
           @contextmenu="openContextMenu"
+          @toggle-expanded="toggleExpanded"
         />
       </template>
 

@@ -346,6 +346,7 @@ export class RuntimePreviewInstance {
       {
         contextSuffix: 'debug-sfc-context',
         meta: { mode: 'debug-preview' },
+        vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
       },
     )
     try {
@@ -358,7 +359,13 @@ export class RuntimePreviewInstance {
         parent: context?.host ?? null,
         ...(draft ? { artifactReader: createOverlayArtifactReader(artifact) } : {}),
         persistence: 'disabled',
-        meta: { mode: 'debug-preview', target: 'dom', input },
+        meta: {
+          mode: 'debug-preview',
+          target: 'dom',
+          input,
+          i18nCatalog: context?.host.getI18nCatalog() ?? {},
+          vocabCatalog: context?.host.getVocabCatalog() ?? {},
+        },
       }) as ComponentSFCRuntimeHost | null
       if (!runtime) { throw new Error(`[RuntimePreview] Component SFC "${identity}" cannot be mounted.`) }
       this._componentContext = context

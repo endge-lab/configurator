@@ -111,6 +111,7 @@ export class UIEditorRuntimePreviewSession {
         contextSuffix: 'ui-editor-context',
         meta: previewMeta(),
         resolveStoreRuntime: identity => UI_EDITOR_PREVIEW_SCOPE.resolve('store', identity),
+        vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
       },
     )
     let nextRuntime: ComponentSFCRuntimeHost | null = null
@@ -129,6 +130,8 @@ export class UIEditorRuntimePreviewSession {
           ...previewMeta(),
           target: 'dom',
           input,
+          i18nCatalog: context?.host.getI18nCatalog() ?? {},
+          vocabCatalog: context?.host.getVocabCatalog() ?? {},
         },
       }) as ComponentSFCRuntimeHost | null
       if (!runtime || runtime.entityType !== 'component-sfc') {

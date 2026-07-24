@@ -1,7 +1,9 @@
 import type {
   ComponentSFCPreviewOptions,
   ComponentSFCPreviewProps,
+  CompositionProgramPayload,
   CompositionRuntimeHost,
+  RComponentSFC_RuntimeVocabDependency,
   RuntimeAppScope,
   RuntimeHostInputSource,
 } from '@endge/core'
@@ -26,6 +28,7 @@ interface ComponentPreviewContextOptions {
   contextSuffix?: string
   meta?: Record<string, unknown>
   resolveStoreRuntime?: (identity: string) => { id: string, entityType: string } | null
+  vocabDependencies?: readonly RComponentSFC_RuntimeVocabDependency[]
 }
 
 /** Materializes definePreviewProps options into a runtime context shared by preview surfaces. */
@@ -53,7 +56,8 @@ export async function prepareComponentPreviewContext(
     }
   }
   const targets = options?.run ?? []
-  if (!storeIdentities.size && !targets.length) {
+  const vocabProviders = resolvePreviewVocabProviders(runtimeOptions.vocabDependencies ?? [])
+  if (!storeIdentities.size && !targets.length && !vocabProviders.size) {
     return null
   }
 
@@ -62,6 +66,7 @@ export async function prepareComponentPreviewContext(
   const model = createPreviewComposition(
     source,
     dataAliases,
+    vocabProviders,
     targets,
     runtimeOptions.contextSuffix ?? 'sfc-context',
   )
@@ -197,11 +202,16 @@ async function ensurePreviewQueryArtifacts(options: ComponentSFCPreviewOptions |
 function createPreviewComposition(
   input: ComponentPreviewSource,
   dataAliases: Map<string, string>,
+  vocabProviders: Map<string, string>,
   targets: NonNullable<ComponentSFCPreviewOptions['run']>,
   contextSuffix: string,
 ): RComposition {
-  const data = Array.from(dataAliases.entries())
-    .map(([identity, alias]) => `${alias}: store(${JSON.stringify(identity)})`)
+  const data = [
+    ...Array.from(dataAliases.entries())
+      .map(([identity, alias]) => `${alias}: store(${JSON.stringify(identity)})`),
+    ...Array.from(vocabProviders.entries())
+      .map(([alias, identity]) => `${JSON.stringify(alias)}: vocab(${JSON.stringify(identity)})`),
+  ]
     .join(',\n    ')
   const runtimes = targets.map((target, index) => {
     const publication = target.storeTo
@@ -228,6 +238,51 @@ function createPreviewComposition(
   ],
 })`
   return model
+}
+
+/**
+ * Разрешает preview-only providers только из compiler-derived Composition data.
+ * Прямое совпадение alias с Vocab identity используется лишь когда ни одна
+ * Composition ещё не опубликовала этот alias.
+ */
+function resolvePreviewVocabProviders(
+  dependencies: readonly RComponentSFC_RuntimeVocabDependency[],
+): Map<string, string> {
+  const providers = new Map<string, string>()
+  const aliases = new Set(dependencies.map(item => item.alias.trim()).filter(Boolean))
+  const compositionArtifacts = Endge.program.getArtifacts()
+    .filter(artifact => artifact.ref.entityType === 'composition')
+
+  for (const alias of aliases) {
+    const identities = new Set<string>()
+    for (const artifact of compositionArtifacts) {
+      const payload = artifact.payload as CompositionProgramPayload
+      for (const data of payload.data ?? []) {
+        if (data.kind === 'vocab' && data.name === alias) {
+          identities.add(data.identity)
+        }
+      }
+    }
+
+    if (identities.size === 0) {
+      const direct = Endge.domain.getVocab(alias)
+      const identity = String(direct?.identity ?? '').trim()
+      if (identity) {
+        identities.add(identity)
+      }
+    }
+
+    if (identities.size === 0) {
+      throw new Error(`Preview Vocab provider is missing for alias "${alias}". Open the component through a Composition that declares this alias.`)
+    }
+    if (identities.size > 1) {
+      throw new Error(`Preview Vocab alias "${alias}" is ambiguous: ${[...identities].join(', ')}. Open the component through the intended Composition.`)
+    }
+
+    providers.set(alias, [...identities][0]!)
+  }
+
+  return providers
 }
 
 function resolvePreviewIdentity(input: ComponentPreviewSource): string {

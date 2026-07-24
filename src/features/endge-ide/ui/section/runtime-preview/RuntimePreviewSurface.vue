@@ -746,6 +746,11 @@ onBeforeUnmount(() => {
   flex: 1 1 0%;
 }
 
+.runtime-preview-surface__renderable :deep(.endge-sfc-table) {
+  height: 600px !important;
+  min-height: 600px !important;
+}
+
 .runtime-preview-surface__canvas :deep([data-endge-inspection-highlight]) {
   position: relative;
   outline: 2px solid rgb(56 189 248 / 0.95) !important;

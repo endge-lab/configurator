@@ -4,10 +4,11 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 import type { Component } from 'vue'
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { runtimeTreeNodeExpansionKey } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 
 defineOptions({ name: 'RuntimeTreeNode' })
@@ -16,16 +17,17 @@ const props = defineProps<{
   entryKey: string
   node: RuntimePreviewTreeNode
   depth?: number
-  expandAll?: boolean
-  expansionRevision?: number
+  expandedNodeKeys: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
   contextmenu: [payload: { entryKey: string, node: RuntimePreviewTreeNode, x: number, y: number }]
+  toggleExpanded: [nodeKey: string, expanded: boolean]
 }>()
 
-const expanded = ref(props.expandAll ?? true)
 const preview = EndgeIDE.runtimePreview
+const nodeKey = computed(() => runtimeTreeNodeExpansionKey(props.entryKey, props.node.id))
+const expanded = computed(() => props.expandedNodeKeys.has(nodeKey.value))
 const selected = computed(() => preview.selectedEntryKey.value === props.entryKey
   && preview.selectedNode.value?.id === props.node.id)
 const state = computed(() => preview.lifecycleState(props.entryKey, props.node))
@@ -35,12 +37,18 @@ const nodeIcon = computed<Component>(() => getIconComponent(props.node.presentat
 const badgeIcon = computed<Component | null>(() => getIconComponent(props.node.presentation?.badgeIcon ?? undefined) as Component | null)
 const iconColorClass = computed(() => props.node.presentation?.colorClass ?? 'text-muted-foreground')
 
-watch(() => props.expansionRevision, () => {
-  expanded.value = props.expandAll ?? true
-})
-
 function select(): void {
   void preview.select(props.entryKey, props.node.id)
+}
+
+function toggleExpanded(): void {
+  if (hasChildren.value) {
+    emit('toggleExpanded', nodeKey.value, !expanded.value)
+  }
+}
+
+function forwardToggleExpanded(childNodeKey: string, childExpanded: boolean): void {
+  emit('toggleExpanded', childNodeKey, childExpanded)
 }
 
 function openContextMenu(event: MouseEvent): void {
@@ -70,7 +78,7 @@ function openContextMenu(event: MouseEvent): void {
     >
       <span
         class="inline-flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-foreground/5"
-        @click.stop="hasChildren && (expanded = !expanded)"
+        @click.stop="toggleExpanded"
       >
         <ChevronRight
           v-if="hasChildren"
@@ -109,9 +117,9 @@ function openContextMenu(event: MouseEvent): void {
         :entry-key="entryKey"
         :node="child"
         :depth="(depth ?? 0) + 1"
-        :expand-all="expandAll"
-        :expansion-revision="expansionRevision"
+        :expanded-node-keys="expandedNodeKeys"
         @contextmenu="emit('contextmenu', $event)"
+        @toggle-expanded="forwardToggleExpanded"
       />
     </div>
   </div>

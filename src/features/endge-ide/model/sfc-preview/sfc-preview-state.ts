@@ -88,6 +88,7 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
         appScope: configuratorPreviewAppScope,
         meta: configuratorPreviewMeta(),
         resolveStoreRuntime: identity => resolvePreviewRuntime<{ id: string, entityType: string }>('store', identity),
+        vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
       },
     )
     try {
@@ -103,6 +104,8 @@ export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<vo
           ...configuratorPreviewMeta(),
           target: 'dom',
           input: runtimeInput,
+          i18nCatalog: composition?.host.getI18nCatalog() ?? {},
+          vocabCatalog: composition?.host.getVocabCatalog() ?? {},
         },
       }) as ComponentSFCRuntimeHost | null
       if (!runtime || runtime.entityType !== 'component-sfc') {
