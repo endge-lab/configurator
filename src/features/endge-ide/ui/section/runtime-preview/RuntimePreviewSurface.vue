@@ -333,6 +333,18 @@ function collectCompositionChildren(node: RuntimePreviewTreeNode): RuntimePrevie
   return result
 }
 
+function findInspectionComponent(
+  roots: SFCRenderInspectionTreeNode[],
+  identity: string,
+): SFCRenderInspectionTreeNode | null {
+  for (const node of roots) {
+    if (node.calledComponentIdentity === identity) { return node }
+    const child = findInspectionComponent(node.children, identity)
+    if (child) { return child }
+  }
+  return null
+}
+
 watch(componentRenderables, () => {
   bindPropsWatch()
   renderInspection.reset()
@@ -343,6 +355,22 @@ watch(hierarchyPanelVisible, (visible) => {
   renderInspection.reset()
   setHighlightedElement(null)
 })
+watch(
+  [
+    () => instance.value?.contextualFocusComponentIdentity.value ?? null,
+    () => renderInspection.roots.value,
+  ],
+  ([componentIdentity, roots]) => {
+    if (!componentIdentity) { return }
+    if (!hierarchyPanelVisible.value) {
+      hierarchyPanelVisible.value = true
+      return
+    }
+    const node = findInspectionComponent(roots, componentIdentity)
+    if (node && renderInspection.pinnedId.value !== node.id) { pinInspectionNode(node.id) }
+  },
+  { flush: 'post' },
+)
 
 onMounted(() => {
   document.addEventListener('pointermove', resizePanel)

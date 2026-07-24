@@ -29,6 +29,28 @@ export interface RuntimePreviewTarget {
   identity: string
 }
 
+export type RuntimePreviewOccurrenceKind = 'composition' | 'component-runtime'
+
+/** Static address of one target usage inside the current Project program. */
+export interface RuntimePreviewOccurrence {
+  id: string
+  kind: RuntimePreviewOccurrenceKind
+  projectIdentity: string
+  nodeId: string
+  composition: RuntimePreviewCompositionAddress
+  runtimePath: string | null
+  path: string[]
+  /** Nested SFC to pin in the semantic renderer inspector after its host is selected. */
+  renderComponentIdentity: string | null
+  /** Conservative flag: activating this branch may run a Composition mount Query. */
+  mayExecuteQueries: boolean
+}
+
+export interface RuntimePreviewContextualLaunch {
+  target: RuntimePreviewTarget
+  occurrence: RuntimePreviewOccurrence
+}
+
 /** Current editor state used for a non-persisting Runtime Preview launch. */
 export interface RuntimePreviewDraft {
   id?: string | number | null
@@ -42,6 +64,13 @@ export interface RuntimePreviewDraft {
 
 export interface RuntimePreviewLaunchRequest extends RuntimePreviewTarget {
   draft?: RuntimePreviewDraft
+  contextual?: RuntimePreviewContextualLaunch
+}
+
+export interface RuntimePreviewOccurrencePrompt {
+  target: RuntimePreviewTarget
+  occurrences: RuntimePreviewOccurrence[]
+  liveMode: boolean
 }
 
 export interface RuntimePreviewCompositionAddress {

@@ -1,6 +1,7 @@
 /* eslint-disable style/max-statements-per-line, ts/naming-convention */
 import type {
   RuntimePreviewCompositionAddress,
+  RuntimePreviewContextualLaunch,
   RuntimePreviewDraft,
   RuntimePreviewLifecycleState,
   RuntimePreviewRenderable,
@@ -16,6 +17,7 @@ import type {
   EndgeStyleSheetArtifact,
   ProgramArtifact,
   ProjectRuntimeSession,
+  RuntimeArtifactReader,
   RuntimeHost,
   StoreRuntimeHost,
 } from '@endge/core'
@@ -56,6 +58,7 @@ export class RuntimePreviewInstance {
   public readonly status = ref<RuntimePreviewLifecycleState>('inactive')
   public readonly error = shallowRef<string | null>(null)
   public readonly revision = ref(0)
+  public readonly contextualFocusComponentIdentity = ref<string | null>(null)
   public readonly selectedNode = computed(() => this.findNode(this.selectedNodeId.value))
   public readonly inactiveRenderableChildren = computed(() => {
     void this.revision.value
@@ -69,6 +72,8 @@ export class RuntimePreviewInstance {
   private _componentContext: ComponentPreviewContext | null = null
   private _store: StoreRuntimeHost | null = null
   private _draft: RuntimePreviewDraft | null = null
+  private _contextual: RuntimePreviewContextualLaunch | null = null
+  private _artifactReader: RuntimeArtifactReader = Endge.program
   private _draftStyleElement: HTMLStyleElement | null = null
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
@@ -81,8 +86,12 @@ export class RuntimePreviewInstance {
   }
 
   /** Replaces any previous generation of this document with a fresh runtime tree. */
-  public launch(draft?: RuntimePreviewDraft): Promise<void> {
+  public launch(
+    draft?: RuntimePreviewDraft,
+    contextual?: RuntimePreviewContextualLaunch,
+  ): Promise<void> {
     if (arguments.length > 0) { this._draft = draft ?? null }
+    if (arguments.length > 1) { this._contextual = contextual ?? null }
     const generation = ++this._generation
     const pending = this._queue
       .catch(() => undefined)
@@ -97,12 +106,32 @@ export class RuntimePreviewInstance {
     this.error.value = null
     await this.disposeRuntime()
     if (generation !== this._generation) { return }
-    this.tree.value = buildRuntimePreviewTree(this.target)
-    this.selectedNodeId.value = this.tree.value[0]?.id ?? null
     try {
+      this._artifactReader = this.prepareArtifactReader()
+      this.tree.value = buildRuntimePreviewTree(this.target, this._artifactReader)
+      this.selectedNodeId.value = this.tree.value[0]?.id ?? null
+      this.contextualFocusComponentIdentity.value = null
       if (this.target.entityType === 'project') {
-        this._project = await Endge.runtime.project.mount(this.target.identity, { autoActivate: 'none' })
-        for (const handle of this._project.compositions.getAll()) { await handle.activate() }
+        this._project = await Endge.runtime.project.mount(this.target.identity, {
+          autoActivate: 'none',
+          artifactReader: this._artifactReader,
+        })
+        if (this._contextual) {
+          const occurrence = this._contextual.occurrence
+          const composition = await this.resolveCompositionAsync(occurrence.composition)
+          if (occurrence.runtimePath) {
+            const handle = composition.getRuntimeHandle(occurrence.runtimePath)
+            if (!handle) {
+              throw new Error(`[RuntimePreview] Runtime "${occurrence.runtimePath}" is unavailable.`)
+            }
+            await handle.activate()
+          }
+          this.selectedNodeId.value = occurrence.nodeId
+          this.contextualFocusComponentIdentity.value = occurrence.renderComponentIdentity
+        }
+        else {
+          for (const handle of this._project.compositions.getAll()) { await handle.activate() }
+        }
       }
       else if (this.target.entityType === 'composition') {
         if (this._draft) {
@@ -234,6 +263,10 @@ export class RuntimePreviewInstance {
     return this.launch()
   }
 
+  public get requiresExplicitDataModeRestartConfirmation(): boolean {
+    return Boolean(this._contextual?.occurrence.mayExecuteQueries)
+  }
+
   public async dispose(): Promise<void> {
     const generation = ++this._generation
     const pending = this._queue
@@ -335,6 +368,40 @@ export class RuntimePreviewInstance {
       await destroyComponentPreviewContext(context)
       throw error
     }
+  }
+
+  private prepareArtifactReader(): RuntimeArtifactReader {
+    if (!this._contextual || !this._draft) { return Endge.program }
+    const target = this._contextual.target
+    if (target.entityType === 'component-sfc') {
+      const model = RComponentSFC.fromPlain({
+        id: this._draft.id ?? target.identity,
+        identity: target.identity,
+        tag: this._draft.tag,
+        name: this._draft.name || this._draft.displayName || target.identity,
+        displayName: this._draft.displayName || this._draft.name || target.identity,
+        source: this._draft.source,
+      })
+      const artifact = createPreviewArtifact(model)
+      if (artifact.status === 'error') {
+        throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
+          ?? 'Component SFC source содержит ошибки.')
+      }
+      return createOverlayArtifactReader(artifact)
+    }
+    if (target.entityType === 'composition') {
+      const model = createPreviewComposition({
+        ...this._draft,
+        identity: target.identity,
+      })
+      const artifact = Endge.compiler.compileCompositionArtifact(model)
+      if (artifact.status === 'error') {
+        throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
+          ?? 'Composition source содержит ошибки.')
+      }
+      return createOverlayArtifactReader(artifact)
+    }
+    return Endge.program
   }
 
   private async mountStore(identity: string, draft: RuntimePreviewDraft | null): Promise<StoreRuntimeHost> {
@@ -588,6 +655,8 @@ export class RuntimePreviewInstance {
     this._store = null
     this._draftStyleElement?.remove()
     this._draftStyleElement = null
+    this._artifactReader = Endge.program
+    this.contextualFocusComponentIdentity.value = null
     this.renderables.value = []
     if (project) { await project.unmount().catch(() => {}) }
     if (composition) { await composition.unmount().catch(() => {}) }
@@ -597,12 +666,12 @@ export class RuntimePreviewInstance {
   }
 }
 
-function createOverlayArtifactReader(root: ProgramArtifact<unknown>) {
+function createOverlayArtifactReader(root: ProgramArtifact<unknown>): RuntimeArtifactReader {
   return {
-    getArtifact: <TPayload>(entityType: string, id: string | number) => {
+    getArtifact: <TPayload>(entityType: Parameters<RuntimeArtifactReader['getArtifact']>[0], id: string | number) => {
       const matchesRoot = entityType === root.ref.entityType
         && (String(id) === String(root.ref.id) || String(id) === root.ref.identity)
-      return (matchesRoot ? root : Endge.program.getArtifact(entityType as any, id)) as ProgramArtifact<TPayload> | null
+      return (matchesRoot ? root : Endge.program.getArtifact(entityType, id)) as ProgramArtifact<TPayload> | null
     },
   }
 }

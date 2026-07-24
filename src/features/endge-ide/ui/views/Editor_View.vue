@@ -22,6 +22,7 @@ import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDoc
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
 import Problems_View from '@/features/endge-ide/ui/section/problems/Problems_View.vue'
 import RuntimePreview_View from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreview_View.vue'
+import RuntimePreviewOccurrenceDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewOccurrenceDialog.vue'
 
 const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals
@@ -191,6 +192,6 @@ onBeforeUnmount(() => {
       :data="modals.vocabJsonPreviewData.value"
     />
     <SourceEditorDialogHost />
-
+    <RuntimePreviewOccurrenceDialog />
   </div>
 </template>

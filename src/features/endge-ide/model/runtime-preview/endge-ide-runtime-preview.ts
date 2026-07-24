@@ -2,6 +2,7 @@
 import type {
   RuntimePreviewLaunchRequest,
   RuntimePreviewLifecycleState,
+  RuntimePreviewOccurrencePrompt,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
@@ -16,6 +17,7 @@ import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtim
 import { readRuntimePreviewHistory, writeRuntimePreviewHistory } from '@/features/endge-ide/model/runtime-preview/runtime-preview-history'
 import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
+import { findRuntimePreviewOccurrences } from '@/features/endge-ide/model/runtime-preview/runtime-preview-occurrence'
 
 /** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
 export class EndgeIDERuntimePreview {
@@ -23,12 +25,14 @@ export class EndgeIDERuntimePreview {
   public readonly selectedEntryKey = ref<string | null>(null)
   public readonly selectedEntry = computed(() => this.get(this.selectedEntryKey.value))
   public readonly selectedNode = computed(() => this.selectedEntry.value?.selectedNode.value ?? null)
+  public readonly occurrencePrompt = shallowRef<RuntimePreviewOccurrencePrompt | null>(null)
 
   private readonly _instances = new Map<string, RuntimePreviewInstance>()
   private _runtimeOff: (() => void) | null = null
   private _scopeOff: (() => void) | null = null
   private _surfaceOff: (() => void) | null = null
   private _initialized = false
+  private _resolveOccurrencePrompt: ((choice: string | 'standalone' | null) => void) | null = null
 
   public init(): void {
     if (this._initialized) { return }
@@ -92,7 +96,7 @@ export class EndgeIDERuntimePreview {
     this.selectedEntryKey.value = key
     if (revealTree) { showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) }
     try {
-      await instance.launch(rawTarget.draft)
+      await instance.launch(rawTarget.draft, rawTarget.contextual)
       return true
     }
     catch (error) {
@@ -104,13 +108,52 @@ export class EndgeIDERuntimePreview {
   }
 
   /** Launches the active editor only when its document type has a runtime contract. */
-  public launchEditor(editor: unknown): Promise<boolean> {
+  public async launchEditor(editor: unknown): Promise<boolean> {
     const request = createRuntimePreviewLaunchRequest(editor)
-    return request ? this.launch(request) : Promise.resolve(false)
+    if (!request) { return false }
+    if (request.entityType !== 'composition' && request.entityType !== 'component-sfc') {
+      return this.launch(request)
+    }
+
+    const projectIdentity = Endge.context.getExecutionContext().projectIdentity
+    const occurrences = findRuntimePreviewOccurrences(request, projectIdentity)
+    if (occurrences.length === 0) { return this.launch(request) }
+
+    let occurrence = occurrences.length === 1 && (!occurrences[0]!.mayExecuteQueries || Endge.context.isMockEnabled)
+      ? occurrences[0]!
+      : null
+    if (!occurrence) {
+      const choice = await this._requestOccurrenceChoice({
+        target: request,
+        occurrences,
+        liveMode: !Endge.context.isMockEnabled,
+      })
+      if (choice === 'standalone') { return this.launch(request) }
+      if (!choice) { return false }
+      occurrence = occurrences.find(item => item.id === choice) ?? null
+      if (!occurrence) { return false }
+    }
+
+    return this.launch({
+      entityType: 'project',
+      identity: occurrence.projectIdentity,
+      draft: request.draft,
+      contextual: {
+        target: request,
+        occurrence,
+      },
+    })
   }
 
   public canLaunchEditor(editor: unknown): boolean {
     return createRuntimePreviewLaunchRequest(editor) != null
+  }
+
+  public chooseOccurrence(choice: string | 'standalone' | null): void {
+    const resolve = this._resolveOccurrencePrompt
+    this._resolveOccurrencePrompt = null
+    this.occurrencePrompt.value = null
+    resolve?.(choice)
   }
 
   /** Escape navigation: leave Runtime Preview without stopping its runtimes. */
@@ -188,9 +231,18 @@ export class EndgeIDERuntimePreview {
 
   /** Recreates mounted preview roots so Store initialization follows the new data mode. */
   public async restartForDataModeChange(): Promise<void> {
-    const mounted = this.entries.value
+    const candidates = this.entries.value
       .map(instance => ({ instance, state: instance.status.value }))
-      .filter(item => item.state === 'active' || item.state === 'paused' || item.state === 'preparing')
+      .filter(item =>
+        item.state === 'active' || item.state === 'paused' || item.state === 'preparing',
+      )
+    const skipped = candidates.filter(item => item.instance.requiresExplicitDataModeRestartConfirmation)
+    const mounted = candidates.filter(item => !item.instance.requiresExplicitDataModeRestartConfirmation)
+    if (skipped.length > 0) {
+      toast.warning('Контекстный Preview не перезапущен автоматически', {
+        description: 'В выбранной ветке есть mount Query. Перезапустите Preview вручную после проверки Live mode.',
+      })
+    }
 
     await Promise.all(mounted.map(async ({ instance, state }) => {
       await instance.restart()
@@ -247,6 +299,7 @@ export class EndgeIDERuntimePreview {
   }
 
   public async disposeAll(): Promise<void> {
+    this.chooseOccurrence(null)
     const instances = [...this._instances.values()]
     this._instances.clear()
     this.entries.value = []
@@ -273,5 +326,15 @@ export class EndgeIDERuntimePreview {
 
   private _persistEntries(): void {
     writeRuntimePreviewHistory(this.entries.value.map(instance => instance.target))
+  }
+
+  private _requestOccurrenceChoice(
+    prompt: RuntimePreviewOccurrencePrompt,
+  ): Promise<string | 'standalone' | null> {
+    this.chooseOccurrence(null)
+    this.occurrencePrompt.value = prompt
+    return new Promise((resolve) => {
+      this._resolveOccurrencePrompt = resolve
+    })
   }
 }

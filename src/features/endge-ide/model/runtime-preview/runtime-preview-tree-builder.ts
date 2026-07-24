@@ -4,20 +4,28 @@ import type {
   RuntimePreviewTarget,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import type { CompositionProgramPayload, CompositionRuntimeDescriptor, DomainDocumentType } from '@endge/core'
+import type {
+  CompositionProgramPayload,
+  CompositionRuntimeDescriptor,
+  DomainDocumentType,
+  RuntimeArtifactReader,
+} from '@endge/core'
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 
-export function buildRuntimePreviewTree(target: RuntimePreviewTarget): RuntimePreviewTreeNode[] {
-  if (target.entityType === 'project') { return [buildProjectNode(target.identity)] }
-  if (target.entityType === 'composition') { return [buildRootCompositionNode(target.identity)] }
+export function buildRuntimePreviewTree(
+  target: RuntimePreviewTarget,
+  artifacts: RuntimeArtifactReader = Endge.program,
+): RuntimePreviewTreeNode[] {
+  if (target.entityType === 'project') { return [buildProjectNode(target.identity, artifacts)] }
+  if (target.entityType === 'composition') { return [buildRootCompositionNode(target.identity, artifacts)] }
   if (target.entityType === 'component-sfc') { return [buildComponentNode(target.identity)] }
   return [buildStoreNode(target.identity)]
 }
 
-function buildProjectNode(identity: string): RuntimePreviewTreeNode {
+function buildProjectNode(identity: string, artifacts: RuntimeArtifactReader): RuntimePreviewTreeNode {
   const node = makeNode({
     id: `project:${identity}`,
     kind: 'project',
@@ -33,20 +41,22 @@ function buildProjectNode(identity: string): RuntimePreviewTreeNode {
     { rootIdentity: composition.identity, invocationPath: [] },
     node.id,
     new Set(),
-    Endge.program.getCompositionArtifact(composition.identity)?.payload.activation?.mode ?? 'startup',
+    artifacts.getArtifact<CompositionProgramPayload>('composition', composition.identity)?.payload.activation?.mode ?? 'startup',
     null,
+    artifacts,
   ))
   return node
 }
 
-function buildRootCompositionNode(identity: string): RuntimePreviewTreeNode {
+function buildRootCompositionNode(identity: string, artifacts: RuntimeArtifactReader): RuntimePreviewTreeNode {
   return buildCompositionNode(
     identity,
     { rootIdentity: identity, invocationPath: [] },
     null,
     new Set(),
-    Endge.program.getCompositionArtifact(identity)?.payload.activation?.mode ?? 'startup',
+    artifacts.getArtifact<CompositionProgramPayload>('composition', identity)?.payload.activation?.mode ?? 'startup',
     null,
+    artifacts,
   )
 }
 
@@ -79,6 +89,7 @@ function buildCompositionNode(
   ancestors: Set<string>,
   activationMode: 'startup' | 'manual',
   runtimeName: string | null,
+  artifacts: RuntimeArtifactReader,
 ): RuntimePreviewTreeNode {
   const model = Endge.domain.getComposition(identity)
   const nodeId = compositionNodeId(address)
@@ -96,14 +107,16 @@ function buildCompositionNode(
     node.subtitle = 'cycle'
     return node
   }
-  const artifact = Endge.program.getCompositionArtifact(identity)
+  const artifact = artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
   if (!artifact || artifact.status === 'error') {
     node.subtitle = 'artifact unavailable'
     return node
   }
   const nextAncestors = new Set(ancestors).add(identity)
-  node.children = buildScopeContents(artifact.payload, 'scope_default', address, node.id, nextAncestors)
-  for (const scope of artifact.payload.scopes.filter(item => item.parentPath === 'scope_default')) { node.children.push(buildScopeNode(artifact.payload, scope.path, address, node.id, nextAncestors)) }
+  node.children = buildScopeContents(artifact.payload, 'scope_default', address, node.id, nextAncestors, artifacts)
+  for (const scope of artifact.payload.scopes.filter(item => item.parentPath === 'scope_default')) {
+    node.children.push(buildScopeNode(artifact.payload, scope.path, address, node.id, nextAncestors, artifacts))
+  }
   return node
 }
 
@@ -113,6 +126,7 @@ function buildScopeNode(
   address: RuntimePreviewCompositionAddress,
   parentId: string,
   ancestors: Set<string>,
+  artifacts: RuntimeArtifactReader,
 ): RuntimePreviewTreeNode {
   const descriptor = payload.scopes.find(item => item.path === scopePath)!
   const id = `${compositionNodeId(address)}:scope:${scopePath}`
@@ -135,8 +149,10 @@ function buildScopeNode(
       runtimeName: descriptor.name,
     },
   })
-  node.children = buildScopeContents(payload, scopePath, address, id, ancestors)
-  for (const child of payload.scopes.filter(item => item.parentPath === scopePath)) { node.children.push(buildScopeNode(payload, child.path, address, id, ancestors)) }
+  node.children = buildScopeContents(payload, scopePath, address, id, ancestors, artifacts)
+  for (const child of payload.scopes.filter(item => item.parentPath === scopePath)) {
+    node.children.push(buildScopeNode(payload, child.path, address, id, ancestors, artifacts))
+  }
   return node
 }
 
@@ -146,6 +162,7 @@ function buildScopeContents(
   address: RuntimePreviewCompositionAddress,
   parentId: string,
   ancestors: Set<string>,
+  artifacts: RuntimeArtifactReader,
 ): RuntimePreviewTreeNode[] {
   const result: RuntimePreviewTreeNode[] = []
   for (const resource of payload.resources.filter(item => item.scopePath === scopePath)) {
@@ -170,6 +187,7 @@ function buildScopeContents(
         ancestors,
         runtime.effectiveActivation.mode,
         runtime.name,
+        artifacts,
       ))
       continue
     }
