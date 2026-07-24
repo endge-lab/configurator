@@ -46,7 +46,7 @@ const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
 const launchLoading = ref(false)
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
-  'source',
+  'visual',
   ['general', 'visual', 'source', 'diagnostics'] as const,
 )
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))

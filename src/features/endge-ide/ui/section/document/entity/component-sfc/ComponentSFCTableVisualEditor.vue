@@ -27,6 +27,7 @@ import {
   inspectComponentSFCMetadata,
   patchComponentSFCMetadataSource,
   patchComponentSFCTableSource,
+  readComponentSFCTranslationFallback,
 } from '@endge/core'
 import {
   AlertCircle,
@@ -382,7 +383,7 @@ watch(
 watch(
   selectedColumn,
   (column) => {
-    titleDraft.value = sourceValueText(column?.title)
+    titleDraft.value = columnTitleText(column?.title)
     keyDraft.value = sourceValueText(column?.key)
     widthDraft.value = sourceValueText(column?.width)
     cellEditorMode.value = column?.cell.kind === 'component'
@@ -419,6 +420,15 @@ function sourceValueText(value: ComponentSFCVisualSourceValue | null | undefined
     return value.value ? 'true' : 'false'
   }
   return value.value == null ? '' : String(value.value)
+}
+
+function columnTitleText(
+  value: ComponentSFCVisualSourceValue | null | undefined,
+): string {
+  if (value?.kind === 'expression') {
+    return readComponentSFCTranslationFallback(value.source) ?? value.source
+  }
+  return sourceValueText(value)
 }
 
 function tableSectionSummary(sectionId: typeof tableSections[number]['id']): string | null {
@@ -600,7 +610,9 @@ function handleCellBindingFocusOut(event: FocusEvent, name: string): void {
 }
 
 function columnTitle(column: ComponentSFCTableColumnProjection): string {
-  return sourceValueText(column.title) || sourceValueText(column.key) || `Колонка ${column.index + 1}`
+  return columnTitleText(column.title)
+    || sourceValueText(column.key)
+    || `Колонка ${column.index + 1}`
 }
 
 function staticColumnKey(column: ComponentSFCTableColumnProjection): string | null {
