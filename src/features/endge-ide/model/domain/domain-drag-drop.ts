@@ -142,6 +142,8 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   'data-view',
   'composition',
   'store',
+  'stream',
+  'update',
   'mock',
   'computation',
   ParameterType.DefaultParameter,
@@ -401,7 +403,7 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
  * - `permanent = true`: жёсткое удаление (разрешено только для сущности в `soft-deleted`).
  */
 export async function deleteEntity(node: FsFileNode, permanent = false): Promise<DeleteEntityResult> {
-  const entity = getEntityBySection(node.id, node.sectionType)
+  const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   if (isExternallyManaged(node) || isExternallyManaged(entity))
     throw new Error('Управляемый извне документ нельзя удалить')
   if (permanent)
@@ -415,7 +417,7 @@ export async function deleteEntity(node: FsFileNode, permanent = false): Promise
  * Восстанавливает сущность в корневую секцию.
  */
 export async function restoreEntity(node: FsFileNode): Promise<void> {
-  const entity = getEntityBySection(node.id, node.sectionType)
+  const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   const restoreToQueries = node.docType === 'composition' && String(entity?.kind ?? 'library') === 'query'
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
     await Endge.schema.restoreDocument(node.id, node.docType)
@@ -430,7 +432,7 @@ export async function restoreEntity(node: FsFileNode): Promise<void> {
     throw new Error(`Восстановление не поддерживается для типа: ${node.docType}`)
   }
 
-  markEntityAsRestoredInDomain(node.id, node.sectionType)
+  markEntityAsRestoredInDomain(node.id, node.sectionType, node.docType)
   if (restoreToQueries) {
     await Endge.schema.changeDocumentFolder(node.id, node.docType, QUERY_ROOT_IDENTITY)
     setEntityFolderInDomain(node.id, node.sectionType, getQueryRootFolderId())
@@ -469,13 +471,17 @@ export function isFolderInSoftDeletedBranch(folderId: string | number): boolean 
 /**
  * Помечает сущность как удалённую в локальном домене (перемещение в `soft-deleted`).
  */
-export function markEntityAsDeletedInDomain(id: string, sectionType: DomainSectionType): void {
+export function markEntityAsDeletedInDomain(
+  id: string,
+  sectionType: DomainSectionType,
+  docType?: DomainDocumentType,
+): void {
   const softId = Endge.domain.getFolderByIdentity(SOFT_DELETED_IDENTITY)?.id ?? null
   if (softId == null)
     return
 
   const now = new Date().toISOString()
-  const entity = getEntityBySection(id, sectionType)
+  const entity = getEntityBySection(id, sectionType, docType)
   if (!entity)
     return
 
@@ -489,8 +495,12 @@ export function markEntityAsDeletedInDomain(id: string, sectionType: DomainSecti
 /**
  * Сбрасывает флаги удаления у сущности в локальном домене.
  */
-export function markEntityAsRestoredInDomain(id: string, sectionType: DomainSectionType): void {
-  const entity = getEntityBySection(id, sectionType)
+export function markEntityAsRestoredInDomain(
+  id: string,
+  sectionType: DomainSectionType,
+  docType?: DomainDocumentType,
+): void {
+  const entity = getEntityBySection(id, sectionType, docType)
   if (!entity)
     return
 
@@ -504,8 +514,13 @@ export function markEntityAsRestoredInDomain(id: string, sectionType: DomainSect
 /**
  * Обновляет локальную папку сущности (без API-вызова).
  */
-export function setEntityFolderInDomain(id: string, sectionType: DomainSectionType, folderId: string | number | null): boolean {
-  const entity = getEntityBySection(id, sectionType)
+export function setEntityFolderInDomain(
+  id: string,
+  sectionType: DomainSectionType,
+  folderId: string | number | null,
+  docType?: DomainDocumentType,
+): boolean {
+  const entity = getEntityBySection(id, sectionType, docType)
   if (!entity)
     return false
 
@@ -747,7 +762,7 @@ async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'd
     throw new Error(`Мягкое удаление не поддерживается для типа: ${node.docType}`)
   }
 
-  markEntityAsDeletedInDomain(node.id, node.sectionType)
+  markEntityAsDeletedInDomain(node.id, node.sectionType, node.docType)
 }
 
 /**
@@ -761,7 +776,7 @@ async function hardDeleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
     throw new Error(`Жёсткое удаление не поддерживается для типа: ${node.docType}`)
 
   await Endge.schema.deleteDocumentHard(node.id, node.docType)
-  removeEntityFromDomain(node.id, node.sectionType)
+  removeEntityFromDomain(node.id, node.sectionType, node.docType)
   Endge.domain.notify()
   return {
     mode: 'hard',
@@ -780,15 +795,15 @@ async function changeEntityFolder(
   dropFolderId: string | number | null,
 ): Promise<void> {
   const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
-  const entity = getEntityBySection(id, sectionType) as any
+  const entity = getEntityBySection(id, sectionType, docType) as any
   const prevFolderId = entity?.folderId ?? entity?.folder ?? entity?.group ?? null
-  if (!setEntityFolderInDomain(id, sectionType, dropFolderId))
+  if (!setEntityFolderInDomain(id, sectionType, dropFolderId, docType))
     throw new Error('не удалось обновить папку в домене')
   try {
     await Endge.schema.changeDocumentFolder(id, docType, folderIdentity)
   }
   catch (err) {
-    setEntityFolderInDomain(id, sectionType, prevFolderId)
+    setEntityFolderInDomain(id, sectionType, prevFolderId, docType)
     throw err
   }
 }
@@ -853,8 +868,8 @@ function getSectionRootIdentity(sectionType: DomainSectionType): string | null {
 /**
  * Удаляет сущность из локального домена по секции.
  */
-function removeEntityFromDomain(id: string, sectionType: DomainSectionType): void {
-  const entity = getEntityBySection(id, sectionType) as any
+function removeEntityFromDomain(id: string, sectionType: DomainSectionType, docType?: DomainDocumentType): void {
+  const entity = getEntityBySection(id, sectionType, docType) as any
   if (!entity)
     return
 
@@ -874,6 +889,12 @@ function removeEntityFromDomain(id: string, sectionType: DomainSectionType): voi
       byId(entityId, identity, (x: any) => (Endge.domain as any).removeComponentSFCById?.(x), x => (Endge.domain as any).removeComponentSFC?.(x))
     else
       byId(entityId, identity, (x: any) => Endge.domain.removeComponentById?.(x), x => Endge.domain.removeComponent(x))
+  }
+  else if (docType === 'stream') {
+    byId(entityId, identity, (x: any) => Endge.domain.removeStreamById(x), x => Endge.domain.removeStream(x))
+  }
+  else if (docType === 'update') {
+    byId(entityId, identity, (x: any) => Endge.domain.removeUpdateById(x), x => Endge.domain.removeUpdate(x))
   }
   else if (sectionType === DomainSectionType.Query) {
     byId(entityId, identity, (x: any) => Endge.domain.removeQueryById?.(x), x => Endge.domain.removeQuery(x))
@@ -960,8 +981,13 @@ function toNumericId(id: string | number): number | null {
 /**
  * Ищет сущность в домене по секции и id/identity.
  */
-function getEntityBySection(id: string, sectionType: DomainSectionType): any | null {
+function getEntityBySection(id: string, sectionType: DomainSectionType, docType?: DomainDocumentType): any | null {
   const numId = toNumericId(id)
+
+  if (docType === 'stream')
+    return (numId != null ? Endge.domain.getStreamById(numId) : null) ?? Endge.domain.getStream(id)
+  if (docType === 'update')
+    return (numId != null ? Endge.domain.getUpdateById(numId) : null) ?? Endge.domain.getUpdate(id)
 
   if (sectionType === DomainSectionType.Component)
     return Endge.domain.getComponent(id) ?? (Endge.domain as any).getComponentSFC?.(id)

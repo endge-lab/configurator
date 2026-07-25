@@ -7,6 +7,7 @@ export interface CreateDocumentContext {
   folderId?: string | number | null
   documentType?: DomainDocumentType
   compositionOwner?: CompositionCreateOwner
+  updateOwnerStoreIdentity?: string
 }
 
 /**

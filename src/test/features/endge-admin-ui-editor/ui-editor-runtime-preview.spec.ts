@@ -60,8 +60,8 @@ function prepareCompilerContext(): void {
       themes: [{ identity: 'light', displayName: 'Light' }],
       defaultTheme: 'light',
       defaultAuthProfileIdentity: null,
-      sfcAdapterIds: ['native-vue'],
-      defaultSfcAdapterId: 'native-vue',
+      sfcAdapterIds: ['vue-native'],
+      defaultSfcAdapterId: 'vue-native',
     },
   })
   Endge.domain.addProject({

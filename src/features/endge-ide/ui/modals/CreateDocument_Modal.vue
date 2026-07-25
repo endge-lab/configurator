@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
-import type { DomainDocumentType, RComponentSFC, RComposition, RDocument } from '@endge/core'
+import type { DomainDocumentType, RComponentSFC, RComposition, RDocument, RUpdate } from '@endge/core'
 
 import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
@@ -135,6 +135,9 @@ const lockedDocumentType = computed(() => createContext.value?.documentType ?? n
 const compositionOwner = computed(() =>
   activeType.value === 'composition' ? createContext.value?.compositionOwner ?? null : null,
 )
+const updateOwnerStoreIdentity = computed(() =>
+  activeType.value === 'update' ? createContext.value?.updateOwnerStoreIdentity ?? null : null,
+)
 const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
 const documentType = computed<DomainDocumentType>(() =>
   activeType.value === QUERY_COMPOSITION_CREATE_KIND
@@ -148,6 +151,7 @@ const filteredTypeGroups = computed(() => {
   const contextualSection = createContext.value?.sectionType ?? null
   const query = typeSearch.value.trim().toLowerCase()
   const descriptors = DOCUMENT_CREATE_DESCRIPTORS.filter((descriptor) => {
+    if (descriptor.type === 'update' && !createContext.value?.updateOwnerStoreIdentity) { return false }
     if (contextualSection && !showAllTypes.value && descriptor.section !== contextualSection) { return false }
     if (!query) { return true }
     return [descriptor.label, descriptor.description, descriptor.type, ...descriptor.keywords]
@@ -341,6 +345,28 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       source: Endge.source.createDefault('store'),
+      sourceVersion: 1,
+      meta: {},
+    }
+  }
+
+  if (activeType.value === 'stream') {
+    return {
+      ...base,
+      source: Endge.source.createDefault('stream'),
+      sourceVersion: 1,
+      meta: {},
+    }
+  }
+
+  if (activeType.value === 'update') {
+    const owner = updateOwnerStoreIdentity.value
+      ? Endge.domain.getStore(updateOwnerStoreIdentity.value)
+      : null
+    return {
+      ...base,
+      store: owner?.id ?? null,
+      source: Endge.source.createDefault('update'),
       sourceVersion: 1,
       meta: {},
     }
@@ -550,6 +576,14 @@ async function onSubmit(): Promise<void> {
           parsed.folder = rootFolderId
         }
       }
+      if (targetDocumentType === 'update') {
+        const owner = updateOwnerStoreIdentity.value
+          ? Endge.domain.getStore(updateOwnerStoreIdentity.value)
+          : null
+        if (!owner)
+          throw new Error('Update можно создать только из контекстного меню существующего Store.')
+        parsed.store = owner.id
+      }
 
       const createdIdentity = String(parsed.identity ?? '').trim()
       if (!createdIdentity) { throw new Error('В JSON обязательно поле "identity"') }
@@ -598,6 +632,11 @@ async function onSubmit(): Promise<void> {
       const compositionDraft = draft as RComposition
       compositionDraft.kind = placement.kind
       compositionDraft.kindIdentity = placement.kindIdentity
+    }
+    if (targetDocumentType === 'update') {
+      if (!updateOwnerStoreIdentity.value)
+        throw new Error('Update можно создать только из контекстного меню Store.')
+      ;(draft as RUpdate).storeIdentity = updateOwnerStoreIdentity.value
     }
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)

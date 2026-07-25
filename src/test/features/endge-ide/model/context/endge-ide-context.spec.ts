@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   readDataModeOverride: vi.fn(),
   writeDataModeOverride: vi.fn(),
   clearStoredDataModeOverride: vi.fn(),
-  requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'native-vue' })),
+  requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'vue-native' })),
 }))
 
 vi.mock('@endge/core', () => ({
@@ -44,7 +44,7 @@ vi.mock('@endge/core', () => ({
     },
     workspace: {
       current: { identity: 'workspace' },
-      defaultSfcAdapterId: 'native-vue',
+      defaultSfcAdapterId: 'vue-native',
     },
   },
 }))

@@ -55,6 +55,7 @@ import {
   RotateCcw,
   Route,
   Save,
+  Search,
   Send,
   ServerCog,
   Shield,
@@ -62,6 +63,7 @@ import {
   Table2,
   Trash2,
   Type,
+  X,
   Zap,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -126,6 +128,7 @@ type MenuAction
     | { type: 'create-folder', node: FsFolderNode }
     | { type: 'create-doc', node: FsFolderNode }
     | { type: 'create-project-composition', node: FsFileNode }
+    | { type: 'create-store-update', node: FsFileNode }
     | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
@@ -212,6 +215,47 @@ const domainTreeHighlightPresentation = computed(() =>
 function cycleDomainTreeHighlightMode(): void {
   const currentIndex = DOMAIN_TREE_HIGHLIGHT_MODES.indexOf(domainTreeHighlightMode.value)
   domainTreeHighlightMode.value = DOMAIN_TREE_HIGHLIGHT_MODES[(currentIndex + 1) % DOMAIN_TREE_HIGHLIGHT_MODES.length] ?? 'root'
+}
+
+interface DomainTreeSearchState {
+  open: boolean
+  query: string
+}
+
+const persistedSearchState = useSafeLocalStorage<DomainTreeSearchState>(
+  'endge-editor-domain-tree-search',
+  { open: false, query: '' },
+)
+const searchOpen = computed({
+  get: () => persistedSearchState.value.open,
+  set: open => persistedSearchState.value = { ...persistedSearchState.value, open },
+})
+const searchQuery = computed({
+  get: () => persistedSearchState.value.query,
+  set: query => persistedSearchState.value = { ...persistedSearchState.value, query },
+})
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase())
+const searchFilteringEnabled = computed(() => searchOpen.value && normalizedSearchQuery.value.length > 0)
+const searchToggleTooltip = computed(() => searchOpen.value ? 'Скрыть поиск' : 'Поиск по проекту')
+
+interface DomainTreeFilterOptions {
+  preserveAncestors: boolean
+  showEmptyRootFolders: boolean
+  showEmptyGroups: boolean
+}
+
+const PROJECT_SEARCH_FILTER_OPTIONS = {
+  preserveAncestors: true,
+  showEmptyRootFolders: false,
+  showEmptyGroups: false,
+} satisfies DomainTreeFilterOptions
+
+function toggleSearch(): void {
+  searchOpen.value = !searchOpen.value
+}
+
+function clearSearch(): void {
+  searchQuery.value = ''
 }
 
 const persistedWorkingSetFilter = useSafeLocalStorage<DomainWorkingSetFilterState>(
@@ -406,6 +450,7 @@ function canDragTreeItem(item: FlatFsItem): boolean {
     return false
   if (item.node.type === 'file')
     return !(item.node as FsFileNode).isTableColumn
+      && (item.node as FsFileNode).docType !== 'update'
 
   const folder = item.node as FsFolderNode
   return !folder.isRoot
@@ -642,7 +687,10 @@ const ROOT_TO_SECTION = computed(() => {
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
     'root-queries': {
       section: DomainSectionType.Query,
-      items: () => withoutDeleted(domainStore.queries, softId),
+      items: () => withoutDeleted([
+        ...(domainStore.queries ?? []),
+        ...((Endge.domain as any).getStreams?.() ?? []),
+      ], softId),
     },
     'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? [], softId) },
     'root-compositions': {
@@ -676,6 +724,8 @@ const ROOT_TO_SECTION = computed(() => {
         ...(domainStore as any),
         dataViews: (Endge.domain as any).getDataViews?.() ?? [],
         stores: (Endge.domain as any).getStores?.() ?? [],
+        streams: (Endge.domain as any).getStreams?.() ?? [],
+        updates: (Endge.domain as any).getUpdates?.() ?? [],
         mocks: Endge.domain.getMocks(),
         computations: Endge.domain.getComputations(),
       }, softId, (domainStore.folders as any[]) ?? []),
@@ -847,6 +897,10 @@ const fsTree = computed<FsNode[]>(() => {
       kindIdentity?: string | null
       folderId?: string | number | null
     }>,
+    storeUpdates: withoutDeleted(
+      (Endge.domain as any).getUpdates?.() ?? [],
+      softDeletedFolderId.value,
+    ),
   })
 
   attachResolvedActionTree(tree, Endge.actions.listResolved())
@@ -868,6 +922,61 @@ const fsTree = computed<FsNode[]>(() => {
   return tree
 })
 
+interface DomainSearchProjection {
+  items: FlatFsItem[]
+  hasMatch: boolean
+}
+
+function nodeMatchesSearch(node: FsNode, query: string): boolean {
+  return [node.name, node.identity]
+    .some(value => value?.toLocaleLowerCase().includes(query))
+}
+
+/**
+ * Строит только отображаемую проекцию поиска, не клонируя узлы домена.
+ * Совпадения раскрываются вместе с цепочкой родителей согласно настройкам фильтра.
+ */
+function projectDomainSearchItems(
+  nodes: readonly FsNode[],
+  query: string,
+  options: DomainTreeFilterOptions,
+  parentPath = '',
+  depth = 0,
+  rootId = '',
+): DomainSearchProjection {
+  const items: FlatFsItem[] = []
+  let hasMatch = false
+
+  for (const node of nodes) {
+    const path = parentPath ? `${parentPath}/${node.name}` : node.name
+    const currentRootId = depth === 0 && node.type === 'folder' ? node.id : rootId
+    const childProjection = node.children?.length
+      ? projectDomainSearchItems(node.children, query, options, path, depth + 1, currentRootId)
+      : { items: [], hasMatch: false }
+    const nodeHasMatch = nodeMatchesSearch(node, query)
+    const branchHasMatch = nodeHasMatch || childProjection.hasMatch
+    const isRoot = depth === 0 && node.type === 'folder'
+    const shouldShowNode = isRoot
+      ? branchHasMatch || options.showEmptyRootFolders
+      : nodeHasMatch || (options.preserveAncestors && childProjection.hasMatch)
+
+    if (shouldShowNode) {
+      items.push({ node, path, depth, rootId: currentRootId })
+    }
+
+    if (childProjection.hasMatch) {
+      const childItems = !shouldShowNode && !options.preserveAncestors
+        ? childProjection.items.map(item => ({ ...item, depth: Math.max(1, item.depth - 1) }))
+        : childProjection.items
+      items.push(...childItems)
+    }
+
+    hasMatch ||= branchHasMatch
+  }
+
+  return { items, hasMatch }
+}
+
 const workingSetResult = computed(() => {
   // Дерево служит reactive boundary для обновлённых документов и program artifacts.
   void fsTree.value
@@ -876,13 +985,41 @@ const workingSetResult = computed(() => {
 
 const flatFs = computed<FlatFsItem[]>(() => {
   if (workingSetFilterEnabled.value) {
-    return projectDomainWorkingSetItems(
+    const expandedPaths = searchFilteringEnabled.value
+      ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
+      : workingSetExpandedFolders.value
+    const projectedItems = projectDomainWorkingSetItems(
       fsTree.value,
       workingSetResult.value,
-      workingSetExpandedFolders.value,
+      expandedPaths,
       DEPENDENCY_FILTER_PROJECTION,
     )
+
+    if (searchFilteringEnabled.value) {
+      const matchedRootIds = new Set(
+        projectedItems
+          .filter(item => item.node.type === 'file' && nodeMatchesSearch(item.node, normalizedSearchQuery.value))
+          .map(item => item.rootId),
+      )
+
+      return projectedItems.filter(item => item.node.type === 'file'
+        ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+        : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+          || matchedRootIds.has(item.rootId)
+          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
+    }
+
+    return projectedItems
   }
+
+  if (searchFilteringEnabled.value) {
+    return projectDomainSearchItems(
+      fsTree.value,
+      normalizedSearchQuery.value,
+      PROJECT_SEARCH_FILTER_OPTIONS,
+    ).items
+  }
+
   return flattenTree(fsTree.value, expandedFolders.value)
 })
 
@@ -896,7 +1033,7 @@ const groupedFlatFs = computed(() => {
     )
   }
 
-  return ROOT_BLOCKS.value
+  const groups = ROOT_BLOCKS.value
     .map(block => ({
       ...block,
       roots: block.rootIds
@@ -906,7 +1043,12 @@ const groupedFlatFs = computed(() => {
         }))
         .filter(root => root.items.length > 0),
     }))
-    .filter(block => block.roots.length > 0)
+
+  if (searchFilteringEnabled.value && PROJECT_SEARCH_FILTER_OPTIONS.showEmptyGroups) {
+    return groups
+  }
+
+  return groups.filter(block => block.roots.length > 0)
 })
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
@@ -1426,6 +1568,14 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
+    if (!externallyManagedDoc && !isInDeleted && fileNode.docType === 'store') {
+      items.push({
+        label: 'Создать обновление',
+        icon: Plus,
+        action: { type: 'create-store-update', node: fileNode },
+      })
+    }
+
     if (isInDeleted && canRestoreDoc) {
       items.push({
         label: 'Восстановить',
@@ -1502,6 +1652,21 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
         identity: projectIdentity,
         displayName: a.node.name,
       },
+    })
+    return
+  }
+
+  if (a.type === 'create-store-update') {
+    const storeIdentity = String(a.node.identity ?? a.node.id ?? '').trim()
+    if (!storeIdentity) {
+      toast.error('Не удалось определить identity хранилища')
+      return
+    }
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: DomainSectionType.Store,
+      documentType: 'update',
+      updateOwnerStoreIdentity: storeIdentity,
     })
     return
   }
@@ -1667,6 +1832,25 @@ function rowClasses(item: FlatFsItem): string {
                 <Button
                   size="icon"
                   variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="searchOpen
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="searchToggleTooltip"
+                  :aria-pressed="searchOpen"
+                  @click="toggleSearch"
+                >
+                  <Search class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ searchToggleTooltip }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  size="icon"
+                  variant="ghost"
                   class="size-6 rounded-sm"
                   @click="EndgeIDE.modals.openCreateDocument()"
                 >
@@ -1677,6 +1861,31 @@ function rowClasses(item: FlatFsItem): string {
             </Tooltip>
           </div>
         </TooltipProvider>
+      </div>
+
+      <div v-if="searchOpen" class="border-t px-2 py-1.5">
+        <div class="relative w-full">
+          <Input
+            v-model="searchQuery"
+            autofocus
+            autocomplete="off"
+            aria-label="Поиск по проекту"
+            placeholder="Поиск по проекту"
+            class="h-8 w-full pr-8 text-xs"
+            @keydown.esc="searchOpen = false"
+          />
+          <Button
+            v-if="searchQuery"
+            type="button"
+            size="icon"
+            variant="ghost"
+            class="absolute right-1 top-1/2 size-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Очистить поиск"
+            @click="clearSearch"
+          >
+            <X class="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
 

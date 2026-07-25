@@ -37,6 +37,8 @@ const DEFAULT_EDITOR_NAMES = [
   'RProjectEditor',
   'RQueryEditor',
   'RStoreEditor',
+  'RStreamEditor',
+  'RUpdateEditor',
   'RStyleEditor',
   'RTenantEditor',
   'RTypeEditor',

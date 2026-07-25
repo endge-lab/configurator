@@ -26,6 +26,7 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/dia
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import { createSFCLanguageContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/language.contribution'
 import { createExtractTypeContribution } from '@/features/endge-ide/source-editor/contributions/types/extract-type'
 import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
@@ -91,6 +92,7 @@ const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
   return [...primitives, ...registered]
 })
 const sourceEditorExtensions = [
+  createSFCLanguageContribution(),
   createTypeRegistryContribution(),
   createExtractTypeContribution({
     getEditorModel: () => editor.value,

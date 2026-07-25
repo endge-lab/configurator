@@ -8,6 +8,8 @@ import type {
   RDataView,
   RComposition,
   RStore,
+  RStream,
+  RUpdate,
   RMock,
   RComputation,
   RQuery,
@@ -44,6 +46,8 @@ import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverte
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
+import { RStreamEditor } from '@/features/endge-ide/domain/entities/RStreamEditor.ts'
+import { RUpdateEditor } from '@/features/endge-ide/domain/entities/RUpdateEditor.ts'
 import { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor.ts'
 import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
@@ -73,6 +77,8 @@ import Query_Editor from '@/features/endge-ide/ui/section/document/entity/Query_
 import DataView_Editor from '@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'
 import Composition_Editor from '@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'
 import Store_Editor from '@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'
+import Stream_Editor from '@/features/endge-ide/ui/section/document/entity/Stream_Editor.vue'
+import Update_Editor from '@/features/endge-ide/ui/section/document/entity/Update_Editor.vue'
 import Mock_Editor from '@/features/endge-ide/ui/section/document/entity/Mock_Editor.vue'
 import Computation_Editor from '@/features/endge-ide/ui/section/document/entity/Computation_Editor.vue'
 import Type_Editor from '@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'
@@ -856,6 +862,8 @@ export class EndgeIDETabs {
     ['data-view', (documentId) => this._resolveDataView(documentId)],
     ['composition', (documentId) => this._resolveComposition(documentId)],
     ['store', (documentId) => this._resolveStore(documentId)],
+    ['stream', (documentId) => this._resolveStream(documentId)],
+    ['update', (documentId) => this._resolveUpdate(documentId)],
     ['mock', (documentId) => this._resolveMock(documentId)],
     ['action', (documentId) => this._resolveAction(documentId)],
     [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
@@ -1025,6 +1033,36 @@ export class EndgeIDETabs {
       editor,
       model: store,
       syncBeforeSave: () => editor.updateSource(store),
+    }
+  }
+
+  private _resolveStream(documentId: string): EditorSession | null {
+    const stream = Endge.domain.getStream(documentId) as RStream | null
+    if (!stream)
+      return null
+    const rawEditor = new RStreamEditor()
+    rawEditor.fillFromSource(stream)
+    const editor = reactive(rawEditor as object) as RStreamEditor
+    return {
+      view: { component: markRaw(Stream_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: stream,
+      syncBeforeSave: () => editor.updateSource(stream),
+    }
+  }
+
+  private _resolveUpdate(documentId: string): EditorSession | null {
+    const update = Endge.domain.getUpdate(documentId) as RUpdate | null
+    if (!update)
+      return null
+    const rawEditor = new RUpdateEditor()
+    rawEditor.fillFromSource(update)
+    const editor = reactive(rawEditor as object) as RUpdateEditor
+    return {
+      view: { component: markRaw(Update_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: update,
+      syncBeforeSave: () => editor.updateSource(update),
     }
   }
 

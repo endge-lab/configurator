@@ -185,7 +185,10 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="editor-wrapper"
-    :class="{ 'editor-wrapper--framed': showToolbar }"
+    :class="{
+      'editor-wrapper--dark': ui.isDark,
+      'editor-wrapper--framed': showToolbar,
+    }"
   >
     <div v-if="showToolbar" class="editor-toolbar">
       <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
@@ -265,5 +268,62 @@ onBeforeUnmount(() => {
   color: #697184 !important;
   cursor: help !important;
   text-decoration: none;
+}
+
+:deep(.endge-sfc-expression-identifier) {
+  color: #001080 !important;
+}
+
+:deep(.endge-sfc-expression-property) {
+  color: #0451a5 !important;
+}
+
+:deep(.endge-sfc-expression-keyword) {
+  color: #00f !important;
+}
+
+:deep(.endge-sfc-expression-number) {
+  color: #098658 !important;
+}
+
+:deep(.endge-sfc-expression-string) {
+  color: #a31515 !important;
+}
+
+:deep(.endge-sfc-expression-operator) {
+  color: #000 !important;
+}
+
+:deep(.endge-sfc-expression-comment) {
+  color: #008000 !important;
+  font-style: italic;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-identifier) {
+  color: #f07178 !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-property) {
+  color: #82aaff !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-keyword) {
+  color: #c792ea !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-number) {
+  color: #ffcb6b !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-string) {
+  color: #c3e88d !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-operator) {
+  color: #bfc7d5 !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-comment) {
+  color: #717cb4 !important;
 }
 </style>

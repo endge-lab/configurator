@@ -107,6 +107,8 @@ function getDocumentSectionType(docType: DomainDocumentType): DomainSectionType 
     'data-view': DomainSectionType.DataView,
     'composition': DomainSectionType.Composition,
     'store': DomainSectionType.Store,
+    'stream': DomainSectionType.Query,
+    'update': DomainSectionType.Store,
     'mock': DomainSectionType.Mock,
     'action': DomainSectionType.Action,
     'converter': DomainSectionType.Converter,

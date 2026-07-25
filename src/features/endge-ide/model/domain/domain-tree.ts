@@ -115,6 +115,8 @@ export interface DomainStoreForTree {
   dataViews?: any[]
   compositions?: any[]
   stores?: any[]
+  streams?: any[]
+  updates?: any[]
   mocks?: any[]
   actions?: any[]
   typesComplex?: any[]
@@ -187,6 +189,8 @@ export function getSoftDeletedItems(
   add(store.dataViews, DomainSectionType.DataView)
   add(store.compositions, DomainSectionType.Composition)
   add(store.stores, DomainSectionType.Store)
+  add(store.streams, DomainSectionType.Query)
+  add(store.updates, DomainSectionType.Store)
   add(store.mocks, DomainSectionType.Mock)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
@@ -239,6 +243,7 @@ function collectDeletedFolderBranchIds(
 
 /** Подписи для виртуальных корней. */
 export const ROOT_FOLDER_LABELS: Record<string, string> = {
+  'root-queries': 'Обмен данными',
   'root-environments': 'Окружения',
   'root-tenants': 'Тенанты',
   'root-policies': 'Политики',
@@ -359,6 +364,8 @@ export function normalizeDocType(
   sectionType: DomainSectionType,
   raw?: DomainDocumentType,
 ): DomainDocumentType | undefined {
+  if (raw === 'stream' || raw === 'update')
+    return raw
   if (sectionType === DomainSectionType.Primitive || sectionType === DomainSectionType.Type)
     return 'type'
   if (sectionType === DomainSectionType.Parameters)
@@ -447,6 +454,14 @@ export interface BuildDomainTreeParams {
     kind?: RCompositionKind
     kindIdentity?: string | null
     folderId?: string | number | null
+  }>
+  /** Store-owned Updates displayed only as children of their owner Store. */
+  storeUpdates?: Array<{
+    id?: string | number
+    identity?: string
+    name?: string
+    displayName?: string
+    storeIdentity?: string
   }>
 }
 
@@ -623,7 +638,42 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   })
 
   attachContextualCompositions(tree, params.contextualCompositions ?? [])
+  attachStoreUpdates(tree, params.storeUpdates ?? [])
   return tree
+}
+
+function attachStoreUpdates(
+  tree: FsNode[],
+  updates: NonNullable<BuildDomainTreeParams['storeUpdates']>,
+): void {
+  const root = tree.find(node => node.type === 'folder' && node.id === 'root-stores')
+  if (!root)
+    return
+  const findStore = (nodes: FsNode[], identity: string): FsFileNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'file' && node.docType === 'store' && node.identity === identity)
+        return node
+      const nested = findStore(node.children ?? [], identity)
+      if (nested)
+        return nested
+    }
+    return null
+  }
+  for (const update of updates) {
+    const owner = findStore(root.children ?? [], String(update.storeIdentity ?? ''))
+    if (!owner)
+      continue
+    const id = String(update.id ?? update.identity ?? '')
+    const identity = String(update.identity ?? '')
+    ;(owner.children ??= []).push({
+      id,
+      ...(identity ? { identity } : {}),
+      name: update.displayName ?? update.name ?? identity ?? id,
+      type: 'file',
+      docType: 'update',
+      sectionType: DomainSectionType.Store,
+    })
+  }
 }
 
 /** Adds effective non-persisted Actions and annotates persisted overrides. */
