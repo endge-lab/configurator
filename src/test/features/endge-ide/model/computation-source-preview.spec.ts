@@ -1,0 +1,45 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  runComputationSourcePreview,
+  serializeComputationPreviewOutput,
+} from '@/features/endge-ide/model/computation-preview/computation-source-preview'
+
+describe('computation editor source preview', () => {
+  it('executes a draft with object input', async () => {
+    await expect(runComputationSourcePreview(
+      `defineComputation({
+        outputs: {
+          result: {
+            value: input('value').trim(),
+            active: input('active').defaultTo(false),
+          },
+        },
+        result: output('result'),
+      })`,
+      '{ "value": " preview ", "active": true }',
+      'editor-preview-test',
+    )).resolves.toEqual({
+      value: 'preview',
+      active: true,
+    })
+  })
+
+  it('accepts scalar JSON input because Computation contracts may be scalar', async () => {
+    await expect(runComputationSourcePreview(
+      `defineComputation({
+        outputs: { result: input('') },
+        result: output('result'),
+      })`,
+      '42',
+      'scalar-preview-test',
+    )).resolves.toBe(42)
+  })
+
+  it('serializes undefined output as JSON null', () => {
+    expect(serializeComputationPreviewOutput(undefined)).toBe('null')
+    expect(serializeComputationPreviewOutput({ value: 1 })).toBe(`{
+  "value": 1
+}`)
+  })
+})
