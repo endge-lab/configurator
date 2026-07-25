@@ -1930,9 +1930,20 @@ function rowClasses(item: FlatFsItem): string {
                 @dragleave="() => onDragLeave(it)"
                 @drop="(e) => onDrop(e, it)"
               >
+                <span class="size-4 shrink-0 inline-flex items-center justify-center">
+                  <ChevronDown
+                    v-if="(it.node.type === 'folder' || it.node.children?.length) && folderIsExpanded(it.path)"
+                    class="size-4"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                  <ChevronRight
+                    v-else-if="it.node.type === 'folder' || it.node.children?.length"
+                    class="size-4"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                </span>
+
                 <template v-if="it.node.type === 'folder'">
-                  <ChevronDown v-if="folderIsExpanded(it.path)" class="size-4 shrink-0" />
-                  <ChevronRight v-else class="size-4 shrink-0" />
                   <component
                     :is="getFolderIcon(it.node)"
                     class="size-4 shrink-0"
@@ -1941,17 +1952,6 @@ function rowClasses(item: FlatFsItem): string {
                 </template>
 
                 <template v-else>
-                  <ChevronDown
-                    v-if="(it.node as FsFileNode).children?.length && folderIsExpanded(it.path)"
-                    class="size-4 shrink-0"
-                    @click.stop="toggleFolder(it.path)"
-                  />
-                  <ChevronRight
-                    v-else-if="(it.node as FsFileNode).children?.length"
-                    class="size-4 shrink-0"
-                    @click.stop="toggleFolder(it.path)"
-                  />
-                  <span v-else class="size-4 shrink-0 ml-1 inline-block" />
                   <Columns
                     v-if="(it.node as FsFileNode).isTableColumn"
                     class="size-4 shrink-0 text-sky-500 mr-1"

@@ -55,6 +55,14 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
     const store = Endge.domain.getStore(id)
     return store?.displayName ?? store?.name ?? id
   }
+  if (key === 'stream') {
+    const stream = Endge.domain.getStream(id)
+    return stream?.displayName ?? stream?.name ?? id
+  }
+  if (key === 'update') {
+    const update = Endge.domain.getUpdate(id)
+    return update?.displayName ?? update?.name ?? id
+  }
   if (key === 'mock') {
     const mock = Endge.domain.getMock(id)
     return mock?.displayName ?? mock?.name ?? id

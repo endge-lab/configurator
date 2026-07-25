@@ -20,6 +20,8 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['data-view', documentId => Endge.domain.getDataView(documentId)],
   ['composition', documentId => Endge.domain.getComposition(documentId)],
   ['store', documentId => Endge.domain.getStore(documentId)],
+  ['stream', documentId => Endge.domain.getStream(documentId)],
+  ['update', documentId => Endge.domain.getUpdate(documentId)],
   ['mock', documentId => Endge.domain.getMock(documentId)],
   ['action', documentId => Endge.domain.getAction(documentId)],
   [String(ParameterType.DefaultParameter), documentId => Endge.domain.getParameter(documentId)],
@@ -47,8 +49,9 @@ export function resolveEndgeIDEDocumentIdentity(
   documentType: DomainDocumentType,
 ): string {
   const normalizedId = String(documentId ?? '').trim()
-  if (!normalizedId)
+  if (!normalizedId) {
     return ''
+  }
 
   const document = DOCUMENT_LOOKUPS.get(String(documentType))?.(normalizedId) as { identity?: unknown } | null | undefined
   const identity = String(document?.identity ?? '').trim()

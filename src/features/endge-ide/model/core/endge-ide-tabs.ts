@@ -223,7 +223,7 @@ export class EndgeIDETabs {
     this._tabsApi.closeTab('ui-editor-demo-singleton')
     this._removeMissingDocumentTabs()
     this._registerSystemViews()
-    this._refreshPersistedDocumentTabIcons()
+    this._refreshPersistedDocumentTabs()
     this._isRegistryBootstrapped = true
   }
 
@@ -678,8 +678,8 @@ export class EndgeIDETabs {
     return 'ti ti-file-alert text-xl text-red-500'
   }
 
-  /** Синхронизирует иконки восстановленных document-вкладок с presentation registry. */
-  private _refreshPersistedDocumentTabIcons(): void {
+  /** Синхронизирует представление восстановленных document-вкладок с загруженным доменом. */
+  private _refreshPersistedDocumentTabs(): void {
     for (const tab of this.openTabs.value) {
       if (tab.viewId !== VIEW_ID_DOCUMENT) {
         continue
@@ -688,6 +688,7 @@ export class EndgeIDETabs {
       if (!payload) {
         continue
       }
+      tab.label = this.getDocumentLabel(payload.documentId, payload.documentType)
       const presentationKind = this._getDocumentPresentationKind(
         payload.documentId,
         payload.documentType,
