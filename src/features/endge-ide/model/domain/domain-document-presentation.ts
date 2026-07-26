@@ -51,6 +51,13 @@ export function getDomainDocumentPresentation(
   docType: DomainDocumentType,
   _presentationKind?: string,
 ): DomainDocumentPresentation {
+  if (String(docType) === 'stream') {
+    return {
+      icon: 'RadioTower',
+      colorClass: DOMAIN_SECTION_PRESENTATION[DomainSectionType.Query].colorClass,
+    }
+  }
+
   const sectionType = getDocumentSectionType(docType)
   const presentation = sectionType == null
     ? FALLBACK_PRESENTATION

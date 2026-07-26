@@ -39,7 +39,7 @@ const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEd
 const domainStore = useDomainStore()
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
-  'source',
+  'visual',
   ['general', 'legacy', 'visual', 'source'] as const,
 )
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)

@@ -52,6 +52,7 @@ import {
   Plus,
   Puzzle,
   Radio,
+  RadioTower,
   RotateCcw,
   Route,
   Save,
@@ -767,6 +768,7 @@ const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
   Type,
   Zap,
   Radio,
+  RadioTower,
 }
 
 function createSectionPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } {
