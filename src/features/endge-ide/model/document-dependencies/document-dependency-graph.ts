@@ -461,8 +461,8 @@ function extractArtifactDependencies(
         dependencies.push(makeDependency('computation', node.identity, `computation-call:${node.name}`))
       }
     }
-    collectContractType(draft?.inputType, dependencies)
-    collectContractType(draft?.outputType, dependencies)
+    collectContractType(payload.input?.type, dependencies)
+    collectContractType(payload.output?.type, dependencies)
   }
   else if (entityType === 'style') {
     dependencies.push(...(payload.dependencies ?? []))

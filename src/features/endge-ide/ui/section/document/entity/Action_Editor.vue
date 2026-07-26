@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 
-import { Endge, RField } from '@endge/core'
+import { Endge } from '@endge/core'
 import { Loader2, Plus, Save, Settings2, Trash2, Workflow } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
 
 const props = defineProps<{
@@ -35,11 +34,6 @@ const uiText = {
   identity: 'Идентификатор',
   displayName: 'Название',
   description: 'Описание',
-  inputType: 'Вход',
-  outputType: 'Выход',
-  type: 'Тип',
-  isArray: 'Массив',
-  optional: 'Опционально',
   active: 'Активно',
   steps: 'Количество шагов',
 }
@@ -87,59 +81,6 @@ const tabButtons = computed(() => [
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
-}
-
-function ensureField(which: 'input' | 'output'): RField | null {
-  if (!editor.value) {
-    return null
-  }
-
-  if (editor.value[which]) {
-    return editor.value[which]
-  }
-
-  const field = new RField(which, '', false, false)
-  editor.value[which] = field
-  return field
-}
-
-function updateFieldType(which: 'input' | 'output', value: string): void {
-  if (!editor.value) {
-    return
-  }
-
-  const nextType = value.trim()
-  if (!nextType) {
-    editor.value[which] = null
-    return
-  }
-
-  const field = ensureField(which)
-  if (!field) {
-    return
-  }
-
-  field.type = nextType
-  field.name = which
-}
-
-function updateFieldArray(which: 'input' | 'output', checked: boolean): void {
-  const field = ensureField(which)
-  if (!field) {
-    return
-  }
-  field.isArray = checked
-}
-
-function updateFieldOptional(
-  which: 'input' | 'output',
-  checked: boolean,
-): void {
-  const field = ensureField(which)
-  if (!field) {
-    return
-  }
-  field.optional = checked
 }
 
 function addTarget(): void {
@@ -227,7 +168,7 @@ function removeTarget(index: number): void {
               Default: {{ JSON.stringify(editor.defaultImplementation) }}
             </div>
             <div class="mt-1 text-muted-foreground">
-              Identity, target, input/output и сохранённый Flow доступны только для чтения.
+              Identity, target и сохранённый Flow доступны только для чтения.
             </div>
           </div>
           <div class="space-y-2">
@@ -257,86 +198,6 @@ function removeTarget(index: number): void {
                   editor && (editor.description = String(value || '') || null)
               "
             />
-          </div>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label>{{ uiText.inputType }}</Label>
-              <div class="space-y-3 rounded-lg border p-3">
-                <div class="space-y-2">
-                  <Label class="text-xs text-muted-foreground">{{
-                    uiText.type
-                  }}</Label>
-                  <TypeRegistrySelect
-                    :model-value="editor?.input?.type ?? ''"
-                    placeholder="Тип не выбран"
-                    :disabled="isOverridden"
-                    @update:model-value="value => updateFieldType('input', String(value ?? ''))"
-                  />
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <Checkbox
-                    :checked="editor?.input?.isArray ?? false"
-                    :disabled="isOverridden"
-                    @update:checked="
-                      (value: boolean) => updateFieldArray('input', value)
-                    "
-                  />
-                  <Label class="text-sm">{{ uiText.isArray }}</Label>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <Checkbox
-                    :checked="editor?.input?.optional ?? false"
-                    :disabled="isOverridden"
-                    @update:checked="
-                      (value: boolean) => updateFieldOptional('input', value)
-                    "
-                  />
-                  <Label class="text-sm">{{ uiText.optional }}</Label>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <Label>{{ uiText.outputType }}</Label>
-              <div class="space-y-3 rounded-lg border p-3">
-                <div class="space-y-2">
-                  <Label class="text-xs text-muted-foreground">{{
-                    uiText.type
-                  }}</Label>
-                  <TypeRegistrySelect
-                    :model-value="editor?.output?.type ?? ''"
-                    placeholder="Тип не выбран"
-                    :disabled="isOverridden"
-                    @update:model-value="value => updateFieldType('output', String(value ?? ''))"
-                  />
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <Checkbox
-                    :checked="editor?.output?.isArray ?? false"
-                    :disabled="isOverridden"
-                    @update:checked="
-                      (value: boolean) => updateFieldArray('output', value)
-                    "
-                  />
-                  <Label class="text-sm">{{ uiText.isArray }}</Label>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <Checkbox
-                    :checked="editor?.output?.optional ?? false"
-                    :disabled="isOverridden"
-                    @update:checked="
-                      (value: boolean) => updateFieldOptional('output', value)
-                    "
-                  />
-                  <Label class="text-sm">{{ uiText.optional }}</Label>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="space-y-2 rounded-lg border p-3">

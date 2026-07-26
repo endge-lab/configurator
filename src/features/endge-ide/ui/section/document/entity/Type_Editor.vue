@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useSmartTabSelection, useSmartTabSharedViewState } from '@/components/ui/smart-tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import {
@@ -235,6 +236,15 @@ async function save(): Promise<void> {
           <div class="space-y-2">
             <Label for="type-source-version">Версия Type Source</Label>
             <Input id="type-source-version" :model-value="String(editor.sourceVersion)" disabled />
+          </div>
+          <div class="space-y-2">
+            <Label for="type-description">Описание</Label>
+            <Textarea
+              id="type-description"
+              v-model="editor.description"
+              :rows="5"
+              placeholder="Назначение типа и особенности его использования"
+            />
           </div>
         </div>
       </div>

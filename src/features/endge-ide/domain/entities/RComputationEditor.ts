@@ -1,7 +1,5 @@
 import type { RComputation } from '@endge/core'
 
-import { RField } from '@endge/core'
-
 /** Editor state for a persisted Computation document. */
 export class RComputationEditor {
   id!: string | number
@@ -11,12 +9,6 @@ export class RComputationEditor {
   source: string = ''
   sourceVersion: number = 1
   contractVersion: number = 1
-  inputType: string = ''
-  inputIsArray: boolean = false
-  inputOptional: boolean = false
-  outputType: string = ''
-  outputIsArray: boolean = false
-  outputOptional: boolean = false
   diagnostics: string[] = []
 
   fillFromSource(source: RComputation): void {
@@ -27,12 +19,6 @@ export class RComputationEditor {
     this.source = String(source.source ?? '')
     this.sourceVersion = source.sourceVersion
     this.contractVersion = source.contractVersion
-    this.inputType = source.input?.type ?? ''
-    this.inputIsArray = source.input?.isArray === true
-    this.inputOptional = source.input?.optional === true
-    this.outputType = source.output?.type ?? ''
-    this.outputIsArray = source.output?.isArray === true
-    this.outputOptional = source.output?.optional === true
     this.refreshDiagnostics()
   }
 
@@ -45,12 +31,6 @@ export class RComputationEditor {
     target.source = this.source
     target.sourceVersion = Math.max(1, Number(this.sourceVersion) || 1)
     target.contractVersion = Math.max(1, Number(this.contractVersion) || 1)
-    target.input = this.inputType.trim()
-      ? new RField('input', this.inputType.trim(), this.inputIsArray, this.inputOptional)
-      : null
-    target.output = this.outputType.trim()
-      ? new RField('output', this.outputType.trim(), this.outputIsArray, this.outputOptional)
-      : null
   }
 
   applySourceText(value: string): void {

@@ -4,7 +4,7 @@
  */
 
 import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
-import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor } from '@endge/core'
+import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor, TypeProgramCatalogEntry } from '@endge/core'
 
 import {
   ComponentType,
@@ -872,6 +872,64 @@ export function attachResolvedActionTree(
       })
     }
   }
+}
+
+/** Adds code-owned built-in Types as the first virtual group under Types. */
+export function attachResolvedTypeTree(
+  tree: FsNode[],
+  types: readonly TypeProgramCatalogEntry[],
+): void {
+  const root = tree.find(node => node.type === 'folder' && node.id === 'root-types') as FsFolderNode | undefined
+  if (!root)
+    return
+
+  root.children = (root.children ?? []).filter(node =>
+    node.identity !== 'types-primitives'
+    && node.identity !== 'types-references',
+  )
+
+  const builtinTypes = types.filter(type => type.category === 'primitive' || type.category === 'reference')
+  if (!builtinTypes.length)
+    return
+
+  const createCategory = (
+    category: 'primitive' | 'reference',
+    name: string,
+  ): FsFolderNode => ({
+    id: `virtual:types:builtin:${category}`,
+    identity: `virtual:types:builtin:${category}`,
+    name,
+    type: 'folder',
+    sectionType: DomainSectionType.Type,
+    virtual: true,
+    children: builtinTypes
+      .filter(type => type.category === category)
+      .map((type): FsFileNode => ({
+        id: `virtual:builtin:type:${type.identity}`,
+        identity: type.identity,
+        name: type.displayName,
+        type: 'file',
+        docType: 'primitive',
+        sectionType: DomainSectionType.Type,
+        virtual: true,
+        origin: { kind: 'builtin', owner: '@endge/core' },
+        badges: ['builtin'],
+      })),
+  })
+
+  root.children.unshift({
+    id: 'virtual:types:builtin',
+    identity: 'virtual:types:builtin',
+    name: 'Built-in',
+    type: 'folder',
+    sectionType: DomainSectionType.Type,
+    virtual: true,
+    virtualOrigin: 'builtin',
+    children: [
+      createCategory('primitive', 'Примитивы'),
+      createCategory('reference', 'Ссылки на сущности'),
+    ],
+  })
 }
 
 const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {

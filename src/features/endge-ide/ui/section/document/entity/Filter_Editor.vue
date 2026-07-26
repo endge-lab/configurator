@@ -15,7 +15,7 @@ import {
   Settings2,
   TriangleAlert,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,14 +31,15 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
-import FilterLegacyFieldsEditor from '@/features/endge-ide/ui/components/FilterLegacyFieldsEditor.vue'
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
+import FilterSourceVisualEditor from '@/features/endge-ide/ui/components/FilterSourceVisualEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 
 interface FilterSourceEditorHandle {
   formatDocument: () => Promise<void>
+  focusOffset: (offset: number) => void
   expandOutput: () => void
   collapseOutput: () => void
   toggleOutput: () => void
@@ -55,7 +56,7 @@ const editor = computed(
 )
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
-  'source',
+  'ui',
   ['general', 'ui', 'source', 'artifact', 'diagnostics'] as const,
 )
 const sourceEditorRef = ref<FilterSourceEditorHandle | null>(null)
@@ -87,6 +88,16 @@ const diagnosticsEntityRef = computed(() =>
 
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
+}
+
+function updateVisualSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+async function openSourceAt(offset: number): Promise<void> {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset(offset)
 }
 
 function updateOutputState(value: FilterOutputState): void {
@@ -241,15 +252,13 @@ function updateOutputState(value: FilterOutputState): void {
           </div>
         </div>
       </div>
-      <div v-else-if="activeTab === 'ui'" class="flex h-full min-h-0 flex-col">
-        <div
-          class="shrink-0 border-b bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-300"
-        >
-          Legacy fields сохраняются отдельно и не используются новым Filter
-          runtime.
-        </div>
-        <FilterLegacyFieldsEditor class="min-h-0 flex-1" />
-      </div>
+      <FilterSourceVisualEditor
+        v-else-if="activeTab === 'ui'"
+        :source="editor.source"
+        :identity="editor.identity"
+        @update:source="updateVisualSource"
+        @open-source="openSourceAt"
+      />
       <FilterSourceEditor
         v-else-if="activeTab === 'source'"
         ref="sourceEditorRef"

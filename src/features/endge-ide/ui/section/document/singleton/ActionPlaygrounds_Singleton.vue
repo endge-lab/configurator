@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EndgeFlowDefinition } from '@endge/core'
 
-import { RField } from '@endge/core'
 import { StorageSerializers } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
@@ -14,18 +13,6 @@ interface PlaygroundPersistedState {
   displayName: string
   description: string | null
   active: boolean
-  input: {
-    name: string
-    type: string
-    isArray: boolean
-    optional: boolean
-  } | null
-  output: {
-    name: string
-    type: string
-    isArray: boolean
-    optional: boolean
-  } | null
   flow: EndgeFlowDefinition
 }
 
@@ -45,22 +32,6 @@ function createPlaygroundEditor(snapshot?: PlaygroundPersistedState | null): RAc
   editor.displayName = snapshot?.displayName || 'Action Playground'
   editor.description = snapshot?.description ?? 'Локальный playground для тестирования flow blocks.'
   editor.active = snapshot?.active ?? true
-  editor.input = snapshot?.input
-    ? new RField(
-        snapshot.input.name,
-        snapshot.input.type,
-        snapshot.input.isArray === true,
-        snapshot.input.optional === true,
-      )
-    : null
-  editor.output = snapshot?.output
-    ? new RField(
-        snapshot.output.name,
-        snapshot.output.type,
-        snapshot.output.isArray === true,
-        snapshot.output.optional === true,
-      )
-    : null
   editor.flowEditor.fillFromDefinition(snapshot?.flow ?? createDefaultPlaygroundFlow())
   editor.syncDefinitionFromFlowEditor()
   return editor
@@ -72,22 +43,6 @@ function toPersistedState(editor: RActionEditor): PlaygroundPersistedState {
     displayName: editor.displayName,
     description: editor.description ?? null,
     active: editor.active,
-    input: editor.input
-      ? {
-          name: editor.input.name,
-          type: editor.input.type,
-          isArray: editor.input.isArray === true,
-          optional: editor.input.optional === true,
-        }
-      : null,
-    output: editor.output
-      ? {
-          name: editor.output.name,
-          type: editor.output.type,
-          isArray: editor.output.isArray === true,
-          optional: editor.output.optional === true,
-        }
-      : null,
     flow: editor.flowEditor.toDefinition(),
   }
 }

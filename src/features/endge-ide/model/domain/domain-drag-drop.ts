@@ -219,11 +219,15 @@ function isManagedFolderNode(node: FsFolderNode): boolean {
  * Создаёт подпапку в указанной папке/корне и сохраняет её в Payload.
  * В корневой (в т.ч. системной) папке создание дочерней разрешено — мы только задаём parent.
  */
-export async function createSubfolder(targetFolder: FsFolderNode): Promise<RFolder> {
+export async function createSubfolder(targetFolder: FsFolderNode, name: string): Promise<RFolder> {
   if (targetFolder.sectionType === DomainSectionType.Integration)
     throw new Error('Глобальный реестр интеграций не поддерживает папки')
   if (isManagedFolderNode(targetFolder) && !targetFolder.isRoot)
     throw new Error('Управляемая извне папка недоступна для редактирования')
+
+  const folderName = name.trim()
+  if (!folderName)
+    throw new Error('Введите название папки')
 
   const parentId = resolveParentIdForNewFolder(targetFolder)
   let newId = `folder-${randomString(5)}`
@@ -234,8 +238,8 @@ export async function createSubfolder(targetFolder: FsFolderNode): Promise<RFold
   const folder = RFolder.fromPlain({
     id: newId,
     identity: newId,
-    name: 'Новая папка',
-    displayName: 'Новая папка',
+    name: folderName,
+    displayName: folderName,
     parent: parentId,
   })
 

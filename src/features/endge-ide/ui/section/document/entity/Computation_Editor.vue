@@ -18,7 +18,6 @@ import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -36,7 +35,6 @@ import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
-import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
 interface ComputationSourceEditorHandle {
   formatDocument: () => Promise<void>
@@ -265,30 +263,6 @@ async function save(): Promise<void> {
           </div>
           <div class="space-y-2">
             <Label for="computation-contract-version">Contract version</Label><Input id="computation-contract-version" v-model.number="editor.contractVersion" type="number" min="1" />
-          </div>
-        </div>
-        <div class="space-y-3">
-          <Label>Контракт</Label>
-          <p class="text-xs text-muted-foreground">
-            Опционально: ComponentSFC ports v1 не проверяют persisted input/output contract.
-          </p>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-3 rounded-lg border p-3">
-              <Label for="computation-input-type">Input type identity</Label>
-              <TypeRegistrySelect id="computation-input-type" v-model="editor.inputType" placeholder="Выберите входной тип" />
-              <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.inputIsArray" />Массив</label>
-                <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.inputOptional" />Опционально</label>
-              </div>
-            </div>
-            <div class="space-y-3 rounded-lg border p-3">
-              <Label for="computation-output-type">Output type identity</Label>
-              <TypeRegistrySelect id="computation-output-type" v-model="editor.outputType" placeholder="Выберите выходной тип" />
-              <div class="flex items-center gap-4">
-                <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.outputIsArray" />Массив</label>
-                <label class="flex items-center gap-2 text-sm"><Checkbox v-model:checked="editor.outputOptional" />Опционально</label>
-              </div>
-            </div>
           </div>
         </div>
       </div>

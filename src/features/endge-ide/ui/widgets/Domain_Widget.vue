@@ -100,6 +100,7 @@ import {
 import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
 import {
   attachResolvedActionTree,
+  attachResolvedTypeTree,
   buildDomainTree,
   flattenTree,
   getDomainTreeRootBlocks,
@@ -337,6 +338,20 @@ function folderIsExpanded(path: string): boolean {
 }
 
 // ---------- dialogs ----------
+const createFolderDialog = ref<{
+  open: boolean
+  loading: boolean
+  targetFolder: FsFolderNode | null
+  targetPath: string
+  name: string
+}>({
+  open: false,
+  loading: false,
+  targetFolder: null,
+  targetPath: '',
+  name: '',
+})
+
 const renameDialog = ref<{
   open: boolean
   folderId: string
@@ -685,7 +700,7 @@ const ROOT_TO_SECTION = computed(() => {
   const softId = softDeletedFolderId.value
   const compositions = withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId)
   return {
-    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted([...(domainStore.typesPrimitives ?? []), ...(domainStore.typesComplex ?? [])], softId) },
+    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? [], softId) },
     'root-queries': {
       section: DomainSectionType.Query,
       items: () => withoutDeleted([
@@ -905,6 +920,7 @@ const fsTree = computed<FsNode[]>(() => {
     ),
   })
 
+  attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
   attachResolvedActionTree(tree, Endge.actions.listResolved())
 
   const eventRoot = buildEventCatalogRoot(
@@ -1237,9 +1253,16 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
       })
       return
     }
-    toast.info('Runtime Action доступен только для выбора и выполнения', {
-      description: 'Built-in, local и provided Actions не имеют persisted editor.',
-    })
+    if (node.sectionType === DomainSectionType.Type) {
+      toast.info('Это built-in тип', {
+        description: 'Тип объявлен в ядре и не имеет persisted editor.',
+      })
+    }
+    else {
+      toast.info('Runtime Action доступен только для выбора и выполнения', {
+        description: 'Built-in, local и provided Actions не имеют persisted editor.',
+      })
+    }
     return
   }
   const isShift = (e as MouseEvent & { shiftKey?: boolean }).shiftKey
@@ -1325,19 +1348,58 @@ async function restoreDocument(node: FsFileNode): Promise<void> {
   }
 }
 
-async function createSubfolderUi(targetFolder: FsFolderNode, targetPath: string): Promise<void> {
+function openCreateFolderDialog(targetFolder: FsFolderNode, targetPath: string): void {
+  createFolderDialog.value.targetFolder = targetFolder
+  createFolderDialog.value.targetPath = targetPath
+  createFolderDialog.value.name = ''
+  createFolderDialog.value.open = true
+}
+
+function closeCreateFolderDialog(): void {
+  if (createFolderDialog.value.loading)
+    return
+
+  createFolderDialog.value.open = false
+  createFolderDialog.value.targetFolder = null
+  createFolderDialog.value.targetPath = ''
+  createFolderDialog.value.name = ''
+}
+
+async function confirmCreateFolder(): Promise<void> {
+  if (createFolderDialog.value.loading)
+    return
+
+  const targetFolder = createFolderDialog.value.targetFolder
+  const targetPath = createFolderDialog.value.targetPath
+  const name = createFolderDialog.value.name.trim()
+  if (!targetFolder || !targetPath)
+    return
+  if (!name) {
+    toast.error('Введите название папки')
+    return
+  }
+
+  createFolderDialog.value.loading = true
   try {
-    await createDomainSubfolder(targetFolder)
+    await EndgeIDE.runBusy(createDomainSubfolder(targetFolder, name))
+
+    const expanded = new Set(activeExpandedFolders.value)
+    expanded.add(targetPath)
+    setActiveExpandedFolders(expanded)
+
+    createFolderDialog.value.open = false
+    createFolderDialog.value.targetFolder = null
+    createFolderDialog.value.targetPath = ''
+    createFolderDialog.value.name = ''
     toast.success('Папка создана')
   }
   catch (e) {
     console.error('[Domain_Widget] Ошибка сохранения папки в Payload:', e)
     toast.error('Не удалось создать папку', { description: (e as Error)?.message })
   }
-
-  const s = new Set(activeExpandedFolders.value)
-  s.add(targetPath)
-  setActiveExpandedFolders(s)
+  finally {
+    createFolderDialog.value.loading = false
+  }
 }
 
 function openFolderDeletionDialog(node: FsFolderNode): void {
@@ -1626,7 +1688,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   if (a.type === 'create-folder') {
     if (!ctxPath)
       return
-    await EndgeIDE.runBusy(createSubfolderUi(a.node, ctxPath))
+    openCreateFolderDialog(a.node, ctxPath)
     return
   }
 
@@ -2031,6 +2093,48 @@ function rowClasses(item: FlatFsItem): string {
         </button>
       </div>
     </Teleport>
+
+    <!-- create folder dialog -->
+    <Dialog v-model:open="createFolderDialog.open">
+      <DialogContent
+        class="sm:max-w-md"
+        @pointer-down-outside="closeCreateFolderDialog"
+        @escape-key-down="closeCreateFolderDialog"
+      >
+        <DialogHeader>
+          <DialogTitle>Создать папку</DialogTitle>
+        </DialogHeader>
+
+        <div class="space-y-2 py-2">
+          <div class="text-sm text-muted-foreground">
+            Название папки:
+          </div>
+          <Input
+            v-model="createFolderDialog.name"
+            autofocus
+            autocomplete="off"
+            placeholder="Введите название"
+            @keydown.enter.prevent="confirmCreateFolder"
+          />
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button
+            variant="outline"
+            :disabled="createFolderDialog.loading"
+            @click="closeCreateFolderDialog"
+          >
+            Отменить
+          </Button>
+          <Button
+            :disabled="createFolderDialog.loading || !createFolderDialog.name.trim()"
+            @click="confirmCreateFolder"
+          >
+            {{ createFolderDialog.loading ? 'Создание…' : 'Создать' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- recursive folder deletion confirmation -->
     <Dialog v-model:open="folderDeletionDialog.open">

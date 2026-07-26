@@ -66,10 +66,23 @@ function toggleOutput(): void {
   inlinePreviewCollapsed.value = !inlinePreviewCollapsed.value
 }
 
+function focusOffset(offset: number): void {
+  const instance = monaco.editor.value
+  const model = instance?.getModel()
+  if (!instance || !model) {
+    return
+  }
+  const position = model.getPositionAt(Math.max(0, Math.min(offset, model.getValueLength())))
+  instance.focus()
+  instance.setPosition(position)
+  instance.revealPositionInCenterIfOutsideViewport(position)
+}
+
 defineExpose({
   expandOutput,
   collapseOutput,
   toggleOutput,
+  focusOffset,
   formatDocument: monaco.formatDocument,
 })
 

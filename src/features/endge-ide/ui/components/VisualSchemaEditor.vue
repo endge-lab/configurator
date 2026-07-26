@@ -32,6 +32,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Input } from '@/components/ui/input'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useSmartTabViewState } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
   cloneTypeSourceDocument,
@@ -105,7 +106,12 @@ const typeSelectOptions = computed(() => [
   ...referenceTypeSelectOptions.value,
 ])
 const selectedRowId = ref<string | null>(null)
-const collapsedIds = ref(new Set<string>())
+const collapsedRowIds = useSmartTabViewState<string[]>('visual-schema.collapsed-row-ids', {
+  version: 1,
+  defaultValue: () => [],
+  validate: value => Array.isArray(value) && value.every(item => typeof item === 'string'),
+})
+const collapsedIds = computed(() => new Set(collapsedRowIds.value))
 const draggedObjectField = ref<ObjectDragState | null>(null)
 const draggedListIndex = ref<number | null>(null)
 const descriptionDialogOpen = ref(false)
@@ -373,7 +379,7 @@ function toggleExpanded(row: TypeVisualRow): void {
     next.delete(row.id)
   }
   else { next.add(row.id) }
-  collapsedIds.value = next
+  collapsedRowIds.value = [...next]
 }
 
 function isExpanded(row: TypeVisualRow): boolean {
@@ -381,16 +387,14 @@ function isExpanded(row: TypeVisualRow): boolean {
 }
 
 function collapseAll(): void {
-  collapsedIds.value = new Set()
-  collapsedIds.value = new Set(
-    objectRows.value
-      .filter(row => row.hasChildren && !row.cycle)
-      .map(row => row.id),
-  )
+  collapsedRowIds.value = []
+  collapsedRowIds.value = objectRows.value
+    .filter(row => row.hasChildren && !row.cycle)
+    .map(row => row.id)
 }
 
 function expandAll(): void {
-  collapsedIds.value = new Set()
+  collapsedRowIds.value = []
 }
 
 function normalizePanelSizes(sizes: readonly number[], panelCount: number): number[] {
@@ -727,70 +731,76 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                   @dragover.prevent
                   @drop.prevent="row.fieldPath && dropObjectField(row.fieldPath)"
                 >
-                  <div class="type-visual-editor__tree-main" :style="{ paddingLeft: `${18 + row.depth * 22}px` }">
-                    <GripVertical v-if="row.local && !props.readonly" class="type-visual-editor__drag size-3.5" />
-                    <span v-else class="w-3.5 shrink-0" />
-                    <button
-                      type="button"
-                      class="type-visual-editor__chevron"
-                      :class="!row.hasChildren ? 'invisible' : ''"
-                      @click.stop="toggleExpanded(row)"
-                    >
-                      <ChevronDown v-if="isExpanded(row)" class="size-3.5" />
-                      <ChevronRight v-else class="size-3.5" />
-                    </button>
-                    <Input
-                      v-if="row.local && !props.readonly"
-                      :model-value="row.field.key"
-                      class="type-visual-editor__name-input"
-                      @click.stop
-                      @change="updateObjectFieldName(row, ($event.target as HTMLInputElement).value)"
-                    />
-                    <button
-                      v-else
-                      type="button"
-                      class="type-visual-editor__resolved-name"
-                      @click.stop="selectedRowId = row.id"
-                    >
-                      {{ row.field.key }}
-                    </button>
-                    <span class="type-visual-editor__colon">:</span>
-                    <div
-                      v-if="row.local && !props.readonly && row.fieldPath && canSelectFieldType(row.field)"
-                      class="type-visual-editor__type-control"
-                      @click.capture="openTypeFromModifiedClick(row.field.type, $event)"
-                    >
-                      <SearchableSelect
-                        :model-value="fieldTypeSelectionValue(row.field)"
-                        :options="typeSelectOptions"
-                        :trigger-class="['type-visual-editor__type-select', 'text-[11px]', expressionTone(row.field.type)]"
-                        content-max-height="min(420px, 62vh)"
-                        size="compact"
-                        @update:model-value="value => updateObjectFieldType(row.fieldPath!, String(value))"
+                  <div class="type-visual-editor__tree-main">
+                    <div class="type-visual-editor__field-cell" :style="{ paddingLeft: `${row.depth * 22}px` }">
+                      <GripVertical v-if="row.local && !props.readonly" class="type-visual-editor__drag size-3.5" />
+                      <span v-else class="w-3.5 shrink-0" />
+                      <button
+                        type="button"
+                        class="type-visual-editor__chevron"
+                        :class="!row.hasChildren ? 'invisible' : ''"
+                        @click.stop="toggleExpanded(row)"
+                      >
+                        <ChevronDown v-if="isExpanded(row)" class="size-3.5" />
+                        <ChevronRight v-else class="size-3.5" />
+                      </button>
+                      <Input
+                        v-if="row.local && !props.readonly"
+                        :model-value="row.field.key"
+                        class="type-visual-editor__name-input"
+                        @click.stop
+                        @change="updateObjectFieldName(row, ($event.target as HTMLInputElement).value)"
                       />
+                      <button
+                        v-else
+                        type="button"
+                        class="type-visual-editor__resolved-name"
+                        @click.stop="selectedRowId = row.id"
+                      >
+                        {{ row.field.key }}
+                      </button>
                     </div>
-                    <span
-                      v-else-if="row.local"
-                      class="type-visual-editor__type-link"
-                      :class="expressionTone(row.field.type)"
-                    >
-                      {{ expressionLabel(row.field.type) }}
-                    </span>
-                    <button
-                      v-else-if="row.field.type.kind === 'reference'"
-                      type="button"
-                      class="type-visual-editor__type-link"
-                      :class="expressionTone(row.field.type)"
-                      @click.stop="emit('open:type', row.field.type.identity)"
-                    >
-                      {{ row.field.type.identity }}
-                    </button>
-                    <span v-else class="type-visual-editor__type-link" :class="expressionTone(row.field.type)">
-                      {{ expressionLabel(row.field.type) }}
-                    </span>
-                    <span v-if="row.field.array" class="type-visual-editor__modifier">[]</span>
-                    <span v-if="row.field.optional" class="type-visual-editor__modifier">optional</span>
-                    <span v-if="row.cycle" class="type-visual-editor__modifier">recursive</span>
+                    <span class="type-visual-editor__colon">:</span>
+                    <div class="type-visual-editor__type-cell">
+                      <div
+                        v-if="row.local && !props.readonly && row.fieldPath && canSelectFieldType(row.field)"
+                        class="type-visual-editor__type-control"
+                        @click.capture="openTypeFromModifiedClick(row.field.type, $event)"
+                      >
+                        <SearchableSelect
+                          :model-value="fieldTypeSelectionValue(row.field)"
+                          :options="typeSelectOptions"
+                          :trigger-class="['type-visual-editor__type-select', 'text-[11px]', expressionTone(row.field.type)]"
+                          content-max-height="min(420px, 62vh)"
+                          size="compact"
+                          @update:model-value="value => updateObjectFieldType(row.fieldPath!, String(value))"
+                        />
+                      </div>
+                      <span
+                        v-else-if="row.local"
+                        class="type-visual-editor__type-link"
+                        :class="expressionTone(row.field.type)"
+                      >
+                        {{ expressionLabel(row.field.type) }}
+                      </span>
+                      <button
+                        v-else-if="row.field.type.kind === 'reference'"
+                        type="button"
+                        class="type-visual-editor__type-link"
+                        :class="expressionTone(row.field.type)"
+                        @click.stop="emit('open:type', row.field.type.identity)"
+                      >
+                        {{ row.field.type.identity }}
+                      </button>
+                      <span v-else class="type-visual-editor__type-link" :class="expressionTone(row.field.type)">
+                        {{ expressionLabel(row.field.type) }}
+                      </span>
+                    </div>
+                    <div class="type-visual-editor__modifiers">
+                      <span v-if="row.field.array" class="type-visual-editor__modifier">[]</span>
+                      <span v-if="row.field.optional" class="type-visual-editor__modifier">optional</span>
+                      <span v-if="row.cycle" class="type-visual-editor__modifier">recursive</span>
+                    </div>
                     <div class="type-visual-editor__row-actions">
                       <template v-if="row.local && !props.readonly">
                         <DropdownMenu>
@@ -1204,12 +1214,13 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__tree-row.is-resolved { background-image: linear-gradient(90deg, color-mix(in srgb, #8b5cf6 5%, transparent), transparent 45%); }
 
 .type-visual-editor__tree-main {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(160px, 2fr) 8px minmax(0, 1fr) 88px 100px;
   min-width: 0;
   min-height: 34px;
   align-items: center;
-  gap: 4px;
-  padding-right: 7px;
+  column-gap: 4px;
+  padding: 0 7px 0 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10.5px;
 }
@@ -1228,21 +1239,24 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__drag:active { cursor: grabbing; }
 .type-visual-editor__chevron { display: flex; height: 18px; width: 18px; flex-shrink: 0; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__chevron:hover { background: var(--muted); color: var(--foreground); }
-.type-visual-editor__name-input { height: 25px; min-width: 88px; flex: 1 1 180px; border-color: transparent; background: transparent; padding: 0 3px; font-family: inherit; font-size: 10.5px; box-shadow: none; }
+.type-visual-editor__field-cell { display: flex; min-width: 0; align-items: center; gap: 4px; }
+.type-visual-editor__name-input { height: 25px; min-width: 0; flex: 1; border-color: transparent; background: transparent; padding: 0 3px; font-family: inherit; font-size: 10.5px; box-shadow: none; }
 .type-visual-editor__name-input:hover { border-color: var(--border); }
-.type-visual-editor__resolved-name { min-width: 0; flex: 1 1 180px; overflow: hidden; color: var(--foreground); text-overflow: ellipsis; white-space: nowrap; }
-.type-visual-editor__colon { color: var(--muted-foreground); }
-.type-visual-editor__type-control { min-width: 90px; max-width: 160px; flex: 0 1 160px; }
-.type-visual-editor__type-select { height: 25px; min-width: 90px; max-width: 160px; border-color: transparent; background: transparent; padding: 0 5px; font-family: inherit; font-size: 11px; font-weight: 500; box-shadow: none; }
-.type-visual-editor__type-link { min-width: 0; max-width: 150px; flex: 0 1 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.type-visual-editor__resolved-name { min-width: 0; flex: 1; overflow: hidden; color: var(--foreground); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.type-visual-editor__colon { color: var(--muted-foreground); text-align: center; }
+.type-visual-editor__type-cell { min-width: 0; }
+.type-visual-editor__type-control { min-width: 0; width: 100%; }
+.type-visual-editor__type-select { height: 25px; min-width: 0; width: 100%; border-color: transparent; background: transparent; padding: 0 5px; font-family: inherit; font-size: 11px; font-weight: 500; box-shadow: none; }
+.type-visual-editor__type-link { display: block; min-width: 0; width: 100%; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .type-visual-editor__type--string { color: #0b9a6d; }
 .type-visual-editor__type--number { color: #dc7625; }
 .type-visual-editor__type--boolean { color: #c74b86; }
 .type-visual-editor__type--reference { color: #258ac3; }
 .type-visual-editor__type--inline { color: #8b5cf6; font-weight: 600; }
 .type-visual-editor__type--neutral { color: var(--muted-foreground); }
+.type-visual-editor__modifiers { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 4px; overflow: hidden; }
 .type-visual-editor__modifier { border: 1px solid var(--border); padding: 2px 4px; color: var(--muted-foreground); font-size: 9px; line-height: 1; }
-.type-visual-editor__row-actions { display: flex; flex-shrink: 0; align-items: center; margin-left: auto; opacity: .4; }
+.type-visual-editor__row-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; opacity: .4; }
 .type-visual-editor__row-actions button { display: inline-flex; height: 25px; width: 25px; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__row-actions button:hover { background: var(--muted); color: var(--foreground); }
 .type-visual-editor__row-actions button:last-child:hover { color: var(--destructive); }
@@ -1283,8 +1297,8 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__doc-values { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .type-visual-editor__doc-values button { border: 0; background: transparent; padding: 0; }
 
-.type-visual-editor__example-card { display: flex; height: 100%; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; background: color-mix(in srgb, #dce6f2 48%, var(--background)); }
-.type-visual-editor__example-head { display: flex; height: 42px; flex-shrink: 0; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in srgb, #94a3b8 25%, var(--border)); background: color-mix(in srgb, #cbd8e8 58%, var(--background)); padding: 0 14px; color: var(--muted-foreground); font-size: 9px; }
+.type-visual-editor__example-card { display: flex; height: 100%; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; background: var(--background); }
+.type-visual-editor__example-head { display: flex; height: 42px; flex-shrink: 0; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in srgb, #94a3b8 25%, var(--border)); background: var(--background); padding: 0 14px; color: var(--muted-foreground); font-size: 9px; }
 .type-visual-editor__example-head span:first-child { color: var(--foreground); font-weight: 600; }
 .type-visual-editor__example-card pre { min-height: 0; flex: 1; overflow: auto; padding: 10px; color: color-mix(in srgb, var(--foreground) 88%, #2563eb); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.62; tab-size: 2; }
 .type-visual-editor__warnings { display: flex; gap: 8px; margin: 18px; border: 1px solid color-mix(in srgb, #f59e0b 24%, var(--border)); border-radius: 7px; background: color-mix(in srgb, #f59e0b 7%, transparent); padding: 10px; color: #d97706; }
