@@ -44,7 +44,6 @@ describe('document editor snapshot', () => {
     const editor = {
       identity: 'orders',
       source: 'defineType({})',
-      fields: new Map([['id', { type: 'ID', optional: false }]]),
     }
     const saved = createDocumentEditorSnapshot(editor)
 

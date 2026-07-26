@@ -386,12 +386,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'type') {
     return {
       ...base,
-      schema: {
-        identity: id,
-        name: displayName,
-        isPrimitive: false,
-        fields: {},
-      },
       source: Endge.source.createDefault('type'),
       sourceVersion: 1,
       isPrimitive: false,

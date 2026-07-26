@@ -1,34 +1,25 @@
 import type { ProgramDiagnostic, RType } from '@endge/core'
 
-import { Endge, RField } from '@endge/core'
-
-import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
+import { Endge } from '@endge/core'
 
 //
-// Модель для редактирования RType. Поля - массив (доменная RType.fields остаётся Map).
+// Модель source-only редактирования RType.
 export class RTypeEditor {
   id!: string
   identity!: string
   name!: string
   isPrimitive!: boolean
-  fields: RFieldEditor[] = []
   source: string = ''
   sourceVersion: number = 1
   diagnostics: ProgramDiagnostic[] = []
 
-  /** Переносит данные редактора в доменную сущность (RType.fields - Map по имени). */
+  /** Переносит source-first данные редактора в доменную сущность. */
   updateSource(source: RType): void {
     source.identity = this.identity
     source.name = this.name
     source.isPrimitive = this.isPrimitive
     source.source = this.source
     source.sourceVersion = this.sourceVersion
-    source.fields = new Map()
-    for (const fieldEditor of this.fields) {
-      const field = new RField(fieldEditor.name, fieldEditor.type)
-      fieldEditor.updateSource(field)
-      source.addField(field)
-    }
   }
 
   /** Заполняет редактор из доменной сущности. */
@@ -39,16 +30,10 @@ export class RTypeEditor {
     this.isPrimitive = source.isPrimitive
     this.source = String(source.source ?? '')
     this.sourceVersion = Math.max(1, Number(source.sourceVersion ?? 1) || 1)
-    this.fields = []
-    for (const [, field] of source.fields) {
-      const editor = new RFieldEditor()
-      editor.fillFromSource(field)
-      this.fields.push(editor)
-    }
     this.refreshDiagnostics()
   }
 
-  /** Меняет только новый persisted source; legacy fields остаются без изменений. */
+  /** Меняет persisted Type Source. */
   applySourceText(value: string): void {
     this.source = value
     this.refreshDiagnostics()

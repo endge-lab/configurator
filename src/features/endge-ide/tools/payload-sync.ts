@@ -143,26 +143,6 @@ export async function syncDomainToPayload(): Promise<void> {
   //   })
   // }
 
-  // // Типы (без примитивов): identity = name, schema = данные типа
-  // for (const type of plain.types ?? []) {
-  //   if (type.isPrimitive) continue
-  //   const name = type.name
-  //   if (!name) continue
-  //   await syncEntity({
-  //     collection: 'types',
-  //     identityKey: 'identity',
-  //     identityValue: name,
-  //     rootFolderId: rootFolderIds.types,
-  //     payloadDoc: {
-  //       identity: name,
-  //       displayName: name,
-  //       schema: type,
-  //       active: true,
-  //       author: 'system',
-  //     },
-  //   })
-  // }
-
   // // Действия
   // for (const action of plain.actions ?? []) {
   //   const id = action.identity ?? action.id
