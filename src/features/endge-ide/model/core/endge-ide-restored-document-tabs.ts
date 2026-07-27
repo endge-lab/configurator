@@ -10,7 +10,7 @@ interface PersistedDocumentTabPayload {
   documentType?: unknown
 }
 
-const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = new Map([
+const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = new Map<string, (documentId: string) => unknown>([
   [String(ComponentType.Table), documentId => Endge.domain.getComponent(documentId)],
   [String(ComponentType.DSL), documentId => Endge.domain.getComponent(documentId)],
   [String(ComponentType.SFC), documentId => Endge.domain.getComponentSFC(documentId)],
@@ -43,6 +43,18 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['type', documentId => Endge.domain.getType(documentId)],
 ])
 
+/** Возвращает текущий domain-документ по identity или storage id. */
+export function resolveEndgeIDEDocument(
+  documentId: string | number,
+  documentType: DomainDocumentType,
+): unknown {
+  const normalizedId = String(documentId ?? '').trim()
+  if (!normalizedId) {
+    return null
+  }
+  return DOCUMENT_LOOKUPS.get(String(documentType))?.(normalizedId) ?? null
+}
+
 /** Нормализует Payload id/identity документа в стабильный identity для ключа вкладки. */
 export function resolveEndgeIDEDocumentIdentity(
   documentId: string | number,
@@ -53,7 +65,7 @@ export function resolveEndgeIDEDocumentIdentity(
     return ''
   }
 
-  const document = DOCUMENT_LOOKUPS.get(String(documentType))?.(normalizedId) as { identity?: unknown } | null | undefined
+  const document = resolveEndgeIDEDocument(normalizedId, documentType) as { identity?: unknown } | null
   const identity = String(document?.identity ?? '').trim()
   return identity || normalizedId
 }
@@ -68,8 +80,7 @@ export function getMissingDocumentTabIds(tabs: readonly SmartTabRef[]): string[]
     const payload = tab.payload as PersistedDocumentTabPayload | undefined
     const documentId = typeof payload?.documentId === 'string' ? payload.documentId.trim() : ''
     const documentType = typeof payload?.documentType === 'string' ? payload.documentType : ''
-    const lookup = DOCUMENT_LOOKUPS.get(documentType)
-    if (!documentId || !lookup || lookup(documentId) == null) {
+    if (!documentId || !DOCUMENT_LOOKUPS.has(documentType) || resolveEndgeIDEDocument(documentId, documentType as DomainDocumentType) == null) {
       missingTabIds.push(tab.id)
     }
   }

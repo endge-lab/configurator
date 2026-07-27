@@ -31,17 +31,18 @@ describe('frontend Event catalog', () => {
     const table = root.children?.[0]?.children?.[0]
     expect(table?.children?.length).toBeGreaterThan(TABLE_EVENT_DEFINITIONS.length)
     expect(table?.children?.find(node => node.identity === 'Table.click')).toMatchObject({
-      name: 'Нажатие',
+      name: 'Table.click',
       badges: [],
     })
     expect(table?.children?.find(node => node.identity === 'Table.rowActivated')).toMatchObject({
-      name: 'Активация строки',
+      name: 'Table.rowActivated',
       badges: [],
     })
     const component = root.children?.[1]?.children?.[0]
     expect(component?.children?.map(node => node.name)).toEqual(['Собственные', 'Проброшенные'])
     expect(component?.children?.[0]?.children?.[0]).toMatchObject({
       identity: 'orders.opened',
+      name: 'orders.opened',
       virtual: true,
       sourceDocument: { identity: 'orders', docType: 'component-sfc' },
     })

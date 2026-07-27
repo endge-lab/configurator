@@ -74,6 +74,8 @@
 :root {
   --editor-surface: var(--background);
   --editor-panel: var(--card);
+  --editor-type-reference: #005cf1;
+  --editor-type-reference-unresolved: #dc2626;
   /*
    * Input is intentionally a stronger border token in light brand themes.
    * Editor controls need a quieter fill, close to the surrounding surface.
@@ -88,9 +90,24 @@
   --editor-surface: #142137;
   --editor-panel: color-mix(in srgb, var(--editor-surface) 92%, black);
   --editor-control: color-mix(in srgb, var(--editor-surface) 76%, black);
+  --editor-type-reference: #82aaff;
+  --editor-type-reference-unresolved: #f87171;
   --editor-active-tab: var(--editor-control);
   --editor-active-tab-foreground: var(--foreground);
   --editor-active-tab-border: var(--input);
+}
+
+.monaco-editor .endge-source-type-reference--resolved {
+  color: var(--editor-type-reference) !important;
+}
+
+.monaco-editor .endge-source-type-reference--resolved:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.monaco-editor .endge-source-type-reference--unresolved {
+  color: var(--editor-type-reference-unresolved) !important;
 }
 
 /*

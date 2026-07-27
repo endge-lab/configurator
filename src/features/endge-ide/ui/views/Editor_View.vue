@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SmartTabRef } from '@/components/ui/smart-tabs'
 import type { IntegrationDisposer } from '@endge/integration-api'
 
 import { Box, Loader2 } from 'lucide-vue-next'
@@ -97,6 +98,10 @@ function getIconClass(tab: { meta?: Record<string, unknown> | undefined }): stri
   return typeof icon === 'string' ? icon : null
 }
 
+function getTabTooltip(tab: SmartTabRef): string | null {
+  return tabs.getTabProjectPath(tab)
+}
+
 useLayout({
   title: computed(() => 'Endge'),
 })
@@ -137,6 +142,7 @@ onBeforeUnmount(() => {
         v-if="!hasNoTabs"
         :api="EndgeIDE.tabs"
         :get-icon-class="getIconClass"
+        :get-tooltip="getTabTooltip"
         class="min-h-0 flex-1"
       />
 

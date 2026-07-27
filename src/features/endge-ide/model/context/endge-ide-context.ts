@@ -10,6 +10,8 @@ import {
 import { registerEndgeMockProviders } from '@/features/endge-ide/model/bootstrap/endge-mock-providers'
 import { configuratorDataModeRepository } from '@/features/endge-ide/model/context/configurator-data-mode-repository'
 
+const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-shadcn', 'vue-native'] as const
+
 export interface EndgeIDESurfaceLifecycle {
   beforeContextReset?: () => Promise<void> | void
   afterContextBoot?: () => Promise<void> | void
@@ -121,6 +123,9 @@ export class EndgeIDEContext {
         SENTRY_ENVIRONMENT: import.meta.env.VITE_SENTRY_ENVIRONMENT,
         SENTRY_RELEASE: import.meta.env.VITE_SENTRY_RELEASE,
       },
+      ui: {
+        adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
+      },
       payload: { baseAPI, secret },
     }
   }
@@ -210,10 +215,19 @@ export class EndgeIDEContext {
       requiredRendererKeys: ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
       requiredRootKeys: ['shell', 'sfc', 'sfc-runtime', 'filter-view'],
     })
+    const expectedAdapter = Endge.uiRegistry.adapters.resolveAvailable(
+      Endge.workspace.defaultSfcAdapterId,
+      CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
+    )
 
-    if (adapter.id !== Endge.workspace.defaultSfcAdapterId) {
+    if (!expectedAdapter) {
+      Endge.uiRegistry.adapters.require({ id: Endge.workspace.defaultSfcAdapterId })
+      return
+    }
+
+    if (adapter.id !== expectedAdapter.id) {
       throw new Error(
-        `[EndgeIDE] active SFC adapter "${adapter.id}" does not match workspace adapter "${Endge.workspace.defaultSfcAdapterId}"`,
+        `[EndgeIDE] active SFC adapter "${adapter.id}" does not match resolved adapter "${expectedAdapter.id}"`,
       )
     }
   }

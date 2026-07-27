@@ -89,7 +89,7 @@ function eventNode(
   return {
     id: `event:${identity}`,
     identity,
-    name: event.displayName || event.name,
+    name: identity,
     type: 'file',
     docType: 'component-sfc' as DomainDocumentType,
     sectionType: DomainSectionType.Event,

@@ -9,11 +9,13 @@ import { getSmartTabView } from '@/components/ui/smart-tabs/registry'
 import SmartTabViewStateScope from '@/components/ui/smart-tabs/SmartTabViewStateScope.vue'
 import { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const props = defineProps<{
   options?: SmartTabsOptions
   api?: SmartTabsApi
-  getIconClass?: (tab: SmartTabRef) => string | null
+  getIconClass?: (tab: SmartTabRef) => string | null,
+  getTooltip?: (tab: SmartTabRef) => string | null,
 }>()
 const dragTabId = ref<string | null>(null)
 const dragOverIndex = ref<number | null>(null)
@@ -145,6 +147,11 @@ function getIconBadgeComponentClass(tab: SmartTabRef): string {
   return 'size-2.5'
 }
 
+function getTabTooltip(tab: SmartTabRef): string | null {
+  const tooltip = props.getTooltip?.(tab) ?? tab.meta?.tooltip
+  return typeof tooltip === 'string' && tooltip.trim() ? tooltip.trim() : null
+}
+
 function close(tabId: string): void {
   console.log('[SmartTabsHost] Закрытие вкладки', { tabId })
   tabsApi.closeTab(tabId)
@@ -263,56 +270,69 @@ watch(contextMenu, (v) => {
           class="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <TabsList class="flex w-max bg-transparent p-0 h-auto border-0">
-            <TabsTrigger
+            <Tooltip
               v-for="(tab, index) in tabs"
               :key="tab.id"
-              :value="tab.id"
-              :data-smart-tab-id="tab.id"
-              draggable="true"
-              class="group relative flex items-center justify-center gap-2 px-3 py-2 rounded-none border-r last:border-r-0 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent after:transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:after:bg-primary cursor-move transition-all shrink-0" :class="[
-                dragTabId === tab.id ? 'opacity-50 scale-95' : '',
-                dragOverIndex === index && dragTabId !== tab.id ? 'border-l-2 border-l-primary bg-muted/50' : '',
-              ]"
-              style="min-width: fit-content; max-width: 200px;"
-              @dragstart="handleDragStart($event, tab.id, index)"
-              @dragover="handleDragOver($event, index)"
-              @dragleave="handleDragLeave"
-              @drop="handleDrop($event, index)"
-              @dragend="handleDragEnd"
-              @contextmenu="openContextMenu($event, tab.id)"
             >
-              <span
-                v-if="getIconComponent(tab)"
-                class="relative size-4 shrink-0"
-              >
-                <component
-                  :is="getIconComponent(tab)"
-                  :class="getIconComponentClass(tab)"
-                />
-                <component
-                  :is="getIconBadgeComponent(tab)"
-                  v-if="getIconBadgeComponent(tab)"
-                  :class="getIconBadgeComponentClass(tab)"
-                  class="absolute -bottom-1 -right-1 rounded-[2px] bg-background p-px"
-                />
-              </span>
-              <i
-                v-else-if="getIconClass?.(tab) ?? tab.meta?.icon"
-                :class="getIconClass?.(tab) ?? tab.meta?.icon"
-                class="shrink-0"
-              />
+              <TooltipTrigger as-child>
+                <TabsTrigger
+                  :value="tab.id"
+                  :data-smart-tab-id="tab.id"
+                  draggable="true"
+                  class="group relative flex items-center justify-center gap-2 px-3 py-2 rounded-none border-r last:border-r-0 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent after:transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:after:bg-primary cursor-move transition-all shrink-0" :class="[
+                    dragTabId === tab.id ? 'opacity-50 scale-95' : '',
+                    dragOverIndex === index && dragTabId !== tab.id ? 'border-l-2 border-l-primary bg-muted/50' : '',
+                  ]"
+                  style="min-width: fit-content; max-width: 200px;"
+                  @dragstart="handleDragStart($event, tab.id, index)"
+                  @dragover="handleDragOver($event, index)"
+                  @dragleave="handleDragLeave"
+                  @drop="handleDrop($event, index)"
+                  @dragend="handleDragEnd"
+                  @contextmenu="openContextMenu($event, tab.id)"
+                >
+                  <span
+                    v-if="getIconComponent(tab)"
+                    class="relative size-4 shrink-0"
+                  >
+                    <component
+                      :is="getIconComponent(tab)"
+                      :class="getIconComponentClass(tab)"
+                    />
+                    <component
+                      :is="getIconBadgeComponent(tab)"
+                      v-if="getIconBadgeComponent(tab)"
+                      :class="getIconBadgeComponentClass(tab)"
+                      class="absolute -bottom-1 -right-1 rounded-[2px] bg-background p-px"
+                    />
+                  </span>
+                  <i
+                    v-else-if="getIconClass?.(tab) ?? tab.meta?.icon"
+                    :class="getIconClass?.(tab) ?? tab.meta?.icon"
+                    class="shrink-0"
+                  />
 
-              <span class="truncate text-sm text-center">
-                {{ tab.label }}
-              </span>
+                  <span class="truncate text-sm text-center">
+                    {{ tab.label }}
+                  </span>
 
-              <button
-                class="opacity-0 group-hover:opacity-100 transition shrink-0"
-                @click.stop="close(tab.id)"
+                  <button
+                    class="opacity-0 group-hover:opacity-100 transition shrink-0"
+                    @click.stop="close(tab.id)"
+                  >
+                    <X class="size-3.5 text-muted-foreground hover:text-foreground" />
+                  </button>
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent
+                v-if="getTabTooltip(tab)"
+                side="bottom"
+                :side-offset="6"
+                class="max-w-[min(36rem,calc(100vw-2rem))] break-words"
               >
-                <X class="size-3.5 text-muted-foreground hover:text-foreground" />
-              </button>
-            </TabsTrigger>
+                {{ getTabTooltip(tab) }}
+              </TooltipContent>
+            </Tooltip>
           </TabsList>
         </div>
       </div>

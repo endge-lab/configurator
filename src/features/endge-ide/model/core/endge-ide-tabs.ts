@@ -27,6 +27,7 @@ import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/gri
 import { registerSmartTabView, useSmartTabs } from '@/components/ui/smart-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
+import { getDomainDocumentProjectPath } from '@/features/endge-ide/model/domain/domain-document-project-path'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model/source-reference/source-reference-document-target'
 import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy.ts'
@@ -676,6 +677,17 @@ export class EndgeIDETabs {
     if (key === 'project')
       return 'ti ti-briefcase text-sky-500 text-2xl'
     return 'ti ti-file-alert text-xl text-red-500'
+  }
+
+  public getTabProjectPath(tab: SmartTabRef): string | null {
+    if (tab.viewId !== VIEW_ID_DOCUMENT) {
+      return null
+    }
+    const payload = this._getPayload<DocumentTabPayload>(tab.payload)
+    if (!payload?.documentId || !payload.documentType) {
+      return null
+    }
+    return getDomainDocumentProjectPath(payload.documentId, payload.documentType)
   }
 
   /** Синхронизирует представление восстановленных document-вкладок с загруженным доменом. */

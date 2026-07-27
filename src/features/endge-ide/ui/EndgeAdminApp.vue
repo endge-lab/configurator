@@ -2,8 +2,8 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 
-import { HeartPulse } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { HeartPulse, Loader2, Play } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 import { getIconComponent, showWidget } from '@/components/layouts/grid'
 import {
@@ -17,6 +17,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { configuratorMenuItems } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
@@ -25,7 +26,17 @@ import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.v
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
+const context = useEndgeIDEContext()
 const isBusy = computed(() => EndgeIDE.busy.value)
+const currentProjectIdentity = computed(() =>
+  String(context.currentContext().projectIdentity ?? '').trim(),
+)
+const isLaunchingProjectRuntime = ref(false)
+const launchProjectRuntimeTitle = computed(() =>
+  currentProjectIdentity.value
+    ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
+    : 'Выберите проект в нижней панели',
+)
 
 async function saveCurrentDocument(): Promise<void> {
   await tabs.save()
@@ -60,6 +71,24 @@ function openPulse(): void {
 function openPulseFromHeader(): void {
   showWidget('domain')
   openPulse()
+}
+
+async function launchCurrentProjectRuntime(): Promise<void> {
+  const identity = currentProjectIdentity.value
+  if (!identity || context.isSwitching() || isLaunchingProjectRuntime.value) {
+    return
+  }
+
+  isLaunchingProjectRuntime.value = true
+  try {
+    await EndgeIDE.runtimePreview.launch({
+      entityType: 'project',
+      identity,
+    })
+  }
+  finally {
+    isLaunchingProjectRuntime.value = false
+  }
 }
 
 function openArchitecture(): void {
@@ -227,6 +256,17 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
     <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
+        :disabled="!currentProjectIdentity || context.isSwitching() || isLaunchingProjectRuntime"
+        :title="launchProjectRuntimeTitle"
+        aria-label="Запустить Runtime Preview текущего проекта"
+        @click="launchCurrentProjectRuntime"
+      >
+        <Loader2 v-if="isLaunchingProjectRuntime" class="size-4 animate-spin" />
+        <Play v-else class="size-4 text-emerald-500" />
+      </button>
       <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

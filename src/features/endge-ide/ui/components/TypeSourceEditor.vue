@@ -59,13 +59,3 @@ defineExpose({ formatDocument: monacoAdapter.formatDocument })
   background: var(--editor-surface);
 }
 </style>
-
-<style>
-.monaco-editor .endge-source-type-reference--resolved {
-  color: #4ade80 !important;
-}
-
-.monaco-editor .endge-source-type-reference--unresolved {
-  color: #f87171 !important;
-}
-</style>
