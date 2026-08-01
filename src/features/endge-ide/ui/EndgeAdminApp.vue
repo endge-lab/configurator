@@ -81,10 +81,13 @@ async function launchCurrentProjectRuntime(): Promise<void> {
 
   isLaunchingProjectRuntime.value = true
   try {
-    await EndgeIDE.runtimePreview.launch({
+    const launched = await EndgeIDE.runtimePreview.launch({
       entityType: 'project',
       identity,
     })
+    if (launched) {
+      EndgeIDE.runtimePreview.requestTreeExpansion('project-compositions')
+    }
   }
   finally {
     isLaunchingProjectRuntime.value = false

@@ -205,6 +205,15 @@ function restart(menu: RuntimeContextMenu): Promise<void> {
 }
 
 watch(treeStructure, restoreOrReconcileExpansion, { immediate: true })
+watch(
+  () => preview.treeExpansionRequest.value,
+  (request) => {
+    if (!request) { return }
+    setExpansion(request.preset)
+    preview.consumeTreeExpansionRequest(request.id)
+  },
+  { flush: 'post', immediate: true },
+)
 onBeforeUnmount(closeContextMenu)
 </script>
 

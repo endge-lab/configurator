@@ -5,6 +5,7 @@ import type {
   RuntimePreviewOccurrencePrompt,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 
 import { Endge } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
@@ -26,12 +27,17 @@ export class EndgeIDERuntimePreview {
   public readonly selectedEntry = computed(() => this.get(this.selectedEntryKey.value))
   public readonly selectedNode = computed(() => this.selectedEntry.value?.selectedNode.value ?? null)
   public readonly occurrencePrompt = shallowRef<RuntimePreviewOccurrencePrompt | null>(null)
+  public readonly treeExpansionRequest = shallowRef<{
+    id: number
+    preset: RuntimeTreeExpansionPreset
+  } | null>(null)
 
   private readonly _instances = new Map<string, RuntimePreviewInstance>()
   private _runtimeOff: (() => void) | null = null
   private _scopeOff: (() => void) | null = null
   private _surfaceOff: (() => void) | null = null
   private _initialized = false
+  private _treeExpansionRequestId = 0
   private _resolveOccurrencePrompt: ((choice: string | 'standalone' | null) => void) | null = null
 
   public init(): void {
@@ -147,6 +153,20 @@ export class EndgeIDERuntimePreview {
 
   public canLaunchEditor(editor: unknown): boolean {
     return createRuntimePreviewLaunchRequest(editor) != null
+  }
+
+  /** Requests a one-shot expansion preset from the Runtime Tree surface. */
+  public requestTreeExpansion(preset: RuntimeTreeExpansionPreset): void {
+    this.treeExpansionRequest.value = {
+      id: ++this._treeExpansionRequestId,
+      preset,
+    }
+  }
+
+  public consumeTreeExpansionRequest(requestId: number): void {
+    if (this.treeExpansionRequest.value?.id === requestId) {
+      this.treeExpansionRequest.value = null
+    }
   }
 
   public chooseOccurrence(choice: string | 'standalone' | null): void {
