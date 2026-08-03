@@ -22,6 +22,42 @@ interface Delimiter {
   offset: number
 }
 
+interface SFCEditableCompletionSpec {
+  label: string
+  detail: string
+  insertText: string
+}
+
+const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
+  {
+    label: 'Editable',
+    detail: 'Display/edit structural variants with semantic edited event',
+    insertText: `<Editable :value="\${1:value}" edit-on="\${2:dblclick}" @edited="\${3:emit('edited', event())}">
+  <Variant name="default">
+    \${4}
+  </Variant>
+  <Variant name="edit">
+    \${5}
+  </Variant>
+</Editable>`,
+  },
+  {
+    label: 'Variant default/edit',
+    detail: 'Explicit default and edit variants',
+    insertText: `<Variant name="default">
+  \${1}
+</Variant>
+<Variant name="edit">
+  \${2}
+</Variant>`,
+  },
+  { label: 'editable', detail: 'Enable the edit controller', insertText: 'editable' },
+  { label: 'edit-on', detail: 'Edit entry trigger; click by default', insertText: `edit-on="\${1:dblclick}"` },
+  { label: 'variant', detail: 'Select a component variant explicitly', insertText: `variant="\${1:default}"` },
+  { label: '@edited', detail: 'Handle a committed semantic edit', insertText: `@edited="\${1:emit('edited', event())}"` },
+  { label: 'emit edited', detail: 'Publish edited from a custom edit variant', insertText: `emit('edited', event('\${1:value}'))` },
+]
+
 /** Adds SFC expression highlighting and TypeScript-aware folding to an HTML Monaco model. */
 export function createSFCLanguageContribution(): ScriptEditorExtension {
   return {
@@ -38,6 +74,27 @@ export function createSFCLanguageContribution(): ScriptEditorExtension {
           return collectScriptFoldingRanges(monaco, model)
         },
       })
+      const completions = monaco.languages.registerCompletionItemProvider('html', {
+        triggerCharacters: ['<', ' ', ':', '@'],
+        provideCompletionItems(currentModel, position) {
+          if (currentModel !== model) { return { suggestions: [] } }
+          const template = findTemplateContentRange(model.getValue())
+          const offset = model.getOffsetAt(position)
+          if (!template || offset < template.start || offset > template.end) { return { suggestions: [] } }
+          const word = model.getWordUntilPosition(position)
+          const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
+          return {
+            suggestions: SFC_EDITABLE_COMPLETIONS.map(item => ({
+              label: item.label,
+              detail: item.detail,
+              insertText: item.insertText,
+              range,
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            })),
+          }
+        },
+      })
 
       refreshHighlights()
 
@@ -46,6 +103,7 @@ export function createSFCLanguageContribution(): ScriptEditorExtension {
           highlights.clear()
           content.dispose()
           folding.dispose()
+          completions.dispose()
         },
       }
     },
