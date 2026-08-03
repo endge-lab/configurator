@@ -1490,9 +1490,9 @@ async function confirmRename(): Promise<void> {
   Endge.domain.notify()
 }
 
-async function downloadSelectedDocuments(): Promise<void> {
+function downloadSelectedDocuments(): void {
   try {
-    await Endge.downloadSelected(selectedExportNodes.value.map(node => ({
+    Endge.download(selectedExportNodes.value.map(node => ({
       id: node.id,
       identity: node.identity,
       sectionType: node.sectionType,
@@ -1761,7 +1761,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   }
 
   if (a.type === 'download-selected') {
-    await downloadSelectedDocuments()
+    downloadSelectedDocuments()
     return
   }
 
