@@ -172,6 +172,10 @@ function getNodeLabel(node: FsNode): string {
   return node.identity?.trim() || node.name
 }
 
+function getVisibleNodeBadges(node: FsNode): string[] {
+  return (node.badges ?? []).filter(badge => badge !== 'system')
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onIdentityModifierKeydown)
   window.addEventListener('keyup', onIdentityModifierKeyup)
@@ -2045,16 +2049,12 @@ function rowClasses(item: FlatFsItem): string {
 
                 <span class="truncate">{{ getNodeLabel(it.node) }}</span>
                 <span
-                  v-for="badge in it.node.badges ?? []"
+                  v-for="badge in getVisibleNodeBadges(it.node)"
                   :key="badge"
                   class="shrink-0 rounded border border-sky-300/60 bg-sky-500/10 px-1 text-[9px] leading-4 text-sky-700 dark:text-sky-300"
                 >{{ badge }}</span>
                 <span
-                  v-if="it.node.managedBy === 'system' && !(it.node.badges ?? []).includes('system')"
-                  class="shrink-0 rounded border border-amber-300/60 bg-amber-500/10 px-1 text-[9px] leading-4 text-amber-700 dark:text-amber-300"
-                >system</span>
-                <span
-                  v-else-if="it.node.managedBy === 'integration'"
+                  v-if="it.node.managedBy === 'integration'"
                   class="shrink-0 rounded border border-violet-300/60 bg-violet-500/10 px-1 text-[9px] leading-4 text-violet-700 dark:text-violet-300"
                 >integration</span>
               </div>

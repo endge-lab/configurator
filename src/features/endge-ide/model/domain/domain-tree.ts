@@ -241,26 +241,33 @@ function collectDeletedFolderBranchIds(
   return out
 }
 
-/** Подписи для виртуальных корней. */
+/** Полные русские подписи корневых разделов дерева. */
 export const ROOT_FOLDER_LABELS: Record<string, string> = {
+  'root-types': 'Типы',
   'root-queries': 'Обмен данными',
+  'root-data-views': 'Представления',
+  'root-compositions': 'Композиции',
+  'root-stores': 'Хранилища',
+  'root-components': 'Компоненты',
+  'root-actions': 'Действия',
+  'root-events': 'События',
+  'root-filters': 'Фильтры',
+  'root-converters': 'Конвертеры',
+  'root-computations': 'Вычисления',
+  'root-parameters': 'Параметры',
+  'root-integrations': 'Интеграции',
   'root-environments': 'Окружения',
   'root-tenants': 'Тенанты',
   'root-policies': 'Политики',
   'root-styles': 'Стили',
   'root-page-templates': 'Шаблоны страниц',
   'root-pages': 'Страницы',
-  'root-navigations': 'Навигации',
-  'root-data-views': 'Представления',
-  'root-compositions': 'Композиции',
-  'root-stores': 'Хранилище',
+  'root-navigations': 'Навигация',
   'root-vocabs': 'Словари',
-  'root-mocks': 'Mock',
+  'root-mocks': 'Тестовые данные',
   'root-i18n-bundles': 'Словари переводов',
-  'root-auth-profiles': 'Аутентификация',
+  'root-auth-profiles': 'Профили аутентификации',
   'root-projects': 'Проекты',
-  'root-computations': 'Вычисления',
-  'root-events': 'События',
   'soft-deleted': 'Удалённые',
 }
 
@@ -613,7 +620,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
     .map((sectionKey) => {
       const folder = rootFolders.find((f: any) => (f.identity ?? f.id) === sectionKey)
       if (folder)
-        return { root: { ...folder, name: rootLabels[sectionKey] ?? folder.name }, sectionKey }
+        return { root: { ...folder, name: rootLabels[sectionKey] ?? sectionKey }, sectionKey }
       if (sectionMapRecord[sectionKey]) {
         return { root: { id: sectionKey, identity: sectionKey, name: rootLabels[sectionKey] ?? sectionKey }, sectionKey }
       }
