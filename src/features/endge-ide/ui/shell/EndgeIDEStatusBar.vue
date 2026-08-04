@@ -1,4 +1,6 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text -- provider status is a technical product label */
+import { Endge } from '@endge/core'
 import { BellDot, DatabaseZap, GitBranch, RefreshCcw, Tag } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -15,6 +17,10 @@ const context = useEndgeIDEContext()
 const isMockEnabled = computed(() => context.isMockEnabled())
 const isDataModeOverridden = computed(() => context.isDataModeOverridden())
 const isChangingDataMode = ref(false)
+const isServiceBackendReadOnly = computed(() =>
+  Endge.schema.capabilities.provider === 'service-backend'
+  && !Endge.schema.capabilities.mutations,
+)
 const mockLabel = 'mock'
 const mockModeTitle = computed(() => {
   const source = isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
@@ -85,6 +91,13 @@ async function toggleMockMode(): Promise<void> {
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
+      <span
+        v-if="isServiceBackendReadOnly"
+        class="inline-flex items-center rounded-md border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+        title="Изменения домена отключены для service-backend на текущем этапе миграции"
+      >
+        Service backend · read-only
+      </span>
       <button
         type="button"
         class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"

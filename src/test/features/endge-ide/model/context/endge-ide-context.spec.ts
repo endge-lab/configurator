@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   writeDataModeOverride: vi.fn(),
   clearStoredDataModeOverride: vi.fn(),
   requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'vue-native' })),
+  resolveAvailable: vi.fn(() => ({ id: 'vue-native' })),
 }))
 
 vi.mock('@endge/core', () => ({
@@ -40,7 +41,10 @@ vi.mock('@endge/core', () => ({
       registerProvider: vi.fn(),
     },
     uiRegistry: {
-      adapters: { requireActive: mocks.requireActive },
+      adapters: {
+        requireActive: mocks.requireActive,
+        resolveAvailable: mocks.resolveAvailable,
+      },
     },
     workspace: {
       current: { identity: 'workspace' },
@@ -87,6 +91,7 @@ describe('endgeIDE context', () => {
     mocks.writeDataModeOverride.mockReset()
     mocks.clearStoredDataModeOverride.mockReset()
     mocks.requireActive.mockClear()
+    mocks.resolveAvailable.mockClear()
     mocks.boot.mockImplementation(async (ctx: { context: Record<string, unknown> }) => {
       mocks.executionContext = { ...ctx.context }
     })

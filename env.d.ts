@@ -10,10 +10,19 @@ interface ViteTypeOptions {
 interface ImportMetaEnv {
   readonly VITE_BRANDING?: string
   readonly VITE_DEFAULT_LOCALE?: string
+  readonly VITE_ENDGE_BACKEND_ADAPTER?: 'payload' | 'service-backend'
+  readonly VITE_ENDGE_SERVICE_BACKEND_URL?: string
   readonly VITE_PAYLOAD_BASE_URL?: string
-  readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
   readonly VITE_PAYLOAD_SECRET?: string
+  readonly VITE_PAYLOAD_WS_URL?: string
+  readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
+  readonly VITE_ENDGE_TENANT_IDENTITY?: string
+  readonly VITE_ENDGE_PROJECT_IDENTITY?: string
+  readonly VITE_ENDGE_ENVIRONMENT_IDENTITY?: string
   readonly VITE_ENDPOINT_AUTH?: string
+  readonly VITE_SENTRY_DSN?: string
+  readonly VITE_SENTRY_ENVIRONMENT?: string
+  readonly VITE_SENTRY_RELEASE?: string
   readonly VITE_APP_SWITCHER?: string
   /** Включить Vite-плагин кодогенерации (endge-codegen). По умолчанию выключен. */
   readonly VITE_ENDGE_CODEGEN_ENABLED?: string

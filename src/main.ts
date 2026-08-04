@@ -1,7 +1,7 @@
 import './assets/main.css'
 import '@/features/endge-ide/source-editor/adapters/monaco/configure-monaco-workers'
-import '@endge/ui-vue/vue.css'
 import '@endge/ui-vue-shadcn/vue-shadcn.css'
+import '@endge/ui-vue/vue.css'
 import 'reflect-metadata'
 
 import { createPinia } from 'pinia'
@@ -23,7 +23,10 @@ function isIgnorableBrowserError(raw: unknown): boolean {
 }
 
 async function bootstrap(): Promise<void> {
-  await bootstrapEndgeIDE()
+  const shouldMountApplication = await bootstrapEndgeIDE()
+  if (!shouldMountApplication) {
+    return
+  }
 
   const [appModule, routerModule, i18nModule, brandingModule] = await Promise.all([
     import('./App.vue'),
@@ -99,5 +102,5 @@ async function bootstrap(): Promise<void> {
 }
 
 void bootstrap().catch((error) => {
-  console.error('[Bootstrap] Failed to load Endge from Payload', error)
+  console.error('[Bootstrap] Failed to initialize Endge Configurator', error)
 })

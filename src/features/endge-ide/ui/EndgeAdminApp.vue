@@ -2,6 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 
+import { Endge } from '@endge/core'
 import { HeartPulse, Loader2, Play } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -28,6 +29,7 @@ import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
 const isBusy = computed(() => EndgeIDE.busy.value)
+const canMutateDomain = computed(() => Endge.schema.capabilities.mutations)
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),
 )
@@ -134,8 +136,8 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuItem :disabled="isBusy" @click="saveCurrentDocument">
-            {{ isBusy ? 'Подождите…' : 'Сохранить текущий документ' }}
+          <DropdownMenuItem :disabled="isBusy || !canMutateDomain" @click="saveCurrentDocument">
+            {{ isBusy ? 'Подождите…' : canMutateDomain ? 'Сохранить текущий документ' : 'Сохранение недоступно в read-only режиме' }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

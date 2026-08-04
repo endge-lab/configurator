@@ -1,4 +1,9 @@
-import type { EndgeBootContext, EndgeExecutionContext } from '@endge/core'
+import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
+import type {
+  EndgeBootContext,
+  EndgeDomainProvider,
+  EndgeExecutionContext,
+} from '@endge/core'
 
 import {
   Endge,
@@ -8,6 +13,7 @@ import {
 } from '@endge/core'
 
 import { registerEndgeMockProviders } from '@/features/endge-ide/model/bootstrap/endge-mock-providers'
+import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 import { configuratorDataModeRepository } from '@/features/endge-ide/model/context/configurator-data-mode-repository'
 
 const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-shadcn', 'vue-native'] as const
@@ -15,6 +21,12 @@ const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-shadcn', 'vue-native'] as co
 export interface EndgeIDESurfaceLifecycle {
   beforeContextReset?: () => Promise<void> | void
   afterContextBoot?: () => Promise<void> | void
+}
+
+export interface EndgeIDEInitOptions {
+  context?: Partial<EndgeExecutionContext>
+  backendConfig?: EndgeBackendConfig
+  domainProvider?: EndgeDomainProvider
 }
 
 /**
@@ -26,6 +38,8 @@ export class EndgeIDEContext {
   private static _switchQueue: Promise<void> = Promise.resolve()
   private static _currentContext: Partial<EndgeExecutionContext> = {}
   private static _requestedContext: Partial<EndgeExecutionContext> = {}
+  private static _backendConfig: EndgeBackendConfig | null = null
+  private static _domainProvider: EndgeDomainProvider | null = null
   private static readonly _listeners = new Set<() => void>()
   private static readonly _surfaces = new Map<string, EndgeIDESurfaceLifecycle>()
 
@@ -33,12 +47,20 @@ export class EndgeIDEContext {
    * Одноразово запускает прикладное ядро конфигуратора.
    * Передает boot-контекст в `Endge.boot()` и проверяет выбранный renderer adapter.
    */
-  public static async init(options: { context?: Partial<EndgeExecutionContext> } = {}): Promise<void> {
+  public static async init(options: EndgeIDEInitOptions = {}): Promise<void> {
     if (this._isInitialized) {
       return
     }
 
-    const ctx = this._createBootContext(options.context)
+    const backendConfig = this._backendConfig ?? options.backendConfig ?? getEndgeBackendConfig()
+    const domainProvider = this._domainProvider ?? options.domainProvider ?? null
+    if (backendConfig.mode === 'service-backend' && !domainProvider) {
+      throw new Error('[EndgeIDE] domainProvider is required for service-backend mode')
+    }
+
+    this._backendConfig = backendConfig
+    this._domainProvider = domainProvider
+    const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
 
     registerEndgeMockProviders()
     await Endge.boot(ctx)
@@ -90,24 +112,17 @@ export class EndgeIDEContext {
     this._notify()
   }
 
-  /**
-   * Собирает Payload boot-контекст из env-переменных.
-   */
-  private static _createBootContext(context: Partial<EndgeExecutionContext> = {}): EndgeBootContext {
-    const baseAPI = String(import.meta.env.VITE_PAYLOAD_BASE_URL || '').trim()
-    const secret = String(import.meta.env.VITE_PAYLOAD_SECRET || '').trim()
+  /** Собирает boot-контекст из единожды выбранного backend provider. */
+  private static _createBootContext(
+    context: Partial<EndgeExecutionContext> = {},
+    backendConfig: EndgeBackendConfig,
+    domainProvider: EndgeDomainProvider | null,
+  ): EndgeBootContext {
     const workspaceIdentity = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
     const tenantIdentity = String(import.meta.env.VITE_ENDGE_TENANT_IDENTITY || '').trim()
     const projectIdentity = String(import.meta.env.VITE_ENDGE_PROJECT_IDENTITY || '').trim()
     const environmentIdentity = String(import.meta.env.VITE_ENDGE_ENVIRONMENT_IDENTITY || '').trim()
-    if (!baseAPI || !secret) {
-      throw new Error(
-        '[EndgeIDE] VITE_PAYLOAD_BASE_URL and VITE_PAYLOAD_SECRET are required',
-      )
-    }
-
-    return {
-      dataProvider: 'payload',
+    const commonContext = {
       scope: workspaceIdentity ? { workspaceIdentity } : {},
       context: {
         ...(tenantIdentity ? { tenantIdentity } : {}),
@@ -126,7 +141,27 @@ export class EndgeIDEContext {
       ui: {
         adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
       },
-      payload: { baseAPI, secret },
+    }
+
+    if (backendConfig.mode === 'payload') {
+      return {
+        ...commonContext,
+        dataProvider: 'payload',
+        payload: {
+          baseAPI: backendConfig.payloadBaseURL,
+          secret: backendConfig.payloadSecret,
+        },
+      }
+    }
+
+    if (!domainProvider) {
+      throw new Error('[EndgeIDE] domainProvider is required for service-backend mode')
+    }
+
+    return {
+      ...commonContext,
+      dataProvider: 'default',
+      domainProvider,
     }
   }
 
