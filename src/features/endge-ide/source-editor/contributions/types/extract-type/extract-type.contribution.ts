@@ -262,7 +262,7 @@ async function executeTypeExtraction(
 
     for (const identity of savedIdentities.reverse()) {
       try {
-        await Endge.schema.deleteDocumentHard(identity, 'type')
+        await Endge.schema.deleteDocument(identity, 'type')
         Endge.domain.removeTypeByIdentity(identity)
       }
       catch (rollbackError) {

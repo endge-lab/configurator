@@ -62,9 +62,16 @@ vi.mock('@/features/endge-ide/model/context/configurator-data-mode-repository', 
 }))
 
 describe('endgeIDE context', () => {
+  const backendConfig = { serviceBackendURL: 'https://backend.test' }
+  const domainProvider = {
+    id: 'service-backend',
+    capabilities: { snapshot: true as const, mutations: true, softDelete: true, restore: true },
+    etag: null,
+    loadWorkspace: vi.fn(), createDocument: vi.fn(), updateDocument: vi.fn(), softDeleteDocument: vi.fn(), restoreDocument: vi.fn(), updateWorkspace: vi.fn(),
+  }
+
   beforeEach(async () => {
-    vi.stubEnv('VITE_PAYLOAD_BASE_URL', 'https://payload.test')
-    vi.stubEnv('VITE_PAYLOAD_SECRET', 'secret')
+    vi.stubEnv('VITE_ENDGE_SERVICE_BACKEND_URL', 'https://backend.test')
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace')
     vi.stubEnv('VITE_ENDGE_TENANT_IDENTITY', 'tenant')
     vi.stubEnv('VITE_ENDGE_PROJECT_IDENTITY', 'project')
@@ -100,20 +107,17 @@ describe('endgeIDE context', () => {
   })
 
   it('boots the initial IDE context and validates its renderer', async () => {
-    await EndgeIDEContext.init()
+    await EndgeIDEContext.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
 
     expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({
-      dataProvider: 'payload',
+      dataProvider: 'default',
       scope: { workspaceIdentity: 'workspace' },
       context: {
         tenantIdentity: 'tenant',
         projectIdentity: 'project',
         environmentIdentity: 'dev',
       },
-      payload: {
-        baseAPI: 'https://payload.test',
-        secret: 'secret',
-      },
+      domainProvider,
       vars: {
         ENDPOINT_AUTH: undefined,
         SENTRY_DSN: 'http://public@sentry.test/2',
@@ -133,7 +137,7 @@ describe('endgeIDE context', () => {
   it('disposes registered surfaces before a project context reboot', async () => {
     const beforeContextReset = vi.fn()
     const unregister = EndgeIDEContext.registerSurface('test-surface', { beforeContextReset })
-    await EndgeIDEContext.init()
+    await EndgeIDEContext.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
     mocks.boot.mockClear()
 
     await EndgeIDEContext.switchContext({ projectIdentity: 'next-project' })
@@ -150,7 +154,7 @@ describe('endgeIDE context', () => {
   })
 
   it('rolls back to the previous context after a failed reboot', async () => {
-    await EndgeIDEContext.init()
+    await EndgeIDEContext.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
     mocks.boot.mockClear()
     mocks.boot.mockImplementation(async (ctx: { context: Record<string, unknown> }) => {
       if (ctx.context.projectIdentity === 'broken') {
@@ -193,7 +197,7 @@ describe('endgeIDE context', () => {
   it('restores the Workspace-scoped Configurator override after boot', async () => {
     mocks.readDataModeOverride.mockReturnValue('mock')
 
-    await EndgeIDEContext.init()
+    await EndgeIDEContext.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
 
     expect(mocks.readDataModeOverride).toHaveBeenCalledWith('workspace')
     expect(mocks.setDataMode).toHaveBeenCalledWith('mock')

@@ -78,15 +78,38 @@ describe('serviceBackendDomain_Service', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain', {
+      method: 'GET',
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
         'X-Endge-Workspace': 'workspace-a',
       },
+      body: undefined,
       signal: abort.signal,
     })
     expect(service.etag).toBe('"generation-id:3"')
     expect(unauthorized).not.toHaveBeenCalled()
+  })
+
+  it('updates a document with cookie, workspace and optimistic revision', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      identity: 'query-a', displayName: 'Query A', source: 'query {}', sourceVersion: 2,
+      id: 'document-id', revision: 4, deletedAt: null,
+    }), { status: 200, headers: { 'Content-Type': 'application/json', ETag: '"4"' } }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn(), true)
+
+    const result = await service.updateDocument({
+      workspaceIdentity: 'workspace-a', collection: 'queries', identity: 'query-a',
+      expectedRevision: 3, document: { identity: 'query-a', displayName: 'Query A', source: 'query {}', sourceVersion: 2 },
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/queries/query-a', expect.objectContaining({
+      method: 'PATCH', credentials: 'include',
+      headers: expect.objectContaining({ 'X-Endge-Workspace': 'workspace-a', 'If-Match': '"3"' }),
+    }))
+    expect(result.document.state).toMatchObject({ id: 'document-id', revision: 4 })
+    expect(result.etag).toBe('"4"')
   })
 
   it('does not restart login for forbidden workspace access', async () => {

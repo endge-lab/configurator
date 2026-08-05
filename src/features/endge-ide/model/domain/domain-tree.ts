@@ -183,7 +183,6 @@ export function getSoftDeletedItems(
       })
     }
   }
-  add(store.components, DomainSectionType.Component)
   add(store.componentSFCs, DomainSectionType.Component)
   add(store.queries, DomainSectionType.Query)
   add(store.dataViews, DomainSectionType.DataView)
@@ -194,14 +193,10 @@ export function getSoftDeletedItems(
   add(store.mocks, DomainSectionType.Mock)
   add(store.actions, DomainSectionType.Action)
   add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
-  add(store.parameters, DomainSectionType.Parameters)
   add(store.filters, DomainSectionType.Filters)
   add(store.converters, DomainSectionType.Converter)
   add(store.computations, DomainSectionType.Computation)
-  add(store.integrations, DomainSectionType.Integration)
   add(store.tenants, DomainSectionType.Tenant)
-  add(store.pageTemplates, DomainSectionType.PageTemplate)
-  add(store.pages, DomainSectionType.Page)
   add(store.vocabs, DomainSectionType.Vocabs)
   add(store.i18nBundles, DomainSectionType.I18nBundles)
   add(store.authProfiles, DomainSectionType.AuthProfile)
@@ -312,7 +307,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-filters',
       'root-converters',
       'root-computations',
-      'root-parameters',
     ],
   },
   {
@@ -321,16 +315,12 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     rootIds: [
       'root-i18n-bundles',
       'root-auth-profiles',
-      'root-integrations',
-      'root-policies',
     ],
   },
   {
     id: 'ui',
     title: 'Интерфейс',
     rootIds: [
-      'root-page-templates',
-      'root-pages',
       'root-navigations',
       'root-styles',
     ],

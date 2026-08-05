@@ -83,7 +83,6 @@ import {
 import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
-  canHardDelete,
   canRestore,
   canSoftDelete,
   createFolderDeletionPlan,
@@ -131,13 +130,12 @@ type MenuAction
     | { type: 'create-doc', node: FsFolderNode }
     | { type: 'create-project-composition', node: FsFileNode }
     | { type: 'create-store-update', node: FsFileNode }
-    | { type: 'remove-doc', node: FsFileNode, permanent?: boolean }
+    | { type: 'remove-doc', node: FsFileNode }
     | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
     | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
     | { type: 'download-selected' }
-    | { type: 'clear-soft-deleted' }
 
 const domainStore = useDomainStore()
 const actionRegistryVersion = ref(0)
@@ -1328,12 +1326,12 @@ function closeDocumentTabIfOpen(id: string, docType: DomainDocumentType): void {
   tabs.closeTab(`${docType}-${id}`)
 }
 
-async function removeDocument(node: FsFileNode, permanent = false): Promise<void> {
+async function removeDocument(node: FsFileNode): Promise<void> {
   try {
-    const result = await deleteEntity(node, permanent)
+    const result = await deleteEntity(node)
     closeDocumentTabIfOpen(node.id, node.docType)
     result.deletedDocs.forEach(doc => closeDocumentTabIfOpen(doc.id, doc.docType))
-    toast.success(permanent ? 'Документ удалён навсегда' : 'Документ перемещён в «Удалённые»')
+    toast.success('Документ перемещён в «Удалённые»')
   }
   catch (e) {
     console.error(e)
@@ -1542,14 +1540,8 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     const isSoftDeletedRoot = isRoot && node.id === 'soft-deleted'
     const isInSoftDeletedBranch = !isRoot && node.folderId != null && isFolderInSoftDeletedBranch(node.folderId)
 
-    if (isSoftDeletedRoot) {
-      items.push({
-        label: 'Очистить все',
-        icon: Trash2,
-        destructive: true,
-        action: { type: 'clear-soft-deleted' },
-      })
-    }
+    if (!Endge.schema.capabilities.mutations)
+      return items
 
     if (supportsFolders && !isRoot && node.folderId) {
       if (isInSoftDeletedBranch) {
@@ -1622,11 +1614,13 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
+    if (!Endge.schema.capabilities.mutations)
+      return items
+
     const externallyManagedDoc = isExternallyManaged(fileNode)
     const isInDeleted = fileNode.isInDeletedFolder === true
     const canRestoreDoc = canRestore(fileNode.docType)
     const canSoftDeleteDoc = canSoftDelete(fileNode.sectionType, fileNode.docType)
-    const canHardDeleteDoc = canHardDelete(fileNode.docType)
 
     if (!externallyManagedDoc && !isInDeleted && fileNode.sectionType === DomainSectionType.Project) {
       items.push({
@@ -1660,12 +1654,12 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (!externallyManagedDoc && ((!isInDeleted && canSoftDeleteDoc) || (isInDeleted && canHardDeleteDoc))) {
+    if (!externallyManagedDoc && !isInDeleted && canSoftDeleteDoc) {
       items.push({
-        label: isInDeleted ? 'Удалить навсегда' : 'Удалить',
+        label: 'Удалить',
         icon: Trash2,
         destructive: true,
-        action: { type: 'remove-doc', node, permanent: isInDeleted },
+        action: { type: 'remove-doc', node },
       })
     }
   }
@@ -1740,7 +1734,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   }
 
   if (a.type === 'remove-doc') {
-    await EndgeIDE.runBusy(removeDocument(a.node, a.permanent))
+    await EndgeIDE.runBusy(removeDocument(a.node))
     return
   }
 
@@ -1774,9 +1768,6 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
-  if (a.type === 'clear-soft-deleted') {
-    EndgeIDE.modals.openClearSoftDeleted()
-  }
 }
 
 // ---------- ui helpers ----------
@@ -1920,6 +1911,7 @@ function rowClasses(item: FlatFsItem): string {
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm"
+                  :disabled="!Endge.schema.capabilities.mutations"
                   @click="EndgeIDE.modals.openCreateDocument()"
                 >
                   <Plus class="size-3" />

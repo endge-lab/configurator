@@ -7,7 +7,12 @@ import 'reflect-metadata'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
-import { bootstrapEndgeIDE } from '@/features/endge-ide/model/bootstrap/endge-ide-bootstrap'
+import { configuratorSessionBindingKey } from '@/features/configurator-session'
+import {
+  bootstrapEndgeIDE,
+  getConfiguratorSessionModule,
+  logoutConfiguratorSession,
+} from '@/features/endge-ide/model/bootstrap/endge-ide-bootstrap'
 import { captureEndgeIDERenderFailure } from '@/features/endge-ide/model/error/endge-ide-render-guard'
 import { installEndgeChromeBridge } from '@/features/endge-ide/tools/chrome-bridge'
 
@@ -96,6 +101,10 @@ async function bootstrap(): Promise<void> {
   app.use(router)
   app.use(i18nModule.i18n)
   app.use(brandingModule.branding)
+  app.provide(configuratorSessionBindingKey, {
+    module: getConfiguratorSessionModule(),
+    logout: logoutConfiguratorSession,
+  })
 
   installEndgeChromeBridge()
   app.mount('#app')

@@ -95,9 +95,9 @@ const WIDGET_ALIASES: Array<{
   summary: string;
 }> = [
   {
-    widgetId: "versions",
-    patterns: [/\bверс(и|и)и\b/i, /\bversions?\b/i],
-    summary: "Открываю виджет Версии.",
+    widgetId: "releases",
+    patterns: [/\bрелиз/i, /\breleases?\b/i],
+    summary: "Открываю виджет Релизы.",
   },
   {
     widgetId: "project",
@@ -160,11 +160,6 @@ const SINGLETON_ALIASES: Array<{
     viewId: "action-playgrounds",
     patterns: [/\baction[\s-]*playgrounds?\b/i],
     summary: "Открываю вкладку Action Playgrounds.",
-  },
-  {
-    viewId: "backup-restore",
-    patterns: [/\bbackup[\s-]*restore\b/i, /\bрезервн/i],
-    summary: "Открываю вкладку Backup Restore.",
   },
   {
     viewId: "demonstration",

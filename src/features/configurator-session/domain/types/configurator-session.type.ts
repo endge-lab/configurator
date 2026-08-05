@@ -15,6 +15,7 @@ export interface ConfiguratorWorkspaceAccess {
   identity: string
   displayName: string
   active: boolean
+  role: 'viewer' | 'editor' | 'admin'
 }
 
 /** Безопасный snapshot developer session без token и JWT claims. */

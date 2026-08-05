@@ -26,6 +26,7 @@ function sessionResponse(): Response {
       identity: 'workspace-a',
       displayName: 'Workspace A',
       active: true,
+      role: 'editor',
       configuration: { mustNotLeak: true },
     }],
   }), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -87,6 +88,7 @@ describe('configurator developer session', () => {
           identity: 'workspace-a',
           displayName: 'Workspace A',
           active: true,
+          role: 'editor',
         }],
       },
     })

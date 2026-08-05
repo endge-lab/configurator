@@ -153,18 +153,6 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   'project',
 ])
 
-const SCHEMA_HARD_DELETE_TYPES = new Set<DomainDocumentType>([
-  ...SCHEMA_SOFT_DELETE_TYPES,
-  'environment',
-  'tenant',
-  'policy',
-  'style',
-  'vocabs',
-  'i18n-bundles',
-  'auth-profile',
-  'project',
-])
-
 const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
   ...SCHEMA_SOFT_DELETE_TYPES,
   'action',
@@ -188,13 +176,6 @@ export function canSoftDelete(sectionType: DomainSectionType, docType?: DomainDo
   if (docType)
     return SCHEMA_SOFT_DELETE_TYPES.has(docType) || CHANGE_FOLDER_TYPES.has(docType)
   return true
-}
-
-/**
- * Проверяет, поддерживается ли жёсткое удаление для типа документа.
- */
-export function canHardDelete(docType: DomainDocumentType): boolean {
-  return SCHEMA_HARD_DELETE_TYPES.has(docType)
 }
 
 /**
@@ -395,8 +376,12 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
     targetParent = resolveSectionRootParent(guessedSection)
   }
 
-  folder.parent = targetParent
-  await Endge.schema.saveFolder(String(folder.id))
+  await Endge.schema.restoreFolder(String(folder.id))
+  const restoredFolder = Endge.domain.getFolder(folder.id)
+  if (!restoredFolder)
+    throw new Error(`Восстановленная папка не найдена: ${String(folder.id)}`)
+  restoredFolder.parent = targetParent
+  await Endge.schema.saveFolder(String(restoredFolder.id))
   Endge.domain.notify()
 }
 
@@ -406,12 +391,10 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
  * - `permanent = false`: мягкое удаление (перенос в `soft-deleted`);
  * - `permanent = true`: жёсткое удаление (разрешено только для сущности в `soft-deleted`).
  */
-export async function deleteEntity(node: FsFileNode, permanent = false): Promise<DeleteEntityResult> {
+export async function deleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
   const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   if (isExternallyManaged(node) || isExternallyManaged(entity))
     throw new Error('Управляемый извне документ нельзя удалить')
-  if (permanent)
-    return hardDeleteEntity(node)
   await softDeleteEntity(node)
   Endge.domain.notify()
   return { mode: 'soft', deletedDocs: [] }
@@ -767,25 +750,6 @@ async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'd
   }
 
   markEntityAsDeletedInDomain(node.id, node.sectionType, node.docType)
-}
-
-/**
- * Выполняет жёсткое удаление сущности.
- */
-async function hardDeleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
-  if (!node.isInDeletedFolder)
-    throw new Error('Жёсткое удаление доступно только для сущностей из папки «Удалённые»')
-
-  if (!SCHEMA_HARD_DELETE_TYPES.has(node.docType))
-    throw new Error(`Жёсткое удаление не поддерживается для типа: ${node.docType}`)
-
-  await Endge.schema.deleteDocumentHard(node.id, node.docType)
-  removeEntityFromDomain(node.id, node.sectionType, node.docType)
-  Endge.domain.notify()
-  return {
-    mode: 'hard',
-    deletedDocs: [{ id: node.id, docType: node.docType }],
-  }
 }
 
 /**

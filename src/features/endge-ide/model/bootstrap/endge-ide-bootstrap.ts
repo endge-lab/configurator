@@ -26,11 +26,6 @@ export class EndgeIDEBootstrapError extends Error {
 /** Boots the Endge engine and establishes the initial IDE execution context. */
 export async function bootstrapEndgeIDE(): Promise<boolean> {
   const backendConfig = getEndgeBackendConfig()
-  if (backendConfig.mode === 'payload') {
-    await EndgeIDEContext.init({ backendConfig })
-    return true
-  }
-
   configuratorSessionModule = new ConfiguratorSession_Module(
     new ConfiguratorSession_Service(backendConfig.serviceBackendURL),
   )
@@ -47,11 +42,18 @@ export async function bootstrapEndgeIDE(): Promise<boolean> {
   }
 
   clearConfiguratorLoginRedirectGuard()
+  const workspaceIdentity = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
+  const workspaceAccess = sessionState.session.workspaces.find(workspace => workspace.identity === workspaceIdentity)
+  const role = sessionState.session.platformAdmin ? 'admin' : workspaceAccess?.role
+  if (!role) {
+    throw new EndgeIDEBootstrapError('workspace_forbidden', `Workspace access denied: ${workspaceIdentity}`)
+  }
   const domainProvider = new ServiceBackendDomain_Service(
     backendConfig.serviceBackendURL,
     startLoginOrThrow,
+    role !== 'viewer',
   )
-  await EndgeIDEContext.init({ backendConfig, domainProvider })
+  await EndgeIDEContext.init({ backendConfig, domainProvider, workspaceRole: role })
   return true
 }
 

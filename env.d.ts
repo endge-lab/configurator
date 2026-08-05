@@ -10,11 +10,7 @@ interface ViteTypeOptions {
 interface ImportMetaEnv {
   readonly VITE_BRANDING?: string
   readonly VITE_DEFAULT_LOCALE?: string
-  readonly VITE_ENDGE_BACKEND_ADAPTER?: 'payload' | 'service-backend'
   readonly VITE_ENDGE_SERVICE_BACKEND_URL?: string
-  readonly VITE_PAYLOAD_BASE_URL?: string
-  readonly VITE_PAYLOAD_SECRET?: string
-  readonly VITE_PAYLOAD_WS_URL?: string
   readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
   readonly VITE_ENDGE_TENANT_IDENTITY?: string
   readonly VITE_ENDGE_PROJECT_IDENTITY?: string

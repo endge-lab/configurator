@@ -4,6 +4,7 @@ import { markRaw } from 'vue'
 
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
+import Releases_Widget from '@/features/configurator-releases/ui/Releases_Widget.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
@@ -14,7 +15,6 @@ import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
-import Versions_Widget from '@/features/endge-ide/ui/widgets/Versions_Widget.vue'
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {
@@ -47,11 +47,11 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     allowedPositions: ['left'],
   },
   {
-    id: 'versions',
-    title: 'Версии',
+    id: 'releases',
+    title: 'Релизы',
     icon: 'GitBranch',
     content: 'component',
-    defaultComponent: markRaw(Versions_Widget),
+    defaultComponent: markRaw(Releases_Widget),
     singleton: true,
     defaultPosition: 'left',
     allowedPositions: ['left', 'right', 'floating'],

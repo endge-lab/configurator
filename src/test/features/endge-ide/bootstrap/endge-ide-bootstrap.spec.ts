@@ -22,22 +22,7 @@ describe('endge IDE backend bootstrap', () => {
     vi.unstubAllGlobals()
     mocks.init.mockReset()
     mocks.config.mockReset()
-  })
-
-  it('keeps Payload mode free of developer-session requests', async () => {
-    const fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
-    const backendConfig = {
-      mode: 'payload' as const,
-      payloadBaseURL: 'https://payload.test/api',
-      payloadSecret: 'legacy-secret',
-    }
-    mocks.config.mockReturnValue(backendConfig)
-
-    await expect(bootstrapEndgeIDE()).resolves.toBe(true)
-
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(mocks.init).toHaveBeenCalledWith({ backendConfig })
+    vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace-a')
   })
 
   it('checks developer session before continuing service-backend boot', async () => {
@@ -55,6 +40,7 @@ describe('endge IDE backend bootstrap', () => {
         identity: 'workspace-a',
         displayName: 'Workspace A',
         active: true,
+        role: 'editor',
       }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
@@ -62,7 +48,6 @@ describe('endge IDE backend bootstrap', () => {
       sessionStorage: { removeItem: vi.fn() },
     })
     const backendConfig = {
-      mode: 'service-backend' as const,
       serviceBackendURL: 'https://backend.test',
     }
     mocks.config.mockReturnValue(backendConfig)
@@ -76,8 +61,9 @@ describe('endge IDE backend bootstrap', () => {
       backendConfig,
       domainProvider: expect.objectContaining({
         id: 'service-backend',
-        capabilities: { snapshot: true, mutations: false },
+        capabilities: { snapshot: true, mutations: true, softDelete: true, restore: true },
       }),
+      workspaceRole: 'editor',
     })
   })
 
@@ -99,7 +85,6 @@ describe('endge IDE backend bootstrap', () => {
       },
     })
     mocks.config.mockReturnValue({
-      mode: 'service-backend',
       serviceBackendURL: 'https://backend.test',
     })
 
@@ -107,5 +92,24 @@ describe('endge IDE backend bootstrap', () => {
 
     expect(assign).toHaveBeenCalledOnce()
     expect(mocks.init).not.toHaveBeenCalled()
+  })
+
+  it('boots Viewer with read-only provider capabilities', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
+      platformAdmin: false,
+      workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'viewer' }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
+    mocks.config.mockReturnValue({ serviceBackendURL: 'https://backend.test' })
+
+    await expect(bootstrapEndgeIDE()).resolves.toBe(true)
+
+    expect(mocks.init).toHaveBeenCalledWith(expect.objectContaining({
+      workspaceRole: 'viewer',
+      domainProvider: expect.objectContaining({
+        capabilities: { snapshot: true, mutations: false, softDelete: false, restore: false },
+      }),
+    }))
   })
 })

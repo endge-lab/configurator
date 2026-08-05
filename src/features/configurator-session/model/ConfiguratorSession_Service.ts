@@ -96,10 +96,12 @@ function parseWorkspaceAccess(value: unknown): ConfiguratorWorkspaceAccess | nul
   const id = stringValue(value.id)
   const identity = stringValue(value.identity)
   const displayName = stringValue(value.displayName)
-  if (!id || !identity || !displayName || typeof value.active !== 'boolean') {
+  const role = stringValue(value.role)
+  if (!id || !identity || !displayName || typeof value.active !== 'boolean'
+    || (role !== 'viewer' && role !== 'editor' && role !== 'admin')) {
     return null
   }
-  return { id, identity, displayName, active: value.active }
+  return { id, identity, displayName, active: value.active, role }
 }
 
 function parseDeveloper(value: UnknownRecord): ConfiguratorDeveloper | null {

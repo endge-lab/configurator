@@ -12,3 +12,8 @@ export {
   clearConfiguratorLoginRedirectGuard,
   startConfiguratorLogin,
 } from '@/features/configurator-session/tools/start-configurator-login'
+export type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
+export {
+  configuratorSessionBindingKey,
+  useConfiguratorSession,
+} from '@/features/configurator-session/ui/configurator-session-context'

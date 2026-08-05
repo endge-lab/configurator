@@ -14,10 +14,8 @@ export interface CreateDocumentContext {
  * Контроллер модальных окон Endge IDE.
  * Открытие/закрытие - здесь, разметка модалок - в Editor_View.
  */
-const _createVersionOpen = ref(false)
 const _createDocumentOpen = ref(false)
 const _createDocumentContext = ref<CreateDocumentContext | null>(null)
-const _clearSoftDeletedOpen = ref(false)
 const _duplicateDocumentOpen = ref(false)
 const _duplicateSourceNode = ref<{ id: string, docType: string, name: string } | null>(null)
 const _vocabJsonPreviewOpen = ref(false)
@@ -27,19 +25,6 @@ const _vocabJsonPreviewData = ref<unknown>(null)
 export class EndgeIDEModals {
   public init(): void {}
   public reset(): void {}
-
-  /** Открыта ли модалка «Создать версию» */
-  get isCreateVersionOpen() {
-    return _createVersionOpen
-  }
-
-  openCreateVersion(): void {
-    _createVersionOpen.value = true
-  }
-
-  closeCreateVersion(): void {
-    _createVersionOpen.value = false
-  }
 
   /** Открыта ли модалка «Создать документ» */
   get isCreateDocumentOpen() {
@@ -77,19 +62,6 @@ export class EndgeIDEModals {
   closeDuplicateDocument(): void {
     _duplicateDocumentOpen.value = false
     _duplicateSourceNode.value = null
-  }
-
-  /** Открыта ли модалка «Очистить все» (папка «Удалённые») */
-  get isClearSoftDeletedOpen() {
-    return _clearSoftDeletedOpen
-  }
-
-  openClearSoftDeleted(): void {
-    _clearSoftDeletedOpen.value = true
-  }
-
-  closeClearSoftDeleted(): void {
-    _clearSoftDeletedOpen.value = false
   }
 
   get isVocabJsonPreviewOpen() {

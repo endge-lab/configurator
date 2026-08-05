@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import {
-  CalendarDays,
-  Languages,
   LogOut,
-  Sparkles,
   UserRoundXIcon,
 } from 'lucide-vue-next'
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
 
 import {
   Avatar,
@@ -17,20 +13,12 @@ import {
 } from '@/components/ui/avatar'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { availableLocales } from '@/i18n'
-import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const props = defineProps<{
   user?: {
@@ -42,14 +30,14 @@ const props = defineProps<{
   align?: 'start' | 'center' | 'end'
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
+  logoutPending?: boolean
+}>()
+
+const emit = defineEmits<{
+  logout: []
 }>()
 
 const { t } = useI18n()
-
-const dateFormat = useSafeLocalStorage<'human' | 'robot'>('app:date-format', 'human')
-watch(dateFormat, () => {
-  toast.info(t('nav.user.dateFormat.changed'))
-})
 
 const avatarFallback = computed(() => {
   return props.user?.name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('')
@@ -116,62 +104,11 @@ const env = import.meta.env.MODE
           </template>
         </div>
       </DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuItem>
-          <Sparkles />
-          {{ t('nav.user.deleteMe.exampleOption') }}
-        </DropdownMenuItem>
-      </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Languages class="size-4 mr-2 text-muted-foreground" />
-            {{ t('nav.user.locale') }}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuCheckboxItem
-                v-for="locale in availableLocales"
-                :key="locale.value"
-                :value="locale.value"
-                :model-value="locale.value === $i18n.locale"
-                @click="$i18n.locale = locale.value"
-              >
-                {{ locale.label }}
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <CalendarDays class="size-4 mr-2 text-muted-foreground" />
-            {{ t('nav.user.dateFormat.title') }}
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuCheckboxItem
-                :model-value="dateFormat === 'human'"
-                @click="dateFormat = 'human'"
-              >
-                {{ t('nav.user.dateFormat.human') }}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                :model-value="dateFormat === 'robot'"
-                @click="dateFormat = 'robot'"
-              >
-                {{ t('nav.user.dateFormat.robot') }}
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-      </DropdownMenuGroup>
       <template v-if="user">
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem :disabled="logoutPending" @click="emit('logout')">
           <LogOut />
-          {{ t('nav.user.logout') }}
+          {{ logoutPending ? t('nav.user.loggingOut') : t('nav.user.logout') }}
         </DropdownMenuItem>
       </template>
       <DropdownMenuSeparator />

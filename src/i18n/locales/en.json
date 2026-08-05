@@ -146,18 +146,11 @@
       "home": "Home"
     },
     "user": {
-      "dateFormat": {
-        "changed": "Dates will use selected format after page reload",
-        "human": "28 June 2000 12:34",
-        "robot": "28.06.2000 12:34",
-        "title": "Date format"
-      },
-      "deleteMe": {
-        "exampleOption": "Button"
-      },
       "guest": "Guest",
       "locale": "Language",
+      "loggingOut": "Logging out...",
       "logout": "Log out",
+      "logoutFailed": "Could not end the session",
       "theme": {
         "dark": "Dark",
         "light": "Light",

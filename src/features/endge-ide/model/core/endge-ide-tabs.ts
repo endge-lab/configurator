@@ -98,9 +98,7 @@ import Navigation_Editor from '@/features/endge-ide/ui/section/document/entity/N
 import Project_Editor from '@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'
 import Filter_Editor from '@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'
 import Workspace_Editor from '@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'
-import Version_Editor from '@/features/endge-ide/ui/section/document/singleton/Version_Editor.vue'
 import ActionPlaygrounds_Singleton from '@/features/endge-ide/ui/section/document/singleton/ActionPlaygrounds_Singleton.vue'
-import BackupRestore_Singleton from '@/features/endge-ide/ui/section/document/singleton/BackupRestore_Singleton.vue'
 import DSL_Playground_Widget from '@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'
 import SFC_Playground_Widget from '@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'
 import DemonstrationTab_View from '@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'
@@ -113,11 +111,9 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
-const VIEW_ID_VERSION = 'endge-version-editor' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
-const VIEW_ID_BACKUP_RESTORE = 'endge-backup-restore' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 const VIEW_ID_PULSE = 'endge-pulse' as const
 const VIEW_ID_ARCHITECTURE = 'endge-architecture' as const
@@ -143,17 +139,13 @@ interface DocumentSourceNavigationRequest {
   token: number
 }
 
-interface VersionTabPayload {
-  versionId: string
-}
-
 interface RuntimeDebugTabPayload {
   id: string
   url?: string
   title?: string
 }
 
-type SupportedViewId = typeof VIEW_ID_DOCUMENT | typeof VIEW_ID_VERSION
+type SupportedViewId = typeof VIEW_ID_DOCUMENT
 
 interface ResolvedView {
   component: Component
@@ -300,8 +292,6 @@ export class EndgeIDETabs {
   public getViewForTab(tab: SmartTabRef): SmartTabViewResolved | null {
     this._syncContextForTab(tab)
     const viewId = tab.viewId as SupportedViewId
-    if (viewId === VIEW_ID_VERSION)
-      return this._resolveVersionTab(tab)
     if (viewId === VIEW_ID_DOCUMENT)
       return this._resolveDocumentTab(tab)
     return null
@@ -317,15 +307,6 @@ export class EndgeIDETabs {
   private async _doSave(activeTab: SmartTabRef): Promise<void> {
     const viewId = activeTab.viewId as SupportedViewId
     try {
-      if (viewId === VIEW_ID_VERSION) {
-        const payload = this._getPayload<VersionTabPayload>(activeTab.payload)
-        const versionId = payload?.versionId
-        if (!versionId)
-          return
-        await Endge.schema.saveDocument(versionId, 'version' as DomainDocumentType)
-        toast.success('Сохранено', { description: versionId })
-        return
-      }
       if (viewId !== VIEW_ID_DOCUMENT)
         return
       const payload = this._getPayload<DocumentTabPayload>(activeTab.payload)
@@ -468,22 +449,6 @@ export class EndgeIDETabs {
     })
   }
 
-  /** Вкладка версий в единственном экземпляре; при повторном вызове - обновление payload и активация. */
-  public openVersion(versionId: string): void {
-    const version = Endge.domain.getVersion(versionId)
-    const label = version?.identity ?? versionId
-    const tabRef: SmartTabRef = {
-      id: 'version-editor',
-      label: `Версия: ${label}`,
-      viewId: VIEW_ID_VERSION,
-      payload: { versionId } satisfies VersionTabPayload,
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-git-branch text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
   /** Открыть DSL Песочницу в единственном экземпляре (при повторном вызове - активация вкладки). */
   public openDSLPlayground(): void {
     const tabRef: SmartTabRef = {
@@ -521,19 +486,6 @@ export class EndgeIDETabs {
       closable: true,
       singleton: true,
       meta: { icon: 'ti ti-route-square text-sky-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
-  public openBackupRestoreSingleton(): void {
-    const tabRef: SmartTabRef = {
-      id: 'backup-restore-singleton',
-      label: 'Резервное восстановление',
-      viewId: VIEW_ID_BACKUP_RESTORE,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-upload text-xl text-emerald-500' },
     }
     this.openTab(tabRef)
   }
@@ -767,7 +719,6 @@ export class EndgeIDETabs {
       component: markRaw(Workspace_Editor),
       props: {},
     }))
-    registerSmartTabView(VIEW_ID_VERSION, wrap)
     registerSmartTabView(VIEW_ID_DSL_PLAYGROUND, (): SmartTabViewResolved => ({
       component: markRaw(DSL_Playground_Widget),
       props: {},
@@ -778,10 +729,6 @@ export class EndgeIDETabs {
     }))
     registerSmartTabView(VIEW_ID_ACTION_PLAYGROUNDS, (): SmartTabViewResolved => ({
       component: markRaw(ActionPlaygrounds_Singleton),
-      props: {},
-    }))
-    registerSmartTabView(VIEW_ID_BACKUP_RESTORE, (): SmartTabViewResolved => ({
-      component: markRaw(BackupRestore_Singleton),
       props: {},
     }))
     registerSmartTabView(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({
@@ -837,24 +784,6 @@ export class EndgeIDETabs {
     }
     if (session.editor) {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
-    }
-    this._sessionByTabId.set(tab.id, session)
-    this._setCurrentFromSession(session)
-    return session.view
-  }
-
-  private _resolveVersionTab(tab: SmartTabRef): SmartTabViewResolved | null {
-    const payload = this._getPayload<VersionTabPayload>(tab.payload)
-    const versionId = payload?.versionId
-    if (!versionId)
-      return null
-    const version = Endge.domain.getVersion(versionId)
-    if (!version)
-      return null
-    const session: EditorSession = {
-      view: { component: markRaw(Version_Editor), props: { tabContext: { version } } },
-      editor: null,
-      model: version,
     }
     this._sessionByTabId.set(tab.id, session)
     this._setCurrentFromSession(session)

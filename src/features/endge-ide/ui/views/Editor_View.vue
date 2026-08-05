@@ -16,9 +16,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { triggerEndgeIDERenderGuardTest } from '@/features/endge-ide/model/error/endge-ide-render-guard'
 import { startTestConfiguratorIntegrations } from '@/features/endge-ide/model/integrations/test-configurator-integrations'
 import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
-import ClearSoftDeleted_Modal from '@/features/endge-ide/ui/modals/ClearSoftDeleted_Modal.vue'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
-import CreateVersion_Modal from '@/features/endge-ide/ui/modals/CreateVersion_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
 import Problems_View from '@/features/endge-ide/ui/section/problems/Problems_View.vue'
@@ -29,14 +27,6 @@ const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals
 const route = useRoute()
 const { widgets } = getLayoutState()
-const createVersionOpen = computed({
-  get: () => modals.isCreateVersionOpen.value,
-  set: (v: boolean) => {
-    if (!v) {
-      modals.closeCreateVersion()
-    }
-  },
-})
 const createDocumentOpen = computed({
   get: () => modals.isCreateDocumentOpen.value,
   set: (v: boolean) => {
@@ -54,14 +44,6 @@ const duplicateDocumentOpen = computed({
   },
 })
 const duplicateSourceNode = computed(() => modals.duplicateSourceNode.value)
-const clearSoftDeletedOpen = computed({
-  get: () => modals.isClearSoftDeletedOpen.value,
-  set: (v: boolean) => {
-    if (!v) {
-      modals.closeClearSoftDeleted()
-    }
-  },
-})
 const vocabJsonPreviewOpen = computed({
   get: () => modals.isVocabJsonPreviewOpen.value,
   set: (v: boolean) => {
@@ -185,13 +167,11 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <CreateVersion_Modal v-model:open="createVersionOpen" />
     <CreateDocument_Modal v-model:open="createDocumentOpen" />
     <DuplicateDocument_Modal
       v-model:open="duplicateDocumentOpen"
       :source="duplicateSourceNode"
     />
-    <ClearSoftDeleted_Modal v-model:open="clearSoftDeletedOpen" />
     <VocabJsonPreview_Modal
       v-model:open="vocabJsonPreviewOpen"
       :title="modals.vocabJsonPreviewTitle.value"

@@ -27,6 +27,7 @@ export interface EndgeIDEInitOptions {
   context?: Partial<EndgeExecutionContext>
   backendConfig?: EndgeBackendConfig
   domainProvider?: EndgeDomainProvider
+  workspaceRole?: 'viewer' | 'editor' | 'admin'
 }
 
 /**
@@ -40,6 +41,7 @@ export class EndgeIDEContext {
   private static _requestedContext: Partial<EndgeExecutionContext> = {}
   private static _backendConfig: EndgeBackendConfig | null = null
   private static _domainProvider: EndgeDomainProvider | null = null
+  private static _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
   private static readonly _listeners = new Set<() => void>()
   private static readonly _surfaces = new Map<string, EndgeIDESurfaceLifecycle>()
 
@@ -54,12 +56,12 @@ export class EndgeIDEContext {
 
     const backendConfig = this._backendConfig ?? options.backendConfig ?? getEndgeBackendConfig()
     const domainProvider = this._domainProvider ?? options.domainProvider ?? null
-    if (backendConfig.mode === 'service-backend' && !domainProvider) {
-      throw new Error('[EndgeIDE] domainProvider is required for service-backend mode')
-    }
+    if (!domainProvider)
+      throw new Error('[EndgeIDE] domainProvider is required')
 
     this._backendConfig = backendConfig
     this._domainProvider = domainProvider
+    this._workspaceRole = this._workspaceRole ?? options.workspaceRole ?? null
     const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
 
     registerEndgeMockProviders()
@@ -143,20 +145,8 @@ export class EndgeIDEContext {
       },
     }
 
-    if (backendConfig.mode === 'payload') {
-      return {
-        ...commonContext,
-        dataProvider: 'payload',
-        payload: {
-          baseAPI: backendConfig.payloadBaseURL,
-          secret: backendConfig.payloadSecret,
-        },
-      }
-    }
-
-    if (!domainProvider) {
-      throw new Error('[EndgeIDE] domainProvider is required for service-backend mode')
-    }
+    if (!domainProvider)
+      throw new Error('[EndgeIDE] domainProvider is required')
 
     return {
       ...commonContext,
@@ -280,6 +270,16 @@ export class EndgeIDEContext {
 
   static get currentContext(): Readonly<Partial<EndgeExecutionContext>> {
     return this._currentContext
+  }
+
+  /** Возвращает единожды выбранную конфигурацию backend без повторного чтения env. */
+  static get backendConfig(): Readonly<EndgeBackendConfig> | null {
+    return this._backendConfig
+  }
+
+  /** Эффективная роль текущего разработчика в выбранном workspace. */
+  static get workspaceRole(): 'viewer' | 'editor' | 'admin' | null {
+    return this._workspaceRole
   }
 
   /** Returns the effective data mode used by Store fixtures and Query execution. */

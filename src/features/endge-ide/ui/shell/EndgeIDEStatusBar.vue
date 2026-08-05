@@ -17,10 +17,7 @@ const context = useEndgeIDEContext()
 const isMockEnabled = computed(() => context.isMockEnabled())
 const isDataModeOverridden = computed(() => context.isDataModeOverridden())
 const isChangingDataMode = ref(false)
-const isServiceBackendReadOnly = computed(() =>
-  Endge.schema.capabilities.provider === 'service-backend'
-  && !Endge.schema.capabilities.mutations,
-)
+const isServiceBackendReadOnly = computed(() => !Endge.schema.capabilities.mutations)
 const mockLabel = 'mock'
 const mockModeTitle = computed(() => {
   const source = isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
@@ -92,11 +89,11 @@ async function toggleMockMode(): Promise<void> {
 
     <div class="flex shrink-0 items-center gap-1">
       <span
-        v-if="isServiceBackendReadOnly"
-        class="inline-flex items-center rounded-md border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300"
-        title="Изменения домена отключены для service-backend на текущем этапе миграции"
+        class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
+        :class="isServiceBackendReadOnly ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'border-border bg-muted/60'"
+        :title="isServiceBackendReadOnly ? 'Workspace доступен только для просмотра' : 'Подключён service-backend'"
       >
-        Service backend · read-only
+        {{ isServiceBackendReadOnly ? 'Service backend · read-only' : 'Service backend' }}
       </span>
       <button
         type="button"

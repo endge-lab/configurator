@@ -576,7 +576,7 @@ async function onSubmit(): Promise<void> {
           : null
         if (!owner)
           throw new Error('Update можно создать только из контекстного меню существующего Store.')
-        parsed.store = owner.id
+        parsed.storeIdentity = owner.identity
       }
 
       const createdIdentity = String(parsed.identity ?? '').trim()
@@ -585,8 +585,8 @@ async function onSubmit(): Promise<void> {
       await Endge.schema.createDocument({
         documentType: targetDocumentType,
         identity: createdIdentity,
-        mode: 'payload',
-        payload: parsed,
+        mode: 'portable',
+        document: parsed,
       })
       EndgeIDE.tabs.openDocument(createdIdentity, targetDocumentType)
       toast.success('Документ создан из JSON', { description: createdIdentity || 'без identity' })

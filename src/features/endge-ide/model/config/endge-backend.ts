@@ -1,4 +1,4 @@
-import type { EndgeBackendConfig, EndgeBackendMode } from '@/features/endge-ide/domain/types/endge-backend.type'
+import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
 /** Ошибка некорректной build-time конфигурации backend. */
 export class EndgeBackendConfigurationError extends Error {
@@ -10,26 +10,14 @@ export class EndgeBackendConfigurationError extends Error {
   }
 }
 
-/** Читает и строго валидирует build-time backend mode Configurator. */
+/** Читает и строго валидирует URL единственного backend Configurator. */
 export function getEndgeBackendConfig(): EndgeBackendConfig {
-  const mode = String(import.meta.env.VITE_ENDGE_BACKEND_ADAPTER || 'payload').trim() as EndgeBackendMode
-  if (mode === 'payload') {
-    return {
-      mode,
-      payloadBaseURL: requiredEnv('VITE_PAYLOAD_BASE_URL', import.meta.env.VITE_PAYLOAD_BASE_URL),
-      payloadSecret: requiredEnv('VITE_PAYLOAD_SECRET', import.meta.env.VITE_PAYLOAD_SECRET),
-    }
+  requiredEnv('VITE_ENDGE_WORKSPACE_IDENTITY', import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY)
+  return {
+    serviceBackendURL: normalizeHTTPURL(
+      requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
+    ),
   }
-  if (mode === 'service-backend') {
-    requiredEnv('VITE_ENDGE_WORKSPACE_IDENTITY', import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY)
-    return {
-      mode,
-      serviceBackendURL: normalizeHTTPURL(
-        requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
-      ),
-    }
-  }
-  throw new EndgeBackendConfigurationError(`Unknown VITE_ENDGE_BACKEND_ADAPTER: ${mode}`)
 }
 
 function requiredEnv(name: string, value: unknown): string {

@@ -255,7 +255,7 @@ async function executeExtraction(
 
     if (childSaved) {
       try {
-        await Endge.schema.deleteDocumentHard(result.identity, ComponentType.SFC)
+        await Endge.schema.deleteDocument(result.identity, ComponentType.SFC)
         Endge.domain.removeComponentSFC(result.identity)
       }
       catch (rollbackError) {

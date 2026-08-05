@@ -612,7 +612,7 @@ export function getRequestEntitiesFilter(
 /** Допустимые widgetId (см. config/widgets.ts). */
 const ALLOWED_WIDGET_IDS = new Set([
   "project",
-  "versions",
+  "releases",
   "errors",
   "storage",
   "testing",
@@ -967,7 +967,6 @@ const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "dsl-playground": () => EndgeIDE.tabs.openDSLPlayground(),
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
   "action-playgrounds": () => EndgeIDE.tabs.openActionPlaygroundsSingleton(),
-  "backup-restore": () => EndgeIDE.tabs.openBackupRestoreSingleton(),
   demonstration: () => EndgeIDE.tabs.openDemonstrationTab(),
   pulse: () => EndgeIDE.tabs.openPulseTab(),
   diagnostics: () => {

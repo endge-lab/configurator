@@ -3,7 +3,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 
 import { Endge } from '@endge/core'
-import { HeartPulse, Loader2, Play } from 'lucide-vue-next'
+import { Download, HeartPulse, Loader2, Play, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { getIconComponent, showWidget } from '@/components/layouts/grid'
@@ -18,11 +18,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
+import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { configuratorMenuItems } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
-import ActiveUsers_Header from '@/features/endge-ide/ui/section/header/ActiveUsers_Header.vue'
+import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
@@ -30,10 +32,13 @@ const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
 const isBusy = computed(() => EndgeIDE.busy.value)
 const canMutateDomain = computed(() => Endge.schema.capabilities.mutations)
+const canImportDomain = computed(() => EndgeIDEContext.workspaceRole === 'admin')
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),
 )
 const isLaunchingProjectRuntime = ref(false)
+const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
+const transferService = new ServiceBackendDomainTransfer_Service(EndgeIDEContext.backendConfig!.serviceBackendURL)
 const launchProjectRuntimeTitle = computed(() =>
   currentProjectIdentity.value
     ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
@@ -42,6 +47,14 @@ const launchProjectRuntimeTitle = computed(() =>
 
 async function saveCurrentDocument(): Promise<void> {
   await tabs.save()
+}
+
+async function exportCurrentDomain(): Promise<void> {
+  await transferService.downloadExport(Endge.workspace.current.identity)
+}
+
+function openDomainImport(): void {
+  void domainImportModal.value?.open()
 }
 
 function openDSLPlayground(): void {
@@ -54,10 +67,6 @@ function openSFCPlayground(): void {
 
 function openActionPlaygroundsSingleton(): void {
   tabs.openActionPlaygroundsSingleton()
-}
-
-function openBackupRestoreSingleton(): void {
-  tabs.openBackupRestoreSingleton()
 }
 
 function openDomainAnalysis(): void {
@@ -139,6 +148,15 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <DropdownMenuItem :disabled="isBusy || !canMutateDomain" @click="saveCurrentDocument">
             {{ isBusy ? 'Подождите…' : canMutateDomain ? 'Сохранить текущий документ' : 'Сохранение недоступно в read-only режиме' }}
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @click="exportCurrentDomain">
+            <Download class="size-3.5" />
+            Экспорт
+          </DropdownMenuItem>
+          <DropdownMenuItem :disabled="isBusy || !canImportDomain" @click="openDomainImport">
+            <Upload class="size-3.5" />
+            {{ canImportDomain ? 'Импорт' : 'Импорт доступен только Workspace Admin' }}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -173,9 +191,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           </DropdownMenuSub>
           <DropdownMenuItem @click="openActionPlaygroundsSingleton">
             Action Playgrounds
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="openBackupRestoreSingleton">
-            Резервное восстановление
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -280,9 +295,9 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
       >
         <HeartPulse class="size-4 text-rose-500" />
       </button>
-      <ActiveUsers_Header />
     </div>
   </Teleport>
 
   <EditorView />
+  <DomainImport_Modal ref="domainImportModal" />
 </template>
