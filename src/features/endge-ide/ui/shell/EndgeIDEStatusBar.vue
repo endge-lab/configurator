@@ -17,7 +17,6 @@ const context = useEndgeIDEContext()
 const isMockEnabled = computed(() => context.isMockEnabled())
 const isDataModeOverridden = computed(() => context.isDataModeOverridden())
 const isChangingDataMode = ref(false)
-const isServiceBackendReadOnly = computed(() => !Endge.schema.capabilities.mutations)
 const mockLabel = 'mock'
 const mockModeTitle = computed(() => {
   const source = isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
@@ -88,13 +87,6 @@ async function toggleMockMode(): Promise<void> {
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
-      <span
-        class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
-        :class="isServiceBackendReadOnly ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'border-border bg-muted/60'"
-        :title="isServiceBackendReadOnly ? 'Workspace доступен только для просмотра' : 'Подключён service-backend'"
-      >
-        {{ isServiceBackendReadOnly ? 'Service backend · read-only' : 'Service backend' }}
-      </span>
       <button
         type="button"
         class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
