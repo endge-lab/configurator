@@ -3,10 +3,10 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
 
 import { Endge } from '@endge/core'
-import { Download, HeartPulse, Loader2, Play, Upload } from 'lucide-vue-next'
+import { Download, Loader2, Play, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { getIconComponent, showWidget } from '@/components/layouts/grid'
+import { getIconComponent } from '@/components/layouts/grid'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +23,6 @@ import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import { configuratorMenuItems } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
-import { clearPulseSelection, showPulseOverview } from '@/features/endge-ide/model/pulse/pulse.mock.ts'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
@@ -71,17 +70,6 @@ function openActionPlaygroundsSingleton(): void {
 
 function openDomainAnalysis(): void {
   EndgeIDE.tabs.openDomainAnalysis()
-}
-
-function openPulse(): void {
-  clearPulseSelection()
-  showPulseOverview()
-  EndgeIDE.tabs.openPulseTab()
-}
-
-function openPulseFromHeader(): void {
-  showWidget('domain')
-  openPulse()
 }
 
 async function launchCurrentProjectRuntime(): Promise<void> {
@@ -211,9 +199,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuItem @click="openPulse">
-            Пульс
-          </DropdownMenuItem>
           <DropdownMenuItem @click="openDomainAnalysis">
             Поиск проблем
           </DropdownMenuItem>
@@ -286,14 +271,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
       >
         <Loader2 v-if="isLaunchingProjectRuntime" class="size-4 animate-spin" />
         <Play v-else class="size-4 text-emerald-500" />
-      </button>
-      <button
-        type="button"
-        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Открыть Пульс и Домен"
-        @click="openPulseFromHeader"
-      >
-        <HeartPulse class="size-4 text-rose-500" />
       </button>
     </div>
   </Teleport>

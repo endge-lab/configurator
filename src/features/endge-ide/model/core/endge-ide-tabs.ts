@@ -102,7 +102,6 @@ import ActionPlaygrounds_Singleton from '@/features/endge-ide/ui/section/documen
 import DSL_Playground_Widget from '@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'
 import SFC_Playground_Widget from '@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'
 import DemonstrationTab_View from '@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'
-import Pulse_Tab from '@/features/endge-ide/ui/section/pulse/Pulse_Tab.vue'
 import Architecture_Tab from '@/features/endge-ide/ui/section/architecture/Architecture_Tab.vue'
 import Domain_Analysis_Tab from '@/features/endge-ide/ui/section/domain-analysis/Domain_Analysis_Tab.vue'
 import Runtime_Debug_Tab from '@/features/endge-ide/ui/section/runtime-debug/Runtime_Debug_Tab.vue'
@@ -115,7 +114,6 @@ const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
-const VIEW_ID_PULSE = 'endge-pulse' as const
 const VIEW_ID_ARCHITECTURE = 'endge-architecture' as const
 const VIEW_ID_DOMAIN_ANALYSIS = 'endge-domain-analysis' as const
 const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
@@ -214,6 +212,7 @@ export class EndgeIDETabs {
       return
     this._tabsApi.closeTab('docs')
     this._tabsApi.closeTab('ui-editor-demo-singleton')
+    this._tabsApi.closeTab('pulse')
     this._removeMissingDocumentTabs()
     this._registerSystemViews()
     this._refreshPersistedDocumentTabs()
@@ -504,21 +503,6 @@ export class EndgeIDETabs {
     this.openTab(tabRef)
   }
 
-  /** Открыть вкладку «Пульс» в единственном экземпляре. */
-  public openPulseTab(): void {
-    const tabRef: SmartTabRef = {
-      id: 'pulse',
-      label: 'Пульс',
-      viewId: VIEW_ID_PULSE,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'HeartPulse', iconClass: 'size-4 text-rose-500' },
-    }
-    this.openTab(tabRef)
-    showWidget('pulse')
-  }
-
   /** Открыть вкладку «Поиск проблем» в единственном экземпляре. */
   public openDomainAnalysis(): void {
     const tabRef: SmartTabRef = {
@@ -733,10 +717,6 @@ export class EndgeIDETabs {
     }))
     registerSmartTabView(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({
       component: markRaw(DemonstrationTab_View),
-      props: {},
-    }))
-    registerSmartTabView(VIEW_ID_PULSE, (): SmartTabViewResolved => ({
-      component: markRaw(Pulse_Tab),
       props: {},
     }))
     registerSmartTabView(VIEW_ID_ARCHITECTURE, (): SmartTabViewResolved => ({

@@ -5,23 +5,14 @@
 
 import { showWidget } from "@/components/layouts/grid";
 import type { DomainDocumentType } from "@endge/core";
-import { DomainSectionType, Endge } from "@endge/core";
+import { Endge } from "@endge/core";
 import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
 import { runAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
-import { setPulseActiveTab } from "@/features/endge-ide/model/pulse/pulse.mock.ts";
-import { launchPulseRuntimeFromEntity } from "@/features/endge-ide/model/pulse/pulse.mock.ts";
 import {
   duplicateEntity,
   getEntityByDocType,
 } from "@/features/endge-ide/model/domain/domain-duplicate";
 import { toast } from "vue-sonner";
-
-/** Вариант выбора для неоднозначного запроса (например, «создай runtime расписание» — и запрос, и таблица). */
-export interface FrontendNeedChoiceOption {
-  entityType: string;
-  identity: string;
-  label?: string;
-}
 
 /** Вариант выбора при неоднозначном открытии документа («открой расписание» — вид или таблица). */
 export interface FrontendNeedOpenDocumentOption {
@@ -35,8 +26,6 @@ export interface FrontendNeed {
   description: string;
   entityType?: string;
   identities?: string[];
-  /** Варианты на выбор: по клику запускается create_runtime для выбранного варианта. */
-  choiceOptions?: FrontendNeedChoiceOption[];
   /** Варианты открытия документа: по клику открывается документ (documentType + identity). */
   openDocumentChoiceOptions?: FrontendNeedOpenDocumentOption[];
 }
@@ -65,12 +54,6 @@ export type FrontendAction =
       title?: string;
       index?: number;
       all?: boolean;
-    }
-  | {
-      action: "create_runtime";
-      entityType: string;
-      identity: string;
-      basePath?: string;
     };
 
 export interface FrontendRequest {
@@ -110,10 +93,6 @@ const FRONTEND_ACTION_ALIASES: Record<string, FrontendAction["action"]> = {
   table_remove_col: "table_remove_column",
   remove_column: "table_remove_column",
   delete_column: "table_remove_column",
-  create_runtime: "create_runtime",
-  createruntime: "create_runtime",
-  run_runtime: "create_runtime",
-  start_runtime: "create_runtime",
 };
 
 const DOCUMENT_TYPE_ALIASES: Record<string, string> = {
@@ -356,26 +335,6 @@ export function normalizeNeedEntityTypeToSliceKey(
   return undefined;
 }
 
-function normalizeNeedChoiceOption(
-  raw: unknown,
-): FrontendNeedChoiceOption | null {
-  const rec = asRecord(raw);
-  if (!rec) return null;
-  const identity = readStringFrom(rec, ["identity", "documentId", "id"]);
-  if (!identity) return null;
-  const rawType = readStringFrom(rec, ["entityType", "entity_type", "type"]);
-  const normalizedType =
-    normalizeRuntimeEntityType(rawType) ??
-    (rawType ? normalizeRuntimeEntityType(normalizeDocumentType(rawType)) : null);
-  if (!normalizedType) return null;
-  const label = readString(rec.label);
-  return {
-    entityType: normalizedType,
-    identity,
-    label: label || undefined,
-  };
-}
-
 function normalizeNeedOpenDocumentChoiceOption(
   raw: unknown,
 ): FrontendNeedOpenDocumentOption | null {
@@ -418,10 +377,6 @@ function normalizeFrontendNeed(raw: unknown, index: number): FrontendNeed | null
         : Array.isArray(rec.options)
           ? rec.options
           : [];
-  const choiceOptions = choiceSource
-    .map((item) => normalizeNeedChoiceOption(item))
-    .filter(Boolean) as FrontendNeedChoiceOption[];
-
   const openChoiceSource = Array.isArray(rec.openDocumentChoiceOptions)
     ? rec.openDocumentChoiceOptions
     : Array.isArray(rec.open_document_choice_options)
@@ -443,7 +398,6 @@ function normalizeFrontendNeed(raw: unknown, index: number): FrontendNeed | null
   const out: FrontendNeed = { id, description };
   if (entityType) out.entityType = entityType;
   if (identities.length) out.identities = identities;
-  if (choiceOptions.length) out.choiceOptions = choiceOptions;
   if (openDocumentChoiceOptions.length)
     out.openDocumentChoiceOptions = openDocumentChoiceOptions;
   return out;
@@ -519,17 +473,6 @@ function normalizeFrontendAction(raw: unknown): FrontendAction | null {
       title: title || undefined,
       index,
       all,
-    };
-  }
-  if (action === "create_runtime") {
-    const entityType = readStringFrom(rec, ["entityType", "entity_type", "type"]);
-    const identity = readStringFrom(rec, ["identity", "documentId", "id"]);
-    const basePath = readStringFrom(rec, ["basePath", "base_path"]);
-    return {
-      action,
-      entityType,
-      identity,
-      basePath: basePath || undefined,
     };
   }
   return null;
@@ -618,7 +561,6 @@ const ALLOWED_WIDGET_IDS = new Set([
   "testing",
   "events",
   "runtime-debug",
-  "pulse",
   "raph",
   "help",
   "agent",
@@ -674,174 +616,6 @@ const DUPLICATE_ALLOWED_DOCUMENT_TYPES = new Set([
   "page-template",
   "navigation",
 ]);
-
-type RuntimeEntityType =
-  | "component"
-  | "query"
-  | "action"
-  | "page"
-  | "project";
-
-/** Нормализованное entityType (из create_runtime) → DomainSectionType. */
-const CREATE_RUNTIME_SECTION_TYPES: Record<
-  RuntimeEntityType,
-  DomainSectionType
-> = {
-  component: DomainSectionType.Component,
-  query: DomainSectionType.Query,
-  action: DomainSectionType.Action,
-  page: DomainSectionType.Page,
-  project: DomainSectionType.Project,
-};
-
-/** Алиасы entityType из модели/оркестратора/промптов. */
-const RUNTIME_ENTITY_TYPE_ALIASES: Record<string, RuntimeEntityType> = {
-  component: "component",
-  components: "component",
-  "component-table": "component",
-  "component-dsl": "component",
-  table: "component",
-  tables: "component",
-  query: "query",
-  queries: "query",
-  "query-gql": "query",
-  "query-rest": "query",
-  "query-custom": "query",
-  action: "action",
-  actions: "action",
-  page: "page",
-  pages: "page",
-  project: "project",
-  projects: "project",
-};
-
-function normalizeRuntimeEntityType(raw: string): RuntimeEntityType | null {
-  const key = raw.trim().toLowerCase();
-  if (!key) return null;
-  return RUNTIME_ENTITY_TYPE_ALIASES[key] ?? null;
-}
-
-function hasIdentity(list: unknown[], identity: string): boolean {
-  const want = identity.trim().toLowerCase();
-  if (!want) return false;
-  return list.some((e) => {
-    const rec = e as { identity?: unknown; id?: unknown };
-    const v = String(rec.identity ?? rec.id ?? "")
-      .trim()
-      .toLowerCase();
-    return v === want;
-  });
-}
-
-/** Если entityType невалиден, пробуем вывести тип по identity из домена. */
-function inferRuntimeEntityTypeByIdentity(
-  identity: string,
-): RuntimeEntityType | null {
-  const id = identity.trim();
-  if (!id) return null;
-  const matches = new Set<RuntimeEntityType>();
-  if (hasIdentity(Endge.domain.getComponents() as unknown[], id))
-    matches.add("component");
-  if (hasIdentity(Endge.domain.getQueries() as unknown[], id))
-    matches.add("query");
-  if (hasIdentity(Endge.domain.getActions() as unknown[], id))
-    matches.add("action");
-  if (hasIdentity(Endge.domain.getPages() as unknown[], id))
-    matches.add("page");
-  if (hasIdentity(Endge.domain.getProjects() as unknown[], id))
-    matches.add("project");
-  if (matches.size !== 1) return null;
-  return [...matches][0] ?? null;
-}
-
-function runtimeTypeByDocumentType(
-  documentTypeRaw: string,
-): RuntimeEntityType | null {
-  const doc = documentTypeRaw.trim().toLowerCase();
-  if (!doc) return null;
-  if (doc.startsWith("component-")) return "component";
-  if (doc.startsWith("query-")) return "query";
-  if (doc === "action") return "action";
-  if (doc === "page") return "page";
-  if (doc === "project") return "project";
-  return null;
-}
-
-/**
- * fallback identity: если модель не передала identity для create_runtime,
- * берём identity активного документа (если тип совместим).
- */
-function resolveRuntimeIdentityFromActiveTab(
-  preferredType: RuntimeEntityType | null,
-): { identity: string; inferredType: RuntimeEntityType | null } {
-  const activeTab = EndgeIDE.tabs.activeTab.value as {
-    payload?: {
-      documentType?: unknown;
-      documentId?: unknown;
-      identity?: unknown;
-    };
-  } | null;
-  const payload = activeTab?.payload;
-  const identity = String(
-    payload?.identity ?? payload?.documentId ?? "",
-  ).trim();
-  if (!identity) return { identity: "", inferredType: preferredType };
-
-  const activeType = runtimeTypeByDocumentType(
-    String(payload?.documentType ?? ""),
-  );
-  if (preferredType && activeType && preferredType !== activeType) {
-    return { identity: "", inferredType: preferredType };
-  }
-  return { identity, inferredType: preferredType ?? activeType };
-}
-
-/** Запускает runtime для сущности и открывает вкладку Пульс. Для component без basePath подставляется "default". */
-export function executeCreateRuntime(
-  entityType: string,
-  identity: string,
-  basePath?: string,
-): { ok: boolean; message: string } {
-  const preferredType = normalizeRuntimeEntityType(entityType);
-  let id = identity.trim();
-  let resolvedType = preferredType;
-  if (!id) {
-    const fallback = resolveRuntimeIdentityFromActiveTab(preferredType);
-    id = fallback.identity;
-    resolvedType = fallback.inferredType;
-  }
-  if (!id) {
-    return {
-      ok: false,
-      message:
-        "Укажите identity сущности или откройте нужный документ перед запуском runtime.",
-    };
-  }
-
-  const normalizedType = resolvedType ?? inferRuntimeEntityTypeByIdentity(id);
-  const sectionType = normalizedType
-    ? CREATE_RUNTIME_SECTION_TYPES[normalizedType]
-    : undefined;
-  if (!sectionType) {
-    return {
-      ok: false,
-      message: `Не удалось определить entityType для runtime: "${entityType}". Допустимы: component, query, action, page, project.`,
-    };
-  }
-
-  const opts: { basePath?: string } = {};
-  if (sectionType === DomainSectionType.Component && basePath === undefined)
-    opts.basePath = "default";
-  else if (basePath !== undefined) opts.basePath = basePath;
-
-  const res = launchPulseRuntimeFromEntity({ id, sectionType }, opts);
-  if (!res.ok) {
-    return { ok: false, message: res.message };
-  }
-  EndgeIDE.tabs.openPulseTab();
-  showWidget("pulse");
-  return { ok: true, message: res.message ?? "Runtime запущен." };
-}
 
 /** Открывает документ по выбору пользователя (из openDocumentChoiceOptions в чате). */
 export function executeOpenDocumentChoice(
@@ -968,11 +742,6 @@ const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
   "action-playgrounds": () => EndgeIDE.tabs.openActionPlaygroundsSingleton(),
   demonstration: () => EndgeIDE.tabs.openDemonstrationTab(),
-  pulse: () => EndgeIDE.tabs.openPulseTab(),
-  diagnostics: () => {
-    setPulseActiveTab("diagnostics");
-    EndgeIDE.tabs.openPulseTab();
-  },
   "domain-analysis": () => EndgeIDE.tabs.openDomainAnalysis(),
   architecture: () => EndgeIDE.tabs.openArchitecture(),
 };
@@ -1252,26 +1021,6 @@ export async function applyFrontendRequest(
       } catch (e) {
         errors.push(
           `table_remove_column: ${e instanceof Error ? e.message : String(e)}`,
-        );
-      }
-      continue;
-    }
-
-    if (act.action === "create_runtime") {
-      const entityType = String(act.entityType ?? "").trim();
-      const identity = String(act.identity ?? "").trim();
-      const basePath = (act.basePath ?? "").trim() || undefined;
-      try {
-        const res = executeCreateRuntime(entityType, identity, basePath);
-        if (res.ok) {
-          actionsExecuted++;
-          toast.success("Runtime запущен", { description: res.message });
-        } else {
-          errors.push(`create_runtime: ${res.message}`);
-        }
-      } catch (e) {
-        errors.push(
-          `create_runtime: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
       continue;

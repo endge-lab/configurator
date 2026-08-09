@@ -47,6 +47,7 @@ export class EndgeIDEWidgets {
     removePersistedWidgetId('help')
     removePersistedWidgetId('inspector')
     removePersistedWidgetId('errors')
+    removePersistedWidgetId('pulse')
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     this._widgetDefinitions.forEach(def => registerWidget(def))

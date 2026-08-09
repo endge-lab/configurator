@@ -9,7 +9,6 @@ import { EndgeIDEModals } from '@/features/endge-ide/model/core/endge-ide-modals
 import { EndgeIDETabs } from '@/features/endge-ide/model/core/endge-ide-tabs.ts'
 import { EndgeIDEWidgets } from '@/features/endge-ide/model/core/endge-ide-widgets.ts'
 import { EndgeIDEProblems } from '@/features/endge-ide/model/diagnostics/endge-ide-problems'
-import { startDiagnosticsChannelListener } from '@/features/endge-ide/model/pulse/diagnostics-register.ts'
 import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
 
 const noopModule = {
@@ -70,7 +69,6 @@ export class EndgeIDE extends EndgeModuleController {
     host.init()
     if (!runtimeDebuggerDisabled) {
       Endge.runtimeDebugger.startListening()
-      startDiagnosticsChannelListener()
     }
   }
 

@@ -14,10 +14,6 @@ export interface LocalOrchestratorEntity {
 export interface LocalOrchestratorInput {
   message: string;
   entities: LocalOrchestratorEntity[];
-  activeDocument?: {
-    documentType?: string | null;
-    identity?: string | null;
-  } | null;
 }
 
 export interface LocalOrchestratorResult {
@@ -31,14 +27,6 @@ type DocumentHint =
   | "query"
   | "component"
   | "document";
-type RuntimeHint =
-  | "component"
-  | "query"
-  | "action"
-  | "page"
-  | "project"
-  | null;
-
 interface RankedEntity {
   entity: LocalOrchestratorEntity;
   score: number;
@@ -49,7 +37,6 @@ const COMMAND_VERB_RE =
   /\b(открой|покажи|перейди|запусти|создай|добавь|удали|очисти|подставь|свяжи|скопируй|дублируй|open|show|go|run|start|create|add|remove|clear|copy|duplicate)\b/i;
 const QUESTION_RE =
   /^(что|как|какие|какой|какая|почему|зачем|когда|где|what|how|why|when|where)\b/i;
-const RUNTIME_RE = /\b(runtime|рантайм)\b/i;
 const DUPLICATE_RE = /\b(скопируй|дублируй|copy|duplicate)\b/i;
 const ADD_COLUMN_RE =
   /\b(добавь|создай|add|create)\b.*\b(колонк|столбец|column)\b/i;
@@ -130,11 +117,6 @@ const WIDGET_ALIASES: Array<{
     summary: "Открываю виджет Runtime Debug.",
   },
   {
-    widgetId: "pulse",
-    patterns: [/\bпульс\b/i, /\bpulse\b/i],
-    summary: "Открываю виджет Пульс.",
-  },
-  {
     widgetId: "raph",
     patterns: [/\braph\b/i],
     summary: "Открываю виджет Raph.",
@@ -165,11 +147,6 @@ const SINGLETON_ALIASES: Array<{
     viewId: "demonstration",
     patterns: [/\bдемонстрац/i],
     summary: "Открываю вкладку Demonstration.",
-  },
-  {
-    viewId: "pulse",
-    patterns: [/\bпульс\b/i, /\bpulse\b/i],
-    summary: "Открываю вкладку Пульс.",
   },
   {
     viewId: "domain-analysis",
@@ -424,58 +401,6 @@ function toDocChoiceNeed(name: string, ranked: RankedEntity[]): FrontendNeed {
   };
 }
 
-function runtimeTypeByDocumentType(documentType: string): RuntimeHint {
-  if (documentType.startsWith("query-")) return "query";
-  if (documentType.startsWith("component-")) return "component";
-  if (documentType === "action") return "action";
-  if (documentType === "page") return "page";
-  if (documentType === "project") return "project";
-  return null;
-}
-
-function runtimeTypeByEntityType(entityType: string): RuntimeHint {
-  switch (entityType) {
-    case "query":
-    case "queries":
-      return "query";
-    case "component":
-    case "components":
-      return "component";
-    case "component-table":
-    case "component-dsl":
-      return "component";
-    case "action":
-    case "actions":
-      return "action";
-    case "page":
-    case "pages":
-      return "page";
-    case "project":
-    case "projects":
-      return "project";
-    default:
-      return null;
-  }
-}
-
-function detectRuntimeHint(normalized: string): RuntimeHint {
-  if (/\b(запрос|query)\b/.test(normalized)) return "query";
-  if (/\b(таблиц|компонент|component|table)\b/.test(normalized))
-    return "component";
-  if (/\b(действи|action)\b/.test(normalized)) return "action";
-  if (/\b(страниц|page)\b/.test(normalized)) return "page";
-  if (/\b(проект|project)\b/.test(normalized)) return "project";
-  return null;
-}
-
-function extractRuntimeName(text: string): string {
-  const quoted = extractQuotedParts(text);
-  if (quoted.length) return cleanTail(quoted[0] ?? "");
-  const m = text.match(/(?:runtime|рантайм)(?:\s+для)?\s+(.+)$/i);
-  if (!m?.[1]) return "";
-  return cleanTail(m[1].replace(OPEN_DOC_PREFIX_RE, ""));
-}
-
 function tryMatchTableAction(text: string): LocalOrchestratorResult | null {
   if (ADD_COLUMN_RE.test(text)) {
     const title = extractColumnTitle(text) || "Новая колонка";
@@ -589,89 +514,6 @@ function tryMatchOpenDocument(
   };
 }
 
-function tryMatchRuntime(
-  text: string,
-  entities: LocalOrchestratorEntity[],
-  activeDocument?: LocalOrchestratorInput["activeDocument"],
-): LocalOrchestratorResult | null {
-  if (!RUNTIME_RE.test(text) || !COMMAND_VERB_RE.test(text)) return null;
-  const hint = detectRuntimeHint(normalizeText(text));
-  const name = extractRuntimeName(text);
-
-  if (!name && activeDocument?.identity) {
-    const activeType = runtimeTypeByDocumentType(
-      String(activeDocument.documentType ?? ""),
-    );
-    if (!activeType) return null;
-    return {
-      request: {
-        actions: [
-          {
-            action: "create_runtime",
-            entityType: activeType,
-            identity: String(activeDocument.identity),
-          },
-        ],
-      },
-      summary: `Запускаю runtime для ${String(activeDocument.identity)}.`,
-    };
-  }
-  if (!name) return null;
-
-  const ranked = rankEntities(
-    entities,
-    name,
-    detectDocumentHint(normalizeText(text)),
-  )
-    .map((x) => {
-      const runtimeType =
-        runtimeTypeByEntityType(x.entity.entityType) ??
-        runtimeTypeByDocumentType(x.entity.documentType);
-      return { ...x, runtimeType };
-    })
-    .filter((x) => x.runtimeType != null)
-    .filter((x) => hint == null || x.runtimeType === hint);
-
-  if (!ranked.length) return null;
-  if ((ranked[0]?.score ?? 0) < 56) return null;
-
-  const topScore = ranked[0]?.score ?? 0;
-  const close = ranked.filter((x) => x.score >= topScore - 8).slice(0, 4);
-  if (close.length > 1) {
-    return {
-      request: {
-        needs: [
-          {
-            id: "runtime-choice",
-            description: `Нашёл несколько вариантов для runtime "${name}". Выберите, что запустить.`,
-            choiceOptions: close.map((x) => ({
-              entityType: x.runtimeType ?? "component",
-              identity: x.entity.identity,
-              label: `${DOCUMENT_TYPE_LABELS[x.entity.documentType] ?? x.entity.documentType}: ${x.entity.displayName || x.entity.identity}`,
-            })),
-          },
-        ],
-      },
-      summary: `Нашёл несколько вариантов для runtime "${name}". Выберите нужный.`,
-    };
-  }
-
-  const winner = close[0];
-  if (!winner?.runtimeType) return null;
-  return {
-    request: {
-      actions: [
-        {
-          action: "create_runtime",
-          entityType: winner.runtimeType,
-          identity: winner.entity.identity,
-        },
-      ],
-    },
-    summary: `Запускаю runtime для ${winner.entity.displayName || winner.entity.identity}.`,
-  };
-}
-
 function tryMatchDuplicate(
   text: string,
   entities: LocalOrchestratorEntity[],
@@ -731,9 +573,6 @@ export function runLocalAgentOrchestrator(
 
   const duplicate = tryMatchDuplicate(text, input.entities);
   if (duplicate) return duplicate;
-
-  const runtime = tryMatchRuntime(text, input.entities, input.activeDocument);
-  if (runtime) return runtime;
 
   const openDocument = tryMatchOpenDocument(text, input.entities);
   if (openDocument) return openDocument;

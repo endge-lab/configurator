@@ -11,7 +11,6 @@ import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
 import Domain_Widget from '@/features/endge-ide/ui/widgets/Domain_Widget.vue'
 import Events_Widget from '@/features/endge-ide/ui/widgets/Events_Widget.vue'
 import Problems_Widget from '@/features/endge-ide/ui/widgets/Problems_Widget.vue'
-import Pulse_Widget from '@/features/endge-ide/ui/widgets/Pulse_Widget.vue'
 import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
 import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
 import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
@@ -152,25 +151,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       maxHeight: 800,
       defaultWidth: 400,
       defaultHeight: 600,
-    },
-  },
-  {
-    id: 'pulse',
-    title: 'Пульс',
-    icon: 'HeartPulse',
-    iconClass: 'text-rose-600 dark:text-[#F07178]',
-    content: 'component',
-    defaultComponent: markRaw(Pulse_Widget),
-    singleton: true,
-    defaultPosition: 'right',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 320,
-      maxWidth: 640,
-      minHeight: 360,
-      maxHeight: 900,
-      defaultWidth: 420,
-      defaultHeight: 640,
     },
   },
   {

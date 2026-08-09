@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {
   FrontendNeed,
-  FrontendNeedChoiceOption,
   FrontendNeedOpenDocumentOption,
   FrontendRequest,
 } from '@/features/endge-ide/model/agent/agent-frontend-request'
@@ -31,7 +30,6 @@ import {
 } from '@/features/endge-ide/model/agent/agent-domain-ops'
 import {
   applyFrontendRequest,
-  executeCreateRuntime,
   executeOpenDocumentChoice,
   getRequestEntitiesFilter,
   iterateUserActionToFrontendRequest,
@@ -707,12 +705,6 @@ async function send(overrideMessage?: string): Promise<void> {
       const local = runLocalAgentOrchestrator({
         message: text,
         entities: flattenEntitiesShortDesc(entitiesShortDesc),
-        activeDocument: activeDocument
-          ? {
-              documentType: activeDocument.documentType,
-              identity: activeDocument.identity,
-            }
-          : null,
       })
       if (local) {
         const localRequest = normalizeFrontendRequest(local.request) ?? local.request
@@ -1123,23 +1115,6 @@ async function send(overrideMessage?: string): Promise<void> {
   }
 }
 
-/** Запуск runtime по выбору пользователя (кнопка из choiceOptions в чате). */
-function runCreateRuntimeChoice(option: FrontendNeedChoiceOption): void {
-  const res = executeCreateRuntime(option.entityType, option.identity)
-  if (res.ok) {
-    toast.success('Runtime запущен', {
-      description: option.label ?? res.message,
-    })
-    messages.value.push({
-      role: 'user',
-      text: option.label ? `Запускаю: ${option.label}` : 'Запускаю runtime.',
-    })
-  }
-  else {
-    toast.error('Не удалось запустить runtime', { description: res.message })
-  }
-}
-
 /** Открытие документа по выбору пользователя (кнопка из openDocumentChoiceOptions в чате). */
 function runOpenDocumentChoice(option: FrontendNeedOpenDocumentOption): void {
   const res = executeOpenDocumentChoice(option)
@@ -1467,7 +1442,7 @@ async function sendContextForNeeds(): Promise<void> {
       </div>
     </ScrollArea>
 
-    <!-- Потребности из frontend-request: агент просит контекст или выбор варианта (create_runtime) -->
+    <!-- Потребности из frontend-request: агент просит контекст или выбор документа -->
     <div
       v-if="
         viewMode === 'chat'
@@ -1489,7 +1464,6 @@ async function sendContextForNeeds(): Promise<void> {
             v-if="
               need.entityType
                 && need.identities?.length
-                && !need.choiceOptions?.length
                 && !need.openDocumentChoiceOptions?.length
             "
             class="text-[10px] opacity-80"
@@ -1513,28 +1487,12 @@ async function sendContextForNeeds(): Promise<void> {
             {{ opt.label || `${opt.documentType}: ${opt.identity}` }}
           </Button>
         </div>
-        <!-- Варианты выбора: что запустить в runtime -->
-        <div
-          v-else-if="need.choiceOptions?.length"
-          class="flex flex-wrap gap-1.5 mb-2"
-        >
-          <Button
-            v-for="(opt, oidx) in need.choiceOptions"
-            :key="`rt-${oidx}`"
-            size="sm"
-            variant="outline"
-            class="h-7 text-xs"
-            @click="runCreateRuntimeChoice(opt)"
-          >
-            {{ opt.label || `${opt.entityType}: ${opt.identity}` }}
-          </Button>
-        </div>
       </template>
       <Button
         v-if="
           pendingFrontendRequest.needs.some(
             (n: FrontendNeed) =>
-              !n.choiceOptions?.length && !n.openDocumentChoiceOptions?.length,
+              !n.openDocumentChoiceOptions?.length,
           )
         "
         size="sm"
