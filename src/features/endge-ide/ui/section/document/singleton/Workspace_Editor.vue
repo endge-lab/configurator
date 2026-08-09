@@ -3,7 +3,7 @@
 import type { EndgeConfiguration, EndgeDataMode } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { CircleHelp } from 'lucide-vue-next'
+import { CircleHelp, Loader2, Save } from 'lucide-vue-next'
 import { onScopeDispose, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -12,14 +12,18 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const configuration = ref<EndgeConfiguration>(clone(Endge.workspace.current.configuration))
 const dataMode = ref<EndgeDataMode>(Endge.workspace.current.dataMode)
+const workspaceIdentity = ref(Endge.workspace.current.identity)
+const workspaceDocumentId = ref(resolveWorkspaceDocumentId())
 
 const offWorkspace = Endge.workspace.subscribe(() => {
   configuration.value = clone(Endge.workspace.current.configuration)
   dataMode.value = Endge.workspace.current.dataMode
+  workspaceIdentity.value = Endge.workspace.current.identity
+  workspaceDocumentId.value = resolveWorkspaceDocumentId()
 })
 onScopeDispose(offWorkspace)
 
@@ -53,17 +57,40 @@ function setWorkspaceMockMode(enabled: boolean): void {
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
+
+function resolveWorkspaceDocumentId(): string | null {
+  return Endge.schema.getLoadedSnapshot()?.workspace.state.id ?? null
+}
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col bg-muted/30">
-    <div class="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4">
-      <div class="flex min-w-0 items-center gap-2">
-        <i class="ti ti-world text-xl text-sky-500" />
-        <h2 class="truncate text-lg font-semibold">Рабочее пространство</h2>
-      </div>
-      <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
-    </div>
+  <SourceDocumentEditorShell
+    :document-id="workspaceDocumentId"
+    :identity="workspaceIdentity"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Сохранить"
+                :disabled="EndgeIDE.busy.value"
+                @click="save"
+              >
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
     <div class="min-h-0 flex-1 overflow-hidden p-4">
       <ConfigurationSettingsEditor v-model="configuration" variant="root">
         <template #general>
@@ -100,5 +127,5 @@ function clone<T>(value: T): T {
         </template>
       </ConfigurationSettingsEditor>
     </div>
-  </div>
+  </SourceDocumentEditorShell>
 </template>

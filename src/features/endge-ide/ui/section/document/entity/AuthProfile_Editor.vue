@@ -7,7 +7,7 @@ import type {
 } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { KeyRound, Loader2, Play } from 'lucide-vue-next'
+import { Loader2, Play, Save } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -18,13 +18,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   getAuthProfileAdapterEditor,
   getAuthProfileAdapterEditors,
 } from '@/features/endge-ide/model/auth-profile/auth-profile-adapter-ui-registry.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
   tabContext?: { editor?: RAuthProfileEditor }
@@ -212,31 +214,59 @@ function normalizeErrorMessage(error: unknown): string {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 w-full flex-col overflow-hidden bg-muted/20">
-    <div class="flex shrink-0 items-center justify-between gap-3 border-b bg-editor-surface px-5 py-3">
-      <div class="flex items-center gap-2 min-w-0">
-        <KeyRound class="size-5 text-sky-500 shrink-0" />
-        <div class="text-lg font-semibold truncate">
-          Профиль авторизации - {{ editor?.displayName ?? '-' }}
+  <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
+    Нет редактора
+  </div>
+  <SourceDocumentEditorShell
+    v-else
+    :document-id="editor.id"
+    :identity="editor.identity"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Тестовый запуск авторизации"
+                :disabled="testLoading || EndgeIDE.busy.value"
+                @click="testAuthProfile"
+              >
+                <Loader2 v-if="testLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Тестовый запуск авторизации</TooltipContent>
+          </Tooltip>
         </div>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
-        <Button
-          size="icon"
-          variant="outline"
-          aria-label="Тестовый запуск авторизации"
-          :disabled="testLoading || EndgeIDE.busy.value"
-          @click="testAuthProfile"
-        >
-          <Loader2 v-if="testLoading" class="size-4 animate-spin" />
-          <Play v-else class="size-4" />
-        </Button>
-      </div>
-    </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Сохранить"
+                :disabled="EndgeIDE.busy.value"
+                @click="save"
+              >
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
 
     <ScrollArea class="min-h-0 flex-1">
-      <div v-if="editor" class="grid min-h-full w-full gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div class="grid min-h-full w-full gap-4 bg-muted/20 p-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card class="min-w-0 space-y-5 p-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -331,5 +361,5 @@ function normalizeErrorMessage(error: unknown): string {
         </Card>
       </div>
     </ScrollArea>
-  </div>
+  </SourceDocumentEditorShell>
 </template>
