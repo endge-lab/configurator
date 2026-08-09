@@ -27,6 +27,7 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 
 const { widgets: widgetsState, isDraggingWidget, draggingWidgetId } = getLayoutState()
+const fallbackWidgetIconClass = 'text-violet-600 dark:text-[#C792EA]'
 
 interface PopupWidgetGroup {
   definition: WidgetDefinition & WidgetDefinitionState
@@ -113,6 +114,10 @@ function isActive(widget: WidgetDefinition & WidgetDefinitionState): boolean {
   if (!area)
     return false
   return area.activeWidget === widget.id && area.expanded
+}
+
+function getWidgetIconClass(widget: WidgetDefinition): string {
+  return widget.iconClass ?? fallbackWidgetIconClass
 }
 
 function handleWidgetClick(widget: WidgetDefinition & WidgetDefinitionState) {
@@ -224,7 +229,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                 @dragover="handleIconDragOver"
                 @drop="handleIconDrop($event, widget)"
               >
-                <component :is="getIconComponent(widget.icon)" class="size-4" />
+                <component :is="getIconComponent(widget.icon)" class="size-4" :class="getWidgetIconClass(widget)" />
               </Button>
             </TooltipTrigger>
             <TooltipContent :side="position === 'left' ? 'right' : 'left'">
@@ -243,7 +248,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                 }"
                 @click="openWorkspaceSettings"
               >
-                <component :is="getIconComponent('Orbit')" class="size-4" />
+                <component :is="getIconComponent('Orbit')" class="size-4 text-lime-600 dark:text-[#C3E88D]" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
@@ -284,7 +289,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
               @dragover="handleIconDragOver"
               @drop="handleIconDrop($event, widget)"
             >
-              <component :is="getIconComponent(widget.icon)" class="size-4" />
+              <component :is="getIconComponent(widget.icon)" class="size-4" :class="getWidgetIconClass(widget)" />
             </Button>
           </TooltipTrigger>
           <TooltipContent :side="position === 'left' ? 'right' : 'left'">
@@ -309,7 +314,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                   }"
                   @click="handlePopupWidgetClick(group)"
                 >
-                  <component :is="getIconComponent(group.definition.icon)" class="size-4" />
+                  <component :is="getIconComponent(group.definition.icon)" class="size-4" :class="getWidgetIconClass(group.definition)" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">
@@ -329,7 +334,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                   }"
                   :title="`${group.definition.title} (${group.instances.length})`"
                 >
-                  <component :is="getIconComponent(group.definition.icon)" class="size-4" />
+                  <component :is="getIconComponent(group.definition.icon)" class="size-4" :class="getWidgetIconClass(group.definition)" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="left" align="start">
@@ -338,7 +343,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
                   :key="instance.id"
                   @click="handlePopupInstanceClick(instance.id)"
                 >
-                  <component :is="getIconComponent(group.definition.icon)" class="size-4 mr-2" />
+                  <component :is="getIconComponent(group.definition.icon)" class="size-4 mr-2" :class="getWidgetIconClass(group.definition)" />
                   {{ instance.title ?? group.definition.title }}
                   <span v-if="isMinimized" class="ml-2 text-xs text-muted-foreground">({{ t('grid.widget.minimized') }})</span>
                 </DropdownMenuItem>

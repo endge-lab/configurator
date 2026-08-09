@@ -28,6 +28,7 @@ export interface WidgetDefinitionBase {
   readonly id: string
   readonly title: string
   readonly icon: string
+  readonly iconClass?: string
   readonly singleton?: boolean
   readonly allowedPositions?: WidgetPosition[]
   readonly defaultPosition?: WidgetPosition

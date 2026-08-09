@@ -8,14 +8,14 @@
 
   .endge-table {
     .rgHeaderCell {
-      border-right: 1px solid white;
+      border-right: 1px solid var(--border);
     }
 
     .rgRow {
       background: transparent;
 
       &:nth-of-type(even) {
-        background: rgba(236, 237, 237, .1);
+        background: color-mix(in srgb, var(--muted) 36%, transparent);
       }
     }
 
@@ -23,15 +23,15 @@
       /**
        * Выделенная строка
        */
-      background-color: rgb(36, 129, 213) !important;
+      background-color: var(--accent) !important;
     }
 
     .rgRow.multi-selected-row {
-      background-color: palevioletred !important;
+      background-color: color-mix(in srgb, var(--primary) 42%, var(--background)) !important;
     }
 
     .rgCell {
-      color: white;
+      color: var(--foreground);
     }
   }
 
@@ -39,7 +39,7 @@
    * Текст в ячейках
    */
   .rgCell div {
-    color: white;
+    color: var(--foreground);
     font-size: .8rem;
   }
 
@@ -48,18 +48,18 @@
   }
 
   .endge-table thead th {
-    background: #2D3248 !important;
-    border: thin solid #555d76;
+    background: var(--card) !important;
+    border: thin solid var(--border);
   }
 
   .header-bg thead th {
-    background: #2D3248 !important;
-    border: thin solid #555d76;
+    background: var(--card) !important;
+    border: thin solid var(--border);
   }
 
   .endge-table > .v-table__wrapper > table > tbody > tr > td {
     padding: 0;
-    border: 1px solid #555d76;
+    border: 1px solid var(--border);
     font-size: 0.8rem;
     text-align: center;
     justify-content: center;
@@ -70,8 +70,8 @@
   .endge-table tbody > tr tr:hover > td:not([variant]),
   .endge-table tbody > tr tr:hover > td[variant=""],
   .static:hover {
-    color: #c5c4c7 !important;
-    background-color: #767e97 !important;
+    color: var(--accent-foreground) !important;
+    background-color: var(--accent) !important;
   }
 
   .endge-table tbody > tr:hover td .col-color {
@@ -161,11 +161,12 @@
   }
 
   .direction-tabs-wrapper {
-    background: #2E3349;
-    border: 1px solid #5d5d5d;
+    background: var(--card);
+    border: 1px solid var(--border);
 
     div.active {
-      background: #228BBC;
+      color: var(--accent-foreground);
+      background: var(--accent);
     }
   }
 

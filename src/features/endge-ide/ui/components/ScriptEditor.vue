@@ -8,7 +8,7 @@ import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { formatSource } from '@/features/endge-ide/tools/format-source'
-import { applyEndgeMonacoTheme } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
@@ -100,6 +100,7 @@ onMounted(() => {
       language: props.language || 'typescript',
       theme: applyEndgeMonacoTheme(monaco, ui.value.isDark),
       minimap: { enabled: false },
+      scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
       automaticLayout: true,
       fontSize: 14,
       tabSize: 2,

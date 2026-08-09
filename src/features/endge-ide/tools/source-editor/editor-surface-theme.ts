@@ -1,8 +1,17 @@
 import type * as Monaco from 'monaco-editor'
 
-const FALLBACK_EDITOR_SURFACE = '#142137'
+const FALLBACK_EDITOR_SURFACE = '#292D3E'
 export const ENDGE_MONACO_DARK_THEME = 'endge-palenight'
 export const ENDGE_MONACO_LIGHT_THEME = 'vs'
+export const ENDGE_MONACO_SCROLLBAR_OPTIONS: Monaco.editor.IEditorScrollbarOptions = {
+  vertical: 'visible',
+  horizontal: 'visible',
+  verticalScrollbarSize: 8,
+  horizontalScrollbarSize: 8,
+  verticalSliderSize: 6,
+  horizontalSliderSize: 6,
+  useShadows: false,
+}
 
 /** Returns the semantic editor surface as a Monaco-compatible hex color. */
 export function resolveEditorSurfaceColor(): string {
@@ -23,7 +32,7 @@ export function applyEndgeMonacoTheme(monaco: typeof Monaco, isDark: boolean): s
     base: 'vs-dark',
     inherit: true,
     rules: [
-      { token: '', foreground: 'bfc7d5', background: resolveEditorSurfaceColor().slice(1) },
+      { token: '', foreground: 'a6accd', background: resolveEditorSurfaceColor().slice(1) },
       { token: 'keyword', foreground: 'c792ea' },
       { token: 'identifier', foreground: 'f07178' },
       { token: 'number', foreground: 'ffcb6b' },
@@ -32,12 +41,19 @@ export function applyEndgeMonacoTheme(monaco: typeof Monaco, isDark: boolean): s
     ],
     colors: {
       'editor.background': resolveEditorSurfaceColor(),
-      'editor.foreground': '#bfc7d5',
-      'editor.lineHighlightBackground': '#1c2b44',
+      'editor.foreground': '#A6ACCD',
+      'editor.lineHighlightBackground': '#32364A',
+      'editor.selectionBackground': '#444267',
+      'editor.inactiveSelectionBackground': '#3B3F51',
       'editorCursor.foreground': '#ffcc00',
-      'editorWhitespace.foreground': '#334155',
-      'editorIndentGuide.background': '#334155',
-      'editorLineNumber.foreground': '#64748b',
+      'editorWhitespace.foreground': '#3B3F51',
+      'editorIndentGuide.background': '#3B3F51',
+      'editorIndentGuide.activeBackground': '#676E95',
+      'editorLineNumber.foreground': '#676E95',
+      'editorLineNumber.activeForeground': '#A6ACCD',
+      'scrollbarSlider.background': '#8C419E',
+      'scrollbarSlider.hoverBackground': '#8C419E',
+      'scrollbarSlider.activeBackground': '#8C419E',
     },
   })
 

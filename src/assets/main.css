@@ -87,14 +87,14 @@
 }
 
 .dark {
-  --editor-surface: #142137;
-  --editor-panel: color-mix(in srgb, var(--editor-surface) 92%, black);
-  --editor-control: color-mix(in srgb, var(--editor-surface) 76%, black);
-  --editor-type-reference: #82aaff;
-  --editor-type-reference-unresolved: #f87171;
-  --editor-active-tab: var(--editor-control);
-  --editor-active-tab-foreground: var(--foreground);
-  --editor-active-tab-border: var(--input);
+  --editor-surface: #292D3E;
+  --editor-panel: var(--card);
+  --editor-control: var(--muted);
+  --editor-type-reference: #89DDFF;
+  --editor-type-reference-unresolved: #F07178;
+  --editor-active-tab: var(--accent);
+  --editor-active-tab-foreground: var(--accent-foreground);
+  --editor-active-tab-border: var(--border);
 }
 
 .monaco-editor .endge-source-type-reference--resolved {
@@ -108,6 +108,10 @@
 
 .monaco-editor .endge-source-type-reference--unresolved {
   color: var(--editor-type-reference-unresolved) !important;
+}
+
+.monaco-editor .monaco-scrollable-element > .scrollbar > .slider {
+  border-radius: 999px;
 }
 
 /*

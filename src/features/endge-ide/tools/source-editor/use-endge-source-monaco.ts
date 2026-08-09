@@ -14,7 +14,7 @@ import { toast } from 'vue-sonner'
 import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
-import { applyEndgeMonacoTheme } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 
 interface EndgeSourceDiagnostic {
   severity?: string
@@ -170,6 +170,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       language: languageId,
       theme: applyEndgeMonacoTheme(monaco, ui.value.isDark),
       minimap: { enabled: false },
+      scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
       automaticLayout: true,
       fontSize: 14,
       tabSize: 2,

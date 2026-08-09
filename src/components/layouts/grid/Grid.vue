@@ -218,7 +218,7 @@ function handleGlobalDrop(event: DragEvent) {
 <template>
   <TooltipProvider :delay-duration="300">
     <div
-      class="h-screen w-screen flex flex-col bg-linear-to-br from-primary/10 via-muted to-muted overflow-hidden"
+      class="h-screen w-screen flex flex-col bg-muted overflow-hidden"
       @dragover="handleGlobalDragOver"
       @drop="handleGlobalDrop"
     >

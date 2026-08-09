@@ -71,7 +71,7 @@ async function toggleMockMode(): Promise<void> {
 </script>
 
 <template>
-  <div class="flex h-8 shrink-0 items-center justify-between border-t border-border/80 bg-background/88 px-3 text-[12px] text-muted-foreground backdrop-blur">
+  <div class="flex h-8 shrink-0 items-center justify-between px-3 text-xs font-medium text-muted-foreground">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div class="footer-context-switchers flex shrink-0 items-center gap-1.5">
         <TenantSwitcher />
@@ -108,6 +108,7 @@ async function toggleMockMode(): Promise<void> {
 </template>
 
 <style scoped>
+.footer-context-switchers :deep([data-slot="button"]),
 .footer-context-switchers :deep([data-slot="dropdown-menu-trigger"]) {
   font-size: inherit;
   line-height: inherit;
