@@ -238,14 +238,14 @@ async function executeExtraction(
   let childSaved = false
 
   try {
-    await Endge.schema.saveDocument(result.identity, ComponentType.SFC, { model: child })
+    await Endge.domainRepository.saveDocument(result.identity, ComponentType.SFC, { model: child })
     childSaved = true
 
     model.setValue(parentSource)
     editorModel.source = parentSource
     editorModel.parseSource()
     editorModel.updateSource(persistedModel)
-    await Endge.schema.saveDocument(editorModel.identity, ComponentType.SFC, { model: persistedModel })
+    await Endge.domainRepository.saveDocument(editorModel.identity, ComponentType.SFC, { model: persistedModel })
   }
   catch (error) {
     model.setValue(currentSource)
@@ -255,7 +255,7 @@ async function executeExtraction(
 
     if (childSaved) {
       try {
-        await Endge.schema.deleteDocument(result.identity, ComponentType.SFC)
+        await Endge.domainRepository.deleteDocument(result.identity, ComponentType.SFC)
         Endge.domain.removeComponentSFC(result.identity)
       }
       catch (rollbackError) {

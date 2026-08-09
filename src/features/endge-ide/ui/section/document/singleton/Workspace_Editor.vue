@@ -30,7 +30,7 @@ onScopeDispose(offWorkspace)
 async function save(): Promise<void> {
   try {
     const previousEffectiveDataMode = Endge.context.dataMode
-    await EndgeIDE.runBusy(Endge.schema.saveDocument(Endge.workspace.current.identity, 'workspace', {
+    await EndgeIDE.runBusy(Endge.domainRepository.saveDocument(Endge.workspace.current.identity, 'workspace', {
       model: {
         identity: Endge.workspace.current.identity,
         displayName: Endge.workspace.current.displayName,
@@ -59,7 +59,7 @@ function clone<T>(value: T): T {
 }
 
 function resolveWorkspaceDocumentId(): string | null {
-  return Endge.schema.getLoadedSnapshot()?.workspace.state.id ?? null
+  return Endge.domainRepository.getLoadedSnapshot()?.workspace.state.id ?? null
 }
 </script>
 

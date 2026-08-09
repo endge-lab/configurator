@@ -330,7 +330,7 @@ export class EndgeIDETabs {
         session?.syncBeforeSave?.()
       }
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
-      await Endge.schema.saveDocument(saveDocumentId, documentType, {
+      await Endge.domainRepository.saveDocument(saveDocumentId, documentType, {
         model: session?.model ?? session?.editor ?? null,
         previousIdentity: session?.persistedIdentity,
       })

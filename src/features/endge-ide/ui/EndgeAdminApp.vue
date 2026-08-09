@@ -30,7 +30,7 @@ import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
 const isBusy = computed(() => EndgeIDE.busy.value)
-const canMutateDomain = computed(() => Endge.schema.capabilities.mutations)
+const canMutateDomain = computed(() => Endge.domainRepository.capabilities.mutations)
 const canImportDomain = computed(() => EndgeIDEContext.workspaceRole === 'admin')
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),

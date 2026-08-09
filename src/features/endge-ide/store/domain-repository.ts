@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { useSubscribableRef } from '@endge/utils'
 import { Endge } from '@endge/core'
+import { ref } from 'vue'
 
-export const useSchemaStorage = defineStore('endge-schema-storage', () => {
-  const { refObj: schema } = useSubscribableRef(Endge.schema)
+export const useDomainRepository = defineStore('endge-domain-repository', () => {
+  const { refObj: domainRepository } = useSubscribableRef(Endge.domainRepository)
   const isPayloadModalActive = ref(false)
 
   function toggleModal(status?: boolean): void {
@@ -15,7 +16,7 @@ export const useSchemaStorage = defineStore('endge-schema-storage', () => {
   }
 
   return {
-    schema,
+    domainRepository,
     isPayloadModalActive,
     toggleModal,
   }

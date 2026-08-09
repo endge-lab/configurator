@@ -68,7 +68,7 @@ const endgeModules: ModuleSpec[] = [
   { title: 'vars', description: 'Переменные и интерполяции.' },
   { title: 'query', description: 'Единая точка запуска запросов.' },
   { title: 'auth', description: 'Авторизация и токены.' },
-  { title: 'schema', description: 'Слой хранения схемы/документов.' },
+  { title: 'domainRepository', description: 'Доступ к persisted Domain и server state.' },
   { title: 'flow', description: 'Движок исполнения действий.' },
   { title: 'updates', description: 'Обновления и синхронизация состояния.' },
   { title: 'events', description: 'Событийная шина.' },

@@ -1482,7 +1482,7 @@ async function confirmRename(): Promise<void> {
   folder.displayName = newName
   renameDialog.value.open = false
   try {
-    await Endge.schema.saveFolder(String(renameDialog.value.folderId))
+    await Endge.domainRepository.saveFolder(String(renameDialog.value.folderId))
     toast.success('Папка переименована')
   }
   catch (e) {
@@ -1540,7 +1540,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     const isSoftDeletedRoot = isRoot && node.id === 'soft-deleted'
     const isInSoftDeletedBranch = !isRoot && node.folderId != null && isFolderInSoftDeletedBranch(node.folderId)
 
-    if (!Endge.schema.capabilities.mutations)
+    if (!Endge.domainRepository.capabilities.mutations)
       return items
 
     if (supportsFolders && !isRoot && node.folderId) {
@@ -1614,7 +1614,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (!Endge.schema.capabilities.mutations)
+    if (!Endge.domainRepository.capabilities.mutations)
       return items
 
     const externallyManagedDoc = isExternallyManaged(fileNode)
@@ -1911,7 +1911,7 @@ function rowClasses(item: FlatFsItem): string {
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm"
-                  :disabled="!Endge.schema.capabilities.mutations"
+                  :disabled="!Endge.domainRepository.capabilities.mutations"
                   @click="EndgeIDE.modals.openCreateDocument()"
                 >
                   <Plus class="size-3" />

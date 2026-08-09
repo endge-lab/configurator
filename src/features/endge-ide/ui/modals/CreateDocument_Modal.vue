@@ -518,7 +518,7 @@ async function validateIdentityAvailability(): Promise<boolean> {
   const requestId = ++identityValidationRequest
   identityChecking.value = true
   try {
-    const available = await Endge.schema.isDocumentIdentityAvailable(documentType.value, normalizedIdentity)
+    const available = await Endge.domainRepository.isDocumentIdentityAvailable(documentType.value, normalizedIdentity)
     if (requestId === identityValidationRequest) { identityConflict.value = !available }
     return available
   }
@@ -582,7 +582,7 @@ async function onSubmit(): Promise<void> {
       const createdIdentity = String(parsed.identity ?? '').trim()
       if (!createdIdentity) { throw new Error('В JSON обязательно поле "identity"') }
 
-      await Endge.schema.createDocument({
+      await Endge.domainRepository.createDocument({
         documentType: targetDocumentType,
         identity: createdIdentity,
         mode: 'portable',
@@ -636,7 +636,7 @@ async function onSubmit(): Promise<void> {
       draft.meta = setQueryCompositionRole(draft.meta, true)
     }
 
-    await Endge.schema.createDocument({
+    await Endge.domainRepository.createDocument({
       documentType: targetDocumentType,
       identity: id,
       mode: 'model',

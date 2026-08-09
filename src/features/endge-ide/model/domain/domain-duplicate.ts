@@ -118,7 +118,7 @@ export async function duplicateEntity(
     draft.folderId = rootFolderId
   }
 
-  await Endge.schema.createDocument({
+  await Endge.domainRepository.createDocument({
     documentType: docType,
     identity: newIdentity,
     mode: 'model',

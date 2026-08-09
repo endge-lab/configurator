@@ -245,14 +245,14 @@ async function executeTypeExtraction(
   try {
     for (const type of types) {
       savedIdentities.push(type.identity)
-      await Endge.schema.saveDocument(type.identity, 'type', { model: type })
+      await Endge.domainRepository.saveDocument(type.identity, 'type', { model: type })
     }
 
     model.setValue(parentSource)
     editorModel.source = parentSource
     editorModel.parseSource()
     editorModel.updateSource(persistedModel)
-    await Endge.schema.saveDocument(editorModel.identity, ComponentType.SFC, { model: persistedModel })
+    await Endge.domainRepository.saveDocument(editorModel.identity, ComponentType.SFC, { model: persistedModel })
   }
   catch (error) {
     model.setValue(currentSource)
@@ -262,7 +262,7 @@ async function executeTypeExtraction(
 
     for (const identity of savedIdentities.reverse()) {
       try {
-        await Endge.schema.deleteDocument(identity, 'type')
+        await Endge.domainRepository.deleteDocument(identity, 'type')
         Endge.domain.removeTypeByIdentity(identity)
       }
       catch (rollbackError) {

@@ -225,7 +225,7 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
   })
 
   Endge.domain.addFolder(folder)
-  await Endge.schema.saveFolder(String(folder.id))
+  await Endge.domainRepository.saveFolder(String(folder.id))
   Endge.domain.notify()
   return folder
 }
@@ -247,7 +247,7 @@ export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
 
   folder.parent = softRoot.id ?? softRoot.identity ?? SOFT_DELETED_IDENTITY
   try {
-    await Endge.schema.saveFolder(String(folder.id))
+    await Endge.domainRepository.saveFolder(String(folder.id))
   }
   catch (error) {
     folder.parent = previousParent
@@ -376,12 +376,12 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
     targetParent = resolveSectionRootParent(guessedSection)
   }
 
-  await Endge.schema.restoreFolder(String(folder.id))
+  await Endge.domainRepository.restoreFolder(String(folder.id))
   const restoredFolder = Endge.domain.getFolder(folder.id)
   if (!restoredFolder)
     throw new Error(`Восстановленная папка не найдена: ${String(folder.id)}`)
   restoredFolder.parent = targetParent
-  await Endge.schema.saveFolder(String(restoredFolder.id))
+  await Endge.domainRepository.saveFolder(String(restoredFolder.id))
   Endge.domain.notify()
 }
 
@@ -407,13 +407,13 @@ export async function restoreEntity(node: FsFileNode): Promise<void> {
   const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   const restoreToQueries = node.docType === 'composition' && String(entity?.kind ?? 'library') === 'query'
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
-    await Endge.schema.restoreDocument(node.id, node.docType)
+    await Endge.domainRepository.restoreDocument(node.id, node.docType)
   }
   else if (CHANGE_FOLDER_TYPES.has(node.docType)) {
     const rootIdentity = getSectionRootIdentity(node.sectionType)
     if (!rootIdentity)
       throw new Error(`Для секции ${node.sectionType} не определён корень восстановления`)
-    await Endge.schema.changeDocumentFolder(node.id, node.docType, rootIdentity)
+    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, rootIdentity)
   }
   else {
     throw new Error(`Восстановление не поддерживается для типа: ${node.docType}`)
@@ -421,7 +421,7 @@ export async function restoreEntity(node: FsFileNode): Promise<void> {
 
   markEntityAsRestoredInDomain(node.id, node.sectionType, node.docType)
   if (restoreToQueries) {
-    await Endge.schema.changeDocumentFolder(node.id, node.docType, QUERY_ROOT_IDENTITY)
+    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, QUERY_ROOT_IDENTITY)
     setEntityFolderInDomain(node.id, node.sectionType, getQueryRootFolderId())
   }
   Endge.domain.notify()
@@ -663,7 +663,7 @@ async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): 
   const previousParent = folder.parent ?? null
   folder.parent = targetParent
   try {
-    await Endge.schema.saveFolder(String(folder.id))
+    await Endge.domainRepository.saveFolder(String(folder.id))
   }
   catch (error) {
     folder.parent = previousParent
@@ -724,7 +724,7 @@ async function reclassifyComposition(
   composition.kindIdentity = null
   composition.folderId = targetFolderId
   try {
-    await Endge.schema.saveDocument(id, 'composition', { model: composition })
+    await Endge.domainRepository.saveDocument(id, 'composition', { model: composition })
   }
   catch (error) {
     composition.meta = previousMeta
@@ -740,10 +740,10 @@ async function reclassifyComposition(
  */
 async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'docType'>): Promise<void> {
   if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
-    await Endge.schema.deleteDocument(node.id, node.docType)
+    await Endge.domainRepository.deleteDocument(node.id, node.docType)
   }
   else if (CHANGE_FOLDER_TYPES.has(node.docType)) {
-    await Endge.schema.changeDocumentFolder(node.id, node.docType, SOFT_DELETED_IDENTITY)
+    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, SOFT_DELETED_IDENTITY)
   }
   else {
     throw new Error(`Мягкое удаление не поддерживается для типа: ${node.docType}`)
@@ -768,7 +768,7 @@ async function changeEntityFolder(
   if (!setEntityFolderInDomain(id, sectionType, dropFolderId, docType))
     throw new Error('не удалось обновить папку в домене')
   try {
-    await Endge.schema.changeDocumentFolder(id, docType, folderIdentity)
+    await Endge.domainRepository.changeDocumentFolder(id, docType, folderIdentity)
   }
   catch (err) {
     setEntityFolderInDomain(id, sectionType, prevFolderId, docType)
