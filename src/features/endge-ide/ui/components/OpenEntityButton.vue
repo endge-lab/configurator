@@ -6,7 +6,7 @@ import { ExternalLink } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const props = defineProps<{
   /** ID сущности домена */

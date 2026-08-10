@@ -151,7 +151,7 @@ definePreviewProps({
 }>()
 
 definePreviewProps({
-  route: 'Moscow → Saint Petersburg',
+  route: 'Moscow - Saint Petersburg',
   aircraft: 'Airbus A320',
 })`, `  <Flex direction="column" gap="8px" p="12px">
     <Box p="12px">
@@ -214,7 +214,7 @@ definePreviewProps({
 
 definePreviewProps({
   flightNumber: 'SU 1402',
-  route: 'SVO → LED',
+  route: 'SVO - LED',
   status: 'On time',
 })`, `  <Grid columns="12" gap="8px" p="12px" autoRows="28px">
     <Text colStart="1" colSpan="4" rowStart="1" rowSpan="1">{{ flightNumber }}</Text>

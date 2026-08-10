@@ -16,11 +16,11 @@ import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
   buildCompositionDropPlan,
   resolveCompositionDropDescriptor,
 } from '@/features/endge-ide/model/composition-source-drop'
-import { domainDragState } from '@/features/endge-ide/model/domain/domain-drag-state'
 import { createCompositionRuntimePropsContribution } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
@@ -49,13 +49,13 @@ const monacoAdapter = useEndgeSourceMonaco({
 })
 
 const draggedDescriptors = computed(() =>
-  domainDragState.value.tree
+  EndgeIDE.domainDrag.state.value.tree
     .map(item => resolveCompositionDropDescriptor(item))
     .filter((item): item is CompositionDropDescriptor => item != null),
 )
 const dropTargetLabel = computed(() => {
   const targets = [...new Set(draggedDescriptors.value.map(item => item.target))]
-  return `${formatDocumentCount(draggedDescriptors.value.length)} → ${targets.join(' + ')}`
+  return `${formatDocumentCount(draggedDescriptors.value.length)} - ${targets.join(' + ')}`
 })
 
 function parseDomainDragPayload(event: DragEvent): CompositionDropPayloadItem[] {
@@ -211,7 +211,7 @@ watch(() => props.modelValue, (value) => {
   source.value = value ?? ''
   monacoAdapter.setValue(source.value)
 })
-watch(() => domainDragState.value.active, (active) => {
+watch(() => EndgeIDE.domainDrag.state.value.active, (active) => {
   if (!active) { dropOver.value = false }
 })
 

@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 

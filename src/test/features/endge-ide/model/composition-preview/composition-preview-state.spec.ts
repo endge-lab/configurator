@@ -4,17 +4,21 @@ import { Endge, RComposition, RQuery } from '@endge/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  compositionPreviewRuntime,
-  destroyCompositionPreviewRuntime,
+  CompositionPreviewSession,
   ensureCompositionRuntimeArtifacts,
-  launchCompositionPreview,
 } from '../../../../../features/endge-ide/model/composition-preview/composition-preview-state'
 
 describe('composition preview artifacts', () => {
+  let preview: CompositionPreviewSession
+
   beforeEach(() => prepareCompilerContext())
 
+  beforeEach(() => {
+    preview = new CompositionPreviewSession()
+  })
+
   afterEach(async () => {
-    await destroyCompositionPreviewRuntime()
+    await preview.dispose()
     Endge.configuration.reset()
     Endge.program.clear()
     Endge.domain.reset()
@@ -94,7 +98,7 @@ defineQuery({
 `
     Endge.domain.addQuery(query)
 
-    await launchCompositionPreview({
+    await preview.launch({
       identity: 'preview-props-composition',
       source: `
 defineComposition({
@@ -111,7 +115,7 @@ defineComposition({
 `,
     })
 
-    expect(compositionPreviewRuntime.value?.getProps()).toEqual({
+    expect(preview.runtime.value?.getProps()).toEqual({
       label: 'Preview label',
     })
   })
@@ -145,12 +149,12 @@ defineComposition({
 })
 `
 
-    await launchCompositionPreview({
+    await preview.launch({
       identity: 'groundhandling-page',
       source: parentSource,
     })
 
-    const childRuntime = compositionPreviewRuntime.value?.getChild('requests') as CompositionRuntimeHost | null
+    const childRuntime = preview.runtime.value?.getChild('requests') as CompositionRuntimeHost | null
     expect(childRuntime?.getProps()).toEqual({
       requirements: {
         arrival: { attributes: ['STA'] },

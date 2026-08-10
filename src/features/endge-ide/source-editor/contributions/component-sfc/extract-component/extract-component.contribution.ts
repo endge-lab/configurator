@@ -19,11 +19,7 @@ import {
 import { defineAsyncComponent } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy'
-import {
-  openSourceEditorDialog,
-  registerSourceEditorDialog,
-} from '@/features/endge-ide/source-editor/core/source-editor-dialogs'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 import { buildExtractComponentFolderOptions } from './extract-component.folders'
 import {
@@ -35,7 +31,6 @@ const DIALOG_ID = 'component-sfc.extract-component'
 const ACTION_CLASS_NAME = 'endge-sfc-column-action'
 const ACTION_DATA_KIND = 'endge.sfc-column.extract-component'
 const ACTION_LABEL = 'Экспорт компонента'
-let contributionSequence = 0
 
 interface ExtractColumnActionData {
   kind: typeof ACTION_DATA_KIND
@@ -52,10 +47,7 @@ interface MonacoInjectedTextMouseTarget {
   }
 }
 
-registerSourceEditorDialog({
-  id: DIALOG_ID,
-  component: defineAsyncComponent(() => import('./ExtractComponent_Dialog.vue')),
-})
+const ExtractComponentDialog = defineAsyncComponent(() => import('./ExtractComponent_Dialog.vue'))
 
 export interface ExtractComponentContributionOptions {
   getEditorModel: () => RComponentSFCEditor | null
@@ -65,7 +57,8 @@ export interface ExtractComponentContributionOptions {
 export function createExtractComponentContribution(
   options: ExtractComponentContributionOptions,
 ): ScriptEditorExtension {
-  const instanceId = ++contributionSequence
+  EndgeIDE.sourceEditorDialogs.register({ id: DIALOG_ID, component: ExtractComponentDialog })
+  const instanceId = EndgeIDE.sourceEditorDialogs.nextInstanceId(DIALOG_ID)
 
   return {
     id: `${DIALOG_ID}.${instanceId}`,
@@ -182,11 +175,11 @@ async function openExtractDialog(
     column,
   }
 
-  const result = await openSourceEditorDialog<ExtractComponentDialogInput, ExtractComponentDialogResult>(DIALOG_ID, input)
+  const result = await EndgeIDE.sourceEditorDialogs.open<ExtractComponentDialogInput, ExtractComponentDialogResult>(DIALOG_ID, input)
   if (!result) { return }
 
   try {
-    await runBusy(executeExtraction(model, column.columnRange.start, result, options))
+    await EndgeIDE.runBusy(executeExtraction(model, column.columnRange.start, result, options))
     toast.success('Компонент создан', { description: result.identity })
   }
   catch (error) {

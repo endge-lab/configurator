@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const helpData = computed(() => EndgeIDE.demonstration.helpData.value)
 const serialized = computed(() => JSON.stringify(helpData.value?.resultByKey ?? {}, null, 2))

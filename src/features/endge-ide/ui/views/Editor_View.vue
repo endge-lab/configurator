@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { SmartTabRef } from '@/components/ui/smart-tabs'
-import type { IntegrationDisposer } from '@endge/integration-api'
 
 import { Box, Loader2 } from 'lucide-vue-next'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted } from 'vue'
@@ -9,12 +8,11 @@ import { useRoute } from 'vue-router'
 import { getLayoutState, useLayout } from '@/components/layouts/grid'
 import { SmartTabsHost } from '@/components/ui/smart-tabs'
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
+import { Configurator } from '@/app'
 import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditorDemo_Singleton.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { triggerEndgeIDERenderGuardTest } from '@/features/endge-ide/model/error/endge-ide-render-guard'
-import { startTestConfiguratorIntegrations } from '@/features/endge-ide/model/integrations/test-configurator-integrations'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
@@ -73,7 +71,6 @@ const isUIEditorActive = computed(() => {
 const isBusy = computed(() => EndgeIDE.busy.value)
 const hotkeysList = computed(() => EndgeIDE.hotkeys.getAllHotkeys())
 const busyText = 'Подождите'
-let stopTestIntegrations: Promise<IntegrationDisposer> | null = null
 
 function getIconClass(tab: { meta?: Record<string, unknown> | undefined }): string | null {
   const icon = tab.meta?.icon
@@ -89,17 +86,14 @@ useLayout({
 })
 
 onBeforeMount(() => {
-  EndgeIDE.init()
+  void EndgeIDE.init().catch((error) => {
+    console.error('[EndgeIDE] Failed to initialize workspace.', error)
+  })
 })
 
 onMounted(() => {
-  stopTestIntegrations = startTestConfiguratorIntegrations()
-  void stopTestIntegrations.catch((error) => {
-    console.error('[EndgeIDE] Failed to start test integrations.', error)
-  })
-
   if (route.query.guardTest === '1') {
-    triggerEndgeIDERenderGuardTest({
+    Configurator.diagnostics.triggerTest({
       routePath: route.path,
       componentName: 'EndgeAdminEditorView',
     })
@@ -107,9 +101,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  void stopTestIntegrations?.then(stop => stop(), () => undefined)
-  stopTestIntegrations = null
-  EndgeIDE.reset()
+  void EndgeIDE.reset()
 })
 </script>
 

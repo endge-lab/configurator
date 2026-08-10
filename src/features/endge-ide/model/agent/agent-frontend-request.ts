@@ -6,8 +6,7 @@
 import { showWidget } from "@/components/layouts/grid";
 import type { DomainDocumentType } from "@endge/core";
 import { Endge } from "@endge/core";
-import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
-import { runAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
+import { EndgeIDE } from "@/features/endge-ide";
 import {
   duplicateEntity,
   getEntityByDocType,
@@ -736,7 +735,7 @@ export async function executeDuplicateDocument(
   }
 }
 
-/** viewId → метод открытия синглтон-вкладки. */
+/** viewId - метод открытия синглтон-вкладки. */
 const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "dsl-playground": () => EndgeIDE.tabs.openDSLPlayground(),
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
@@ -916,7 +915,7 @@ export async function applyFrontendRequest(
 
     if (act.action === "table_auto_fill_datapaths") {
       try {
-        const ok = await runAgentTableAction("auto_fill_datapaths");
+        const ok = await EndgeIDE.agentTableActions.run("auto_fill_datapaths");
         if (ok) actionsExecuted++;
       } catch (e) {
         errors.push(
@@ -928,7 +927,7 @@ export async function applyFrontendRequest(
 
     if (act.action === "table_clear_all_datapaths") {
       try {
-        const ok = await runAgentTableAction("clear_all_datapaths");
+        const ok = await EndgeIDE.agentTableActions.run("clear_all_datapaths");
         if (ok) actionsExecuted++;
       } catch (e) {
         errors.push(
@@ -941,7 +940,7 @@ export async function applyFrontendRequest(
     if (act.action === "table_add_column") {
       const title = String(act.title ?? "").trim();
       try {
-        const ok = await runAgentTableAction("add_column", { title });
+        const ok = await EndgeIDE.agentTableActions.run("add_column", { title });
         if (ok) actionsExecuted++;
       } catch (e) {
         errors.push(
@@ -979,7 +978,7 @@ export async function applyFrontendRequest(
         let removed = 0;
         try {
           for (let i = titles.length - 1; i >= 0; i--) {
-            const ok = await runAgentTableAction("remove_column", { index: i });
+            const ok = await EndgeIDE.agentTableActions.run("remove_column", { index: i });
             if (ok) removed++;
           }
           if (removed > 0) actionsExecuted += removed;
@@ -1012,7 +1011,7 @@ export async function applyFrontendRequest(
         continue;
       }
       try {
-        const ok = await runAgentTableAction("remove_column", { index });
+        const ok = await EndgeIDE.agentTableActions.run("remove_column", { index });
         if (ok) actionsExecuted++;
         else
           errors.push(

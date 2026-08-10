@@ -315,7 +315,7 @@ const architectureSections: ArchitectureFlowSection[] = [
     text: [
       'Проект является верхнеуровневым контейнером: в нём живут страницы, окружения, навигация и стили.',
       'Страница обычно собирается из нескольких источников: она может быть связана с шаблоном страницы, использовать навигацию и стили, а в областях напрямую размещать поддерживаемые компоненты.',
-      'Runtime-граф Filter → Query → Component описывает Composition: orchestration без layout и rendering. Actions and the event bus remain independent runtime mechanisms.',
+      'Runtime-граф Filter - Query - Component описывает Composition: orchestration без layout и rendering. Actions and the event bus remain independent runtime mechanisms.',
     ],
     nodes: [
       createFlowNode('behavior-actions', 'Действия', 'Поведенческая логика и сценарии', 680, 40, 'action'),

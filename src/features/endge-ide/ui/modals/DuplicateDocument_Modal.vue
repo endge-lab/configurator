@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { duplicateEntity } from '@/features/endge-ide/model/domain/domain-duplicate'
 
 export interface DuplicateSourcePayload {

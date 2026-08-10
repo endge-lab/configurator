@@ -8,6 +8,7 @@
  */
 
 import type { FsFileNode, FsFolderNode } from './domain-tree'
+import type { FolderRestoreStateOwner } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type { DomainDocumentType } from '@endge/core'
 
 import {
@@ -96,13 +97,6 @@ export interface FolderDeletionResult {
 
 /** Корневой id виртуальной секции «Удалённые». */
 export const DROP_TARGET_SOFT_DELETED = SOFT_DELETED_IDENTITY as string
-
-interface FolderRestoreState {
-  parent: string | number | null
-  rootIdentity: string | null
-}
-
-const folderRestoreState = new Map<string, FolderRestoreState>()
 
 const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Primitive]: 'root-primitives',
@@ -233,7 +227,10 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
 /**
  * Мягко удаляет папку: переносит её под корень `soft-deleted`.
  */
-export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
+export async function softDeleteFolder(
+  node: FsFolderNode,
+  restoreState: FolderRestoreStateOwner,
+): Promise<void> {
   if (isManagedFolderNode(node))
     throw new Error('Управляемую извне папку нельзя удалить')
 
@@ -255,12 +252,9 @@ export async function softDeleteFolder(node: FsFolderNode): Promise<void> {
     throw error
   }
 
-  if (!folderRestoreState.has(key)) {
-    folderRestoreState.set(key, {
-      parent: previousParent,
-      rootIdentity: getSectionRootIdentity(node.sectionType),
-    })
-  }
+  restoreState.rememberFolderRestore(key, {
+    parent: previousParent,
+  })
   Endge.domain.notify()
 }
 
@@ -328,12 +322,15 @@ function validateFolderDeletionPlan(plan: FolderDeletionPlan): void {
  * 1. переносит корень ветки в `soft-deleted`, сохраняя иерархию подпапок;
  * 2. применяет штатное мягкое удаление к каждому persisted-документу ветки.
  */
-export async function deleteFolderRecursively(plan: FolderDeletionPlan): Promise<FolderDeletionResult> {
+export async function deleteFolderRecursively(
+  plan: FolderDeletionPlan,
+  restoreState: FolderRestoreStateOwner,
+): Promise<FolderDeletionResult> {
   validateFolderDeletionPlan(plan)
 
   // Перенос корня сразу делает всю ветку недоступной в обычном дереве даже при
   // частичной сетевой ошибке во время последующих запросов по документам.
-  await softDeleteFolder(plan.root)
+  await softDeleteFolder(plan.root, restoreState)
 
   const deletedEntities: FsFileNode[] = []
   const failedEntities: Array<{ node: FsFileNode, error: Error }> = []
@@ -365,10 +362,13 @@ export async function deleteFolderRecursively(plan: FolderDeletionPlan): Promise
  * Если есть сохранённый исходный parent - папка возвращается в него,
  * иначе переносится в корневую секцию (по определённому `sectionType`).
  */
-export async function restoreFolder(node: FsFolderNode): Promise<void> {
+export async function restoreFolder(
+  node: FsFolderNode,
+  restoreState: FolderRestoreStateOwner,
+): Promise<void> {
   const folder = getMutableFolder(node)
   const key = String(folder.id)
-  const restore = folderRestoreState.get(key)
+  const restore = restoreState.getFolderRestore(key)
 
   let targetParent: string | number | null = restore?.parent ?? null
   if (targetParent == null) {
@@ -382,6 +382,7 @@ export async function restoreFolder(node: FsFolderNode): Promise<void> {
     throw new Error(`Восстановленная папка не найдена: ${String(folder.id)}`)
   restoredFolder.parent = targetParent
   await Endge.domainRepository.saveFolder(String(restoredFolder.id))
+  restoreState.forgetFolderRestore(key)
   Endge.domain.notify()
 }
 

@@ -1,4 +1,4 @@
-export { clearSmartTabViews, getSmartTabView, registerSmartTabView, unregisterSmartTabView } from '@/components/ui/smart-tabs/registry'
+export { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
 
 export { default as SmartTabsHost } from '@/components/ui/smart-tabs/SmartTabsHost.vue'
 export type {

@@ -23,12 +23,6 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
-  EndgeIDEContext: {
-    get isSwitchingContext() { return state.switching },
-  },
-}))
-
 describe('runtime Preview context guard', () => {
   beforeEach(() => {
     state.switching = false
@@ -63,7 +57,7 @@ describe('runtime Preview context guard', () => {
     expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'library-entry' }).valid).toBe(true)
 
     state.switching = true
-    expect(validateRuntimePreviewContext({ entityType: 'store', identity: 'data' })).toMatchObject({
+    expect(validateRuntimePreviewContext({ entityType: 'store', identity: 'data' }, state.switching)).toMatchObject({
       valid: false,
       message: 'Контекст приложения переключается',
     })

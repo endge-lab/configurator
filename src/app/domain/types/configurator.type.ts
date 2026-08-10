@@ -1,0 +1,21 @@
+import type { ConfiguratorBranding_Module } from '@/app/model/modules/branding/ConfiguratorBranding_Module'
+import type { ConfiguratorChromeBridge_Module } from '@/app/model/modules/chrome-bridge/ConfiguratorChromeBridge_Module'
+import type { ConfiguratorContext_Module } from '@/app/model/modules/context/ConfiguratorContext_Module'
+import type { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
+import type { ConfiguratorI18n_Module } from '@/app/model/modules/i18n/ConfiguratorI18n_Module'
+import type { Layout_Module } from '@/app/model/modules/layout/Layout_Module'
+import type { Questions_Module } from '@/app/model/modules/questions/Questions_Module'
+import type { ConfiguratorSession_Module } from '@/features/configurator-session'
+
+export type ConfiguratorStatus = 'ready' | 'redirecting'
+
+export interface ConfiguratorModules {
+  session: ConfiguratorSession_Module
+  context: ConfiguratorContext_Module
+  diagnostics: ConfiguratorDiagnostics_Module
+  i18n: ConfiguratorI18n_Module
+  chromeBridge: ConfiguratorChromeBridge_Module
+  branding: ConfiguratorBranding_Module
+  questions: Questions_Module
+  layout: Layout_Module
+}

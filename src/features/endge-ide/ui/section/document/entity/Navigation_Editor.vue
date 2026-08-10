@@ -15,7 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 

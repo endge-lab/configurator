@@ -441,7 +441,7 @@ function extractArtifactDependencies(
     const auth = query.auth
     if (auth && typeof auth === 'object' && !Array.isArray(auth) && !('type' in auth)) {
       const authRecord = auth as Record<string, unknown>
-      const profile = String(authRecord.profile ?? authRecord.authProfileIdentity ?? '').trim()
+      const profile = String(authRecord.profileIdentity ?? '').trim()
       if (profile) {
         dependencies.push(makeDependency('auth-profile', profile, 'query-auth'))
       }

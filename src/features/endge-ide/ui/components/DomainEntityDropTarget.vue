@@ -2,7 +2,7 @@
 import { DomainSectionType } from '@endge/core'
 import { computed, ref } from 'vue'
 
-import { domainDragState } from '@/features/endge-ide/model/domain/domain-drag-state.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 
@@ -44,7 +44,7 @@ const dropOver = ref(false)
 /** Рамка видна при наведении или пока из домена тащат подходящий тип */
 const showHighlight = computed(() => {
   if (dropOver.value) return true
-  const drag = domainDragState.value
+  const drag = EndgeIDE.domainDrag.state.value
   if (!drag.active || !drag.sectionTypes.length) return false
   return drag.sectionTypes.some(t => props.acceptSectionTypes.includes(t as DomainSectionType))
 })

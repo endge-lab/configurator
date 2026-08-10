@@ -5,10 +5,10 @@ export class RAuthProfileEditor {
   identity!: string
   displayName!: string
   description: string = ''
-  adapterId: AuthProfileAdapterId = 'manual_token'
+  adapterId: AuthProfileAdapterId = 'bearer'
   configText: string = '{}'
   credentialRefsText: string = '{}'
-  persist: AuthProfilePersist = 'localStorage'
+  persist: AuthProfilePersist = 'memory'
   active: boolean = true
 
   fillFromSource(source: RAuthProfile): void {
@@ -16,10 +16,10 @@ export class RAuthProfileEditor {
     this.identity = String(source.identity ?? '').trim()
     this.displayName = String(source.displayName ?? source.name ?? '').trim()
     this.description = String(source.description ?? '')
-    this.adapterId = source.adapterId ?? 'manual_token'
+    this.adapterId = source.adapterId ?? 'bearer'
     this.configText = stringify(source.config ?? {})
     this.credentialRefsText = stringify(source.credentialRefs ?? {})
-    this.persist = source.persist ?? 'localStorage'
+    this.persist = source.persist ?? (this.adapterId === 'bearer' ? 'memory' : 'localStorage')
     this.active = source.active !== false
   }
 

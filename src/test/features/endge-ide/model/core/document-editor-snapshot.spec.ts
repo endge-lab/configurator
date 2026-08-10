@@ -4,7 +4,7 @@ import { EndgeFlowEditorModel } from '@/features/endge-ide/domain/action-flow/En
 import {
   createDocumentEditorSnapshot,
   DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS,
-} from '@/features/endge-ide/model/core/document-editor-snapshot'
+} from '@/features/endge-ide/model/modules/tabs/document-editor-snapshot'
 
 const EXPECTED_EDITOR_FAMILIES = [
   'RActionEditor',

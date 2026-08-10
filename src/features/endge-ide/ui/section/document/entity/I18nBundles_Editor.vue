@@ -39,7 +39,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -82,7 +82,7 @@ const currentLocale = ref<string>(Endge.workspace.defaultLocale)
 const activePanel = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
-/** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ→значение */
+/** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ-значение */
 const editMode = useSmartTabSelection('i18n.edit-mode', 'table', ['json', 'table'] as const)
 
 const panelButtons = [

@@ -16,20 +16,13 @@ import {
   RComputation,
 } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
-import { computed, reactive, shallowRef } from 'vue'
+import { computed, shallowRef } from 'vue'
 
 import {
   destroyComponentPreviewContext,
   prepareComponentPreviewContext,
   resolveComponentPreviewInput,
 } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
-import {
-  configuratorPreviewAppScope,
-  configuratorPreviewMeta,
-  destroyPreviewRuntime,
-  resolvePreviewRuntime,
-  serializePreviewLifecycle,
-} from '@/features/endge-ide/model/preview-runtime/preview-runtime'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 
 export interface SFCPreviewLaunchInput {
@@ -41,106 +34,136 @@ export interface SFCPreviewLaunchInput {
   source: string
 }
 
-export const sfcPreviewRuntime = shallowRef<ComponentSFCRuntimeHost | null>(null)
-export const sfcPreviewInput = shallowRef<RuntimeHostInputSource>({ kind: 'local', props: {} })
-export const sfcPreviewError = shallowRef<string | null>(null)
-export const sfcPreviewTitle = shallowRef('SFC preview')
-export const hasSFCPreviewRuntime = computed(() => Boolean(sfcPreviewRuntime.value))
+/** Owns one standalone SFC preview and all of its disposable resources. */
+export class SFCPreviewSession {
+  public readonly runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
+  public readonly input = shallowRef<RuntimeHostInputSource>({ kind: 'local', props: {} })
+  public readonly error = shallowRef<string | null>(null)
+  public readonly title = shallowRef('SFC preview')
+  public readonly hasRuntime = computed(() => Boolean(this.runtime.value))
 
-let runtimeCounter = 0
-let previewComposition: ComponentPreviewContext | null = null
-let previewStyleElement: HTMLStyleElement | null = null
-
-export async function launchSFCPreview(input: SFCPreviewLaunchInput): Promise<void> {
-  await serializePreviewLifecycle('component-sfc', async () => {
-    sfcPreviewError.value = null
-    sfcPreviewTitle.value = input.displayName || input.name || input.identity || 'SFC preview'
-
-    const model = RComponentSFC.fromPlain({
-      id: input.id ?? `preview-${++runtimeCounter}`,
-      identity: input.identity || `sfc-preview-${runtimeCounter}`,
-      tag: input.tag,
-      name: input.name || input.displayName || input.identity || 'SFC preview',
-      displayName: input.displayName || input.name || input.identity || 'SFC preview',
-      source: input.source,
-    })
-    const artifact = createPreviewArtifact(model)
-    if (artifact.status === 'error') {
-      const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
-        ?? 'SFC source содержит ошибки.'
-      throw new Error(message)
-    }
-    const previewProps = artifact.payload.previewProps
-    if (!previewProps || Object.keys(previewProps).length === 0) {
-      throw new Error('Сначала определите превью props')
-    }
-
-    const identity = resolvePreviewIdentity(input)
-    ensurePreviewPortArtifacts(artifact.payload)
-    await disposeSFCPreviewRuntime()
-    applyPreviewStyle(artifact.payload.ir?.style ?? null)
-    await destroyPreviewRuntime('component-sfc', identity)
-    const composition = await prepareComponentPreviewContext(
-      artifact.payload.previewOptions,
-      previewProps,
-      input,
-      {
-        appScope: configuratorPreviewAppScope,
-        meta: configuratorPreviewMeta(),
-        resolveStoreRuntime: identity => resolvePreviewRuntime<{ id: string, entityType: string }>('store', identity),
-        vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
-      },
-    )
-    try {
-      const runtimeInput = resolveComponentPreviewInput(previewProps, composition)
-      sfcPreviewInput.value = runtimeInput
-      const artifactReader = {
-        getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
-      }
-      const runtime = configuratorPreviewAppScope.execute(model, {
-        parent: composition?.host ?? null,
-        artifactReader,
-        meta: {
-          ...configuratorPreviewMeta(),
-          target: 'dom',
-          input: runtimeInput,
-          i18nCatalog: composition?.host.getI18nCatalog() ?? {},
-          vocabCatalog: composition?.host.getVocabCatalog() ?? {},
-        },
-      }) as ComponentSFCRuntimeHost | null
-      if (!runtime || runtime.entityType !== 'component-sfc') {
-        throw new Error('Не удалось создать SFC preview runtime.')
-      }
-      previewComposition = composition
-      sfcPreviewRuntime.value = runtime
-    }
-    catch (error) {
-      await destroyComponentPreviewContext(composition)
-      throw error
-    }
+  private readonly _scope = Endge.runtime.createAppScope({
+    id: 'configurator-sfc-preview',
+    rootPath: 'runtime-preview.component-sfc',
+    collisionPolicy: 'replace',
+    persistence: 'disabled',
   })
-}
 
-export function destroySFCPreviewRuntime(): Promise<void> {
-  return serializePreviewLifecycle('component-sfc', disposeSFCPreviewRuntime)
-}
+  private _composition: ComponentPreviewContext | null = null
+  private _styleElement: HTMLStyleElement | null = null
+  private _counter = 0
+  private _queue: Promise<void> = Promise.resolve()
 
-async function disposeSFCPreviewRuntime(): Promise<void> {
-  const runtimeId = sfcPreviewRuntime.value?.id
-  try {
-    if (previewComposition) {
-      await destroyComponentPreviewContext(previewComposition)
+  public launch(input: SFCPreviewLaunchInput): Promise<void> {
+    return this._serialize(async () => {
+      this.error.value = null
+      this.title.value = input.displayName || input.name || input.identity || 'SFC preview'
+
+      const index = ++this._counter
+      const model = RComponentSFC.fromPlain({
+        id: input.id ?? `preview-${index}`,
+        identity: input.identity || `sfc-preview-${index}`,
+        tag: input.tag,
+        name: input.name || input.displayName || input.identity || 'SFC preview',
+        displayName: input.displayName || input.name || input.identity || 'SFC preview',
+        source: input.source,
+      })
+      const artifact = createPreviewArtifact(model)
+      if (artifact.status === 'error') {
+        const message = artifact.diagnostics.find(item => item.severity === 'error')?.message
+          ?? 'SFC source содержит ошибки.'
+        throw new Error(message)
+      }
+      const previewProps = artifact.payload.previewProps
+      if (!previewProps || Object.keys(previewProps).length === 0) {
+        throw new Error('Сначала определите превью props')
+      }
+
+      const identity = resolvePreviewIdentity(input)
+      ensurePreviewPortArtifacts(artifact.payload)
+      await this._disposeRuntime()
+      this._applyPreviewStyle(artifact.payload.ir?.style ?? null)
+      await this._scope.destroyAsync('component-sfc', identity)
+      const composition = await prepareComponentPreviewContext(
+        artifact.payload.previewOptions,
+        previewProps,
+        input,
+        {
+          appScope: this._scope,
+          meta: { mode: 'preview' },
+          resolveStoreRuntime: identity => this._scope.resolve('store', identity),
+          vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
+        },
+      )
+      try {
+        const runtimeInput = resolveComponentPreviewInput(previewProps, composition)
+        this.input.value = runtimeInput
+        const artifactReader = {
+          getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
+        }
+        const runtime = this._scope.execute(model, {
+          parent: composition?.host ?? null,
+          artifactReader,
+          meta: {
+            mode: 'preview',
+            target: 'dom',
+            input: runtimeInput,
+            i18nCatalog: composition?.host.getI18nCatalog() ?? {},
+            vocabCatalog: composition?.host.getVocabCatalog() ?? {},
+          },
+        }) as ComponentSFCRuntimeHost | null
+        if (!runtime || runtime.entityType !== 'component-sfc') {
+          throw new Error('Не удалось создать SFC preview runtime.')
+        }
+        this._composition = composition
+        this.runtime.value = runtime
+      }
+      catch (error) {
+        await destroyComponentPreviewContext(composition)
+        throw error
+      }
+    })
+  }
+
+  public dispose(): Promise<void> {
+    return this._serialize(() => this._disposeRuntime())
+  }
+
+  private async _disposeRuntime(): Promise<void> {
+    const runtimeId = this.runtime.value?.id
+    try {
+      if (this._composition) {
+        await destroyComponentPreviewContext(this._composition)
+      }
+      else if (runtimeId) {
+        await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
+      }
     }
-    else if (runtimeId) {
-      await Endge.runtime.destroyRuntimeTreeAsync(runtimeId)
+    finally {
+      this._composition = null
+      this.runtime.value = null
+      this.input.value = { kind: 'local', props: {} }
+      this._styleElement?.remove()
+      this._styleElement = null
     }
   }
-  finally {
-    previewComposition = null
-    sfcPreviewRuntime.value = null
-    sfcPreviewInput.value = { kind: 'local', props: {} }
-    previewStyleElement?.remove()
-    previewStyleElement = null
+
+  private _applyPreviewStyle(style: EndgeStyleSheetArtifact | null): void {
+    if (typeof document === 'undefined') {
+      return
+    }
+    this._styleElement ??= document.createElement('style')
+    this._styleElement.dataset.endgePreviewStyles = ''
+    if (!this._styleElement.isConnected) {
+      document.head.append(this._styleElement)
+    }
+    this._styleElement.textContent = style ? materializeEndgeCSSForDOM([style]).css : ''
+  }
+
+  private _serialize(operation: () => Promise<void>): Promise<void> {
+    const result = this._queue.catch(() => undefined).then(operation)
+    this._queue = result.catch(() => undefined)
+    return result
   }
 }
 
@@ -157,7 +180,10 @@ export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<Com
     resolvePortProvider: (identity, expectedKind) => resolvePreviewPortProvider(identity, expectedKind),
     resolveComponentPortManifest: identity => Endge.program
       .getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
-      ?.payload.ir?.script.ports ?? null,
+      ?.payload
+      .ir
+      ?.script
+      .ports ?? null,
     resolveTypeDefinition: resolveEndgeTypeDefinition,
   })
   const { diagnostics, metadata, ...payload } = compiled
@@ -178,18 +204,6 @@ export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<Com
     metadata,
     payload,
   }
-}
-
-function applyPreviewStyle(style: EndgeStyleSheetArtifact | null): void {
-  if (typeof document === 'undefined') {
-    return
-  }
-  previewStyleElement ??= document.createElement('style')
-  previewStyleElement.dataset.endgePreviewStyles = ''
-  if (!previewStyleElement.isConnected) {
-    document.head.append(previewStyleElement)
-  }
-  previewStyleElement.textContent = style ? materializeEndgeCSSForDOM([style]).css : ''
 }
 
 function resolvePreviewPortProvider(identity: string, expectedKind: 'computation' | 'component') {
@@ -251,11 +265,3 @@ export function ensurePreviewPortArtifacts(
     }
   }
 }
-
-export const sfcPreviewState = reactive({
-  runtime: sfcPreviewRuntime,
-  input: sfcPreviewInput,
-  error: sfcPreviewError,
-  title: sfcPreviewTitle,
-  hasRuntime: hasSFCPreviewRuntime,
-})

@@ -3,13 +3,14 @@ import type {
   SmartTabRef,
   SmartTabsApi,
   SmartTabsOptions,
+  SmartTabsPersistedState,
   SmartTabViewState,
   SmartTabViewStateSlice,
-  SmartTabsPersistedState,
 } from './types'
 
 import { computed, reactive, watch } from 'vue'
 
+import { SmartTabViewRegistry } from './SmartTabViewRegistry'
 import { clearSmartTabs, loadSmartTabs, saveSmartTabs } from './storage'
 
 function sanitizeViewState(raw: unknown): SmartTabViewState {
@@ -75,6 +76,7 @@ function sanitizeInitial(raw: SmartTabsPersistedState | null | undefined): Smart
 }
 
 export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
+  const viewRegistry = new SmartTabViewRegistry()
   const persist = options.persist !== false
   const maxTabs = options.maxTabs ?? 40
 
@@ -402,6 +404,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   }
 
   return {
+    viewRegistry,
     openTabs,
     activeTab,
     activeTabId,

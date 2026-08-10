@@ -21,11 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  getAuthProfileAdapterEditor,
-  getAuthProfileAdapterEditors,
-} from '@/features/endge-ide/model/auth-profile/auth-profile-adapter-ui-registry.ts'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -33,11 +29,13 @@ const props = defineProps<{
 }>()
 
 const editor = computed<RAuthProfileEditor | null>(() => props.tabContext?.editor ?? null)
-const adapterEditors = getAuthProfileAdapterEditors()
+const adapterEditors = EndgeIDE.authProfileEditors.list()
 const testLoading = ref(false)
+const testUsername = ref('')
+const testPassword = ref('')
 
 const adapterModel = computed<AuthProfileAdapterId>({
-  get: () => editor.value?.adapterId ?? 'manual_token',
+  get: () => editor.value?.adapterId ?? 'bearer',
   set: (value) => {
     if (editor.value)
       editor.value.adapterId = value
@@ -45,14 +43,14 @@ const adapterModel = computed<AuthProfileAdapterId>({
 })
 
 const persistModel = computed<AuthProfilePersist>({
-  get: () => editor.value?.persist ?? 'localStorage',
+  get: () => editor.value?.persist ?? 'memory',
   set: (value) => {
     if (editor.value)
-      editor.value.persist = value
+      editor.value.persist = adapterModel.value === 'bearer' ? 'memory' : value
   },
 })
 
-const selectedAdapterEditor = computed(() => getAuthProfileAdapterEditor(adapterModel.value))
+const selectedAdapterEditor = computed(() => EndgeIDE.authProfileEditors.get(adapterModel.value))
 
 const configModel = computed<Record<string, unknown>>({
   get: () => parseObject(editor.value?.configText ?? '{}'),
@@ -70,19 +68,35 @@ const credentialRefsModel = computed<Record<string, unknown>>({
   },
 })
 
+const isInteractiveKeycloak = computed(() => (
+  adapterModel.value === 'keycloak' && configModel.value.loginMode !== 'service'
+))
+
 watch(
   () => editor.value?.adapterId,
-  (adapterId) => {
+  (adapterId, previousAdapterId) => {
     if (!adapterId || !editor.value)
       return
-    const registration = getAuthProfileAdapterEditor(adapterId)
+    const registration = EndgeIDE.authProfileEditors.get(adapterId)
     if (!registration?.defaults)
       return
 
-    const configDefaults = registration.defaults.config ?? {}
-    const credentialDefaults = registration.defaults.credentialRefs ?? {}
-    configModel.value = mergeMissing(configModel.value, configDefaults)
-    credentialRefsModel.value = mergeMissing(credentialRefsModel.value, credentialDefaults)
+    const configDefaults = structuredClone(registration.defaults.config ?? {})
+    const credentialDefaults = structuredClone(registration.defaults.credentialRefs ?? {})
+    if (previousAdapterId == null) {
+      configModel.value = mergeMissing(configModel.value, configDefaults)
+      credentialRefsModel.value = mergeMissing(credentialRefsModel.value, credentialDefaults)
+    }
+    else if (previousAdapterId !== adapterId) {
+      configModel.value = configDefaults
+      credentialRefsModel.value = credentialDefaults
+      testUsername.value = ''
+      testPassword.value = ''
+    }
+    if (adapterId === 'bearer')
+      persistModel.value = 'memory'
+    else if (previousAdapterId && previousAdapterId !== adapterId)
+      persistModel.value = 'localStorage'
   },
   { immediate: true },
 )
@@ -101,29 +115,16 @@ async function testAuthProfile(): Promise<void> {
   testLoading.value = true
   try {
     const profile = buildProfileSchema(current)
-    const session = await Endge.auth.profiles.test(profile)
-    const token = String(session.accessToken ?? '')
-    const storageKey = getStorageKey(profile)
-
-    console.info('[AuthProfile_Editor] Тест авторизации выполнен', {
-      identity: profile.identity,
-      adapterId: profile.adapterId,
-      persist: profile.persist,
-      storageKey,
-      hasAccessToken: Boolean(token),
-      tokenPreview: maskToken(token),
-      tokenLength: token.length,
-      expiresAt: session.expiresAt ? new Date(session.expiresAt).toISOString() : null,
-      headerNames: Object.keys(session.headers ?? {}),
-      stored: profile.persist === 'memory'
-        ? 'memory'
-        : Boolean(window[profile.persist === 'sessionStorage' ? 'sessionStorage' : 'localStorage'].getItem(storageKey)),
+    const result = await Endge.auth.profiles.test(profile, {
+      credentials: isInteractiveKeycloak.value
+        ? { username: testUsername.value, password: testPassword.value }
+        : undefined,
     })
 
     toast.success('Авторизация выполнена', {
-      description: token
-        ? `Токен применен. Подробности выведены в консоль.`
-        : 'Профиль выполнился без access token.',
+      description: result.context.subject
+        ? `Пользователь: ${result.context.subject}`
+        : 'Профиль успешно проверен в изолированной сессии.',
     })
   }
   catch (error: any) {
@@ -186,22 +187,6 @@ function parseStringObject(value: string): Record<string, string | undefined> {
   for (const [key, v] of Object.entries(raw))
     out[key] = v == null ? undefined : String(v)
   return out
-}
-
-function getStorageKey(profile: AuthProfileSchema): string {
-  const raw = profile.config?.storageKey
-  const value = raw == null ? '' : String(raw).trim()
-  if (!value)
-    return `endge.auth.${profile.identity}`
-  return String(Endge.workspace.variables.resolve(value) ?? value).trim() || `endge.auth.${profile.identity}`
-}
-
-function maskToken(token: string): string {
-  if (!token)
-    return ''
-  if (token.length <= 12)
-    return `${token.slice(0, 3)}...${token.slice(-3)}`
-  return `${token.slice(0, 6)}...${token.slice(-6)}`
 }
 
 function normalizeErrorMessage(error: unknown): string {
@@ -301,7 +286,7 @@ function normalizeErrorMessage(error: unknown): string {
             <div class="min-w-0 space-y-1">
               <Label class="text-xs text-muted-foreground">Хранение</Label>
               <Select v-model="persistModel">
-                <SelectTrigger class="w-full">
+                <SelectTrigger class="w-full" :disabled="adapterModel === 'bearer'">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,6 +304,19 @@ function normalizeErrorMessage(error: unknown): string {
             v-model:config="configModel"
             v-model:credential-refs="credentialRefsModel"
           />
+          <div v-if="isInteractiveKeycloak" class="grid gap-3 border-t pt-4 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <Label class="text-xs text-muted-foreground">Тестовый username</Label>
+              <Input v-model="testUsername" autocomplete="username" />
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-xs text-muted-foreground">Тестовый password</Label>
+              <Input v-model="testPassword" type="password" autocomplete="current-password" />
+            </div>
+            <div class="text-xs text-muted-foreground sm:col-span-2">
+              Значения используются только для текущего теста и не записываются в документ.
+            </div>
+          </div>
           <div v-else class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
             Для этого адаптера нет визуального редактора.
           </div>

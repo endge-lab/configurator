@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { bootstrapEndgeIDE } from '@/features/endge-ide/model/bootstrap/endge-ide-bootstrap'
-
 const mocks = vi.hoisted(() => ({
   config: vi.fn(),
   init: vi.fn(),
@@ -12,17 +10,32 @@ vi.mock('@/features/endge-ide/model/bootstrap/endge-renderer-plugins', () => ({}
 vi.mock('@/features/endge-ide/model/config/endge-backend', () => ({
   getEndgeBackendConfig: mocks.config,
 }))
-vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
-  EndgeIDEContext: { init: mocks.init },
+vi.mock('@/app/model/modules/context/ConfiguratorContext_Module', () => ({
+  ConfiguratorContext_Module: class {
+    public init = mocks.init
+    public reset = vi.fn()
+  },
+}))
+vi.mock('@/app/model/modules/i18n/ConfiguratorI18n_Module', () => ({
+  ConfiguratorI18n_Module: class {
+    public availableLocales = { value: [] }
+    public init = vi.fn()
+    public reset = vi.fn()
+  },
 }))
 
 describe('endge IDE backend bootstrap', () => {
-  beforeEach(() => {
+  let Configurator: typeof import('@/app').Configurator
+
+  beforeEach(async () => {
+    vi.resetModules()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
     mocks.init.mockReset()
     mocks.config.mockReset()
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace-a')
+    const bootstrapModule = await import('@/app')
+    Configurator = bootstrapModule.Configurator
   })
 
   it('checks developer session before continuing service-backend boot', async () => {
@@ -52,7 +65,7 @@ describe('endge IDE backend bootstrap', () => {
     }
     mocks.config.mockReturnValue(backendConfig)
 
-    await expect(bootstrapEndgeIDE()).resolves.toBe(true)
+    await expect(Configurator.init()).resolves.toBe('ready')
 
     expect(fetchMock).toHaveBeenCalledWith('https://backend.test/auth/session', expect.objectContaining({
       credentials: 'include',
@@ -88,7 +101,7 @@ describe('endge IDE backend bootstrap', () => {
       serviceBackendURL: 'https://backend.test',
     })
 
-    await expect(bootstrapEndgeIDE()).resolves.toBe(false)
+    await expect(Configurator.init()).resolves.toBe('redirecting')
 
     expect(assign).toHaveBeenCalledOnce()
     expect(mocks.init).not.toHaveBeenCalled()
@@ -103,7 +116,7 @@ describe('endge IDE backend bootstrap', () => {
     vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
     mocks.config.mockReturnValue({ serviceBackendURL: 'https://backend.test' })
 
-    await expect(bootstrapEndgeIDE()).resolves.toBe(true)
+    await expect(Configurator.init()).resolves.toBe('ready')
 
     expect(mocks.init).toHaveBeenCalledWith(expect.objectContaining({
       workspaceRole: 'viewer',

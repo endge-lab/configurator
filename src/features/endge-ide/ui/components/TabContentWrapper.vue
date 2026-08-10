@@ -3,7 +3,7 @@ import type { SmartTabRef } from '@/components/ui/smart-tabs/types'
 
 import { computed } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const props = defineProps<{
   tab: SmartTabRef | null

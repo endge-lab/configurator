@@ -10,7 +10,7 @@ import { toast } from 'vue-sonner'
 
 import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import { Button } from '@/components/ui/button'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { SFCRenderInspectionController } from '@/features/endge-ide/model/runtime-preview/sfc-render-inspection-controller'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'

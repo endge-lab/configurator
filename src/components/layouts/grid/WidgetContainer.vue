@@ -53,7 +53,7 @@ const emit = defineEmits<{
   headerMousedown: [event: MouseEvent]
 }>()
 
-/** Снимок домена для виджета агента (двухшаговый запрос: потребность → вопрос + сущности). */
+/** Снимок домена для виджета агента (двухшаговый запрос: потребность - вопрос + сущности). */
 provide('agentDomainSnapshot', () => Endge.domain.toPlain())
 
 const { t } = useI18n()

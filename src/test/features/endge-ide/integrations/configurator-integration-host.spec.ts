@@ -2,7 +2,7 @@ import type { IntegrationModule } from '@endge/integration-api'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ConfiguratorIntegrationHost } from '@/features/endge-ide/model/integrations/configurator-integration-host'
+import { EndgeIDEIntegrations_Module } from '@/features/endge-ide/model/modules/integrations/EndgeIDEIntegrations_Module'
 
 const testState = vi.hoisted(() => {
   const integrations = new Map<string, any>()
@@ -37,21 +37,16 @@ vi.mock('@endge/core', () => ({
   RIntegration: class RIntegration {},
 }))
 
-vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
-  EndgeIDEContext: {
-    registerSurface: vi.fn(() => testState.removeSurface),
-  },
-}))
-
-vi.mock('@/features/endge-ide/model/integrations/configurator-widget-registry', () => ({
+vi.mock('@/features/endge-ide/model/modules/integrations/ConfiguratorWidgetRegistry', () => ({
   ConfiguratorWidgetRegistry: class ConfiguratorWidgetRegistry {
     register = testState.registerWidget
   },
 }))
 
-vi.mock('@/features/endge-ide/model/integrations/configurator-menu-registry', () => ({
+vi.mock('@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry', () => ({
   ConfiguratorMenuRegistry: class ConfiguratorMenuRegistry {
     add = testState.registerMenuItem
+    items = { value: [] }
   },
 }))
 
@@ -87,9 +82,13 @@ describe('configurator integration host', () => {
         })
       },
     }
-    const host = new ConfiguratorIntegrationHost([module])
+    const context = {
+      isSwitchingContext: false,
+      registerSurface: vi.fn(() => testState.removeSurface),
+    }
+    const host = new EndgeIDEIntegrations_Module(async () => [module], context)
 
-    const stop = await host.start()
+    await host.init()
 
     expect(testState.integrations.get('test-hello-world')).toMatchObject({
       id: -1,
@@ -119,7 +118,7 @@ describe('configurator integration host', () => {
       }),
     )
 
-    await stop()
+    await host.reset()
 
     expect(testState.removeSurface).toHaveBeenCalledOnce()
     expect(testState.integrations.size).toBe(0)

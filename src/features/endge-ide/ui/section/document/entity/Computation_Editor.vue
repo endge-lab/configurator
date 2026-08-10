@@ -28,7 +28,7 @@ import {
   runComputationSourcePreview,
   serializeComputationPreviewOutput,
 } from '@/features/endge-ide/model/computation-preview/computation-source-preview'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'

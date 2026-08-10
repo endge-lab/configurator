@@ -11,7 +11,7 @@ export class RVocabsEditor {
   mode: 'external_payload' | 'internal' = 'external_payload'
   baseApiUrl: string = ''
   collectionSlug: string = ''
-  authMode: 'inherit' | 'profile' | 'manual' | 'none' = 'inherit'
+  authMode: 'inherit' | 'profile' | 'none' = 'inherit'
   authProfileIdentity: string = ''
   active: boolean = true
 
@@ -43,8 +43,8 @@ export class RVocabsEditor {
   }
 }
 
-function normalizeAuthMode(value: unknown): 'inherit' | 'profile' | 'manual' | 'none' {
-  if (value === 'profile' || value === 'manual' || value === 'none')
+function normalizeAuthMode(value: unknown): 'inherit' | 'profile' | 'none' {
+  if (value === 'profile' || value === 'none')
     return value
   return 'inherit'
 }

@@ -3,14 +3,11 @@ import { Endge } from '@endge/core'
 import { onBeforeUnmount, onMounted } from 'vue'
 
 import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
-import {
-  destroySFCPreviewRuntime,
-  launchSFCPreview,
-  sfcPreviewInput,
-  sfcPreviewRuntime,
-} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
+import { SFCPreviewSession } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
 const IDENTITY = 'schedule-sandbox'
+const preview = new SFCPreviewSession()
+const { input: previewInput, runtime: previewRuntime } = preview
 
 onMounted(async () => {
   const component = Endge.domain.getComponentSFC(IDENTITY)
@@ -18,19 +15,19 @@ onMounted(async () => {
     throw new Error(`Component "${IDENTITY}" is missing.`)
   }
 
-  await launchSFCPreview(component)
+  await preview.launch(component)
 })
 
-onBeforeUnmount(() => destroySFCPreviewRuntime())
+onBeforeUnmount(() => preview.dispose())
 </script>
 
 <template>
   <main class="h-screen min-h-0 w-screen overflow-hidden">
     <EndgeAdapterRoot
-      v-if="sfcPreviewRuntime"
+      v-if="previewRuntime"
       root-key="sfc-runtime"
-      :host="sfcPreviewRuntime"
-      :input="sfcPreviewInput"
+      :host="previewRuntime"
+      :input="previewInput"
     />
   </main>
 </template>

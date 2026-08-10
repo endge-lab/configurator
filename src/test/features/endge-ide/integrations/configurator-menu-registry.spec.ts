@@ -2,10 +2,7 @@ import type { IntegrationContext } from '@endge/integration-api'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import {
-  configuratorMenuItems,
-  ConfiguratorMenuRegistry,
-} from '@/features/endge-ide/model/integrations/configurator-menu-registry'
+import { ConfiguratorMenuRegistry } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 const context: IntegrationContext = {
   integrationId: 1,
@@ -34,7 +31,7 @@ describe('configurator menu registry', () => {
     })
     disposers.push(dispose)
 
-    expect(configuratorMenuItems.value).toEqual([
+    expect(registry.items.value).toEqual([
       expect.objectContaining({
         id: 'integration:test-menu:hello',
         integrationIdentity: 'test-menu',
@@ -43,7 +40,7 @@ describe('configurator menu registry', () => {
     ])
 
     await dispose()
-    expect(configuratorMenuItems.value).toEqual([])
+    expect(registry.items.value).toEqual([])
   })
 
   it('rejects nested items until a nested menu renderer is introduced', () => {

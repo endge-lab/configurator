@@ -9,8 +9,8 @@ import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { isIDEPlainMode } from '@/features/endge-ide/model/core/endge-ide-debug-flags.ts'
-import { captureEndgeIDERenderFailure, endgeIDERenderGuardState, resetEndgeIDERenderGuard } from '@/features/endge-ide/model/error/endge-ide-render-guard'
+import { Configurator } from '@/app'
+import { isIDEPlainMode } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 
 const route = useRoute()
@@ -18,7 +18,7 @@ const error = ref<Error | null>(null)
 const errorInfo = ref<string>('')
 const errorComponentName = ref<string>('')
 const appLoadingText = 'Идет загрузка приложения...'
-const fatalRenderGuard = endgeIDERenderGuardState
+const fatalRenderGuard = Configurator.diagnostics.renderGuard
 
 const currentLayout = computed(() => {
   if (fatalRenderGuard.value) {
@@ -37,7 +37,7 @@ watch(() => route.fullPath, () => {
   error.value = null
   errorInfo.value = ''
   errorComponentName.value = ''
-  resetEndgeIDERenderGuard()
+  Configurator.diagnostics.reset()
 })
 
 // Capture errors from child components
@@ -61,7 +61,7 @@ onErrorCaptured((err, instance, info) => {
 
   errorComponentName.value = componentName
   const capturedError = err instanceof Error ? err : new Error(String(err))
-  const fatalState = captureEndgeIDERenderFailure({
+  const fatalState = Configurator.diagnostics.capture({
     err: capturedError,
     errorInfo: info,
     componentName,

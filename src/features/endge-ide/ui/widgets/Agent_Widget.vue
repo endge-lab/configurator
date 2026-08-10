@@ -38,7 +38,7 @@ import {
   parseFrontendRequestFromMessage,
 } from '@/features/endge-ide/model/agent/agent-frontend-request'
 import { runLocalAgentOrchestrator } from '@/features/endge-ide/model/agent/agent-local-orchestrator'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 /** Опционально: родитель может передать функцию, возвращающую снимок домена для retrieval (большой домен не уходит целиком в модель). */
 const getDomainSnapshot = inject<() => object | Promise<object>>(
@@ -114,7 +114,7 @@ function buildDomainCatalog(
   return JSON.stringify(list)
 }
 
-/** Маппинг documentType (вкладка) → ключ среза домена для контекста. */
+/** Маппинг documentType (вкладка) - ключ среза домена для контекста. */
 const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'component-table': 'components',
   'component-dsl': 'components',
@@ -141,7 +141,7 @@ const DOCUMENT_TYPE_TO_SLICE: Record<string, string> = {
   'project': 'projects',
 }
 
-/** Маппинг: ключ коллекции → documentType для open_document. Для components и queries берётся из сущности при наличии. */
+/** Маппинг: ключ коллекции - documentType для open_document. Для components и queries берётся из сущности при наличии. */
 function getDocumentType(
   sliceKey: string,
   rec: Record<string, unknown>,
@@ -259,7 +259,7 @@ const ITERATE_ENTITY_KEYS = [
   'navigations',
 ] as const
 
-/** Маппинг ключа среза домена → ключ в entities-short-desc (camelCase). */
+/** Маппинг ключа среза домена - ключ в entities-short-desc (camelCase). */
 const SLICE_TO_CONTEXT_KEY: Record<string, string> = {
   'projects': 'projects',
   'folders': 'folders',

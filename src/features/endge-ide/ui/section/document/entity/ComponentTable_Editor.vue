@@ -48,13 +48,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor";
-import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
+import { EndgeIDE } from "@/features/endge-ide";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 import TableDataMappingAssistant from "@/features/endge-ide/ui/components/TableDataMappingAssistant.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
 import TypeRegistrySelect from "@/features/endge-ide/ui/components/TypeRegistrySelect.vue";
-import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
 
 const tabs = EndgeIDE.tabs;
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
@@ -171,13 +170,13 @@ function removeColumnByIndex(index: number): boolean {
 const _unregAgentTable: (() => void)[] = [];
 onMounted(() => {
   _unregAgentTable.push(
-    registerAgentTableAction("clear_all_datapaths", () => {
+    EndgeIDE.agentTableActions.register("clear_all_datapaths", () => {
       clearAllDataPathBindings();
     }),
-    registerAgentTableAction("add_column", (p?: unknown) => {
+    EndgeIDE.agentTableActions.register("add_column", (p?: unknown) => {
       addColumn((p as { title?: string })?.title ?? "");
     }),
-    registerAgentTableAction("remove_column", (p?: unknown) => {
+    EndgeIDE.agentTableActions.register("remove_column", (p?: unknown) => {
       return removeColumnByIndex((p as { index?: number })?.index ?? -1);
     }),
   );

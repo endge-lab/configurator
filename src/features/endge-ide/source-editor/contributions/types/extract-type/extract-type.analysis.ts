@@ -66,7 +66,7 @@ export function buildExtractableSFCTypePlan(
       return
     }
     if (visiting.has(declaration.identity)) {
-      unsupportedReason = `Циклическая локальная зависимость: ${[...path, declaration.identity].join(' → ')}.`
+      unsupportedReason = `Циклическая локальная зависимость: ${[...path, declaration.identity].join(' - ')}.`
       return
     }
     if (duplicateIdentities.has(declaration.identity)) {

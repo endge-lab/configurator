@@ -152,7 +152,7 @@ export function getValueByPath(obj: any, path: string): unknown {
 /** Префикс runtime-ключей превью ячеек таблицы (виджет Демонстрация). */
 export const TABLE_PREVIEW_STORE_PREFIX = 'endge:admin:table-preview:'
 
-/** Путь в строке после [$i]. из accessor (например $store.legs[$i].id → "id") */
+/** Путь в строке после [$i]. из accessor (например $store.legs[$i].id - "id") */
 export function pathFromAccessor(accessor: string): string | null {
   const s = String(accessor ?? '').trim()
   if (!s) return null
@@ -253,29 +253,29 @@ export function normalizeFieldType(typeName: string | undefined | null): Primiti
 }
 
 /**
- * Таблица соответствий тип_до → тип_после → identity стандартного конвертера (Payload).
+ * Таблица соответствий тип_до - тип_после - identity стандартного конвертера (Payload).
  * Конвертеры: iso-string-to-date, timestamp-to-date, date-to-iso-string, date-to-iso-z,
  * string-to-date, date-to-date-string, date-to-time-string, time-string-to-date,
  * iso-string-to-time-string, weekdays-range, string-trim, default-if-empty, string-to-boolean,
  * to-array, split, string-to-number, number-to-string, json-parse, json-stringify.
  */
 const CONVERTER_MATRIX: Array<{ from: PrimitiveKind; to: PrimitiveKind; converterId: string }> = [
-  // Строка → число / булево
+  // Строка - число / булево
   { from: 'string', to: 'number', converterId: 'string-to-number' },
   { from: 'string', to: 'boolean', converterId: 'string-to-boolean' },
-  // Строка → дата/время
+  // Строка - дата/время
   { from: 'string', to: 'date', converterId: 'string-to-date' },
   { from: 'string', to: 'datetime', converterId: 'iso-string-to-date' },
   { from: 'string', to: 'time', converterId: 'iso-string-to-time-string' },
-  // Число → строка / дата
+  // Число - строка / дата
   { from: 'number', to: 'string', converterId: 'number-to-string' },
   { from: 'number', to: 'date', converterId: 'timestamp-to-date' },
   { from: 'number', to: 'datetime', converterId: 'timestamp-to-date' },
-  // Date/datetime → строка (разные форматы)
+  // Date/datetime - строка (разные форматы)
   { from: 'date', to: 'string', converterId: 'date-to-date-string' },
   { from: 'datetime', to: 'string', converterId: 'date-to-iso-string' },
   { from: 'datetime', to: 'time', converterId: 'date-to-time-string' },
-  // Время HH:mm:ss → Date (сегодня) - для полей DateTime при значении только времени
+  // Время HH:mm:ss - Date (сегодня) - для полей DateTime при значении только времени
   { from: 'time', to: 'date', converterId: 'time-string-to-date' },
   { from: 'time', to: 'datetime', converterId: 'time-string-to-date' },
   // Объект ↔ строка (JSON)

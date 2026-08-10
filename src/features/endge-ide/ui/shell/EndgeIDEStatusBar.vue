@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
 import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'

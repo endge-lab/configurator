@@ -5,7 +5,6 @@ import type { Component } from 'vue'
 import { CircleX, CopyX, PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, h, ref, watch } from 'vue'
 
-import { getSmartTabView } from '@/components/ui/smart-tabs/registry'
 import SmartTabViewStateScope from '@/components/ui/smart-tabs/SmartTabViewStateScope.vue'
 import { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -60,7 +59,7 @@ const resolved = computed(() => {
 
   console.log('[SmartTabsHost] Ищем factory для viewId:', viewId, 'tabId:', tabId)
 
-  const factory = getSmartTabView(viewId)
+  const factory = tabsApi.viewRegistry.get(viewId)
   console.log('[SmartTabsHost] Factory для viewId', {
     viewId,
     hasFactory: !!factory,

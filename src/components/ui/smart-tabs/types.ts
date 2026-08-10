@@ -1,3 +1,4 @@
+import type { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
 import type { Component, ComputedRef } from 'vue'
 
 export type SmartTabId = string
@@ -80,6 +81,7 @@ export interface SmartTabViewResolved {
 export type SmartTabViewFactory = (tab: SmartTabRef) => SmartTabViewResolved
 
 export interface SmartTabsApi {
+  viewRegistry: SmartTabViewRegistry
   openTabs: ComputedRef<SmartTabRef[]>
   activeTab: ComputedRef<SmartTabRef | null>
   activeTabId: ComputedRef<SmartTabId | null>

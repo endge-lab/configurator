@@ -20,7 +20,7 @@ import {
   COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
   DOCUMENT_CREATE_DESCRIPTORS,
 } from '@/features/endge-ide/model/config/document-create'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/model/domain/composition-create'
 import {
   getQueryRootFolderId,

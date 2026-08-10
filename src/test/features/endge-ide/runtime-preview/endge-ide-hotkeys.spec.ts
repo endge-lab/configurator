@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isCloseTabShortcut, REGISTERED_HOTKEYS } from '@/features/endge-ide/model/core/endge-ide-hotkeys'
+import { isCloseTabShortcut, REGISTERED_HOTKEYS } from '@/features/endge-ide/model/modules/hotkeys/EndgeIDEHotkeys_Module'
 
 describe('endgeIDE workspace hotkeys', () => {
   it('registers cross-platform runtime launch and shared project return shortcuts', () => {

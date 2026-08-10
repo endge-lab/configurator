@@ -14,11 +14,7 @@ import {
 import { defineAsyncComponent } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { runBusy } from '@/features/endge-ide/model/core/endge-ide-busy'
-import {
-  openSourceEditorDialog,
-  registerSourceEditorDialog,
-} from '@/features/endge-ide/source-editor/core/source-editor-dialogs'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 import {
   analyzeExtractableSFCTypeDeclarations,
@@ -33,7 +29,6 @@ const ACTION_CLASS_NAME = 'endge-source-inline-action'
 const ACTION_DISABLED_CLASS_NAME = 'endge-source-inline-action endge-source-inline-action--disabled'
 const ACTION_DATA_KIND = 'endge.sfc.extract-type'
 const TYPES_ROOT_IDENTITY = 'root-types'
-let contributionSequence = 0
 
 interface ExtractTypeActionData {
   kind: typeof ACTION_DATA_KIND
@@ -48,10 +43,7 @@ interface MonacoInjectedTextMouseTarget {
   }
 }
 
-registerSourceEditorDialog({
-  id: DIALOG_ID,
-  component: defineAsyncComponent(() => import('./ExtractType_Dialog.vue')),
-})
+const ExtractTypeDialog = defineAsyncComponent(() => import('./ExtractType_Dialog.vue'))
 
 export interface ExtractTypeContributionOptions {
   getEditorModel: () => RComponentSFCEditor | null
@@ -59,7 +51,8 @@ export interface ExtractTypeContributionOptions {
 }
 
 export function createExtractTypeContribution(options: ExtractTypeContributionOptions): ScriptEditorExtension {
-  const instanceId = ++contributionSequence
+  EndgeIDE.sourceEditorDialogs.register({ id: DIALOG_ID, component: ExtractTypeDialog })
+  const instanceId = EndgeIDE.sourceEditorDialogs.nextInstanceId(DIALOG_ID)
   return {
     id: `${DIALOG_ID}.${instanceId}`,
     install: ({ monaco, editor, model }) => {
@@ -169,11 +162,11 @@ async function openExtractTypeDialog(
     })),
     folderOptions: buildExtractTypeFolderOptions(Endge.domain.getFolders()),
   }
-  const result = await openSourceEditorDialog<ExtractTypeDialogInput, ExtractTypeDialogResult>(DIALOG_ID, input)
+  const result = await EndgeIDE.sourceEditorDialogs.open<ExtractTypeDialogInput, ExtractTypeDialogResult>(DIALOG_ID, input)
   if (!result) { return }
 
   try {
-    await runBusy(executeTypeExtraction(model, plan.root.range.start, result, options))
+    await EndgeIDE.runBusy(executeTypeExtraction(model, plan.root.range.start, result, options))
     toast.success(
       plan.declarations.length === 1 ? 'RType создан' : `Создано RType: ${plan.declarations.length}`,
       { description: plan.declarations.map(declaration => declaration.identity).join(', ') },

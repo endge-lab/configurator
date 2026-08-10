@@ -11,7 +11,7 @@ import * as monaco from 'monaco-editor'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
@@ -41,7 +41,7 @@ export interface UseEndgeSourceMonacoOptions {
   extensions?: readonly ScriptEditorExtension[]
 }
 
-/** Общий browser adapter Endge source language → Monaco. */
+/** Общий browser adapter Endge source language - Monaco. */
 export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const ui = useUI()
   const editor = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)

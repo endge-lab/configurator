@@ -1,32 +1,20 @@
+import type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useTitle } from '@vueuse/core'
-import { computed, onBeforeUnmount, reactive, toValue, watch } from 'vue'
+import { computed, onBeforeUnmount, toValue, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { Configurator } from '@/app'
 import { useBranding } from '@/lib/branding'
 
-export interface BreadcrumbItem {
-  title: string
-  href?: string
-}
+export type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 
 export interface LayoutOptions {
   title?: MaybeRefOrGetter<string | null | undefined>
   breadcrumbs?: MaybeRefOrGetter<BreadcrumbItem[]>
   breadcrumbsLimit?: number
 }
-
-interface LayoutState {
-  breadcrumbs: BreadcrumbItem[]
-  breadcrumbsLimit: number
-}
-
-// Global reactive state for layout
-const layoutState = reactive<LayoutState>({
-  breadcrumbs: [],
-  breadcrumbsLimit: 3,
-})
 
 export function useLayout(options?: LayoutOptions) {
   const { currentBranding } = useBranding()
@@ -49,17 +37,17 @@ export function useLayout(options?: LayoutOptions) {
   // Function to apply layout settings
   const applyLayoutSettings = () => {
     // Set breadcrumbs limit if provided, otherwise reset to default
-    layoutState.breadcrumbsLimit = options?.breadcrumbsLimit ?? 3
+    Configurator.layout.setBreadcrumbsLimit(options?.breadcrumbsLimit ?? 3)
 
     // Set breadcrumbs if provided
     if (options?.breadcrumbs) {
       const breadcrumbsValue = toValue(options.breadcrumbs)
       if (breadcrumbsValue) {
-        layoutState.breadcrumbs = breadcrumbsValue
+        Configurator.layout.setBreadcrumbs(breadcrumbsValue)
       }
     }
     else {
-      layoutState.breadcrumbs = []
+      Configurator.layout.setBreadcrumbs([])
     }
   }
 
@@ -81,7 +69,7 @@ export function useLayout(options?: LayoutOptions) {
       () => toValue(options.breadcrumbs),
       (newBreadcrumbs) => {
         if (newBreadcrumbs) {
-          layoutState.breadcrumbs = newBreadcrumbs
+          Configurator.layout.setBreadcrumbs(newBreadcrumbs)
         }
       },
     )
@@ -94,16 +82,16 @@ export function useLayout(options?: LayoutOptions) {
   })
 
   return {
-    breadcrumbs: computed(() => layoutState.breadcrumbs),
-    breadcrumbsLimit: computed(() => layoutState.breadcrumbsLimit),
+    breadcrumbs: Configurator.layout.breadcrumbs,
+    breadcrumbsLimit: Configurator.layout.breadcrumbsLimit,
     setBreadcrumbs: (breadcrumbs: BreadcrumbItem[]) => {
-      layoutState.breadcrumbs = breadcrumbs
+      Configurator.layout.setBreadcrumbs(breadcrumbs)
     },
     setBreadcrumbsLimit: (limit: number) => {
-      layoutState.breadcrumbsLimit = limit
+      Configurator.layout.setBreadcrumbsLimit(limit)
     },
     clearBreadcrumbs: () => {
-      layoutState.breadcrumbs = []
+      Configurator.layout.setBreadcrumbs([])
     },
   }
 }
@@ -111,13 +99,12 @@ export function useLayout(options?: LayoutOptions) {
 // Export the state for use in layout components
 export function getLayoutState() {
   return {
-    breadcrumbs: computed(() => layoutState.breadcrumbs),
-    breadcrumbsLimit: computed(() => layoutState.breadcrumbsLimit),
+    breadcrumbs: Configurator.layout.breadcrumbs,
+    breadcrumbsLimit: Configurator.layout.breadcrumbsLimit,
   }
 }
 
 // Reset function for router hooks
 export function resetLayout() {
-  layoutState.breadcrumbs = []
-  layoutState.breadcrumbsLimit = 3
+  Configurator.layout.reset()
 }

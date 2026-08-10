@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref, shallowRef } from 'vue'
 
-import { EndgeIDERuntimePreview } from '@/features/endge-ide/model/runtime-preview/endge-ide-runtime-preview'
+import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/modules/runtime-preview/EndgeIDERuntimePreview_Module'
 
 const mocks = vi.hoisted(() => ({
   valid: true,
@@ -31,14 +31,6 @@ vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError } }))
 vi.mock('@/components/layouts/grid', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
-}))
-vi.mock('@/features/endge-ide/model/context/endge-ide-context', () => ({
-  EndgeIDEContext: {
-    registerSurface: vi.fn((_id: string, lifecycle: { beforeContextReset?: () => Promise<void> | void }) => {
-      mocks.surfaceLifecycle = lifecycle
-      return vi.fn()
-    }),
-  },
 }))
 vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-history', () => ({
   readRuntimePreviewHistory: mocks.readHistory,
@@ -83,6 +75,16 @@ vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-instance', (
   },
 }))
 
+function createManager(): EndgeIDERuntimePreview_Module {
+  return new EndgeIDERuntimePreview_Module({
+    isSwitchingContext: false,
+    registerSurface: (_id, lifecycle) => {
+      mocks.surfaceLifecycle = lifecycle
+      return vi.fn()
+    },
+  })
+}
+
 describe('endgeIDE Runtime Preview manager', () => {
   beforeEach(() => {
     mocks.valid = true
@@ -99,7 +101,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('passes the current editor draft to the stable runtime entry', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     const draft = { identity: 'table', source: '<template><div /></template>' }
 
     await manager.launch({ entityType: 'component-sfc', identity: 'table', draft })
@@ -108,7 +110,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('returns from Runtime Tree to Project without disposing runtimes', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     await manager.launch({ entityType: 'store', identity: 'flights' })
     mocks.showWidget.mockClear()
 
@@ -118,7 +120,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('starts empty and keeps multiple explicitly launched roots', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
 
     expect(manager.entries.value).toEqual([])
     await manager.launch({ entityType: 'composition', identity: 'entry' })
@@ -137,7 +139,7 @@ describe('endgeIDE Runtime Preview manager', () => {
       { entityType: 'composition', identity: 'entry' },
       { entityType: 'store', identity: 'flights' },
     ]
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
 
     manager.init()
 
@@ -152,7 +154,7 @@ describe('endgeIDE Runtime Preview manager', () => {
 
   it('keeps restored inactive roots when another entity is launched explicitly', async () => {
     mocks.rememberedTargets = [{ entityType: 'composition', identity: 'remembered' }]
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     manager.init()
 
     await manager.launch({ entityType: 'store', identity: 'flights' })
@@ -171,7 +173,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('launches a document batch in order, deduplicates targets, and reveals the tree once', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
 
     const launched = await manager.launchAll([
       { entityType: 'store', identity: 'flights' },
@@ -192,14 +194,14 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('reveals the Runtime Tree for an empty batch', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
 
     expect(await manager.launchAll([])).toBe(0)
     expect(mocks.showWidget).toHaveBeenCalledWith('runtime-tree')
   })
 
   it('serializes duplicate documents through the same stable entry and launches a fresh generation', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
 
     await manager.launch({ entityType: 'store', identity: 'flights' })
     await manager.launch({ entityType: 'store', identity: 'flights' })
@@ -210,7 +212,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('does not create or replace an entry when context validation fails', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     await manager.launch({ entityType: 'store', identity: 'flights' })
     mocks.valid = false
 
@@ -220,7 +222,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('pauses and stops all roots without removing them and disposes everything on reset', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     await manager.launch({ entityType: 'composition', identity: 'entry' })
     await manager.launch({ entityType: 'store', identity: 'flights' })
 
@@ -238,7 +240,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('starts inactive, stopped, and failed roots while resuming paused roots', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     const statuses = ['inactive', 'paused', 'stopped', 'error', 'active', 'preparing'] as const
 
     for (const [index, status] of statuses.entries()) {
@@ -261,7 +263,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('restarts mounted roots after a data mode change and preserves paused state', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     await manager.launch({ entityType: 'store', identity: 'active' })
     await manager.launch({ entityType: 'composition', identity: 'paused' })
     await manager.launch({ entityType: 'store', identity: 'inactive' })
@@ -281,7 +283,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('removes every root and clears remembered history only on explicit remove-all', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     await manager.launch({ entityType: 'composition', identity: 'entry' })
     await manager.launch({ entityType: 'store', identity: 'flights' })
     mocks.writeHistory.mockClear()
@@ -295,7 +297,7 @@ describe('endgeIDE Runtime Preview manager', () => {
   })
 
   it('clears every runtime before a context reset', async () => {
-    const manager = new EndgeIDERuntimePreview()
+    const manager = createManager()
     manager.init()
     await manager.launch({ entityType: 'composition', identity: 'entry' })
     await manager.launch({ entityType: 'store', identity: 'flights' })

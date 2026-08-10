@@ -8,7 +8,7 @@ export class RI18nBundleEditor {
   identity!: string
   displayName!: string
   description: string = ''
-  /** По коду локали — дерево ключ→значение. */
+  /** По коду локали — дерево ключ-значение. */
   locales: Record<string, Record<string, unknown>> = {}
   /** Editor-only JSON source полного объекта locales. */
   sourceText: string = '{}'

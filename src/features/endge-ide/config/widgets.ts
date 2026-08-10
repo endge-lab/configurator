@@ -1,19 +1,20 @@
 import type { WidgetDefinition } from '@/components/layouts/grid'
 
-import { markRaw } from 'vue'
+import { defineAsyncComponent, markRaw } from 'vue'
 
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
-import UIEditorLibrary_Widget from '@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'
-import Releases_Widget from '@/features/configurator-releases/ui/Releases_Widget.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import Agent_Widget from '@/features/endge-ide/ui/widgets/Agent_Widget.vue'
-import Domain_Widget from '@/features/endge-ide/ui/widgets/Domain_Widget.vue'
-import Events_Widget from '@/features/endge-ide/ui/widgets/Events_Widget.vue'
-import Problems_Widget from '@/features/endge-ide/ui/widgets/Problems_Widget.vue'
-import Raph_Widget from '@/features/endge-ide/ui/widgets/Raph_Widget.vue'
-import RuntimeTree_Widget from '@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'
-import Storage_Widget from '@/features/endge-ide/ui/widgets/Storage_Widget.vue'
+
+const UIEditorLibrary_Widget = defineAsyncComponent(() => import('@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'))
+const Releases_Widget = defineAsyncComponent(() => import('@/features/configurator-releases/ui/Releases_Widget.vue'))
+const Agent_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Agent_Widget.vue'))
+const Domain_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Domain_Widget.vue'))
+const Events_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Events_Widget.vue'))
+const Problems_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Problems_Widget.vue'))
+const Raph_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Raph_Widget.vue'))
+const RuntimeTree_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/RuntimeTree_Widget.vue'))
+const Storage_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Storage_Widget.vue'))
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {

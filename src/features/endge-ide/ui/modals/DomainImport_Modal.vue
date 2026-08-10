@@ -37,7 +37,7 @@ import {
   ServiceBackendDomainTransfer_Service,
   ServiceBackendDomainTransferError,
 } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
-import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
+import { Configurator } from '@/app'
 
 type BackupState = 'idle' | 'complete' | 'error'
 type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
@@ -53,7 +53,7 @@ const errorMessage = ref('')
 const isDragOver = ref(false)
 let planController: AbortController | null = null
 
-const backendConfig = EndgeIDEContext.backendConfig
+const backendConfig = Configurator.context.backendConfig
 const transferService = backendConfig
   ? new ServiceBackendDomainTransfer_Service(backendConfig.serviceBackendURL)
   : null
@@ -226,7 +226,7 @@ async function applyImport(): Promise<void> {
 
   importState.value = 'reloading'
   try {
-    await EndgeIDEContext.reloadCurrentContext()
+    await Configurator.context.reloadCurrentContext()
   }
   catch {
     toast.warning('Импорт завершён, интерфейс будет перезагружен', {

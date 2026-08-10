@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import { isEditorTabSurfaceVisible } from '@/features/endge-ide/model/core/endge-ide-workspace-surface'
+import { isEditorTabSurfaceVisible } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
 
 function createWidgets(activeWidget: string | null, expanded = true): LayoutWidgetsState {
   const definitions = [

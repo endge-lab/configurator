@@ -1,7 +1,7 @@
 import { Endge, QueryType } from '@endge/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ENDGE_IDE_DOCUMENT_VIEW_ID, getMissingDocumentTabIds } from '@/features/endge-ide/model/core/endge-ide-restored-document-tabs'
+import { ENDGE_IDE_DOCUMENT_VIEW_ID, getMissingDocumentTabIds } from '@/features/endge-ide/model/modules/tabs/endge-ide-restored-document-tabs'
 
 describe('endge IDE restored document tabs', () => {
   afterEach(() => {

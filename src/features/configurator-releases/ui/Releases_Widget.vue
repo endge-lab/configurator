@@ -4,11 +4,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { configuratorReleases } from '@/features/configurator-releases'
-import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
+import { Configurator } from '@/app'
 
 const version = ref(0)
 const identity = ref('')
-const role = computed(() => EndgeIDEContext.workspaceRole)
+const role = computed(() => Configurator.context.workspaceRole)
 const canCreate = computed(() => role.value === 'editor' || role.value === 'admin')
 const items = computed(() => { void version.value; return configuratorReleases.items })
 const loading = computed(() => { void version.value; return configuratorReleases.loading })

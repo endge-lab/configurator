@@ -80,7 +80,7 @@ interface NodeB { next: NodeA }
 
     expect(nodeA?.document).not.toBeNull()
     expect(plan?.declarations).toEqual([])
-    expect(plan?.unsupportedReason).toBe('Циклическая локальная зависимость: NodeA → NodeB → NodeA.')
+    expect(plan?.unsupportedReason).toBe('Циклическая локальная зависимость: NodeA - NodeB - NodeA.')
   })
 
   it('builds selectable folders only below the types root', () => {

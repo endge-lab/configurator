@@ -6,7 +6,7 @@ import { useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'
 
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const props = withDefaults(defineProps<{
   modelValue?: string | null

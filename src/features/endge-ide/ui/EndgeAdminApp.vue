@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
+import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
 import { Download, Loader2, Play, Upload } from 'lucide-vue-next'
@@ -18,26 +18,26 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { EndgeIDEContext } from '@/features/endge-ide/model/context/endge-ide-context'
+import { Configurator } from '@/app'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
-import { configuratorMenuItems } from '@/features/endge-ide/model/integrations/configurator-menu-registry'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
+const configuratorMenuItems = EndgeIDE.integrations.menuItems
 const isBusy = computed(() => EndgeIDE.busy.value)
 const canMutateDomain = computed(() => Endge.domainRepository.capabilities.mutations)
-const canImportDomain = computed(() => EndgeIDEContext.workspaceRole === 'admin')
+const canImportDomain = computed(() => Configurator.context.workspaceRole === 'admin')
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),
 )
 const isLaunchingProjectRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
-const transferService = new ServiceBackendDomainTransfer_Service(EndgeIDEContext.backendConfig!.serviceBackendURL)
+const transferService = new ServiceBackendDomainTransfer_Service(Configurator.context.backendConfig!.serviceBackendURL)
 const launchProjectRuntimeTitle = computed(() =>
   currentProjectIdentity.value
     ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
@@ -103,7 +103,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   }
   catch (error) {
     console.error(
-      `[ConfiguratorIntegrationHost] Menu action "${entry.id}" failed.`,
+      `[EndgeIDEIntegrations] Menu action "${entry.id}" failed.`,
       error,
     )
   }

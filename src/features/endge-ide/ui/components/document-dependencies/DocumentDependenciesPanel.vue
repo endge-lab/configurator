@@ -23,7 +23,7 @@ import {
   buildCompositionDependencyHierarchy,
   buildCompositionDependencyTree,
 } from '@/features/endge-ide/model/composition-dependencies/composition-dependency-tree'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
   buildDocumentDependencyHierarchy,
   buildDocumentDependencyTree,

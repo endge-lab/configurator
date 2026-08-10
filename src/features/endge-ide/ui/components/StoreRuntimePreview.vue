@@ -24,7 +24,7 @@ const copy = {
   collapse: 'Свернуть output.json',
   expand: 'Показать output.json',
   empty: 'Store runtime не содержит полей.',
-  flow: '→',
+  flow: '-',
 } as const
 
 const collapsed = ref(false)

@@ -28,7 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { availableLocales } from '@/i18n'
+import { Configurator } from '@/app'
 
 defineProps<{
   user?: {
@@ -101,7 +101,7 @@ const ui = useUI()
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
                   <DropdownMenuCheckboxItem
-                    v-for="locale in availableLocales"
+                    v-for="locale in Configurator.i18n.availableLocales.value"
                     :key="locale.value"
                     :model-value="locale.value === $i18n.locale"
                     @click="$i18n.locale = locale.value"

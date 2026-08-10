@@ -9,7 +9,7 @@ import type {
   FolderDeletionPlan,
   FolderDragPayloadItem,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
-import type { DomainDragTreeItem } from '@/features/endge-ide/model/domain/domain-drag-state'
+import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
 import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
@@ -75,7 +75,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
@@ -96,7 +96,6 @@ import {
   restoreEntity,
   restoreFolder,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
-import { clearDomainDrag, setDomainDrag } from '@/features/endge-ide/model/domain/domain-drag-state'
 import {
   attachResolvedActionTree,
   attachResolvedTypeTree,
@@ -492,7 +491,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
   const sources = sourceItems.map(it => it.node as FsFileNode)
   if (sources.some(source => isExternallyManaged(source))) {
     dragSources.value = []
-    clearDomainDrag()
+    EndgeIDE.domainDrag.reset()
     e.dataTransfer.effectAllowed = 'none'
     toast.error('Управляемые извне документы нельзя перемещать')
     return
@@ -502,7 +501,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     || sources.some(n => n.isInDeletedFolder === true)
   ) {
     dragSources.value = []
-    clearDomainDrag()
+    EndgeIDE.domainDrag.reset()
     e.dataTransfer.effectAllowed = 'none'
     toast.error('Нельзя перетаскивать сущности из «Удалённые»')
     return
@@ -568,7 +567,7 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
       hierarchy: hierarchyNodes,
     }
   })
-  setDomainDrag(sources.map(n => n.sectionType), tree)
+  EndgeIDE.domainDrag.start(sources.map(n => n.sectionType), tree)
 }
 
 function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode): void {
@@ -580,7 +579,7 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
     || isFolderInSoftDeletedBranch(folder.folderId)
   ) {
     draggedFolder.value = null
-    clearDomainDrag()
+    EndgeIDE.domainDrag.reset()
     e.dataTransfer!.effectAllowed = 'none'
     toast.error('Эту папку нельзя перемещать')
     return
@@ -598,7 +597,7 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
     rootId: item.rootId,
   }
   dragSources.value = []
-  clearDomainDrag()
+  EndgeIDE.domainDrag.reset()
   e.dataTransfer!.effectAllowed = 'move'
   e.dataTransfer!.setData('text/plain', json)
   e.dataTransfer!.setData('application/x-endge-domain-entity', json)
@@ -637,7 +636,7 @@ function onDragLeave(item: FlatFsItem): void {
 function clearDragSources(): void {
   dragSources.value = []
   draggedFolder.value = null
-  clearDomainDrag()
+  EndgeIDE.domainDrag.reset()
 }
 
 async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
@@ -1423,7 +1422,7 @@ async function confirmFolderDeletion(): Promise<void> {
 
   folderDeletionDialog.value.loading = true
   try {
-    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan))
+    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan, EndgeIDE.domainDrag))
     result.deletedEntities.forEach(entity => closeDocumentTabIfOpen(entity.id, entity.docType))
 
     folderDeletionDialog.value.open = false
@@ -1452,7 +1451,7 @@ async function confirmFolderDeletion(): Promise<void> {
 
 async function restoreFolderFromTrash(node: FsFolderNode): Promise<void> {
   try {
-    await restoreFolder(node)
+    await restoreFolder(node, EndgeIDE.domainDrag)
     toast.success('Папка восстановлена')
   }
   catch (e) {

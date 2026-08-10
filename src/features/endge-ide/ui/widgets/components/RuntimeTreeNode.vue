@@ -7,7 +7,7 @@ import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { runtimeTreeNodeExpansionKey } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 

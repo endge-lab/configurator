@@ -2,27 +2,27 @@
 /* eslint-disable style/max-statements-per-line */
 import { onBeforeUnmount } from 'vue'
 
-import {
-  cancelSourceEditorDialog,
-  resolveSourceEditorDialog,
-  sourceEditorDialogState,
-} from '@/features/endge-ide/source-editor/core/source-editor-dialogs'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+
+const dialogs = EndgeIDE.sourceEditorDialogs
+const cancelDialog = (): void => dialogs.cancel()
+const resolveDialog = (result: unknown): void => dialogs.resolve(result)
 
 function onOpenChange(open: boolean): void {
-  if (!open) { cancelSourceEditorDialog() }
+  if (!open) { cancelDialog() }
 }
 
-onBeforeUnmount(cancelSourceEditorDialog)
+onBeforeUnmount(cancelDialog)
 </script>
 
 <template>
   <component
-    :is="sourceEditorDialogState.active.value.definition.component"
-    v-if="sourceEditorDialogState.active.value"
+    :is="dialogs.active.value.definition.component"
+    v-if="dialogs.active.value"
     :open="true"
-    :input="sourceEditorDialogState.active.value.input"
-    @submit="resolveSourceEditorDialog"
-    @cancel="cancelSourceEditorDialog"
+    :input="dialogs.active.value.input"
+    @submit="resolveDialog"
+    @cancel="cancelDialog"
     @update:open="onOpenChange"
   />
 </template>

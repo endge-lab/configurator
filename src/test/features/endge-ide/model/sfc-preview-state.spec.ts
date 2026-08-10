@@ -2,16 +2,20 @@ import { Endge, RComponentSFC, RComputation } from '@endge/core'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  destroySFCPreviewRuntime,
-  launchSFCPreview,
-  sfcPreviewRuntime,
+  SFCPreviewSession,
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
 describe('ComponentSFC port preview', () => {
+  let preview: SFCPreviewSession
+
   beforeEach(() => prepareCompilerContext())
 
+  beforeEach(() => {
+    preview = new SFCPreviewSession()
+  })
+
   afterEach(async () => {
-    await destroySFCPreviewRuntime()
+    await preview.dispose()
     Endge.configuration.reset()
     Endge.program.clear()
     Endge.domain.reset()
@@ -45,7 +49,7 @@ defineProps<{ point?: Output }>()
     Endge.domain.addComputation(computation)
     Endge.domain.addComponentSFC(cell)
 
-    await launchSFCPreview({
+    await preview.launch({
       identity: 'preview-owner',
       source: `<script setup lang="ts">
 interface Input { value?: string }
@@ -62,7 +66,7 @@ const state = ports.state({ value: props.value })
 <template><Preview.Cell :point="state.value" /></template>`,
     })
 
-    expect(sfcPreviewRuntime.value?.entityIdentity).toBe('preview-owner')
+    expect(preview.runtime.value?.entityIdentity).toBe('preview-owner')
     expect(Endge.program.getComputationArtifact('preview-state')?.status).toBe('valid')
     expect(Endge.program.getArtifact('component-sfc', 'preview-cell')?.status).toBe('valid')
   })

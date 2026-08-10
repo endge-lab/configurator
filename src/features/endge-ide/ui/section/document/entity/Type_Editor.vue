@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator'
 import { useSmartTabSelection, useSmartTabSharedViewState } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
   createVisualSchemaWorkspaceState,
   isVisualSchemaWorkspaceState,

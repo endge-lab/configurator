@@ -16,7 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide.ts'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -40,7 +40,7 @@ const modeModel = computed<'external_payload' | 'internal'>({
   },
 })
 
-const authModeModel = computed<'inherit' | 'profile' | 'manual' | 'none'>({
+const authModeModel = computed<'inherit' | 'profile' | 'none'>({
   get: () => editor.value?.authMode ?? 'inherit',
   set: (value) => {
     if (!editor.value)
@@ -57,14 +57,6 @@ const isVocabLoading = computed(() => vocabsRef.value.loading === true)
 async function loadVocab(): Promise<void> {
   if (!canLoadVocab.value || !editor.value?.id)
     return
-
-  // Временно отключено для работы админки без авторизации
-  // if (!Endge.auth.isAuthenticated) {
-  //   toast.error('Не удалось получить доступ к справочнику', {
-  //     description: 'Проверьте авторизацию и настройки словаря',
-  //   })
-  //   return
-  // }
 
   try {
     const docs = await Endge.vocabs.loadVocab(editor.value.id)
@@ -176,7 +168,6 @@ async function save(): Promise<void> {
                 <SelectContent>
                   <SelectItem value="inherit">inherit</SelectItem>
                   <SelectItem value="profile">profile</SelectItem>
-                  <SelectItem value="manual">manual</SelectItem>
                   <SelectItem value="none">none</SelectItem>
                 </SelectContent>
               </Select>

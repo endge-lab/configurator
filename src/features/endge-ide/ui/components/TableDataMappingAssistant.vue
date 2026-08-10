@@ -20,7 +20,7 @@ import {
   autoFillColumn,
   buildAccessor,
 } from "@/features/endge-ide/tools/table-editor-helper";
-import { EndgeIDE } from "@/features/endge-ide/model/core/endge-ide.ts";
+import { EndgeIDE } from "@/features/endge-ide";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
 import { Bot, Loader2, LayoutGrid, Sparkles, Wand2 } from "lucide-vue-next";
@@ -30,7 +30,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { registerAgentTableAction } from "@/features/endge-ide/model/agent/agent-table-actions";
 
 const assistanceApiUrl =
   (import.meta.env.VITE_ASSISTANCE_API_URL as string | undefined)?.trim() ?? "";
@@ -86,7 +85,7 @@ const selectedQueryId = ref<string | null>(null);
 const runQueryLoading = ref(false);
 const queryPanelCollapsed = ref(true);
 
-/** После выполнения: ключ → массив (для словаря ключ:массив или один ключ для массива) */
+/** После выполнения: ключ - массив (для словаря ключ:массив или один ключ для массива) */
 const resultByKey = ref<Record<string, unknown[]>>({});
 /** Ключи для вкладок (порядок) */
 const resultKeys = computed(() => Object.keys(resultByKey.value));
@@ -599,7 +598,7 @@ function extractJsonFromMessage(text: string): Record<string, unknown> | null {
   }
 }
 
-/** Подставить dataPaths для открытой колонки через LLM: запрос (если нет примера) → ответ модели → маппинг полей. */
+/** Подставить dataPaths для открытой колонки через LLM: запрос (если нет примера) - ответ модели - маппинг полей. */
 async function autoFillCurrentColumnViaLLM(): Promise<void> {
   if (!assistanceApiUrl) {
     toast.error("Сервис ассистента не настроен (VITE_ASSISTANCE_API_URL)");
@@ -940,7 +939,7 @@ ${converterSummary}
 const _unregAgentTable: (() => void)[] = [];
 onMounted(() => {
   _unregAgentTable.push(
-    registerAgentTableAction("auto_fill_datapaths", () =>
+    EndgeIDE.agentTableActions.register("auto_fill_datapaths", () =>
       autoFillAllColumnsViaLLM(),
     ),
   );

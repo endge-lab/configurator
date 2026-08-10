@@ -8,7 +8,7 @@ import { Box, CircleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
-import { EndgeIDE } from '@/features/endge-ide/model/core/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 
