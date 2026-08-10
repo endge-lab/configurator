@@ -205,6 +205,11 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
     throw new Error('Введите название папки')
 
   const parentId = resolveParentIdForNewFolder(targetFolder)
+  const parentFolder = parentId == null ? null : Endge.domain.getFolder(parentId)
+  const entityType = String(parentFolder?.entityType ?? '').trim()
+  if (!entityType)
+    throw new Error('Не удалось определить тип сущностей для новой папки')
+
   let newId = `folder-${randomString(5)}`
   while (Endge.domain.hasFolderById(newId) || Endge.domain.hasFolderByIdentity(newId)) {
     newId = `folder-${randomString(5)}`
@@ -215,6 +220,7 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
     identity: newId,
     name: folderName,
     displayName: folderName,
+    entityType,
     parent: parentId,
   })
 
@@ -1021,7 +1027,7 @@ function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
 
   if (Endge.domain.getComponents().some(hasInBranch))
     return DomainSectionType.Component
-  if (Endge.domain.getQueries().some(hasInBranch))
+  if (Endge.domain.getQueries().some(hasInBranch) || ((Endge.domain as any).getStreams?.() ?? []).some(hasInBranch))
     return DomainSectionType.Query
   if (((Endge.domain as any).getDataViews?.() ?? []).some(hasInBranch))
     return DomainSectionType.DataView
