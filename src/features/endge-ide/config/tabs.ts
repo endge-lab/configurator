@@ -1,5 +1,9 @@
-export const endgeIDETabsConfig = {
-  storageKey: 'endge-editor-tabs',
-  persist: true,
-  maxTabs: 40,
+import { currentTargetStorageNamespace } from '@/features/backend-connections/model/backend-connection-storage'
+
+export function createEndgeIDETabsConfig() {
+  return {
+    storageKey: `endge-editor-tabs:v2:${currentTargetStorageNamespace()}`,
+    persist: true,
+    maxTabs: 40,
+  }
 }

@@ -3,7 +3,7 @@
  * См. egorkozelskij-endge-assistance-service/docs/ASSISTANCE_PROTOCOL.md
  */
 
-import { showWidget } from "@/components/layouts/grid";
+import { showWidget } from "@/components/layouts/grid/layout";
 import type { DomainDocumentType } from "@endge/core";
 import { Endge } from "@endge/core";
 import { EndgeIDE } from "@/features/endge-ide";

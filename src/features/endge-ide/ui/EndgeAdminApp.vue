@@ -3,7 +3,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { Download, Loader2, Play, Upload } from 'lucide-vue-next'
+import { Download, Loader2, Play, Settings2, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid'
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Configurator } from '@/app'
+import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -37,6 +38,7 @@ const currentProjectIdentity = computed(() =>
 )
 const isLaunchingProjectRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
+const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const transferService = new ServiceBackendDomainTransfer_Service(Configurator.context.backendConfig!.serviceBackendURL)
 const launchProjectRuntimeTitle = computed(() =>
   currentProjectIdentity.value
@@ -54,6 +56,10 @@ async function exportCurrentDomain(): Promise<void> {
 
 function openDomainImport(): void {
   void domainImportModal.value?.open()
+}
+
+function openBackendConnections(): void {
+  backendConnectionsModal.value?.open()
 }
 
 function openDSLPlayground(): void {
@@ -144,6 +150,11 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <DropdownMenuItem :disabled="isBusy || !canImportDomain" @click="openDomainImport">
             <Upload class="size-3.5" />
             {{ canImportDomain ? 'Импорт' : 'Импорт доступен только Workspace Admin' }}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @click="openBackendConnections">
+            <Settings2 class="size-3.5" />
+            Настройка подключений
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -277,4 +288,5 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
 
   <EditorView />
   <DomainImport_Modal ref="domainImportModal" />
+  <BackendConnections_Modal ref="backendConnectionsModal" />
 </template>

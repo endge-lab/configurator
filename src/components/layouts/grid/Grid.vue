@@ -10,6 +10,7 @@ import WidgetArea from '@/components/layouts/grid/WidgetArea.vue'
 import WidgetPanel from '@/components/layouts/grid/WidgetPanel.vue'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useBackendConnections } from '@/features/backend-connections'
 
 // Initialize widget channel for popup communication
 initWidgetChannel()
@@ -17,6 +18,7 @@ initWidgetChannel()
 const route = useRoute()
 setLayoutScope(String(route.meta.layoutScope ?? 'endge-ide'))
 const showWorkspaceSettings = true
+const { isPrimaryActive } = useBackendConnections()
 
 // Close non-detachable popups on route change
 watch(() => route.fullPath, () => {
@@ -224,7 +226,8 @@ function handleGlobalDrop(event: DragEvent) {
     >
       <header
         ref="headerRef"
-        class="flex h-12 shrink-0 items-center gap-2 px-1.5"
+        class="flex h-12 shrink-0 items-center gap-2 border-b px-1.5 transition-colors"
+        :class="isPrimaryActive ? 'border-transparent' : 'border-orange-500/70 bg-orange-500/15'"
       >
         <GridHeader />
       </header>

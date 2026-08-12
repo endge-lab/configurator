@@ -12,7 +12,7 @@ import { Endge } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { getLayoutState, showWidget } from '@/components/layouts/grid'
+import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard'
 import { readRuntimePreviewHistory, writeRuntimePreviewHistory } from '@/features/endge-ide/model/runtime-preview/runtime-preview-history'

@@ -4,14 +4,17 @@ import 'vue-sonner/style.css'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { Configurator } from '@/app'
 import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { Configurator } from '@/app'
+import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceSelectionGate.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
+
+const workspaceSelectionRequired = Configurator.status === 'workspace-selection-required'
 
 const route = useRoute()
 const error = ref<Error | null>(null)
@@ -79,7 +82,8 @@ onErrorCaptured((err, instance, info) => {
 </script>
 
 <template>
-  <EndgeAdapterRoot root-key="shell" project="configurator" env="dev">
+  <WorkspaceSelectionGate v-if="workspaceSelectionRequired" />
+  <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>
       <div class="fixed inset-0 z-[220] flex flex-col items-center justify-center gap-4 bg-slate-50/70 backdrop-blur-sm">

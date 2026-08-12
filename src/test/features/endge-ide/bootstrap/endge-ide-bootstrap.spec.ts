@@ -7,6 +7,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/features/endge-ide/model/bootstrap/endge-runtime-plugins', () => ({}))
 vi.mock('@/features/endge-ide/model/bootstrap/endge-renderer-plugins', () => ({}))
+vi.mock('@/features/endge-ide/model/kernel/endge-ide', () => ({
+  EndgeIDE: {
+    setup: vi.fn(),
+    reset: vi.fn(),
+  },
+}))
 vi.mock('@/features/endge-ide/model/config/endge-backend', () => ({
   getEndgeBackendConfig: mocks.config,
 }))
@@ -34,12 +40,17 @@ describe('endge IDE backend bootstrap', () => {
     mocks.init.mockReset()
     mocks.config.mockReset()
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace-a')
+    mocks.config.mockReturnValue({
+      serviceBackendURL: 'https://backend.test',
+      primaryBackendURL: 'https://backend.test',
+      activeBackendURL: 'https://backend.test',
+    })
     const bootstrapModule = await import('@/app')
     Configurator = bootstrapModule.Configurator
   })
 
   it('checks developer session before continuing service-backend boot', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       user: {
         id: 'developer-id',
         providerId: 'keycloak',
@@ -56,12 +67,17 @@ describe('endge IDE backend bootstrap', () => {
         role: 'editor',
       }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [], total: 0, canManage: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
     vi.stubGlobal('window', {
       sessionStorage: { removeItem: vi.fn() },
     })
     const backendConfig = {
       serviceBackendURL: 'https://backend.test',
+      primaryBackendURL: 'https://backend.test',
+      activeBackendURL: 'https://backend.test',
     }
     mocks.config.mockReturnValue(backendConfig)
 
@@ -77,6 +93,7 @@ describe('endge IDE backend bootstrap', () => {
         capabilities: { snapshot: true, mutations: true, softDelete: true, restore: true },
       }),
       workspaceRole: 'editor',
+      workspaceIdentity: 'workspace-a',
     })
   })
 
@@ -99,6 +116,8 @@ describe('endge IDE backend bootstrap', () => {
     })
     mocks.config.mockReturnValue({
       serviceBackendURL: 'https://backend.test',
+      primaryBackendURL: 'https://backend.test',
+      activeBackendURL: 'https://backend.test',
     })
 
     await expect(Configurator.init()).resolves.toBe('redirecting')
@@ -108,13 +127,21 @@ describe('endge IDE backend bootstrap', () => {
   })
 
   it('boots Viewer with read-only provider capabilities', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
       user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
       platformAdmin: false,
       workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'viewer' }],
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [], total: 0, canManage: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
     vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
-    mocks.config.mockReturnValue({ serviceBackendURL: 'https://backend.test' })
+    mocks.config.mockReturnValue({
+      serviceBackendURL: 'https://backend.test',
+      primaryBackendURL: 'https://backend.test',
+      activeBackendURL: 'https://backend.test',
+    })
 
     await expect(Configurator.init()).resolves.toBe('ready')
 
@@ -124,5 +151,26 @@ describe('endge IDE backend bootstrap', () => {
         capabilities: { snapshot: true, mutations: false, softDelete: false, restore: false },
       }),
     }))
+  })
+
+  it('requires Workspace selection without running Endge boot when saved value and seed are unavailable', async () => {
+    vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', '')
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
+        platformAdmin: false,
+        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'editor' }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [],
+        total: 0,
+        canManage: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
+
+    await expect(Configurator.init()).resolves.toBe('workspace-selection-required')
+
+    expect(Configurator.workspaceSelection).toHaveLength(1)
+    expect(mocks.init).not.toHaveBeenCalled()
   })
 })

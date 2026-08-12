@@ -1,5 +1,7 @@
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
+import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
+
 /** Ошибка некорректной build-time конфигурации backend. */
 export class EndgeBackendConfigurationError extends Error {
   public readonly code = 'backend_configuration_invalid'
@@ -10,13 +12,16 @@ export class EndgeBackendConfigurationError extends Error {
   }
 }
 
-/** Читает и строго валидирует URL единственного backend Configurator. */
+/** Читает обязательный primary URL и локально выбранный target. */
 export function getEndgeBackendConfig(): EndgeBackendConfig {
-  requiredEnv('VITE_ENDGE_WORKSPACE_IDENTITY', import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY)
+  const primaryBackendURL = normalizeHTTPURL(
+    requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
+  )
+  const activeBackendURL = new BackendConnectionStorage().readActiveBackend(primaryBackendURL)
   return {
-    serviceBackendURL: normalizeHTTPURL(
-      requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
-    ),
+    serviceBackendURL: activeBackendURL,
+    primaryBackendURL,
+    activeBackendURL,
   }
 }
 
@@ -29,15 +34,10 @@ function requiredEnv(name: string, value: unknown): string {
 }
 
 function normalizeHTTPURL(value: string): string {
-  let url: URL
   try {
-    url = new URL(value)
+    return normalizeBackendURL(value)
   }
   catch {
-    throw new EndgeBackendConfigurationError('VITE_ENDGE_SERVICE_BACKEND_URL must be a valid URL')
+    throw new EndgeBackendConfigurationError('VITE_ENDGE_SERVICE_BACKEND_URL must be a valid http/https URL')
   }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new EndgeBackendConfigurationError('VITE_ENDGE_SERVICE_BACKEND_URL must use http or https')
-  }
-  return url.toString().replace(/\/+$/, '')
 }

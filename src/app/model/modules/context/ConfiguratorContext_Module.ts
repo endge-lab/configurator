@@ -34,6 +34,7 @@ export class ConfiguratorContext_Module {
   private _backendConfig: EndgeBackendConfig | null = null
   private _domainProvider: EndgeDomainProvider | null = null
   private _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
+  private _workspaceIdentity: string | null = null
   private readonly _listeners = new Set<() => void>()
   private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
 
@@ -55,6 +56,7 @@ export class ConfiguratorContext_Module {
     this._backendConfig = backendConfig
     this._domainProvider = domainProvider
     this._workspaceRole = this._workspaceRole ?? options.workspaceRole ?? null
+    this._workspaceIdentity = this._workspaceIdentity ?? options.workspaceIdentity ?? null
     const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
 
     registerEndgeMockProviders()
@@ -113,7 +115,7 @@ export class ConfiguratorContext_Module {
     backendConfig: EndgeBackendConfig,
     domainProvider: EndgeDomainProvider | null,
   ): EndgeBootContext {
-    const workspaceIdentity = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
+    const workspaceIdentity = this._workspaceIdentity ?? String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
     const tenantIdentity = String(import.meta.env.VITE_ENDGE_TENANT_IDENTITY || '').trim()
     const projectIdentity = String(import.meta.env.VITE_ENDGE_PROJECT_IDENTITY || '').trim()
     const environmentIdentity = String(import.meta.env.VITE_ENDGE_ENVIRONMENT_IDENTITY || '').trim()
@@ -138,7 +140,8 @@ export class ConfiguratorContext_Module {
         adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
       },
       auth: {
-        resolveCredential: ({ ref }) => authCredentials[ref],
+        resolveCredential: ({ ref }: { ref: string }) => authCredentials[ref],
+        storageNamespace: backendConfig.activeBackendURL,
       },
     }
 
@@ -222,7 +225,7 @@ export class ConfiguratorContext_Module {
   /** Restores the Configurator-only override after Workspace has been loaded by Endge.boot(). */
   private _restoreDataModeOverride(): void {
     const workspaceIdentity = Endge.workspace.current.identity
-    const mode = configuratorDataModeRepository.read(workspaceIdentity)
+    const mode = configuratorDataModeRepository.read(this._activeBackendURL(), workspaceIdentity)
     if (mode) {
       Endge.context.setDataMode(mode)
     }
@@ -293,16 +296,20 @@ export class ConfiguratorContext_Module {
   /** Updates mock mode without rebuilding the immutable structural context. */
   public setMockEnabled(enabled: boolean): void {
     const mode = enabled ? 'mock' : 'live'
-    configuratorDataModeRepository.write(Endge.workspace.current.identity, mode)
+    configuratorDataModeRepository.write(this._activeBackendURL(), Endge.workspace.current.identity, mode)
     Endge.context.setDataMode(mode)
     this._notify()
   }
 
   /** Returns data execution to the persisted Workspace default. */
   public clearDataModeOverride(): void {
-    configuratorDataModeRepository.clear(Endge.workspace.current.identity)
+    configuratorDataModeRepository.clear(this._activeBackendURL(), Endge.workspace.current.identity)
     Endge.context.clearDataModeOverride()
     this._notify()
+  }
+
+  private _activeBackendURL(): string {
+    return this._backendConfig?.activeBackendURL ?? getEndgeBackendConfig().activeBackendURL
   }
 }
 

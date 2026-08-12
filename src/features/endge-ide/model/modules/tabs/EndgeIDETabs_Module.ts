@@ -23,7 +23,7 @@ import type { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/bus
 import { ComponentType, Endge, FilterType, ParameterType, QueryType, isExternallyManaged, isSystemManaged } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid'
+import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
 
 import { useSmartTabs } from '@/components/ui/smart-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
@@ -67,7 +67,7 @@ import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEdito
 import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
-import { endgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
+import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
 const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))
@@ -186,7 +186,7 @@ export class EndgeIDETabs_Module {
 
   public constructor(private readonly _busy: EndgeIDEBusy_Module) {
     this._tabsApi = useSmartTabs({
-      ...endgeIDETabsConfig,
+      ...createEndgeIDETabsConfig(),
       persist: !isIDETabStorageDisabled(),
       onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })
@@ -230,7 +230,7 @@ export class EndgeIDETabs_Module {
     this._tabsApi.closeAll()
     this._tabsApi.clearStorage()
     this._tabsApi = useSmartTabs({
-      ...endgeIDETabsConfig,
+      ...createEndgeIDETabsConfig(),
       persist: !isIDETabStorageDisabled(),
       onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })

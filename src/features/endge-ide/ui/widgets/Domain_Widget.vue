@@ -71,6 +71,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
+import { Configurator } from '@/app'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -122,7 +123,8 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 const tabs = EndgeIDE.tabs
 
 type MenuAction
-  = | { type: 'remove-folder', node: FsFolderNode }
+  = | { type: 'switch-workspace', workspaceIdentity: string }
+    | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'restore-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
@@ -701,6 +703,7 @@ const ROOT_TO_SECTION = computed(() => {
   const softId = softDeletedFolderId.value
   const compositions = withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId)
   return {
+    'root-workspaces': { section: DomainSectionType.Project, items: () => [] },
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? [], softId) },
     'root-queries': {
       section: DomainSectionType.Query,
@@ -797,6 +800,7 @@ function createSectionPresentation(sectionType: DomainSectionType): { icon: any,
 
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
 const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
+  'root-workspaces': { icon: Building2, colorClass: 'text-orange-500' },
   'root-types': createSectionPresentation(DomainSectionType.Type),
   'root-queries': createSectionPresentation(DomainSectionType.Query),
   'root-data-views': createSectionPresentation(DomainSectionType.DataView),
@@ -937,6 +941,26 @@ const fsTree = computed<FsNode[]>(() => {
   const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
   if (eventRootIndex >= 0) tree[eventRootIndex] = eventRoot
   else tree.push(eventRoot)
+
+  const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
+  const sessionState = Configurator.session.state
+  if (workspaceRoot?.type === 'folder' && sessionState.status === 'authenticated') {
+    workspaceRoot.virtual = true
+    workspaceRoot.children = sessionState.session.workspaces
+      .filter(workspace => workspace.active)
+      .map(workspace => ({
+        id: `workspace:${workspace.id}`,
+        identity: workspace.identity,
+        name: workspace.displayName,
+        type: 'file' as const,
+        docType: 'project' as DomainDocumentType,
+        sectionType: DomainSectionType.Project,
+        virtual: true,
+        workspaceIdentity: workspace.identity,
+        activeWorkspace: workspace.identity === Endge.workspace.current.identity,
+        badges: [workspace.role],
+      }))
+  }
 
   return tree
 })
@@ -1237,6 +1261,10 @@ function selectRange(anchorKey: string, targetKey: string, rootId: string): void
 function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   closeContextMenu()
 
+  if (item.node.workspaceIdentity) {
+    return
+  }
+
   if (item.node.type === 'folder') {
     toggleFolder(item.path)
     return
@@ -1527,6 +1555,16 @@ function getContextFileNodes(node: FsFileNode): FsFileNode[] {
 /** Формирует контекстные действия для узла дерева домена. */
 function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
+  if (node.workspaceIdentity) {
+    if (!node.activeWorkspace) {
+      items.push({
+        label: 'Переключить рабочее место',
+        icon: ArrowLeftRight,
+        action: { type: 'switch-workspace', workspaceIdentity: node.workspaceIdentity },
+      })
+    }
+    return items
+  }
   if (node.virtual)
     return items
 
@@ -1667,6 +1705,11 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
 }
 
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
+  if (a.type === 'switch-workspace') {
+    Configurator.connections.selectWorkspace(a.workspaceIdentity)
+    return
+  }
+
   if (a.type === 'remove-folder') {
     openFolderDeletionDialog(a.node)
     return
@@ -1792,6 +1835,7 @@ function rowClasses(item: FlatFsItem): string {
       ? 'text-slate-600'
       : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
+    item.node.activeWorkspace ? 'bg-orange-500/15 text-orange-950 ring-1 ring-orange-500/50 dark:text-orange-100' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
   ].filter(Boolean).join(' ')
 }

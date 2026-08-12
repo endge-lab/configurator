@@ -2,7 +2,9 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 
 import { Endge } from '@endge/core'
 
-const STORAGE_KEY_PREFIX = 'endge:runtime-tree:view:v1'
+import { currentActiveBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
+
+const STORAGE_KEY_PREFIX = 'endge:runtime-tree:view:v2'
 
 export type RuntimeTreeExpansionPreset
   = | 'collapsed'
@@ -103,6 +105,7 @@ export function runtimeTreeViewStorageKey(): string {
   const context = Endge.context.getExecutionContext()
   return [
     STORAGE_KEY_PREFIX,
+    currentActiveBackendURL(),
     workspace,
     context.tenantIdentity,
     context.projectIdentity,

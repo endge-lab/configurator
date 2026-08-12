@@ -247,7 +247,10 @@ function handleTransferError(error: unknown, fallback: string): void {
   if (error instanceof ServiceBackendDomainTransferError
     && error.code === 'service_backend_unauthorized'
     && error.loginUrl) {
-    const redirect = startConfiguratorLogin(error.loginUrl)
+    const redirect = startConfiguratorLogin(
+      error.loginUrl,
+      Configurator.connections.activeBackendURL,
+    )
     errorMessage.value = redirect.redirected
       ? 'Сессия истекла. Переходим к авторизации…'
       : redirect.message ?? 'Не удалось запустить повторную авторизацию'

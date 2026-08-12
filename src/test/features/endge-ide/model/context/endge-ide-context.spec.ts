@@ -63,7 +63,11 @@ vi.mock('@/features/endge-ide/model/context/configurator-data-mode-repository', 
 
 describe('endgeIDE context', () => {
   let context: ConfiguratorContext_Module
-  const backendConfig = { serviceBackendURL: 'https://backend.test' }
+  const backendConfig = {
+    serviceBackendURL: 'https://backend.test',
+    primaryBackendURL: 'https://backend.test',
+    activeBackendURL: 'https://backend.test',
+  }
   const domainProvider = {
     id: 'service-backend',
     capabilities: { snapshot: true as const, mutations: true, softDelete: true, restore: true },
@@ -188,7 +192,7 @@ describe('endgeIDE context', () => {
 
     context.setMockEnabled(true)
 
-    expect(mocks.writeDataModeOverride).toHaveBeenCalledWith('workspace', 'mock')
+    expect(mocks.writeDataModeOverride).toHaveBeenCalledWith('https://backend.test', 'workspace', 'mock')
     expect(mocks.setDataMode).toHaveBeenCalledWith('mock')
     expect(context.isMockEnabled).toBe(true)
     expect(context.isDataModeOverridden).toBe(true)
@@ -201,7 +205,7 @@ describe('endgeIDE context', () => {
 
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
 
-    expect(mocks.readDataModeOverride).toHaveBeenCalledWith('workspace')
+    expect(mocks.readDataModeOverride).toHaveBeenCalledWith('https://backend.test', 'workspace')
     expect(mocks.setDataMode).toHaveBeenCalledWith('mock')
   })
 })

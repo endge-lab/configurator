@@ -31,6 +31,7 @@ const BUILT_IN_TAGS = new Set([
   'Column',
   'Cell',
   'ColumnMenu',
+  'RowMenu',
   'MenuItem',
   'MenuSeparator',
 ])

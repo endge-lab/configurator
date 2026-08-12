@@ -8,17 +8,25 @@ import { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/
 import { ConfiguratorI18n_Module } from '@/app/model/modules/i18n/ConfiguratorI18n_Module'
 import { Layout_Module } from '@/app/model/modules/layout/Layout_Module'
 import { Questions_Module } from '@/app/model/modules/questions/Questions_Module'
-import { ConfiguratorSession_Module, ConfiguratorSession_Service } from '@/features/configurator-session'
+import { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
+import { BackendConnections_Service } from '@/features/backend-connections/model/BackendConnections_Service'
+import { ConfiguratorSession_Module } from '@/features/configurator-session/model/ConfiguratorSession_Module'
+import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
 import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 
 /** Creates the single application-scoped module graph. */
 export function createConfiguratorModules(): ConfiguratorModules {
   const backendConfig = getEndgeBackendConfig()
   const branding = new ConfiguratorBranding_Module()
+  const connections = new BackendConnections_Module(
+    backendConfig.primaryBackendURL,
+    new BackendConnections_Service(backendConfig.primaryBackendURL),
+  )
 
   return {
+    connections,
     session: new ConfiguratorSession_Module(
-      new ConfiguratorSession_Service(backendConfig.serviceBackendURL),
+      new ConfiguratorSession_Service(connections.activeBackendURL),
     ),
     context: new ConfiguratorContext_Module(),
     diagnostics: new ConfiguratorDiagnostics_Module(

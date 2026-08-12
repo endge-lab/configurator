@@ -11,4 +11,5 @@ export interface ConfiguratorContextInitOptions {
   backendConfig?: EndgeBackendConfig
   domainProvider?: EndgeDomainProvider
   workspaceRole?: 'viewer' | 'editor' | 'admin'
+  workspaceIdentity?: string
 }

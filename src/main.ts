@@ -33,7 +33,7 @@ async function mountApplication(): Promise<void> {
   try {
     // Initial navigation запускает Configurator и является Endge boot-барьером.
     await router.isReady()
-    if (!Configurator.isReady) {
+    if (!Configurator.isReady && Configurator.status !== 'workspace-selection-required') {
       return
     }
 

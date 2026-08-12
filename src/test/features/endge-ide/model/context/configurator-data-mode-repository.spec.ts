@@ -17,22 +17,24 @@ describe('configurator data mode repository', () => {
     })
   })
 
-  it('persists overrides independently for each Workspace', () => {
+  it('persists overrides independently for each backend and Workspace', () => {
     const repository = new ConfiguratorDataModeRepository()
 
-    repository.write('workspace-a', 'mock')
-    repository.write('workspace-b', 'live')
+    repository.write('https://backend-a.test', 'workspace-a', 'mock')
+    repository.write('https://backend-a.test', 'workspace-b', 'live')
+    repository.write('https://backend-b.test', 'workspace-a', 'live')
 
-    expect(repository.read('workspace-a')).toBe('mock')
-    expect(repository.read('workspace-b')).toBe('live')
+    expect(repository.read('https://backend-a.test', 'workspace-a')).toBe('mock')
+    expect(repository.read('https://backend-a.test', 'workspace-b')).toBe('live')
+    expect(repository.read('https://backend-b.test', 'workspace-a')).toBe('live')
   })
 
   it('clears the override so EndgeContext can return to the Workspace default', () => {
     const repository = new ConfiguratorDataModeRepository()
-    repository.write('workspace-a', 'mock')
+    repository.write('https://backend.test', 'workspace-a', 'mock')
 
-    repository.clear('workspace-a')
+    repository.clear('https://backend.test', 'workspace-a')
 
-    expect(repository.read('workspace-a')).toBeNull()
+    expect(repository.read('https://backend.test', 'workspace-a')).toBeNull()
   })
 })

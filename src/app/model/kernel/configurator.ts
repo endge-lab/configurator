@@ -3,14 +3,17 @@ import '@/features/endge-ide/model/bootstrap/endge-runtime-plugins'
 import '@/features/endge-ide/model/bootstrap/endge-renderer-plugins'
 
 import type { ConfiguratorModules, ConfiguratorStatus } from '@/app/domain/types/configurator.type'
-import type { ConfiguratorSessionBinding } from '@/features/configurator-session'
+import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
+import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
 import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
+import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
 import {
   clearConfiguratorLoginRedirectGuard,
   startConfiguratorLogin,
-} from '@/features/configurator-session'
+} from '@/features/configurator-session/tools/start-configurator-login'
+import { resolveConfiguratorWorkspace } from '@/features/backend-connections/model/resolve-configurator-workspace'
 
 import { createConfiguratorModules } from '@/app/model/config/modules.config'
 import { VueErrorBoundary_Adapter } from '@/app/model/adapters/VueErrorBoundary_Adapter'
@@ -41,6 +44,21 @@ export class Configurator {
 
   public static get session() {
     return this._modules.session
+  }
+
+  public static get connections() {
+    return this._modules.connections
+  }
+
+  public static get status(): 'idle' | ConfiguratorStatus {
+    return this._status
+  }
+
+  public static get workspaceSelection(): readonly ConfiguratorWorkspaceAccess[] {
+    const state = this._modules.session.state
+    return state.status === 'authenticated'
+      ? state.session.workspaces.filter(workspace => workspace.active)
+      : []
   }
 
   public static get context() {
@@ -139,22 +157,75 @@ export class Configurator {
   }
 
   private static async _initialize(): Promise<ConfiguratorStatus> {
+    const backendConfig = getEndgeBackendConfig()
+    if (!this._modules.connections.isPrimaryActive) {
+      const primarySession = await new ConfiguratorSession_Service(backendConfig.primaryBackendURL).check()
+      if (primarySession.status === 'unauthenticated') {
+        this._startLoginOrThrow(primarySession.loginUrl, backendConfig.primaryBackendURL)
+        return 'redirecting'
+      }
+      if (primarySession.status !== 'authenticated') {
+        this._modules.connections.fallbackToPrimary()
+        return 'redirecting'
+      }
+      clearConfiguratorLoginRedirectGuard(backendConfig.primaryBackendURL)
+      try {
+        const catalog = await this._modules.connections.load()
+        if (!this._modules.connections.hasActiveConnection(catalog)) {
+          this._modules.connections.fallbackToPrimary()
+          return 'redirecting'
+        }
+      }
+      catch {
+        this._modules.connections.fallbackToPrimary()
+        return 'redirecting'
+      }
+    }
+
     const sessionState = await this._modules.session.check()
     if (sessionState.status === 'unauthenticated') {
-      this._startLoginOrThrow(sessionState.loginUrl)
+      this._startLoginOrThrow(sessionState.loginUrl, backendConfig.activeBackendURL)
       return 'redirecting'
     }
     if (sessionState.status === 'error') {
+      if (!this._modules.connections.isPrimaryActive) {
+        this._modules.connections.fallbackToPrimary()
+        return 'redirecting'
+      }
       throw new ConfiguratorBootstrapError(sessionState.code, sessionState.message)
     }
     if (sessionState.status !== 'authenticated') {
       throw new ConfiguratorBootstrapError('session_invalid_state', `Unexpected session state: ${sessionState.status}`)
     }
 
-    clearConfiguratorLoginRedirectGuard()
-    const backendConfig = getEndgeBackendConfig()
-    const workspaceIdentity = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
-    const workspaceAccess = sessionState.session.workspaces.find(workspace => workspace.identity === workspaceIdentity)
+    clearConfiguratorLoginRedirectGuard(backendConfig.activeBackendURL)
+    if (this._modules.connections.isPrimaryActive) {
+      try {
+        await this._modules.connections.load()
+      }
+      catch (error) {
+        const value = error as { code?: string, message?: string }
+        throw new ConfiguratorBootstrapError(
+          value.code ?? 'backend_catalog_unavailable',
+          value.message ?? 'Backend connection catalog is unavailable',
+        )
+      }
+    }
+
+    const storedWorkspace = this._modules.connections.readWorkspace()
+    const workspaceSeed = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
+    const workspaceAccess = resolveConfiguratorWorkspace(
+      sessionState.session.workspaces,
+      storedWorkspace,
+      workspaceSeed,
+    )
+    if (!workspaceAccess) {
+      return 'workspace-selection-required'
+    }
+    if (storedWorkspace !== workspaceAccess.identity) {
+      this._modules.connections.seedWorkspace(workspaceAccess.identity)
+    }
+    const workspaceIdentity = workspaceAccess.identity
     const role = sessionState.session.platformAdmin ? 'admin' : workspaceAccess?.role
     if (!role) {
       throw new ConfiguratorBootstrapError('workspace_forbidden', `Workspace access denied: ${workspaceIdentity}`)
@@ -165,13 +236,13 @@ export class Configurator {
       loginUrl => this._startLoginOrThrow(loginUrl),
       role !== 'viewer',
     )
-    await this._modules.context.init({ backendConfig, domainProvider, workspaceRole: role })
+    await this._modules.context.init({ backendConfig, domainProvider, workspaceRole: role, workspaceIdentity })
     this._modules.i18n.init()
     return 'ready'
   }
 
-  private static _startLoginOrThrow(loginUrl: string): void {
-    const result = startConfiguratorLogin(loginUrl)
+  private static _startLoginOrThrow(loginUrl: string, backendURL = this._modules.connections.activeBackendURL): void {
+    const result = startConfiguratorLogin(loginUrl, backendURL)
     if (!result.redirected) {
       throw new ConfiguratorBootstrapError(
         result.code ?? 'auth_redirect_failed',

@@ -6,7 +6,11 @@ import {
   ConfiguratorSession_Service,
   startConfiguratorLogin,
 } from '@/features/configurator-session'
-import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY } from '@/features/configurator-session/model/config/configurator-session'
+import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX } from '@/features/configurator-session/model/config/configurator-session'
+
+const BACKEND_URL = 'https://backend.test'
+const CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY
+  = `${CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX}:${encodeURIComponent(BACKEND_URL)}`
 
 function sessionResponse(): Response {
   return new Response(JSON.stringify({
@@ -97,12 +101,12 @@ describe('configurator developer session', () => {
   it('builds returnTo once and stops a redirect loop for two minutes', () => {
     const { assign } = installWindow()
 
-    expect(startConfiguratorLogin('https://backend.test/auth/login')).toEqual({ redirected: true })
+    expect(startConfiguratorLogin('https://backend.test/auth/login', BACKEND_URL)).toEqual({ redirected: true })
     expect(assign).toHaveBeenCalledOnce()
     const target = new URL(assign.mock.calls[0]![0])
     expect(target.searchParams.get('returnTo')).toBe('https://configurator.test/editor?project=demo')
 
-    expect(startConfiguratorLogin('https://backend.test/auth/login')).toMatchObject({
+    expect(startConfiguratorLogin('https://backend.test/auth/login', BACKEND_URL)).toMatchObject({
       redirected: false,
       code: 'auth_redirect_loop',
     })
@@ -113,7 +117,7 @@ describe('configurator developer session', () => {
     const { storage } = installWindow()
     storage.set(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY, String(Date.now()))
 
-    clearConfiguratorLoginRedirectGuard()
+    clearConfiguratorLoginRedirectGuard(BACKEND_URL)
 
     expect(storage.has(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY)).toBe(false)
   })

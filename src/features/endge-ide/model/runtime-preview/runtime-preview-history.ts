@@ -2,7 +2,9 @@ import type { RuntimePreviewEntityType, RuntimePreviewTarget } from '@/features/
 
 import { Endge } from '@endge/core'
 
-const STORAGE_KEY_PREFIX = 'endge:runtime-preview:history:v1'
+import { currentActiveBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
+
+const STORAGE_KEY_PREFIX = 'endge:runtime-preview:history:v2'
 const ENTITY_TYPES = new Set<RuntimePreviewEntityType>(['project', 'composition', 'component-sfc', 'store'])
 
 interface PersistedRuntimePreviewHistory {
@@ -61,6 +63,7 @@ export function runtimePreviewHistoryStorageKey(): string {
   const context = Endge.context.getExecutionContext()
   return [
     STORAGE_KEY_PREFIX,
+    currentActiveBackendURL(),
     workspace,
     context.tenantIdentity,
     context.projectIdentity,

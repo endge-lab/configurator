@@ -23,6 +23,9 @@ export interface FsNodeBase {
   type: FsNodeType
   virtual?: boolean
   badges?: string[]
+  /** Frontend-only Workspace projection; never belongs to Endge Domain. */
+  workspaceIdentity?: string
+  activeWorkspace?: boolean
 }
 
 export interface FsFolderNode extends FsNodeBase {
@@ -238,6 +241,7 @@ function collectDeletedFolderBranchIds(
 
 /** Полные русские подписи корневых разделов дерева. */
 export const ROOT_FOLDER_LABELS: Record<string, string> = {
+  'root-workspaces': 'Рабочие пространства',
   'root-types': 'Типы',
   'root-queries': 'Обмен данными',
   'root-data-views': 'Представления',
@@ -279,6 +283,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     id: 'context',
     title: 'Контекст',
     rootIds: [
+      'root-workspaces',
       'root-tenants',
       'root-projects',
       'root-environments',
