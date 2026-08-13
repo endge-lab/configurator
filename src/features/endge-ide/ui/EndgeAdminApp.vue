@@ -3,9 +3,10 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { Download, Loader2, Play, Settings2, Upload } from 'lucide-vue-next'
+import { Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
+import { Configurator } from '@/app'
 import { getIconComponent } from '@/components/layouts/grid'
 import {
   DropdownMenu,
@@ -18,7 +19,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Configurator } from '@/app'
+import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
+import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
@@ -39,6 +41,14 @@ const currentProjectIdentity = computed(() =>
 const isLaunchingProjectRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
+const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
+const canManageAccess = computed(() => {
+  const state = Configurator.session.state
+  return canManageAccessPolicy(
+    state.status === 'authenticated' && state.session.platformAdmin,
+    Configurator.context.workspaceRole,
+  )
+})
 const transferService = new ServiceBackendDomainTransfer_Service(Configurator.context.backendConfig!.serviceBackendURL)
 const launchProjectRuntimeTitle = computed(() =>
   currentProjectIdentity.value
@@ -60,6 +70,10 @@ function openDomainImport(): void {
 
 function openBackendConnections(): void {
   backendConnectionsModal.value?.open()
+}
+
+function openAccessControl(): void {
+  accessControlModal.value?.open()
 }
 
 function openDSLPlayground(): void {
@@ -155,6 +169,10 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <DropdownMenuItem @click="openBackendConnections">
             <Settings2 class="size-3.5" />
             Настройка подключений
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
+            <ShieldCheck class="size-3.5" />
+            Управление доступом
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -289,4 +307,5 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <EditorView />
   <DomainImport_Modal ref="domainImportModal" />
   <BackendConnections_Modal ref="backendConnectionsModal" />
+  <AccessControl_Modal ref="accessControlModal" />
 </template>

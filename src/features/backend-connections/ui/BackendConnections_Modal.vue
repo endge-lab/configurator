@@ -93,9 +93,6 @@ defineExpose({ open })
           <Server class="size-4 text-orange-500" />
           Настройка подключений
         </DialogTitle>
-        <DialogDescription>
-          Глобальный каталог хранится на основном backend. Проверка удалённого адреса выполняется при переключении.
-        </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4 px-6 py-5">
