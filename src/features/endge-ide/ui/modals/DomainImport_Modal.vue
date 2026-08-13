@@ -9,18 +9,14 @@ import type { EndgeDomainBundle } from '@endge/core'
 import { Endge } from '@endge/core'
 import {
   ArchiveRestore,
-  Check,
-  Download,
   FileJson2,
   Loader2,
-  RefreshCcw,
-  ShieldAlert,
   UploadCloud,
-  X,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Configurator } from '@/app'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,9 +33,7 @@ import {
   ServiceBackendDomainTransfer_Service,
   ServiceBackendDomainTransferError,
 } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
-import { Configurator } from '@/app'
 
-type BackupState = 'idle' | 'complete' | 'error'
 type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
 
 const openModel = ref(false)
@@ -47,7 +41,6 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const plan = ref<ServiceBackendDomainImportPlan | null>(null)
 const confirmation = ref('')
-const backupState = ref<BackupState>('idle')
 const importState = ref<ImportState>('idle')
 const errorMessage = ref('')
 const isDragOver = ref(false)
@@ -61,17 +54,15 @@ const workspaceIdentity = computed(() => String(Endge.workspace.current.identity
 const isBusy = computed(() => importState.value === 'checking'
   || importState.value === 'importing'
   || importState.value === 'reloading')
-const canImport = computed(() => backupState.value === 'complete'
-  && importState.value === 'ready'
+const canImport = computed(() => importState.value === 'ready'
   && plan.value?.valid === true
   && !!plan.value.planId
   && !!plan.value.targetETag
   && confirmation.value.trim() === workspaceIdentity.value)
 
-async function open(): Promise<void> {
+function open(): void {
   reset()
   openModel.value = true
-  await downloadSafetyCopy()
 }
 
 defineExpose({ open })
@@ -82,7 +73,6 @@ function reset(): void {
   selectedFile.value = null
   plan.value = null
   confirmation.value = ''
-  backupState.value = 'idle'
   importState.value = 'idle'
   errorMessage.value = ''
   isDragOver.value = false
@@ -98,20 +88,6 @@ function setOpen(value: boolean): void {
   openModel.value = value
   if (!value) {
     planController?.abort()
-  }
-}
-
-async function downloadSafetyCopy(): Promise<void> {
-  backupState.value = 'idle'
-  try {
-    if (!transferService)
-      throw new Error('Backend export service is unavailable')
-    await transferService.downloadExport(workspaceIdentity.value)
-    backupState.value = 'complete'
-  }
-  catch (error) {
-    backupState.value = 'error'
-    errorMessage.value = `Не удалось скачать страховочную копию: ${errorText(error)}`
   }
 }
 
@@ -230,14 +206,14 @@ async function applyImport(): Promise<void> {
   }
   catch {
     toast.warning('Импорт завершён, интерфейс будет перезагружен', {
-      description: 'Backend уже заменил домен, поэтому повторный импорт не запускается.',
+      description: 'Backend уже создал import commit, поэтому повторный импорт не запускается.',
     })
     window.location.reload()
     return
   }
 
   toast.success('Домен импортирован', {
-    description: `${result.imported.documents} документов. Страховочная backend-копия создана автоматически.`,
+    description: `${result.imported.documents} документов, удалено: ${result.deletes}. Создан обратимый import commit.`,
   })
   openModel.value = false
   reset()
@@ -290,49 +266,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 <template>
   <Dialog :open="openModel" @update:open="setOpen">
     <DialogContent class="max-h-[92vh] overflow-hidden p-0 sm:max-w-[760px]">
-      <DialogHeader class="border-b bg-destructive/[0.045] px-6 py-5 pr-14">
+      <DialogHeader class="border-b bg-primary/[0.035] px-6 py-5 pr-14">
         <div class="flex items-start gap-3">
-          <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive ring-1 ring-destructive/20">
-            <ShieldAlert class="size-5" />
+          <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
+            <ArchiveRestore class="size-5" />
           </div>
           <div class="space-y-1.5">
             <DialogTitle class="text-left text-lg">
-              Полный импорт домена
+              Импорт домена
             </DialogTitle>
             <DialogDescription class="text-left leading-5">
-              Все документы и история workspace <span class="font-mono font-semibold text-foreground">{{ workspaceIdentity }}</span>
-              будут полностью заменены содержимым выбранного файла.
+              Workspace <span class="font-mono font-semibold text-foreground">{{ workspaceIdentity }}</span>
+              будет приведён к выбранному snapshot через новые ревизии. Предыдущее состояние останется доступно для отката.
             </DialogDescription>
           </div>
         </div>
       </DialogHeader>
 
       <div class="min-h-0 space-y-4 overflow-y-auto px-6 py-5">
-        <section
-          class="flex items-center justify-between gap-4 rounded-md border px-4 py-3"
-          :class="backupState === 'error' ? 'border-destructive/40 bg-destructive/5' : 'border-emerald-500/25 bg-emerald-500/[0.06]'"
-        >
-          <div class="flex min-w-0 items-center gap-3">
-            <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-background ring-1 ring-border">
-              <Check v-if="backupState === 'complete'" class="size-4 text-emerald-600" />
-              <X v-else-if="backupState === 'error'" class="size-4 text-destructive" />
-              <Download v-else class="size-4 text-muted-foreground" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-sm font-medium">
-                {{ backupState === 'complete' ? 'Скачивание страховочной копии запущено' : backupState === 'error' ? 'Копия не скачана' : 'Подготовка копии' }}
-              </div>
-              <div class="mt-0.5 text-xs text-muted-foreground">
-                Импорт заблокирован, пока локальная копия текущего домена не будет сохранена.
-              </div>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" :disabled="isBusy" @click="downloadSafetyCopy">
-            <RefreshCcw class="size-3.5" />
-            Скачать ещё раз
-          </Button>
-        </section>
-
         <section class="space-y-2">
           <Label>Snapshot для импорта</Label>
           <input
@@ -371,34 +322,34 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           <div class="grid grid-cols-2 divide-x border-b bg-muted/25 sm:grid-cols-4">
             <div class="px-3 py-2.5">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                В файле
+                Будет создано
               </div>
               <div class="mt-1 text-sm font-semibold">
-                {{ plan.incoming.documents }} документов
+                {{ plan.creates }} документов
               </div>
             </div>
             <div class="px-3 py-2.5">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Будет удалено
+                Будет обновлено
               </div>
-              <div class="mt-1 text-sm font-semibold text-destructive">
-                {{ plan.willRemove.documents }} документов
+              <div class="mt-1 text-sm font-semibold">
+                {{ plan.updates }} документов
               </div>
             </div>
             <div class="border-t px-3 py-2.5 sm:border-t-0">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Ревизии
+                Восстановится
               </div>
               <div class="mt-1 text-sm font-semibold">
-                {{ plan.willRemove.revisions }}
+                {{ plan.restores }} документов
               </div>
             </div>
             <div class="border-t px-3 py-2.5 sm:border-t-0">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                История
+                Будет скрыто
               </div>
-              <div class="mt-1 text-sm font-semibold">
-                {{ plan.willRemove.commits + plan.willRemove.releases }}
+              <div class="mt-1 text-sm font-semibold" :class="plan.deletes > 0 ? 'text-amber-700 dark:text-amber-300' : ''">
+                {{ plan.deletes }} документов
               </div>
             </div>
           </div>
@@ -418,7 +369,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           </div>
         </section>
 
-        <section v-if="plan?.valid" class="space-y-2 rounded-md border border-destructive/25 bg-destructive/[0.035] p-4">
+        <section v-if="plan?.valid" class="space-y-2 rounded-md border bg-muted/20 p-4">
           <Label for="domain-import-confirmation" class="text-sm">
             Для подтверждения введите identity workspace:
             <span class="font-mono font-semibold">{{ workspaceIdentity }}</span>
@@ -440,17 +391,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
       <DialogFooter class="border-t bg-muted/15 px-6 py-4 sm:justify-between">
         <div class="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
           <ArchiveRestore class="size-3.5" />
-          Backend также создаст pre-import backup
+          Импорт создаст новый commit; предыдущую версию можно восстановить
         </div>
         <div class="flex justify-end gap-2">
           <Button variant="outline" :disabled="importState === 'importing' || importState === 'reloading'" @click="setOpen(false)">
             Отмена
           </Button>
-          <Button variant="destructive" :disabled="!canImport" @click="applyImport">
+          <Button :disabled="!canImport" @click="applyImport">
             <Loader2 v-if="importState === 'importing' || importState === 'reloading'" class="size-4 animate-spin" />
             <span v-if="importState === 'importing'">Импортируем…</span>
             <span v-else-if="importState === 'reloading'">Обновляем домен…</span>
-            <span v-else>Полностью заменить домен</span>
+            <span v-else>Импортировать домен</span>
           </Button>
         </div>
       </DialogFooter>

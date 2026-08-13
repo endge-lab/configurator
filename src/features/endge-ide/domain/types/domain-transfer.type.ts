@@ -1,6 +1,6 @@
 import type { EndgeDomainBundle } from '@endge/core'
 
-/** Нормализованный результат безопасной проверки destructive import. */
+/** Нормализованный результат проверки безопасного ревизионного импорта. */
 export interface ServiceBackendDomainImportPlan {
   planId?: string
   valid: boolean
@@ -11,32 +11,29 @@ export interface ServiceBackendDomainImportPlan {
     documents: number
     integrations: number
   }
-  willRemove: {
-    documents: number
-    revisions: number
-    commits: number
-    releases: number
-  }
+  creates: number
+  updates: number
+  restores: number
+  deletes: number
   warnings: string[]
   validationErrors: string[]
   unsupportedCollections: string[]
   missingIntegrations: string[]
 }
 
-/** Результат атомарного импорта и metadata созданной backend-копии. */
+/** Результат атомарного импорта и созданный обратимый commit. */
 export interface ServiceBackendDomainImportResult {
   workspace: string
   imported: {
     documents: number
     integrations: number
   }
-  backup: {
-    id: string
-    kind: string
-    sizeBytes: number
-    createdAt: string
-  }
-  initialCommitId: string
+  creates: number
+  updates: number
+  restores: number
+  deletes: number
+  commitId: string
+  parentCommitId: string
 }
 
 export interface ServiceBackendDomainImportPlanRequest {

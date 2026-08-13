@@ -30,7 +30,7 @@ export class ServiceBackendDomainTransferError extends Error {
   }
 }
 
-/** Выполняет только двухфазный destructive import нового backend. */
+/** Выполняет двухфазный ревизионный import нового backend. */
 export class ServiceBackendDomainTransfer_Service {
   private readonly _baseURL: string
 
@@ -44,8 +44,9 @@ export class ServiceBackendDomainTransfer_Service {
       credentials: 'include',
       headers: { 'X-Endge-Workspace': workspaceIdentity },
     })
-    if (!response.ok)
+    if (!response.ok) {
       throw new ServiceBackendDomainTransferError('import_request_failed', `Не удалось экспортировать домен (${response.status})`, response.status)
+    }
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -198,7 +199,10 @@ function normalizeImportPlan(value: UnknownRecord): ServiceBackendDomainImportPl
     targetETag: stringValue(value.targetETag),
     expiresAt: stringValue(value.expiresAt) || undefined,
     incoming: normalizeCounts(value.incoming),
-    willRemove: normalizeStateCounts(value.willRemove),
+    creates: nonNegativeNumber(value.creates),
+    updates: nonNegativeNumber(value.updates),
+    restores: nonNegativeNumber(value.restores),
+    deletes: nonNegativeNumber(value.deletes),
     warnings: stringArray(value.warnings),
     validationErrors: stringArray(value.validationErrors),
     unsupportedCollections: stringArray(value.unsupportedCollections),
@@ -211,26 +215,21 @@ function normalizeImportPlan(value: UnknownRecord): ServiceBackendDomainImportPl
 }
 
 function normalizeImportResult(value: UnknownRecord): ServiceBackendDomainImportResult | null {
-  const backup = recordValue(value.backup)
-  if (!backup) {
-    return null
-  }
   const workspace = stringValue(value.workspace)
-  const backupId = stringValue(backup.id)
-  const initialCommitId = stringValue(value.initialCommitId)
-  if (!workspace || !backupId || !initialCommitId) {
+  const commitId = stringValue(value.commitId)
+  const parentCommitId = stringValue(value.parentCommitId)
+  if (!workspace || !commitId || !parentCommitId) {
     return null
   }
   return {
     workspace,
     imported: normalizeCounts(value.imported),
-    backup: {
-      id: backupId,
-      kind: stringValue(backup.kind),
-      sizeBytes: nonNegativeNumber(backup.sizeBytes),
-      createdAt: stringValue(backup.createdAt),
-    },
-    initialCommitId,
+    creates: nonNegativeNumber(value.creates),
+    updates: nonNegativeNumber(value.updates),
+    restores: nonNegativeNumber(value.restores),
+    deletes: nonNegativeNumber(value.deletes),
+    commitId,
+    parentCommitId,
   }
 }
 
@@ -239,16 +238,6 @@ function normalizeCounts(value: unknown): { documents: number, integrations: num
   return {
     documents: nonNegativeNumber(source?.documents),
     integrations: nonNegativeNumber(source?.integrations),
-  }
-}
-
-function normalizeStateCounts(value: unknown): ServiceBackendDomainImportPlan['willRemove'] {
-  const source = recordValue(value)
-  return {
-    documents: nonNegativeNumber(source?.documents),
-    revisions: nonNegativeNumber(source?.revisions),
-    commits: nonNegativeNumber(source?.commits),
-    releases: nonNegativeNumber(source?.releases),
   }
 }
 

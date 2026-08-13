@@ -33,7 +33,6 @@ const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
 const configuratorMenuItems = EndgeIDE.integrations.menuItems
 const isBusy = computed(() => EndgeIDE.busy.value)
-const canMutateDomain = computed(() => Endge.domainRepository.capabilities.mutations)
 const canImportDomain = computed(() => Configurator.context.workspaceRole === 'admin')
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),
@@ -55,10 +54,6 @@ const launchProjectRuntimeTitle = computed(() =>
     ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
     : 'Выберите проект в нижней панели',
 )
-
-async function saveCurrentDocument(): Promise<void> {
-  await tabs.save()
-}
 
 async function exportCurrentDomain(): Promise<void> {
   await transferService.downloadExport(Endge.workspace.current.identity)
@@ -153,10 +148,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuItem :disabled="isBusy || !canMutateDomain" @click="saveCurrentDocument">
-            {{ isBusy ? 'Подождите…' : canMutateDomain ? 'Сохранить текущий документ' : 'Сохранение недоступно в read-only режиме' }}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem @click="exportCurrentDomain">
             <Download class="size-3.5" />
             Экспорт

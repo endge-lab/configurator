@@ -26,8 +26,11 @@ describe('serviceBackendDomainTransfer_Service', () => {
       targetWorkspace: 'workspace-a',
       targetETag: '"generation:3"',
       incoming: { documents: 12, integrations: 0 },
-      willRemove: { documents: 8, revisions: 24, commits: 3, releases: 1 },
-      warnings: ['Existing workspace documents and history will be removed'],
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
+      warnings: ['Documents absent from snapshot will be soft-deleted: 3'],
     }))
     vi.stubGlobal('fetch', fetchMock)
     const service = new ServiceBackendDomainTransfer_Service('https://backend.test/')
@@ -38,7 +41,10 @@ describe('serviceBackendDomainTransfer_Service', () => {
     })).resolves.toMatchObject({
       valid: true,
       incoming: { documents: 12 },
-      willRemove: { documents: 8, revisions: 24 },
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
     })
 
     expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/import/plan', {
@@ -57,14 +63,13 @@ describe('serviceBackendDomainTransfer_Service', () => {
   it('applies only the checked plan with exact confirmation and If-Match', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
       workspace: 'workspace-a',
-      backup: {
-        id: 'backup-id',
-        kind: 'pre_import',
-        sizeBytes: 1024,
-        createdAt: '2026-08-04T12:00:00Z',
-      },
       imported: { documents: 12, integrations: 0 },
-      initialCommitId: 'commit-id',
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
+      commitId: 'commit-id',
+      parentCommitId: 'parent-commit-id',
     }, 201))
     vi.stubGlobal('fetch', fetchMock)
     const service = new ServiceBackendDomainTransfer_Service('https://backend.test')
