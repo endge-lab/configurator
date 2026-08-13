@@ -21,11 +21,11 @@ export class BackendConnections_Service implements BackendConnectionsService {
     return this._request<BackendConnectionListResponse>('/api/v1/backend-connections')
   }
 
-  public async create(baseUrl: string): Promise<void> {
+  public async create(name: string, baseUrl: string): Promise<void> {
     await this._request('/api/v1/backend-connections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ baseUrl }),
+      body: JSON.stringify({ name, baseUrl }),
     })
   }
 

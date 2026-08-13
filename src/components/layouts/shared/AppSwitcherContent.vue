@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import { Check, ChevronsUpDown, Server } from 'lucide-vue-next'
+import { ChevronsUpDown, Server } from 'lucide-vue-next'
+import { computed } from 'vue'
 
 import { Configurator } from '@/app'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,11 @@ defineProps<{
   sideOffset?: number
 }>()
 
-const { catalog, activeBackendURL } = useBackendConnections()
+const { catalog, activeBackendURL, isPrimaryActive } = useBackendConnections()
+const activeConnectionName = computed(() =>
+  catalog.value?.items.find(connection => connection.baseUrl === activeBackendURL.value)?.name
+  ?? (isPrimaryActive.value ? 'Основной' : activeBackendURL.value),
+)
 
 function switchBackend(baseURL: string): void {
   Configurator.connections.switchBackend(baseURL)
@@ -33,8 +38,8 @@ function switchBackend(baseURL: string): void {
     <DropdownMenuTrigger as-child>
       <slot>
         <Button variant="ghost" size="sm" class="gap-2 px-2 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground">
-          <span class="max-w-64 truncate font-mono text-xs font-medium" :title="activeBackendURL">
-            {{ activeBackendURL }}
+          <span class="max-w-64 truncate text-xs font-medium" :title="activeBackendURL">
+            {{ activeConnectionName }}
           </span>
           <ChevronsUpDown class="size-4 text-muted-foreground" />
         </Button>
@@ -59,10 +64,9 @@ function switchBackend(baseURL: string): void {
         >
           <Server class="size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
           <div class="min-w-0 flex-1">
-            <span class="block truncate font-mono text-xs">{{ connection.baseUrl }}</span>
-            <span class="block text-[10px] text-muted-foreground">{{ connection.primary ? 'Основной' : 'Удалённый backend' }}</span>
+            <span class="block truncate text-xs font-medium">{{ connection.name }}</span>
+            <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
           </div>
-          <Check v-if="activeBackendURL === connection.baseUrl" class="size-4 shrink-0 text-emerald-500" />
         </DropdownMenuItem>
       </DropdownMenuGroup>
     </DropdownMenuContent>

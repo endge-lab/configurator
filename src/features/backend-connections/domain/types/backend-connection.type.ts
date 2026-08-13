@@ -1,5 +1,6 @@
 export interface BackendConnection {
   id: string
+  name: string
   baseUrl: string
   createdBy?: string
   createdAt?: string
@@ -21,6 +22,7 @@ export type BackendConnectionCatalogState
 export interface BackendConnectionListResponse {
   items: Array<{
     id: string
+    name?: string
     baseUrl: string
     createdBy?: string
     createdAt?: string
@@ -31,6 +33,6 @@ export interface BackendConnectionListResponse {
 
 export interface BackendConnectionsService {
   list: () => Promise<BackendConnectionListResponse>
-  create: (baseURL: string) => Promise<void>
+  create: (name: string, baseURL: string) => Promise<void>
   delete: (id: string) => Promise<void>
 }

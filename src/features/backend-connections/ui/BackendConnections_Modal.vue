@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import { Check, Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucide-vue-next'
+import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Configurator } from '@/app'
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -17,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { useBackendConnections } from '@/features/backend-connections'
 
 const openState = ref(false)
+const newName = ref('')
 const newURL = ref('')
 const isSubmitting = ref(false)
 const deletingID = ref<string | null>(null)
@@ -33,13 +33,14 @@ function open(): void {
 }
 
 async function addConnection(): Promise<void> {
-  if (!newURL.value.trim() || isSubmitting.value) {
+  if (!newName.value.trim() || !newURL.value.trim() || isSubmitting.value) {
     return
   }
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    await Configurator.connections.create(newURL.value)
+    await Configurator.connections.create(newName.value, newURL.value)
+    newName.value = ''
     newURL.value = ''
   }
   catch (error) {
@@ -50,10 +51,10 @@ async function addConnection(): Promise<void> {
   }
 }
 
-async function removeConnection(id: string, baseURL: string): Promise<void> {
+async function removeConnection(id: string, name: string, baseURL: string): Promise<void> {
   const confirmed = await Configurator.questions.ask({
     title: 'Удалить подключение?',
-    text: baseURL,
+    text: name,
     description: activeBackendURL.value === baseURL
       ? 'Это активное подключение. Configurator переключится на основной backend и перезагрузится.'
       : 'Адрес исчезнет из каталога у всех пользователей.',
@@ -106,21 +107,18 @@ defineExpose({ open })
             v-for="connection in catalog?.items ?? []"
             :key="connection.id"
             class="flex items-center gap-3 rounded-lg border bg-card px-3.5 py-3"
+            :class="activeBackendURL === connection.baseUrl ? 'border-primary/40 bg-accent/40' : ''"
           >
             <span class="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
               <LockKeyhole v-if="connection.primary" class="size-4" />
               <Server v-else class="size-4" />
             </span>
             <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="truncate font-mono text-xs">{{ connection.baseUrl }}</span>
-                <span v-if="connection.primary" class="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">Основной</span>
-                <span v-if="activeBackendURL === connection.baseUrl" class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-                  <Check class="size-3" /> Активен
-                </span>
-              </div>
-              <p class="mt-1 text-[11px] text-muted-foreground">
-                {{ connection.primary ? 'Задан переменной среды и не может быть удалён' : 'Удалённый backend' }}
+              <p class="truncate text-sm font-medium">
+                {{ connection.name }}
+              </p>
+              <p class="mt-1 truncate font-mono text-[11px] text-muted-foreground" :title="connection.baseUrl">
+                {{ connection.baseUrl }}
               </p>
             </div>
             <Button
@@ -130,7 +128,7 @@ defineExpose({ open })
               class="size-8 text-muted-foreground hover:text-destructive"
               :disabled="deletingID === connection.id"
               title="Удалить подключение"
-              @click="removeConnection(connection.id, connection.baseUrl)"
+              @click="removeConnection(connection.id, connection.name, connection.baseUrl)"
             >
               <Loader2 v-if="deletingID === connection.id" class="size-4 animate-spin" />
               <Trash2 v-else class="size-4" />
@@ -141,9 +139,10 @@ defineExpose({ open })
           </div>
         </div>
 
-        <form v-if="canManage" class="flex gap-2 border-t pt-4" @submit.prevent="addConnection">
+        <form v-if="canManage" class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto] gap-2 border-t pt-4" @submit.prevent="addConnection">
+          <Input v-model="newName" placeholder="Название" autocomplete="off" maxlength="160" />
           <Input v-model="newURL" placeholder="https://backend.example.com" autocomplete="url" />
-          <Button type="submit" :disabled="isSubmitting || !newURL.trim()" class="shrink-0 gap-2">
+          <Button type="submit" :disabled="isSubmitting || !newName.trim() || !newURL.trim()" class="shrink-0 gap-2">
             <Loader2 v-if="isSubmitting" class="size-4 animate-spin" />
             <Plus v-else class="size-4" />
             Добавить

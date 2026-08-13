@@ -24,10 +24,10 @@ class MemoryStorage implements Storage {
 
 class ServiceStub implements BackendConnectionsService {
   public response: BackendConnectionListResponse = { items: [], total: 0, canManage: false }
-  public readonly created: string[] = []
+  public readonly created: Array<{ name: string, baseURL: string }> = []
   public readonly deleted: string[] = []
   public async list(): Promise<BackendConnectionListResponse> { return this.response }
-  public async create(baseURL: string): Promise<void> { this.created.push(baseURL) }
+  public async create(name: string, baseURL: string): Promise<void> { this.created.push({ name, baseURL }) }
   public async delete(id: string): Promise<void> { this.deleted.push(id) }
 }
 
@@ -69,8 +69,8 @@ describe('backend connections', () => {
       canManage: true,
       total: 2,
       items: [
-        { id: 'duplicate-primary', baseUrl: 'https://primary.test/' },
-        { id: 'remote', baseUrl: 'https://remote.test/' },
+        { id: 'duplicate-primary', name: 'Duplicate', baseUrl: 'https://primary.test/' },
+        { id: 'remote', name: 'Production', baseUrl: 'https://remote.test/' },
       ],
     }
     const reload = vi.fn()
@@ -86,6 +86,7 @@ describe('backend connections', () => {
       'https://primary.test',
       'https://remote.test',
     ])
+    expect(catalog.items.map(item => item.name)).toEqual(['Основной', 'Production'])
     module.switchBackend('https://remote.test/')
     expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://remote.test')
     expect(reload).toHaveBeenCalledOnce()
@@ -105,6 +106,47 @@ describe('backend connections', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://primary.test/api/v1/backend-connections',
       expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
+  it('keeps a legacy connection visible when an older backend has no name yet', async () => {
+    const service = new ServiceStub()
+    service.response = {
+      canManage: false,
+      total: 1,
+      items: [{ id: 'legacy', baseUrl: 'https://legacy.test/' }],
+    }
+    const module = new BackendConnections_Module(
+      'https://primary.test',
+      service,
+      new BackendConnectionStorage(),
+      vi.fn(),
+    )
+
+    const catalog = await module.load()
+
+    expect(catalog.items[1]).toMatchObject({
+      name: 'https://legacy.test',
+      baseUrl: 'https://legacy.test',
+    })
+  })
+
+  it('sends the user-defined name together with the normalized URL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({}), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new BackendConnections_Service('https://primary.test/')
+
+    await service.create('Production', 'https://remote.test')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://primary.test/api/v1/backend-connections',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'Production', baseUrl: 'https://remote.test' }),
+      }),
     )
   })
 

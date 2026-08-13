@@ -67,8 +67,8 @@ export class BackendConnections_Module {
     return this._loadPromise
   }
 
-  public async create(baseURL: string): Promise<void> {
-    await this._service.create(normalizeBackendURL(baseURL))
+  public async create(name: string, baseURL: string): Promise<void> {
+    await this._service.create(name.trim(), normalizeBackendURL(baseURL))
     await this.load()
   }
 
@@ -127,12 +127,13 @@ export class BackendConnections_Module {
   }
 
   private _normalizeCatalog(
-    values: Array<{ id: string, baseUrl: string, createdBy?: string, createdAt?: string }>,
+    values: Array<{ id: string, name?: string, baseUrl: string, createdBy?: string, createdAt?: string }>,
     canManage: boolean,
   ): BackendConnectionCatalog {
     const byURL = new Map<string, BackendConnection>()
     byURL.set(this.primaryBackendURL, {
       id: 'primary',
+      name: 'Основной',
       baseUrl: this.primaryBackendURL,
       primary: true,
     })
@@ -140,7 +141,7 @@ export class BackendConnections_Module {
       try {
         const baseUrl = normalizeBackendURL(value.baseUrl)
         if (!byURL.has(baseUrl)) {
-          byURL.set(baseUrl, { ...value, baseUrl, primary: false })
+          byURL.set(baseUrl, { ...value, name: value.name?.trim() || baseUrl, baseUrl, primary: false })
         }
       }
       catch {
@@ -151,7 +152,7 @@ export class BackendConnections_Module {
       if (left.primary !== right.primary) {
         return left.primary ? -1 : 1
       }
-      return left.baseUrl.localeCompare(right.baseUrl)
+      return left.name.localeCompare(right.name) || left.baseUrl.localeCompare(right.baseUrl)
     })
     return { items, total: items.length, canManage }
   }
