@@ -50,7 +50,7 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   },
   {
     id: 'releases',
-    title: 'Релизы',
+    title: 'Версии',
     icon: 'GitBranch',
     iconClass: 'text-emerald-600 dark:text-[#C3E88D]',
     content: 'component',

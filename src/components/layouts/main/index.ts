@@ -3,7 +3,6 @@ import Main from '@/components/layouts/main/Main.vue'
 
 interface App {
   name: string
-  logo: string
   href: string
 }
 

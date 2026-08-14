@@ -27,7 +27,6 @@ export default antfu(
       '@intlify/vue-i18n/no-unknown-locale': 'error',
       '@intlify/vue-i18n/no-unused-keys': ['error', {
         extensions: ['.ts', '.vue'],
-        ignores: ['app.title', 'app.shortTitle', 'app.description'],
       }],
       '@intlify/vue-i18n/prefer-sfc-lang-attr': 'error',
 
@@ -59,7 +58,6 @@ export default antfu(
       'vue-i18n': {
         localeDir: [
           './src/i18n/locales/*.{json,json5,yaml,yml}',
-          './src/assets/branding/*/locale/*.{json,json5,yaml,yml}',
         ],
         messageSyntaxVersion: '^11.1.12',
       },

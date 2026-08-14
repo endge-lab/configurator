@@ -1,38 +1,20 @@
 import type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { useTitle } from '@vueuse/core'
-import { computed, onBeforeUnmount, toValue, watch } from 'vue'
+import { onBeforeUnmount, toValue, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { Configurator } from '@/app'
-import { useBranding } from '@/lib/branding'
 
 export type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 
 export interface LayoutOptions {
-  title?: MaybeRefOrGetter<string | null | undefined>
   breadcrumbs?: MaybeRefOrGetter<BreadcrumbItem[]>
   breadcrumbsLimit?: number
 }
 
 export function useLayout(options?: LayoutOptions) {
-  const { currentBranding } = useBranding()
   const route = useRoute()
-
-  // Compute the full title based on the provided title option
-  const fullTitle = computed(() => {
-    const titleValue = options?.title ? toValue(options.title) : null
-    const brandingName = currentBranding.value?.name
-
-    if (titleValue) {
-      return `${titleValue} – ${brandingName}`
-    }
-    return brandingName
-  })
-
-  // Set the document title reactively
-  useTitle(fullTitle)
 
   // Function to apply layout settings
   const applyLayoutSettings = () => {

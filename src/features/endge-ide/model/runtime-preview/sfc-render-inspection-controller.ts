@@ -27,7 +27,7 @@ export class SFCRenderInspectionController {
   public readonly activeData = computed<Record<string, unknown> | null>(() => {
     const node = this.activeNode.value
     if (!node) { return null }
-    return toInspectableValue({
+    return {
       component: node.calledComponentIdentity ?? node.componentIdentity,
       node: {
         id: node.nodeId,
@@ -43,7 +43,7 @@ export class SFCRenderInspectionController {
       componentProps: node.componentProps,
       locals: node.locals,
       bindings: node.bindings,
-    }) as Record<string, unknown>
+    }
   })
 
   public constructor() {
@@ -82,34 +82,4 @@ export class SFCRenderInspectionController {
     this._unsubscribe()
     this.reset()
   }
-}
-
-function toInspectableValue(value: unknown, seen = new WeakSet<object>(), depth = 0): unknown {
-  if (value == null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') { return value }
-  if (typeof value === 'bigint') { return `${value}n` }
-  if (typeof value === 'function') { return `[Function ${value.name || 'anonymous'}]` }
-  if (typeof value === 'symbol') { return String(value) }
-  if (depth >= 8) { return '[Max depth]' }
-  if (value instanceof Date) { return value.toISOString() }
-  if (value instanceof Error) { return { name: value.name, message: value.message } }
-  if (typeof value !== 'object') { return String(value) }
-  if (seen.has(value)) { return '[Circular]' }
-  seen.add(value)
-  if (Array.isArray(value)) {
-    const items = value.slice(0, 100).map(item => toInspectableValue(item, seen, depth + 1))
-    if (value.length > 100) { items.push(`[+${value.length - 100} more]`) }
-    return items
-  }
-  let sourceEntries: [string, unknown][]
-  try {
-    sourceEntries = Object.entries(value as Record<string, unknown>)
-  }
-  catch (error) {
-    return `[Uninspectable: ${error instanceof Error ? error.message : String(error)}]`
-  }
-  const entries = sourceEntries.slice(0, 100)
-  const result = Object.fromEntries(entries.map(([key, item]) => [key, toInspectableValue(item, seen, depth + 1)]))
-  const total = sourceEntries.length
-  if (total > entries.length) { result.$truncated = `${total - entries.length} more fields` }
-  return result
 }

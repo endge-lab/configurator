@@ -1,4 +1,3 @@
-import type { ConfiguratorBranding_Module } from '@/app/model/modules/branding/ConfiguratorBranding_Module'
 import type { ConfiguratorChromeBridge_Module } from '@/app/model/modules/chrome-bridge/ConfiguratorChromeBridge_Module'
 import type { ConfiguratorContext_Module } from '@/app/model/modules/context/ConfiguratorContext_Module'
 import type { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
@@ -33,7 +32,6 @@ export interface ConfiguratorModules {
   diagnostics: ConfiguratorDiagnostics_Module
   i18n: ConfiguratorI18n_Module
   chromeBridge: ConfiguratorChromeBridge_Module
-  branding: ConfiguratorBranding_Module
   questions: Questions_Module
   layout: Layout_Module
 }

@@ -1,6 +1,4 @@
 /// <reference types="vite/client" />
-import type { Ref } from 'vue'
-
 interface ViteTypeOptions {
   // By adding this line, you can make the type of ImportMetaEnv strict
   // to disallow unknown keys.
@@ -8,7 +6,6 @@ interface ViteTypeOptions {
 }
 
 interface ImportMetaEnv {
-  readonly VITE_BRANDING?: string
   readonly VITE_DEFAULT_LOCALE?: string
   readonly VITE_ENDGE_SERVICE_BACKEND_URL?: string
   readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
@@ -27,12 +24,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
-declare module 'vue' {
-  interface ComponentCustomProperties {
-    $branding: Ref<string>
-  }
-}
-
 declare const __APP_VERSION__: string
 declare const __APP_VERSION_UPDATED__: string
 

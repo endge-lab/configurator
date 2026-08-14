@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { App } from '@/components/layouts/main/index.ts'
 
-import { ChevronsUpDown } from 'lucide-vue-next'
+import { ChevronsUpDown, Settings2 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -18,16 +18,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { useBranding } from '@/lib/branding.ts'
 
 const { isMobile } = useSidebar()
-const { currentBranding } = useBranding()
 const { t } = useI18n()
 
 const apps = ref<App[]>([
   {
     name: 'App switcher coming soon',
-    logo: currentBranding.value.iconHref!,
     href: '#',
   },
 ])
@@ -43,7 +40,7 @@ const apps = ref<App[]>([
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div class="flex aspect-square size-8 items-center justify-center rounded-lg">
-              <img :src="currentBranding.iconHref" class="size-6">
+              <Settings2 class="size-6" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-medium">
@@ -69,7 +66,7 @@ const apps = ref<App[]>([
             class="gap-2 p-2"
           >
             <div class="flex size-6 items-center justify-center rounded-sm border">
-              <img :src="app.logo" class="size-3.5 shrink-0">
+              <Settings2 class="size-3.5 shrink-0" />
             </div>
             {{ app.name }}
           </DropdownMenuItem>

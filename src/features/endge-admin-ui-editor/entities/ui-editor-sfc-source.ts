@@ -474,12 +474,12 @@ function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | nul
     runtimeState: null,
     componentStack: [],
     consumerScope: 'ui-editor-preview',
+    variant: 'default',
     styleArtifacts: [],
     styleParent: undefined,
-    styleSiblings: [],
-    styleSiblingCount: 0,
     styleOwnerScopeId: undefined,
     runtimeScopeIds: [],
+    metadata: null,
   }
 }
 

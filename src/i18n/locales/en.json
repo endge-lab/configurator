@@ -1,4 +1,8 @@
 {
+  "app": {
+    "description": "Endge configuration environment",
+    "title": "Configurator"
+  },
   "grid": {
     "widget": {
       "close": "Close",
@@ -18,10 +22,6 @@
         "appSwitcher": {
           "description": "Configurable app switcher dropdown powered by environment variable with support for groups, icons, and external links.",
           "title": "App Switcher"
-        },
-        "branding": {
-          "description": "Dynamic branding system with customizable colors, logos, and themes.",
-          "title": "Custom Branding"
         },
         "errors": {
           "description": "Catch errors with a beautiful error page.",
@@ -80,8 +80,8 @@
         "viewDemo": "View Demo"
       },
       "hero": {
-        "badge": "PANORAMA",
-        "description": "Template for all PANORAMA modules with modern tooling, flexible UI components, and built-in best practices.",
+        "badge": "Endge",
+        "description": "Endge configuration environment with modern tooling and flexible UI components.",
         "gitlab": "Go to repository",
         "title": "Starter Template"
       }

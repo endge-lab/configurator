@@ -27,7 +27,6 @@ const title = computed(() => props.isNotFound ? t('nav.error.notFound.title') : 
 const isOpen = ref(false)
 
 useLayout({
-  title,
   breadcrumbs: computed(() => [
     { title: title.value },
   ]).value,

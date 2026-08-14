@@ -88,10 +88,6 @@ export class Configurator {
     return this._modules.i18n
   }
 
-  public static get branding() {
-    return this._modules.branding
-  }
-
   public static get questions() {
     return this._modules.questions
   }
@@ -107,7 +103,6 @@ export class Configurator {
 
     this._errorBoundary = new VueErrorBoundary_Adapter(app, router, this._modules.diagnostics)
     this._errorBoundary.setup()
-    this._modules.branding.setup(app)
     this._modules.chromeBridge.setup()
     EndgeIDE.setup(this._modules.context)
   }
@@ -179,7 +174,6 @@ export class Configurator {
     this._errorBoundary?.destroy()
     this._errorBoundary = null
     this._modules.chromeBridge.destroy()
-    this._modules.branding.destroy()
   }
 
   private static async _initialize(): Promise<ConfiguratorStatus> {

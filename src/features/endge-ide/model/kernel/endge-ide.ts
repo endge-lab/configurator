@@ -1,6 +1,9 @@
 import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
+import type { RuntimeInspectionLease } from '@endge/core'
+import type { RaphDebugLease } from '@endge/raph'
 
 import { Endge } from '@endge/core'
+import { Raph } from '@endge/raph'
 
 import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
 import { createEndgeIDEModules } from '@/features/endge-ide/model/config/modules.config'
@@ -11,6 +14,8 @@ export class EndgeIDE {
   private static _initialized = false
   private static _hasActiveModules = false
   private static _initialization: Promise<void> | null = null
+  private static _raphDebugLease: RaphDebugLease | null = null
+  private static _destroyedSnapshotsLease: RuntimeInspectionLease | null = null
 
   private constructor() {}
 
@@ -103,24 +108,33 @@ export class EndgeIDE {
 
   private static async _resetModules(): Promise<void> {
     const modules = this._requireModules()
-    await modules.integrations.reset()
-    modules.problems.reset()
-    modules.sourceEditorDialogs.reset()
-    modules.authProfileEditors.reset()
-    modules.runtimePreview.reset()
-    modules.flowCatalog.reset()
-    modules.hotkeys.reset()
-    modules.tabs.reset()
-    if (!isIDEWidgetsDisabled()) {
-      modules.widgets.reset()
+    try {
+      await modules.integrations.reset()
+      modules.problems.reset()
+      modules.sourceEditorDialogs.reset()
+      modules.authProfileEditors.reset()
+      modules.runtimePreview.reset()
+      modules.flowCatalog.reset()
+      modules.hotkeys.reset()
+      modules.tabs.reset()
+      if (!isIDEWidgetsDisabled()) {
+        modules.widgets.reset()
+      }
+      modules.modals.reset()
+      modules.demonstration.reset()
+      modules.domainDrag.reset()
+      modules.busy.reset()
+      modules.agentTableActions.reset()
+      Endge.runtimeDebugger.reset()
     }
-    modules.modals.reset()
-    modules.demonstration.reset()
-    modules.domainDrag.reset()
-    modules.busy.reset()
-    modules.agentTableActions.reset()
-    this._initialized = false
-    this._hasActiveModules = false
+    finally {
+      this._raphDebugLease?.release()
+      this._raphDebugLease = null
+      this._destroyedSnapshotsLease?.release()
+      this._destroyedSnapshotsLease = null
+      this._initialized = false
+      this._hasActiveModules = false
+    }
   }
 
   private static async _initialize(): Promise<void> {
@@ -130,6 +144,8 @@ export class EndgeIDE {
 
     this._hasActiveModules = true
     try {
+      this._raphDebugLease = Raph.debug.acquire()
+      this._destroyedSnapshotsLease = Endge.runtime.acquireDestroyedHostSnapshots(50)
       modules.demonstration.init()
       modules.modals.init()
       if (!widgetsDisabled) {

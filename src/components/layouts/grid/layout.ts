@@ -12,7 +12,6 @@ import type {
 import type { WidgetChannelMessage, WidgetPopupState } from '@/components/layouts/grid/widget-channel.ts'
 import type { ComputedRef, Ref } from 'vue'
 
-import { useTitle } from '@vueuse/core'
 import { computed, isRef, onBeforeUnmount, reactive, ref, toValue, watch } from 'vue'
 
 import {
@@ -23,7 +22,6 @@ import {
   registerPopupWindow,
   unregisterPopupWindow,
 } from '@/components/layouts/grid/widget-channel.ts'
-import { useBranding } from '@/lib/branding.ts'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const STORAGE_KEY = 'app:grid-layout-state'
@@ -205,21 +203,20 @@ function hydrateLayoutFromPersisted(): void {
 export function useLayout(options?: LayoutOptions) {
   hydrateLayoutFromPersisted()
 
-  const { currentBranding } = useBranding()
+  const titleOption = options?.title
+  const stopTitleWatch = titleOption
+    ? watch(
+        () => toValue(titleOption),
+        (title) => {
+          layoutState.title = title ?? ''
+        },
+        { immediate: true },
+      )
+    : undefined
 
-  const fullTitle = computed(() => {
-    const titleValue = options?.title ? toValue(options.title) : null
-    const brandingName = currentBranding.value?.name
-
-    if (titleValue) {
-      layoutState.title = titleValue
-      return `${titleValue} – ${brandingName}`
-    }
-    layoutState.title = brandingName ?? ''
-    return brandingName
-  })
-
-  useTitle(fullTitle)
+  if (!titleOption) {
+    layoutState.title = ''
+  }
 
   const applyLayoutSettings = () => {
     if (options?.isLoading) {
@@ -261,6 +258,7 @@ export function useLayout(options?: LayoutOptions) {
   }
 
   onBeforeUnmount(() => {
+    stopTitleWatch?.()
     stopLoadingWatch?.()
     stopLoadingReverseWatch?.()
   })

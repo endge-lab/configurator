@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Settings2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { useBranding } from '@/lib/branding.ts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const props = withDefaults(defineProps<{
@@ -13,8 +13,6 @@ const props = withDefaults(defineProps<{
 }>(), {
   iconHeight: 'h-10',
 })
-
-const { currentBranding } = useBranding()
 
 const appVersion: string = __APP_VERSION__
 const appVersionUpdated: string = __APP_VERSION_UPDATED__
@@ -48,13 +46,11 @@ const iconStyle = computed<Record<string, string> | undefined>(() => {
     <Tooltip>
       <TooltipTrigger as-child>
         <div class="flex items-center gap-2 cursor-default">
-          <img
-            v-if="currentBranding.iconHref"
-            :src="currentBranding.iconHref"
-            alt="Конфигуратор"
+          <Settings2
+            aria-label="Конфигуратор"
             :class="iconClass"
             :style="iconStyle"
-          >
+          />
         </div>
       </TooltipTrigger>
 

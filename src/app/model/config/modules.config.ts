@@ -1,7 +1,6 @@
 import type { ConfiguratorModules } from '@/app/domain/types/configurator.type'
 
 import { CONFIGURATOR_DIAGNOSTICS_CONFIG } from '@/app/model/config/diagnostics.config'
-import { ConfiguratorBranding_Module } from '@/app/model/modules/branding/ConfiguratorBranding_Module'
 import { ConfiguratorChromeBridge_Module } from '@/app/model/modules/chrome-bridge/ConfiguratorChromeBridge_Module'
 import { ConfiguratorContext_Module } from '@/app/model/modules/context/ConfiguratorContext_Module'
 import { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
@@ -17,7 +16,6 @@ import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-b
 /** Creates the single application-scoped module graph. */
 export function createConfiguratorModules(): ConfiguratorModules {
   const backendConfig = getEndgeBackendConfig()
-  const branding = new ConfiguratorBranding_Module()
   const connections = new BackendConnections_Module(
     backendConfig.primaryBackendURL,
     new BackendConnections_Service(backendConfig.primaryBackendURL),
@@ -37,9 +35,8 @@ export function createConfiguratorModules(): ConfiguratorModules {
           .catch(() => undefined)
       },
     ),
-    i18n: new ConfiguratorI18n_Module(branding.value),
+    i18n: new ConfiguratorI18n_Module(),
     chromeBridge: new ConfiguratorChromeBridge_Module(),
-    branding,
     questions: new Questions_Module(),
     layout: new Layout_Module(),
   }

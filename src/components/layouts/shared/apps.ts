@@ -2,8 +2,6 @@ import type { Component } from 'vue'
 
 import { defineAsyncComponent } from 'vue'
 
-import { useBranding } from '@/lib/branding'
-
 export interface AppSwitcherGroup {
   label: string
   links: AppSwitcherLink[]
@@ -40,23 +38,13 @@ function resolveStaticIcon(icon: string): ResolvedIcon {
   if (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:'))
     return { type: 'url', src: icon }
 
-  if (icon !== 'branding')
-    return { type: 'component', component: resolveLucideIcon(icon) }
-
-  return null
+  return { type: 'component', component: resolveLucideIcon(icon) }
 }
 
 export function useAppSwitcherIcon() {
-  const { currentBranding } = useBranding()
-
   function resolveIcon(icon: string | undefined): ResolvedIcon {
     if (!icon)
       return null
-
-    if (icon === 'branding') {
-      const href = currentBranding.value?.iconHref
-      return href ? { type: 'url', src: href } : null
-    }
 
     return resolveStaticIcon(icon)
   }
