@@ -10,11 +10,15 @@ import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
+import AuthenticationRequiredGate from '@/features/backend-connections/ui/AuthenticationRequiredGate.vue'
+import BackendConnectionFailureGate from '@/features/backend-connections/ui/BackendConnectionFailureGate.vue'
 import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceSelectionGate.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 
 const workspaceSelectionRequired = Configurator.status === 'workspace-selection-required'
+const backendConnectionFailed = Configurator.status === 'backend-connection-failed'
+const authenticationRequired = Configurator.status === 'authentication-required'
 
 const route = useRoute()
 const error = ref<Error | null>(null)
@@ -82,7 +86,9 @@ onErrorCaptured((err, instance, info) => {
 </script>
 
 <template>
-  <WorkspaceSelectionGate v-if="workspaceSelectionRequired" />
+  <AuthenticationRequiredGate v-if="authenticationRequired" />
+  <BackendConnectionFailureGate v-else-if="backendConnectionFailed" />
+  <WorkspaceSelectionGate v-else-if="workspaceSelectionRequired" />
   <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>

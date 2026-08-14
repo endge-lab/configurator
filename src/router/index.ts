@@ -8,11 +8,14 @@ const router = createRouter({
   routes,
 })
 
-// Initial navigation является boot-барьером: все маршруты получают уже
-// авторизованный Configurator с загруженным и скомпилированным Endge domain.
+// Initial navigation является boot-барьером. Специальные bootstrap-состояния
+// допускают mount приложения, но App перекрывает RouterView своим gate.
 router.beforeEach(async () => {
   const status = await Configurator.init()
   return status === 'ready'
+    || status === 'authentication-required'
+    || status === 'workspace-selection-required'
+    || status === 'backend-connection-failed'
 })
 
 router.onError((error) => {

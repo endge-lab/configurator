@@ -121,7 +121,10 @@ export class CompositionPreviewSession {
         artifact.payload.data,
         identity => this._scope.resolve<StoreRuntimeHost>('store', identity),
       )
-      const props = materializeCompositionPreviewProps(artifact.payload.previewProps)
+      const props = materializeCompositionPreviewProps(
+        artifact.payload.previewProps,
+        artifact.payload.dataMode ?? Endge.context.dataMode,
+      )
       const runtime = this._scope.execute(model, {
         meta: {
           mode: 'preview',

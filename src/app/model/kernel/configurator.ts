@@ -2,7 +2,12 @@
 import '@/features/endge-ide/model/bootstrap/endge-runtime-plugins'
 import '@/features/endge-ide/model/bootstrap/endge-renderer-plugins'
 
-import type { ConfiguratorModules, ConfiguratorStatus } from '@/app/domain/types/configurator.type'
+import type {
+  ConfiguratorAuthenticationRequirement,
+  ConfiguratorBackendConnectionFailure,
+  ConfiguratorModules,
+  ConfiguratorStatus,
+} from '@/app/domain/types/configurator.type'
 import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
 import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
 import type { App } from 'vue'
@@ -34,6 +39,8 @@ export class Configurator {
   private static readonly _modules: ConfiguratorModules = createConfiguratorModules()
   private static _initialization: Promise<ConfiguratorStatus> | null = null
   private static _status: 'idle' | ConfiguratorStatus = 'idle'
+  private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
+  private static _backendConnectionFailure: ConfiguratorBackendConnectionFailure | null = null
   private static _errorBoundary: VueErrorBoundary_Adapter | null = null
 
   private constructor() {}
@@ -59,6 +66,14 @@ export class Configurator {
     return state.status === 'authenticated'
       ? state.session.workspaces.filter(workspace => workspace.active)
       : []
+  }
+
+  public static get backendConnectionFailure(): ConfiguratorBackendConnectionFailure | null {
+    return this._backendConnectionFailure
+  }
+
+  public static get authenticationRequirement(): ConfiguratorAuthenticationRequirement | null {
+    return this._authenticationRequirement
   }
 
   public static get context() {
@@ -137,6 +152,15 @@ export class Configurator {
     throw new ConfiguratorBootstrapError('logout_failed', 'Backend session remained authenticated after logout')
   }
 
+  public static retryAuthentication(): void {
+    const requirement = this._authenticationRequirement
+    if (!requirement) {
+      return
+    }
+    clearConfiguratorLoginRedirectGuard(requirement.backendURL)
+    this._startLoginOrThrow(requirement.loginUrl, requirement.backendURL)
+  }
+
   public static async reset(): Promise<void> {
     await EndgeIDE.reset()
     this._modules.i18n.reset()
@@ -145,6 +169,8 @@ export class Configurator {
     this._modules.diagnostics.reset()
     this._modules.questions.reset()
     this._modules.layout.reset()
+    this._authenticationRequirement = null
+    this._backendConnectionFailure = null
     this._status = 'idle'
   }
 
@@ -157,16 +183,22 @@ export class Configurator {
   }
 
   private static async _initialize(): Promise<ConfiguratorStatus> {
+    this._authenticationRequirement = null
+    this._backendConnectionFailure = null
     const backendConfig = getEndgeBackendConfig()
     if (!this._modules.connections.isPrimaryActive) {
       const primarySession = await new ConfiguratorSession_Service(backendConfig.primaryBackendURL).check()
       if (primarySession.status === 'unauthenticated') {
-        this._startLoginOrThrow(primarySession.loginUrl, backendConfig.primaryBackendURL)
-        return 'redirecting'
+        return this._startLoginOrRequire(primarySession.loginUrl, backendConfig.primaryBackendURL)
       }
       if (primarySession.status !== 'authenticated') {
-        this._modules.connections.fallbackToPrimary()
-        return 'redirecting'
+        return this._connectionFailed(
+          backendConfig.primaryBackendURL,
+          primarySession.status === 'error' ? primarySession.code : 'primary_session_unavailable',
+          primarySession.status === 'error'
+            ? primarySession.message
+            : 'Primary backend session is unavailable',
+        )
       }
       clearConfiguratorLoginRedirectGuard(backendConfig.primaryBackendURL)
       try {
@@ -176,21 +208,27 @@ export class Configurator {
           return 'redirecting'
         }
       }
-      catch {
-        this._modules.connections.fallbackToPrimary()
-        return 'redirecting'
+      catch (error) {
+        const value = error as { code?: string, message?: string }
+        return this._connectionFailed(
+          backendConfig.primaryBackendURL,
+          value.code ?? 'backend_catalog_unavailable',
+          value.message ?? 'Backend connection catalog is unavailable',
+        )
       }
     }
 
     const sessionState = await this._modules.session.check()
     if (sessionState.status === 'unauthenticated') {
-      this._startLoginOrThrow(sessionState.loginUrl, backendConfig.activeBackendURL)
-      return 'redirecting'
+      return this._startLoginOrRequire(sessionState.loginUrl, backendConfig.activeBackendURL)
     }
     if (sessionState.status === 'error') {
       if (!this._modules.connections.isPrimaryActive) {
-        this._modules.connections.fallbackToPrimary()
-        return 'redirecting'
+        return this._connectionFailed(
+          backendConfig.activeBackendURL,
+          sessionState.code,
+          sessionState.message,
+        )
       }
       throw new ConfiguratorBootstrapError(sessionState.code, sessionState.message)
     }
@@ -239,6 +277,26 @@ export class Configurator {
     await this._modules.context.init({ backendConfig, domainProvider, workspaceRole: role, workspaceIdentity })
     this._modules.i18n.init()
     return 'ready'
+  }
+
+  private static _connectionFailed(backendURL: string, code: string, message: string): ConfiguratorStatus {
+    this._backendConnectionFailure = { backendURL, code, message }
+    return 'backend-connection-failed'
+  }
+
+  private static _startLoginOrRequire(loginUrl: string, backendURL: string): ConfiguratorStatus {
+    const result = startConfiguratorLogin(loginUrl, backendURL)
+    if (result.redirected) {
+      return 'redirecting'
+    }
+    if (result.code === 'auth_redirect_loop') {
+      this._authenticationRequirement = { backendURL, loginUrl }
+      return 'authentication-required'
+    }
+    throw new ConfiguratorBootstrapError(
+      result.code ?? 'auth_redirect_failed',
+      result.message ?? 'Configurator login redirect failed',
+    )
   }
 
   private static _startLoginOrThrow(loginUrl: string, backendURL = this._modules.connections.activeBackendURL): void {

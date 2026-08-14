@@ -8,7 +8,23 @@ import type { Questions_Module } from '@/app/model/modules/questions/Questions_M
 import type { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
 import type { ConfiguratorSession_Module } from '@/features/configurator-session'
 
-export type ConfiguratorStatus = 'ready' | 'redirecting' | 'workspace-selection-required'
+export type ConfiguratorStatus
+  = | 'authentication-required'
+    | 'backend-connection-failed'
+    | 'ready'
+    | 'redirecting'
+    | 'workspace-selection-required'
+
+export interface ConfiguratorAuthenticationRequirement {
+  backendURL: string
+  loginUrl: string
+}
+
+export interface ConfiguratorBackendConnectionFailure {
+  backendURL: string
+  code: string
+  message: string
+}
 
 export interface ConfiguratorModules {
   session: ConfiguratorSession_Module

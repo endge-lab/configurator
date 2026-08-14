@@ -5,6 +5,16 @@ const mocks = vi.hoisted(() => ({
   init: vi.fn(),
 }))
 
+class MemoryStorage implements Storage {
+  private readonly _values = new Map<string, string>()
+  public get length(): number { return this._values.size }
+  public clear(): void { this._values.clear() }
+  public getItem(key: string): string | null { return this._values.get(key) ?? null }
+  public key(index: number): string | null { return [...this._values.keys()][index] ?? null }
+  public removeItem(key: string): void { this._values.delete(key) }
+  public setItem(key: string, value: string): void { this._values.set(key, value) }
+}
+
 vi.mock('@/features/endge-ide/model/bootstrap/endge-runtime-plugins', () => ({}))
 vi.mock('@/features/endge-ide/model/bootstrap/endge-renderer-plugins', () => ({}))
 vi.mock('@/features/endge-ide/model/kernel/endge-ide', () => ({
@@ -66,10 +76,11 @@ describe('endge IDE backend bootstrap', () => {
         active: true,
         role: 'editor',
       }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })).mockResolvedValueOnce(new Response(JSON.stringify({
+      items: [],
+      total: 0,
+      canManage: false,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        items: [], total: 0, canManage: false,
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
     vi.stubGlobal('window', {
       sessionStorage: { removeItem: vi.fn() },
@@ -126,15 +137,54 @@ describe('endge IDE backend bootstrap', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
+  it('offers an explicit login retry when session is still missing after callback', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      code: 'unauthorized',
+      loginUrl: 'https://backend.test/auth/login',
+    }), { status: 401, headers: { 'Content-Type': 'application/json' } })))
+    const assign = vi.fn()
+    const sessionStorage = new MemoryStorage()
+    sessionStorage.setItem(
+      'endge:configurator-login-redirect:v2:https%3A%2F%2Fbackend.test',
+      String(Date.now()),
+    )
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'https://configurator.test',
+        href: 'https://configurator.test/editor',
+        assign,
+      },
+      sessionStorage,
+    })
+
+    await expect(Configurator.init()).resolves.toBe('authentication-required')
+
+    expect(assign).not.toHaveBeenCalled()
+    expect(Configurator.authenticationRequirement).toEqual({
+      backendURL: 'https://backend.test',
+      loginUrl: 'https://backend.test/auth/login',
+    })
+
+    Configurator.retryAuthentication()
+
+    expect(assign).toHaveBeenCalledOnce()
+    expect(assign).toHaveBeenCalledWith(
+      'https://backend.test/auth/login?returnTo=https%3A%2F%2Fconfigurator.test%2Feditor',
+    )
+    expect(mocks.init).not.toHaveBeenCalled()
+  })
+
   it('boots Viewer with read-only provider capabilities', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
-      user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
-      platformAdmin: false,
-      workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'viewer' }],
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
+        platformAdmin: false,
+        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'viewer' }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
-        items: [], total: 0, canManage: false,
+        items: [],
+        total: 0,
+        canManage: false,
       }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
     vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
     mocks.config.mockReturnValue({
@@ -171,6 +221,45 @@ describe('endge IDE backend bootstrap', () => {
     await expect(Configurator.init()).resolves.toBe('workspace-selection-required')
 
     expect(Configurator.workspaceSelection).toHaveLength(1)
+    expect(mocks.init).not.toHaveBeenCalled()
+  })
+
+  it('keeps an unavailable remote backend selected and exposes a recoverable bootstrap failure', async () => {
+    vi.resetModules()
+    const localStorage = new MemoryStorage()
+    localStorage.setItem('endge:configurator:active-backend-url:v1', 'https://remote.test')
+    vi.stubGlobal('window', {
+      localStorage,
+      sessionStorage: { removeItem: vi.fn() },
+    })
+    mocks.config.mockReturnValue({
+      serviceBackendURL: 'https://remote.test',
+      primaryBackendURL: 'https://primary.test',
+      activeBackendURL: 'https://remote.test',
+    })
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
+        platformAdmin: true,
+        workspaces: [],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [{ id: 'remote', name: 'Remote', baseUrl: 'https://remote.test' }],
+        total: 1,
+        canManage: true,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch')))
+
+    const { Configurator: RemoteConfigurator } = await import('@/app')
+
+    await expect(RemoteConfigurator.init()).resolves.toBe('backend-connection-failed')
+
+    expect(localStorage.getItem('endge:configurator:active-backend-url:v1')).toBe('https://remote.test')
+    expect(RemoteConfigurator.backendConnectionFailure).toEqual({
+      backendURL: 'https://remote.test',
+      code: 'session_unavailable',
+      message: 'Failed to fetch',
+    })
     expect(mocks.init).not.toHaveBeenCalled()
   })
 })

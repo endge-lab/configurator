@@ -139,7 +139,10 @@ export class RuntimePreviewInstance {
         }
         else {
           const artifact = Endge.program.getCompositionArtifact(this.target.identity)
-          const props = materializeCompositionPreviewProps(artifact?.payload.previewProps)
+          const props = materializeCompositionPreviewProps(
+            artifact?.payload.previewProps,
+            artifact?.payload.dataMode ?? Endge.context.dataMode,
+          )
           this._composition = await Endge.runtime.composition.mount(this.target.identity, { props })
         }
       }
@@ -444,7 +447,10 @@ export class RuntimePreviewInstance {
         dataRuntimes: resolvePreviewStoreRuntimes(artifact.payload.data),
         input: {
           kind: 'local',
-          props: materializeCompositionPreviewProps(artifact.payload.previewProps),
+          props: materializeCompositionPreviewProps(
+            artifact.payload.previewProps,
+            artifact.payload.dataMode ?? Endge.context.dataMode,
+          ),
         },
       },
     }) as CompositionRuntimeHost | null
