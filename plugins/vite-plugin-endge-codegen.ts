@@ -85,7 +85,7 @@ if (typeof window !== 'undefined') {
           console.log('[endge-codegen] Записано в', result.outputDir)
         }
         catch (e) {
-          console.error('[endge-codegen] Ошибка:', e)
+          console.error(`[endge-codegen] Ошибка: ${e instanceof Error ? e.message : String(e)}`)
           res.statusCode = 500
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }))
