@@ -252,7 +252,7 @@ async function executeExtraction(
         Endge.domain.removeComponentSFC(result.identity)
       }
       catch (rollbackError) {
-        console.error('[extract-component] rollback failed', rollbackError)
+        console.error(`[extract-component] rollback failed: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`)
       }
     }
     throw error

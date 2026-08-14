@@ -798,7 +798,7 @@ function parseDropPayload(event: DragEvent): UIEditorDragPayload | null {
     return JSON.parse(raw) as UIEditorDragPayload
   }
   catch (error) {
-    console.warn('[UIEditorDemoNode] drop payload parse failed', error)
+    console.warn(`[UIEditorDemoNode] drop payload parse failed: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
 }

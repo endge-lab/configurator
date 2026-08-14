@@ -382,11 +382,16 @@ function renderMarkdown(text: string): string {
 const AGENT_LLM_LOG_PREFIX = '[Agent/LLM]'
 
 function logLlm(event: string, payload?: unknown): void {
-  if (payload === undefined) {
-    console.log(`${AGENT_LLM_LOG_PREFIX} ${event}`)
-    return
-  }
-  console.log(`${AGENT_LLM_LOG_PREFIX} ${event}`, payload)
+  const summary = payload === undefined
+    ? ''
+    : typeof payload === 'string'
+      ? ` string(${payload.length})`
+      : Array.isArray(payload)
+        ? ` array(${payload.length})`
+        : payload && typeof payload === 'object'
+          ? ` object(${Object.keys(payload).length})`
+          : ` ${String(payload)}`
+  console.log(`${AGENT_LLM_LOG_PREFIX} ${event}${summary}`)
 }
 
 /** Адрес сервиса ассистента (LLM). Без переменной в .env не подключаемся. */
@@ -694,12 +699,7 @@ async function send(overrideMessage?: string): Promise<void> {
       ? buildEntitiesShortDesc(domainSnapshot as Record<string, unknown>)
       : null
 
-    console.log(
-      '[Agent] Домен для запроса:',
-      hasDomain
-        ? `есть (ключей: ${Object.keys(domainSnapshot as object).length})`
-        : 'нет — будет один запрос без двух шагов',
-    )
+    console.log(`[Agent] Домен для запроса: ${hasDomain ? `есть (ключей: ${Object.keys(domainSnapshot as object).length})` : 'нет — будет один запрос без двух шагов'}`)
 
     if (hasDomain && entitiesShortDesc) {
       const local = runLocalAgentOrchestrator({
@@ -769,12 +769,7 @@ async function send(overrideMessage?: string): Promise<void> {
         )
         userContext.requestedEntities = requested
         requestedEntitiesFilter.value = null
-        console.log(
-          '[Agent] Контекст request_entities:',
-          filter,
-          'записей:',
-          requested.length,
-        )
+        console.log(`[Agent] Контекст request_entities: записей ${requested.length}`)
       }
       streamBody = {
         message: text,
@@ -784,20 +779,14 @@ async function send(overrideMessage?: string): Promise<void> {
           .slice(0, Math.max(0, messages.value.length - 2))
           .map(m => ({ role: m.role, content: m.text })),
       }
-      console.log(
-        '[Agent] Итеративный режим, контекст заново: entities-short-desc',
-        Object.keys(entitiesShortDesc).length,
-      )
+      console.log(`[Agent] Итеративный режим, контекст заново: entities-short-desc=${Object.keys(entitiesShortDesc).length}`)
     }
     else if (hasDomain) {
       const catalog = buildDomainCatalog(
         domainSnapshot as Record<string, unknown>,
       )
       const catalogCount = (JSON.parse(catalog) as unknown[]).length
-      console.log(
-        '[Agent] Шаг 1/2 — resolve, записей в каталоге:',
-        catalogCount,
-      )
+      console.log(`[Agent] Шаг 1/2 — resolve, записей в каталоге: ${catalogCount}`)
       logLlm('resolve.request', {
         sessionId,
         message: text,
@@ -859,12 +848,7 @@ async function send(overrideMessage?: string): Promise<void> {
           return
         }
 
-        console.log(
-          '[Agent] Шаг 1/2 завершён. entities =',
-          entities.length,
-          ', question =',
-          question,
-        )
+        console.log(`[Agent] Шаг 1/2 завершён: entities=${entities.length}, questionLength=${question.length}`)
         const fragment = buildDomainFragment(
           domainSnapshot as Record<string, unknown>,
           entities,
@@ -890,7 +874,6 @@ async function send(overrideMessage?: string): Promise<void> {
     }
 
     const bodySent = JSON.stringify(streamBody)
-    console.log('[Agent] Отправленный JSON:', streamBody)
     logLlm('stream.request', streamBody)
     const res = await fetch(`${assistanceApiUrl}/api/v1/chat/stream`, {
       method: 'POST',
@@ -1030,7 +1013,6 @@ async function send(overrideMessage?: string): Promise<void> {
       && iterateRawContent.trim()
     ) {
       const normalized = iterateRawContent.trim()
-      console.log('[Agent] Получен сырой JSON content:', normalized)
       const jsonBody = normalized.startsWith('```')
         ? normalized
             .replace(/^```json\s*/i, '')

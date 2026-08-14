@@ -448,7 +448,6 @@ function applyFilter(): void {
   saveByIdentity(id, payload)
   if (key) Raph.set(key, payload)
 
-  console.log('[FiltersPanel] APPLY', { identity: id, key, payload })
 }
 </script>
 

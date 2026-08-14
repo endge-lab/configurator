@@ -42,7 +42,7 @@ function onRootDrop(event: DragEvent): void {
   }
   catch (error) {
     props.state.endGridInteraction()
-    console.warn('[UIEditorDemoCanvas] root drop parse failed', error)
+    console.warn(`[UIEditorDemoCanvas] root drop parse failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 </script>

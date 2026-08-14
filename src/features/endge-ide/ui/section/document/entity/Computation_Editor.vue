@@ -114,7 +114,7 @@ async function runPreview(): Promise<void> {
     toast.success('Preview выполнен')
   }
   catch (error: any) {
-    console.error('[Computation_Editor] Preview error:', error)
+    console.error(`[Computation_Editor] Preview error: ${error instanceof Error ? error.message : String(error)}`)
     previewOutput.value = ''
     toast.error('Ошибка Preview', {
       description: error?.message ?? String(error),

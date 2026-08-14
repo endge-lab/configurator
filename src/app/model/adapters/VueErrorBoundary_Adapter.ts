@@ -45,7 +45,7 @@ export class VueErrorBoundary_Adapter {
       isEndgeIDE: this._router.currentRoute.value.meta.layoutScope === 'endge-ide',
     })
 
-    console.error('[Vue errorHandler]', err, info, instance)
+    console.error(`[Vue errorHandler] ${this._resolveComponentName(instance)}: ${err instanceof Error ? err.message : String(err)} (${String(info ?? '')})`)
   }
 
   private readonly _handleWindowError = (event: ErrorEvent): void => {

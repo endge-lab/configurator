@@ -19,7 +19,7 @@ router.beforeEach(async () => {
 })
 
 router.onError((error) => {
-  console.error('[Router] Navigation error:', error)
+  console.error(`[Router] Navigation error: ${error instanceof Error ? error.message : String(error)}`)
 })
 
 export default router

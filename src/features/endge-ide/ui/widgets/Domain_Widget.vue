@@ -1361,7 +1361,7 @@ async function removeDocument(node: FsFileNode): Promise<void> {
     toast.success('Документ перемещён в «Удалённые»')
   }
   catch (e) {
-    console.error(e)
+    console.error(`[Domain_Widget] Не удалось удалить документ: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось удалить', { description: (e as Error)?.message })
   }
 }
@@ -1372,7 +1372,7 @@ async function restoreDocument(node: FsFileNode): Promise<void> {
     toast.success('Документ восстановлен')
   }
   catch (e) {
-    console.error(e)
+    console.error(`[Domain_Widget] Не удалось восстановить документ: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось восстановить', { description: (e as Error)?.message })
   }
 }
@@ -1423,7 +1423,7 @@ async function confirmCreateFolder(): Promise<void> {
     toast.success('Папка создана')
   }
   catch (e) {
-    console.error('[Domain_Widget] Ошибка сохранения папки в Payload:', e)
+    console.error(`[Domain_Widget] Ошибка сохранения папки в Payload: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось создать папку', { description: (e as Error)?.message })
   }
   finally {
@@ -1469,7 +1469,7 @@ async function confirmFolderDeletion(): Promise<void> {
     })
   }
   catch (e) {
-    console.error('[Domain_Widget] Ошибка удаления папки:', e)
+    console.error(`[Domain_Widget] Ошибка удаления папки: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось удалить папку', { description: (e as Error)?.message })
   }
   finally {
@@ -1483,7 +1483,7 @@ async function restoreFolderFromTrash(node: FsFolderNode): Promise<void> {
     toast.success('Папка восстановлена')
   }
   catch (e) {
-    console.error('[Domain_Widget] Ошибка восстановления папки:', e)
+    console.error(`[Domain_Widget] Ошибка восстановления папки: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось восстановить папку', { description: (e as Error)?.message })
   }
 }
@@ -1513,7 +1513,7 @@ async function confirmRename(): Promise<void> {
     toast.success('Папка переименована')
   }
   catch (e) {
-    console.error('[Domain_Widget] Ошибка сохранения переименования папки:', e)
+    console.error(`[Domain_Widget] Ошибка сохранения переименования папки: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось переименовать папку', { description: (e as Error)?.message })
   }
   Endge.domain.notify()
@@ -1530,7 +1530,7 @@ function downloadSelectedDocuments(): void {
     toast.success(`Скачано сущностей: ${selectedExportNodes.value.length}`)
   }
   catch (error) {
-    console.error('[Domain_Widget] Не удалось скачать выбранные сущности:', error)
+    console.error(`[Domain_Widget] Не удалось скачать выбранные сущности: ${error instanceof Error ? error.message : String(error)}`)
     toast.error('Не удалось скачать выбранные сущности', { description: (error as Error)?.message })
   }
 }

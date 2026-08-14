@@ -84,12 +84,6 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     ? sanitizeInitial(loadSmartTabs(options.storageKey))
     : { openTabs: [], activeTabId: null, viewStateByTabId: {}, sharedViewState: {} }
 
-  console.log('[useSmartTabs] Инициализация', {
-    storageKey: options.storageKey,
-    persist,
-    loadedState: initial,
-  })
-
   const state = reactive<SmartTabsPersistedState>({
     openTabs: initial.openTabs ?? [],
     activeTabId: initial.activeTabId ?? null,
@@ -106,10 +100,6 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       viewStateByTabId: state.viewStateByTabId,
       sharedViewState: state.sharedViewState,
     }
-    console.log('[useSmartTabs] Сохранение состояния в localStorage', {
-      storageKey: options.storageKey,
-      state: stateToSave,
-    })
     saveSmartTabs(options.storageKey, stateToSave)
   }
 
@@ -149,13 +139,6 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   }
 
   function openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
-    console.log('[useSmartTabs] openTab вызван', {
-      tab,
-      opts,
-      currentTabs: state.openTabs.length,
-      currentActiveId: state.activeTabId,
-    })
-
     const activate = opts?.activate !== false
     const replace = opts?.replace === true
 
@@ -172,28 +155,15 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     const existingIndex = state.openTabs.findIndex(t => t.id === tab.id)
 
     if (existingIndex !== -1) {
-      console.log('[useSmartTabs] Вкладка уже существует, обновляем и активируем', {
-        existingIndex,
-        tabId: tab.id,
-        activate,
-      })
       state.openTabs.splice(existingIndex, 1, { ...state.openTabs[existingIndex], ...tab })
       if (activate)
         state.activeTabId = tab.id
-      console.log('[useSmartTabs] После обновления', {
-        openTabs: state.openTabs.length,
-        activeTabId: state.activeTabId,
-      })
       return
     }
 
     if (replace && state.activeTabId) {
       const idx = state.openTabs.findIndex(t => t.id === state.activeTabId)
       if (idx !== -1) {
-        console.log('[useSmartTabs] Заменяем активную вкладку', {
-          replaceIndex: idx,
-          tabId: tab.id,
-        })
         const replacedTabId = state.openTabs[idx]!.id
         const replacedTab = state.openTabs[idx]!
         state.openTabs.splice(idx, 1, tab)
@@ -207,36 +177,19 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       }
     }
 
-    console.log('[useSmartTabs] Добавляем новую вкладку', {
-      tabId: tab.id,
-      activate,
-    })
     state.openTabs.push(tab)
     if (activate)
       state.activeTabId = tab.id
 
     enforceMax()
-    console.log('[useSmartTabs] После добавления', {
-      openTabs: state.openTabs.length,
-      activeTabId: state.activeTabId,
-      tabs: state.openTabs.map(t => ({ id: t.id, label: t.label })),
-    })
   }
 
   function activateTab(id: SmartTabId): void {
-    console.log('[useSmartTabs] activateTab вызван', {
-      id,
-      exists: state.openTabs.some(t => t.id === id),
-      currentActiveId: state.activeTabId,
-    })
     if (!state.openTabs.some(t => t.id === id)) {
-      console.warn('[useSmartTabs] Вкладка не найдена для активации, но это нормально если она была закрыта', { id })
+      console.warn(`[useSmartTabs] Вкладка "${id}" не найдена для активации`)
       return
     }
     state.activeTabId = id
-    console.log('[useSmartTabs] Вкладка активирована', {
-      activeTabId: state.activeTabId,
-    })
   }
 
   function closeTab(id: SmartTabId): void {
@@ -316,12 +269,6 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     state.openTabs.splice(fromIndex, 1)
     state.openTabs.splice(toIndex, 0, tab)
 
-    console.log('[useSmartTabs] Вкладка перемещена', {
-      fromIndex,
-      toIndex,
-      tabId: tab.id,
-      newOrder: state.openTabs.map(t => t.id),
-    })
   }
 
   function pruneViewState(): void {
@@ -344,7 +291,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       JSON.stringify(slice.value)
     }
     catch (error) {
-      console.warn('[SmartTabs] Ignored non-serializable view state.', { tabId, key, error })
+      console.warn(`[SmartTabs] Ignored non-serializable view state "${tabId}.${key}": ${error instanceof Error ? error.message : String(error)}`)
       return
     }
     const tabState = state.viewStateByTabId[tabId]
@@ -380,7 +327,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       JSON.stringify(slice.value)
     }
     catch (error) {
-      console.warn('[SmartTabs] Ignored non-serializable shared view state.', { key, error })
+      console.warn(`[SmartTabs] Ignored non-serializable shared view state "${key}": ${error instanceof Error ? error.message : String(error)}`)
       return
     }
     if (!state.sharedViewState) {

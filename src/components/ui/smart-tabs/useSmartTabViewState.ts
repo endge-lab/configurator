@@ -70,18 +70,18 @@ function useViewStateFromScope<T>(
     stored = scope.read(key)
   }
   catch (error) {
-    console.warn('[SmartTabs] Failed to read view state.', { key, error })
+    console.warn(`[SmartTabs] Failed to read view state "${key}": ${error instanceof Error ? error.message : String(error)}`)
   }
 
   const restored = resolveSmartTabViewState(stored, options)
   const state = ref(restored.value) as Ref<T>
   if (stored && !restored.restored) {
-    console.warn('[SmartTabs] Ignored invalid view state.', { key })
+    console.warn(`[SmartTabs] Ignored invalid view state "${key}"`)
     try {
       scope.clear(key)
     }
     catch (error) {
-      console.warn('[SmartTabs] Failed to clear invalid view state.', { key, error })
+      console.warn(`[SmartTabs] Failed to clear invalid view state "${key}": ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -94,7 +94,7 @@ function useViewStateFromScope<T>(
       scope.write(key, { version, value })
     }
     catch (error) {
-      console.warn('[SmartTabs] Failed to update view state.', { key, error })
+      console.warn(`[SmartTabs] Failed to update view state "${key}": ${error instanceof Error ? error.message : String(error)}`)
     }
   }, { deep: true, flush: 'sync' })
 

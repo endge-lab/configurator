@@ -117,10 +117,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
     await entry.item.action?.()
   }
   catch (error) {
-    console.error(
-      `[EndgeIDEIntegrations] Menu action "${entry.id}" failed.`,
-      error,
-    )
+    console.error(`[EndgeIDEIntegrations] Menu action "${entry.id}" failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 </script>

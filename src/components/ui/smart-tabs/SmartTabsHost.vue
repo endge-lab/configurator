@@ -28,13 +28,6 @@ if (!props.api && !props.options) {
 const tabsApi = props.api ?? useSmartTabs(props.options!)
 const tabIconComponentCache = new Map<string, Component>()
 
-console.log('[SmartTabsHost] Инициализация', {
-  hasApi: !!props.api,
-  options: props.options,
-  openTabs: tabsApi.openTabs.value,
-  activeTabId: tabsApi.activeTabId.value,
-})
-
 const tabs = computed<SmartTabRef[]>(() => tabsApi.openTabs.value)
 const activeId = computed(() => tabsApi.activeTabId.value)
 const activeTab = computed(() => tabsApi.activeTab.value)
@@ -43,31 +36,16 @@ const resolved = computed(() => {
   const currentActiveTab = activeTab.value
   const currentActiveId = activeId.value
 
-  console.log('[SmartTabsHost] resolved computed вызван', {
-    activeTab: currentActiveTab,
-    activeTabId: currentActiveId,
-    hasActiveTab: !!currentActiveTab,
-  })
-
   if (!currentActiveTab || !currentActiveId) {
-    console.log('[SmartTabsHost] Нет активной вкладки, возвращаем null')
     return null
   }
 
   const viewId = currentActiveTab.viewId
-  const tabId = currentActiveTab.id
-
-  console.log('[SmartTabsHost] Ищем factory для viewId:', viewId, 'tabId:', tabId)
 
   const factory = tabsApi.viewRegistry.get(viewId)
-  console.log('[SmartTabsHost] Factory для viewId', {
-    viewId,
-    hasFactory: !!factory,
-    factoryType: typeof factory,
-  })
 
   if (!factory) {
-    console.warn('[SmartTabsHost] View не зарегистрирован:', viewId)
+    console.warn(`[SmartTabsHost] View не зарегистрирован: ${viewId}`)
     const errorViewId = viewId
     return {
       component: {
@@ -83,15 +61,7 @@ const resolved = computed(() => {
     }
   }
 
-  console.log('[SmartTabsHost] Вызываем factory с tab:', currentActiveTab)
   const result = factory(currentActiveTab)
-  console.log('[SmartTabsHost] Factory вернул результат', {
-    hasComponent: !!result.component,
-    componentType: typeof result.component,
-    componentName: (result.component as any)?.name || (result.component as any)?.__name,
-    props: result.props,
-  })
-
   return result
 })
 
@@ -152,12 +122,7 @@ function getTabTooltip(tab: SmartTabRef): string | null {
 }
 
 function close(tabId: string): void {
-  console.log('[SmartTabsHost] Закрытие вкладки', { tabId })
   tabsApi.closeTab(tabId)
-  console.log('[SmartTabsHost] После закрытия', {
-    openTabs: tabsApi.openTabs.value,
-    activeTabId: tabsApi.activeTabId.value,
-  })
 }
 
 function handleDragStart(e: DragEvent, tabId: string, index: number): void {
@@ -167,7 +132,6 @@ function handleDragStart(e: DragEvent, tabId: string, index: number): void {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', tabId)
   }
-  console.log('[SmartTabsHost] Начало перетаскивания', { tabId, index })
 }
 
 function handleDragOver(e: DragEvent, index: number): void {
@@ -198,11 +162,6 @@ function handleDrop(e: DragEvent, dropIndex: number): void {
 
   dragTabId.value = null
   dragOverIndex.value = null
-  console.log('[SmartTabsHost] Перетаскивание завершено', {
-    dragIndex,
-    dropIndex,
-    newOrder: tabsApi.openTabs.value.map(t => t.id),
-  })
 }
 
 function handleDragEnd(): void {

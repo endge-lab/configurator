@@ -89,10 +89,7 @@ export class EndgeIDEIntegrations_Module {
       }
       catch (error) {
         await this._dispose(disposers)
-        console.error(
-          `[EndgeIDEIntegrations] Failed to activate "${module.manifest.identity}".`,
-          error,
-        )
+        console.error(`[EndgeIDEIntegrations] Failed to activate "${module.manifest.identity}": ${error instanceof Error ? error.message : String(error)}`)
       }
     }
   }
@@ -199,7 +196,7 @@ export class EndgeIDEIntegrations_Module {
         await disposer()
       }
       catch (error) {
-        console.warn('[EndgeIDEIntegrations] Failed to dispose integration resource.', error)
+        console.warn(`[EndgeIDEIntegrations] Failed to dispose integration resource: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
     disposers.length = 0

@@ -359,7 +359,7 @@ export class EndgeIDETabs_Module {
       toast.success('Сохранено', { description: label })
     }
     catch (e) {
-      console.error('[EndgeIDETabs] save', e)
+      console.error(`[EndgeIDETabs] save failed: ${e instanceof Error ? e.message : String(e)}`)
       toast.error('Ошибка сохранения', { description: String(e) })
     }
   }

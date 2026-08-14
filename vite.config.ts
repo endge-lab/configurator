@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, loadEnv } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
+
 import pkg from './package.json'
 import { endgeCodegen } from './plugins/vite-plugin-endge-codegen'
 import { endgeTestIntegrations } from './plugins/vite-plugin-endge-test-integrations'
@@ -22,15 +23,18 @@ export default defineConfig(({ mode, command }) => {
   const testIntegrationsEnabled = isDevServer || mode === 'test-integrations'
   const testIntegrationsRoot = fileURLToPath(new URL('../integrations/test', import.meta.url))
   const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
-  const codegenEnabled =
-    isDevServer &&
-    (env.VITE_ENDGE_CODEGEN_ENABLED === 'true' || env.VITE_ENDGE_CODEGEN_ENABLED === '1')
+  const codegenEnabled
+    = isDevServer
+      && (env.VITE_ENDGE_CODEGEN_ENABLED === 'true' || env.VITE_ENDGE_CODEGEN_ENABLED === '1')
+  const vueDevToolsEnabled
+    = isDevServer
+      && (env.VITE_VUE_DEVTOOLS_ENABLED === 'true' || env.VITE_VUE_DEVTOOLS_ENABLED === '1')
 
   return {
     base: '/',
     plugins: [
       vue(),
-      vueDevTools(),
+      vueDevToolsEnabled && vueDevTools(),
       tailwindcss(),
       endgeCodegen({ enabled: codegenEnabled }),
       endgeTestIntegrations({

@@ -69,7 +69,7 @@ function parseAppSwitcher(raw: string | undefined): AppSwitcherGroup[] {
     return parsed
   }
   catch {
-    console.warn('[AppSwitcher] Failed to parse VITE_APP_SWITCHER:', raw)
+    console.warn(`[AppSwitcher] Failed to parse VITE_APP_SWITCHER (${raw.length} chars)`)
     return [DEFAULT_APP_GROUP]
   }
 }

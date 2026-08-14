@@ -29,7 +29,7 @@ export function loadSmartTabs(key: string): SmartTabsPersistedState | null {
     parsed = safeParse<StoredPayload>(localStorage.getItem(key))
   }
   catch (error) {
-    console.warn('[SmartTabs] Failed to restore tab state.', { key, error })
+    console.warn(`[SmartTabs] Failed to restore tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
   if (!parsed || (parsed.v !== 1 && parsed.v !== VERSION)) {
@@ -57,7 +57,7 @@ export function saveSmartTabs(key: string, state: SmartTabsPersistedState): void
     localStorage.setItem(key, JSON.stringify(payload))
   }
   catch (error) {
-    console.warn('[SmartTabs] Failed to persist tab state.', { key, error })
+    console.warn(`[SmartTabs] Failed to persist tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -69,6 +69,6 @@ export function clearSmartTabs(key: string): void {
     localStorage.removeItem(key)
   }
   catch (error) {
-    console.warn('[SmartTabs] Failed to clear tab state.', { key, error })
+    console.warn(`[SmartTabs] Failed to clear tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)
   }
 }

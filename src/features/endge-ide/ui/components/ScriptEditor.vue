@@ -75,7 +75,7 @@ async function formatDocument(): Promise<void> {
     emit('format')
   }
   catch (error) {
-    console.error(`[ScriptEditor] Failed to format ${formatLanguage} document`, error)
+    console.error(`[ScriptEditor] Failed to format ${formatLanguage} document: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -135,7 +135,7 @@ onMounted(() => {
           return disposable ? [disposable] : []
         }
         catch (error) {
-          console.error(`[ScriptEditor] Failed to install extension "${extension.id}"`, error)
+          console.error(`[ScriptEditor] Failed to install extension "${extension.id}": ${error instanceof Error ? error.message : String(error)}`)
           return []
         }
       })

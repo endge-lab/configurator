@@ -627,7 +627,7 @@ function readPersistedState(): {
     }
   }
   catch (error) {
-    console.warn('[UIEditorDemoState] failed to read persisted state', error)
+    console.warn(`[UIEditorDemoState] failed to read persisted state: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
 }
@@ -1305,9 +1305,7 @@ export class UIEditorDemoState {
   }
 
   public logTree(): void {
-    console.groupCollapsed('[UIEditorDemo] AST tree')
-    console.log(this.toTree())
-    console.groupEnd()
+    console.log('[UIEditorDemo] AST tree inspection is available in the editor UI.')
   }
 
   private findParentId(nodeId: string): string | null {
@@ -1429,7 +1427,7 @@ export class UIEditorDemoState {
       }))
     }
     catch (error) {
-      console.warn('[UIEditorDemoState] failed to persist state', error)
+      console.warn(`[UIEditorDemoState] failed to persist state: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

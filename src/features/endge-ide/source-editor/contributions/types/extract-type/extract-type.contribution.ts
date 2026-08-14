@@ -259,7 +259,7 @@ async function executeTypeExtraction(
         Endge.domain.removeTypeByIdentity(identity)
       }
       catch (rollbackError) {
-        console.error(`[extract-type] rollback failed for ${identity}`, rollbackError)
+        console.error(`[extract-type] rollback failed for ${identity}: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`)
       }
     }
     throw error

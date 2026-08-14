@@ -52,14 +52,7 @@ export class ConfiguratorDiagnostics_Module {
       triggeredAt: new Date(now).toISOString(),
     }
 
-    console.error('[ConfiguratorDiagnostics] Emergency UI shutdown triggered', {
-      routePath,
-      componentName,
-      errorInfo,
-      reason: this._renderGuard.value.reason,
-      hits,
-      error,
-    })
+    console.error(`[ConfiguratorDiagnostics] Emergency UI shutdown: ${this._renderGuard.value.reason}; route=${routePath}; component=${componentName}; hits=${hits}; error=${error.message}; info=${errorInfo}`)
 
     return this._renderGuard.value
   }

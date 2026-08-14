@@ -49,10 +49,6 @@ watch(() => route.fullPath, () => {
 
 // Capture errors from child components
 onErrorCaptured((err, instance, info) => {
-  console.error('Error captured:', err)
-  console.error('Component:', instance)
-  console.error('Error info:', info)
-
   // Try to find the page component by traversing up the tree
   let current = instance
   let componentName = 'Unknown'
@@ -67,6 +63,7 @@ onErrorCaptured((err, instance, info) => {
   }
 
   errorComponentName.value = componentName
+  console.error(`[Configurator] Vue error in ${componentName}: ${err instanceof Error ? err.message : String(err)} (${info})`)
   const capturedError = err instanceof Error ? err : new Error(String(err))
   const fatalState = Configurator.diagnostics.capture({
     err: capturedError,

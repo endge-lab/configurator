@@ -520,12 +520,7 @@ function buildFolderNode(
       || (softDeletedFolderId != null && String(folderId) === String(softDeletedFolderId))
 
   if (visitedFolderKeys.has(folderKey)) {
-    console.warn('[DomainTree] Skipping cyclic folder branch while building admin tree', {
-      cycle: [...traversalPath, folderKey],
-      folderId: String(folderId),
-      folderIdentity,
-      sectionType,
-    })
+    console.warn(`[DomainTree] Skipping cyclic folder branch: folder=${String(folderId)}, identity=${folderIdentity}, section=${sectionType}, depth=${traversalPath.length + 1}`)
     return createFolderTreeNode(folder, sectionType, folderId, folderIdentity, folderName, isRoot, [])
   }
 

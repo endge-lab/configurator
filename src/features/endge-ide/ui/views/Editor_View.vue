@@ -87,7 +87,7 @@ useLayout({
 
 onBeforeMount(() => {
   void EndgeIDE.init().catch((error) => {
-    console.error('[EndgeIDE] Failed to initialize workspace.', error)
+    console.error(`[EndgeIDE] Failed to initialize workspace: ${error instanceof Error ? error.message : String(error)}`)
   })
 })
 

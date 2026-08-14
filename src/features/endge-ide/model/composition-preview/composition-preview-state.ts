@@ -144,7 +144,6 @@ export class CompositionPreviewSession {
         throw error
       }
       this.runtime.value = runtime
-      logCompositionPreviewOutputs(runtime)
     })
   }
 
@@ -310,41 +309,4 @@ export function resolvePreviewStoreRuntimes(
     }
   }
   return runtimes
-}
-
-function logCompositionPreviewOutputs(runtime: CompositionRuntimeHost): void {
-  const outputs = Object.fromEntries(
-    Object.entries(runtime.getOutputs()).map(([key, handle]) => [
-      key,
-      readCompositionPreviewOutput(handle),
-    ]),
-  )
-
-  // eslint-disable-next-line no-console
-  console.groupCollapsed(`[Composition_Editor] Outputs: ${runtime.entityIdentity}`)
-  for (const [key, value] of Object.entries(outputs)) {
-    // eslint-disable-next-line no-console
-    console.log(key, value)
-  }
-  // eslint-disable-next-line no-console
-  console.log('all', outputs)
-  // eslint-disable-next-line no-console
-  console.groupEnd()
-}
-
-function readCompositionPreviewOutput(
-  handle: ReturnType<CompositionRuntimeHost['getOutputs']>[string],
-): unknown {
-  const runtime = handle.runtime as typeof handle.runtime & {
-    getOutput?: (name: string) => unknown
-    getOutputs?: () => Readonly<Record<string, unknown>>
-  }
-
-  if (handle.output) {
-    return runtime.getOutput?.(handle.output)
-  }
-  if (typeof runtime.getOutputs === 'function') {
-    return runtime.getOutputs()
-  }
-  return runtime
 }

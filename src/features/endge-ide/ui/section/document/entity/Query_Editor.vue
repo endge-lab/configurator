@@ -82,18 +82,12 @@ async function runQuery(): Promise<void> {
       string,
       unknown
     >
-    console.groupCollapsed(`[Query_Editor] Outputs: ${query.identity}`)
-    for (const [key, value] of Object.entries(outputs)) {
-      console.log(key, value)
-    }
-    console.log('all', outputs)
-    console.groupEnd()
     toast.success('Запрос выполнен', {
-      description: 'Результат выведен в консоль',
+      description: `Получено outputs: ${Object.keys(outputs).length}`,
     })
   }
   catch (error: any) {
-    console.error('[Query_Editor] Ошибка выполнения запроса:', error)
+    console.error(`[Query_Editor] Ошибка выполнения запроса: ${error?.message ?? String(error)}`)
     toast.error('Ошибка выполнения запроса', {
       description: error?.message ?? String(error),
     })

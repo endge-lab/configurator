@@ -190,7 +190,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
           return disposable ? [disposable] : []
         }
         catch (error) {
-          console.error(`[EndgeSourceMonaco] Failed to install extension "${extension.id}"`, error)
+          console.error(`[EndgeSourceMonaco] Failed to install extension "${extension.id}": ${error instanceof Error ? error.message : String(error)}`)
           return []
         }
       })

@@ -695,11 +695,6 @@ ${converterSummary}
     message: userMessage,
     model: "deepseek-v3.1:671b-cloud",
   };
-  console.log(
-    "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Запрос к агенту:",
-    requestBody,
-  );
-
   llmFillLoading.value = true;
   try {
     const res = await fetch(`${assistanceApiUrl}/api/v1/chat`, {
@@ -709,25 +704,13 @@ ${converterSummary}
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     const msg = data.message ?? "";
-    console.log(
-      "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Ответ агента (сырой):",
-      msg,
-    );
     if (!res.ok) {
       toast.error(msg || `Ошибка ${res.status}`);
       return;
     }
     const mapping = extractJsonFromMessage(msg);
-    if (mapping && Object.keys(mapping).length)
-      console.log(
-        "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Распарсенный маппинг:",
-        mapping,
-      );
-    else
-      console.warn(
-        "[TableDataMappingAssistant autoFillCurrentColumnViaLLM] Не удалось распарсить маппинг из ответа, msg:",
-        msg,
-      );
+    if (!mapping || !Object.keys(mapping).length)
+      console.warn(`[TableDataMappingAssistant] Не удалось распарсить маппинг из ответа (${msg.length} chars)`);
     if (!mapping || !Object.keys(mapping).length) {
       toast.error("Не удалось разобрать маппинг из ответа модели");
       return;
@@ -868,11 +851,6 @@ ${converterSummary}
     message: userMessage,
     model: "deepseek-v3.1:671b-cloud",
   };
-  console.log(
-    "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Запрос к агенту:",
-    requestBody,
-  );
-
   llmFillLoading.value = true;
   try {
     const res = await fetch(`${assistanceApiUrl}/api/v1/chat`, {
@@ -882,10 +860,6 @@ ${converterSummary}
     });
     const data = (await res.json().catch(() => ({}))) as { message?: string };
     const msg = data.message ?? "";
-    console.log(
-      "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Ответ агента (сырой):",
-      msg,
-    );
     if (!res.ok) {
       toast.error(msg || `Ошибка ${res.status}`);
       return;
@@ -895,12 +869,6 @@ ${converterSummary}
       toast.error("Не удалось разобрать ответ модели");
       return;
     }
-    if (Object.keys(mappingAll).length)
-      console.log(
-        "[TableDataMappingAssistant autoFillAllColumnsViaLLM] Распарсенный маппинг по колонкам:",
-        mappingAll,
-      );
-
     const opts = getAutoFillOpts();
     let totalFilled = 0;
     for (const { index } of columnsMeta) {

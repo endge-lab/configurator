@@ -1562,11 +1562,7 @@ function hydrateGraphFromEditor(): void {
       ))
     }
     catch (error) {
-      console.warn('[EndgeFlowEditor] Skip invalid flow node during hydration', {
-        nodeId: flowNode.id,
-        blockId: flowNode.blockId,
-        error,
-      })
+      console.warn(`[EndgeFlowEditor] Skip invalid flow node during hydration: node=${flowNode.id}, block=${flowNode.blockId}, error=${error instanceof Error ? error.message : String(error)}`)
     }
   })
 

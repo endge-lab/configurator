@@ -129,7 +129,7 @@ async function testAuthProfile(): Promise<void> {
   }
   catch (error: any) {
     const message = normalizeErrorMessage(error)
-    console.error('[AuthProfile_Editor] Ошибка теста авторизации:', error)
+    console.error(`[AuthProfile_Editor] Ошибка теста авторизации: ${error instanceof Error ? error.message : String(error)}`)
     toast.error('Ошибка авторизации', { description: message })
   }
   finally {
