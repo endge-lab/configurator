@@ -12,7 +12,7 @@ importers:
         specifier: ^0.1.0
         version: link:../../packages/@endge-codegen
       '@endge/computation-sandbox':
-        specifier: workspace:*
+        specifier: ^0.1.4
         version: link:../../packages/@endge-computation-sandbox
       '@endge/core':
         specifier: ^1.2.12
@@ -24,7 +24,7 @@ importers:
         specifier: ^0.23.8
         version: link:../../packages/@endge-ui-vue
       '@endge/ui-vue-shadcn':
-        specifier: workspace:*
+        specifier: ^0.1.4
         version: link:../../packages/@endge-ui-vue-shadcn
       '@endge/utils':
         specifier: ^0.24.7
