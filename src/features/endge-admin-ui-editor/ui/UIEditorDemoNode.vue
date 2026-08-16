@@ -9,7 +9,11 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { Card } from '@/components/ui/card'
 import { getUIEditorDefaultLayout, isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import { hasUIEditorSFCBinding, hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
+import {
+  getUIEditorSFCSourceTag,
+  hasUIEditorSFCBinding,
+  hasUIEditorSFCTextBinding,
+} from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 import UIEditorNodeRendererSFCPrimitive from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererSFCPrimitive.vue'
 import UIEditorDemoSelectionChrome from '@/features/endge-admin-ui-editor/ui/UIEditorDemoSelectionChrome.vue'
@@ -306,6 +310,10 @@ watch(
 )
 
 function getNodeTypeLabel(targetNode: UIEditorNode): string {
+  const sourceTag = getUIEditorSFCSourceTag(targetNode)
+  if (sourceTag) {
+    return `${sourceTag} · Source`
+  }
   if (targetNode.kind === 'page') {
     return targetNode.props.layoutMode === 'grid'
       ? `Template · Grid ${targetNode.props.columns}`

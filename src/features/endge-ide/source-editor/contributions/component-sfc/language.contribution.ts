@@ -1,7 +1,19 @@
 /* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
+import type {
+  ComponentSFCAttributeAnalysisOptions,
+  ComponentSFCTagAttributeContract,
+  ComponentSFCTagAttributeLiteral,
+  RComponentSFC_AST_Attribute,
+  RComponentSFC_AST_TemplateNode,
+} from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 
+import {
+  parseComponentSFC,
+  resolveComponentSFCTagAttributeContracts,
+  validateComponentSFCAttributeValues,
+} from '@endge/core'
 import ts from 'typescript'
 
 const SCRIPT_PATTERN = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
@@ -26,6 +38,23 @@ interface SFCEditableCompletionSpec {
   label: string
   detail: string
   insertText: string
+}
+
+export interface SFCLanguageContributionOptions extends ComponentSFCAttributeAnalysisOptions {}
+
+interface SFCAttributeCompletionContext {
+  tag: string
+  kind: 'name' | 'value'
+  attributeName?: string
+  dynamic: boolean
+  existingAttributes: Set<string>
+  replaceStart: number
+  replaceEnd: number
+}
+
+interface SFCAttributeReference {
+  tag: string
+  attribute: RComponentSFC_AST_Attribute
 }
 
 const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
@@ -59,15 +88,45 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
 ]
 
 /** Adds SFC expression highlighting and TypeScript-aware folding to an HTML Monaco model. */
-export function createSFCLanguageContribution(): ScriptEditorExtension {
+export function createSFCLanguageContribution(
+  options: SFCLanguageContributionOptions = {},
+): ScriptEditorExtension {
   return {
     id: 'component-sfc:language',
     install({ monaco, editor, model }) {
       const highlights = editor.createDecorationsCollection()
+      let diagnosticsTimer: ReturnType<typeof setTimeout> | null = null
       const refreshHighlights = () => {
         highlights.set(collectExpressionDecorations(monaco, model))
       }
-      const content = model.onDidChangeContent(refreshHighlights)
+      const refreshDiagnostics = () => {
+        const source = model.getValue()
+        const parsed = parseComponentSFC(source)
+        const diagnostics = validateComponentSFCAttributeValues(source, parsed.ast, options)
+        monaco.editor.setModelMarkers(model, 'endge-sfc-attributes', diagnostics.map((diagnostic) => {
+          const start = Math.max(0, diagnostic.start ?? 0)
+          const end = Math.max(start + 1, diagnostic.end ?? start + 1)
+          const startPosition = model.getPositionAt(start)
+          const endPosition = model.getPositionAt(end)
+          return {
+            severity: monaco.MarkerSeverity.Error,
+            message: diagnostic.message,
+            code: diagnostic.code,
+            startLineNumber: startPosition.lineNumber,
+            startColumn: startPosition.column,
+            endLineNumber: endPosition.lineNumber,
+            endColumn: endPosition.column,
+          }
+        }))
+      }
+      const content = model.onDidChangeContent(() => {
+        refreshHighlights()
+        if (diagnosticsTimer) { clearTimeout(diagnosticsTimer) }
+        diagnosticsTimer = setTimeout(() => {
+          diagnosticsTimer = null
+          refreshDiagnostics()
+        }, 120)
+      })
       const folding = monaco.languages.registerFoldingRangeProvider('html', {
         provideFoldingRanges(currentModel) {
           if (currentModel !== model) { return null }
@@ -75,12 +134,58 @@ export function createSFCLanguageContribution(): ScriptEditorExtension {
         },
       })
       const completions = monaco.languages.registerCompletionItemProvider('html', {
-        triggerCharacters: ['<', ' ', ':', '@'],
+        triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\''],
         provideCompletionItems(currentModel, position) {
           if (currentModel !== model) { return { suggestions: [] } }
           const template = findTemplateContentRange(model.getValue())
           const offset = model.getOffsetAt(position)
           if (!template || offset < template.start || offset > template.end) { return { suggestions: [] } }
+          const attributeContext = resolveAttributeCompletionContext(model.getValue(), offset)
+          if (attributeContext) {
+            const contracts = resolveComponentSFCTagAttributeContracts(attributeContext.tag, options)
+            const range = monaco.Range.fromPositions(
+              model.getPositionAt(attributeContext.replaceStart),
+              model.getPositionAt(attributeContext.replaceEnd),
+            )
+            if (attributeContext.kind === 'value' && attributeContext.attributeName) {
+              const contract = findAttributeContract(contracts, attributeContext.attributeName)
+              return {
+                suggestions: (contract?.values ?? []).map(value => ({
+                  label: String(value),
+                  detail: `${attributeContext.tag}.${contract?.name} · ${contract?.description}`,
+                  insertText: formatAttributeCompletionValue(value, attributeContext.dynamic),
+                  range,
+                  kind: monaco.languages.CompletionItemKind.Value,
+                })),
+              }
+            }
+            const genericAttributes = SFC_EDITABLE_COMPLETIONS
+              .filter(item => ['editable', 'edit-on', 'variant', '@edited'].includes(item.label))
+              .map(item => ({
+                label: item.label,
+                detail: item.detail,
+                insertText: item.insertText,
+                range,
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              }))
+            return {
+              suggestions: [
+                ...contracts
+                  .filter(contract => ![contract.name, ...(contract.aliases ?? [])]
+                    .some(name => attributeContext.existingAttributes.has(name)))
+                  .map(contract => ({
+                    label: contract.name,
+                    detail: `${attributeContext.tag} · ${contract.description}`,
+                    insertText: attributeSnippet(contract),
+                    range,
+                    kind: monaco.languages.CompletionItemKind.Property,
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  })),
+                ...genericAttributes,
+              ],
+            }
+          }
           const word = model.getWordUntilPosition(position)
           const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
           return {
@@ -95,19 +200,144 @@ export function createSFCLanguageContribution(): ScriptEditorExtension {
           }
         },
       })
+      const hover = monaco.languages.registerHoverProvider('html', {
+        provideHover(currentModel, position) {
+          if (currentModel !== model) { return null }
+          const reference = findAttributeReference(model.getValue(), model.getOffsetAt(position))
+          if (!reference) { return null }
+          const contract = findAttributeContract(
+            resolveComponentSFCTagAttributeContracts(reference.tag, options),
+            reference.attribute.name,
+          )
+          if (!contract) { return null }
+          const values = contract.values.map(formatHoverLiteral).join(' | ')
+          const defaultLine = contract.defaultValue == null
+            ? []
+            : [{ value: `Default: \`${String(contract.defaultValue)}\`` }]
+          return {
+            range: monaco.Range.fromPositions(
+              model.getPositionAt(reference.attribute.range.start),
+              model.getPositionAt(reference.attribute.range.end),
+            ),
+            contents: [
+              { value: `**${reference.tag}.${contract.name}**` },
+              { value: contract.description },
+              { value: `Values: ${values}` },
+              ...defaultLine,
+            ],
+          }
+        },
+      })
 
       refreshHighlights()
+      refreshDiagnostics()
 
       return {
         dispose() {
+          if (diagnosticsTimer) { clearTimeout(diagnosticsTimer) }
           highlights.clear()
+          monaco.editor.setModelMarkers(model, 'endge-sfc-attributes', [])
           content.dispose()
           folding.dispose()
           completions.dispose()
+          hover.dispose()
         },
       }
     },
   }
+}
+
+function resolveAttributeCompletionContext(
+  source: string,
+  offset: number,
+): SFCAttributeCompletionContext | null {
+  const openingStart = source.lastIndexOf('<', offset)
+  const previousClose = source.lastIndexOf('>', offset - 1)
+  if (openingStart < 0 || openingStart <= previousClose) { return null }
+  const prefix = source.slice(openingStart, offset)
+  if (/^<\s*[!/]/.test(prefix)) { return null }
+  const tagMatch = prefix.match(/^<([A-Z][\w.-]*)/i)
+  const tag = tagMatch?.[1]
+  if (!tag || prefix.length === tagMatch[0].length) { return null }
+
+  const afterTag = prefix.slice(tagMatch[0].length)
+  if (!/^\s/.test(afterTag)) { return null }
+  const existingAttributes = new Set<string>()
+  for (const match of afterTag.matchAll(/(?:^|\s)(?::|v-bind:)?([A-Za-z_][\w.-]*)/g)) {
+    if (match[1]) { existingAttributes.add(match[1]) }
+  }
+
+  const valueMatch = afterTag.match(/(?:^|\s)(:|v-bind:)?([A-Za-z_][\w.-]*)\s*=\s*(["'])([^"']*)$/)
+  if (valueMatch?.[2] != null && valueMatch[4] != null) {
+    return {
+      tag,
+      kind: 'value',
+      attributeName: valueMatch[2],
+      dynamic: Boolean(valueMatch[1]),
+      existingAttributes,
+      replaceStart: offset - valueMatch[4].length,
+      replaceEnd: offset,
+    }
+  }
+
+  const nameMatch = afterTag.match(/(?:^|\s)([A-Z_][\w.-]*)$/i)
+  const emptyName = /\s$/.test(afterTag)
+  if (!nameMatch && !emptyName) { return null }
+  const partial = nameMatch?.[1] ?? ''
+  return {
+    tag,
+    kind: 'name',
+    dynamic: false,
+    existingAttributes,
+    replaceStart: offset - partial.length,
+    replaceEnd: offset,
+  }
+}
+
+function findAttributeReference(source: string, offset: number): SFCAttributeReference | null {
+  const ast = parseComponentSFC(source).ast
+  const visit = (node: RComponentSFC_AST_TemplateNode): SFCAttributeReference | null => {
+    if (node.kind !== 'element') { return null }
+    const attribute = node.attributes.find(item => offset >= item.range.start && offset <= item.range.end)
+    if (attribute) { return { tag: node.tag, attribute } }
+    for (const child of node.children) {
+      const reference = visit(child)
+      if (reference) { return reference }
+    }
+    return null
+  }
+  for (const root of ast?.template?.roots ?? []) {
+    const reference = visit(root)
+    if (reference) { return reference }
+  }
+  return null
+}
+
+function findAttributeContract(
+  contracts: readonly ComponentSFCTagAttributeContract[],
+  name: string,
+): ComponentSFCTagAttributeContract | null {
+  return contracts.find(contract => contract.name === name || contract.aliases?.includes(name)) ?? null
+}
+
+function attributeSnippet(contract: ComponentSFCTagAttributeContract): string {
+  const value = contract.defaultValue ?? contract.values[0] ?? ''
+  if (typeof value === 'string') { return `${contract.name}="\${1:${value}}"` }
+  return `:${contract.name}="\${1:${String(value)}}"`
+}
+
+function formatAttributeCompletionValue(
+  value: ComponentSFCTagAttributeLiteral,
+  dynamic: boolean,
+): string {
+  if (!dynamic) { return String(value) }
+  return typeof value === 'string'
+    ? JSON.stringify(value)
+    : String(value)
+}
+
+function formatHoverLiteral(value: ComponentSFCTagAttributeLiteral): string {
+  return `\`${typeof value === 'string' ? value : String(value)}\``
 }
 
 function collectExpressionDecorations(

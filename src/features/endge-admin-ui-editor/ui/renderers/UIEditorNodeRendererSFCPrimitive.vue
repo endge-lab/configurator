@@ -5,7 +5,11 @@ import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
 import { Check, ChevronDown, Shapes } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { getUIEditorSFCAttributeBindings, getUIEditorSFCContentPreview } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
+import {
+  getUIEditorSFCAttributeBindings,
+  getUIEditorSFCContentPreview,
+  getUIEditorSFCSourceTag,
+} from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 
 const props = defineProps<{
@@ -15,7 +19,9 @@ const props = defineProps<{
   preview?: boolean
 }>()
 
-const tag = computed(() => getUIEditorSFCDefinitionContract(props.node.definitionRef)?.tag ?? 'Component')
+const tag = computed(() => getUIEditorSFCDefinitionContract(props.node.definitionRef)?.tag
+  ?? getUIEditorSFCSourceTag(props.node)
+  ?? 'Component')
 const bindings = computed(() => getUIEditorSFCAttributeBindings(props.node))
 
 function bindingValue(name: string): unknown {

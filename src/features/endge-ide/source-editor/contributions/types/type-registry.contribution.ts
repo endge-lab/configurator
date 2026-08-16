@@ -1,7 +1,13 @@
 /* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
-import { compileComponentSFC, Endge } from '@endge/core'
+import {
+  compileComponentSFC,
+  COMPONENT_SFC_FORM_EVENT_DEFINITIONS,
+  COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS,
+  Endge,
+  TABLE_EVENT_DEFINITIONS,
+} from '@endge/core'
 import { toast } from 'vue-sonner'
 
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -40,6 +46,9 @@ const BUILTINS = new Set([
   'any',
   'true',
   'false',
+  ...COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS.map(event => event.payloadType),
+  ...COMPONENT_SFC_FORM_EVENT_DEFINITIONS.map(event => event.payloadType),
+  ...TABLE_EVENT_DEFINITIONS.map(event => event.payloadType),
 ])
 
 /** Type Registry completion, hover, navigation and live diagnostics for SFC Monaco. */
@@ -91,10 +100,12 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
           for (const match of String(expression).matchAll(/\b[A-Z_$][\w$]*\b/gi)) {
             const identity = match[0]
             if (identity === 'Any' || identity === 'any') {
-              markers.push(markerForIdentity(source, identity, 'Any disables strict type checking.', false))
+              const marker = markerForIdentity(source, identity, 'Any disables strict type checking.', false)
+              if (marker) { markers.push(marker) }
             }
             else if (/^[A-Z]/.test(identity) && !BUILTINS.has(identity) && !known.has(identity)) {
-              markers.push(markerForIdentity(source, identity, `Type "${identity}" is missing from Type Registry.`, true))
+              const marker = markerForIdentity(source, identity, `Type "${identity}" is missing from Type Registry.`, true)
+              if (marker) { markers.push(marker) }
             }
           }
         }
@@ -193,7 +204,8 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       }
 
       function markerForIdentity(source: string, identity: string, message: string, error: boolean) {
-        const start = Math.max(0, source.indexOf(identity))
+        const start = source.indexOf(identity)
+        if (start < 0) { return null }
         const startPosition = model.getPositionAt(start)
         const endPosition = model.getPositionAt(start + identity.length)
         return {

@@ -2,9 +2,14 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
-import type { RComponentSFC } from '@endge/core'
+import type { ComponentSFCTagAttributeContract, RComponentSFC } from '@endge/core'
 
-import { compileComponentSFC, Endge, inspectComponentSFCVisual } from '@endge/core'
+import {
+  compileComponentSFC,
+  createComponentSFCAttributeContractsFromInputs,
+  Endge,
+  inspectComponentSFCVisual,
+} from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -21,8 +26,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
 import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
 import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
@@ -91,8 +96,36 @@ const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
     } satisfies VisualSchemaTypeOption))
   return [...primitives, ...registered]
 })
+const componentAttributeContractCache = new Map<string, {
+  source: string
+  contracts: ComponentSFCTagAttributeContract[]
+}>()
+
+function resolveUserComponentAttributeContracts(tag: string): readonly ComponentSFCTagAttributeContract[] {
+  const identity = Endge.program.resolveComponentTag(tag)
+    ?? Endge.domain.getComponentSFCs().find(component => component.tag?.trim() === tag)?.identity
+  const component = identity ? Endge.domain.getComponentSFC(identity) : null
+  if (!component) {
+    return []
+  }
+
+  const source = component.source ?? ''
+  const cached = componentAttributeContractCache.get(component.identity)
+  if (cached?.source === source) {
+    return cached.contracts
+  }
+
+  const contracts = createComponentSFCAttributeContractsFromInputs(
+    compileComponentSFC(source, { resolveTypeDefinition: resolveEndgeTypeDefinition }).contract.inputs,
+  )
+  componentAttributeContractCache.set(component.identity, { source, contracts })
+  return contracts
+}
+
 const sourceEditorExtensions = [
-  createSFCLanguageContribution(),
+  createSFCLanguageContribution({
+    resolveTagAttributeContracts: resolveUserComponentAttributeContracts,
+  }),
   createTypeRegistryContribution(),
   createExtractTypeContribution({
     getEditorModel: () => editor.value,
@@ -141,9 +174,13 @@ watch(
     () => editor.value?.identity,
   ],
   async ([request]) => {
-    if (!request || String(request.documentType) !== 'component-sfc') return
+    if (!request || String(request.documentType) !== 'component-sfc') {
+      return
+    }
     const current = editor.value
-    if (!current || ![current.id, current.identity].some(value => String(value ?? '') === request.documentId)) return
+    if (!current || ![current.id, current.identity].some(value => String(value ?? '') === request.documentId)) {
+      return
+    }
     await openSourceAt(request.offset)
   },
   { immediate: true, flush: 'post' },

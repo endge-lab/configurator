@@ -4,6 +4,9 @@ import type { UIEditorDocument, UIEditorNode } from '@/features/endge-admin-ui-e
 import {
   getUIEditorSFCAttributeBindings,
   getUIEditorSFCContentPreview,
+  getUIEditorSFCOpaqueSource,
+  getUIEditorSFCSourceAttributes,
+  getUIEditorSFCSourceDirectives,
   getUIEditorSFCTextSegments,
 } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
@@ -45,54 +48,113 @@ function optionalAttribute(name: string, value: unknown): string {
   return normalized ? `${name}="${normalized}"` : ''
 }
 
-function printAttributes(node: UIEditorNode): string[] {
-  const bindings = getUIEditorSFCAttributeBindings(node)
+function sourceOwnedAttributes(
+  node: UIEditorNode,
+  managedNames: ReadonlySet<string>,
+  managePlacement: boolean,
+): string[] {
+  const placementNames = new Set(['colStart', 'colSpan', 'rowStart', 'rowSpan'])
+  return getUIEditorSFCSourceAttributes(node)
+    .filter(attribute => attribute.dynamic || (
+      !managedNames.has(attribute.name)
+      && (!managePlacement || !placementNames.has(attribute.name))
+    ))
+    .map(attribute => attribute.raw.trim())
+    .filter(Boolean)
+}
+
+function sourceOwnedDirectives(node: UIEditorNode): string[] {
+  return getUIEditorSFCSourceDirectives(node)
+    .map(directive => directive.raw.trim())
+    .filter(Boolean)
+}
+
+function fallbackBindings(node: UIEditorNode): string[] {
+  const sourceDynamicNames = new Set(
+    getUIEditorSFCSourceAttributes(node)
+      .filter(attribute => attribute.dynamic)
+      .map(attribute => attribute.name),
+  )
+  return getUIEditorSFCAttributeBindings(node)
+    .filter(binding => !sourceDynamicNames.has(binding.name))
     .map(binding => `:${binding.name}="${escapeAttributeExpression(binding.expression)}"`)
+}
+
+function hasDynamicSourceAttribute(node: UIEditorNode, ...names: string[]): boolean {
+  const candidates = new Set(names)
+  return getUIEditorSFCSourceAttributes(node)
+    .some(attribute => attribute.dynamic && candidates.has(attribute.name))
+}
+
+function printAttributes(node: UIEditorNode, parentTag: UIEditorSFCBaseTag | null): string[] {
+  const bindings = fallbackBindings(node)
+  const managePlacement = parentTag === 'Grid'
 
   if (node.kind === 'page') {
     if (node.props.layoutMode === 'grid') {
+      const managedNames = new Set(['columns', 'gap', 'p', 'autoRows'])
       return [
-        `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
-        pixelAttribute('gap', node.props.gap),
-        pixelAttribute('p', node.props.padding),
-        pixelAttribute('autoRows', node.props.rowHeight),
+        hasDynamicSourceAttribute(node, 'columns') ? '' : `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
+        hasDynamicSourceAttribute(node, 'gap') ? '' : pixelAttribute('gap', node.props.gap),
+        hasDynamicSourceAttribute(node, 'p') ? '' : pixelAttribute('p', node.props.padding),
+        hasDynamicSourceAttribute(node, 'autoRows') ? '' : pixelAttribute('autoRows', node.props.rowHeight),
+        ...sourceOwnedAttributes(node, managedNames, managePlacement),
+        ...sourceOwnedDirectives(node),
       ].filter(Boolean).concat(bindings)
     }
+    const managedNames = new Set(['direction', 'col', 'row', 'align', 'justify', 'wrap', 'gap', 'p'])
     return [
-      `direction="${node.props.direction === 'column' ? 'column' : 'row'}"`,
-      optionalAttribute('align', node.props.align),
-      optionalAttribute('justify', node.props.justify),
-      node.props.wrap === true ? 'wrap' : '',
-      pixelAttribute('gap', node.props.gap),
-      pixelAttribute('p', node.props.padding),
+      hasDynamicSourceAttribute(node, 'direction', 'col', 'row') ? '' : `direction="${node.props.direction === 'column' ? 'column' : 'row'}"`,
+      hasDynamicSourceAttribute(node, 'align') ? '' : optionalAttribute('align', node.props.align),
+      hasDynamicSourceAttribute(node, 'justify') ? '' : optionalAttribute('justify', node.props.justify),
+      hasDynamicSourceAttribute(node, 'wrap') ? '' : node.props.wrap === true ? 'wrap' : '',
+      hasDynamicSourceAttribute(node, 'gap') ? '' : pixelAttribute('gap', node.props.gap),
+      hasDynamicSourceAttribute(node, 'p') ? '' : pixelAttribute('p', node.props.padding),
+      ...sourceOwnedAttributes(node, managedNames, managePlacement),
+      ...sourceOwnedDirectives(node),
     ].filter(Boolean).concat(bindings)
   }
 
   if (node.kind === 'flex') {
+    const managedNames = new Set(['direction', 'col', 'row', 'align', 'justify', 'wrap', 'gap', 'p'])
     return [
-      `direction="${node.props.direction === 'column' ? 'column' : 'row'}"`,
-      optionalAttribute('align', node.props.align),
-      optionalAttribute('justify', node.props.justify),
-      node.props.wrap === true ? 'wrap' : '',
-      pixelAttribute('gap', node.props.gap),
-      pixelAttribute('p', node.props.padding),
+      hasDynamicSourceAttribute(node, 'direction', 'col', 'row') ? '' : `direction="${node.props.direction === 'column' ? 'column' : 'row'}"`,
+      hasDynamicSourceAttribute(node, 'align') ? '' : optionalAttribute('align', node.props.align),
+      hasDynamicSourceAttribute(node, 'justify') ? '' : optionalAttribute('justify', node.props.justify),
+      hasDynamicSourceAttribute(node, 'wrap') ? '' : node.props.wrap === true ? 'wrap' : '',
+      hasDynamicSourceAttribute(node, 'gap') ? '' : pixelAttribute('gap', node.props.gap),
+      hasDynamicSourceAttribute(node, 'p') ? '' : pixelAttribute('p', node.props.padding),
+      ...sourceOwnedAttributes(node, managedNames, managePlacement),
+      ...sourceOwnedDirectives(node),
     ].filter(Boolean).concat(bindings)
   }
 
   if (node.kind === 'box') {
-    return [pixelAttribute('p', node.props.padding)].filter(Boolean).concat(bindings)
-  }
-
-  if (node.kind === 'grid') {
+    const managedNames = new Set(['p'])
     return [
-      `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
-      pixelAttribute('gap', node.props.gap),
-      pixelAttribute('p', node.props.padding),
-      pixelAttribute('autoRows', node.props.rowHeight),
+      hasDynamicSourceAttribute(node, 'p') ? '' : pixelAttribute('p', node.props.padding),
+      ...sourceOwnedAttributes(node, managedNames, managePlacement),
+      ...sourceOwnedDirectives(node),
     ].filter(Boolean).concat(bindings)
   }
 
-  return bindings
+  if (node.kind === 'grid') {
+    const managedNames = new Set(['columns', 'gap', 'p', 'autoRows'])
+    return [
+      hasDynamicSourceAttribute(node, 'columns') ? '' : `columns="${Math.max(1, Math.round(Number(node.props.columns) || 12))}"`,
+      hasDynamicSourceAttribute(node, 'gap') ? '' : pixelAttribute('gap', node.props.gap),
+      hasDynamicSourceAttribute(node, 'p') ? '' : pixelAttribute('p', node.props.padding),
+      hasDynamicSourceAttribute(node, 'autoRows') ? '' : pixelAttribute('autoRows', node.props.rowHeight),
+      ...sourceOwnedAttributes(node, managedNames, managePlacement),
+      ...sourceOwnedDirectives(node),
+    ].filter(Boolean).concat(bindings)
+  }
+
+  return [
+    ...sourceOwnedAttributes(node, new Set(), managePlacement),
+    ...sourceOwnedDirectives(node),
+    ...bindings,
+  ]
 }
 
 function printPlacementAttributes(node: UIEditorNode, parentTag: UIEditorSFCBaseTag | null): string[] {
@@ -101,11 +163,11 @@ function printPlacementAttributes(node: UIEditorNode, parentTag: UIEditorSFCBase
   }
 
   return [
-    `colStart="${node.layout.colStart}"`,
-    `colSpan="${node.layout.span}"`,
-    `rowStart="${node.layout.rowStart}"`,
-    `rowSpan="${node.layout.rowSpan}"`,
-  ]
+    hasDynamicSourceAttribute(node, 'colStart') ? '' : `colStart="${node.layout.colStart}"`,
+    hasDynamicSourceAttribute(node, 'colSpan') ? '' : `colSpan="${node.layout.span}"`,
+    hasDynamicSourceAttribute(node, 'rowStart') ? '' : `rowStart="${node.layout.rowStart}"`,
+    hasDynamicSourceAttribute(node, 'rowSpan') ? '' : `rowSpan="${node.layout.rowSpan}"`,
+  ].filter(Boolean)
 }
 
 function printChildren(
@@ -127,7 +189,7 @@ function printElement(
   parentTag: UIEditorSFCBaseTag | null,
 ): string {
   const attrs = [
-    ...printAttributes(node),
+    ...printAttributes(node, parentTag),
     ...printPlacementAttributes(node, parentTag),
   ]
   const serializedAttrs = attrs.length ? ` ${attrs.join(' ')}` : ''
@@ -178,6 +240,11 @@ function printNode(
     return ''
   }
 
+  const opaqueSource = getUIEditorSFCOpaqueSource(node)
+  if (opaqueSource) {
+    return indentOpaqueSource(opaqueSource, depth)
+  }
+
   if (node.kind === 'page') {
     return printElement(document, node, node.props.layoutMode === 'grid' ? 'Grid' : 'Flex', depth, parentTag)
   }
@@ -189,6 +256,17 @@ function printNode(
 
   const label = escapeComment(`${node.name || node.kind} · ${node.definitionRef}`)
   return `${indent(depth)}<!-- Unsupported legacy editor node: ${label} -->`
+}
+
+function indentOpaqueSource(source: string, depth: number): string {
+  const lines = source.trim().split('\n')
+  const commonIndent = lines
+    .filter(line => line.trim())
+    .reduce((minimum, line) => Math.min(minimum, line.match(/^\s*/)?.[0].length ?? 0), Number.POSITIVE_INFINITY)
+  const trimBy = Number.isFinite(commonIndent) ? commonIndent : 0
+  return lines
+    .map(line => `${indent(depth)}${line.slice(trimBy)}`.trimEnd())
+    .join('\n')
 }
 
 export function printUIEditorDocumentSFC(document: UIEditorDocument): string {

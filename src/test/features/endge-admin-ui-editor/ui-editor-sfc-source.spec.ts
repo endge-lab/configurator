@@ -170,6 +170,69 @@ describe('ui editor SFC source projection', () => {
     expect(root.props).toMatchObject({ direction: 'row' })
   })
 
+  it('projects Flex shorthands and keeps source-owned SFC syntax round-trip safe', () => {
+    const source = `<script setup lang="ts">
+defineProps<{ mode: 'create' | 'edit', flight: { daysOfWeek: boolean[] } }>()
+definePreviewProps({ mode: 'edit', flight: { daysOfWeek: [true, false] } })
+</script>
+
+<template>
+  <Flex col gap="4" w="100%" maxW="800px" p="6" bg="background">
+    <Flex row gap="3" align="center" justify="space-between">
+      <Text if="mode === 'edit'" size="24" weight="600">Рейс</Text>
+      <Badge if="mode === 'create'" tone="info">Новый рейс</Badge>
+    </Flex>
+    <Box w="100%" p="6" bg="surface" borderWidth="1" borderColor="muted" r="8">
+      <Grid columns="12" gap="4">
+        <Input colStart="1" colSpan="6" type="Time" w="100%" readonly />
+        <Weekdays colStart="7" colSpan="6" :weekdays="flight.daysOfWeek" />
+      </Grid>
+    </Box>
+  </Flex>
+</template>`
+    const projected = projectUIEditorDocumentFromSFC(source)
+
+    expect(projected.diagnostics).toEqual([])
+    const document = projected.document!
+    const root = document.nodes[document.rootId]!
+    const row = document.nodes[root.children[0]!]!
+    const box = document.nodes[root.children[1]!]!
+    const grid = document.nodes[box.children[0]!]!
+    const weekdays = document.nodes[grid.children[1]!]!
+
+    expect(root.props).toMatchObject({ direction: 'column', gap: 16, padding: 24 })
+    expect(row.props).toMatchObject({ direction: 'row', gap: 12 })
+    expect(box.props).toMatchObject({ padding: 24 })
+    expect(grid.props).toMatchObject({ gap: 16 })
+    expect(weekdays).toMatchObject({
+      kind: 'custom-component',
+      name: 'Weekdays',
+      layout: { colStart: 7, span: 6 },
+    })
+
+    const patched = patchUIEditorSFCTemplate(source, document)
+    expect(patched).toContain('<Flex direction="column" gap="16px" p="24px" w="100%" maxW="800px" bg="background">')
+    expect(patched).toContain('if="mode === \'edit\'"')
+    expect(patched).toContain('borderWidth="1" borderColor="muted" r="8"')
+    expect(patched).toContain('<Input type="Time" w="100%" readonly colStart="1" colSpan="6" rowStart="1" rowSpan="2" />')
+    expect(patched).toContain('<Weekdays colStart="7" colSpan="6" :weekdays="flight.daysOfWeek" />')
+    expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
+  })
+
+  it('preserves dynamic visual layout attributes instead of replacing them with fallback values', () => {
+    const source = `<script setup lang="ts">
+defineProps<{ spacing: number }>()
+definePreviewProps({ spacing: 3 })
+</script>
+<template><Flex col :gap="spacing"><Text>Dynamic</Text></Flex></template>`
+    const document = projectUIEditorDocumentFromSFC(source).document!
+    const patched = patchUIEditorSFCTemplate(source, document)
+
+    expect(patched).toContain('<Flex direction="column" p="10px" :gap="spacing">')
+    expect(patched).not.toContain('gap="10px"')
+    expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
+  })
+
   it('does not enable Flex wrapping for an explicit false boolean attribute', () => {
     const projected = projectUIEditorDocumentFromSFC('<template><Flex wrap="false"><Text>A</Text><Text>B</Text></Flex></template>')
 
@@ -194,12 +257,22 @@ describe('ui editor SFC source projection', () => {
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('keeps unsupported dynamic source out of the visual projection', () => {
+  it('keeps source-owned dynamic attributes in the visual projection', () => {
     const result = projectUIEditorDocumentFromSFC(`<script setup lang="ts"></script>
 <template><Flex><Text :value="label" /></Flex></template>`)
 
-    expect(result.document).toBeNull()
-    expect(result.diagnostics.join(' ')).toContain('dynamic binding')
+    expect(result.diagnostics).toEqual([])
+    const document = result.document!
+    const text = document.nodes[document.nodes[document.rootId]!.children[0]!]!
+    expect(getUIEditorSFCAttributeBindings(text)).toEqual([
+      {
+        name: 'value',
+        expression: 'label',
+        resolved: false,
+      },
+    ])
+    expect(patchUIEditorSFCTemplate(`<script setup lang="ts"></script>
+<template><Flex><Text :value="label" /></Flex></template>`, document)).toContain(':value="label"')
   })
 
   it('renders Text interpolation from literal definePreviewProps and preserves its binding', () => {

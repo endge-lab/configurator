@@ -25,6 +25,10 @@ import type {
 import {
   compileComponentSFCExpression,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+  ENDGE_SFC_TABLE_PAGING_MODES,
+  ENDGE_SFC_TABLE_SELECTION_MODES,
+  ENDGE_SFC_TABLE_SELECTION_TRIGGERS,
+  ENDGE_SFC_TABLE_SORT_COMPARATORS,
   getComponentSFCTagInputContract,
   inspectComponentSFCMetadata,
   patchComponentSFCMetadataSource,
@@ -141,25 +145,43 @@ const emit = defineEmits<{
 
 const PAGING_NOT_SET_VALUE = '__paging_not_set__'
 const PAGING_SOURCE_VALUE = '__paging_source__'
+const SELECTION_NOT_SET_VALUE = '__selection_not_set__'
+const SELECTION_SOURCE_VALUE = '__selection_source__'
 const DATA_SPLIT_DEFAULT_RATIO = 30
 const DATA_SPLIT_MIN_RATIO = 20
 const DATA_SPLIT_MAX_RATIO = 55
 const DATA_SPLIT_KEYBOARD_STEP = 2
-const SORT_COMPARATOR_OPTIONS = [
-  { value: 'natural', label: 'Natural' },
-  { value: 'text', label: 'Text' },
-  { value: 'number', label: 'Number' },
-  { value: 'date', label: 'Date' },
-  { value: 'time', label: 'Time' },
-  { value: 'boolean', label: 'Boolean' },
-] as const
+const SELECTION_MODE_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_MODES[number], string> = {
+  none: 'Без выделения',
+  single: 'Одна строка',
+  multiple: 'Несколько строк',
+}
+const SELECTION_TRIGGER_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_TRIGGERS[number], string> = {
+  auto: 'Auto',
+  control: 'Только control слева',
+  row: 'Только клик по строке',
+  both: 'Control и строка',
+}
+const PAGING_LABELS: Record<typeof ENDGE_SFC_TABLE_PAGING_MODES[number], string> = {
+  pages: 'Страницы',
+  virtual: 'Виртуальный скролл',
+}
+const SELECTION_MODE_OPTIONS = ENDGE_SFC_TABLE_SELECTION_MODES.map(value => ({ value, label: SELECTION_MODE_LABELS[value] }))
+const SELECTION_TRIGGER_OPTIONS = ENDGE_SFC_TABLE_SELECTION_TRIGGERS.map(value => ({ value, label: SELECTION_TRIGGER_LABELS[value] }))
+const PAGING_OPTIONS = ENDGE_SFC_TABLE_PAGING_MODES.map(value => ({ value, label: PAGING_LABELS[value] }))
+const SORT_COMPARATOR_OPTIONS = ENDGE_SFC_TABLE_SORT_COMPARATORS.map(value => ({
+  value,
+  label: value[0]!.toUpperCase() + value.slice(1),
+}))
 const MENU_KIND_OPTIONS = [
   { kind: 'column', label: 'Меню заголовков', description: 'Открывается на заголовке колонки.' },
   { kind: 'row', label: 'Меню строк', description: 'Получает row, rowId, rowIndex, columnKey и value.' },
 ] as const
 
 type EditableTableAttributeName
-  = 'paging' | 'page-size' | 'page-sizes' | 'default-pin' | 'default-sort' | 'default-hidden'
+  = 'selection-mode' | 'selection-trigger'
+    | 'paging' | 'page-size' | 'page-sizes'
+    | 'default-pin' | 'default-sort' | 'default-hidden'
 
 const mainTab = useSmartTabSelection(
   'component-sfc.visual.active-tab',
@@ -169,13 +191,14 @@ const mainTab = useSmartTabSelection(
 const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
-  ['general', 'inputs', 'events', 'ports', 'paging', 'visibility', 'pinning', 'sorting', 'menus', 'metadata'] as const,
+  ['general', 'inputs', 'events', 'ports', 'selection', 'paging', 'visibility', 'pinning', 'sorting', 'menus', 'metadata'] as const,
 )
 const tableSections = [
   { id: 'general', label: 'Основное', icon: Settings2 },
   { id: 'inputs', label: 'Входные данные', icon: Braces },
   { id: 'events', label: 'События', icon: Radio },
   { id: 'ports', label: 'Порты', icon: Unplug },
+  { id: 'selection', label: 'Выделение', icon: Check },
   { id: 'paging', label: 'Пагинация', icon: Table2 },
   { id: 'visibility', label: 'Видимость', icon: Eye },
   { id: 'pinning', label: 'Закрепления', icon: Pin },
@@ -295,13 +318,35 @@ const relevantDiagnostics = computed(() => (
 ))
 const metadataProjection = computed(() => inspectComponentSFCMetadata(props.source))
 const errorCount = computed(() => relevantDiagnostics.value.filter(item => item.severity === 'error').length)
+const selectionModeValue = computed(() => {
+  const value = props.projection.selectionMode
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_SELECTION_MODES as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
+const selectionTriggerValue = computed(() => {
+  const value = props.projection.selectionTrigger
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_SELECTION_TRIGGERS as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
+const selectionModeIsSourceOwned = computed(() => props.projection.selectionMode?.kind === 'expression')
+const selectionTriggerIsSourceOwned = computed(() => props.projection.selectionTrigger?.kind === 'expression')
 const pagingModeValue = computed(() => {
   const value = props.projection.paging
   if (value?.kind === 'expression') {
     return PAGING_SOURCE_VALUE
   }
   const source = sourceValueText(value).trim()
-  return source === 'pages' || source === 'virtual' ? source : PAGING_NOT_SET_VALUE
+  return (ENDGE_SFC_TABLE_PAGING_MODES as readonly string[]).includes(source) ? source : PAGING_NOT_SET_VALUE
 })
 const pagingIsSourceOwned = computed(() => props.projection.paging?.kind === 'expression')
 const usesPagePaging = computed(() => pagingModeValue.value === 'pages')
@@ -451,6 +496,14 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
     case 'events':
     case 'ports':
       return null
+    case 'selection':
+      if (selectionModeIsSourceOwned.value || selectionTriggerIsSourceOwned.value) {
+        return 'Source'
+      }
+      if (selectionModeValue.value === SELECTION_NOT_SET_VALUE) {
+        return null
+      }
+      return `${selectionModeValue.value} / ${selectionTriggerValue.value === SELECTION_NOT_SET_VALUE ? 'auto' : selectionTriggerValue.value}`
     case 'paging':
       if (pagingIsSourceOwned.value) {
         return 'Source'
@@ -951,6 +1004,10 @@ function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
 
 function tableProjectionValue(name: EditableTableAttributeName): ComponentSFCVisualSourceValue | null {
   switch (name) {
+    case 'selection-mode':
+      return props.projection.selectionMode
+    case 'selection-trigger':
+      return props.projection.selectionTrigger
     case 'paging':
       return props.projection.paging
     case 'page-size':
@@ -977,6 +1034,20 @@ function commitTableAttribute(name: EditableTableAttributeName, rawValue: string
     return
   }
   applyPatch({ type: 'set-table-attribute', name, value })
+}
+
+function updateSelectionMode(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || selectionModeIsSourceOwned.value) {
+    return
+  }
+  commitTableAttribute('selection-mode', value === SELECTION_NOT_SET_VALUE ? '' : value)
+}
+
+function updateSelectionTrigger(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || selectionTriggerIsSourceOwned.value) {
+    return
+  }
+  commitTableAttribute('selection-trigger', value === SELECTION_NOT_SET_VALUE ? '' : value)
 }
 
 function updatePaging(value: string | null): void {
@@ -1963,6 +2034,71 @@ onBeforeUnmount(() => {
                     @open-source="offset => emit('openSource', offset)"
                   />
 
+                  <section v-show="tableSection === 'selection'" class="space-y-3">
+                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
+                      Режим задаёт допустимое количество выбранных строк, а способ выбора — какие действия меняют единое состояние выделения.
+                    </p>
+
+                    <div class="grid max-w-[720px] gap-3 sm:grid-cols-2">
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-selection-mode">Режим</Label>
+                        <Select
+                          :model-value="selectionModeValue"
+                          :disabled="selectionModeIsSourceOwned"
+                          @update:model-value="value => updateSelectionMode(value == null ? null : String(value))"
+                        >
+                          <SelectTrigger id="sfc-table-selection-mode" class="editor-control w-full">
+                            <SelectValue placeholder="Выберите режим" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                              Не задано
+                            </SelectItem>
+                            <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
+                              {{ option.label }}
+                            </SelectItem>
+                            <SelectItem v-if="selectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                              Настроено в Source
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p v-if="selectionModeIsSourceOwned" class="text-xs text-muted-foreground">
+                          Dynamic selection-mode expression можно изменить только в Source.
+                        </p>
+                      </div>
+
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-selection-trigger">Способ выбора</Label>
+                        <Select
+                          :model-value="selectionTriggerValue"
+                          :disabled="selectionTriggerIsSourceOwned"
+                          @update:model-value="value => updateSelectionTrigger(value == null ? null : String(value))"
+                        >
+                          <SelectTrigger id="sfc-table-selection-trigger" class="editor-control w-full">
+                            <SelectValue placeholder="Выберите способ" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                              По умолчанию адаптера
+                            </SelectItem>
+                            <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
+                              {{ option.label }}
+                            </SelectItem>
+                            <SelectItem v-if="selectionTriggerIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                              Настроено в Source
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p v-if="selectionTriggerIsSourceOwned" class="text-xs text-muted-foreground">
+                          Dynamic selection-trigger expression можно изменить только в Source.
+                        </p>
+                        <p v-else class="text-[11px] text-muted-foreground">
+                          <code>auto</code> оставляет выбор конкретного UX адаптеру отрисовки.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
                   <section v-show="tableSection === 'paging'" class="space-y-3">
                     <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
                       Способ отображения больших наборов строк.
@@ -1983,11 +2119,8 @@ onBeforeUnmount(() => {
                             <SelectItem :value="PAGING_NOT_SET_VALUE">
                               Не задано
                             </SelectItem>
-                            <SelectItem value="pages">
-                              Страницы
-                            </SelectItem>
-                            <SelectItem value="virtual">
-                              Виртуальный скролл
+                            <SelectItem v-for="option in PAGING_OPTIONS" :key="option.value" :value="option.value">
+                              {{ option.label }}
                             </SelectItem>
                             <SelectItem v-if="pagingIsSourceOwned" :value="PAGING_SOURCE_VALUE">
                               Настроено в Source

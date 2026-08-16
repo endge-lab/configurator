@@ -81,6 +81,21 @@ export interface UIEditorSFCAttributeBinding {
   previewValue?: unknown
 }
 
+export interface UIEditorSFCSourceAttribute {
+  name: string
+  value: string | null
+  dynamic: boolean
+  raw: string
+}
+
+export interface UIEditorSFCSourceDirective {
+  name: string
+  argument?: string
+  expression?: string
+  modifiers: string[]
+  raw: string
+}
+
 export interface UIEditorNodePropsMap {
   'page': UIEditorPageProps
   'flex': UIEditorFlexProps

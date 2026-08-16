@@ -3,6 +3,8 @@ import type {
   UIEditorNode,
   UIEditorNodeLayout,
   UIEditorSFCAttributeBinding,
+  UIEditorSFCSourceAttribute,
+  UIEditorSFCSourceDirective,
   UIEditorSFCTextSegment,
   UIEditorSourceNodeLocations,
 } from '@/features/endge-admin-ui-editor/types'
@@ -21,6 +23,10 @@ import { printUIEditorDocumentSFC, printUIEditorDocumentTemplate } from '@/featu
 import {
   UI_EDITOR_SFC_ATTRIBUTE_BINDINGS_META_KEY,
   UI_EDITOR_SFC_CONTENT_PREVIEW_META_KEY,
+  UI_EDITOR_SFC_OPAQUE_SOURCE_META_KEY,
+  UI_EDITOR_SFC_SOURCE_ATTRIBUTES_META_KEY,
+  UI_EDITOR_SFC_SOURCE_DIRECTIVES_META_KEY,
+  UI_EDITOR_SFC_SOURCE_TAG_META_KEY,
   UI_EDITOR_SFC_TEXT_SEGMENTS_META_KEY,
 } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import {
@@ -144,50 +150,10 @@ function projectElement(
   suggestedRowStart = 1,
   parentTag: string | null = null,
 ): UIEditorNode | null {
-  const direction = readAttribute(ast.attributes, 'direction') ?? 'row'
+  const direction = readFlexDirection(ast.attributes)
   const contract = isRoot
     ? null
     : resolveContract(ast.tag, direction)
-
-  if (!isRoot && !contract) {
-    context.diagnostics.push(`Тег <${ast.tag}> пока не поддерживается visual editor.`)
-    return null
-  }
-  if (ast.directives.length > 0) {
-    context.diagnostics.push(`<${ast.tag}> содержит directive, недоступную visual editor.`)
-    return null
-  }
-
-  const allowedAttributes = ast.tag === 'Flex'
-    ? new Set(['direction', 'gap', 'p', 'align', 'justify', 'wrap'])
-    : ast.tag === 'Grid'
-      ? new Set(['columns', 'gap', 'p', 'autoRows'])
-      : ast.tag === 'Box'
-        ? new Set(['p'])
-        : new Set<string>()
-  if (parentTag === 'Grid') {
-    allowedAttributes.add('colStart')
-    allowedAttributes.add('colSpan')
-    allowedAttributes.add('rowStart')
-    allowedAttributes.add('rowSpan')
-  }
-  const dynamicAttributes = new Set(contract?.dynamicAttributes ?? [])
-  const unsupportedDynamicAttribute = ast.attributes.find(
-    attribute => attribute.dynamic && !dynamicAttributes.has(attribute.name),
-  )
-  if (unsupportedDynamicAttribute) {
-    context.diagnostics.push(
-      `<${ast.tag}> содержит dynamic binding :${unsupportedDynamicAttribute.name}, недоступную visual editor.`,
-    )
-    return null
-  }
-  const unsupportedAttribute = ast.attributes.find(
-    attribute => !attribute.dynamic && !allowedAttributes.has(attribute.name),
-  )
-  if (unsupportedAttribute) {
-    context.diagnostics.push(`Атрибут "${unsupportedAttribute.name}" тега <${ast.tag}> пока не поддерживается visual editor.`)
-    return null
-  }
 
   const previous = context.previousByPath.get(path)
   const canReusePrevious = previous && nodeTag(previous) === ast.tag
@@ -208,10 +174,30 @@ function projectElement(
           rowStart: 1,
         }
 
+  if (!isRoot && !contract) {
+    const node = createOpaqueSourceNode(id, ast, layout!, context.source)
+    context.nodes[id] = node
+    return node
+  }
+
   const node = isRoot
     ? createPageNode(id, ast)
     : createContractNode(id, ast, contract!, layout!)
   context.nodes[id] = node
+
+  const sourceAttributes = projectSourceAttributes(ast, context.source)
+  const sourceDirectives = projectSourceDirectives(ast, context.source)
+  if (sourceAttributes.length > 0 || sourceDirectives.length > 0) {
+    node.meta = {
+      ...(node.meta ?? {}),
+      ...(sourceAttributes.length > 0
+        ? { [UI_EDITOR_SFC_SOURCE_ATTRIBUTES_META_KEY]: sourceAttributes }
+        : {}),
+      ...(sourceDirectives.length > 0
+        ? { [UI_EDITOR_SFC_SOURCE_DIRECTIVES_META_KEY]: sourceDirectives }
+        : {}),
+    }
+  }
 
   const attributeBindings = projectAttributeBindings(ast.attributes, context)
   if (attributeBindings.length > 0) {
@@ -321,13 +307,13 @@ function createPageNode(id: string, ast: RComponentSFC_AST_ElementNode): UIEdito
     props: {
       title: 'SFC Page',
       layoutMode,
-      direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
+      direction: readFlexDirection(ast.attributes),
       align: readAttribute(ast.attributes, 'align'),
       justify: readAttribute(ast.attributes, 'justify'),
       wrap: readBooleanAttribute(ast.attributes, 'wrap'),
       columns: layoutMode === 'grid' ? readNumberAttribute(ast.attributes, 'columns', 12) : 12,
-      gap: readPixelAttribute(ast.attributes, 'gap', 10),
-      padding: readPixelAttribute(ast.attributes, 'p', 10),
+      gap: readSpacingAttribute(ast.attributes, 'gap', 10),
+      padding: readSpacingAttribute(ast.attributes, 'p', 10),
       rowHeight: layoutMode === 'grid'
         ? readPixelAttribute(ast.attributes, 'autoRows', DEFAULT_PAGE_ROW_HEIGHT)
         : DEFAULT_PAGE_ROW_HEIGHT,
@@ -344,24 +330,24 @@ function createContractNode(
   const props = { ...contract.defaultProps }
   if (contract.kind === 'flex') {
     Object.assign(props, {
-      direction: readAttribute(ast.attributes, 'direction') === 'column' ? 'column' : 'row',
       align: readAttribute(ast.attributes, 'align'),
       justify: readAttribute(ast.attributes, 'justify'),
       wrap: readBooleanAttribute(ast.attributes, 'wrap'),
-      gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
-      padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
+      direction: readFlexDirection(ast.attributes),
+      gap: readSpacingAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
+      padding: readSpacingAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
     })
   }
   if (contract.kind === 'box') {
     Object.assign(props, {
-      padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
+      padding: readSpacingAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
     })
   }
   if (contract.kind === 'grid') {
     Object.assign(props, {
       columns: readNumberAttribute(ast.attributes, 'columns', Number(props.columns ?? 12)),
-      gap: readPixelAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
-      padding: readPixelAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
+      gap: readSpacingAttribute(ast.attributes, 'gap', Number(props.gap ?? 8)),
+      padding: readSpacingAttribute(ast.attributes, 'p', Number(props.padding ?? 8)),
       rowHeight: readPixelAttribute(ast.attributes, 'autoRows', Number(props.rowHeight ?? DEFAULT_PAGE_ROW_HEIGHT)),
     })
   }
@@ -377,6 +363,59 @@ function createContractNode(
     props,
     layout,
   } as unknown as UIEditorNode
+}
+
+function createOpaqueSourceNode(
+  id: string,
+  ast: RComponentSFC_AST_ElementNode,
+  layout: UIEditorNodeLayout,
+  source: string,
+): UIEditorNode {
+  return {
+    id,
+    kind: 'custom-component',
+    definitionRef: `sfc.source.${ast.tag}`,
+    configRef: null,
+    assetRef: null,
+    name: ast.tag,
+    children: [],
+    props: {
+      title: ast.tag,
+      rendererRef: '',
+    },
+    layout,
+    meta: {
+      [UI_EDITOR_SFC_SOURCE_TAG_META_KEY]: ast.tag,
+      [UI_EDITOR_SFC_OPAQUE_SOURCE_META_KEY]: source.slice(ast.range.start, ast.range.end),
+      [UI_EDITOR_SFC_SOURCE_ATTRIBUTES_META_KEY]: projectSourceAttributes(ast, source),
+      [UI_EDITOR_SFC_SOURCE_DIRECTIVES_META_KEY]: projectSourceDirectives(ast, source),
+    },
+  } as UIEditorNode
+}
+
+function projectSourceAttributes(
+  ast: RComponentSFC_AST_ElementNode,
+  source: string,
+): UIEditorSFCSourceAttribute[] {
+  return ast.attributes.map(attribute => ({
+    name: attribute.name,
+    value: attribute.value,
+    dynamic: attribute.dynamic,
+    raw: source.slice(attribute.range.start, attribute.range.end),
+  }))
+}
+
+function projectSourceDirectives(
+  ast: RComponentSFC_AST_ElementNode,
+  source: string,
+): UIEditorSFCSourceDirective[] {
+  return ast.directives.map(directive => ({
+    name: directive.name,
+    argument: directive.argument,
+    expression: directive.expression,
+    modifiers: [...directive.modifiers],
+    raw: source.slice(directive.range.start, directive.range.end),
+  }))
 }
 
 function resolveContract(tag: string, direction: string) {
@@ -513,6 +552,24 @@ function readBooleanAttribute(attributes: RComponentSFC_AST_Attribute[], name: s
   return attribute.value === null || attribute.value === '' || attribute.value === 'true'
 }
 
+function readSpacingAttribute(
+  attributes: RComponentSFC_AST_Attribute[],
+  name: string,
+  fallback: number,
+): number {
+  const raw = readAttribute(attributes, name)
+  if (!raw) {
+    return fallback
+  }
+  const pixelMatch = raw.match(/^(-?\d+(?:\.\d+)?)px$/i)
+  if (pixelMatch) {
+    const pixels = Number(pixelMatch[1])
+    return Number.isFinite(pixels) ? pixels : fallback
+  }
+  const numeric = Number(raw)
+  return Number.isFinite(numeric) ? numeric * 4 : fallback
+}
+
 function readPixelAttribute(
   attributes: RComponentSFC_AST_Attribute[],
   name: string,
@@ -524,6 +581,16 @@ function readPixelAttribute(
   }
   const numeric = Number(raw.replace(/px$/i, ''))
   return Number.isFinite(numeric) ? numeric : fallback
+}
+
+function readFlexDirection(attributes: RComponentSFC_AST_Attribute[]): 'row' | 'column' {
+  if (readBooleanAttribute(attributes, 'col')) {
+    return 'column'
+  }
+  if (readBooleanAttribute(attributes, 'row')) {
+    return 'row'
+  }
+  return readAttribute(attributes, 'direction') === 'column' ? 'column' : 'row'
 }
 
 function readNumberAttribute(
@@ -555,6 +622,10 @@ function readGridPlacement(
 }
 
 function nodeTag(node: UIEditorNode): string | null {
+  const sourceTag = node.meta?.[UI_EDITOR_SFC_SOURCE_TAG_META_KEY]
+  if (typeof sourceTag === 'string' && sourceTag.trim()) {
+    return sourceTag
+  }
   if (node.kind === 'page') {
     return node.props.layoutMode === 'grid' ? 'Grid' : 'Flex'
   }
