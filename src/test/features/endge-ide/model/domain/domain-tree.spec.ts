@@ -27,7 +27,6 @@ describe('buildDomainTree', () => {
       allFolders: [
         { id: 'root-data-views', identity: 'root-data-views', name: 'Data Views', parent: null },
       ],
-      softDeletedFolderId: null,
     })
 
     expect(tree[0]?.name).toBe('Представления')
@@ -52,7 +51,6 @@ describe('buildDomainTree', () => {
       allFolders: [
         { id: 'root-integrations', identity: 'root-integrations', name: 'Integrations', parent: null, managedBy: 'system' },
       ],
-      softDeletedFolderId: null,
     })
 
     expect(tree[0]).toMatchObject({ managedBy: 'system', managedById: null })
@@ -83,7 +81,6 @@ describe('buildDomainTree', () => {
       allFolders: [
         { id: 'root-queries', identity: 'root-queries', name: 'Queries', parent: null },
       ],
-      softDeletedFolderId: null,
     })
 
     const file = tree[0]?.children?.[0]
@@ -189,11 +186,10 @@ describe('buildDomainTree', () => {
         { id: 'folder-b', name: 'Folder B', parent: 'folder-a' },
         { id: 'folder-a', name: 'Folder A duplicate', parent: 'folder-b' },
       ],
-      softDeletedFolderId: null,
     })
 
     expect(tree).toHaveLength(1)
-    const root = tree[0]
+    const root = tree[0]!
     expect(root.type).toBe('folder')
     expect(root.children).toHaveLength(1)
 

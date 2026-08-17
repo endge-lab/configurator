@@ -50,7 +50,6 @@ export interface FsFileNode extends FsNodeBase {
   sectionType: DomainSectionType
   managedBy?: ManagedBy
   managedById?: string | null
-  isInDeletedFolder?: boolean
   children?: FsNode[]
   isTableColumn?: boolean
   parentComponentId?: string
@@ -79,15 +78,11 @@ export interface FlatFsItem {
   rootId: string
 }
 
-export const SOFT_DELETED_IDENTITY = 'soft-deleted'
-
-/** Признак удалённой сущности (папка «удалённые» по id или проставлен deletedAt). */
+/** Признак удалённой сущности по серверному tombstone. */
 export function isDeleted(
-  e: { folderId?: string | number | null, folder?: string | number | null, group?: string | number | null, deletedAt?: string | null },
-  softDeletedFolderId?: string | number | null,
+  e: { deletedAt?: string | null },
 ): boolean {
-  const fid = e.folderId ?? e.folder ?? e.group ?? null
-  return (softDeletedFolderId != null && fid === softDeletedFolderId) || (e.deletedAt != null && e.deletedAt !== '')
+  return e.deletedAt != null && e.deletedAt !== ''
 }
 
 function isTemporaryEntity(entity: unknown): boolean {
@@ -95,148 +90,15 @@ function isTemporaryEntity(entity: unknown): boolean {
 }
 
 /** Исключаем удалённые из списков. */
-export function withoutDeleted<T extends { folderId?: string | number | null, folder?: string | number | null, group?: string | number | null, deletedAt?: string | null }>(
-  list: T[] | undefined,
-  softDeletedFolderId?: string | number | null,
-): T[] {
+export function withoutDeleted<T>(list: T[] | undefined): T[] {
   if (!Array.isArray(list))
     return []
-  return list.filter(e => !isDeleted(e, softDeletedFolderId) && !isTemporaryEntity(e))
+  return list.filter(e => !isDeleted(e as { deletedAt?: string | null }) && !isTemporaryEntity(e))
 }
 
 export function getFolderParent(f: { parent?: string | number | null, parentId?: string | number }): string | number | null {
   const p = f.parent ?? (f as any).parentId
   return p == null || p === '' ? null : p
-}
-
-/** Минимальный контракт store для getSoftDeletedItems. */
-export interface DomainStoreForTree {
-  folders?: any[]
-  components?: any[]
-  componentSFCs?: any[]
-  queries?: any[]
-  dataViews?: any[]
-  compositions?: any[]
-  stores?: any[]
-  streams?: any[]
-  updates?: any[]
-  mocks?: any[]
-  actions?: any[]
-  typesComplex?: any[]
-  typesPrimitives?: any[]
-  parameters?: any[]
-  filters?: any[]
-  converters?: any[]
-  computations?: any[]
-  integrations?: any[]
-  tenants?: any[]
-  pageTemplates?: any[]
-  pages?: any[]
-  vocabs?: any[]
-  i18nBundles?: any[]
-  authProfiles?: any[]
-  projects?: any[]
-}
-
-/** Собирает только удалённые сущности в папку «Удалённые» (из всех секций). */
-export function getSoftDeletedItems(
-  store: DomainStoreForTree,
-  softDeletedFolderId?: string | number | null,
-  allFolders?: Array<{ id?: string | number, parent?: string | number | null, parentId?: string | number | null }>,
-): Array<{
-  id: string
-  name: string
-  folderId?: string | number | null
-  type?: DomainDocumentType
-  sectionType: DomainSectionType
-  presentationKind?: CompositionPresentationKind
-}> {
-  const out: Array<{
-    id: string
-    name: string
-    folderId?: string | number | null
-    type?: DomainDocumentType
-    sectionType: DomainSectionType
-  }> = []
-
-  const deletedFolderIds = collectDeletedFolderBranchIds(
-    allFolders ?? store.folders ?? [],
-    softDeletedFolderId,
-  )
-  const isDeletedOrInDeletedFolderBranch = (e: any) => {
-    const fid = e?.folderId ?? e?.folder ?? e?.group ?? null
-    return isDeleted(e, softDeletedFolderId) || (fid != null && deletedFolderIds.has(String(fid)))
-  }
-
-  const add = (list: any[] | undefined, sectionType: DomainSectionType) => {
-    if (!Array.isArray(list))
-      return
-    for (const e of list) {
-      if (isTemporaryEntity(e))
-        continue
-      if (!isDeletedOrInDeletedFolderBranch(e))
-        continue
-      out.push({
-        id: e.id ?? e.name ?? '',
-        name: e.name ?? e.id ?? '',
-        folderId: e.folderId ?? e.folder ?? e.group,
-        type: e.type,
-        sectionType,
-        ...(e?.type === 'composition' && { presentationKind: String(e.kind ?? 'library') as CompositionPresentationKind }),
-      })
-    }
-  }
-  add(store.componentSFCs, DomainSectionType.Component)
-  add(store.queries, DomainSectionType.Query)
-  add(store.dataViews, DomainSectionType.DataView)
-  add(store.compositions, DomainSectionType.Composition)
-  add(store.stores, DomainSectionType.Store)
-  add(store.streams, DomainSectionType.Query)
-  add(store.updates, DomainSectionType.Store)
-  add(store.mocks, DomainSectionType.Mock)
-  add(store.actions, DomainSectionType.Action)
-  add([...(store.typesPrimitives ?? []), ...(store.typesComplex ?? [])], DomainSectionType.Type)
-  add(store.filters, DomainSectionType.Filters)
-  add(store.converters, DomainSectionType.Converter)
-  add(store.computations, DomainSectionType.Computation)
-  add(store.tenants, DomainSectionType.Tenant)
-  add(store.vocabs, DomainSectionType.Vocabs)
-  add(store.i18nBundles, DomainSectionType.I18nBundles)
-  add(store.authProfiles, DomainSectionType.AuthProfile)
-  add(store.projects, DomainSectionType.Project)
-  return out
-}
-
-function collectDeletedFolderBranchIds(
-  allFolders: Array<{ id?: string | number, parent?: string | number | null, parentId?: string | number | null }>,
-  softDeletedFolderId?: string | number | null,
-): Set<string> {
-  const out = new Set<string>()
-  if (softDeletedFolderId == null)
-    return out
-
-  const softId = String(softDeletedFolderId)
-  out.add(softId)
-
-  let changed = true
-  while (changed) {
-    changed = false
-    for (const folder of allFolders) {
-      const id = folder?.id
-      if (id == null)
-        continue
-      const parent = getFolderParent(folder as any)
-      if (parent == null)
-        continue
-      const idKey = String(id)
-      if (!out.has(idKey) && out.has(String(parent))) {
-        out.add(idKey)
-        changed = true
-      }
-    }
-  }
-
-  return out
 }
 
 /** Полные русские подписи корневых разделов дерева. */
@@ -267,7 +129,6 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Профили аутентификации',
   'root-projects': 'Проекты',
-  'soft-deleted': 'Удалённые',
 }
 
 export interface DomainTreeRootBlock {
@@ -329,15 +190,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
       'root-navigations',
       'root-styles',
     ],
-  },
-  {
-    id: 'deleted',
-    title: 'Другое',
-    rootIds: [
-      'soft-deleted',
-    ],
-    className: 'mt-4',
-    showTitle: true,
   },
 ]
 
@@ -445,8 +297,6 @@ export interface BuildDomainTreeParams {
   rootOrder: string[]
   rootLabels: Record<string, string>
   allFolders: any[]
-  /** Id папки «Удалённые» для определения isInDeletedFolder и isDeleted. */
-  softDeletedFolderId?: string | number | null
   /** Composition documents presented by kind rather than their persisted folder. */
   contextualCompositions?: Array<{
     id?: string | number
@@ -505,8 +355,6 @@ function buildFolderNode(
   allFolders: any[],
   isRoot = true,
   isVirtualRoot = false,
-  softDeletedFolderId?: string | number | null,
-  isInDeletedBranch = false,
   visitedFolderKeys: Set<string> = new Set(),
   traversalPath: string[] = [],
 ): FsFolderNode {
@@ -514,11 +362,6 @@ function buildFolderNode(
   const folderName = folder.name ?? folder.identity ?? String(folderId)
   const folderIdentity = String((folder as any).identity ?? folder.id ?? '')
   const folderKey = getFolderTraversalKey(folder)
-  const currentInDeletedBranch
-    = isInDeletedBranch
-      || folderIdentity === SOFT_DELETED_IDENTITY
-      || (softDeletedFolderId != null && String(folderId) === String(softDeletedFolderId))
-
   if (visitedFolderKeys.has(folderKey)) {
     console.warn(`[DomainTree] Skipping cyclic folder branch: folder=${String(folderId)}, identity=${folderIdentity}, section=${sectionType}, depth=${traversalPath.length + 1}`)
     return createFolderTreeNode(folder, sectionType, folderId, folderIdentity, folderName, isRoot, [])
@@ -553,8 +396,6 @@ function buildFolderNode(
         allFolders,
         false,
         false,
-        softDeletedFolderId,
-        currentInDeletedBranch,
         nextVisitedFolderKeys,
         nextTraversalPath,
       ),
@@ -577,7 +418,6 @@ function buildFolderNode(
         sectionType: itemSectionType,
         managedBy: (c as { managedBy?: ManagedBy }).managedBy ?? 'user',
         managedById: (c as { managedById?: string | null }).managedById ?? null,
-        isInDeletedFolder: currentInDeletedBranch,
         ...((c as { presentationKind?: unknown }).presentationKind != null
           && { presentationKind: String((c as { presentationKind?: unknown }).presentationKind) as CompositionPresentationKind }),
       }
@@ -601,7 +441,7 @@ function buildFolderNode(
  * Строит дерево секций и сущностей домена.
  */
 export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
-  const { rootToSection, rootOrder, rootLabels, allFolders, softDeletedFolderId } = params
+  const { rootToSection, rootOrder, rootLabels, allFolders } = params
   const folders = allFolders
   const rootFolders = folders.filter((f: any) => getFolderParent(f) == null)
   const sectionMapRecord = rootToSection as Record<string, { section: DomainSectionType, items: () => unknown[] }>
@@ -631,7 +471,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
       type?: DomainDocumentType
     }[]
     const isVirtualRoot = !rootFolders.some((f: any) => (f.identity ?? f.id) === sectionKey)
-    return buildFolderNode(root, sectionType, items, folders, true, isVirtualRoot, softDeletedFolderId)
+    return buildFolderNode(root, sectionType, items, folders, true, isVirtualRoot)
   })
 
   attachContextualCompositions(tree, params.contextualCompositions ?? [])

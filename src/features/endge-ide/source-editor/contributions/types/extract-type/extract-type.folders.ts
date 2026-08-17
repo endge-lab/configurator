@@ -12,7 +12,6 @@ interface TypeFolderLike {
 }
 
 const TYPES_ROOT_IDENTITY = 'root-types'
-const SOFT_DELETED_IDENTITY = 'soft-deleted'
 
 export function buildExtractTypeFolderOptions(folders: readonly TypeFolderLike[]): ExtractTypeFolderOption[] {
   const typeFolders = folders.filter(folder => folder.entityType === 'types' && !folder.deletedAt)
@@ -35,7 +34,7 @@ function collectChildren(
   result: ExtractTypeFolderOption[],
 ): void {
   const children = folders
-    .filter(folder => readParentId(folder) === parentId && folder.identity !== SOFT_DELETED_IDENTITY)
+    .filter(folder => readParentId(folder) === parentId)
     .sort((left, right) => readFolderName(left).localeCompare(readFolderName(right), 'ru'))
 
   for (const folder of children) {

@@ -1,7 +1,6 @@
 import type {
   DomainDragState,
   DomainDragTreeItem,
-  FolderRestoreState,
 } from '@/features/endge-ide/domain/types/domain-drag.type'
 
 import { ref } from 'vue'
@@ -13,8 +12,6 @@ export class EndgeIDEDomainDrag_Module {
     sectionTypes: [],
     tree: [],
   })
-
-  private readonly _folderRestoreState = new Map<string, FolderRestoreState>()
 
   public get state() {
     return this._state
@@ -30,20 +27,5 @@ export class EndgeIDEDomainDrag_Module {
 
   public reset(): void {
     this._state.value = { active: false, sectionTypes: [], tree: [] }
-    this._folderRestoreState.clear()
-  }
-
-  public rememberFolderRestore(folderId: string, state: FolderRestoreState): void {
-    if (!this._folderRestoreState.has(folderId)) {
-      this._folderRestoreState.set(folderId, state)
-    }
-  }
-
-  public getFolderRestore(folderId: string): FolderRestoreState | null {
-    return this._folderRestoreState.get(folderId) ?? null
-  }
-
-  public forgetFolderRestore(folderId: string): void {
-    this._folderRestoreState.delete(folderId)
   }
 }

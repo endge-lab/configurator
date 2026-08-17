@@ -2,13 +2,12 @@
  * Единый модуль операций над доменным деревом в Domain Widget.
  *
  * В модуле собраны все ключевые сценарии:
- * - создание/мягкое удаление/восстановление папок;
- * - мягкое/жёсткое удаление и восстановление сущностей;
+ * - создание и рекурсивное удаление папок;
+ * - удаление сущностей;
  * - перенос папок и сущностей внутри доменного дерева (drag-and-drop).
  */
 
 import type { FsFileNode, FsFolderNode } from './domain-tree'
-import type { FolderRestoreStateOwner } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type { DomainDocumentType } from '@endge/core'
 
 import {
@@ -16,19 +15,18 @@ import {
   DomainSectionType,
   Endge,
   FilterType,
+  isExternallyManaged,
   ParameterType,
   QueryType,
   RFolder,
-  isExternallyManaged,
 } from '@endge/core'
 import { randomString } from '@endge/utils'
 
-import { SOFT_DELETED_IDENTITY } from './domain-tree'
 import {
   COMPOSITION_ROOT_IDENTITY,
-  QUERY_ROOT_IDENTITY,
   getCompositionRootFolderId,
   getQueryRootFolderId,
+  QUERY_ROOT_IDENTITY,
   setQueryCompositionRole,
 } from './query-composition-presentation'
 
@@ -87,46 +85,17 @@ export interface FolderDeletionPlan {
   entities: FsFileNode[]
 }
 
-/** Результат рекурсивного мягкого удаления папки. */
+/** Результат рекурсивного удаления папки. */
 export interface FolderDeletionResult {
   folderCount: number
   entityCount: number
   deletedEntities: FsFileNode[]
   failedEntities: Array<{ node: FsFileNode, error: Error }>
+  deletedFolders: FsFolderNode[]
+  failedFolders: Array<{ node: FsFolderNode, error: Error }>
 }
 
-/** Корневой id виртуальной секции «Удалённые». */
-export const DROP_TARGET_SOFT_DELETED = SOFT_DELETED_IDENTITY as string
-
-const SECTION_ROOT_IDENTITY: Partial<Record<DomainSectionType, string>> = {
-  [DomainSectionType.Primitive]: 'root-primitives',
-  [DomainSectionType.Type]: 'root-types',
-  [DomainSectionType.Query]: 'root-queries',
-  [DomainSectionType.DataView]: 'root-data-views',
-  [DomainSectionType.Composition]: 'root-compositions',
-  [DomainSectionType.Store]: 'root-stores',
-  [DomainSectionType.Mock]: 'root-mocks',
-  [DomainSectionType.Component]: 'root-components',
-  [DomainSectionType.Action]: 'root-actions',
-  [DomainSectionType.Parameters]: 'root-parameters',
-  [DomainSectionType.Converter]: 'root-converters',
-  [DomainSectionType.Computation]: 'root-computations',
-  [DomainSectionType.Integration]: 'root-integrations',
-  [DomainSectionType.Filters]: 'root-filters',
-  [DomainSectionType.Environment]: 'root-environments',
-  [DomainSectionType.Tenant]: 'root-tenants',
-  [DomainSectionType.Policy]: 'root-policies',
-  [DomainSectionType.Style]: 'root-styles',
-  [DomainSectionType.PageTemplate]: 'root-page-templates',
-  [DomainSectionType.Page]: 'root-pages',
-  [DomainSectionType.Navigation]: 'root-navigations',
-  [DomainSectionType.Vocabs]: 'root-vocabs',
-  [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
-  [DomainSectionType.AuthProfile]: 'root-auth-profiles',
-  [DomainSectionType.Project]: 'root-projects',
-}
-
-const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
+const BASE_DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   ComponentType.Table,
   ComponentType.DSL,
   COMPONENT_SFC_TYPE,
@@ -147,8 +116,8 @@ const SCHEMA_SOFT_DELETE_TYPES = new Set<DomainDocumentType>([
   'project',
 ])
 
-const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
-  ...SCHEMA_SOFT_DELETE_TYPES,
+const DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
+  ...BASE_DELETABLE_DOCUMENT_TYPES,
   'action',
   'converter',
   'environment',
@@ -164,19 +133,12 @@ const CHANGE_FOLDER_TYPES = new Set<DomainDocumentType>([
 ])
 
 /**
- * Проверяет, можно ли выполнять мягкое удаление сущности.
+ * Проверяет, можно ли удалить сущность через backend API.
  */
-export function canSoftDelete(sectionType: DomainSectionType, docType?: DomainDocumentType): boolean {
+export function canDelete(_sectionType: DomainSectionType, docType?: DomainDocumentType): boolean {
   if (docType)
-    return SCHEMA_SOFT_DELETE_TYPES.has(docType) || CHANGE_FOLDER_TYPES.has(docType)
+    return DELETABLE_DOCUMENT_TYPES.has(docType)
   return true
-}
-
-/**
- * Проверяет, поддерживается ли восстановление для типа документа.
- */
-export function canRestore(docType: DomainDocumentType): boolean {
-  return SCHEMA_SOFT_DELETE_TYPES.has(docType) || CHANGE_FOLDER_TYPES.has(docType)
 }
 
 /**
@@ -231,40 +193,6 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
 }
 
 /**
- * Мягко удаляет папку: переносит её под корень `soft-deleted`.
- */
-export async function softDeleteFolder(
-  node: FsFolderNode,
-  restoreState: FolderRestoreStateOwner,
-): Promise<void> {
-  if (isManagedFolderNode(node))
-    throw new Error('Управляемую извне папку нельзя удалить')
-
-  const folder = getMutableFolder(node)
-  const softRoot = Endge.domain.getFolderByIdentity(SOFT_DELETED_IDENTITY)
-  if (!softRoot)
-    throw new Error('Папка «Удалённые» не найдена')
-
-  const key = String(folder.id)
-  const previousParent = folder.parent ?? null
-
-  folder.parent = softRoot.id ?? softRoot.identity ?? SOFT_DELETED_IDENTITY
-  try {
-    await Endge.domainRepository.saveFolder(String(folder.id))
-  }
-  catch (error) {
-    folder.parent = previousParent
-    Endge.domain.notify()
-    throw error
-  }
-
-  restoreState.rememberFolderRestore(key, {
-    parent: previousParent,
-  })
-  Endge.domain.notify()
-}
-
-/**
  * Собирает папку, все вложенные persisted-папки и реальные документы.
  * Виртуальные проекции и колонки таблиц не являются самостоятельными сущностями.
  */
@@ -315,28 +243,22 @@ function validateFolderDeletionPlan(plan: FolderDeletionPlan): void {
   if (managedEntity)
     throw new Error(`Управляемый извне документ «${managedEntity.name}» нельзя удалить`)
 
-  const unsupportedEntity = plan.entities.find(entity => !canSoftDelete(entity.sectionType, entity.docType))
+  const unsupportedEntity = plan.entities.find(entity => !canDelete(entity.sectionType, entity.docType))
   if (unsupportedEntity) {
     throw new Error(
-      `Мягкое удаление не поддерживается для «${unsupportedEntity.name}» (${unsupportedEntity.docType})`,
+      `Удаление не поддерживается для «${unsupportedEntity.name}» (${unsupportedEntity.docType})`,
     )
   }
 }
 
 /**
- * Рекурсивно удаляет содержимое папки на стороне frontend:
- * 1. переносит корень ветки в `soft-deleted`, сохраняя иерархию подпапок;
- * 2. применяет штатное мягкое удаление к каждому persisted-документу ветки.
+ * Рекурсивно удаляет содержимое папки стандартными DELETE-запросами.
+ * Сначала удаляются документы, затем папки от самых глубоких к корневой.
  */
 export async function deleteFolderRecursively(
   plan: FolderDeletionPlan,
-  restoreState: FolderRestoreStateOwner,
 ): Promise<FolderDeletionResult> {
   validateFolderDeletionPlan(plan)
-
-  // Перенос корня сразу делает всю ветку недоступной в обычном дереве даже при
-  // частичной сетевой ошибке во время последующих запросов по документам.
-  await softDeleteFolder(plan.root, restoreState)
 
   const deletedEntities: FsFileNode[] = []
   const failedEntities: Array<{ node: FsFileNode, error: Error }> = []
@@ -353,156 +275,49 @@ export async function deleteFolderRecursively(
     }
   }
 
+  const deletedFolders: FsFolderNode[] = []
+  const failedFolders: Array<{ node: FsFolderNode, error: Error }> = []
+  if (failedEntities.length === 0) {
+    for (const folder of [...plan.folders].reverse()) {
+      try {
+        await Endge.domainRepository.deleteFolder(String(folder.folderId ?? folder.id))
+        deletedFolders.push(folder)
+      }
+      catch (error) {
+        failedFolders.push({
+          node: folder,
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
+        break
+      }
+    }
+  }
+
   Endge.domain.notify()
   return {
     folderCount: plan.folders.length,
     entityCount: plan.entities.length,
     deletedEntities,
     failedEntities,
+    deletedFolders,
+    failedFolders,
   }
-}
-
-/**
- * Восстанавливает папку из `soft-deleted`.
- *
- * Если есть сохранённый исходный parent - папка возвращается в него,
- * иначе переносится в корневую секцию (по определённому `sectionType`).
- */
-export async function restoreFolder(
-  node: FsFolderNode,
-  restoreState: FolderRestoreStateOwner,
-): Promise<void> {
-  const folder = getMutableFolder(node)
-  const key = String(folder.id)
-  const restore = restoreState.getFolderRestore(key)
-
-  let targetParent: string | number | null = restore?.parent ?? null
-  if (targetParent == null) {
-    const guessedSection = guessSectionTypeByFolder(String(folder.id)) ?? node.sectionType
-    targetParent = resolveSectionRootParent(guessedSection)
-  }
-
-  await Endge.domainRepository.restoreFolder(String(folder.id))
-  const restoredFolder = Endge.domain.getFolder(folder.id)
-  if (!restoredFolder)
-    throw new Error(`Восстановленная папка не найдена: ${String(folder.id)}`)
-  restoredFolder.parent = targetParent
-  await Endge.domainRepository.saveFolder(String(restoredFolder.id))
-  restoreState.forgetFolderRestore(key)
-  Endge.domain.notify()
 }
 
 /**
  * Удаляет сущность.
  *
- * - `permanent = false`: мягкое удаление (перенос в `soft-deleted`);
- * - `permanent = true`: жёсткое удаление (разрешено только для сущности в `soft-deleted`).
+ * Backend сохраняет удалённое состояние и ревизию документа.
  */
 export async function deleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
   const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   if (isExternallyManaged(node) || isExternallyManaged(entity))
     throw new Error('Управляемый извне документ нельзя удалить')
-  await softDeleteEntity(node)
+  if (!DELETABLE_DOCUMENT_TYPES.has(node.docType))
+    throw new Error(`Удаление не поддерживается для типа: ${node.docType}`)
+  await Endge.domainRepository.deleteDocument(node.id, node.docType)
   Endge.domain.notify()
   return { mode: 'soft', deletedDocs: [] }
-}
-
-/**
- * Восстанавливает сущность в корневую секцию.
- */
-export async function restoreEntity(node: FsFileNode): Promise<void> {
-  const entity = getEntityBySection(node.id, node.sectionType, node.docType)
-  const restoreToQueries = node.docType === 'composition' && String(entity?.kind ?? 'library') === 'query'
-  if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
-    await Endge.domainRepository.restoreDocument(node.id, node.docType)
-  }
-  else if (CHANGE_FOLDER_TYPES.has(node.docType)) {
-    const rootIdentity = getSectionRootIdentity(node.sectionType)
-    if (!rootIdentity)
-      throw new Error(`Для секции ${node.sectionType} не определён корень восстановления`)
-    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, rootIdentity)
-  }
-  else {
-    throw new Error(`Восстановление не поддерживается для типа: ${node.docType}`)
-  }
-
-  markEntityAsRestoredInDomain(node.id, node.sectionType, node.docType)
-  if (restoreToQueries) {
-    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, QUERY_ROOT_IDENTITY)
-    setEntityFolderInDomain(node.id, node.sectionType, getQueryRootFolderId())
-  }
-  Endge.domain.notify()
-}
-
-/**
- * Определяет, находится ли папка внутри ветки `soft-deleted`.
- */
-export function isFolderInSoftDeletedBranch(folderId: string | number): boolean {
-  const softRoot = Endge.domain.getFolderByIdentity(SOFT_DELETED_IDENTITY)
-  if (!softRoot)
-    return false
-
-  const visited = new Set<string>()
-  let current = Endge.domain.getFolder(folderId)
-  while (current) {
-    const key = String(current.id)
-    if (visited.has(key))
-      return false
-    visited.add(key)
-
-    if (current.id === softRoot.id || current.identity === SOFT_DELETED_IDENTITY)
-      return true
-
-    const parent = current.parent
-    if (parent == null)
-      return false
-    current = Endge.domain.getFolder(parent)
-  }
-
-  return false
-}
-
-/**
- * Помечает сущность как удалённую в локальном домене (перемещение в `soft-deleted`).
- */
-export function markEntityAsDeletedInDomain(
-  id: string,
-  sectionType: DomainSectionType,
-  docType?: DomainDocumentType,
-): void {
-  const softId = Endge.domain.getFolderByIdentity(SOFT_DELETED_IDENTITY)?.id ?? null
-  if (softId == null)
-    return
-
-  const now = new Date().toISOString()
-  const entity = getEntityBySection(id, sectionType, docType)
-  if (!entity)
-    return
-
-  const mutable = entity as any
-  mutable.folderId = softId
-  mutable.deletedAt = now
-  if (sectionType === DomainSectionType.Component)
-    mutable.group = softId
-}
-
-/**
- * Сбрасывает флаги удаления у сущности в локальном домене.
- */
-export function markEntityAsRestoredInDomain(
-  id: string,
-  sectionType: DomainSectionType,
-  docType?: DomainDocumentType,
-): void {
-  const entity = getEntityBySection(id, sectionType, docType)
-  if (!entity)
-    return
-
-  const mutable = entity as any
-  mutable.folderId = null
-  mutable.deletedAt = null
-  if (sectionType === DomainSectionType.Component)
-    mutable.group = null
 }
 
 /**
@@ -530,7 +345,6 @@ export function setEntityFolderInDomain(
  */
 export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: DropTarget): Promise<DropResult> {
   const result: DropResult = { moved: 0, skipped: 0, errors: [] }
-  const isDropToDeleted = dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED
   const folderMoves: DragPayloadItem[] = []
 
   if (dropTarget.targetRootId === 'root-integrations') {
@@ -565,34 +379,6 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
     if (isExternallyManaged(entity)) {
       result.skipped++
       result.errors.push(`«${item.id}»: управляемый извне документ нельзя перемещать`)
-      continue
-    }
-
-    if (item.rootId === DROP_TARGET_SOFT_DELETED) {
-      result.skipped++
-      result.errors.push(`«${item.id}»: перетаскивание из «Удалённые» запрещено`)
-      continue
-    }
-
-    if (isDropToDeleted) {
-      if (!canSoftDelete(item.sectionType, item.docType)) {
-        result.skipped++
-        result.errors.push(`«${item.id}»: мягкое удаление не поддерживается для ${item.docType}`)
-        continue
-      }
-
-      try {
-        await softDeleteEntity({
-          id: item.id,
-          sectionType: item.sectionType,
-          docType: item.docType,
-        })
-        result.moved++
-      }
-      catch (err) {
-        result.skipped++
-        result.errors.push(`«${item.id}»: ${(err as Error)?.message ?? 'ошибка удаления'}`)
-      }
       continue
     }
 
@@ -655,10 +441,6 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
  * сохраняет всю вложенную структуру без каскада document PATCH-запросов.
  */
 async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): Promise<boolean> {
-  if (item.rootId === DROP_TARGET_SOFT_DELETED)
-    throw new Error('перетаскивание из «Удалённые» запрещено')
-  if (dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED)
-    throw new Error('для удаления папки используйте действие «Удалить папку»')
   if (item.rootId !== dropTarget.targetRootId)
     throw new Error('перетаскивание между разными секциями запрещено')
 
@@ -760,23 +542,6 @@ async function reclassifyComposition(
 }
 
 /**
- * Выполняет мягкое удаление сущности.
- */
-async function softDeleteEntity(node: Pick<FsFileNode, 'id' | 'sectionType' | 'docType'>): Promise<void> {
-  if (SCHEMA_SOFT_DELETE_TYPES.has(node.docType)) {
-    await Endge.domainRepository.deleteDocument(node.id, node.docType)
-  }
-  else if (CHANGE_FOLDER_TYPES.has(node.docType)) {
-    await Endge.domainRepository.changeDocumentFolder(node.id, node.docType, SOFT_DELETED_IDENTITY)
-  }
-  else {
-    throw new Error(`Мягкое удаление не поддерживается для типа: ${node.docType}`)
-  }
-
-  markEntityAsDeletedInDomain(node.id, node.sectionType, node.docType)
-}
-
-/**
  * Переносит сущность в другую папку (домен + API).
  */
 async function changeEntityFolder(
@@ -827,23 +592,6 @@ function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | nu
 }
 
 /**
- * Валидирует папочный узел и возвращает мутабельную папку из домена.
- */
-function getMutableFolder(node: FsFolderNode): RFolder {
-  if (node.isRoot)
-    throw new Error('Нельзя выполнить операцию с корневой папкой')
-  if (isManagedFolderNode(node))
-    throw new Error('Управляемая извне папка недоступна для редактирования')
-  if (node.folderId == null)
-    throw new Error('Не удалось определить id папки')
-
-  const folder = Endge.domain.getFolder(node.folderId)
-  if (!folder)
-    throw new Error(`Папка не найдена: ${node.folderId}`)
-  return folder
-}
-
-/**
  * Вычисляет parent для новой подпапки.
  */
 function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | number | null {
@@ -853,125 +601,6 @@ function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | numbe
   const rootIdentity = String(targetFolder.id)
   const rootFolder = Endge.domain.getFolderByIdentity(rootIdentity)
   return rootFolder?.id ?? rootIdentity
-}
-
-/**
- * Возвращает parent корневой секции для восстановления сущности/папки.
- */
-function resolveSectionRootParent(sectionType: DomainSectionType): string | number | null {
-  const identity = getSectionRootIdentity(sectionType)
-  if (!identity)
-    return null
-  return Endge.domain.getFolderByIdentity(identity)?.id ?? identity
-}
-
-/**
- * Возвращает identity корня секции.
- */
-function getSectionRootIdentity(sectionType: DomainSectionType): string | null {
-  return SECTION_ROOT_IDENTITY[sectionType] ?? null
-}
-
-/**
- * Удаляет сущность из локального домена по секции.
- */
-function removeEntityFromDomain(id: string, sectionType: DomainSectionType, docType?: DomainDocumentType): void {
-  const entity = getEntityBySection(id, sectionType, docType) as any
-  if (!entity)
-    return
-
-  const byId = (entityId: string | number, fallbackIdentity: string, removeById: ((id: any) => void) | undefined, removeByIdentity: (identity: string) => void) => {
-    if (removeById && entityId != null) {
-      removeById(entityId)
-      return
-    }
-    removeByIdentity(fallbackIdentity)
-  }
-
-  const entityId = entity.id
-  const identity = String(entity.identity ?? id)
-
-  if (sectionType === DomainSectionType.Component) {
-    if (entity.type === COMPONENT_SFC_TYPE)
-      byId(entityId, identity, (x: any) => (Endge.domain as any).removeComponentSFCById?.(x), x => (Endge.domain as any).removeComponentSFC?.(x))
-    else
-      byId(entityId, identity, (x: any) => Endge.domain.removeComponentById?.(x), x => Endge.domain.removeComponent(x))
-  }
-  else if (docType === 'stream') {
-    byId(entityId, identity, (x: any) => Endge.domain.removeStreamById(x), x => Endge.domain.removeStream(x))
-  }
-  else if (docType === 'update') {
-    byId(entityId, identity, (x: any) => Endge.domain.removeUpdateById(x), x => Endge.domain.removeUpdate(x))
-  }
-  else if (sectionType === DomainSectionType.Query) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeQueryById?.(x), x => Endge.domain.removeQuery(x))
-  }
-  else if (sectionType === DomainSectionType.DataView) {
-    byId(entityId, identity, (x: any) => (Endge.domain as any).removeDataViewById?.(x), x => (Endge.domain as any).removeDataView(x))
-  }
-  else if (sectionType === DomainSectionType.Composition) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeCompositionById(x), x => Endge.domain.removeComposition(x))
-  }
-  else if (sectionType === DomainSectionType.Store) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeStoreById(x), x => Endge.domain.removeStore(x))
-  }
-  else if (sectionType === DomainSectionType.Mock) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeMockById(x), x => Endge.domain.removeMock(x))
-  }
-  else if (sectionType === DomainSectionType.Parameters) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeParameterById?.(x), x => Endge.domain.removeParameter(x))
-  }
-  else if (sectionType === DomainSectionType.Filters) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeFilterById?.(x), x => Endge.domain.removeFilter(x))
-  }
-  else if (sectionType === DomainSectionType.Type || sectionType === DomainSectionType.Primitive) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeTypeById?.(x), x => Endge.domain.removeType(x))
-  }
-  else if (sectionType === DomainSectionType.Action) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeActionById?.(x), x => Endge.domain.removeAction(x))
-  }
-  else if (sectionType === DomainSectionType.Converter) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeConverterById?.(x), x => Endge.domain.removeConverter(x))
-  }
-  else if (sectionType === DomainSectionType.Computation) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeComputationById?.(x), x => Endge.domain.removeComputation(x))
-  }
-  else if (sectionType === DomainSectionType.Integration) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeIntegrationById?.(x), x => Endge.domain.removeIntegration(x))
-  }
-  else if (sectionType === DomainSectionType.Environment) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeEnvironmentById?.(x), x => Endge.domain.removeEnvironment(x))
-  }
-  else if (sectionType === DomainSectionType.Tenant) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeTenantById?.(x), x => Endge.domain.removeTenant(x))
-  }
-  else if (sectionType === DomainSectionType.Policy) {
-    byId(entityId, identity, (x: any) => Endge.domain.removePolicyById?.(x), x => Endge.domain.removePolicy(x))
-  }
-  else if (sectionType === DomainSectionType.Style) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeStyleById?.(x), x => Endge.domain.removeStyle(x))
-  }
-  else if (sectionType === DomainSectionType.PageTemplate) {
-    byId(entityId, identity, (x: any) => Endge.domain.removePageTemplateById?.(x), x => Endge.domain.removePageTemplate(x))
-  }
-  else if (sectionType === DomainSectionType.Page) {
-    byId(entityId, identity, (x: any) => Endge.domain.removePageById?.(x), x => Endge.domain.removePage(x))
-  }
-  else if (sectionType === DomainSectionType.Navigation) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeNavigationById?.(x), x => Endge.domain.removeNavigation(x))
-  }
-  else if (sectionType === DomainSectionType.Vocabs) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeVocabsById?.(x), x => Endge.domain.removeVocabs(x))
-  }
-  else if (sectionType === DomainSectionType.I18nBundles) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeI18nBundlesById?.(x), x => Endge.domain.removeI18nBundles(x))
-  }
-  else if (sectionType === DomainSectionType.AuthProfile) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeAuthProfileById?.(x), x => Endge.domain.removeAuthProfile(x))
-  }
-  else if (sectionType === DomainSectionType.Project) {
-    byId(entityId, identity, (x: any) => Endge.domain.removeProjectById?.(x), x => Endge.domain.removeProject(x))
-  }
 }
 
 /**
@@ -1045,87 +674,4 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
   if (sectionType === DomainSectionType.Project)
     return (numId != null ? Endge.domain.getProjectById(numId) : null) ?? Endge.domain.getProject(id)
   return null
-}
-
-/**
- * Пытается определить секцию папки по сущностям внутри её ветки.
- */
-function guessSectionTypeByFolder(folderId: string): DomainSectionType | null {
-  const folderIds = collectFolderBranchIds(folderId)
-  const hasInBranch = (e: any) => {
-    const fid = e?.folderId ?? e?.folder ?? e?.group ?? null
-    return fid != null && folderIds.has(String(fid))
-  }
-
-  if (Endge.domain.getComponents().some(hasInBranch))
-    return DomainSectionType.Component
-  if (Endge.domain.getQueries().some(hasInBranch) || ((Endge.domain as any).getStreams?.() ?? []).some(hasInBranch))
-    return DomainSectionType.Query
-  if (((Endge.domain as any).getDataViews?.() ?? []).some(hasInBranch))
-    return DomainSectionType.DataView
-  if (Endge.domain.getCompositions().some(hasInBranch))
-    return DomainSectionType.Composition
-  if (Endge.domain.getStores().some(hasInBranch))
-    return DomainSectionType.Store
-  if (Endge.domain.getMocks().some(hasInBranch))
-    return DomainSectionType.Mock
-  if (Endge.domain.getFilters().some(hasInBranch))
-    return DomainSectionType.Filters
-  if (Endge.domain.getParameters().some(hasInBranch))
-    return DomainSectionType.Parameters
-  if (Endge.domain.getTypes().some(hasInBranch))
-    return DomainSectionType.Type
-  if (Endge.domain.getActions().some(hasInBranch))
-    return DomainSectionType.Action
-  if (Endge.domain.getConverters().some(hasInBranch))
-    return DomainSectionType.Converter
-  if (Endge.domain.getComputations().some(hasInBranch))
-    return DomainSectionType.Computation
-  if (Endge.domain.getIntegrations().some(hasInBranch))
-    return DomainSectionType.Integration
-  if (Endge.domain.getEnvironments().some(hasInBranch))
-    return DomainSectionType.Environment
-  if (Endge.domain.getTenants().some(hasInBranch))
-    return DomainSectionType.Tenant
-  if (Endge.domain.getPolicies().some(hasInBranch))
-    return DomainSectionType.Policy
-  if (Endge.domain.getStyles().some(hasInBranch))
-    return DomainSectionType.Style
-  if (Endge.domain.getPageTemplates().some(hasInBranch))
-    return DomainSectionType.PageTemplate
-  if (Endge.domain.getPages().some(hasInBranch))
-    return DomainSectionType.Page
-  if (Endge.domain.getNavigations().some(hasInBranch))
-    return DomainSectionType.Navigation
-  if (Endge.domain.getVocabs().some(hasInBranch))
-    return DomainSectionType.Vocabs
-  if (Endge.domain.getI18nBundles().some(hasInBranch))
-    return DomainSectionType.I18nBundles
-  if (Endge.domain.getAuthProfiles().some(hasInBranch))
-    return DomainSectionType.AuthProfile
-
-  return null
-}
-
-/**
- * Собирает id папки и всех дочерних подпапок.
- */
-function collectFolderBranchIds(rootFolderId: string): Set<string> {
-  const out = new Set<string>([String(rootFolderId)])
-  const queue = [String(rootFolderId)]
-  const folders = Endge.domain.getFolders()
-
-  while (queue.length) {
-    const current = queue.shift()!
-    for (const folder of folders) {
-      const parent = folder.parent == null ? null : String(folder.parent)
-      const id = String(folder.id)
-      if (parent === current && !out.has(id)) {
-        out.add(id)
-        queue.push(id)
-      }
-    }
-  }
-
-  return out
 }

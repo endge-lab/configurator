@@ -12,7 +12,6 @@ interface ComponentFolderLike {
 }
 
 const COMPONENTS_ROOT_IDENTITY = 'root-components'
-const SOFT_DELETED_IDENTITY = 'soft-deleted'
 
 export function buildExtractComponentFolderOptions(
   folders: readonly ComponentFolderLike[],
@@ -42,7 +41,7 @@ function collectChildren(
   result: ExtractComponentFolderOption[],
 ): void {
   const children = folders
-    .filter(folder => readParentId(folder) === parentId && folder.identity !== SOFT_DELETED_IDENTITY)
+    .filter(folder => readParentId(folder) === parentId)
     .sort((left, right) => readFolderName(left).localeCompare(readFolderName(right), 'ru'))
 
   for (const folder of children) {

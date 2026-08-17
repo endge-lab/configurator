@@ -3530,20 +3530,6 @@
         "parent": null
       },
       {
-        "id": 9,
-        "identity": "soft-deleted",
-        "displayName": "Мягкое удаление",
-        "name": "Мягкое удаление",
-        "description": null,
-        "folderId": null,
-        "project": null,
-        "managedBy": "system",
-        "managedById": null,
-        "meta": {},
-        "entityType": "system",
-        "parent": null
-      },
-      {
         "id": 35,
         "identity": "types-primitives",
         "displayName": "Примитивы",

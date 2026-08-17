@@ -53,7 +53,6 @@ import {
   Puzzle,
   Radio,
   RadioTower,
-  RotateCcw,
   Route,
   Save,
   Search,
@@ -84,18 +83,13 @@ import {
 import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
-  canRestore,
-  canSoftDelete,
-  createFolderDeletionPlan,
+  canDelete,
   createSubfolder as createDomainSubfolder,
-  deleteFolderRecursively,
+  createFolderDeletionPlan,
   deleteEntity,
-  DROP_TARGET_SOFT_DELETED,
+  deleteFolderRecursively,
   executeDrop,
   getDropFolderId,
-  isFolderInSoftDeletedBranch,
-  restoreEntity,
-  restoreFolder,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
 import {
   attachResolvedActionTree,
@@ -104,7 +98,6 @@ import {
   flattenTree,
   getDomainTreeRootBlocks,
   getRootFolderOrder,
-  getSoftDeletedItems,
   ROOT_FOLDER_LABELS,
   withoutDeleted,
 } from '@/features/endge-ide/model/domain/domain-tree'
@@ -125,14 +118,12 @@ const tabs = EndgeIDE.tabs
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
     | { type: 'remove-folder', node: FsFolderNode }
-    | { type: 'restore-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
     | { type: 'create-doc', node: FsFolderNode }
     | { type: 'create-project-composition', node: FsFileNode }
     | { type: 'create-store-update', node: FsFileNode }
     | { type: 'remove-doc', node: FsFileNode }
-    | { type: 'restore-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
     | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
@@ -180,9 +171,6 @@ onMounted(() => {
   window.addEventListener('keyup', onIdentityModifierKeyup)
   window.addEventListener('blur', resetIdentityLabels)
 })
-
-/** Id папки «Удалённые» для дерева и пометки сущностей. */
-const softDeletedFolderId = computed(() => Endge.domain.getFolderByIdentity('soft-deleted')?.id ?? null)
 
 // ---------- expanded state (persisted) ----------
 const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
@@ -476,7 +464,6 @@ function canDragTreeItem(item: FlatFsItem): boolean {
     && folder.folderId != null
     && folder.sectionType !== DomainSectionType.Integration
     && !isExternallyManaged(folder)
-    && !isFolderInSoftDeletedBranch(folder.folderId)
 }
 
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
@@ -496,16 +483,6 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     EndgeIDE.domainDrag.reset()
     e.dataTransfer.effectAllowed = 'none'
     toast.error('Управляемые извне документы нельзя перемещать')
-    return
-  }
-  if (
-    item.rootId === DROP_TARGET_SOFT_DELETED
-    || sources.some(n => n.isInDeletedFolder === true)
-  ) {
-    dragSources.value = []
-    EndgeIDE.domainDrag.reset()
-    e.dataTransfer.effectAllowed = 'none'
-    toast.error('Нельзя перетаскивать сущности из «Удалённые»')
     return
   }
   dragSources.value = sources
@@ -578,7 +555,6 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
     || folder.folderId == null
     || folder.sectionType === DomainSectionType.Integration
     || isExternallyManaged(folder)
-    || isFolderInSoftDeletedBranch(folder.folderId)
   ) {
     draggedFolder.value = null
     EndgeIDE.domainDrag.reset()
@@ -700,56 +676,43 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
 
 /** Маппинг: identity корневой папки — секция и активные документы домена. */
 const ROOT_TO_SECTION = computed(() => {
-  const softId = softDeletedFolderId.value
-  const compositions = withoutDeleted((Endge.domain as any).getCompositions?.() ?? [], softId)
+  const compositions = withoutDeleted<any>((Endge.domain as any).getCompositions?.() ?? [])
   return {
     'root-workspaces': { section: DomainSectionType.Project, items: () => [] },
-    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? [], softId) },
+    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? []) },
     'root-queries': {
       section: DomainSectionType.Query,
       items: () => withoutDeleted([
         ...(domainStore.queries ?? []),
         ...((Endge.domain as any).getStreams?.() ?? []),
-      ], softId),
+      ]),
     },
-    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? [], softId) },
+    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? []) },
     'root-compositions': {
       section: DomainSectionType.Composition,
       items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
     },
-    'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? [], softId) },
-    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])], softId) },
-    'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions, softId) },
+    'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
+    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
+    'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
     'root-events': { section: DomainSectionType.Event, items: () => [] },
-    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters, softId) },
-    'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters, softId) },
-    'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations(), softId) },
-    'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters, softId) },
-    'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations, softId) },
-    'root-environments': { section: DomainSectionType.Environment, items: () => withoutDeleted(domainStore.environments, softId) },
-    'root-tenants': { section: DomainSectionType.Tenant, items: () => withoutDeleted(domainStore.tenants, softId) },
-    'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies, softId) },
-    'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles, softId) },
-    'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates, softId) },
-    'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages, softId) },
-    'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations, softId) },
-    'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs, softId) },
-    'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks, softId) },
-    'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles, softId) },
-    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles, softId) },
-    'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects, softId) },
-    'soft-deleted': {
-      section: DomainSectionType.Parameters,
-      items: () => getSoftDeletedItems({
-        ...(domainStore as any),
-        dataViews: (Endge.domain as any).getDataViews?.() ?? [],
-        stores: (Endge.domain as any).getStores?.() ?? [],
-        streams: (Endge.domain as any).getStreams?.() ?? [],
-        updates: (Endge.domain as any).getUpdates?.() ?? [],
-        mocks: Endge.domain.getMocks(),
-        computations: Endge.domain.getComputations(),
-      }, softId, (domainStore.folders as any[]) ?? []),
-    },
+    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters) },
+    'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
+    'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
+    'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters) },
+    'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations) },
+    'root-environments': { section: DomainSectionType.Environment, items: () => withoutDeleted(domainStore.environments) },
+    'root-tenants': { section: DomainSectionType.Tenant, items: () => withoutDeleted(domainStore.tenants) },
+    'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies) },
+    'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles) },
+    'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates) },
+    'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages) },
+    'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations) },
+    'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs) },
+    'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks) },
+    'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
+    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
+    'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects) },
   }
 })
 
@@ -826,7 +789,6 @@ const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
   'root-i18n-bundles': createSectionPresentation(DomainSectionType.I18nBundles),
   'root-auth-profiles': createSectionPresentation(DomainSectionType.AuthProfile),
   'root-projects': createSectionPresentation(DomainSectionType.Project),
-  'soft-deleted': { icon: Trash2, colorClass: 'text-muted-foreground' },
 }
 
 /** Типы документов, которые можно дублировать (те же, что в «Создать»). */
@@ -906,10 +868,8 @@ const fsTree = computed<FsNode[]>(() => {
     rootOrder: ROOT_FOLDER_ORDER.value,
     rootLabels: ROOT_FOLDER_LABELS,
     allFolders,
-    softDeletedFolderId: softDeletedFolderId.value,
-    contextualCompositions: withoutDeleted(
+    contextualCompositions: withoutDeleted<any>(
       (Endge.domain as any).getCompositions?.() ?? [],
-      softDeletedFolderId.value,
     ).filter(composition => String(composition.kind ?? 'library') !== 'library') as Array<{
       id?: string | number
       identity?: string
@@ -921,7 +881,6 @@ const fsTree = computed<FsNode[]>(() => {
     }>,
     storeUpdates: withoutDeleted(
       (Endge.domain as any).getUpdates?.() ?? [],
-      softDeletedFolderId.value,
     ),
   })
 
@@ -1358,22 +1317,11 @@ async function removeDocument(node: FsFileNode): Promise<void> {
     const result = await deleteEntity(node)
     closeDocumentTabIfOpen(node.id, node.docType)
     result.deletedDocs.forEach(doc => closeDocumentTabIfOpen(doc.id, doc.docType))
-    toast.success('Документ перемещён в «Удалённые»')
+    toast.success('Документ удалён')
   }
   catch (e) {
     console.error(`[Domain_Widget] Не удалось удалить документ: ${e instanceof Error ? e.message : String(e)}`)
     toast.error('Не удалось удалить', { description: (e as Error)?.message })
-  }
-}
-
-async function restoreDocument(node: FsFileNode): Promise<void> {
-  try {
-    await restoreEntity(node)
-    toast.success('Документ восстановлен')
-  }
-  catch (e) {
-    console.error(`[Domain_Widget] Не удалось восстановить документ: ${e instanceof Error ? e.message : String(e)}`)
-    toast.error('Не удалось восстановить', { description: (e as Error)?.message })
   }
 }
 
@@ -1450,21 +1398,21 @@ async function confirmFolderDeletion(): Promise<void> {
 
   folderDeletionDialog.value.loading = true
   try {
-    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan, EndgeIDE.domainDrag))
+    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan))
     result.deletedEntities.forEach(entity => closeDocumentTabIfOpen(entity.id, entity.docType))
 
     folderDeletionDialog.value.open = false
     folderDeletionDialog.value.plan = null
 
-    if (result.failedEntities.length > 0) {
-      const firstFailure = result.failedEntities[0]
-      toast.error('Папка перемещена в «Удалённые», но удалены не все сущности', {
-        description: `Не удалось удалить: ${result.failedEntities.length}. ${firstFailure?.node.name}: ${firstFailure?.error.message}`,
+    if (result.failedEntities.length > 0 || result.failedFolders.length > 0) {
+      const firstFailure = result.failedEntities[0] ?? result.failedFolders[0]
+      toast.error('Удалена только часть содержимого папки', {
+        description: `Не удалось удалить: ${result.failedEntities.length + result.failedFolders.length}. ${firstFailure?.node.name}: ${firstFailure?.error.message}`,
       })
       return
     }
 
-    toast.success('Папка и её содержимое перемещены в «Удалённые»', {
+    toast.success('Папка и её содержимое удалены', {
       description: `Удалено сущностей: ${result.entityCount}`,
     })
   }
@@ -1474,17 +1422,6 @@ async function confirmFolderDeletion(): Promise<void> {
   }
   finally {
     folderDeletionDialog.value.loading = false
-  }
-}
-
-async function restoreFolderFromTrash(node: FsFolderNode): Promise<void> {
-  try {
-    await restoreFolder(node, EndgeIDE.domainDrag)
-    toast.success('Папка восстановлена')
-  }
-  catch (e) {
-    console.error(`[Domain_Widget] Ошибка восстановления папки: ${e instanceof Error ? e.message : String(e)}`)
-    toast.error('Не удалось восстановить папку', { description: (e as Error)?.message })
   }
 }
 
@@ -1537,7 +1474,6 @@ function downloadSelectedDocuments(): void {
 
 async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void> {
   const requests = nodes
-    .filter(node => node.isInDeletedFolder !== true)
     .map(node => createRuntimePreviewLaunchRequestFromDocument(node))
     .filter(request => request != null)
 
@@ -1574,49 +1510,35 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     if (isManagedTypeFolder(node) && !isRoot)
       return items
 
-    const isSoftDeletedRoot = isRoot && node.id === 'soft-deleted'
-    const isInSoftDeletedBranch = !isRoot && node.folderId != null && isFolderInSoftDeletedBranch(node.folderId)
-
     if (!Endge.domainRepository.capabilities.mutations)
       return items
 
     if (supportsFolders && !isRoot && node.folderId) {
-      if (isInSoftDeletedBranch) {
-        items.push({
-          label: 'Восстановить папку',
-          icon: RotateCcw,
-          action: { type: 'restore-folder', node },
-        })
-      }
-      else {
-        items.push({
-          label: 'Удалить папку',
-          icon: Trash2,
-          destructive: true,
-          action: { type: 'remove-folder', node },
-        })
-        items.push({
-          label: 'Переименовать',
-          icon: Pencil,
-          action: { type: 'rename-folder', node },
-        })
-      }
-    }
-
-    if (!isSoftDeletedRoot && !isInSoftDeletedBranch) {
-      if (supportsFolders) {
-        items.push({
-          label: 'Создать папку',
-          icon: FolderPlus,
-          action: { type: 'create-folder', node },
-        })
-      }
       items.push({
-        label: 'Добавить сущность',
-        icon: Plus,
-        action: { type: 'create-doc', node },
+        label: 'Удалить папку',
+        icon: Trash2,
+        destructive: true,
+        action: { type: 'remove-folder', node },
+      })
+      items.push({
+        label: 'Переименовать',
+        icon: Pencil,
+        action: { type: 'rename-folder', node },
       })
     }
+
+    if (supportsFolders) {
+      items.push({
+        label: 'Создать папку',
+        icon: FolderPlus,
+        action: { type: 'create-folder', node },
+      })
+    }
+    items.push({
+      label: 'Добавить сущность',
+      icon: Plus,
+      action: { type: 'create-doc', node },
+    })
   }
   else {
     const fileNode = node as FsFileNode
@@ -1655,11 +1577,9 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       return items
 
     const externallyManagedDoc = isExternallyManaged(fileNode)
-    const isInDeleted = fileNode.isInDeletedFolder === true
-    const canRestoreDoc = canRestore(fileNode.docType)
-    const canSoftDeleteDoc = canSoftDelete(fileNode.sectionType, fileNode.docType)
+    const canDeleteDoc = canDelete(fileNode.sectionType, fileNode.docType)
 
-    if (!externallyManagedDoc && !isInDeleted && fileNode.sectionType === DomainSectionType.Project) {
+    if (!externallyManagedDoc && fileNode.sectionType === DomainSectionType.Project) {
       items.push({
         label: 'Создать композицию',
         icon: Network,
@@ -1667,7 +1587,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (!externallyManagedDoc && !isInDeleted && fileNode.docType === 'store') {
+    if (!externallyManagedDoc && fileNode.docType === 'store') {
       items.push({
         label: 'Создать обновление',
         icon: Plus,
@@ -1675,15 +1595,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (isInDeleted && canRestoreDoc) {
-      items.push({
-        label: 'Восстановить',
-        icon: RotateCcw,
-        action: { type: 'restore-doc', node },
-      })
-    }
-
-    if (!externallyManagedDoc && !isInDeleted && DUPLICATABLE_DOC_TYPES.has(fileNode.docType)) {
+    if (!externallyManagedDoc && DUPLICATABLE_DOC_TYPES.has(fileNode.docType)) {
       items.push({
         label: 'Дублировать',
         icon: Copy,
@@ -1691,7 +1603,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (!externallyManagedDoc && !isInDeleted && canSoftDeleteDoc) {
+    if (!externallyManagedDoc && canDeleteDoc) {
       items.push({
         label: 'Удалить',
         icon: Trash2,
@@ -1712,11 +1624,6 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
 
   if (a.type === 'remove-folder') {
     openFolderDeletionDialog(a.node)
-    return
-  }
-
-  if (a.type === 'restore-folder') {
-    await EndgeIDE.runBusy(restoreFolderFromTrash(a.node))
     return
   }
 
@@ -1780,11 +1687,6 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
-  if (a.type === 'restore-doc') {
-    await EndgeIDE.runBusy(restoreDocument(a.node))
-    return
-  }
-
   if (a.type === 'duplicate-doc') {
     closeContextMenu()
     EndgeIDE.modals.openDuplicateDocument({
@@ -1807,9 +1709,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
 
   if (a.type === 'launch-runtime-previews') {
     await EndgeIDE.runBusy(launchRuntimePreviews(a.nodes))
-    return
   }
-
 }
 
 // ---------- ui helpers ----------
@@ -2184,7 +2084,7 @@ function rowClasses(item: FlatFsItem): string {
 
         <div class="space-y-3 py-2 text-sm">
           <p class="text-muted-foreground">
-            Папка и всё её содержимое будут перемещены в «Удалённые».
+            Папка и всё её содержимое будут удалены. Восстановление будет доступно через ревизии.
           </p>
           <div class="rounded-md border bg-muted/40 px-3 py-2">
             <div>Будет удалено сущностей: <strong>{{ folderDeletionEntityCount }}</strong></div>

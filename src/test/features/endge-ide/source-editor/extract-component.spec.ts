@@ -227,8 +227,8 @@ defineProps<{ suffix: string }>()
       { id: 3, identity: 'tables', displayName: 'Таблицы', entityType: 'components', parent: 1 },
       { id: 4, identity: 'cells', displayName: 'Ячейки', entityType: 'components', parent: 3 },
       { id: 5, identity: 'query-folder', displayName: 'Запросы', entityType: 'queries', parent: 1 },
-      { id: 6, identity: 'soft-deleted', displayName: 'Удалённые', entityType: 'components', parent: 1 },
-      { id: 7, identity: 'inside-deleted', displayName: 'Скрытая', entityType: 'components', parent: 6 },
+      { id: 6, identity: 'archived', displayName: 'Архивная', entityType: 'components', parent: 1, deletedAt: '2026-08-17T00:00:00Z' },
+      { id: 7, identity: 'inside-archived', displayName: 'Скрытая', entityType: 'components', parent: 6 },
     ])
 
     expect(options).toEqual([

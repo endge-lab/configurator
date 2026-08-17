@@ -30,7 +30,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
       updates: 8,
       restores: 1,
       deletes: 3,
-      warnings: ['Documents absent from snapshot will be soft-deleted: 3'],
+      warnings: ['Documents absent from snapshot will be marked as deleted: 3'],
     }))
     vi.stubGlobal('fetch', fetchMock)
     const service = new ServiceBackendDomainTransfer_Service('https://backend.test/')

@@ -30,13 +30,3 @@ export interface DomainDragState {
   sectionTypes: string[]
   tree: DomainDragTreeItem[]
 }
-
-export interface FolderRestoreState {
-  parent: string | number | null
-}
-
-export interface FolderRestoreStateOwner {
-  rememberFolderRestore: (folderId: string, state: FolderRestoreState) => void
-  getFolderRestore: (folderId: string) => FolderRestoreState | null
-  forgetFolderRestore: (folderId: string) => void
-}
