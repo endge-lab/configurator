@@ -112,6 +112,48 @@ describe('serviceBackendDomain_Service', () => {
     expect(result.etag).toBe('"4"')
   })
 
+  it('moves several documents through one atomic backend request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      documents: [
+        {
+          collection: 'actions',
+          document: { identity: 'action-a', displayName: 'Action A', folderIdentity: 'schedule', id: 'action-a-id', revision: 4 },
+        },
+        {
+          collection: 'actions',
+          document: { identity: 'action-b', displayName: 'Action B', folderIdentity: 'schedule', id: 'action-b-id', revision: 6 },
+        },
+      ],
+      moved: 2,
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn(), true)
+
+    const result = await service.moveDocuments({
+      workspaceIdentity: 'workspace-a',
+      folderIdentity: 'schedule',
+      documents: [
+        { collection: 'actions', identity: 'action-a', expectedRevision: 3 },
+        { collection: 'actions', identity: 'action-b', expectedRevision: 5 },
+      ],
+    })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/documents/move', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify({
+        documents: [
+          { collection: 'actions', identity: 'action-a', expectedRevision: 3 },
+          { collection: 'actions', identity: 'action-b', expectedRevision: 5 },
+        ],
+        folderIdentity: 'schedule',
+      }),
+    }))
+    expect(result.moved).toBe(2)
+    expect(result.documents.map(item => item.document.state.revision)).toEqual([4, 6])
+  })
+
   it('does not restart login for forbidden workspace access', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: 'workspace_forbidden',

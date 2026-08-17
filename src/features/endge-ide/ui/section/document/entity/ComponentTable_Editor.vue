@@ -1033,7 +1033,7 @@ watch(
                   </div>
                   <div class="space-y-2">
                     <Label>Legacy setup source (data only)</Label>
-                    <ScriptEditor v-model="editor.setupScript" :type="editor.type" />
+                    <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-table.setup" />
                     <p class="text-xs text-muted-foreground">
                       This field is preserved in the document but is no longer executed.
                     </p>

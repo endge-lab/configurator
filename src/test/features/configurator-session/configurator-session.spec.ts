@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearConfiguratorBrowserState,
   clearConfiguratorLoginRedirectGuard,
   ConfiguratorSession_Module,
   ConfiguratorSession_Service,
@@ -139,5 +140,19 @@ describe('configurator developer session', () => {
       credentials: 'include',
     }))
     expect(module.state).toEqual({ status: 'idle' })
+  })
+
+  it('clears Configurator browser storage during forced logout', () => {
+    const localStorageClear = vi.fn()
+    const sessionStorageClear = vi.fn()
+    vi.stubGlobal('window', {
+      localStorage: { clear: localStorageClear },
+      sessionStorage: { clear: sessionStorageClear },
+    })
+
+    clearConfiguratorBrowserState()
+
+    expect(localStorageClear).toHaveBeenCalledOnce()
+    expect(sessionStorageClear).toHaveBeenCalledOnce()
   })
 })

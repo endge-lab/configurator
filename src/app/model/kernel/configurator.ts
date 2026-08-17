@@ -14,6 +14,7 @@ import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
 import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
+import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
 import {
   clearConfiguratorLoginRedirectGuard,
   startConfiguratorLogin,
@@ -135,7 +136,12 @@ export class Configurator {
   }
 
   public static async logout(): Promise<void> {
-    await this._modules.session.logout()
+    try {
+      await this._modules.session.logout()
+    }
+    finally {
+      clearConfiguratorBrowserState()
+    }
     const state = await this._modules.session.check()
     if (state.status === 'unauthenticated') {
       this._startLoginOrThrow(state.loginUrl)

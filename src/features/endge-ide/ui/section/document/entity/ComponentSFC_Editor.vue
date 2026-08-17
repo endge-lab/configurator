@@ -63,6 +63,7 @@ const visualInspection = computed(() => {
     ? inspectComponentSFCVisual(current.source ?? '', {
         resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
         resolveTypeDefinition: resolveEndgeTypeDefinition,
+        actionIdentities: Endge.actions.listResolved().map(action => action.identity),
       })
     : null
 })
@@ -458,6 +459,7 @@ async function launchPreview(): Promise<void> {
       <ScriptEditor
         ref="sourceEditorRef"
         v-model="editor.source"
+        view-state-key="component-sfc.source"
         :extensions="sourceEditorExtensions"
         language="html"
         format-language="vue"

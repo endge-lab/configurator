@@ -531,6 +531,7 @@ export function setEntityFolderInDomain(
 export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: DropTarget): Promise<DropResult> {
   const result: DropResult = { moved: 0, skipped: 0, errors: [] }
   const isDropToDeleted = dropTarget.targetRootId === DROP_TARGET_SOFT_DELETED
+  const folderMoves: DragPayloadItem[] = []
 
   if (dropTarget.targetRootId === 'root-integrations') {
     result.errors.push('Глобальный реестр интеграций не поддерживает папки')
@@ -616,6 +617,11 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
       continue
     }
 
+    folderMoves.push(item)
+  }
+
+  if (folderMoves.length === 1) {
+    const item = folderMoves[0]!
     try {
       await changeEntityFolder(item.id, item.sectionType, item.docType, dropTarget.targetRootId, dropTarget.dropFolderId)
       result.moved++
@@ -623,6 +629,17 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
     catch (err) {
       result.skipped++
       result.errors.push(`«${item.id}»: ${(err as Error)?.message ?? 'ошибка смены папки'}`)
+    }
+  }
+  else if (folderMoves.length > 1) {
+    try {
+      const moved = await changeEntitiesFolder(folderMoves, dropTarget.targetRootId, dropTarget.dropFolderId)
+      result.moved += moved
+      result.skipped += folderMoves.length - moved
+    }
+    catch (err) {
+      result.skipped += folderMoves.length
+      result.errors.push(`Выбранные документы: ${(err as Error)?.message ?? 'ошибка массовой смены папки'}`)
     }
   }
 
@@ -781,6 +798,21 @@ async function changeEntityFolder(
     setEntityFolderInDomain(id, sectionType, prevFolderId, docType)
     throw err
   }
+}
+
+/** Атомарно переносит несколько сущностей в одну папку одним backend-запросом. */
+async function changeEntitiesFolder(
+  items: readonly DragPayloadItem[],
+  targetRootId: string,
+  dropFolderId: string | number | null,
+): Promise<number> {
+  const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
+  if (!folderIdentity)
+    throw new Error('не удалось определить папку назначения')
+  return Endge.domainRepository.changeDocumentsFolder(items.map(item => ({
+    documentId: item.id,
+    documentType: item.docType,
+  })), folderIdentity)
 }
 
 /**

@@ -11,6 +11,7 @@ import * as monaco from 'monaco-editor'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { useSmartTabVolatileViewState } from '@/components/ui/smart-tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
@@ -39,6 +40,7 @@ export interface UseEndgeSourceMonacoOptions {
   formatLanguage?: SourceFormatLanguage
   onReady?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
   extensions?: readonly ScriptEditorExtension[]
+  viewStateKey?: string
 }
 
 /** Общий browser adapter Endge source language - Monaco. */
@@ -47,6 +49,10 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const editor = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
   const diagnosticsCount = ref(0)
   const languageId = `endge-${options.sourceKind}-source`
+  const viewState = useSmartTabVolatileViewState<Monaco.editor.ICodeEditorViewState | null>(
+    `monaco.${options.viewStateKey ?? options.sourceKind}`,
+    { defaultValue: () => null },
+  )
   const markerOwner = options.owner ?? languageId
   const languageStrategy = Endge.source.resolveLanguageStrategy(options.sourceKind)
   if (!languageStrategy) { throw new Error(`Source language strategy is not registered for "${options.sourceKind}".`) }
@@ -181,6 +187,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       scrollBeyondLastLine: true,
       padding: { bottom: 10 },
     })
+    if (viewState.value) {
+      editor.value.restoreViewState(viewState.value)
+    }
     semanticHighlights = editor.value.createDecorationsCollection()
     const editorModel = editor.value.getModel()
     if (editorModel) {
@@ -249,6 +258,10 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
 
   onBeforeUnmount(() => {
     const model = editor.value?.getModel()
+    const savedViewState = editor.value?.saveViewState()
+    if (savedViewState) {
+      viewState.value = savedViewState
+    }
     if (model) { monaco.editor.setModelMarkers(model, markerOwner, []) }
     contentDisposable?.dispose()
     completionDisposable?.dispose()

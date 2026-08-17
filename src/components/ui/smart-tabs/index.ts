@@ -1,6 +1,5 @@
-export { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
-
 export { default as SmartTabsHost } from '@/components/ui/smart-tabs/SmartTabsHost.vue'
+export { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
 export type {
   SmartTab,
   SmartTabId,
@@ -15,4 +14,4 @@ export type {
 } from '@/components/ui/smart-tabs/types'
 
 export { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
-export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState } from '@/components/ui/smart-tabs/useSmartTabViewState'
+export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState, useSmartTabVolatileViewState } from '@/components/ui/smart-tabs/useSmartTabViewState'

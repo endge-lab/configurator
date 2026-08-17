@@ -567,7 +567,12 @@ function setMenuItemAttribute(
 }
 
 function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown): void {
-  setMenuItemAttribute(kind, nodeIndex, 'action', typeof value === 'string' || typeof value === 'number' ? String(value) : null, 'literal')
+  const identity = typeof value === 'string' || typeof value === 'number' ? String(value) : null
+  const option = props.projection.menuActions.find(action => action.identity === identity)
+  const valueKind = option && ['required', 'provided', 'forwarded'].includes(option.source)
+    ? 'expression'
+    : 'literal'
+  setMenuItemAttribute(kind, nodeIndex, 'action', identity, valueKind)
 }
 
 function menuItemSourceOwned(item: ComponentSFCTableMenuNodeProjection): boolean {
@@ -1998,6 +2003,7 @@ onBeforeUnmount(() => {
 
               <ScriptEditor
                 :model-value="metadataDraft"
+                view-state-key="component-sfc.table-metadata"
                 language="json"
                 format-language="json"
                 show-toolbar

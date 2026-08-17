@@ -449,6 +449,7 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
               </Label>
               <ScriptEditor
                 v-model="source"
+                view-state-key="sfc-playground.source"
                 language="html"
                 class="flex-1 min-h-0"
               />
@@ -460,6 +461,7 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
               </Label>
               <ScriptEditor
                 v-model="contextJson"
+                view-state-key="sfc-playground.context"
                 language="json"
                 class="flex-1 min-h-0"
               />
@@ -558,6 +560,7 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
             <TabsContent value="ir" class="flex-1 mt-3 min-h-0 overflow-hidden">
               <ScriptEditor
                 :model-value="stringify(compileResult.ir)"
+                view-state-key="sfc-playground.ir"
                 language="json"
                 read-only
                 class="h-full min-h-0"
@@ -567,6 +570,7 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
             <TabsContent value="ast" class="flex-1 mt-3 min-h-0 overflow-hidden">
               <ScriptEditor
                 :model-value="stringify(compileResult.ast)"
+                view-state-key="sfc-playground.ast"
                 language="json"
                 read-only
                 class="h-full min-h-0"
@@ -576,6 +580,7 @@ function diagnosticLocation(diagnostic: { sourcePath?: string, start?: number, e
             <TabsContent value="contract" class="flex-1 mt-3 min-h-0 overflow-hidden">
               <ScriptEditor
                 :model-value="stringify({ contract: compileResult.contract, dependencies: compileResult.dependencies, sourceParts: compileResult.sourceParts })"
+                view-state-key="sfc-playground.contract"
                 language="json"
                 read-only
                 class="h-full min-h-0"

@@ -25,12 +25,13 @@ import {
 export type UIEditorRuntimePreviewStatus = 'idle' | 'preparing' | 'active' | 'stale' | 'error'
 
 const UI_EDITOR_PREVIEW_IDENTITY = 'ui-editor-demo-component'
-const UI_EDITOR_PREVIEW_SCOPE = Endge.runtime.createAppScope({
-  id: 'ui-editor-demo-preview',
-  rootPath: 'runtime-preview.ui-editor-demo',
-  collisionPolicy: 'replace',
-  persistence: 'disabled',
-})
+
+export interface UIEditorRuntimePreviewOptions {
+  scopeId?: string
+  rootPath?: string
+  origin?: string
+  mode?: 'preview' | 'editor'
+}
 
 /** Owns the single disposable runtime rendered by the feature-local Preview panel. */
 export class UIEditorRuntimePreviewSession {
@@ -44,6 +45,24 @@ export class UIEditorRuntimePreviewSession {
   private _styleElement: HTMLStyleElement | null = null
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
+  private readonly _origin: string
+  private readonly _mode: 'preview' | 'editor'
+  private readonly _scope: ReturnType<typeof Endge.runtime.createAppScope>
+
+  public constructor(options: UIEditorRuntimePreviewOptions = {}) {
+    const scopeId = options.scopeId ?? 'ui-editor-demo-preview'
+    const defaultSession = scopeId === 'ui-editor-demo-preview'
+    this._origin = options.origin ?? (defaultSession ? 'ui-editor-demo' : scopeId)
+    this._mode = options.mode ?? 'preview'
+    this._scope = Endge.runtime.createAppScope({
+      id: scopeId,
+      rootPath: options.rootPath ?? (defaultSession
+        ? 'runtime-preview.ui-editor-demo'
+        : `runtime-preview.${scopeId}`),
+      collisionPolicy: 'replace',
+      persistence: 'disabled',
+    })
+  }
 
   public markStale(): void {
     if (this.runtime.value) {
@@ -107,10 +126,10 @@ export class UIEditorRuntimePreviewSession {
       previewProps,
       model,
       {
-        appScope: UI_EDITOR_PREVIEW_SCOPE,
+        appScope: this._scope,
         contextSuffix: 'ui-editor-context',
-        meta: previewMeta(),
-        resolveStoreRuntime: identity => UI_EDITOR_PREVIEW_SCOPE.resolve('store', identity),
+        meta: this._previewMeta(),
+        resolveStoreRuntime: identity => this._scope.resolve('store', identity),
         vocabDependencies: artifact.payload.runtimeDependencies?.vocabs ?? [],
       },
     )
@@ -121,13 +140,13 @@ export class UIEditorRuntimePreviewSession {
         context,
         'runtime-preview.ui-editor-demo.props',
       )
-      const runtime = UI_EDITOR_PREVIEW_SCOPE.execute(model, {
+      const runtime = this._scope.execute(model, {
         instanceId: 'component',
         parent: context?.host ?? null,
         artifactReader: createOverlayArtifactReader(artifact),
         persistence: 'disabled',
         meta: {
-          ...previewMeta(),
+          ...this._previewMeta(),
           target: 'dom',
           input,
           i18nCatalog: context?.host.getI18nCatalog() ?? {},
@@ -190,18 +209,18 @@ export class UIEditorRuntimePreviewSession {
       return
     }
     const element = document.createElement('style')
-    element.dataset.endgeUiEditorPreviewStyles = ''
+    element.dataset.endgeUiEditorRuntimeStyles = this._origin
     element.textContent = materializeEndgeCSSForDOM([style]).css
     document.head.append(element)
     this._styleElement = element
   }
-}
 
-function previewMeta(): Record<string, unknown> {
-  return {
-    mode: 'preview',
-    origin: 'ui-editor-demo',
-    previewScope: 'ui-editor-demo-preview',
+  private _previewMeta(): Record<string, unknown> {
+    return {
+      mode: this._mode,
+      origin: this._origin,
+      previewScope: this._scope.id,
+    }
   }
 }
 

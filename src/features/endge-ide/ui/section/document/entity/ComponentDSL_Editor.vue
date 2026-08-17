@@ -100,11 +100,11 @@ function addInputField(): void {
               <div class="p-4 space-y-3">
                 <div class="space-y-2">
                   <Label class="font-semibold">JSX шаблон</Label>
-                  <ScriptEditor v-model="editor.jsxScript" :type="editor.type" />
+                  <ScriptEditor v-model="editor.jsxScript" :type="editor.type" view-state-key="component-dsl.jsx" />
                 </div>
                 <div class="space-y-2">
                   <Label class="font-semibold">Legacy setup source (data only)</Label>
-                  <ScriptEditor v-model="editor.setupScript" :type="editor.type" />
+                  <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-dsl.setup" />
                   <p class="text-xs text-muted-foreground">
                     This field is preserved in the document but is no longer executed.
                   </p>

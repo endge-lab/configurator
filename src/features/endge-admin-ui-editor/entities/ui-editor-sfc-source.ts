@@ -6,6 +6,7 @@ import type {
   UIEditorSFCSourceAttribute,
   UIEditorSFCSourceDirective,
   UIEditorSFCTextSegment,
+  UIEditorSourceNodeLocation,
   UIEditorSourceNodeLocations,
 } from '@/features/endge-admin-ui-editor/types'
 import type {
@@ -39,6 +40,8 @@ export interface UIEditorSFCSourceProjection {
   diagnostics: string[]
   sourceLocations: UIEditorSourceNodeLocations
 }
+
+export type UIEditorSFCStaticAttributeValue = string | number | boolean | null
 
 export function findUIEditorSourceNodeAtOffset(
   sourceLocations: UIEditorSourceNodeLocations,
@@ -140,6 +143,88 @@ export function patchUIEditorSFCTemplate(source: string, document: UIEditorDocum
 
   const template = `\n${printUIEditorDocumentTemplate(document)}\n`
   return `${source.slice(0, range.start)}${template}${source.slice(range.end)}`
+}
+
+/** Applies one literal attribute edit without reprinting the rest of the SFC template. */
+export function patchUIEditorSFCStaticAttribute(
+  source: string,
+  location: UIEditorSourceNodeLocation,
+  name: string,
+  value: UIEditorSFCStaticAttributeValue,
+): string {
+  const normalizedName = name.trim()
+  if (!normalizedName || !/^[A-Z_][\w:.-]*$/i.test(normalizedName)) {
+    return source
+  }
+
+  const parsed = parseComponentSFC(source)
+  const element = findElementByRange(parsed.ast?.template?.roots ?? [], location.range.start, location.range.end)
+  if (!element) {
+    return source
+  }
+
+  const attribute = element.attributes.find(candidate => !candidate.dynamic && candidate.name === normalizedName)
+  const serialized = serializeStaticAttribute(normalizedName, value)
+  if (attribute) {
+    const start = serialized ? attribute.range.start : attributeRemovalStart(source, attribute.range.start, location.openingTagRange.start)
+    return `${source.slice(0, start)}${serialized}${source.slice(attribute.range.end)}`
+  }
+  if (!serialized) {
+    return source
+  }
+
+  const openingTag = source.slice(location.openingTagRange.start, location.openingTagRange.end)
+  const closingOffset = openingTag.includes('/>')
+    ? openingTag.lastIndexOf('/>')
+    : openingTag.lastIndexOf('>')
+  if (closingOffset < 0) {
+    return source
+  }
+  const insertionOffset = location.openingTagRange.start + closingOffset
+  return `${source.slice(0, insertionOffset)} ${serialized}${source.slice(insertionOffset)}`
+}
+
+function findElementByRange(
+  nodes: RComponentSFC_AST_TemplateNode[],
+  start: number,
+  end: number,
+): RComponentSFC_AST_ElementNode | null {
+  for (const node of nodes) {
+    if (node.kind !== 'element') {
+      continue
+    }
+    if (node.range.start === start && node.range.end === end) {
+      return node
+    }
+    const nested = findElementByRange(node.children, start, end)
+    if (nested) {
+      return nested
+    }
+  }
+  return null
+}
+
+function serializeStaticAttribute(name: string, value: UIEditorSFCStaticAttributeValue): string {
+  if (value === false || value == null) {
+    return ''
+  }
+  if (value === true) {
+    return name
+  }
+  const escaped = String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  return `${name}="${escaped}"`
+}
+
+function attributeRemovalStart(source: string, start: number, openingTagStart: number): number {
+  let offset = start
+  while (offset > openingTagStart && /[\t ]/.test(source[offset - 1] ?? '')) {
+    offset -= 1
+  }
+  return offset
 }
 
 function projectElement(

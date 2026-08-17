@@ -306,6 +306,7 @@ async function save(): Promise<void> {
         <ScriptEditor
           ref="sourceEditorRef"
           :model-value="editor.source"
+          view-state-key="mock.source"
           :language="monacoLanguage"
           class="min-h-0 flex-1"
           min-height="100%"

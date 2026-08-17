@@ -435,6 +435,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
       <ScriptEditor
         ref="sourceEditorRef"
         v-model="editor!.sourceText"
+        view-state-key="i18n.source"
         language="json"
         class="min-h-0 flex-1"
         min-height="100%"

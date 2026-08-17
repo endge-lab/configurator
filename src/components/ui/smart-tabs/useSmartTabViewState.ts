@@ -7,6 +7,9 @@ export interface SmartTabViewStateScope {
   read: (key: string) => SmartTabViewStateSlice | undefined
   write: (key: string, slice: SmartTabViewStateSlice) => void
   clear: (key: string) => void
+  readVolatile: (key: string) => SmartTabViewStateSlice | undefined
+  writeVolatile: (key: string, slice: SmartTabViewStateSlice) => void
+  clearVolatile: (key: string) => void
   readShared: (key: string) => SmartTabViewStateSlice | undefined
   writeShared: (key: string, slice: SmartTabViewStateSlice) => void
   clearShared: (key: string) => void
@@ -58,6 +61,22 @@ export function useSmartTabViewState<T>(
   }
 
   return useViewStateFromScope(key, options, scope)
+}
+
+export function useSmartTabVolatileViewState<T>(
+  key: string,
+  options: SmartTabViewStateOptions<T>,
+): Ref<T> {
+  const scope = inject(SMART_TAB_VIEW_STATE_SCOPE, null)
+  if (!scope) {
+    return ref(options.defaultValue()) as Ref<T>
+  }
+
+  return useViewStateFromScope(key, options, {
+    read: scope.readVolatile,
+    write: scope.writeVolatile,
+    clear: scope.clearVolatile,
+  })
 }
 
 function useViewStateFromScope<T>(

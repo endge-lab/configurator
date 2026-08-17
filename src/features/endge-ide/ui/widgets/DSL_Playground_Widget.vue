@@ -73,7 +73,7 @@ async function formatSource(): Promise<void> {
 
     <Card class="flex-1 min-h-0 flex flex-col p-4">
       <Label class="font-semibold mb-2">JSX source</Label>
-      <ScriptEditor v-model="jsxScript" class="flex-1 min-h-0" />
+      <ScriptEditor v-model="jsxScript" view-state-key="dsl-playground.source" class="flex-1 min-h-0" />
     </Card>
   </div>
 </template>

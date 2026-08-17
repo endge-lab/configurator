@@ -254,6 +254,12 @@ export class EndgeIDETabs_Module {
   public getTabViewState(tabId: string, key: string) { return this._tabsApi.getTabViewState(tabId, key) }
   public setTabViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabViewState']>[2]): void { this._tabsApi.setTabViewState(tabId, key, slice) }
   public clearTabViewState(tabId: string, key?: string): void { this._tabsApi.clearTabViewState(tabId, key) }
+  public getTabVolatileViewState(tabId: string, key: string) { return this._tabsApi.getTabVolatileViewState(tabId, key) }
+  public setTabVolatileViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabVolatileViewState']>[2]): void { this._tabsApi.setTabVolatileViewState(tabId, key, slice) }
+  public clearTabVolatileViewState(tabId: string, key?: string): void { this._tabsApi.clearTabVolatileViewState(tabId, key) }
+  public getSharedViewState(key: string) { return this._tabsApi.getSharedViewState(key) }
+  public setSharedViewState(key: string, slice: Parameters<SmartTabsApi['setSharedViewState']>[1]): void { this._tabsApi.setSharedViewState(key, slice) }
+  public clearSharedViewState(key?: string): void { this._tabsApi.clearSharedViewState(key) }
   public clearStorage(): void { this._tabsApi.clearStorage() }
 
   /** Returns true when the active editor differs from its last successful save. */

@@ -1,6 +1,8 @@
 import type {
   EndgeDocumentMutationRequest,
   EndgeDocumentMutationResult,
+  EndgeDocumentsMoveRequest,
+  EndgeDocumentsMoveResult,
   EndgeDomainLoadRequest,
   EndgeDomainProvider,
   EndgeLiveDomainDocument,
@@ -93,6 +95,44 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
 
   public async restoreDocument(request: EndgeDocumentMutationRequest): Promise<EndgeDocumentMutationResult> {
     return this._mutateDocument(request, 'POST', `${this._documentPath(request)}/restore`)
+  }
+
+  /** Атомарно перемещает несколько persisted-документов в одну папку. */
+  public async moveDocuments(request: EndgeDocumentsMoveRequest): Promise<EndgeDocumentsMoveResult> {
+    const response = await this._fetch('/api/v1/domain/documents/move', {
+      method: 'POST',
+      workspaceIdentity: request.workspaceIdentity,
+      body: {
+        documents: request.documents,
+        folderIdentity: request.folderIdentity,
+      },
+      signal: request.signal,
+    })
+    const payloadDocuments = response.payload.documents
+    const moved = response.payload.moved
+    if (!Array.isArray(payloadDocuments)
+      || payloadDocuments.length !== request.documents.length
+      || !isNonNegativeInteger(moved)
+      || Number(moved) > payloadDocuments.length) {
+      throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid bulk move response', response.status)
+    }
+
+    const documents = payloadDocuments.map((value, index) => {
+      const requested = request.documents[index]!
+      if (!isRecord(value) || value.collection !== requested.collection || !isRecord(value.document))
+        return null
+      const document = normalizeDocument(value.document)
+      return document && document.identity === requested.identity
+        ? { collection: requested.collection, document }
+        : null
+    })
+    if (documents.some(document => document == null))
+      throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid bulk move document', response.status)
+
+    return {
+      documents: documents as EndgeDocumentsMoveResult['documents'],
+      moved: Number(moved),
+    }
   }
 
   public async updateWorkspace(request: EndgeWorkspaceMutationRequest): Promise<EndgeWorkspaceMutationResult> {

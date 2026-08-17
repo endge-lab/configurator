@@ -97,6 +97,9 @@ export interface SmartTabsApi {
   getTabViewState: (tabId: SmartTabId, key: string) => SmartTabViewStateSlice | undefined
   setTabViewState: (tabId: SmartTabId, key: string, slice: SmartTabViewStateSlice) => void
   clearTabViewState: (tabId: SmartTabId, key?: string) => void
+  getTabVolatileViewState: (tabId: SmartTabId, key: string) => SmartTabViewStateSlice | undefined
+  setTabVolatileViewState: (tabId: SmartTabId, key: string, slice: SmartTabViewStateSlice) => void
+  clearTabVolatileViewState: (tabId: SmartTabId, key?: string) => void
   getSharedViewState: (key: string) => SmartTabViewStateSlice | undefined
   setSharedViewState: (key: string, slice: SmartTabViewStateSlice) => void
   clearSharedViewState: (key?: string) => void

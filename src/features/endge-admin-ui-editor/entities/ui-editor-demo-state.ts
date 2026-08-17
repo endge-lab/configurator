@@ -26,7 +26,12 @@ import { reactive } from 'vue'
 import { printUIEditorDocumentSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
 import { hasUIEditorSFCTextBinding } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
-import { findUIEditorSourceNodeAtOffset, patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
+import {
+  findUIEditorSourceNodeAtOffset,
+  patchUIEditorSFCStaticAttribute,
+  patchUIEditorSFCTemplate,
+  projectUIEditorDocumentFromSFC,
+} from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export const UI_EDITOR_DND_MIME = 'application/x-endge-ui-editor'
 const UI_EDITOR_DEMO_STORAGE_KEY = 'endge-admin-ui-editor-demo-state:v11'
@@ -1228,6 +1233,25 @@ export class UIEditorDemoState {
     } as UIEditorNode['props']
     ;(node as UIEditorNode).props = normalizeNodeProps(node)
     this.persistDocumentState()
+  }
+
+  public patchNodeSourceAttribute(
+    nodeId: string,
+    name: string,
+    value: string | number | boolean | null,
+  ): void {
+    if (this.sourceDiagnostics.length > 0) {
+      return
+    }
+    const location = this.getSourceLocation(nodeId)
+    if (!location) {
+      return
+    }
+    const nextSource = patchUIEditorSFCStaticAttribute(this.source, location, name, value)
+    if (nextSource !== this.source) {
+      this.applySFCSource(nextSource)
+      this.selectNode(nodeId)
+    }
   }
 
   public patchNodeLayout(nodeId: string, patch: Partial<UIEditorNodeLayout>): void {

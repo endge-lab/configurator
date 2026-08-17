@@ -1,14 +1,30 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import { Building2, ChevronRight, ServerOff } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { Building2, ChevronRight, LogOut, ServerOff } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Configurator } from '@/app'
 
 const workspaces = computed(() => Configurator.workspaceSelection)
+const logoutPending = ref(false)
 
 function selectWorkspace(identity: string): void {
   Configurator.connections.selectWorkspace(identity)
+}
+
+async function logout(): Promise<void> {
+  if (logoutPending.value) {
+    return
+  }
+  logoutPending.value = true
+  try {
+    await Configurator.logout()
+  }
+  catch {
+    toast.error('Не удалось завершить сессию')
+    logoutPending.value = false
+  }
 }
 </script>
 
@@ -16,16 +32,19 @@ function selectWorkspace(identity: string): void {
   <main class="fixed inset-0 z-[300] grid place-items-center bg-slate-950 px-5 py-10 text-slate-100">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.1),transparent_38%)]" />
     <section class="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl shadow-black/50 backdrop-blur">
-      <header class="border-b border-white/10 px-7 py-6">
-        <p class="mb-2 font-mono text-[11px] uppercase tracking-[0.22em] text-orange-300">
-          {{ Configurator.connections.activeBackendURL }}
-        </p>
+      <header class="flex items-center justify-between gap-4 border-b border-white/10 px-7 py-6">
         <h1 class="text-2xl font-semibold tracking-tight">
-          Выберите рабочее пространство
+          Выберите пространство
         </h1>
-        <p class="mt-2 text-sm leading-6 text-slate-400">
-          Выбор сохранится только для этого backend. Configurator продолжит запуск после полной перезагрузки.
-        </p>
+        <button
+          type="button"
+          class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:pointer-events-none disabled:opacity-50"
+          :disabled="logoutPending"
+          @click="logout"
+        >
+          <LogOut class="size-4" />
+          {{ logoutPending ? 'Выход...' : 'Выйти' }}
+        </button>
       </header>
 
       <div v-if="workspaces.length" class="max-h-[52vh] space-y-2 overflow-y-auto p-4">
@@ -41,7 +60,6 @@ function selectWorkspace(identity: string): void {
           </span>
           <span class="min-w-0 flex-1">
             <span class="block truncate text-sm font-medium text-slate-100">{{ workspace.displayName }}</span>
-            <span class="mt-0.5 block truncate font-mono text-xs text-slate-500">{{ workspace.identity }} · {{ workspace.role }}</span>
           </span>
           <ChevronRight class="size-4 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-orange-300" />
         </button>
@@ -52,11 +70,8 @@ function selectWorkspace(identity: string): void {
           <ServerOff class="size-6" />
         </span>
         <h2 class="font-medium">
-          Нет доступных рабочих пространств
+          Нет доступных пространств
         </h2>
-        <p class="mt-2 max-w-md text-sm leading-6 text-slate-400">
-          У текущей учётной записи нет доступа ни к одному активному Workspace на выбранном backend.
-        </p>
       </div>
     </section>
   </main>

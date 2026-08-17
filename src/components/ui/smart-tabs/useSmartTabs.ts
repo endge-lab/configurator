@@ -90,6 +90,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     viewStateByTabId: initial.viewStateByTabId ?? {},
     sharedViewState: initial.sharedViewState ?? {},
   })
+  const volatileViewStateByTabId: Record<SmartTabId, SmartTabViewState> = {}
 
   function persistNow(): void {
     if (!persist)
@@ -128,7 +129,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     const overflow = state.openTabs.length - maxTabs
     const removed = state.openTabs.splice(0, overflow)
     removed.forEach((tab) => {
-      delete state.viewStateByTabId[tab.id]
+      clearClosedTabViewState(tab.id)
       options.onTabClosed?.(tab)
     })
 
@@ -168,7 +169,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
         const replacedTab = state.openTabs[idx]!
         state.openTabs.splice(idx, 1, tab)
         if (replacedTabId !== tab.id) {
-          delete state.viewStateByTabId[replacedTabId]
+          clearClosedTabViewState(replacedTabId)
           options.onTabClosed?.(replacedTab)
         }
         state.activeTabId = activate ? tab.id : state.activeTabId
@@ -205,13 +206,13 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
     if (!wasActive) {
       state.openTabs.splice(idx, 1)
-      delete state.viewStateByTabId[id]
+      clearClosedTabViewState(id)
       options.onTabClosed?.(closedTab)
       return
     }
 
     state.openTabs.splice(idx, 1)
-    delete state.viewStateByTabId[id]
+    clearClosedTabViewState(id)
     options.onTabClosed?.(closedTab)
 
     const remainingTabs = state.openTabs
@@ -274,9 +275,20 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   function pruneViewState(): void {
     const openTabIds = new Set(state.openTabs.map(tab => tab.id))
     for (const tabId of Object.keys(state.viewStateByTabId)) {
-      if (!openTabIds.has(tabId))
+      if (!openTabIds.has(tabId)) {
         delete state.viewStateByTabId[tabId]
+      }
     }
+    for (const tabId of Object.keys(volatileViewStateByTabId)) {
+      if (!openTabIds.has(tabId)) {
+        delete volatileViewStateByTabId[tabId]
+      }
+    }
+  }
+
+  function clearClosedTabViewState(tabId: SmartTabId): void {
+    delete state.viewStateByTabId[tabId]
+    delete volatileViewStateByTabId[tabId]
   }
 
   function getTabViewState(tabId: SmartTabId, key: string): SmartTabViewStateSlice | undefined {
@@ -315,6 +327,38 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     delete tabState[key]
     if (Object.keys(tabState).length === 0) {
       delete state.viewStateByTabId[tabId]
+    }
+  }
+
+  function getTabVolatileViewState(tabId: SmartTabId, key: string): SmartTabViewStateSlice | undefined {
+    return volatileViewStateByTabId[tabId]?.[key]
+  }
+
+  function setTabVolatileViewState(tabId: SmartTabId, key: string, slice: SmartTabViewStateSlice): void {
+    if (!state.openTabs.some(tab => tab.id === tabId)) {
+      return
+    }
+    const tabState = volatileViewStateByTabId[tabId]
+    if (tabState) {
+      tabState[key] = slice
+    }
+    else {
+      volatileViewStateByTabId[tabId] = { [key]: slice }
+    }
+  }
+
+  function clearTabVolatileViewState(tabId: SmartTabId, key?: string): void {
+    if (key == null) {
+      delete volatileViewStateByTabId[tabId]
+      return
+    }
+    const tabState = volatileViewStateByTabId[tabId]
+    if (!tabState) {
+      return
+    }
+    delete tabState[key]
+    if (Object.keys(tabState).length === 0) {
+      delete volatileViewStateByTabId[tabId]
     }
   }
 
@@ -366,6 +410,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     getTabViewState,
     setTabViewState,
     clearTabViewState,
+    getTabVolatileViewState,
+    setTabVolatileViewState,
+    clearTabVolatileViewState,
     getSharedViewState,
     setSharedViewState,
     clearSharedViewState,
