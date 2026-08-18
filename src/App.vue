@@ -110,7 +110,7 @@ onErrorCaptured((err, instance, info) => {
   </EndgeAdapterRoot>
 
   <Toaster
-    position="bottom-right"
+    position="top-center"
     rich-colors
     :duration="5000"
   />

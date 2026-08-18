@@ -83,7 +83,7 @@ function shortVersion(value: string): string {
 
 <template>
   <span
-    class="domain-version-badge inline-flex h-5 max-w-48 items-center gap-1 rounded-full border px-2 font-mono text-[10px] font-semibold leading-none"
+    class="domain-version-badge inline-flex h-5 max-w-48 items-center gap-1 rounded-md border px-2 font-mono text-[10px] font-semibold leading-none"
     :class="`domain-version-badge--${stateKind}`"
     :style="versionStyle"
     :title="title"

@@ -124,11 +124,11 @@ onBeforeUnmount(() => {
         <DatabaseZap class="size-3.5 shrink-0" />
         <span>{{ mockLabel }}</span>
       </button>
+      <DomainVersionBadge :state="activeDomainVersionState" prefix />
       <button type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
         <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
       </button>
       <BellDot class="size-3.5 mx-1" />
-      <DomainVersionBadge :state="activeDomainVersionState" prefix />
     </div>
   </div>
 </template>
