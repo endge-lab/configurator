@@ -317,9 +317,6 @@ function normalizeErrorMessage(error: unknown): string {
               Значения используются только для текущего теста и не записываются в документ.
             </div>
           </div>
-          <div v-else class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            Для этого адаптера нет визуального редактора.
-          </div>
         </Card>
 
         <Card class="min-w-0 space-y-4 p-4 xl:sticky xl:top-5 xl:self-start">

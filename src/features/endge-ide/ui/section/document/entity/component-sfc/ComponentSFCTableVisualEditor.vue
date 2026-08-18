@@ -127,6 +127,7 @@ import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/Co
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
+import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCTableMenuPreviewEditor from './ComponentSFCTableMenuPreviewEditor.vue'
 
 const props = defineProps<{
@@ -1690,6 +1691,16 @@ function openSelectedColumnSource(): void {
   }
 }
 
+function updateSelectedCellInteractions(value: string | null): void {
+  const column = selectedColumn.value
+  if (!column) return
+  applyPatch({
+    type: 'set-column-cell-on',
+    columnIndex: column.index,
+    value,
+  })
+}
+
 function openColumnContextMenu(event: MouseEvent, columnIndex: number): void {
   event.preventDefault()
   event.stopPropagation()
@@ -3057,6 +3068,12 @@ onBeforeUnmount(() => {
                     </Button>
                   </div>
                 </section>
+
+                <ComponentSFCCellInteractionsEditor
+                  :model-value="selectedColumn.interactions"
+                  @update="updateSelectedCellInteractions"
+                  @open-source="openSelectedColumnSource"
+                />
 
                 <section class="border-b bg-background/15 px-5 py-4">
                   <div class="mb-3 flex items-center gap-1.5">

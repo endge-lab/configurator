@@ -11,12 +11,14 @@ import {
 } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Braces, Plus, Radio, Trash2, Unplug, Zap } from 'lucide-vue-next'
+import { Braces, ChevronDown, Plus, Radio, Trash2, Unplug, Zap } from 'lucide-vue-next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
@@ -31,17 +33,67 @@ const emit = defineEmits<{
   (event: 'openSource', offset: number): void
 }>()
 
+const eventPickerOpen = ref(false)
+const eventSearch = ref('')
+const expandedEvents = ref<Set<string>>(new Set())
+
 const projection = computed(() => inspectComponentSFCPortsSource(props.source, {
   resolveComponentPortManifest: (identity: string) => Endge.program.getArtifact<any>('component-sfc', identity)?.payload?.ir?.script.ports ?? null,
 }))
 const actions = computed(() => Endge.domain.getActions()
   .filter(action => action.active !== false && Boolean(action.identity?.trim())))
 const eventPorts = computed(() => projection.value.manifest.emits.events)
-const tableEvents = computed(() => TABLE_EVENT_DEFINITIONS.map(definition => ({
-  ...definition,
-  port: eventPorts.value.find(event => event.name === definition.name) ?? null,
-})))
-const ownEvents = computed(() => eventPorts.value.filter(event => !TABLE_EVENT_DEFINITIONS.some(definition => definition.name === event.name)))
+const configuredEvents = computed(() => eventPorts.value
+  .filter(isExplicitEvent)
+  .map((port) => {
+    const definition = TABLE_EVENT_DEFINITIONS.find(event => event.name === port.name)
+    return {
+      name: port.name,
+      displayName: definition?.displayName ?? port.displayName ?? port.name,
+      payloadType: port.payloadType,
+      description: definition?.description ?? describeEvent(port),
+      port,
+    }
+  }))
+const availableEvents = computed(() => {
+  const catalog = new Map<string, {
+    name: string
+    displayName: string
+    payloadType: string
+    description: string
+    port: ComponentSFCEventPort | null
+  }>()
+  for (const definition of TABLE_EVENT_DEFINITIONS) {
+    catalog.set(definition.name, {
+      ...definition,
+      port: eventPorts.value.find(event => event.name === definition.name) ?? null,
+    })
+  }
+  for (const port of eventPorts.value) {
+    const definition = TABLE_EVENT_DEFINITIONS.find(event => event.name === port.name)
+    catalog.set(port.name, {
+      name: port.name,
+      displayName: definition?.displayName ?? port.displayName ?? port.name,
+      payloadType: port.payloadType,
+      description: definition?.description ?? describeEvent(port),
+      port,
+    })
+  }
+  const configuredNames = new Set(configuredEvents.value.map(event => event.name))
+  return [...catalog.values()].filter(event => !configuredNames.has(event.name))
+})
+const filteredAvailableEvents = computed(() => {
+  const query = eventSearch.value.trim().toLowerCase()
+  if (!query) {
+    return availableEvents.value
+  }
+  return availableEvents.value.filter(event => (
+    event.name.toLowerCase().includes(query)
+    || event.displayName.toLowerCase().includes(query)
+    || event.payloadType.toLowerCase().includes(query)
+    || event.description.toLowerCase().includes(query)
+  ))
+})
 const requiredPorts = computed(() => [
   ...projection.value.manifest.require.actions,
   ...projection.value.manifest.require.computations,
@@ -49,8 +101,6 @@ const requiredPorts = computed(() => [
 ])
 const providedPorts = computed(() => projection.value.manifest.provides.actions)
 
-const customEventName = ref('')
-const customEventType = ref('unknown')
 const portRole = ref<ComponentSFCPortRole>('require')
 const portKind = ref<'action' | 'computation' | 'component'>('action')
 const portName = ref('')
@@ -69,11 +119,36 @@ function reactionValue(event: ComponentSFCEventPort | null): string {
   return event?.action?.kind === 'action' ? event.action.identity : '__none__'
 }
 
-function eventOrigin(event: ComponentSFCEventPort | null, intrinsic = false): string {
-  if (!event) return intrinsic ? 'Built-in Table' : 'Не объявлен'
-  if (event.forwardedFrom) return `Forward: ${event.forwardedFrom.ref ?? event.forwardedFrom.componentTag}`
-  if (event.from) return `Table ref=${event.from.ref}`
-  return 'Собственное событие'
+function reactionLabel(event: ComponentSFCEventPort): string {
+  const reaction = event.action
+  if (reaction?.kind === 'typescript') {
+    return 'TypeScript sandbox'
+  }
+  if (reaction?.kind !== 'action') {
+    return 'Без реакции'
+  }
+  const action = actions.value.find(item => item.identity === reaction.identity)
+  return action?.displayName || action?.name || reaction.identity
+}
+
+function isExplicitEvent(event: ComponentSFCEventPort): boolean {
+  if (!event.sourceRange) {
+    return false
+  }
+  return !projection.value.manifest.forward.rules.some(rule => (
+    rule.sourceRange?.start === event.sourceRange?.start
+    && rule.sourceRange?.end === event.sourceRange?.end
+  ))
+}
+
+function describeEvent(event: ComponentSFCEventPort): string {
+  if (event.forwardedFrom) {
+    return `Событие ${event.forwardedFrom.ref ?? event.forwardedFrom.componentTag}.`
+  }
+  if (event.from) {
+    return `Событие ${event.from.ref}.`
+  }
+  return 'Событие компонента.'
 }
 
 function changeReaction(name: string, payloadType: string, port: ComponentSFCEventPort | null, value: string): void {
@@ -95,47 +170,60 @@ function saveTypescript(name: string, payloadType: string, port: ComponentSFCEve
   applyEvent(name, payloadType, port, typescriptDrafts.value[name] ?? null)
 }
 
-function applyEvent(name: string, payloadType: string, port: ComponentSFCEventPort | null, actionSource: string | null): void {
+function applyEvent(name: string, payloadType: string, port: ComponentSFCEventPort | null, actionSource: string | null): boolean {
   let source = props.source
-  let refName = port?.from?.ref ?? props.tableRef?.trim() ?? ''
+  let refName = port?.from?.ref ?? port?.forwardedFrom?.ref ?? props.tableRef?.trim() ?? ''
   const isIntrinsic = TABLE_EVENT_DEFINITIONS.some(definition => definition.name === name)
-  if (isIntrinsic && !port?.from && !port?.forwardedFrom) {
-    if (!refName) {
-      refName = 'table'
-      const tablePatch = patchComponentSFCTableSource(source, { type: 'set-table-attribute', name: 'ref', value: refName })
-      if (!tablePatch.ok) {
-        fail(tablePatch.message)
-        return
-      }
-      source = tablePatch.source
+  const isTableOrigin = port?.forwardedFrom?.componentTag.toLowerCase() === 'table'
+  if ((isIntrinsic || isTableOrigin) && !refName) {
+    refName = 'table'
+    const tablePatch = patchComponentSFCTableSource(source, { type: 'set-table-attribute', name: 'ref', value: refName })
+    if (!tablePatch.ok) {
+      return fail(tablePatch.message)
     }
+    source = tablePatch.source
   }
   const result = patchComponentSFCPortsSource(source, {
     type: 'set-event',
     name,
     payloadType,
-    from: port?.forwardedFrom ? null : (port?.from ?? (isIntrinsic ? { ref: refName, event: name } : null)),
+    from: port?.from
+      ?? (port?.forwardedFrom && refName ? { ref: refName, event: port.forwardedFrom.portName } : null)
+      ?? (isIntrinsic ? { ref: refName, event: name } : null),
     actionSource,
   })
-  commit(result)
+  return commit(result)
 }
 
-function addOwnEvent(): void {
-  const name = customEventName.value.trim()
-  if (!name) return
-  const result = patchComponentSFCPortsSource(props.source, {
-    type: 'set-event',
-    name,
-    payloadType: customEventType.value.trim() || 'unknown',
-  })
-  if (commit(result)) {
-    customEventName.value = ''
-    customEventType.value = 'unknown'
+function addEvent(name: string): void {
+  const event = availableEvents.value.find(item => item.name === name)
+  if (!event || !applyEvent(event.name, event.payloadType, event.port, null)) {
+    return
   }
+  expandedEvents.value = new Set([...expandedEvents.value, name])
+  eventPickerOpen.value = false
+  eventSearch.value = ''
+}
+
+function setEventExpanded(name: string, expanded: boolean): void {
+  const next = new Set(expandedEvents.value)
+  if (expanded) {
+    next.add(name)
+  }
+  else {
+    next.delete(name)
+  }
+  expandedEvents.value = next
 }
 
 function removeEvent(name: string): void {
-  commit(patchComponentSFCPortsSource(props.source, { type: 'remove-port', role: 'emits', name }))
+  if (!commit(patchComponentSFCPortsSource(props.source, { type: 'remove-port', role: 'emits', name }))) {
+    return
+  }
+  const next = new Set(expandedEvents.value)
+  next.delete(name)
+  expandedEvents.value = next
+  delete typescriptDrafts.value[name]
 }
 
 function addPort(): void {
@@ -239,49 +327,96 @@ function toPortName(identity: string): string {
     </div>
 
     <template v-if="mode === 'events'">
-      <div class="space-y-1">
-        <h3 class="flex items-center gap-2 text-sm font-semibold"><Radio class="size-4" /> События Table</h3>
-        <p class="text-xs text-muted-foreground">Event всегда публикуется. Выбранный Action — дополнительная реакция Source.</p>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="space-y-1">
+          <h3 class="flex items-center gap-2 text-sm font-semibold"><Radio class="size-4" /> События Table</h3>
+          <p class="text-xs text-muted-foreground">Добавляйте события, для которых нужна реакция.</p>
+        </div>
+        <Popover v-model:open="eventPickerOpen">
+          <PopoverTrigger as-child class="!w-auto">
+            <Button
+              size="sm"
+              :aria-expanded="eventPickerOpen"
+              :disabled="!projection.editable || !availableEvents.length"
+              @click="eventPickerOpen = !eventPickerOpen"
+            >
+              <Plus class="mr-1 size-4" />Событие
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-[min(28rem,calc(100vw-2rem))] p-0" align="end" side-offset="6">
+            <div class="border-b p-2">
+              <Input v-model="eventSearch" class="h-8" placeholder="Найти событие..." @keydown.stop />
+            </div>
+            <div class="max-h-80 overflow-y-auto p-1.5">
+              <button
+                v-for="event in filteredAvailableEvents"
+                :key="event.name"
+                type="button"
+                class="flex w-full items-start gap-3 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+                @click="addEvent(event.name)"
+              >
+                <Radio class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <span class="min-w-0">
+                  <span class="flex flex-wrap items-baseline gap-x-2">
+                    <span class="text-sm font-medium">{{ event.displayName }}</span>
+                    <span class="font-mono text-xs text-muted-foreground">{{ event.name }}</span>
+                  </span>
+                  <span class="mt-0.5 block text-xs text-muted-foreground">{{ event.description }}</span>
+                  <span class="mt-1 block font-mono text-[11px] text-muted-foreground/80">{{ event.payloadType }}</span>
+                </span>
+              </button>
+              <div v-if="!filteredAvailableEvents.length" class="px-3 py-8 text-center text-sm text-muted-foreground">
+                {{ availableEvents.length ? 'Ничего не найдено' : 'Все события уже добавлены' }}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      <div v-for="item in tableEvents" :key="item.name" class="editor-panel rounded-lg border p-3">
-        <div class="flex flex-wrap items-start gap-2">
-          <div class="min-w-0 flex-1">
-            <div class="font-mono text-sm">{{ item.name }}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{{ item.payloadType }} · {{ eventOrigin(item.port, true) }}</div>
+      <Collapsible
+        v-for="item in configuredEvents"
+        :key="item.name"
+        :open="expandedEvents.has(item.name)"
+        class="editor-panel rounded-lg border"
+        @update:open="setEventExpanded(item.name, $event)"
+      >
+        <div class="flex min-h-16 items-center gap-2 p-3">
+          <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left" @click="setEventExpanded(item.name, !expandedEvents.has(item.name))">
+            <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ '-rotate-90': !expandedEvents.has(item.name) }" />
+            <span class="min-w-0 flex-1">
+              <span class="block font-mono text-sm">{{ item.name }}</span>
+              <span class="mt-0.5 block truncate text-xs text-muted-foreground">{{ item.displayName }} · {{ item.payloadType }}</span>
+            </span>
+            <span class="hidden max-w-[20rem] truncate text-xs text-muted-foreground sm:block">{{ reactionLabel(item.port) }}</span>
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 shrink-0"
+            title="Убрать из настройки"
+            :disabled="!projection.editable"
+            @click="removeEvent(item.name)"
+          >
+            <Trash2 class="size-3.5" />
+          </Button>
+        </div>
+        <CollapsibleContent>
+          <div class="border-t px-3 pb-3 pt-3">
+            <div class="grid gap-2 sm:grid-cols-[12rem_minmax(0,1fr)]">
+              <Label class="self-center text-xs">Реакция</Label>
+              <select class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :value="reactionValue(item.port)" :disabled="!projection.editable" @change="changeReaction(item.name, item.payloadType, item.port, ($event.target as HTMLSelectElement).value)">
+                <option value="__none__">Без реакции</option>
+                <option value="__typescript__">TypeScript sandbox</option>
+                <option v-for="action in actions" :key="action.identity" :value="action.identity">{{ action.displayName || action.name || action.identity }}</option>
+              </select>
+            </div>
+            <div v-if="typescriptDrafts[item.name] != null" class="mt-3 space-y-2">
+              <Textarea v-model="typescriptDrafts[item.name]" class="min-h-40 font-mono text-xs" />
+              <Button size="sm" @click="saveTypescript(item.name, item.payloadType, item.port)">Сохранить sandbox-реакцию</Button>
+            </div>
           </div>
-          <Badge v-if="item.port" variant="secondary">опубликован</Badge>
-          <Button v-if="item.port?.sourceRange" variant="ghost" size="icon" class="size-7" @click="removeEvent(item.name)"><Trash2 class="size-3.5" /></Button>
-        </div>
-        <div class="mt-3 grid gap-2 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <Label class="self-center text-xs">Реакция</Label>
-          <select class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :value="reactionValue(item.port)" :disabled="!projection.editable" @change="changeReaction(item.name, item.payloadType, item.port, ($event.target as HTMLSelectElement).value)">
-            <option value="__none__">Без реакции</option>
-            <option value="__typescript__">TypeScript sandbox</option>
-            <option v-for="action in actions" :key="action.identity" :value="action.identity">{{ action.displayName || action.name || action.identity }}</option>
-          </select>
-        </div>
-        <div v-if="typescriptDrafts[item.name] != null" class="mt-3 space-y-2">
-          <Textarea v-model="typescriptDrafts[item.name]" class="min-h-40 font-mono text-xs" />
-          <Button size="sm" @click="saveTypescript(item.name, item.payloadType, item.port)">Сохранить sandbox-реакцию</Button>
-        </div>
-      </div>
-
-      <div class="editor-panel rounded-lg border border-dashed p-3">
-        <h4 class="text-sm font-medium">Собственное Event компонента</h4>
-        <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <Input v-model="customEventName" placeholder="detailsOpened" />
-          <Input v-model="customEventType" placeholder="{ id: string }" />
-          <Button :disabled="!projection.editable" @click="addOwnEvent"><Plus class="mr-1 size-4" />Добавить</Button>
-        </div>
-      </div>
-
-      <div v-for="event in ownEvents" :key="event.name" class="flex items-center gap-2 rounded-md border px-3 py-2">
-        <span class="font-mono text-sm">{{ event.name }}</span>
-        <Badge variant="outline">{{ event.payloadType }}</Badge>
-        <span class="text-xs text-muted-foreground">{{ eventOrigin(event) }}</span>
-        <Button class="ml-auto" variant="ghost" size="icon" @click="removeEvent(event.name)"><Trash2 class="size-3.5" /></Button>
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
     </template>
 
     <template v-else>
