@@ -107,6 +107,35 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
   stop: true,
 }]"`,
   },
+  {
+    label: ':on interaction',
+    detail: 'Conditional interaction with the same trigger grammar as edit-on',
+    insertText: `:on="{
+  event: '\${1:click}',
+  reaction: action({
+    identity: '\${2:action.identity}',
+    input: { \${3} },
+  }),
+}"`,
+  },
+  {
+    label: ':on sequence',
+    detail: 'First-match interaction rules with sequential reactions',
+    insertText: `:on.stop.prevent="[{
+  event: '\${1:click}',
+  held: { code: ['\${2:KeyW}'], exact: true },
+  modifiers: { shift: true, exact: true },
+  reaction: [
+    action({ identity: '\${3:action.first}', input: { \${4} } }),
+    emit('\${5:completed}', { \${6} }),
+  ],
+}]"`,
+  },
+  ...['stop', 'prevent', 'self', 'once', 'capture', 'passive'].map(modifier => ({
+    label: `:on.${modifier}`,
+    detail: `Interaction annotation with .${modifier} semantics`,
+    insertText: `:on.${modifier}="{ event: '\${1:click}', reaction: action({ identity: '\${2:action.identity}' }) }"`,
+  })),
   { label: 'variant', detail: 'Select a component variant explicitly', insertText: `variant="\${1:default}"` },
   { label: '@edited', detail: 'Handle a committed semantic edit', insertText: `@edited="\${1:emit('edited', event())}"` },
   { label: 'emit edited', detail: 'Publish edited from a custom edit variant', insertText: `emit('edited', event('\${1:value}'))` },
@@ -185,7 +214,22 @@ export function createSFCLanguageContribution(
               }
             }
             const genericAttributes = SFC_EDITABLE_COMPLETIONS
-              .filter(item => ['editable', 'edit-on', 'edit-on shortcut', 'edit-on held pointer chord', 'variant', '@edited'].includes(item.label))
+              .filter(item => [
+                'editable',
+                'edit-on',
+                'edit-on shortcut',
+                'edit-on held pointer chord',
+                ':on interaction',
+                ':on sequence',
+                ':on.stop',
+                ':on.prevent',
+                ':on.self',
+                ':on.once',
+                ':on.capture',
+                ':on.passive',
+                'variant',
+                '@edited',
+              ].includes(item.label))
               .map(item => ({
                 label: item.label,
                 detail: item.detail,
