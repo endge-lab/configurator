@@ -240,8 +240,8 @@ export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
   {
     type: 'auth-profile',
     label: 'Профиль авторизации',
-    description: 'Настройки auth adapter и ссылки на credentials без хранения секретов в документе.',
-    keywords: ['auth', 'profile', 'keycloak', 'авторизация'],
+    description: 'Настройки auth adapter и credentials как Workspace variables или тестовые literal-значения.',
+    keywords: ['auth', 'profile', 'oidc', 'oauth2', 'авторизация'],
     defaultName: 'Новый профиль авторизации',
     section: DomainSectionType.AuthProfile,
     group: 'Система',

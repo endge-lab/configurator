@@ -27,6 +27,7 @@ import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
+import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
@@ -296,4 +297,5 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <DomainImport_Modal ref="domainImportModal" />
   <BackendConnections_Modal ref="backendConnectionsModal" />
   <AccessControl_Modal ref="accessControlModal" />
+  <RuntimePreviewAuthDialog />
 </template>

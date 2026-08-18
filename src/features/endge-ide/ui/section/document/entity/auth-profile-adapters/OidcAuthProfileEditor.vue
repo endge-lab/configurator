@@ -1,0 +1,62 @@
+<script setup lang="ts">
+import { Endge } from '@endge/core'
+import { CheckCircle2, Loader2, XCircle } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+const props = defineProps<{ config: Record<string, unknown>, credentials: Record<string, unknown> }>()
+const emit = defineEmits<{ 'update:config': [Record<string, unknown>], 'update:credentials': [Record<string, unknown>] }>()
+function configString(key: string) { return computed({ get: () => String(props.config[key] ?? ''), set: value => emit('update:config', { ...props.config, [key]: value }) }) }
+const issuer = configString('issuer')
+const clientId = configString('clientId')
+const scopes = computed({ get: () => Array.isArray(props.config.scopes) ? props.config.scopes.join(' ') : '', set: value => emit('update:config', { ...props.config, scopes: [...new Set(String(value).split(/[\s,]+/).map(item => item.trim()).filter(Boolean))] }) })
+const discovery = ref<{ status: 'idle' | 'checking' | 'available' | 'error', message: string }>({ status: 'idle', message: 'Discovery ещё не проверен.' })
+
+async function checkDiscovery(): Promise<void> {
+  discovery.value = { status: 'checking', message: 'Проверяем OpenID Discovery…' }
+  try {
+    const raw = issuer.value.trim()
+    const resolved = String(Endge.workspace.variables.resolve(raw, { fallback: raw, onInvalid: 'as-is' }) ?? raw).trim()
+    if (!resolved)
+      throw new Error('Укажите issuer')
+    if (/^\{[A-Za-z_][A-Za-z0-9_.-]*\}$/.test(raw) && resolved === raw)
+      throw new Error(`Workspace variable не задана: ${raw}`)
+    const response = await fetch(`${resolved.replace(/\/+$/, '')}/.well-known/openid-configuration`)
+    if (!response.ok)
+      throw new Error(`Discovery ответил HTTP ${response.status}`)
+    const metadata = await response.json() as Record<string, unknown>
+    if (!String(metadata.authorization_endpoint ?? '').trim() || !String(metadata.token_endpoint ?? '').trim())
+      throw new Error('В metadata отсутствуют authorization_endpoint или token_endpoint')
+    discovery.value = { status: 'available', message: 'Discovery доступен, обязательные endpoints найдены.' }
+  }
+  catch (error) {
+    discovery.value = { status: 'error', message: error instanceof Error ? error.message : String(error) }
+  }
+}
+</script>
+<template>
+  <div class="grid gap-3">
+    <div class="space-y-1.5">
+      <Label class="text-xs text-muted-foreground">Issuer</Label>
+      <div class="flex gap-2">
+        <Input v-model="issuer" placeholder="{OIDC_ISSUER}" autocomplete="off" />
+        <Button type="button" variant="outline" :disabled="discovery.status === 'checking'" @click="checkDiscovery">
+          <Loader2 v-if="discovery.status === 'checking'" class="mr-2 size-4 animate-spin" />
+          Проверить
+        </Button>
+      </div>
+      <p class="flex items-center gap-1.5 text-xs" :class="discovery.status === 'error' ? 'text-destructive' : 'text-muted-foreground'">
+        <CheckCircle2 v-if="discovery.status === 'available'" class="size-3.5 text-primary" />
+        <XCircle v-else-if="discovery.status === 'error'" class="size-3.5" />
+        {{ discovery.message }}
+      </p>
+    </div>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <div class="space-y-1.5"><Label class="text-xs text-muted-foreground">Client ID</Label><Input v-model="clientId" autocomplete="off" /></div>
+      <div class="space-y-1.5"><Label class="text-xs text-muted-foreground">Scopes</Label><Input v-model="scopes" placeholder="openid profile" autocomplete="off" /></div>
+    </div>
+  </div>
+</template>

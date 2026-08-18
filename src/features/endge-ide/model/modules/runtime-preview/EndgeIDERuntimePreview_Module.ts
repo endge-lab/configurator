@@ -2,13 +2,15 @@
 import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
   RuntimePreviewLaunchRequest,
+  RuntimePreviewAuthPrompt,
   RuntimePreviewLifecycleState,
   RuntimePreviewOccurrencePrompt,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 
-import { Endge } from '@endge/core'
+import { AuthInteractionRequiredError, Endge } from '@endge/core'
+import type { AuthProfileSchema, OidcBrowserSession_Service } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -19,6 +21,8 @@ import { readRuntimePreviewHistory, writeRuntimePreviewHistory } from '@/feature
 import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 import { findRuntimePreviewOccurrences } from '@/features/endge-ide/model/runtime-preview/runtime-preview-occurrence'
+import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/model/runtime-preview/runtime-preview-auth'
+import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 
 /** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
 export class EndgeIDERuntimePreview_Module {
@@ -27,6 +31,7 @@ export class EndgeIDERuntimePreview_Module {
   public readonly selectedEntry = computed(() => this.get(this.selectedEntryKey.value))
   public readonly selectedNode = computed(() => this.selectedEntry.value?.selectedNode.value ?? null)
   public readonly occurrencePrompt = shallowRef<RuntimePreviewOccurrencePrompt | null>(null)
+  public readonly authPrompt = shallowRef<RuntimePreviewAuthPrompt | null>(null)
   public readonly treeExpansionRequest = shallowRef<{
     id: number
     preset: RuntimeTreeExpansionPreset
@@ -36,9 +41,12 @@ export class EndgeIDERuntimePreview_Module {
   private _runtimeOff: (() => void) | null = null
   private _scopeOff: (() => void) | null = null
   private _surfaceOff: (() => void) | null = null
+  private _authInteractionOff: (() => void) | null = null
   private _initialized = false
   private _treeExpansionRequestId = 0
   private _resolveOccurrencePrompt: ((choice: string | 'standalone' | null) => void) | null = null
+  private _resolveAuthPrompt: ((authorized: boolean) => void) | null = null
+  private readonly _oidcSources = new Map<string, OidcBrowserSession_Service>()
 
   public constructor(private readonly _context: EndgeIDEContextPort) {}
 
@@ -50,6 +58,7 @@ export class EndgeIDERuntimePreview_Module {
       beforeContextReset: () => this.disposeAll(),
       afterContextBoot: () => this._restoreRememberedEntries(),
     })
+    this._authInteractionOff = Endge.auth.onInteractionRequired(error => this._handleInteractionRequired(error))
     this._restoreRememberedEntries()
     this._initialized = true
   }
@@ -58,9 +67,11 @@ export class EndgeIDERuntimePreview_Module {
     this._runtimeOff?.()
     this._scopeOff?.()
     this._surfaceOff?.()
+    this._authInteractionOff?.()
     this._runtimeOff = null
     this._scopeOff = null
     this._surfaceOff = null
+    this._authInteractionOff = null
     this._initialized = false
     void this.disposeAll()
   }
@@ -92,6 +103,16 @@ export class EndgeIDERuntimePreview_Module {
       toast.error(validation.message ?? 'Runtime Preview недоступен', { description: validation.description })
       return false
     }
+    try {
+      if (!await this._ensureProfiles(collectRuntimePreviewAuthProfiles(rawTarget)))
+        return false
+    }
+    catch (error) {
+      toast.error('Не удалось подготовить авторизацию Runtime Preview', {
+        description: error instanceof Error ? error.message : String(error),
+      })
+      return false
+    }
 
     const key = runtimePreviewKey(target)
     let instance = this._instances.get(key)
@@ -108,6 +129,9 @@ export class EndgeIDERuntimePreview_Module {
       return true
     }
     catch (error) {
+      if (error instanceof AuthInteractionRequiredError) {
+        return false
+      }
       toast.error('Не удалось запустить Runtime Preview', {
         description: error instanceof Error ? error.message : String(error),
       })
@@ -176,6 +200,50 @@ export class EndgeIDERuntimePreview_Module {
     this._resolveOccurrencePrompt = null
     this.occurrencePrompt.value = null
     resolve?.(choice)
+  }
+
+  /** Выполняет следующий OIDC popup исключительно из пользовательского клика. */
+  public async authorizeNextProfile(): Promise<void> {
+    const prompt = this.authPrompt.value
+    if (!prompt || prompt.pending)
+      return
+    const profile = prompt.profiles[prompt.currentIndex]
+    const source = profile ? this._oidcSources.get(profile.identity) : null
+    if (!profile || !source)
+      return
+    this.authPrompt.value = { ...prompt, pending: true, error: null }
+    try {
+      await source.loginPopup()
+      Endge.auth.session.connect(profile.identity, source)
+      const token = await Endge.auth.session.ensureProfile(profile)
+      if (!token)
+        throw new Error(`OIDC session не создана: ${profile.identity}`)
+      const nextIndex = prompt.currentIndex + 1
+      if (nextIndex >= prompt.profiles.length) {
+        const resolve = this._resolveAuthPrompt
+        this._resolveAuthPrompt = null
+        this.authPrompt.value = null
+        resolve?.(true)
+      }
+      else {
+        this.authPrompt.value = { profiles: prompt.profiles, currentIndex: nextIndex, pending: false, error: null }
+      }
+    }
+    catch (error) {
+      this.authPrompt.value = {
+        ...prompt,
+        pending: false,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
+  }
+
+  /** Отменяет preflight и не создаёт частично запущенный Runtime Preview. */
+  public cancelAuthorization(): void {
+    const resolve = this._resolveAuthPrompt
+    this._resolveAuthPrompt = null
+    this.authPrompt.value = null
+    resolve?.(false)
   }
 
   /** Escape navigation: leave Runtime Preview without stopping its runtimes. */
@@ -322,6 +390,7 @@ export class EndgeIDERuntimePreview_Module {
 
   public async disposeAll(): Promise<void> {
     this.chooseOccurrence(null)
+    this.cancelAuthorization()
     const instances = [...this._instances.values()]
     this._instances.clear()
     this.entries.value = []
@@ -357,6 +426,75 @@ export class EndgeIDERuntimePreview_Module {
     this.occurrencePrompt.value = prompt
     return new Promise((resolve) => {
       this._resolveOccurrencePrompt = resolve
+    })
+  }
+
+  private async _ensureProfiles(profiles: AuthProfileSchema[]): Promise<boolean> {
+    const missing: AuthProfileSchema[] = []
+    for (const profile of profiles) {
+      if (profile.adapterId !== 'oidc') {
+        await Endge.auth.session.ensureProfile(profile)
+        continue
+      }
+      const source = this._oidcSource(profile)
+      this._oidcSources.set(profile.identity, source)
+      Endge.auth.session.connect(profile.identity, source)
+      if (await source.hasSession())
+        await Endge.auth.session.ensureProfile(profile)
+      else
+        missing.push(profile)
+    }
+    if (missing.length === 0)
+      return true
+    this.cancelAuthorization()
+    this.authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
+    return new Promise(resolve => { this._resolveAuthPrompt = resolve })
+  }
+
+  private _oidcSource(profile: AuthProfileSchema): OidcBrowserSession_Service {
+    const callback = getConfiguratorOidcPopupCallbackURL()
+    return Endge.auth.createOidcSessionSource(profile, {
+      redirectUri: callback,
+      popupRedirectUri: callback,
+      postLogoutRedirectUri: new URL(callback).origin,
+      flow: 'popup',
+    })
+  }
+
+  private async _authorizeAndRetry(
+    profileIdentity: string,
+    instance: RuntimePreviewInstance,
+  ): Promise<void> {
+    const profile = Endge.auth.profiles.requireActive(profileIdentity)
+    if (profile.adapterId !== 'oidc') {
+      await Endge.auth.session.ensureProfile(profile)
+      await instance.restart()
+      return
+    }
+    const source = this._oidcSources.get(profile.identity) ?? this._oidcSource(profile)
+    this._oidcSources.set(profile.identity, source)
+    Endge.auth.session.connect(profile.identity, source)
+    await source.loginPopup()
+    const token = await Endge.auth.session.ensureProfile(profile)
+    if (!token)
+      throw new Error(`OIDC session не создана: ${profile.identity}`)
+    await instance.restart()
+  }
+
+  /** Handles auth requested by a Query that appeared after Preview startup. */
+  private _handleInteractionRequired(error: AuthInteractionRequiredError): void {
+    const instance = this.selectedEntry.value
+    if (!instance)
+      return
+    toast.error('Для запроса требуется авторизация', {
+      description: error.message,
+      action: {
+        label: 'Авторизоваться и повторить',
+        onClick: () => void this._authorizeAndRetry(error.profileIdentity, instance)
+          .catch(authError => toast.error('Не удалось завершить вход', {
+            description: authError instanceof Error ? authError.message : String(authError),
+          })),
+      },
     })
   }
 }

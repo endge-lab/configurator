@@ -21,6 +21,7 @@ const backendConnectionFailed = Configurator.status === 'backend-connection-fail
 const authenticationRequired = Configurator.status === 'authentication-required'
 
 const route = useRoute()
+const isOidcPopupCallback = computed(() => route.name === 'oidc-popup-callback')
 const error = ref<Error | null>(null)
 const errorInfo = ref<string>('')
 const errorComponentName = ref<string>('')
@@ -83,7 +84,8 @@ onErrorCaptured((err, instance, info) => {
 </script>
 
 <template>
-  <AuthenticationRequiredGate v-if="authenticationRequired" />
+  <RouterView v-if="isOidcPopupCallback" />
+  <AuthenticationRequiredGate v-else-if="authenticationRequired" />
   <BackendConnectionFailureGate v-else-if="backendConnectionFailed" />
   <WorkspaceSelectionGate v-else-if="workspaceSelectionRequired" />
   <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">

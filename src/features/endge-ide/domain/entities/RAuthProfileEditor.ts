@@ -1,4 +1,4 @@
-import type { AuthProfileAdapterId, AuthProfilePersist, RAuthProfile } from '@endge/core'
+import type { AuthProfileAdapterId, AuthSessionStorage, RAuthProfile } from '@endge/core'
 
 export class RAuthProfileEditor {
   id!: string | number
@@ -7,8 +7,9 @@ export class RAuthProfileEditor {
   description: string = ''
   adapterId: AuthProfileAdapterId = 'bearer'
   configText: string = '{}'
-  credentialRefsText: string = '{}'
-  persist: AuthProfilePersist = 'memory'
+  credentialsText: string = '{}'
+  sessionStorage: AuthSessionStorage = 'memory'
+  persistRefreshToken: boolean = false
   active: boolean = true
 
   fillFromSource(source: RAuthProfile): void {
@@ -18,23 +19,30 @@ export class RAuthProfileEditor {
     this.description = String(source.description ?? '')
     this.adapterId = source.adapterId ?? 'bearer'
     this.configText = stringify(source.config ?? {})
-    this.credentialRefsText = stringify(source.credentialRefs ?? {})
-    this.persist = source.persist ?? (this.adapterId === 'bearer' ? 'memory' : 'localStorage')
+    this.credentialsText = stringify(source.credentials ?? {})
+    this.sessionStorage = source.session?.storage ?? 'memory'
+    this.persistRefreshToken = source.session?.persistRefreshToken === true
     this.active = source.active !== false
   }
 
   updateSource(source: RAuthProfile): void {
-    source.id = this.id
+    source.id = this.id as number
     source.identity = this.identity
     source.name = this.displayName
     source.displayName = this.displayName
     source.description = this.description || null
     source.adapterId = this.adapterId
     source.config = parseObject(this.configText)
-    source.credentialRefs = parseStringObject(this.credentialRefsText)
-    source.persist = this.persist
+    source.credentials = parseStringObject(this.credentialsText)
+    source.session = supportsSession(this.adapterId)
+      ? { storage: this.sessionStorage, persistRefreshToken: this.persistRefreshToken }
+      : undefined
     source.active = this.active !== false
   }
+}
+
+function supportsSession(adapterId: string): boolean {
+  return adapterId === 'oidc' || adapterId === 'oauth2-client-credentials'
 }
 
 function stringify(value: unknown): string {
@@ -51,10 +59,10 @@ function parseObject(value: string): Record<string, unknown> {
   }
 }
 
-function parseStringObject(value: string): Record<string, string | undefined> {
+function parseStringObject(value: string): Record<string, string> {
   const raw = parseObject(value)
-  const out: Record<string, string | undefined> = {}
+  const out: Record<string, string> = {}
   for (const [key, v] of Object.entries(raw))
-    out[key] = v == null ? undefined : String(v)
+    out[key] = v == null ? '' : String(v)
   return out
 }

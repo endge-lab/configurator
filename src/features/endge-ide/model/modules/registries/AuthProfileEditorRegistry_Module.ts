@@ -3,7 +3,9 @@ import type { Component } from 'vue'
 import { markRaw } from 'vue'
 
 import BearerAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/BearerAuthProfileEditor.vue'
-import KeycloakAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/KeycloakAuthProfileEditor.vue'
+import BasicAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/BasicAuthProfileEditor.vue'
+import OAuth2ClientCredentialsAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/OAuth2ClientCredentialsAuthProfileEditor.vue'
+import OidcAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/OidcAuthProfileEditor.vue'
 
 export interface AuthProfileAdapterEditorRegistration {
   id: string
@@ -11,28 +13,38 @@ export interface AuthProfileAdapterEditorRegistration {
   editor: Component
   defaults?: {
     config?: Record<string, unknown>
-    credentialRefs?: Record<string, unknown>
+    credentials?: Record<string, unknown>
   }
 }
 
 const BUILTIN_AUTH_PROFILE_EDITORS: AuthProfileAdapterEditorRegistration[] = [
   {
-    id: 'keycloak',
-    label: 'Keycloak',
-    editor: KeycloakAuthProfileEditor,
+    id: 'oidc',
+    label: 'OIDC',
+    editor: OidcAuthProfileEditor,
     defaults: {
       config: {
-        loginMode: 'interactive',
-        baseUrl: '',
-        clientId: '',
-        scope: 'openid profile email',
-        refreshSkewMs: 30_000,
-        tokenPath: '/token',
-        logoutPath: '/logout',
-        userinfoPath: '/userinfo',
+        issuer: '{OIDC_ISSUER}',
+        clientId: 'endge-configurator',
+        scopes: ['openid', 'profile'],
       },
-      credentialRefs: {},
+      credentials: {},
     },
+  },
+  {
+    id: 'oauth2-client-credentials',
+    label: 'OAuth2 Client Credentials',
+    editor: OAuth2ClientCredentialsAuthProfileEditor,
+    defaults: {
+      config: { tokenEndpoint: '', clientId: '', scopes: [], clientAuthentication: 'client_secret_basic' },
+      credentials: { clientSecret: '' },
+    },
+  },
+  {
+    id: 'basic',
+    label: 'Basic',
+    editor: BasicAuthProfileEditor,
+    defaults: { config: {}, credentials: { username: '', password: '' } },
   },
   {
     id: 'bearer',
@@ -40,7 +52,7 @@ const BUILTIN_AUTH_PROFILE_EDITORS: AuthProfileAdapterEditorRegistration[] = [
     editor: BearerAuthProfileEditor,
     defaults: {
       config: {},
-      credentialRefs: { token: '' },
+      credentials: { token: '' },
     },
   },
 ]

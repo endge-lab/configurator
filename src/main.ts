@@ -6,6 +6,7 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
 import { configuratorSessionBindingKey } from '@/features/configurator-session'
+import { getCanonicalLocalhostURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 import '@/features/endge-ide/source-editor/adapters/monaco/configure-monaco-workers'
 import { i18n } from '@/i18n'
 import App from './App.vue'
@@ -35,7 +36,9 @@ async function mountApplication(): Promise<void> {
   try {
     // Initial navigation запускает Configurator и является Endge boot-барьером.
     await router.isReady()
+    const isOidcPopupCallback = router.currentRoute.value.name === 'oidc-popup-callback'
     if (!Configurator.isReady
+      && !isOidcPopupCallback
       && Configurator.status !== 'authentication-required'
       && Configurator.status !== 'workspace-selection-required'
       && Configurator.status !== 'backend-connection-failed') {
@@ -46,6 +49,8 @@ async function mountApplication(): Promise<void> {
     app.mount('#app')
   }
   catch (error: unknown) {
+    if (getCanonicalLocalhostURL())
+      return
     console.error(`[App] Application bootstrap failed: ${error instanceof Error ? error.message : String(error)}`)
     const root = document.getElementById('app')
     if (root) {

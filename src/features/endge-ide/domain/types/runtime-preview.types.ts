@@ -1,4 +1,5 @@
 import type {
+  AuthProfileSchema,
   ComponentSFCRuntimeHost,
   CompositionRuntimeHost,
   DomainDocumentType,
@@ -7,6 +8,13 @@ import type {
   RuntimeHostInputSource,
   StoreRuntimeHost,
 } from '@endge/core'
+
+export interface RuntimePreviewAuthPrompt {
+  profiles: AuthProfileSchema[]
+  currentIndex: number
+  pending: boolean
+  error: string | null
+}
 
 export const ENDGE_IDE_RUNTIME_TREE_WIDGET_ID = 'runtime-tree'
 export const LEGACY_ENDGE_PREVIEW_WIDGET_ID = 'preview-runtime-tree'

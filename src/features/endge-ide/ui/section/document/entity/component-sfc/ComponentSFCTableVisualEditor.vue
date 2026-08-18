@@ -211,6 +211,11 @@ const tableSection = useSmartTabSelection(
   'general',
   ['general', 'inputs', 'events', 'ports', 'selection', 'paging', 'visibility', 'pinning', 'sorting', 'menus', 'metadata'] as const,
 )
+const columnSection = useSmartTabSelection(
+  'component-sfc.visual.column-section',
+  'general',
+  ['general', 'data', 'events', 'sorting'] as const,
+)
 const activeMenuKind = useSmartTabSelection(
   'component-sfc.visual.table-menu-kind',
   'column',
@@ -228,6 +233,12 @@ const tableSections = [
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
   { id: 'menus', label: 'Меню', icon: SquareMenu },
   { id: 'metadata', label: 'Метаданные', icon: FileJson2 },
+] as const
+const columnSections = [
+  { id: 'general', label: 'Основное', icon: Settings2 },
+  { id: 'data', label: 'Данные', icon: Blocks },
+  { id: 'events', label: 'События', icon: Radio },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
 ] as const
 const inputWorkspaceState = useSmartTabViewState(
   'component-sfc.visual.table-input-workspace',
@@ -760,6 +771,12 @@ function updateInputPanelSizes(sizes: number[]): void {
 function updateTableSection(value: string | null): void {
   if (tableSections.some(section => section.id === value)) {
     tableSection.value = value as typeof tableSection.value
+  }
+}
+
+function updateColumnSection(value: string | null): void {
+  if (columnSections.some(section => section.id === value)) {
+    columnSection.value = value as typeof columnSection.value
   }
 }
 
@@ -2576,9 +2593,8 @@ onBeforeUnmount(() => {
       </TabsContent>
 
       <TabsContent value="columns" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
-        <ScrollArea class="h-full">
-          <div class="space-y-3 pb-3 pr-2">
-            <Card class="editor-panel gap-0 overflow-hidden py-0">
+        <div class="flex h-full min-h-0 flex-col gap-3 pr-2">
+          <Card class="editor-panel shrink-0 gap-0 overflow-hidden py-0">
               <div class="flex min-h-16 items-start gap-2 p-3">
                 <div class="flex flex-1 flex-wrap items-center gap-2">
                   <template
@@ -2680,7 +2696,7 @@ onBeforeUnmount(() => {
                   </TooltipProvider>
                 </div>
               </div>
-            </Card>
+          </Card>
 
             <Teleport to="body">
               <template v-if="columnContextMenu && contextMenuColumn">
@@ -2788,13 +2804,46 @@ onBeforeUnmount(() => {
               </AlertDialogContent>
             </AlertDialog>
 
-            <Card class="editor-panel gap-0 overflow-hidden py-0">
-              <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
-                Выберите колонку выше для настройки.
-              </div>
+            <Tabs
+              v-model="columnSection"
+              orientation="vertical"
+              class="editor-panel grid min-h-0 flex-1 overflow-hidden rounded-xl border border-border/80 lg:grid-cols-[12rem_minmax(0,1fr)]"
+            >
+              <aside class="hidden min-h-0 overflow-hidden border-r border-border/70 bg-muted/20 lg:flex lg:flex-col">
+                <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+                  <TabsTrigger
+                    v-for="section in columnSections"
+                    :key="section.id"
+                    :value="section.id"
+                    class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                  >
+                    <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                    <span class="truncate">{{ section.label }}</span>
+                  </TabsTrigger>
+                </TabsList>
+              </aside>
 
-              <template v-else>
-                <section class="border-b px-5 py-5">
+              <main class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background/35">
+                <div class="border-b border-border/70 p-3 lg:hidden">
+                  <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
+                    <SelectTrigger class="editor-control w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="section in columnSections" :key="section.id" :value="section.id">
+                        {{ section.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <ScrollArea class="min-h-0 flex-1">
+                  <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
+                    Выберите колонку выше для настройки.
+                  </div>
+
+                  <template v-else>
+                <section v-show="columnSection === 'general'" class="px-5 py-5">
                   <div class="mb-3 text-xs font-medium text-muted-foreground">
                     Выбранная колонка
                   </div>
@@ -2837,7 +2886,7 @@ onBeforeUnmount(() => {
                   </div>
                 </section>
 
-                <section class="border-b px-5 py-4">
+                <section v-show="columnSection === 'data'" class="px-5 py-4">
                   <div class="mb-3 flex items-center justify-between gap-3">
                     <h3 class="text-sm font-semibold">
                       Данные
@@ -3069,13 +3118,15 @@ onBeforeUnmount(() => {
                   </div>
                 </section>
 
-                <ComponentSFCCellInteractionsEditor
-                  :model-value="selectedColumn.interactions"
-                  @update="updateSelectedCellInteractions"
-                  @open-source="openSelectedColumnSource"
-                />
+                <div v-show="columnSection === 'events'">
+                  <ComponentSFCCellInteractionsEditor
+                    :model-value="selectedColumn.interactions"
+                    @update="updateSelectedCellInteractions"
+                    @open-source="openSelectedColumnSource"
+                  />
+                </div>
 
-                <section class="border-b bg-background/15 px-5 py-4">
+                <section v-show="columnSection === 'sorting'" class="bg-background/15 px-5 py-4">
                   <div class="mb-3 flex items-center gap-1.5">
                     <h3 class="text-sm font-semibold">
                       Сортировка
@@ -3320,10 +3371,11 @@ onBeforeUnmount(() => {
                     </aside>
                   </div>
                 </section>
-              </template>
-            </Card>
-          </div>
-        </ScrollArea>
+                  </template>
+                </ScrollArea>
+              </main>
+            </Tabs>
+        </div>
       </TabsContent>
     </Tabs>
   </div>

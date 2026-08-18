@@ -2,8 +2,9 @@
 import type { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor'
 import type {
   AuthProfileAdapterId,
-  AuthProfilePersist,
   AuthProfileSchema,
+  AuthProfileTestResult,
+  AuthSessionStorage,
 } from '@endge/core'
 
 import { Endge } from '@endge/core'
@@ -19,9 +20,11 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -31,8 +34,6 @@ const props = defineProps<{
 const editor = computed<RAuthProfileEditor | null>(() => props.tabContext?.editor ?? null)
 const adapterEditors = EndgeIDE.authProfileEditors.list()
 const testLoading = ref(false)
-const testUsername = ref('')
-const testPassword = ref('')
 
 const adapterModel = computed<AuthProfileAdapterId>({
   get: () => editor.value?.adapterId ?? 'bearer',
@@ -42,13 +43,15 @@ const adapterModel = computed<AuthProfileAdapterId>({
   },
 })
 
-const persistModel = computed<AuthProfilePersist>({
-  get: () => editor.value?.persist ?? 'memory',
+const storageModel = computed<AuthSessionStorage>({
+  get: () => editor.value?.sessionStorage ?? 'memory',
   set: (value) => {
     if (editor.value)
-      editor.value.persist = adapterModel.value === 'bearer' ? 'memory' : value
+      editor.value.sessionStorage = value
   },
 })
+
+const supportsSession = computed(() => adapterModel.value === 'oidc' || adapterModel.value === 'oauth2-client-credentials')
 
 const selectedAdapterEditor = computed(() => EndgeIDE.authProfileEditors.get(adapterModel.value))
 
@@ -60,17 +63,13 @@ const configModel = computed<Record<string, unknown>>({
   },
 })
 
-const credentialRefsModel = computed<Record<string, unknown>>({
-  get: () => parseObject(editor.value?.credentialRefsText ?? '{}'),
+const credentialsModel = computed<Record<string, unknown>>({
+  get: () => parseObject(editor.value?.credentialsText ?? '{}'),
   set: (value) => {
     if (editor.value)
-      editor.value.credentialRefsText = stringify(value)
+      editor.value.credentialsText = stringify(value)
   },
 })
-
-const isInteractiveKeycloak = computed(() => (
-  adapterModel.value === 'keycloak' && configModel.value.loginMode !== 'service'
-))
 
 watch(
   () => editor.value?.adapterId,
@@ -82,21 +81,19 @@ watch(
       return
 
     const configDefaults = structuredClone(registration.defaults.config ?? {})
-    const credentialDefaults = structuredClone(registration.defaults.credentialRefs ?? {})
+    const credentialDefaults = structuredClone(registration.defaults.credentials ?? {})
     if (previousAdapterId == null) {
       configModel.value = mergeMissing(configModel.value, configDefaults)
-      credentialRefsModel.value = mergeMissing(credentialRefsModel.value, credentialDefaults)
+      credentialsModel.value = mergeMissing(credentialsModel.value, credentialDefaults)
     }
     else if (previousAdapterId !== adapterId) {
       configModel.value = configDefaults
-      credentialRefsModel.value = credentialDefaults
-      testUsername.value = ''
-      testPassword.value = ''
+      credentialsModel.value = credentialDefaults
     }
-    if (adapterId === 'bearer')
-      persistModel.value = 'memory'
-    else if (previousAdapterId && previousAdapterId !== adapterId)
-      persistModel.value = 'localStorage'
+    if (previousAdapterId && previousAdapterId !== adapterId && supportsSession.value) {
+      storageModel.value = 'memory'
+      editor.value.persistRefreshToken = false
+    }
   },
   { immediate: true },
 )
@@ -115,17 +112,22 @@ async function testAuthProfile(): Promise<void> {
   testLoading.value = true
   try {
     const profile = buildProfileSchema(current)
-    const result = await Endge.auth.profiles.test(profile, {
-      credentials: isInteractiveKeycloak.value
-        ? { username: testUsername.value, password: testPassword.value }
-        : undefined,
-    })
+    const result = profile.adapterId === 'oidc'
+      ? await testOidcProfile(profile)
+      : await Endge.auth.profiles.test(profile)
 
-    toast.success('Авторизация выполнена', {
-      description: result.context.subject
-        ? `Пользователь: ${result.context.subject}`
-        : 'Профиль успешно проверен в изолированной сессии.',
-    })
+    if (profile.adapterId === 'basic' || profile.adapterId === 'bearer') {
+      toast.success('Заголовок сформирован', {
+        description: 'Credentials разрешены, но внешний сервис этим тестом не проверялся.',
+      })
+    }
+    else {
+      toast.success('Авторизация выполнена', {
+        description: result.context.subject
+          ? `Пользователь: ${result.context.subject}`
+          : 'Профиль успешно проверен в изолированной сессии.',
+      })
+    }
   }
   catch (error: any) {
     const message = normalizeErrorMessage(error)
@@ -135,6 +137,33 @@ async function testAuthProfile(): Promise<void> {
   finally {
     testLoading.value = false
   }
+}
+
+async function testOidcProfile(profile: AuthProfileSchema): Promise<AuthProfileTestResult> {
+  if (!profile.session)
+    throw new Error('OIDC session policy is required')
+  const callback = getConfiguratorOidcPopupCallbackURL()
+  const source = Endge.auth.createOidcSessionSource(profile, {
+    redirectUri: callback,
+    popupRedirectUri: callback,
+    postLogoutRedirectUri: new URL(callback).origin,
+    flow: 'popup',
+  })
+  const token = await source.loginPopup()
+  const userInfo = await source.loadUserInfo()
+  const subject = String(userInfo?.sub ?? '').trim()
+  return {
+    authenticated: Boolean(token.accessToken),
+    profileIdentity: profile.identity,
+    expiresAt: token.accessExpiresAt,
+    context: { authenticated: true, profileIdentity: profile.identity, ...(subject ? { subject } : {}) },
+    userInfo,
+  }
+}
+
+function setActive(value: unknown): void {
+  if (editor.value)
+    editor.value.active = value === true
 }
 
 function parseObject(value: string): Record<string, unknown> {
@@ -174,18 +203,18 @@ function buildProfileSchema(source: RAuthProfileEditor): AuthProfileSchema {
     description: source.description || null,
     adapterId: source.adapterId,
     config: parseObject(source.configText),
-    credentialRefs: parseStringObject(source.credentialRefsText),
-    persist: source.persist,
+    credentials: parseStringObject(source.credentialsText),
+    ...(supportsSession.value ? { session: { storage: source.sessionStorage, persistRefreshToken: source.persistRefreshToken } } : {}),
     active: source.active !== false,
     meta: { test: true },
   }
 }
 
-function parseStringObject(value: string): Record<string, string | undefined> {
+function parseStringObject(value: string): Record<string, string> {
   const raw = parseObject(value)
-  const out: Record<string, string | undefined> = {}
+  const out: Record<string, string> = {}
   for (const [key, v] of Object.entries(raw))
-    out[key] = v == null ? undefined : String(v)
+    out[key] = v == null ? '' : String(v)
   return out
 }
 
@@ -283,10 +312,10 @@ function normalizeErrorMessage(error: unknown): string {
               </Select>
             </div>
 
-            <div class="min-w-0 space-y-1">
+            <div v-if="supportsSession" class="min-w-0 space-y-1">
               <Label class="text-xs text-muted-foreground">Хранение</Label>
-              <Select v-model="persistModel">
-                <SelectTrigger class="w-full" :disabled="adapterModel === 'bearer'">
+              <Select v-model="storageModel">
+                <SelectTrigger class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,28 +324,21 @@ function normalizeErrorMessage(error: unknown): string {
                   <SelectItem value="memory">memory</SelectItem>
                 </SelectContent>
               </Select>
+              <p class="text-xs text-muted-foreground">memory — до перезагрузки, sessionStorage — до закрытия вкладки, localStorage — между запусками.</p>
             </div>
+          </div>
+
+          <div v-if="supportsSession" class="space-y-2 rounded-md border bg-muted/30 p-3">
+            <div class="flex items-center justify-between gap-4"><Label class="text-sm">Сохранять refresh token</Label><Switch v-model:checked="editor.persistRefreshToken" /></div>
+            <p class="text-xs text-destructive">Включайте только осознанно: refresh token будет доступен JavaScript-коду и browser storage.</p>
           </div>
 
           <component
             :is="selectedAdapterEditor.editor"
             v-if="selectedAdapterEditor?.editor"
             v-model:config="configModel"
-            v-model:credential-refs="credentialRefsModel"
+            v-model:credentials="credentialsModel"
           />
-          <div v-if="isInteractiveKeycloak" class="grid gap-3 border-t pt-4 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs text-muted-foreground">Тестовый username</Label>
-              <Input v-model="testUsername" autocomplete="username" />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs text-muted-foreground">Тестовый password</Label>
-              <Input v-model="testPassword" type="password" autocomplete="current-password" />
-            </div>
-            <div class="text-xs text-muted-foreground sm:col-span-2">
-              Значения используются только для текущего теста и не записываются в документ.
-            </div>
-          </div>
         </Card>
 
         <Card class="min-w-0 space-y-4 p-4 xl:sticky xl:top-5 xl:self-start">
@@ -348,7 +370,7 @@ function normalizeErrorMessage(error: unknown): string {
             <div class="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
               <Checkbox
                 :checked="editor.active"
-                @update:checked="value => { editor.active = value === true }"
+                @update:checked="setActive"
               />
               <Label class="text-sm">Активен</Label>
             </div>

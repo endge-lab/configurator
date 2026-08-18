@@ -16,10 +16,20 @@ const mocks = vi.hoisted(() => ({
     afterContextBoot?: () => Promise<void> | void
   } | null,
   leftArea: { expanded: true, activeWidget: 'runtime-tree' },
+  authInteractionListener: null as ((error: Error & { profileIdentity: string }) => void) | null,
 }))
 
 vi.mock('@endge/core', () => ({
+  AuthInteractionRequiredError: class AuthInteractionRequiredError extends Error {
+    public constructor(public readonly profileIdentity: string) { super('Authentication required') }
+  },
   Endge: {
+    auth: {
+      onInteractionRequired: vi.fn((listener) => {
+        mocks.authInteractionListener = listener
+        return () => { mocks.authInteractionListener = null }
+      }),
+    },
     runtime: {
       subscribe: vi.fn(() => vi.fn()),
       scopes: { subscribe: vi.fn(() => vi.fn()) },
@@ -27,8 +37,12 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
+vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-auth', () => ({
+  collectRuntimePreviewAuthProfiles: () => [],
+}))
+
 vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/components/layouts/grid', () => ({
+vi.mock('@/components/layouts/grid/layout', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
 }))
@@ -98,6 +112,7 @@ describe('endgeIDE Runtime Preview manager', () => {
     mocks.surfaceLifecycle = null
     mocks.leftArea.expanded = true
     mocks.leftArea.activeWidget = 'runtime-tree'
+    mocks.authInteractionListener = null
   })
 
   it('passes the current editor draft to the stable runtime entry', async () => {
@@ -106,7 +121,7 @@ describe('endgeIDE Runtime Preview manager', () => {
 
     await manager.launch({ entityType: 'component-sfc', identity: 'table', draft })
 
-    expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft)
+    expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft, undefined)
   })
 
   it('returns from Runtime Tree to Project without disposing runtimes', async () => {
@@ -312,6 +327,21 @@ describe('endgeIDE Runtime Preview manager', () => {
     await mocks.surfaceLifecycle?.afterContextBoot?.()
     expect(manager.entries.value.map(item => item.key)).toEqual(['store:remembered'])
     expect(mocks.instances.at(-1).launch).not.toHaveBeenCalled()
+    manager.reset()
+  })
+
+  it('offers authorization and retry when a live Query requires interaction after launch', async () => {
+    const manager = createManager()
+    manager.init()
+    await manager.launch({ entityType: 'store', identity: 'flights' })
+
+    mocks.authInteractionListener?.(Object.assign(new Error('Authentication required'), {
+      profileIdentity: 'keycloak-default',
+    }))
+
+    expect(mocks.toastError).toHaveBeenCalledWith('Для запроса требуется авторизация', expect.objectContaining({
+      action: expect.objectContaining({ label: 'Авторизоваться и повторить' }),
+    }))
     manager.reset()
   })
 })

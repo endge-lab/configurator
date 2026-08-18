@@ -119,7 +119,7 @@ export class ConfiguratorContext_Module {
     const tenantIdentity = String(import.meta.env.VITE_ENDGE_TENANT_IDENTITY || '').trim()
     const projectIdentity = String(import.meta.env.VITE_ENDGE_PROJECT_IDENTITY || '').trim()
     const environmentIdentity = String(import.meta.env.VITE_ENDGE_ENVIRONMENT_IDENTITY || '').trim()
-    const authCredentials = readAuthCredentialRecord(import.meta.env)
+    const authVariables = readAuthVariableRecord(import.meta.env)
     const commonContext = {
       scope: workspaceIdentity ? { workspaceIdentity } : {},
       context: {
@@ -129,7 +129,9 @@ export class ConfiguratorContext_Module {
         ...context,
       },
       vars: {
+        OIDC_ISSUER: import.meta.env.VITE_OIDC_ISSUER,
         ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
+        ...authVariables,
         // Application env передаётся в ядро явно: @endge/core собирается отдельно
         // и не должен читать import.meta.env приложения из своего library bundle.
         SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN,
@@ -140,7 +142,6 @@ export class ConfiguratorContext_Module {
         adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
       },
       auth: {
-        resolveCredential: ({ ref }: { ref: string }) => authCredentials[ref],
         storageNamespace: backendConfig.activeBackendURL,
       },
     }
@@ -314,17 +315,17 @@ export class ConfiguratorContext_Module {
 }
 
 /** Допускает для auth только явно выделенный VITE_ENDGE_AUTH_* namespace host-приложения. */
-function readAuthCredentialRecord(env: ImportMetaEnv): Readonly<Record<string, string>> {
-  const credentials: Record<string, string> = {}
+function readAuthVariableRecord(env: ImportMetaEnv): Readonly<Record<string, string>> {
+  const variables: Record<string, string> = {}
   for (const [key, rawValue] of Object.entries(env as unknown as Record<string, unknown>)) {
     if (!key.startsWith('VITE_ENDGE_AUTH_') || typeof rawValue !== 'string')
       continue
     const ref = key.slice('VITE_ENDGE_AUTH_'.length).trim()
     const value = rawValue.trim()
     if (ref && value)
-      credentials[ref] = value
+      variables[ref] = value
   }
-  return credentials
+  return variables
 }
 
 function sameContext(left: Partial<EndgeExecutionContext>, right: Partial<EndgeExecutionContext>): boolean {
