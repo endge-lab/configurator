@@ -23,12 +23,12 @@ const runParallelCommand = join(
 )
 const packages = [
   localPackage('@endge/codegen', '../../../packages/@endge-codegen/'),
-  localPackage('@endge/computation-sandbox', '../../../packages/@endge-computation-sandbox/'),
-  localPackage('@endge/core', '../../../packages/@endge-core/'),
-  localPackage('@endge/raph', '../../../packages/@endge-raph/'),
-  localPackage('@endge/ui-vue', '../../../packages/@endge-ui-vue/'),
-  localPackage('@endge/ui-vue-shadcn', '../../../packages/@endge-ui-vue-shadcn/'),
   localPackage('@endge/utils', '../../../packages/@endge-utils/'),
+  localPackage('@endge/raph', '../../../packages/@endge-raph/'),
+  localPackage('@endge/core', '../../../packages/@endge-core/'),
+  localPackage('@endge/ui-vue', '../../../packages/@endge-ui-vue/'),
+  localPackage('@endge/computation-sandbox', '../../../packages/@endge-computation-sandbox/'),
+  localPackage('@endge/ui-vue-shadcn', '../../../packages/@endge-ui-vue-shadcn/'),
 ]
 
 let child = null
@@ -41,7 +41,7 @@ try {
   }
 
   for (const pkg of packages)
-    verifyPackage(pkg)
+    await ensurePackageBuilt(pkg)
 
   linkLocalPackages()
 
@@ -97,7 +97,7 @@ function localPackage(name, relativePath) {
   }
 }
 
-function verifyPackage(pkg) {
+async function ensurePackageBuilt(pkg) {
   const manifestPath = join(pkg.directory, 'package.json')
   if (!existsSync(manifestPath)) {
     throw new Error(`Local package "${pkg.name}" was not found at ${pkg.directory}`)
@@ -109,9 +109,36 @@ function verifyPackage(pkg) {
   }
 
   const entry = manifest.exports?.['.']?.import ?? manifest.module ?? manifest.main
-  if (typeof entry === 'string' && !existsSync(join(pkg.directory, entry))) {
-    throw new Error(`Local package "${pkg.name}" is not built.`)
-  }
+  if (typeof entry !== 'string' || existsSync(join(pkg.directory, entry)))
+    return
+
+  if (typeof manifest.scripts?.build !== 'string')
+    throw new Error(`Local package "${pkg.name}" is not built and has no build script.`)
+
+  console.log(`Building missing local package "${pkg.name}"...`)
+  await runCommand('pnpm', ['--dir', pkg.directory, 'run', 'build'])
+
+  if (!existsSync(join(pkg.directory, entry)))
+    throw new Error(`Local package "${pkg.name}" build completed without creating ${entry}.`)
+}
+
+function runCommand(command, args) {
+  return new Promise((resolve, reject) => {
+    const buildProcess = spawn(command, args, {
+      cwd: appRoot,
+      env: process.env,
+      shell: process.platform === 'win32',
+      stdio: 'inherit',
+    })
+
+    buildProcess.once('error', reject)
+    buildProcess.once('exit', (code, signal) => {
+      if (code === 0)
+        resolve()
+      else
+        reject(new Error(`Command "${command} ${args.join(' ')}" failed${signal ? ` with ${signal}` : ` with exit code ${code ?? 1}`}.`))
+    })
+  })
 }
 
 function linkLocalPackages() {
