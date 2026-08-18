@@ -28,7 +28,6 @@ import {
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -102,10 +101,6 @@ const newItemDraft = reactive<MenuItemDraft>({
   icon: '',
 })
 
-const menuTitle = computed(() => props.kind === 'column' ? 'Меню заголовков v2' : 'Меню строк v2')
-const menuDescription = computed(() => props.kind === 'column'
-  ? 'Preview-first редактор меню заголовка колонки.'
-  : 'Preview-first редактор меню строки с контекстом row.')
 const menuIsCustom = computed(() => props.menu.mode === 'custom')
 const inspectedItem = computed(() => {
   if (actionInspectorIndex.value == null) {
@@ -220,7 +215,7 @@ function beginLabelEdit(index: number, item: ComponentSFCTableMenuNodeProjection
   translationDraft.value = item.label?.kind === 'expression'
   labelDraft.value = itemLabel(item)
   translationKeyDraft.value = itemTranslationKey(item)
-  void nextTick(() => root.value?.querySelector<HTMLInputElement>(`[data-menu-v2-label="${index}"]`)?.focus())
+  void nextTick(() => root.value?.querySelector<HTMLInputElement>(`[data-menu-label="${index}"]`)?.focus())
 }
 
 function saveLabelEdit(): void {
@@ -314,7 +309,7 @@ function startCreateItem(): void {
     input: '',
     icon: '',
   } satisfies MenuItemDraft)
-  void nextTick(() => root.value?.querySelector<HTMLInputElement>('[data-menu-v2-new-label]')?.select())
+  void nextTick(() => root.value?.querySelector<HTMLInputElement>('[data-menu-new-label]')?.select())
 }
 
 function createItem(): void {
@@ -358,28 +353,13 @@ function resetDrag(): void {
 </script>
 
 <template>
-  <article ref="root" class="overflow-hidden rounded-xl border border-sky-500/25 bg-background shadow-sm">
-    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-sky-500/20 bg-sky-500/[0.04] p-3">
-      <div class="min-w-0">
-        <div class="flex items-center gap-2">
-          <h3 class="text-sm font-semibold">
-            {{ menuTitle }}
-          </h3>
-          <Badge variant="outline" class="h-5 border-sky-500/30 bg-sky-500/10 px-1.5 text-[9px] font-semibold uppercase tracking-wider text-sky-700 dark:text-sky-300">
-            Preview
-          </Badge>
-        </div>
-        <p class="mt-0.5 text-[11px] text-muted-foreground">
-          {{ menuDescription }} Двойной клик редактирует название.
-        </p>
-      </div>
-
+  <article ref="root" class="relative overflow-hidden rounded-xl border border-sky-500/25 bg-background shadow-sm">
+    <div v-if="!menu.sourceOwned" class="absolute right-3 top-3 z-20">
       <Select
         :model-value="menu.mode"
-        :disabled="menu.sourceOwned"
         @update:model-value="value => emit('setMode', String(value ?? '') as 'default' | 'disabled' | 'none' | 'custom')"
       >
-        <SelectTrigger class="editor-control h-8 w-32 text-xs">
+        <SelectTrigger class="editor-control h-7 w-28 bg-background/90 text-[11px] shadow-sm backdrop-blur">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -407,7 +387,7 @@ function resetDrag(): void {
           </SelectItem>
         </SelectContent>
       </Select>
-    </header>
+    </div>
 
     <div v-if="menu.sourceOwned" class="flex items-center justify-between gap-3 border-b border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
       <span class="flex items-center gap-2"><Code2 class="size-3.5" /> Меню содержит Source-owned конструкции и доступно только для просмотра.</span>
@@ -499,7 +479,7 @@ function resetDrag(): void {
                     </Tooltip>
                     <Input
                       v-model="labelDraft"
-                      :data-menu-v2-label="itemIndex"
+                      :data-menu-label="itemIndex"
                       class="editor-control h-8 min-w-0 flex-1"
                       :placeholder="translationDraft ? 'Fallback' : 'Название пункта'"
                       @keydown.enter.prevent="saveLabelEdit"
@@ -600,7 +580,7 @@ function resetDrag(): void {
                 </Button>
                 <Input
                   v-model="newItemDraft.label"
-                  data-menu-v2-new-label
+                  data-menu-new-label
                   class="editor-control h-8 min-w-0 flex-1"
                   :placeholder="newItemDraft.labelMode === 'translation' ? 'Fallback' : 'Название пункта'"
                   @keydown.esc.prevent="creatingItem = false"

@@ -175,8 +175,8 @@ const SORT_COMPARATOR_OPTIONS = ENDGE_SFC_TABLE_SORT_COMPARATORS.map(value => ({
   label: value[0]!.toUpperCase() + value.slice(1),
 }))
 const MENU_KIND_OPTIONS = [
-  { kind: 'column', label: 'Меню заголовков', description: 'Открывается на заголовке колонки.' },
-  { kind: 'row', label: 'Меню строк', description: 'Получает row, rowId, rowIndex, columnKey и value.' },
+  { kind: 'column', label: 'Меню заголовков' },
+  { kind: 'row', label: 'Меню строк' },
 ] as const
 
 type EditableTableAttributeName
@@ -2394,10 +2394,6 @@ onBeforeUnmount(() => {
                   </section>
 
                   <section v-show="tableSection === 'menus'" class="space-y-4">
-                    <p class="max-w-[760px] text-[11px] leading-relaxed text-muted-foreground">
-                      Состав меню хранится только в SFC Source. Превью показывает итоговый вид и редактирует его без отдельной JSON-модели.
-                    </p>
-
                     <Tabs v-model="activeMenuKind" class="w-full">
                       <TabsList class="grid w-full grid-cols-2">
                         <TabsTrigger
