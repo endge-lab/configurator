@@ -12,7 +12,7 @@
     "dev": "node ./scripts/endge-local-packages.mjs",
     "devsafe": "rm -rf node_modules/.vite && node ./scripts/endge-local-packages.mjs",
     "dev:app": "vite",
-    "dev:libs": "run-p --parallel dev:lib:*",
+    "dev:libs": "run-p dev:lib:*",
     "dev:lib:computation-sandbox": "pnpm --dir ../../packages/@endge-computation-sandbox dev",
     "dev:lib:core": "pnpm --dir ../../packages/@endge-core dev",
     "dev:lib:raph": "pnpm --dir ../../packages/@endge-raph dev",

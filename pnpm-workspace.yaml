@@ -1,3 +1,13 @@
+packages:
+  - '../../packages/@endge-codegen'
+  - '../../packages/@endge-core'
+  - '../../packages/@endge-computation-sandbox'
+  - '../../packages/@endge-raph'
+  - '../../packages/@endge-utils'
+  - '../../packages/@endge-ui-vue'
+  - '../../packages/@endge-ui-vue-shadcn'
+linkWorkspacePackages: false
+
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
