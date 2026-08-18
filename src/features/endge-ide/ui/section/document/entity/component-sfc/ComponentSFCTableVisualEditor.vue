@@ -53,7 +53,6 @@ import {
   FileCode2,
   FileJson2,
   GripVertical,
-  ListTree,
   PanelLeft,
   PanelRight,
   Pin,
@@ -61,6 +60,7 @@ import {
   Plus,
   Radio,
   Settings2,
+  SquareMenu,
   Table2,
   Tags,
   Trash2,
@@ -127,6 +127,7 @@ import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/Co
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
+import ComponentSFCTableMenuPreviewEditor from './ComponentSFCTableMenuPreviewEditor.vue'
 
 const props = defineProps<{
   source: string
@@ -183,6 +184,22 @@ type EditableTableAttributeName
     | 'paging' | 'page-size' | 'page-sizes'
     | 'default-pin' | 'default-sort' | 'default-hidden'
 
+interface MenuItemDraft {
+  labelMode: 'text' | 'translation'
+  label: string
+  translationKey: string
+  action: string
+  input: string
+  icon: string
+}
+
+interface MenuLabelUpdate {
+  index: number
+  mode: 'text' | 'translation'
+  label: string
+  translationKey: string
+}
+
 const mainTab = useSmartTabSelection(
   'component-sfc.visual.active-tab',
   'table',
@@ -192,6 +209,11 @@ const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
   ['general', 'inputs', 'events', 'ports', 'selection', 'paging', 'visibility', 'pinning', 'sorting', 'menus', 'metadata'] as const,
+)
+const activeMenuKind = useSmartTabSelection(
+  'component-sfc.visual.table-menu-kind',
+  'column',
+  ['column', 'row'] as const,
 )
 const tableSections = [
   { id: 'general', label: 'Основное', icon: Settings2 },
@@ -203,7 +225,7 @@ const tableSections = [
   { id: 'visibility', label: 'Видимость', icon: Eye },
   { id: 'pinning', label: 'Закрепления', icon: Pin },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
-  { id: 'menus', label: 'Меню', icon: ListTree },
+  { id: 'menus', label: 'Меню', icon: SquareMenu },
   { id: 'metadata', label: 'Метаданные', icon: FileJson2 },
 ] as const
 const inputWorkspaceState = useSmartTabViewState(
@@ -357,10 +379,6 @@ const componentSelectOptions = computed<SearchableSelectOption[]>(() => props.co
 const tagSelectOptions = computed<SearchableSelectOption[]>(() => (
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS.map(tag => ({ value: tag, label: tag }))
 ))
-const menuActionOptions = computed<SearchableSelectOption[]>(() => props.projection.menuActions.map(action => ({
-  value: action.identity,
-  label: `${action.identity} · ${action.source}`,
-})))
 const selectedComponentValue = computed(() => {
   const cell = selectedColumn.value?.cell
   return cell?.kind === 'component' && cell.identity
@@ -552,10 +570,6 @@ function removeMenuNode(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number
   applyPatch({ type: 'remove-menu-node', menu: kind, nodeIndex })
 }
 
-function moveMenuNode(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, delta: -1 | 1): void {
-  applyPatch({ type: 'move-menu-node', menu: kind, fromIndex: nodeIndex, toIndex: nodeIndex + delta })
-}
-
 function setMenuItemAttribute(
   kind: ComponentSFCTableVisualMenuKind,
   nodeIndex: number,
@@ -568,79 +582,128 @@ function setMenuItemAttribute(
 
 function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown): void {
   const identity = typeof value === 'string' || typeof value === 'number' ? String(value) : null
-  const option = props.projection.menuActions.find(action => action.identity === identity)
-  const valueKind = option && ['required', 'provided', 'forwarded'].includes(option.source)
-    ? 'expression'
-    : 'literal'
-  setMenuItemAttribute(kind, nodeIndex, 'action', identity, valueKind)
+  setMenuItemAttribute(kind, nodeIndex, 'action', identity, menuActionValueKind(identity))
 }
 
-function menuItemSourceOwned(item: ComponentSFCTableMenuNodeProjection): boolean {
-  return item.kind === 'item' && (
-    item.sourceOwned
-    || (item.label?.kind === 'expression' && readComponentSFCTranslationFallback(item.label.source) == null)
+function menuActionValueKind(identity: string | null): 'expression' | 'literal' {
+  const option = props.projection.menuActions.find(action => action.identity === identity)
+  return option && ['required', 'provided', 'forwarded'].includes(option.source)
+    ? 'expression'
+    : 'literal'
+}
+
+function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDraft): void {
+  const label = draft.label.trim()
+  const action = draft.action.trim()
+  if (!label || !action) {
+    toast.error('Название и Action обязательны для пункта меню.')
+    return
+  }
+
+  const nodeIndex = props.projection.menus[kind].items.length
+  const translationKey = draft.translationKey.trim() || `table:menu.item-${nodeIndex + 1}`
+  const labelValue = draft.labelMode === 'translation'
+    ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
+    : label
+  const patches: ComponentSFCTableSourcePatch[] = [
+    { type: 'add-menu-node', menu: kind, node: 'item' },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'label',
+      value: labelValue,
+      valueKind: draft.labelMode === 'translation' ? 'expression' : 'literal',
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'action',
+      value: action,
+      valueKind: menuActionValueKind(action),
+    },
+  ]
+
+  if (draft.input.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'input',
+      value: draft.input.trim(),
+      valueKind: 'expression',
+    })
+  }
+  if (draft.icon.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'icon',
+      value: draft.icon.trim(),
+      valueKind: 'literal',
+    })
+  }
+
+  applyPatches(patches)
+}
+
+function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelUpdate): void {
+  const label = update.label.trim()
+  if (!label) {
+    return
+  }
+  const translationKey = update.translationKey.trim() || `table:menu.item-${update.index + 1}`
+  setMenuItemAttribute(
+    kind,
+    update.index,
+    'label',
+    update.mode === 'translation'
+      ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
+      : label,
+    update.mode === 'translation' ? 'expression' : 'literal',
   )
 }
 
-function menuLabelMode(item: ComponentSFCTableMenuNodeProjection): 'text' | 'translation' | 'source' {
-  if (item.kind !== 'item' || menuItemSourceOwned(item)) {
-    return 'source'
-  }
-  return item.label?.kind === 'expression' ? 'translation' : 'text'
-}
-
-function menuLabelText(item: ComponentSFCTableMenuNodeProjection): string {
-  if (item.kind !== 'item') {
-    return ''
-  }
-  if (item.label?.kind === 'expression') {
-    return readComponentSFCTranslationFallback(item.label.source) ?? item.label.source
-  }
-  return sourceValueText(item.label)
-}
-
-function menuTranslationKey(item: ComponentSFCTableMenuNodeProjection): string {
-  if (item.kind !== 'item' || item.label?.kind !== 'expression') {
-    return `table:menu.${item.id}`
-  }
-  return item.label.source.match(/^\s*t\(\s*(['"])(.*?)\1/)?.[2] ?? `table:menu.${item.id}`
-}
-
-function setMenuLabelMode(
+function saveMenuDetails(
   kind: ComponentSFCTableVisualMenuKind,
-  nodeIndex: number,
-  item: ComponentSFCTableMenuNodeProjection,
-  mode: unknown,
+  payload: { index: number, input: string, icon: string },
 ): void {
-  if (item.kind !== 'item' || menuItemSourceOwned(item)) {
-    return
-  }
-  const fallback = menuLabelText(item) || 'Новый пункт'
-  if (mode === 'translation') {
-    setMenuItemAttribute(kind, nodeIndex, 'label', `t('${escapeExpressionString(menuTranslationKey(item))}', '${escapeExpressionString(fallback)}')`, 'expression')
-  }
-  else {
-    setMenuItemAttribute(kind, nodeIndex, 'label', fallback, 'literal')
-  }
+  applyPatches([
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'input',
+      value: payload.input.trim() || null,
+      valueKind: 'expression',
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'icon',
+      value: payload.icon.trim() || null,
+      valueKind: 'literal',
+    },
+  ])
 }
 
-function commitMenuTranslation(
+function moveMenuItem(
   kind: ComponentSFCTableVisualMenuKind,
-  nodeIndex: number,
-  item: ComponentSFCTableMenuNodeProjection,
-  next: { key?: string, fallback?: string },
+  payload: { fromIndex: number, toIndex: number },
 ): void {
-  const key = next.key?.trim() || menuTranslationKey(item)
-  const fallback = next.fallback?.trim() || menuLabelText(item) || key
-  setMenuItemAttribute(kind, nodeIndex, 'label', `t('${escapeExpressionString(key)}', '${escapeExpressionString(fallback)}')`, 'expression')
+  applyPatch({
+    type: 'move-menu-node',
+    menu: kind,
+    fromIndex: payload.fromIndex,
+    toIndex: payload.toIndex,
+  })
 }
 
 function escapeExpressionString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
-}
-
-function inputEventValue(event: Event): string {
-  return event.target instanceof HTMLInputElement ? event.target.value : ''
 }
 
 function openMenuSource(kind: ComponentSFCTableVisualMenuKind, item?: ComponentSFCTableMenuNodeProjection): void {
@@ -1910,7 +1973,7 @@ onBeforeUnmount(() => {
                 <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
                 <span class="truncate">{{ section.label }}</span>
                 <Badge
-                  v-if="tableSectionSummary(section.id)"
+                  v-if="section.id !== 'selection' && tableSectionSummary(section.id)"
                   variant="secondary"
                   class="ml-auto h-5 min-w-5 justify-center px-1.5 text-[9px] font-normal"
                 >
@@ -2332,182 +2395,42 @@ onBeforeUnmount(() => {
 
                   <section v-show="tableSection === 'menus'" class="space-y-4">
                     <p class="max-w-[760px] text-[11px] leading-relaxed text-muted-foreground">
-                      Состав меню хранится только в SFC Source. Выражения <code>t()</code> и input mapping не преобразуются в отдельную JSON-модель.
+                      Состав меню хранится только в SFC Source. Превью показывает итоговый вид и редактирует его без отдельной JSON-модели.
                     </p>
 
-                    <div class="grid max-w-[980px] gap-4 xl:grid-cols-2">
-                      <article
+                    <Tabs v-model="activeMenuKind" class="w-full">
+                      <TabsList class="grid w-full grid-cols-2">
+                        <TabsTrigger
+                          v-for="menuOption in MENU_KIND_OPTIONS"
+                          :key="`menu-tab-${menuOption.kind}`"
+                          :value="menuOption.kind"
+                        >
+                          {{ menuOption.label }}
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent
                         v-for="menuOption in MENU_KIND_OPTIONS"
                         :key="menuOption.kind"
-                        class="overflow-hidden rounded-xl border border-border/70 bg-background/20"
+                        :value="menuOption.kind"
+                        class="m-0 mt-4"
                       >
-                        <header class="flex items-start gap-3 border-b border-border/60 bg-muted/20 p-3">
-                          <div class="min-w-0 flex-1">
-                            <h3 class="text-sm font-semibold">
-                              {{ menuOption.label }}
-                            </h3>
-                            <p class="mt-0.5 text-[11px] text-muted-foreground">
-                              {{ menuOption.description }}
-                            </p>
-                          </div>
-                          <Select
-                            :model-value="projection.menus[menuOption.kind].mode"
-                            :disabled="projection.menus[menuOption.kind].sourceOwned"
-                            @update:model-value="value => setMenuMode(menuOption.kind, value)"
-                          >
-                            <SelectTrigger class="editor-control h-8 w-32 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <template v-if="menuOption.kind === 'column'">
-                                <SelectItem value="default">
-                                  Default
-                                </SelectItem>
-                                <SelectItem value="custom">
-                                  Custom
-                                </SelectItem>
-                                <SelectItem value="disabled">
-                                  Disabled
-                                </SelectItem>
-                              </template>
-                              <template v-else>
-                                <SelectItem value="none">
-                                  None
-                                </SelectItem>
-                                <SelectItem value="custom">
-                                  Custom
-                                </SelectItem>
-                              </template>
-                              <SelectItem v-if="projection.menus[menuOption.kind].mode === 'source'" value="source">
-                                Source
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </header>
-
-                        <div
-                          v-if="projection.menus[menuOption.kind].sourceOwned"
-                          class="flex items-center justify-between gap-3 p-3 text-xs text-muted-foreground"
-                        >
-                          <span>Меню содержит Source-owned конструкции и не будет переписано.</span>
-                          <Button variant="outline" size="sm" class="h-7 shrink-0 gap-1" @click="openMenuSource(menuOption.kind)">
-                            Source <ExternalLink class="size-3" />
-                          </Button>
-                        </div>
-
-                        <div
-                          v-else-if="projection.menus[menuOption.kind].mode === 'custom'"
-                          class="divide-y divide-border/60"
-                        >
-                          <div
-                            v-for="(item, itemIndex) in projection.menus[menuOption.kind].items"
-                            :key="`${menuOption.kind}-${item.id}-${itemIndex}`"
-                            class="p-3"
-                          >
-                            <div class="mb-2 flex items-center gap-1">
-                              <GripVertical class="size-3.5 text-muted-foreground" />
-                              <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                {{ item.kind === 'separator' ? 'Separator' : `Item ${itemIndex + 1}` }}
-                              </span>
-                              <div class="ml-auto flex items-center gap-0.5">
-                                <Button variant="ghost" size="icon" class="size-6" :disabled="itemIndex === 0" @click="moveMenuNode(menuOption.kind, itemIndex, -1)">
-                                  <ArrowUp class="size-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" class="size-6" :disabled="itemIndex === projection.menus[menuOption.kind].items.length - 1" @click="moveMenuNode(menuOption.kind, itemIndex, 1)">
-                                  <ArrowDown class="size-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-destructive" @click="removeMenuNode(menuOption.kind, itemIndex)">
-                                  <Trash2 class="size-3" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div v-if="item.kind === 'separator'" class="my-2 h-px bg-border" />
-                            <div v-else-if="menuItemSourceOwned(item)" class="flex items-center justify-between gap-3 rounded-md border border-dashed p-2 text-xs text-muted-foreground">
-                              <span>Неизвестное expression остаётся Source-owned.</span>
-                              <Button variant="ghost" size="sm" class="h-7" @click="openMenuSource(menuOption.kind, item)">
-                                Открыть Source
-                              </Button>
-                            </div>
-                            <div v-else class="space-y-2.5">
-                              <div class="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)]">
-                                <Select :model-value="menuLabelMode(item)" @update:model-value="value => setMenuLabelMode(menuOption.kind, itemIndex, item, value)">
-                                  <SelectTrigger class="editor-control h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="text">
-                                      Текст
-                                    </SelectItem>
-                                    <SelectItem value="translation">
-                                      Перевод
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <Input
-                                  v-if="menuLabelMode(item) === 'text'"
-                                  :model-value="menuLabelText(item)"
-                                  class="editor-control h-8"
-                                  placeholder="Название пункта"
-                                  @blur="(event: Event) => setMenuItemAttribute(menuOption.kind, itemIndex, 'label', inputEventValue(event), 'literal')"
-                                />
-                                <div v-else class="grid gap-2 sm:grid-cols-2">
-                                  <Input
-                                    :model-value="menuTranslationKey(item)"
-                                    class="editor-control h-8 font-mono text-xs"
-                                    placeholder="namespace:menu.key"
-                                    @blur="(event: Event) => commitMenuTranslation(menuOption.kind, itemIndex, item, { key: inputEventValue(event) })"
-                                  />
-                                  <Input
-                                    :model-value="menuLabelText(item)"
-                                    class="editor-control h-8"
-                                    placeholder="Fallback"
-                                    @blur="(event: Event) => commitMenuTranslation(menuOption.kind, itemIndex, item, { fallback: inputEventValue(event) })"
-                                  />
-                                </div>
-                              </div>
-
-                              <SearchableSelect
-                                :model-value="sourceValueText(item.action) || null"
-                                :options="menuActionOptions"
-                                placeholder="Выберите Action…"
-                                size="compact"
-                                trigger-class="editor-control h-8 font-mono text-xs"
-                                @update:model-value="value => setMenuItemAction(menuOption.kind, itemIndex, value)"
-                              />
-
-                              <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
-                                <Input
-                                  :model-value="sourceValueText(item.input)"
-                                  class="editor-control h-8 font-mono text-xs"
-                                  :placeholder="menuOption.kind === 'row' ? '{ id: rowId, value, columnKey }' : '{ column: columnKey }'"
-                                  @blur="(event: Event) => setMenuItemAttribute(menuOption.kind, itemIndex, 'input', inputEventValue(event), 'expression')"
-                                />
-                                <Input
-                                  :model-value="sourceValueText(item.icon)"
-                                  class="editor-control h-8 font-mono text-xs"
-                                  placeholder="icon identity"
-                                  @blur="(event: Event) => setMenuItemAttribute(menuOption.kind, itemIndex, 'icon', inputEventValue(event), 'literal')"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div class="flex gap-2 p-2">
-                            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs" @click="addMenuNode(menuOption.kind, 'item')">
-                              <Plus class="size-3" /> Пункт
-                            </Button>
-                            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="addMenuNode(menuOption.kind, 'separator')">
-                              <Plus class="size-3" /> Разделитель
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div v-else class="p-4 text-center text-xs text-muted-foreground">
-                          {{ menuOption.kind === 'column' && projection.menus.column.mode === 'default' ? 'Используется стандартное меню адаптера.' : 'Декларативное меню не задано.' }}
-                        </div>
-                      </article>
-                    </div>
+                        <ComponentSFCTableMenuPreviewEditor
+                          :kind="menuOption.kind"
+                          :menu="projection.menus[menuOption.kind]"
+                          :actions="projection.menuActions"
+                          @set-mode="value => setMenuMode(menuOption.kind, value)"
+                          @create-item="draft => createMenuItem(menuOption.kind, draft)"
+                          @add-separator="addMenuNode(menuOption.kind, 'separator')"
+                          @move-item="payload => moveMenuItem(menuOption.kind, payload)"
+                          @remove-item="index => removeMenuNode(menuOption.kind, index)"
+                          @save-label="update => saveMenuLabel(menuOption.kind, update)"
+                          @set-action="payload => setMenuItemAction(menuOption.kind, payload.index, payload.value)"
+                          @save-details="payload => saveMenuDetails(menuOption.kind, payload)"
+                          @open-source="item => openMenuSource(menuOption.kind, item)"
+                        />
+                      </TabsContent>
+                    </Tabs>
                   </section>
 
                   <section v-show="tableSection === 'sorting'" class="space-y-3">

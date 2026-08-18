@@ -81,7 +81,32 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
 </Variant>`,
   },
   { label: 'editable', detail: 'Enable the edit controller', insertText: 'editable' },
-  { label: 'edit-on', detail: 'Edit entry trigger; click by default', insertText: `edit-on="\${1:dblclick}"` },
+  { label: 'edit-on', detail: 'Edit entry trigger; click by default, keyboard combinations via :edit-on', insertText: `edit-on="\${1:dblclick}"` },
+  {
+    label: 'edit-on shortcut',
+    detail: 'Cross-platform keyboard combination for edit entry',
+    insertText: `:edit-on="[{
+  event: 'keydown',
+  code: ['\${1:KeyE}'],
+  modifiers: { mod: true, exact: true },
+  repeat: false,
+  composing: false,
+  prevent: true,
+  stop: true,
+}]"`,
+  },
+  {
+    label: 'edit-on held pointer chord',
+    detail: 'Pointer trigger with held ordinary keys and physical modifiers',
+    insertText: `:edit-on="[{
+  event: 'contextmenu',
+  button: 2,
+  held: { code: ['\${1:KeyW}'], exact: true },
+  modifiers: { shift: true, meta: true, exact: true },
+  prevent: true,
+  stop: true,
+}]"`,
+  },
   { label: 'variant', detail: 'Select a component variant explicitly', insertText: `variant="\${1:default}"` },
   { label: '@edited', detail: 'Handle a committed semantic edit', insertText: `@edited="\${1:emit('edited', event())}"` },
   { label: 'emit edited', detail: 'Publish edited from a custom edit variant', insertText: `emit('edited', event('\${1:value}'))` },
@@ -160,7 +185,7 @@ export function createSFCLanguageContribution(
               }
             }
             const genericAttributes = SFC_EDITABLE_COMPLETIONS
-              .filter(item => ['editable', 'edit-on', 'variant', '@edited'].includes(item.label))
+              .filter(item => ['editable', 'edit-on', 'edit-on shortcut', 'edit-on held pointer chord', 'variant', '@edited'].includes(item.label))
               .map(item => ({
                 label: item.label,
                 detail: item.detail,
