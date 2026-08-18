@@ -203,6 +203,10 @@ async function applyImport(): Promise<void> {
   importState.value = 'reloading'
   try {
     await Configurator.context.reloadCurrentContext()
+    void Configurator.domainVersions.refresh({
+      backendURL: Configurator.connections.activeBackendURL,
+      workspace: workspaceIdentity.value,
+    }, true)
   }
   catch {
     toast.warning('Импорт завершён, интерфейс будет перезагружен', {

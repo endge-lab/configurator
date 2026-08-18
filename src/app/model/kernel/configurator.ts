@@ -58,6 +58,10 @@ export class Configurator {
     return this._modules.connections
   }
 
+  public static get domainVersions() {
+    return this._modules.domainVersions
+  }
+
   public static get status(): 'idle' | ConfiguratorStatus {
     return this._status
   }

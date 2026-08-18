@@ -218,7 +218,8 @@ function normalizeImportResult(value: UnknownRecord): ServiceBackendDomainImport
   const workspace = stringValue(value.workspace)
   const commitId = stringValue(value.commitId)
   const parentCommitId = stringValue(value.parentCommitId)
-  if (!workspace || !commitId || !parentCommitId) {
+  const domainVersion = stringValue(value.domainVersion)
+  if (!workspace || !commitId || !parentCommitId || !domainVersion) {
     return null
   }
   return {
@@ -230,6 +231,7 @@ function normalizeImportResult(value: UnknownRecord): ServiceBackendDomainImport
     deletes: nonNegativeNumber(value.deletes),
     commitId,
     parentCommitId,
+    domainVersion,
   }
 }
 

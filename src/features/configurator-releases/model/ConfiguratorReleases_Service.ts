@@ -205,12 +205,14 @@ function normalizeCommit(value: RecordValue): ConfiguratorCommit {
     message: String(value.message || ''),
     revisionPolicy: value.revisionPolicy === 'squash' ? 'squash' : 'preserve',
     operation: String(value.operation || 'user'),
+    domainVersion: value.domainVersion == null ? undefined : String(value.domainVersion),
     createdBy: normalizeActor(value.createdBy),
     createdAt: String(value.createdAt || ''),
     changes: Array.isArray(value.changes)
       ? value.changes.map(change => ({
           documentType: String(change.documentType || ''),
           documentId: String(change.documentId || ''),
+          documentIdentity: String(change.documentIdentity || ''),
           beforeRevisionId:
             change.beforeRevisionId == null
               ? undefined

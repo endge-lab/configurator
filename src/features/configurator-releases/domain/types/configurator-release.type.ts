@@ -23,6 +23,7 @@ export interface ConfiguratorCommit {
   message: string
   revisionPolicy: 'preserve' | 'squash'
   operation: string
+  domainVersion?: string
   createdBy: ConfiguratorVersionActor
   createdAt: string
   changes: ConfiguratorCommitChange[]
@@ -31,6 +32,7 @@ export interface ConfiguratorCommit {
 export interface ConfiguratorCommitChange {
   documentType: string
   documentId: string
+  documentIdentity: string
   beforeRevisionId?: string
   afterRevisionId?: string
   operation: string

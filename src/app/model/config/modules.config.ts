@@ -11,6 +11,8 @@ import { BackendConnections_Module } from '@/features/backend-connections/model/
 import { BackendConnections_Service } from '@/features/backend-connections/model/BackendConnections_Service'
 import { ConfiguratorSession_Module } from '@/features/configurator-session/model/ConfiguratorSession_Module'
 import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
+import { DomainVersion_Service } from '@/features/domain-version/model/DomainVersion_Service'
+import { DomainVersions_Module } from '@/features/domain-version/model/DomainVersions_Module'
 import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 
 /** Creates the single application-scoped module graph. */
@@ -23,6 +25,7 @@ export function createConfiguratorModules(): ConfiguratorModules {
 
   return {
     connections,
+    domainVersions: new DomainVersions_Module(new DomainVersion_Service()),
     session: new ConfiguratorSession_Module(
       new ConfiguratorSession_Service(connections.activeBackendURL),
     ),

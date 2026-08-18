@@ -112,6 +112,10 @@ export class BackendConnections_Module {
     return this._storage.readWorkspace(this.activeBackendURL)
   }
 
+  public readWorkspaceFor(backendURL: string): string | null {
+    return this._storage.readWorkspace(normalizeBackendURL(backendURL))
+  }
+
   public selectWorkspace(workspaceIdentity: string): void {
     this._storage.writeWorkspace(this.activeBackendURL, workspaceIdentity)
     this._reload()

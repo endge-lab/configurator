@@ -1,7 +1,9 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { BackendConnection } from '@/features/backend-connections'
+
 import { ChevronsUpDown, Server } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { Configurator } from '@/app'
 import { Button } from '@/components/ui/button'
@@ -14,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useBackendConnections } from '@/features/backend-connections'
+import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
+import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 
 defineProps<{
   contentClass?: string
@@ -23,6 +27,8 @@ defineProps<{
 }>()
 
 const { catalog, activeBackendURL, isPrimaryActive } = useBackendConnections()
+const { state: domainVersionState, refreshMany } = useDomainVersions()
+const open = ref(false)
 const activeConnectionName = computed(() =>
   catalog.value?.items.find(connection => connection.baseUrl === activeBackendURL.value)?.name
   ?? (isPrimaryActive.value ? 'Основной' : activeBackendURL.value),
@@ -31,10 +37,36 @@ const activeConnectionName = computed(() =>
 function switchBackend(baseURL: string): void {
   Configurator.connections.switchBackend(baseURL)
 }
+
+function targetFor(connection: BackendConnection) {
+  const workspace = Configurator.connections.readWorkspaceFor(connection.baseUrl)
+  return workspace ? { backendURL: connection.baseUrl, workspace } : null
+}
+
+function workspaceFor(connection: BackendConnection): string {
+  return targetFor(connection)?.workspace ?? 'workspace не выбран'
+}
+
+function statusFor(connection: BackendConnection) {
+  return domainVersionState(targetFor(connection))
+}
+
+async function refreshStatuses(force = false): Promise<void> {
+  const targets = (catalog.value?.items ?? [])
+    .map(targetFor)
+    .filter(target => target != null)
+  await refreshMany(targets, force)
+}
+
+watch(open, (value) => {
+  if (value) {
+    void refreshStatuses(true)
+  }
+})
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot>
         <Button variant="ghost" size="sm" class="gap-2 px-2 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground">
@@ -46,7 +78,7 @@ function switchBackend(baseURL: string): void {
       </slot>
     </DropdownMenuTrigger>
     <DropdownMenuContent
-      :class="contentClass ?? 'w-64 rounded-lg'"
+      :class="contentClass ?? 'w-[34rem] max-w-[calc(100vw-1rem)] rounded-lg'"
       :align="align ?? 'start'"
       :side="side"
       :side-offset="sideOffset ?? 4"
@@ -58,15 +90,19 @@ function switchBackend(baseURL: string): void {
         <DropdownMenuItem
           v-for="connection in catalog?.items ?? []"
           :key="connection.id"
-          class="cursor-pointer gap-3"
+          class="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-4 px-3 py-2"
           :class="activeBackendURL === connection.baseUrl ? 'bg-accent text-accent-foreground' : ''"
           @click="switchBackend(connection.baseUrl)"
         >
-          <Server class="size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
-          <div class="min-w-0 flex-1">
-            <span class="block truncate text-xs font-medium">{{ connection.name }}</span>
-            <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
+          <div class="flex min-w-0 items-start gap-3">
+            <Server class="mt-0.5 size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
+            <div class="min-w-0 flex-1">
+              <span class="block truncate text-xs font-medium">{{ connection.name }}</span>
+              <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
+              <span class="block truncate text-[10px] text-muted-foreground">{{ workspaceFor(connection) }}</span>
+            </div>
           </div>
+          <DomainVersionBadge class="self-center" :state="statusFor(connection)" />
         </DropdownMenuItem>
       </DropdownMenuGroup>
     </DropdownMenuContent>

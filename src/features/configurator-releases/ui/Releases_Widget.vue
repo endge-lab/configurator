@@ -158,6 +158,16 @@ async function loadVersions(): Promise<void> {
   }
 }
 
+function refreshActiveDomainVersion(): void {
+  const workspace = Configurator.connections.readWorkspace()
+  if (workspace) {
+    void Configurator.domainVersions.refresh({
+      backendURL: Configurator.connections.activeBackendURL,
+      workspace,
+    }, true)
+  }
+}
+
 async function createCommit(): Promise<void> {
   commitMessageTouched.value = true
   if (commitMessageError.value || !hasPendingRevisions.value) {
@@ -166,6 +176,7 @@ async function createCommit(): Promise<void> {
   try {
     const message = commitMessage.value.trim()
     await configuratorReleases.createCommit(message)
+    refreshActiveDomainVersion()
     commitMessage.value = ''
     commitMessageTouched.value = false
     toast.success('Коммит создан', { description: message })
@@ -264,6 +275,7 @@ async function confirmRestore(): Promise<void> {
       description: 'Создан новый коммит восстановления',
     })
     await Configurator.context.reloadCurrentContext()
+    refreshActiveDomainVersion()
   }
   catch (error) {
     toast.error(errorMessage(error, 'Не удалось восстановить версию'))
@@ -721,8 +733,8 @@ onBeforeUnmount(stop)
     </Tabs>
 
     <Dialog v-model:open="commitDetailsOpen">
-      <DialogContent class="max-h-[80vh] overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader class="border-b bg-muted/25 px-5 py-4 pr-12 text-left">
+      <DialogContent class="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader class="shrink-0 border-b bg-muted/25 px-5 py-4 pr-12 text-left">
           <DialogTitle class="text-base">
             {{ commitDetails?.message }}
           </DialogTitle>
@@ -732,7 +744,7 @@ onBeforeUnmount(stop)
           </DialogDescription>
         </DialogHeader>
 
-        <div v-if="commitDetails" class="min-h-0 overflow-y-auto px-5 py-4">
+        <div v-if="commitDetails" class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           <div class="mb-3 flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2 text-[11px]">
             <span class="text-muted-foreground">Commit</span>
             <span class="font-mono">{{ commitDetails.id }}</span>
@@ -752,7 +764,7 @@ onBeforeUnmount(stop)
                   {{ change.documentType }}
                 </p>
                 <p class="truncate font-mono text-[9px] text-muted-foreground">
-                  {{ change.documentId }}
+                  {{ change.documentIdentity || change.documentId }}
                 </p>
               </div>
               <Badge variant="outline" class="h-5 px-1.5 text-[9px]">

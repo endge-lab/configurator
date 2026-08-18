@@ -34,6 +34,7 @@ export interface ServiceBackendDomainImportResult {
   deletes: number
   commitId: string
   parentCommitId: string
+  domainVersion: string
 }
 
 export interface ServiceBackendDomainImportPlanRequest {

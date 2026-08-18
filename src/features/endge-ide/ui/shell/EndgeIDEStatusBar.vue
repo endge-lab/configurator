@@ -1,10 +1,13 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text -- provider status is a technical product label */
 import { Endge } from '@endge/core'
-import { BellDot, DatabaseZap, GitBranch, RefreshCcw, Tag } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { AppBus } from '@endge/utils'
+import { BellDot, DatabaseZap, RefreshCcw } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Configurator } from '@/app'
+import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
+import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
@@ -14,6 +17,7 @@ import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 
 const context = useEndgeIDEContext()
+const { state: domainVersionState, refresh: refreshDomainVersion } = useDomainVersions()
 const isMockEnabled = computed(() => context.isMockEnabled())
 const isDataModeOverridden = computed(() => context.isDataModeOverridden())
 const isChangingDataMode = ref(false)
@@ -24,13 +28,29 @@ const mockModeTitle = computed(() => {
     ? `Mock data enabled (${source}). External queries are not executed.`
     : `Live data enabled (${source}). Queries may call real services.`
 })
-const leftItems = [
-  { id: 'branch', label: 'main', icon: GitBranch },
-  { id: 'version', label: 'latest', icon: Tag },
-]
+const activeDomainTarget = computed(() => {
+  const workspace = Configurator.connections.readWorkspace()
+    ?? String(Endge.workspace.current.identity ?? '').trim()
+  return workspace
+    ? { backendURL: Configurator.connections.activeBackendURL, workspace }
+    : null
+})
+const activeDomainVersionState = computed(() => domainVersionState(activeDomainTarget.value))
+
+function updateDomainVersion(force = false): void {
+  if (activeDomainTarget.value) {
+    void refreshDomainVersion(activeDomainTarget.value, force)
+  }
+}
+
+function handleDomainChanged(): void {
+  updateDomainVersion(true)
+}
+
 async function reloadDomain(): Promise<void> {
   try {
     await context.reloadCurrentContext()
+    updateDomainVersion(true)
     toast.success('Домен полностью перезагружен', { description: 'Данные заново загружены с сервера и скомпилированы.' })
   }
   catch (error: any) {
@@ -68,6 +88,15 @@ async function toggleMockMode(): Promise<void> {
     isChangingDataMode.value = false
   }
 }
+
+onMounted(() => {
+  AppBus.onCustom('domainChanged', handleDomainChanged)
+  updateDomainVersion()
+})
+
+onBeforeUnmount(() => {
+  AppBus.offCustom('domainChanged', handleDomainChanged)
+})
 </script>
 
 <template>
@@ -79,10 +108,6 @@ async function toggleMockMode(): Promise<void> {
         <EnvironmentSwitcher />
         <LocaleSwitcher />
         <ThemeSwitcher />
-      </div>
-      <div v-for="item in leftItems" :key="item.id" class="inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5">
-        <component :is="item.icon" class="size-3.5 shrink-0" />
-        <span class="truncate">{{ item.label }}</span>
       </div>
     </div>
 
@@ -103,6 +128,7 @@ async function toggleMockMode(): Promise<void> {
         <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
       </button>
       <BellDot class="size-3.5 mx-1" />
+      <DomainVersionBadge :state="activeDomainVersionState" prefix />
     </div>
   </div>
 </template>
