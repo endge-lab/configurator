@@ -58,6 +58,10 @@ export class Configurator {
     return this._modules.connections
   }
 
+  public static get backendVersions() {
+    return this._modules.backendVersions
+  }
+
   public static get domainVersions() {
     return this._modules.domainVersions
   }

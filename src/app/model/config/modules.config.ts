@@ -9,6 +9,8 @@ import { Layout_Module } from '@/app/model/modules/layout/Layout_Module'
 import { Questions_Module } from '@/app/model/modules/questions/Questions_Module'
 import { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
 import { BackendConnections_Service } from '@/features/backend-connections/model/BackendConnections_Service'
+import { BackendVersion_Service } from '@/features/backend-connections/model/BackendVersion_Service'
+import { BackendVersions_Module } from '@/features/backend-connections/model/BackendVersions_Module'
 import { ConfiguratorSession_Module } from '@/features/configurator-session/model/ConfiguratorSession_Module'
 import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
 import { DomainVersion_Service } from '@/features/domain-version/model/DomainVersion_Service'
@@ -25,6 +27,7 @@ export function createConfiguratorModules(): ConfiguratorModules {
 
   return {
     connections,
+    backendVersions: new BackendVersions_Module(new BackendVersion_Service()),
     domainVersions: new DomainVersions_Module(new DomainVersion_Service()),
     session: new ConfiguratorSession_Module(
       new ConfiguratorSession_Service(connections.activeBackendURL),

@@ -15,7 +15,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useBackendConnections } from '@/features/backend-connections'
+import { useBackendConnections, useBackendVersions } from '@/features/backend-connections'
 import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
 import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 
@@ -27,12 +27,19 @@ defineProps<{
 }>()
 
 const { catalog, activeBackendURL, isPrimaryActive } = useBackendConnections()
+const { state: backendVersionState, refresh: refreshBackendVersion, refreshMany: refreshBackendVersions } = useBackendVersions()
 const { state: domainVersionState, refreshMany } = useDomainVersions()
 const open = ref(false)
 const activeConnectionName = computed(() =>
   catalog.value?.items.find(connection => connection.baseUrl === activeBackendURL.value)?.name
   ?? (isPrimaryActive.value ? 'Основной' : activeBackendURL.value),
 )
+const activeConnectionLabel = computed(() => formatConnectionName(activeConnectionName.value, activeBackendURL.value))
+
+function formatConnectionName(name: string, backendURL: string): string {
+  const state = backendVersionState(backendURL)
+  return state.status === 'ready' ? `${name} (${state.value.version})` : name
+}
 
 function switchBackend(baseURL: string): void {
   Configurator.connections.switchBackend(baseURL)
@@ -58,8 +65,13 @@ async function refreshStatuses(force = false): Promise<void> {
   await refreshMany(targets, force)
 }
 
-watch(open, (value) => {
-  if (value) {
+watch(activeBackendURL, (backendURL) => {
+  void refreshBackendVersion(backendURL)
+}, { immediate: true })
+
+watch([open, catalog], ([isOpen, currentCatalog]) => {
+  if (isOpen && currentCatalog) {
+    void refreshBackendVersions(currentCatalog.items.map(connection => connection.baseUrl), true)
     void refreshStatuses(true)
   }
 })
@@ -71,7 +83,7 @@ watch(open, (value) => {
       <slot>
         <Button variant="ghost" size="sm" class="gap-2 px-2 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground">
           <span class="max-w-64 truncate text-xs font-medium" :title="activeBackendURL">
-            {{ activeConnectionName }}
+            {{ activeConnectionLabel }}
           </span>
           <ChevronsUpDown class="size-4 text-muted-foreground" />
         </Button>
@@ -97,7 +109,7 @@ watch(open, (value) => {
           <div class="flex min-w-0 items-start gap-3">
             <Server class="mt-0.5 size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
             <div class="min-w-0 flex-1">
-              <span class="block truncate text-xs font-medium">{{ connection.name }}</span>
+              <span class="block truncate text-xs font-medium">{{ formatConnectionName(connection.name, connection.baseUrl) }}</span>
               <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
               <span class="block truncate text-[10px] text-muted-foreground">{{ workspaceFor(connection) }}</span>
             </div>

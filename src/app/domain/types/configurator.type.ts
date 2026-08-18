@@ -5,6 +5,7 @@ import type { ConfiguratorI18n_Module } from '@/app/model/modules/i18n/Configura
 import type { Layout_Module } from '@/app/model/modules/layout/Layout_Module'
 import type { Questions_Module } from '@/app/model/modules/questions/Questions_Module'
 import type { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
+import type { BackendVersions_Module } from '@/features/backend-connections/model/BackendVersions_Module'
 import type { ConfiguratorSession_Module } from '@/features/configurator-session'
 import type { DomainVersions_Module } from '@/features/domain-version/model/DomainVersions_Module'
 
@@ -29,6 +30,7 @@ export interface ConfiguratorBackendConnectionFailure {
 export interface ConfiguratorModules {
   session: ConfiguratorSession_Module
   connections: BackendConnections_Module
+  backendVersions: BackendVersions_Module
   domainVersions: DomainVersions_Module
   context: ConfiguratorContext_Module
   diagnostics: ConfiguratorDiagnostics_Module
