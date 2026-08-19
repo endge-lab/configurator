@@ -2,9 +2,10 @@ import type { Component } from 'vue'
 
 import { markRaw } from 'vue'
 
-import BearerAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/BearerAuthProfileEditor.vue'
 import BasicAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/BasicAuthProfileEditor.vue'
+import BearerAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/BearerAuthProfileEditor.vue'
 import OAuth2ClientCredentialsAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/OAuth2ClientCredentialsAuthProfileEditor.vue'
+import OAuth2PasswordAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/OAuth2PasswordAuthProfileEditor.vue'
 import OidcAuthProfileEditor from '@/features/endge-ide/ui/section/document/entity/auth-profile-adapters/OidcAuthProfileEditor.vue'
 
 export interface AuthProfileAdapterEditorRegistration {
@@ -38,6 +39,15 @@ const BUILTIN_AUTH_PROFILE_EDITORS: AuthProfileAdapterEditorRegistration[] = [
     defaults: {
       config: { tokenEndpoint: '', clientId: '', scopes: [], clientAuthentication: 'client_secret_basic' },
       credentials: { clientSecret: '' },
+    },
+  },
+  {
+    id: 'oauth2-password',
+    label: 'OAuth2 Password (dev/test)',
+    editor: OAuth2PasswordAuthProfileEditor,
+    defaults: {
+      config: { tokenEndpoint: '{KEYCLOAK_TOKEN_ENDPOINT}', clientId: 'hub-public', scopes: ['openid', 'email'] },
+      credentials: { username: '', password: '' },
     },
   },
   {

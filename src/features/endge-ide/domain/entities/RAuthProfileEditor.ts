@@ -42,7 +42,9 @@ export class RAuthProfileEditor {
 }
 
 function supportsSession(adapterId: string): boolean {
-  return adapterId === 'oidc' || adapterId === 'oauth2-client-credentials'
+  return adapterId === 'oidc'
+    || adapterId === 'oauth2-client-credentials'
+    || adapterId === 'oauth2-password'
 }
 
 function stringify(value: unknown): string {

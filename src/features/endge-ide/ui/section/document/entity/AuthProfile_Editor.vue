@@ -51,7 +51,9 @@ const storageModel = computed<AuthSessionStorage>({
   },
 })
 
-const supportsSession = computed(() => adapterModel.value === 'oidc' || adapterModel.value === 'oauth2-client-credentials')
+const supportsSession = computed(() => adapterModel.value === 'oidc'
+  || adapterModel.value === 'oauth2-client-credentials'
+  || adapterModel.value === 'oauth2-password')
 
 const selectedAdapterEditor = computed(() => EndgeIDE.authProfileEditors.get(adapterModel.value))
 
