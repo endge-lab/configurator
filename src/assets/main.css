@@ -111,6 +111,18 @@
   color: var(--editor-type-reference-unresolved) !important;
 }
 
+.monaco-editor .endge-source-inline-hint {
+  color: var(--muted-foreground) !important;
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.8;
+  user-select: none;
+}
+
+.monaco-editor .endge-source-inline-hint--ambiguous {
+  color: var(--editor-type-reference-unresolved) !important;
+}
+
 .monaco-editor .monaco-scrollable-element > .scrollbar > .slider {
   border-radius: 999px;
 }

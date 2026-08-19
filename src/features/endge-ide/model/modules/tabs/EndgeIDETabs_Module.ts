@@ -696,6 +696,7 @@ export class EndgeIDETabs_Module {
       'converter': 'Converter',
       'data-view': 'DataView',
       'filter': 'Filter',
+      'i18n-bundles': 'Словарь переводов',
       'mock': 'Mock',
       'query': 'Query',
       'store': 'Store',

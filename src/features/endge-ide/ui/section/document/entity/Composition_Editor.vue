@@ -27,8 +27,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -284,6 +284,8 @@ async function launchPreview(): Promise<void> {
         v-else-if="activeTab === 'source'"
         ref="sourceEditorRef"
         :model-value="editor.source"
+        :owner-id="editor.id"
+        :owner-identity="editor.identity"
         @update:model-value="updateSource"
       />
       <pre

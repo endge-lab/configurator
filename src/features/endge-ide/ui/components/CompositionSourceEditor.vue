@@ -16,15 +16,20 @@ import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { resolveCompositionI18nContext } from '@/features/endge-ide/model/composition-i18n-hints/composition-i18n-context'
 import {
   buildCompositionDropPlan,
   resolveCompositionDropDescriptor,
 } from '@/features/endge-ide/model/composition-source-drop'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createCompositionRuntimePropsContribution } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
-const props = defineProps<{ modelValue: string }>()
+const props = defineProps<{
+  modelValue: string
+  ownerId?: string | number
+  ownerIdentity?: string
+}>()
 const emit = defineEmits<{ (event: 'update:modelValue', value: string): void }>()
 const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 const container = ref<HTMLDivElement | null>(null)
@@ -35,6 +40,19 @@ const monacoAdapter = useEndgeSourceMonaco({
   container,
   sourceKind: 'composition',
   value: () => source.value,
+  ownerIdentity: () => props.ownerIdentity,
+  languageContext: currentSource => ({
+    i18n: resolveCompositionI18nContext({
+      documentId: props.ownerId,
+      identity: props.ownerIdentity,
+      source: currentSource,
+    }),
+  }),
+  refreshTriggers: [
+    refresh => Endge.context.subscribe(refresh),
+    refresh => Endge.program.subscribe(refresh),
+    refresh => Endge.domain.subscribe(refresh),
+  ],
   onChange: (value) => {
     source.value = value
     emit('update:modelValue', value)

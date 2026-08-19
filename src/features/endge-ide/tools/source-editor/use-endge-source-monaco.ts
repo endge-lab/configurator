@@ -1,7 +1,13 @@
 /* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
-import type { SourceKind, SourceLanguageSemanticHighlight, SourceLanguageSyntaxDefinition } from '@endge/core'
+import type {
+  SourceKind,
+  SourceLanguageContext,
+  SourceLanguageInlineHint,
+  SourceLanguageSemanticHighlight,
+  SourceLanguageSyntaxDefinition,
+} from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { Ref } from 'vue'
 
@@ -37,11 +43,15 @@ export interface UseEndgeSourceMonacoOptions {
   onChange: (value: string) => void
   owner?: string
   ownerIdentity?: () => string | undefined
+  languageContext?: (source: string) => Partial<Omit<SourceLanguageContext, 'source' | 'position'>>
+  refreshTriggers?: readonly SourceEditorRefreshTrigger[]
   formatLanguage?: SourceFormatLanguage
   onReady?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
   extensions?: readonly ScriptEditorExtension[]
   viewStateKey?: string
 }
+
+export type SourceEditorRefreshTrigger = (refresh: () => void) => () => void
 
 /** Общий browser adapter Endge source language - Monaco. */
 export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
@@ -62,6 +72,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   let referenceNavigationDisposable: Monaco.IDisposable | null = null
   let hoverDisposable: Monaco.IDisposable | null = null
   let semanticHighlights: Monaco.editor.IEditorDecorationsCollection | null = null
+  let inlineHints: Monaco.editor.IEditorDecorationsCollection | null = null
+  let inlineHintsTimer: ReturnType<typeof setTimeout> | null = null
+  let refreshTriggerDisposables: Array<() => void> = []
   let extensionDisposables: Monaco.IDisposable[] = []
 
   const typeCatalog = () => {
@@ -88,16 +101,55 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     return [...compiled, ...domainFallback]
   }
 
-  const languageContext = (source: string, position?: Monaco.Position) => ({
-    source,
-    position: position ? { lineNumber: position.lineNumber, column: position.column } : undefined,
-    ownerIdentity: options.ownerIdentity?.(),
-    typeSymbols: typeCatalog().map(type => ({
-      identity: type.identity,
-      displayName: type.displayName,
-      category: type.category,
-    })),
-  })
+  const languageContext = (
+    source: string,
+    position?: Monaco.Position,
+    includeExternal = false,
+  ): SourceLanguageContext => {
+    let external: Partial<Omit<SourceLanguageContext, 'source' | 'position'>> = {}
+    if (includeExternal) {
+      try {
+        external = options.languageContext?.(source) ?? {}
+      }
+      catch (error) {
+        console.warn(`[EndgeSourceMonaco] Language context is unavailable for "${options.sourceKind}".`, error)
+      }
+    }
+    return {
+      ...external,
+      source,
+      position: position ? { lineNumber: position.lineNumber, column: position.column } : undefined,
+      ownerIdentity: options.ownerIdentity?.() ?? external.ownerIdentity,
+      typeSymbols: typeCatalog().map(type => ({
+        identity: type.identity,
+        displayName: type.displayName,
+        category: type.category,
+      })),
+    }
+  }
+
+  function refreshInlineHints(): void {
+    const model = editor.value?.getModel()
+    if (!model || !inlineHints) { return }
+    try {
+      inlineHints.set(
+        Endge.source.inlineHints(options.sourceKind, languageContext(model.getValue(), undefined, true))
+          .map(hint => toInlineHintDecoration(model, hint)),
+      )
+    }
+    catch (error) {
+      inlineHints.clear()
+      console.warn(`[EndgeSourceMonaco] Inline hints are unavailable for "${options.sourceKind}".`, error)
+    }
+  }
+
+  function scheduleInlineHints(): void {
+    if (inlineHintsTimer) { clearTimeout(inlineHintsTimer) }
+    inlineHintsTimer = setTimeout(() => {
+      inlineHintsTimer = null
+      refreshInlineHints()
+    }, 120)
+  }
 
   const validate = () => {
     const model = editor.value?.getModel()
@@ -110,6 +162,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       Endge.source.semanticHighlights(options.sourceKind, context)
         .map(item => toSemanticDecoration(model, item)),
     )
+    scheduleInlineHints()
   }
 
   const setValue = (value: string) => {
@@ -191,6 +244,16 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       editor.value.restoreViewState(viewState.value)
     }
     semanticHighlights = editor.value.createDecorationsCollection()
+    inlineHints = editor.value.createDecorationsCollection()
+    refreshTriggerDisposables = (options.refreshTriggers ?? []).flatMap((trigger) => {
+      try {
+        return [trigger(scheduleInlineHints)]
+      }
+      catch (error) {
+        console.warn(`[EndgeSourceMonaco] Inline hint refresh trigger is unavailable for "${options.sourceKind}".`, error)
+        return []
+      }
+    })
     const editorModel = editor.value.getModel()
     if (editorModel) {
       extensionDisposables = (options.extensions ?? []).flatMap((extension) => {
@@ -263,14 +326,19 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       viewState.value = savedViewState
     }
     if (model) { monaco.editor.setModelMarkers(model, markerOwner, []) }
+    if (inlineHintsTimer) { clearTimeout(inlineHintsTimer) }
     contentDisposable?.dispose()
     completionDisposable?.dispose()
     referenceNavigationDisposable?.dispose()
     hoverDisposable?.dispose()
+    refreshTriggerDisposables.forEach(dispose => dispose())
+    refreshTriggerDisposables = []
     extensionDisposables.forEach(disposable => disposable.dispose())
     extensionDisposables = []
     semanticHighlights?.clear()
     semanticHighlights = null
+    inlineHints?.clear()
+    inlineHints = null
     editor.value?.dispose()
     model?.dispose()
     editor.value = null
@@ -282,7 +350,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     if (!model) { return false }
     const reference = Endge.source.referenceAt(
       options.sourceKind,
-      languageContext(model.getValue(), position),
+      languageContext(model.getValue(), position, true),
     )
     if (!reference) { return false }
     if (reference.target === 'type') {
@@ -369,6 +437,32 @@ function toSemanticDecoration(
       inlineClassName: highlight.status === 'resolved'
         ? 'endge-source-type-reference--resolved'
         : 'endge-source-type-reference--unresolved',
+    },
+  }
+}
+
+function toInlineHintDecoration(
+  model: Monaco.editor.ITextModel,
+  hint: SourceLanguageInlineHint,
+): Monaco.editor.IModelDeltaDecoration {
+  const length = model.getValueLength()
+  const start = Math.max(0, Math.min(hint.range.start, length))
+  const end = Math.max(start, Math.min(hint.range.end, length))
+  return {
+    range: monaco.Range.fromPositions(
+      model.getPositionAt(start),
+      model.getPositionAt(end),
+    ),
+    options: {
+      hoverMessage: hint.tooltip ? { value: hint.tooltip } : undefined,
+      after: {
+        content: `  → ${hint.text}`,
+        inlineClassName: hint.status === 'ambiguous'
+          ? 'endge-source-inline-hint endge-source-inline-hint--ambiguous'
+          : 'endge-source-inline-hint',
+        inlineClassNameAffectsLetterSpacing: true,
+        cursorStops: monaco.editor.InjectedTextCursorStops.None,
+      },
     },
   }
 }
