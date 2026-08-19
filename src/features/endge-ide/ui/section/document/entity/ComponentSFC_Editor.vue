@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
-import type { ComponentSFCTagAttributeContract, RComponentSFC } from '@endge/core'
+import type { ComponentSFCTagAttributeContract, EndgeSFCEditingConfiguration, RComponentSFC } from '@endge/core'
 
 import {
   compileComponentSFC,
@@ -12,7 +12,7 @@ import {
 } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +57,17 @@ const activeTab = useSmartTabSelection(
 )
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const configurationRevision = ref(0)
+const offConfiguration = Endge.configuration.subscribe(() => {
+  configurationRevision.value += 1
+})
+onScopeDispose(offConfiguration)
+const sfcEditing = computed<EndgeSFCEditingConfiguration>(() => {
+  void configurationRevision.value
+  return Endge.configuration.isResolved
+    ? Endge.configuration.current.sfcEditing
+    : Endge.workspace.current.configuration.sfcEditing
+})
 const visualInspection = computed(() => {
   const current = editor.value
   return current
@@ -64,6 +75,7 @@ const visualInspection = computed(() => {
         resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
         resolveTypeDefinition: resolveEndgeTypeDefinition,
         actionIdentities: Endge.actions.listResolved().map(action => action.identity),
+        sfcEditing: sfcEditing.value,
       })
     : null
 })
@@ -76,6 +88,7 @@ const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.d
     label: component.displayName || component.name || component.identity,
     inputs: compileComponentSFC(component.source ?? '', {
       resolveTypeDefinition: resolveEndgeTypeDefinition,
+      sfcEditing: sfcEditing.value,
     }).contract.inputs,
   })))
 const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
@@ -404,6 +417,7 @@ async function launchPreview(): Promise<void> {
       :projection="tableVisualProjection"
       :component-options="tableComponentOptions"
       :prop-types="tablePropTypes"
+      :sfc-editing="sfcEditing"
       :diagnostics="visualInspection?.diagnostics"
       class="min-h-0 flex-1"
       @update:source="updateVisualSource"

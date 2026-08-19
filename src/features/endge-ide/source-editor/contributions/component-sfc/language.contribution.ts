@@ -108,6 +108,28 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
 }]"`,
   },
   {
+    label: 'cancel-on',
+    detail: 'Cancel editing; Escape and focus loss outside Editable by default',
+    insertText: `:cancel-on="[
+  {
+    event: 'keydown',
+    key: ['Escape'],
+    prevent: true,
+    stop: true,
+  },
+  { event: 'focusout' },
+]"`,
+  },
+  {
+    label: 'commit-on',
+    detail: 'Commit editing; Enter by default',
+    insertText: `:commit-on="{
+  event: 'keydown',
+  key: ['Enter'],
+  prevent: true,
+}"`,
+  },
+  {
     label: ':on interaction',
     detail: 'Conditional interaction with the same trigger grammar as edit-on',
     insertText: `:on="{
@@ -219,6 +241,8 @@ export function createSFCLanguageContribution(
                 'edit-on',
                 'edit-on shortcut',
                 'edit-on held pointer chord',
+                'cancel-on',
+                'commit-on',
                 ':on interaction',
                 ':on sequence',
                 ':on.stop',

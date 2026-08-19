@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 
 defineProps<{
   label: string
+  labelClass?: string
   usesParentValue?: boolean
   overridden?: boolean
 }>()
@@ -19,7 +20,7 @@ const emit = defineEmits<{
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between gap-3">
-      <Label>{{ label }}</Label>
+      <Label :class="labelClass">{{ label }}</Label>
       <Button
         v-if="usesParentValue"
         type="button"

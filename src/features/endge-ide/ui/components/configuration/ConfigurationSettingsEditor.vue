@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  ComponentSFCInteractionTrigger,
   EndgeConfiguration,
   EndgeConfigurationContribution,
   EndgeConfigurationPatch,
@@ -8,7 +9,7 @@ import type {
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
-import { Braces, HeartPulse, Languages, Palette, PanelsTopLeft, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
+import { Braces, HeartPulse, Languages, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -21,17 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
 import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
+import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'sfcAdapterIds'
 type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
-type ConfigurationSection = 'general' | 'environment' | 'ui' | 'auth' | 'locales' | 'themes' | 'diagnostics'
+type ConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'auth' | 'locales' | 'themes' | 'diagnostics'
+type SFCEditingField = 'cancelOn' | 'commitOn'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -49,7 +52,7 @@ const excludedRowDrafts = new WeakMap<object, unknown>()
 const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
-  ['general', 'environment', 'ui', 'auth', 'locales', 'themes', 'diagnostics'],
+  ['general', 'environment', 'ui', 'editing', 'auth', 'locales', 'themes', 'diagnostics'],
 )
 const sections = [
   {
@@ -66,6 +69,11 @@ const sections = [
     id: 'ui',
     label: 'UI',
     icon: PanelsTopLeft,
+  },
+  {
+    id: 'editing',
+    label: 'Редактирование',
+    icon: Pencil,
   },
   {
     id: 'auth',
@@ -161,6 +169,52 @@ function enableScalar(name: ScalarName): void {
 function resetScalar(name: ScalarName): void {
   if (patch.value)
     delete (patch.value as Record<string, unknown>)[name]
+  notifyRootMutation()
+}
+
+function hasSFCEditingOverride(name: SFCEditingField): boolean {
+  return patch.value?.sfcEditing?.[name]?.op === 'set'
+}
+
+function sfcEditingTriggers(name: SFCEditingField): ComponentSFCInteractionTrigger[] {
+  if (isInherit.value) {
+    const override = patch.value?.sfcEditing?.[name]
+    return override?.op === 'set' ? override.value : effective.value.sfcEditing[name]
+  }
+  return editableConfiguration.value.sfcEditing[name]
+}
+
+function enableSFCEditingOverride(name: SFCEditingField): void {
+  const target = patch.value as EndgeConfigurationPatch
+  target.sfcEditing ??= {}
+  target.sfcEditing[name] = {
+    op: 'set',
+    value: clone(props.upstream!.sfcEditing[name]),
+  }
+  notifyRootMutation()
+}
+
+function resetSFCEditingOverride(name: SFCEditingField): void {
+  if (!patch.value?.sfcEditing) {
+    return
+  }
+  delete patch.value.sfcEditing[name]
+  if (!Object.keys(patch.value.sfcEditing).length) {
+    delete patch.value.sfcEditing
+  }
+  notifyRootMutation()
+}
+
+function setSFCEditingTriggers(name: SFCEditingField, value: ComponentSFCInteractionTrigger[]): void {
+  if (isInherit.value) {
+    if (!hasSFCEditingOverride(name)) {
+      return
+    }
+    patch.value!.sfcEditing![name] = { op: 'set', value: clone(value) }
+  }
+  else {
+    editableConfiguration.value.sfcEditing[name] = clone(value)
+  }
   notifyRootMutation()
 }
 
@@ -383,7 +437,7 @@ function isEqual(left: unknown, right: unknown): boolean {
     <Tabs
       v-model="activeSection"
       orientation="vertical"
-      class="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)]"
+      class="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs lg:grid lg:grid-cols-[12rem_minmax(0,1fr)]"
     >
       <aside class="hidden min-h-0 overflow-hidden overscroll-none border-r border-border/70 bg-muted/25 lg:flex lg:flex-col">
         <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
@@ -391,9 +445,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             v-for="section in sections"
             :key="section.id"
             :value="section.id"
-            class="group h-auto min-h-10 w-full flex-none justify-start gap-2.5 rounded-md border-0 border-l-2 border-l-transparent px-3 py-2 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+            class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
           >
-            <component :is="section.icon" class="size-4 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
+            <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
             <span>{{ section.label }}</span>
           </TabsTrigger>
         </TabsList>
@@ -474,6 +528,51 @@ function isEqual(left: unknown, right: unknown): boolean {
             <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
               <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
                 <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
+              </template>
+            </ConfigurationOverrideField>
+          </TabsContent>
+
+          <TabsContent value="editing" class="m-0 space-y-5 p-5 outline-none">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">Завершение редактирования</h3>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                Эти triggers используют SFC editable-узлы без локальных cancel-on и commit-on.
+              </p>
+            </div>
+
+            <ConfigurationOverrideField
+              label="Отмена"
+              label-class="font-semibold"
+              :uses-parent-value="isInherit"
+              :overridden="hasSFCEditingOverride('cancelOn')"
+              @enable="enableSFCEditingOverride('cancelOn')"
+              @reset="resetSFCEditingOverride('cancelOn')"
+            >
+              <template #default="{ disabled: fieldDisabled }">
+                <SFCEditingTriggerListEditor
+                  :model-value="sfcEditingTriggers('cancelOn')"
+                  kind="cancel"
+                  :disabled="disabled || fieldDisabled"
+                  @update:model-value="setSFCEditingTriggers('cancelOn', $event)"
+                />
+              </template>
+            </ConfigurationOverrideField>
+
+            <ConfigurationOverrideField
+              label="Сохранение"
+              label-class="font-semibold"
+              :uses-parent-value="isInherit"
+              :overridden="hasSFCEditingOverride('commitOn')"
+              @enable="enableSFCEditingOverride('commitOn')"
+              @reset="resetSFCEditingOverride('commitOn')"
+            >
+              <template #default="{ disabled: fieldDisabled }">
+                <SFCEditingTriggerListEditor
+                  :model-value="sfcEditingTriggers('commitOn')"
+                  kind="commit"
+                  :disabled="disabled || fieldDisabled"
+                  @update:model-value="setSFCEditingTriggers('commitOn', $event)"
+                />
               </template>
             </ConfigurationOverrideField>
           </TabsContent>

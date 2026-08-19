@@ -18,6 +18,7 @@ import type {
   ComponentSFCTableVisualMenuKind,
   ComponentSFCTableVisualProjection,
   ComponentSFCVisualSourceValue,
+  EndgeSFCEditingConfiguration,
   ProgramMetadataMap,
   RComponentContractInput,
   RComponentDiagnostic,
@@ -131,6 +132,7 @@ import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
+import ComponentSFCEditOutcomeEditor from './ComponentSFCEditOutcomeEditor.vue'
 import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
@@ -143,6 +145,7 @@ const props = defineProps<{
   projection: ComponentSFCTableVisualProjection
   componentOptions: TableCellComponentOption[]
   propTypes: VisualSchemaTypeOption[]
+  sfcEditing: EndgeSFCEditingConfiguration
   diagnostics?: RComponentDiagnostic[]
 }>()
 
@@ -1081,7 +1084,9 @@ function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
   let changed = false
 
   for (const patch of patches) {
-    const result = patchComponentSFCTableSource(nextSource, patch)
+    const result = patchComponentSFCTableSource(nextSource, patch, {
+      sfcEditing: props.sfcEditing,
+    })
     if (!result.ok) {
       toast.error('Не удалось изменить Table Source', {
         description: result.message,
@@ -1792,6 +1797,30 @@ function setSelectedCellEditedReaction(value: string | null): void {
     type: 'set-column-cell-edited-reaction',
     columnIndex: column.index,
     value,
+  })
+}
+
+function setSelectedCellCancelTriggers(triggers: ComponentSFCInteractionTriggerProjection[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.enabled) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-cancel-triggers',
+    columnIndex: column.index,
+    triggers,
+  })
+}
+
+function setSelectedCellCommitTriggers(triggers: ComponentSFCInteractionTriggerProjection[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.enabled) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-commit-triggers',
+    columnIndex: column.index,
+    triggers,
   })
 }
 
@@ -3311,6 +3340,13 @@ onBeforeUnmount(() => {
                         @set-binding="setSelectedCellEditorBinding"
                         @separate="separateSelectedCellEditor"
                         @open-source="openSelectedCellEditingSource"
+                      />
+
+                      <ComponentSFCEditOutcomeEditor
+                        :cancel="selectedColumn.editing.cancel"
+                        :commit="selectedColumn.editing.commit"
+                        @update-cancel="setSelectedCellCancelTriggers"
+                        @update-commit="setSelectedCellCommitTriggers"
                       />
 
                       <div class="flex justify-end">
