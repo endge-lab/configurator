@@ -130,8 +130,10 @@ import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/Co
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
+import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
 import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
+import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 import ComponentSFCSettingsSectionHeader from './ComponentSFCSettingsSectionHeader.vue'
 import ComponentSFCTableMenuPreviewEditor from './ComponentSFCTableMenuPreviewEditor.vue'
 
@@ -242,7 +244,7 @@ const tableSections = [
 const columnSections = [
   { id: 'general', label: 'Основное', icon: Settings2, description: 'Key, отображаемое имя и ширина выбранной колонки.' },
   { id: 'data', label: 'Данные', icon: Blocks, description: 'Компонент или встроенный tag ячейки и значения его входных параметров.' },
-  { id: 'editing', label: 'Редактирование', icon: PencilLine, description: 'Встроенный editor, trigger входа и сложные комбинации клавиш или указателя.' },
+  { id: 'editing', label: 'Редактирование', icon: PencilLine, description: 'Editor, trigger входа и реакция после изменения.' },
   { id: 'events', label: 'События', icon: Radio, description: 'Обработчики событий ячейки получают row, rowIndex, rowKey, columnKey, value и event().' },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Цепочки сравниваются последовательно. Используйте dot paths без префикса row; если список пуст, используется key колонки.' },
 ] as const
@@ -1781,6 +1783,76 @@ function applySelectedCellEditTriggers(triggers: ComponentSFCInteractionTriggerP
   })
 }
 
+function setSelectedCellEditedReaction(value: string | null): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable || !column.editing.enabled || !column.editing.reaction.editable) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-edited-reaction',
+    columnIndex: column.index,
+    value,
+  })
+}
+
+function setSelectedCellEditorComponent(identity: string): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  const editor = column.editing.editor
+  if (!column.editing.editorImplicit && editor?.kind === 'component' && editor.identity === identity) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-editor-component',
+    columnIndex: column.index,
+    identity,
+  })
+}
+
+function setSelectedCellEditorTag(tag: ComponentSFCTableVisualCellTag): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  const editor = column.editing.editor
+  if (!column.editing.editorImplicit && editor?.kind === 'tag' && editor.tag === tag) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-editor-tag',
+    columnIndex: column.index,
+    tag,
+  })
+}
+
+function setSelectedCellEditorBinding(payload: {
+  name: string
+  value: string | null
+  valueKind: TableCellBindingValueKind
+}): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-editor-attribute',
+    columnIndex: column.index,
+    ...payload,
+  })
+}
+
+function separateSelectedCellEditor(): void {
+  const editor = selectedColumn.value?.editing.editor
+  if (editor?.kind === 'component' && editor.identity) {
+    setSelectedCellEditorComponent(editor.identity)
+  }
+  else if (editor?.kind === 'tag') {
+    setSelectedCellEditorTag(editor.tag)
+  }
+}
+
 function createInteractionTrigger(event: string): ComponentSFCInteractionTriggerProjection {
   return {
     event,
@@ -3220,15 +3292,7 @@ onBeforeUnmount(() => {
 
                   <div v-else class="space-y-4">
                     <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="text-sm font-medium">Сделать редактируемым</span>
-                          <Badge variant="outline" class="font-mono text-[10px]">{{ selectedColumn.editing.tag }}</Badge>
-                        </div>
-                        <div class="mt-1 text-xs text-muted-foreground">
-                          Встроенный editor публикует semantic event <code>edited</code> после commit.
-                        </div>
-                      </div>
+                      <span class="text-sm font-medium">Сделать редактируемым</span>
                       <Switch
                         :checked="selectedColumn.editing.enabled"
                         aria-label="Сделать содержимое ячейки редактируемым"
@@ -3237,13 +3301,19 @@ onBeforeUnmount(() => {
                     </div>
 
                     <template v-if="selectedColumn.editing.enabled">
-                      <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div class="text-sm font-medium">Вход в редактирование</div>
-                          <div class="mt-0.5 text-xs text-muted-foreground">
-                            Условия одного trigger объединяются через И, альтернативные trigger — через ИЛИ.
-                          </div>
-                        </div>
+                      <ComponentSFCEditableVariantEditor
+                        v-if="selectedColumn.editing.editor"
+                        :editor="selectedColumn.editing.editor"
+                        :implicit="selectedColumn.editing.editorImplicit"
+                        :component-options="componentOptions"
+                        @set-component="setSelectedCellEditorComponent"
+                        @set-tag="setSelectedCellEditorTag"
+                        @set-binding="setSelectedCellEditorBinding"
+                        @separate="separateSelectedCellEditor"
+                        @open-source="openSelectedCellEditingSource"
+                      />
+
+                      <div class="flex justify-end">
                         <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
                           <Plus class="size-3.5" />
                           Альтернативный trigger
@@ -3267,7 +3337,9 @@ onBeforeUnmount(() => {
                         >
                           <div class="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
                             <div class="flex min-w-0 items-center gap-2">
-                              <Badge variant="secondary" class="font-mono text-[10px]">{{ index + 1 }}</Badge>
+                              <Badge variant="secondary" class="font-mono text-[10px]">
+                                {{ index + 1 }}
+                              </Badge>
                               <code class="truncate text-xs font-medium">{{ trigger.event }}</code>
                             </div>
                             <Button
@@ -3291,8 +3363,35 @@ onBeforeUnmount(() => {
                         </div>
                       </div>
 
-                      <div class="rounded-lg border border-border/70 bg-muted/20 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-                        После commit компонент публикует <code>edited</code> с <code>value</code> и <code>previousValue</code>. Query или Store Update подключается снаружи через Composition.
+                      <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
+                        <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                          <span>Для edited:</span>
+                          <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                        </div>
+                        <ComponentSFCReactionEditor
+                          :model-value="selectedColumn.editing.reaction.source"
+                          event-name="edited"
+                          variant="section"
+                          @save="setSelectedCellEditedReaction"
+                        />
+                      </div>
+
+                      <div
+                        v-else
+                        class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                      >
+                        <div class="min-w-0">
+                          <div class="text-sm font-medium">
+                            Reaction управляется Source
+                          </div>
+                          <div class="mt-0.5 text-xs text-muted-foreground">
+                            {{ selectedColumn.editing.reaction.message }}
+                          </div>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                          <FileCode2 class="size-3.5" />
+                          Открыть
+                        </Button>
                       </div>
                     </template>
                   </div>

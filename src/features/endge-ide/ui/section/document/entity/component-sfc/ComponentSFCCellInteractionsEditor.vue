@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
   ComponentSFCInteractionTriggerProjection,
   ComponentSFCTableCellInteractionModifier,
@@ -8,17 +7,15 @@ import type {
   ComponentSFCTableCellInteractionsProjection,
 } from '@endge/core'
 
-import { Endge, getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
+import { getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
 import { ChevronDown, FileCode2, Plus, Trash2 } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
-import { Label } from '@/components/ui/label'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { Textarea } from '@/components/ui/textarea'
 
 import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
+import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 
 const props = defineProps<{
   modelValue: ComponentSFCTableCellInteractionsProjection
@@ -30,19 +27,6 @@ const emit = defineEmits<{
 }>()
 
 const events = getComponentSFCIntrinsicEventDefinitions('Cell')
-const actionsRevision = ref(0)
-const unsubscribeActions = Endge.actions.subscribe(() => actionsRevision.value += 1)
-const actions = computed(() => (void actionsRevision.value, Endge.actions.listResolved())
-  .filter(action => action.active && Boolean(action.identity.trim()))
-  .sort((left, right) => {
-    const groupDifference = actionGroupOrder(left.origin.kind) - actionGroupOrder(right.origin.kind)
-    return groupDifference || left.displayName.localeCompare(right.displayName)
-  }))
-const actionOptions = computed<SearchableSelectOption[]>(() => actions.value.map(action => ({
-  value: action.identity,
-  label: action.displayName || action.identity,
-  group: actionGroupLabel(action.origin.kind),
-})))
 const drafts = ref<ComponentSFCTableCellInteractionRuleProjection[]>([])
 const expanded = ref<Set<number>>(new Set())
 
@@ -51,8 +35,6 @@ watch(
   value => drafts.value = value.rules.map(cloneRule),
   { immediate: true, deep: true },
 )
-
-onBeforeUnmount(unsubscribeActions)
 
 function cloneTrigger(value: ComponentSFCInteractionTriggerProjection): ComponentSFCInteractionTriggerProjection {
   return {
@@ -80,7 +62,7 @@ function createRule(): ComponentSFCTableCellInteractionRuleProjection {
     composing: null,
     button: 0,
     flags: {},
-    reactionSource: serializeAction(actions.value[0]),
+    reactionSource: defaultReactionSource(),
   }
 }
 
@@ -156,50 +138,17 @@ function uniqueTokens(tokens: string[]): string[] {
   return [...new Set(tokens.filter(Boolean))]
 }
 
-function selectedAction(rule: ComponentSFCTableCellInteractionRuleProjection): string | null {
-  const match = rule.reactionSource.match(/\bidentity\s*:\s*(['"])(.*?)\1/)
-  return match?.[2] && actions.value.some(action => action.identity === match[2]) ? match[2] : null
-}
-
-function updateAction(rule: ComponentSFCTableCellInteractionRuleProjection, value: string | string[] | null): void {
-  if (!value || Array.isArray(value)) {
+function updateReaction(index: number, value: string | null): void {
+  const rule = drafts.value[index]
+  if (!rule) {
     return
   }
-  rule.reactionSource = serializeAction(actions.value.find(action => action.identity === value))
+  rule.reactionSource = value?.trim() || defaultReactionSource()
   commit()
 }
 
-function serializeAction(action: { identity: string } | undefined): string {
-  const identity = action?.identity || 'action.identity'
-  const definition = action ? Endge.actions.getDefinition(action.identity) : null
-  const params = [...(definition?.input?.params?.values() ?? [])]
-  const input = action
-    ? params.length
-      ? `{ ${params.map(param => `${param.name}: ${cellActionInputSource(param.name)}`).join(', ')} }`
-      : 'event()'
-    : '{ rowId: rowKey, row, rowIndex, columnKey, value, event: event() }'
-  return `action({ identity: ${quote(identity)}, input: ${input} })`
-}
-
-function actionGroupOrder(kind: 'storage' | 'builtin' | 'derived' | 'local'): number {
-  return ({ builtin: 0, storage: 1, derived: 2, local: 3 })[kind]
-}
-
-function actionGroupLabel(kind: 'storage' | 'builtin' | 'derived' | 'local'): string {
-  return ({ builtin: 'Built-in', storage: 'Actions', derived: 'Provided', local: 'Local' })[kind]
-}
-
-function cellActionInputSource(name: string): string {
-  if (name === 'rowId' || name === 'rowKey') {
-    return 'rowKey'
-  }
-  if (name === 'row' || name === 'rowIndex' || name === 'columnKey' || name === 'value') {
-    return name
-  }
-  if (name === 'event') {
-    return 'event()'
-  }
-  return `event(${quote(name)})`
+function defaultReactionSource(): string {
+  return `action({ identity: 'action.identity', input: { rowId: rowKey, row, rowIndex, columnKey, value, event: event() } })`
 }
 
 function commit(): void {
@@ -329,17 +278,11 @@ function quote(value: string): string {
               @update:model-value="updateTrigger(index, $event)"
             />
 
-            <div class="grid gap-3 md:grid-cols-[minmax(180px,0.55fr)_minmax(260px,1.45fr)]">
-              <div class="space-y-1.5">
-                <Label class="text-xs">Action</Label>
-                <SearchableSelect :options="actionOptions" :model-value="selectedAction(rule)" placeholder="Выбрать Action..." trigger-class="editor-control w-full" @update:model-value="updateAction(rule, $event)" />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs">Reaction</Label>
-                <Textarea v-model="rule.reactionSource" class="editor-control min-h-20 font-mono text-xs" spellcheck="false" @blur="commit" />
-                <p class="text-[10px] text-muted-foreground">Можно указать action(), query(), emit(), typescript() или их массив.</p>
-              </div>
-            </div>
+            <ComponentSFCReactionEditor
+              :model-value="rule.reactionSource"
+              :event-name="rule.event"
+              @save="updateReaction(index, $event)"
+            />
           </div>
         </CollapsibleContent>
       </Collapsible>
