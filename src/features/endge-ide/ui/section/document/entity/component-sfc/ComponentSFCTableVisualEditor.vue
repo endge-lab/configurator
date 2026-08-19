@@ -45,7 +45,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  CircleHelp,
   Columns3,
   ExternalLink,
   Eye,
@@ -128,6 +127,7 @@ import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
+import ComponentSFCSettingsSectionHeader from './ComponentSFCSettingsSectionHeader.vue'
 import ComponentSFCTableMenuPreviewEditor from './ComponentSFCTableMenuPreviewEditor.vue'
 
 const props = defineProps<{
@@ -222,24 +222,26 @@ const activeMenuKind = useSmartTabSelection(
   ['column', 'row'] as const,
 )
 const tableSections = [
-  { id: 'general', label: 'Основное', icon: Settings2 },
-  { id: 'inputs', label: 'Входные данные', icon: Braces },
-  { id: 'events', label: 'События', icon: Radio },
-  { id: 'ports', label: 'Порты', icon: Unplug },
-  { id: 'selection', label: 'Выделение', icon: Check },
-  { id: 'paging', label: 'Пагинация', icon: Table2 },
-  { id: 'visibility', label: 'Видимость', icon: Eye },
-  { id: 'pinning', label: 'Закрепления', icon: Pin },
-  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
-  { id: 'menus', label: 'Меню', icon: SquareMenu },
-  { id: 'metadata', label: 'Метаданные', icon: FileJson2 },
+  { id: 'general', label: 'Основное', icon: Settings2, description: 'Основные параметры таблицы и её отображения.' },
+  { id: 'inputs', label: 'Входные данные', icon: Braces, description: 'Public props генерируются напрямую в SFC defineProps.' },
+  { id: 'events', label: 'События', icon: Radio, description: 'Добавляйте только события Table, для которых нужна реакция.' },
+  { id: 'ports', label: 'Порты', icon: Unplug, description: 'Required, Provided, Events и Forwarding читаются из definePorts и сразу патчат Source.' },
+  { id: 'selection', label: 'Выделение', icon: Check, description: 'Режим задаёт допустимое количество выбранных строк, а способ выбора — какие действия меняют состояние выделения.' },
+  { id: 'paging', label: 'Пагинация', icon: Table2, description: 'Способ отображения больших наборов строк.' },
+  { id: 'visibility', label: 'Видимость', icon: Eye, description: 'Управляет колонками, видимыми при первом открытии таблицы; ту же настройку можно менять на вкладке «Колонки».' },
+  { id: 'pinning', label: 'Закрепления', icon: Pin, description: 'Задаёт колонки, закреплённые слева или справа по умолчанию; порядок берётся со вкладки «Колонки».' },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Строки сортировки идут в порядке приоритета; поля и comparator задаются в настройках колонок.' },
+  { id: 'menus', label: 'Меню', icon: SquareMenu, description: 'Настройка пунктов меню заголовков колонок и строк таблицы.' },
+  { id: 'metadata', label: 'Метаданные', icon: FileJson2, description: 'Редактирование metadata компонента как JSON-объекта.' },
 ] as const
 const columnSections = [
-  { id: 'general', label: 'Основное', icon: Settings2 },
-  { id: 'data', label: 'Данные', icon: Blocks },
-  { id: 'events', label: 'События', icon: Radio },
-  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown },
+  { id: 'general', label: 'Основное', icon: Settings2, description: 'Key, отображаемое имя и ширина выбранной колонки.' },
+  { id: 'data', label: 'Данные', icon: Blocks, description: 'Компонент или встроенный tag ячейки и значения его входных параметров.' },
+  { id: 'events', label: 'События', icon: Radio, description: 'Обработчики событий ячейки получают row, rowIndex, rowKey, columnKey, value и event().' },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Цепочки сравниваются последовательно. Используйте dot paths без префикса row; если список пуст, используется key колонки.' },
 ] as const
+const activeTableSection = computed(() => tableSections.find(section => section.id === tableSection.value) ?? tableSections[0])
+const activeColumnSection = computed(() => columnSections.find(section => section.id === columnSection.value) ?? columnSections[0])
 const inputWorkspaceState = useSmartTabViewState(
   'component-sfc.visual.table-input-workspace',
   {
@@ -2025,12 +2027,12 @@ onBeforeUnmount(() => {
               </Select>
             </div>
 
-            <section v-if="tableSection === 'inputs'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <TooltipProvider :delay-duration="120">
-                <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-3 py-2">
-                  <p class="text-[11px] leading-relaxed text-muted-foreground">
-                    Public props are generated directly in SFC <code>defineProps</code>.
-                  </p>
+            <ComponentSFCSettingsSectionHeader
+              :label="activeTableSection.label"
+              :description="activeTableSection.description"
+            >
+              <template v-if="tableSection === 'inputs'" #actions>
+                <TooltipProvider :delay-duration="120">
                   <div class="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Input editor display options">
                     <Tooltip>
                       <TooltipTrigger as-child>
@@ -2065,9 +2067,11 @@ onBeforeUnmount(() => {
                       <TooltipContent>Показать автоматически сгенерированный JSON example</TooltipContent>
                     </Tooltip>
                   </div>
-                </div>
-              </TooltipProvider>
+                </TooltipProvider>
+              </template>
+            </ComponentSFCSettingsSectionHeader>
 
+            <section v-if="tableSection === 'inputs'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
               <ComponentSFCPropsVisualEditor
                 class="min-h-0 flex-1"
                 :source="source"
@@ -2132,10 +2136,6 @@ onBeforeUnmount(() => {
                   />
 
                   <section v-show="tableSection === 'selection'" class="space-y-3">
-                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
-                      Режим задаёт допустимое количество выбранных строк, а способ выбора — какие действия меняют единое состояние выделения.
-                    </p>
-
                     <div class="grid max-w-[720px] gap-3 sm:grid-cols-2">
                       <div class="space-y-1.5">
                         <Label for="sfc-table-selection-mode">Режим</Label>
@@ -2197,10 +2197,6 @@ onBeforeUnmount(() => {
                   </section>
 
                   <section v-show="tableSection === 'paging'" class="space-y-3">
-                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
-                      Способ отображения больших наборов строк.
-                    </p>
-
                     <div class="max-w-[720px] min-w-0 space-y-3">
                       <div class="max-w-sm space-y-1.5">
                         <Label for="sfc-table-paging">Режим</Label>
@@ -2272,10 +2268,6 @@ onBeforeUnmount(() => {
                   </section>
 
                   <section v-show="tableSection === 'visibility'" class="space-y-3">
-                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
-                      Отмеченные колонки видны при первом открытии. Эту же настройку можно менять для каждой колонки на вкладке «Колонки».
-                    </p>
-
                     <div class="max-w-[720px] min-w-0">
                       <div
                         v-if="columns.length"
@@ -2311,10 +2303,6 @@ onBeforeUnmount(() => {
                   </section>
 
                   <section v-show="tableSection === 'pinning'" class="space-y-3">
-                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
-                      Порядок закреплённых колонок определяется их порядком на вкладке «Колонки». Там же можно настроить каждую колонку отдельно.
-                    </p>
-
                     <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
                       <div
                         v-if="projection.defaultPin?.kind === 'expression'"
@@ -2458,10 +2446,6 @@ onBeforeUnmount(() => {
                   </section>
 
                   <section v-show="tableSection === 'sorting'" class="space-y-3">
-                    <p class="max-w-[720px] text-[11px] leading-relaxed text-muted-foreground">
-                      Строки идут в порядке приоритета. Поля и comparator каждой колонки настраиваются на вкладке «Колонки».
-                    </p>
-
                     <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
                       <div
                         v-if="projection.defaultSort?.kind === 'expression'"
@@ -2837,60 +2821,11 @@ onBeforeUnmount(() => {
                   </Select>
                 </div>
 
-                <ScrollArea class="min-h-0 flex-1">
-                  <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
-                    Выберите колонку выше для настройки.
-                  </div>
-
-                  <template v-else>
-                <section v-show="columnSection === 'general'" class="px-5 py-5">
-                  <div class="mb-3 text-xs font-medium text-muted-foreground">
-                    Выбранная колонка
-                  </div>
-                  <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-key">Key</Label>
-                      <Input
-                        id="sfc-table-column-key"
-                        v-model="keyDraft"
-                        class="editor-control font-mono"
-                        spellcheck="false"
-                        :disabled="!canEdit(selectedColumn.key)"
-                        @blur="commitAttribute('key', keyDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-title">Отображаемое имя</Label>
-                      <Input
-                        id="sfc-table-column-title"
-                        v-model="titleDraft"
-                        class="editor-control"
-                        :disabled="!canEdit(selectedColumn.title)"
-                        @blur="commitAttribute('title', titleDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-width">Ширина</Label>
-                      <Input
-                        id="sfc-table-column-width"
-                        v-model="widthDraft"
-                        class="editor-control"
-                        placeholder="auto"
-                        :disabled="!canEdit(selectedColumn.width)"
-                        @blur="commitAttribute('width', widthDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section v-show="columnSection === 'data'" class="px-5 py-4">
-                  <div class="mb-3 flex items-center justify-between gap-3">
-                    <h3 class="text-sm font-semibold">
-                      Данные
-                    </h3>
+                <ComponentSFCSettingsSectionHeader
+                  :label="activeColumnSection.label"
+                  :description="activeColumnSection.description"
+                >
+                  <template v-if="columnSection === 'data' && selectedColumn" #actions>
                     <TooltipProvider :delay-duration="120">
                       <div
                         class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
@@ -2949,8 +2884,56 @@ onBeforeUnmount(() => {
                         </Tooltip>
                       </div>
                     </TooltipProvider>
+                  </template>
+                </ComponentSFCSettingsSectionHeader>
+
+                <ScrollArea class="min-h-0 flex-1">
+                  <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
+                    Выберите колонку выше для настройки.
                   </div>
 
+                  <template v-else>
+                <section v-show="columnSection === 'general'" class="px-5 py-5">
+                  <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
+                    <div class="space-y-1.5">
+                      <Label for="sfc-table-column-key">Key</Label>
+                      <Input
+                        id="sfc-table-column-key"
+                        v-model="keyDraft"
+                        class="editor-control font-mono"
+                        spellcheck="false"
+                        :disabled="!canEdit(selectedColumn.key)"
+                        @blur="commitAttribute('key', keyDraft)"
+                        @keydown.enter="blurInput"
+                      />
+                    </div>
+                    <div class="space-y-1.5">
+                      <Label for="sfc-table-column-title">Отображаемое имя</Label>
+                      <Input
+                        id="sfc-table-column-title"
+                        v-model="titleDraft"
+                        class="editor-control"
+                        :disabled="!canEdit(selectedColumn.title)"
+                        @blur="commitAttribute('title', titleDraft)"
+                        @keydown.enter="blurInput"
+                      />
+                    </div>
+                    <div class="space-y-1.5">
+                      <Label for="sfc-table-column-width">Ширина</Label>
+                      <Input
+                        id="sfc-table-column-width"
+                        v-model="widthDraft"
+                        class="editor-control"
+                        placeholder="auto"
+                        :disabled="!canEdit(selectedColumn.width)"
+                        @blur="commitAttribute('width', widthDraft)"
+                        @keydown.enter="blurInput"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section v-show="columnSection === 'data'" class="px-5 py-4">
                   <div
                     v-if="cellEditorMode === 'component' || cellEditorMode === 'tag'"
                     ref="dataSplitContainer"
@@ -3127,28 +3110,6 @@ onBeforeUnmount(() => {
                 </div>
 
                 <section v-show="columnSection === 'sorting'" class="bg-background/15 px-5 py-4">
-                  <div class="mb-3 flex items-center gap-1.5">
-                    <h3 class="text-sm font-semibold">
-                      Сортировка
-                    </h3>
-                    <TooltipProvider :delay-duration="120">
-                      <Tooltip>
-                        <TooltipTrigger as-child>
-                          <button
-                            type="button"
-                            class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            aria-label="О сортировке колонки"
-                          >
-                            <CircleHelp class="size-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" class="max-w-80 leading-relaxed">
-                          Цепочки сравниваются последовательно. Используйте dot paths без префикса row. Если список пуст, сортировка использует key колонки.
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
                   <div class="grid max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
                     <div class="overflow-hidden rounded-lg border border-border/70">
                       <div

@@ -11,7 +11,7 @@ import {
 } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Braces, ChevronDown, Plus, Radio, Trash2, Unplug, Zap } from 'lucide-vue-next'
+import { Braces, ChevronDown, Plus, Radio, Trash2, Zap } from 'lucide-vue-next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -327,11 +327,7 @@ function toPortName(identity: string): string {
     </div>
 
     <template v-if="mode === 'events'">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="space-y-1">
-          <h3 class="flex items-center gap-2 text-sm font-semibold"><Radio class="size-4" /> События Table</h3>
-          <p class="text-xs text-muted-foreground">Добавляйте события, для которых нужна реакция.</p>
-        </div>
+      <div class="flex justify-end">
         <Popover v-model:open="eventPickerOpen">
           <PopoverTrigger as-child class="!w-auto">
             <Button
@@ -420,11 +416,6 @@ function toPortName(identity: string): string {
     </template>
 
     <template v-else>
-      <div class="space-y-1">
-        <h3 class="flex items-center gap-2 text-sm font-semibold"><Unplug class="size-4" /> Типизированные порты</h3>
-        <p class="text-xs text-muted-foreground">Required, Provided, Events и Forwarding читаются из definePorts и сразу патчат Source.</p>
-      </div>
-
       <div class="grid gap-3 xl:grid-cols-2">
         <section class="rounded-lg border p-3">
           <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Required</h4>

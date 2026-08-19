@@ -47,12 +47,17 @@ export default defineConfig(({ mode, command }) => {
         allow: [cwd, testIntegrationsRoot, packagesRoot],
       },
     },
+    optimizeDeps: {
+      // Core собирается локальным watch-процессом и должен обновляться без
+      // замороженной копии в node_modules/.vite/deps.
+      exclude: ['@endge/core'],
+    },
     resolve: {
       // Endge runtime packages and class-transformer share singleton state.
       // Without dedupe, optimizeDeps can resolve nested published copies:
       // Raph then exposes an older API, while class-transformer loses the
       // decorator metadata used by Serialize.fromJSON in @endge/core.
-      dedupe: ['@endge/raph', '@endge/utils', 'class-transformer'],
+      dedupe: ['@endge/core', '@endge/raph', '@endge/utils', 'class-transformer'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),

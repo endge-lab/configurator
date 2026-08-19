@@ -43,7 +43,7 @@ describe('Runtime Preview auth preflight', () => {
   it('collects inherited and explicit Query profiles from the program graph', () => {
     mocks.artifacts.set('composition:root', artifact('composition', [dependency('query', 'inherited'), dependency('query', 'explicit')]))
     mocks.artifacts.set('query:inherited', artifact('query', [], { auth: { mode: 'inherit' } }))
-    mocks.artifacts.set('query:explicit', artifact('query', [], { auth: { mode: 'profile', profileIdentity: 'service-auth' } }))
+    mocks.artifacts.set('query:explicit', artifact('query', [], { auth: { mode: 'profile', profile: 'service-auth' } }))
 
     expect(collectRuntimePreviewAuthProfiles({ entityType: 'composition', identity: 'root' }).map(item => item.identity))
       .toEqual(['default-auth', 'service-auth'])

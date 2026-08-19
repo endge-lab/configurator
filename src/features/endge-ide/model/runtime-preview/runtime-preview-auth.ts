@@ -48,7 +48,7 @@ function collectQueryProfile(artifact: ProgramArtifact<QueryProgramPayload>, ide
   if (policy.mode === 'none')
     return
   if (policy.mode === 'profile') {
-    const identity = String(policy.profileIdentity ?? '').trim()
+    const identity = String(policy.profile ?? '').trim()
     if (identity)
       identities.add(identity)
     return

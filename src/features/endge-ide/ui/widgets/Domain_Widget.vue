@@ -1221,6 +1221,14 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   closeContextMenu()
 
   if (item.node.workspaceIdentity) {
+    if (item.node.activeWorkspace) {
+      EndgeIDE.tabs.openWorkspaceSettings()
+    }
+    else {
+      toast.warning('Сначала переключитесь на это рабочее пространство', {
+        description: item.node.name,
+      })
+    }
     return
   }
 

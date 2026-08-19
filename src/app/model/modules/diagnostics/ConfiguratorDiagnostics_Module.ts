@@ -30,7 +30,7 @@ export class ConfiguratorDiagnostics_Module {
     const errorInfo = String(params.errorInfo ?? '')
     const componentName = String(params.componentName ?? 'Unknown')
     const routePath = String(params.routePath ?? '')
-    const isRecursive = this._looksLikeRecursiveVueUpdate(error, errorInfo)
+    const isRecursive = this._looksLikeRecursiveVueUpdate(error)
     const isErrorStorm = hits >= this._config.errorStormLimit
 
     if (!isRecursive && !isErrorStorm) {
@@ -113,14 +113,9 @@ export class ConfiguratorDiagnostics_Module {
     }
   }
 
-  private _looksLikeRecursiveVueUpdate(error: Error, errorInfo: string): boolean {
+  private _looksLikeRecursiveVueUpdate(error: Error): boolean {
     const message = `${error.message}\n${error.stack ?? ''}`.toLowerCase()
-    const info = errorInfo.toLowerCase()
 
-    return message.includes('maximum recursive updates exceeded')
-      || info.includes('#runtime-14')
-      || info.includes('#runtime-15')
-      || info.includes('scheduler flush')
-      || info.includes('component update')
+    return message.includes('maximum recursive updates')
   }
 }

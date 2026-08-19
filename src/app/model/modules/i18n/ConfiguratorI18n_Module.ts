@@ -30,6 +30,9 @@ export class ConfiguratorI18n_Module {
         Endge.context.setCurrentLocale(newLocale)
       }),
       Endge.context.subscribe(() => {
+        if (!Endge.workspace.isLoaded) {
+          return
+        }
         const next = Endge.workspace.normalizeLocale(Endge.context.currentLocale) as ConfiguratorLocale
         if (i18n.global.locale.value !== next) {
           i18n.global.locale.value = next
@@ -55,6 +58,11 @@ export class ConfiguratorI18n_Module {
   }
 
   private _syncWorkspace(): void {
+    if (!Endge.workspace.isLoaded) {
+      this._availableLocales.value = []
+      return
+    }
+
     this._availableLocales.value = Endge.workspace.locales.map(locale => ({
       label: locale.displayName || locale.shortLabel || locale.code,
       value: locale.code,

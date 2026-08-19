@@ -104,7 +104,7 @@ function shortVersion(value: string): string {
   color: hsl(var(--domain-version-hue) 65% 31%);
 }
 
-:global(.dark) .domain-version-badge--version {
+:global(.dark .domain-version-badge--version) {
   border-color: hsl(var(--domain-version-hue) 70% 65% / 38%);
   background: hsl(var(--domain-version-hue) 70% 55% / 16%);
   color: hsl(var(--domain-version-hue) 72% 76%);
@@ -116,7 +116,7 @@ function shortVersion(value: string): string {
   color: rgb(180 83 9);
 }
 
-:global(.dark) .domain-version-badge--dirty {
+:global(.dark .domain-version-badge--dirty) {
   color: rgb(252 211 77);
 }
 

@@ -14,6 +14,7 @@ import AuthenticationRequiredGate from '@/features/backend-connections/ui/Authen
 import BackendConnectionFailureGate from '@/features/backend-connections/ui/BackendConnectionFailureGate.vue'
 import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceSelectionGate.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
+import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 
 const workspaceSelectionRequired = Configurator.status === 'workspace-selection-required'
@@ -21,7 +22,9 @@ const backendConnectionFailed = Configurator.status === 'backend-connection-fail
 const authenticationRequired = Configurator.status === 'authentication-required'
 
 const route = useRoute()
+const context = useEndgeIDEContext()
 const isOidcPopupCallback = computed(() => route.name === 'oidc-popup-callback')
+const isContextSwitching = computed(() => context.isSwitching())
 const error = ref<Error | null>(null)
 const errorInfo = ref<string>('')
 const errorComponentName = ref<string>('')
@@ -88,6 +91,12 @@ onErrorCaptured((err, instance, info) => {
   <AuthenticationRequiredGate v-else-if="authenticationRequired" />
   <BackendConnectionFailureGate v-else-if="backendConnectionFailed" />
   <WorkspaceSelectionGate v-else-if="workspaceSelectionRequired" />
+  <div v-else-if="isContextSwitching" class="fixed inset-0 z-[220] flex flex-col items-center justify-center gap-4 bg-slate-50/70 backdrop-blur-sm">
+    <div class="size-14 animate-spin rounded-full border-[3px] border-slate-300 border-r-sky-400 border-t-sky-500" />
+    <p class="text-sm font-medium text-slate-600">
+      {{ appLoadingText }}
+    </p>
+  </div>
   <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>

@@ -104,9 +104,9 @@ export class ConfiguratorContext_Module {
    * Используется для полного повторного boot без пересоздания IDE context runtime.
    */
   public async reset(): Promise<void> {
-    await Endge.reset()
     this._isInitialized = false
     this._notify()
+    await Endge.reset()
   }
 
   /** Собирает boot-контекст из единожды выбранного backend provider. */

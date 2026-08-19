@@ -164,40 +164,6 @@ function resetScalar(name: ScalarName): void {
   notifyRootMutation()
 }
 
-function sseUrl(): string {
-  if (isInherit.value) {
-    const override = patch.value?.sse
-    return override?.op === 'set' ? override.value.url : ''
-  }
-  return editableConfiguration.value.sse?.url ?? ''
-}
-
-function hasSSEOverride(): boolean {
-  return patch.value?.sse != null
-}
-
-function setSSEUrl(url: string): void {
-  const current = isInherit.value
-    ? patch.value?.sse?.op === 'set' ? patch.value.sse.value : props.upstream?.sse
-    : editableConfiguration.value.sse
-  const next = { url, authMode: current?.authMode ?? 'inherit' as const }
-  if (isInherit.value)
-    patch.value!.sse = { op: 'set', value: next }
-  else
-    editableConfiguration.value.sse = next
-  notifyRootMutation()
-}
-
-function enableSSE(): void {
-  setSSEUrl(props.upstream?.sse?.url ?? '')
-}
-
-function resetSSE(): void {
-  if (patch.value)
-    delete patch.value.sse
-  notifyRootMutation()
-}
-
 function collectionRows(name: CollectionName): any[] {
   if (!isInherit.value)
     return editableConfiguration.value[name] as any[]
@@ -448,11 +414,6 @@ function isEqual(left: unknown, right: unknown): boolean {
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
             <slot name="general" />
-            <ConfigurationOverrideField label="SSE endpoint" :uses-parent-value="isInherit" :overridden="hasSSEOverride()" @enable="enableSSE" @reset="resetSSE">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                <Input :model-value="sseUrl()" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : '{ENDPOINT_SSE}'" @update:model-value="setSSEUrl(String($event ?? ''))" />
-              </template>
-            </ConfigurationOverrideField>
           </TabsContent>
 
           <TabsContent value="environment" class="m-0 p-5 outline-none">

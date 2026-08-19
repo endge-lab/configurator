@@ -3,7 +3,7 @@
 import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { Endge } from '@endge/core'
-import { Loader2, Save, Settings2 } from 'lucide-vue-next'
+import { Loader2, Save, Settings2, SlidersHorizontal } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -37,6 +38,15 @@ const documentModel = computed(
 const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
 const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
 const externallyManaged = computed(() => systemManaged.value || integrationManaged.value)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'general',
+  ['general', 'configuration'] as const,
+)
+const tabButtons = [
+  { value: 'general', icon: Settings2, label: 'Основное' },
+  { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
+] as const
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
   set: (value) => {
@@ -70,18 +80,24 @@ async function save(): Promise<void> {
     <template #center>
       <TooltipProvider>
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip>
+          <Tooltip v-for="item in tabButtons" :key="item.value">
             <TooltipTrigger as-child>
               <Button
                 size="icon"
                 variant="ghost"
-                class="h-7 w-7 bg-editor-control shadow-sm"
-                aria-label="Основное"
+                class="h-7 w-7"
+                :class="
+                  activeTab === item.value
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                :aria-label="item.label"
+                @click="activeTab = item.value"
               >
-                <Settings2 class="size-4" />
+                <component :is="item.icon" class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ item.label }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -110,49 +126,43 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <ScrollArea class="min-h-0 flex-1">
-      <div class="mx-auto max-w-3xl space-y-8 p-6">
-        <section class="space-y-4">
-          <div class="space-y-2">
-            <Label for="environment-identity">Identity</Label>
-            <Input
-              id="environment-identity"
-              v-model="editor.identity"
-              :disabled="externallyManaged"
-              placeholder="dev"
-            />
+    <div class="min-h-0 flex-1 bg-muted/25 p-4">
+      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
+        <ScrollArea v-if="activeTab === 'general'" class="h-full">
+          <div class="w-full p-6 lg:p-8">
+            <section class="max-w-2xl space-y-4">
+              <div class="space-y-2">
+                <Label for="environment-identity">Identity</Label>
+                <Input
+                  id="environment-identity"
+                  v-model="editor.identity"
+                  :disabled="externallyManaged"
+                  placeholder="dev"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label for="environment-display-name">Display name</Label>
+                <Input
+                  id="environment-display-name"
+                  v-model="editor.displayName"
+                  :disabled="externallyManaged"
+                  placeholder="Development"
+                />
+              </div>
+            </section>
           </div>
-          <div class="space-y-2">
-            <Label for="environment-display-name">Display name</Label>
-            <Input
-              id="environment-display-name"
-              v-model="editor.displayName"
-              :disabled="externallyManaged"
-              placeholder="Development"
-            />
-          </div>
-        </section>
+        </ScrollArea>
 
-        <Separator />
-
-        <section class="flex h-[42rem] min-h-[32rem] flex-col gap-3">
-          <div>
-            <h2 class="text-sm font-semibold">
-              Конфигурация
-            </h2>
-            <p class="text-xs text-muted-foreground">
-              Переопределения конфигурации для этого окружения.
-            </p>
-          </div>
+        <div v-else class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor
             v-model="configuration"
-            class="min-h-0 flex-1"
+            class="min-h-0"
             variant="contribution"
             :upstream="upstreamConfiguration"
             :disabled="externallyManaged"
           />
-        </section>
+        </div>
       </div>
-    </ScrollArea>
+    </div>
   </SourceDocumentEditorShell>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, curly */
+/* eslint-disable curly */
 import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
 
 import { computed } from 'vue'
@@ -11,18 +11,12 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import { isEditorTabSurfaceVisible } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
-import { EndgeIDE } from '@/features/endge-ide'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   position: 'left' | 'right'
   widgets: (WidgetDefinition & WidgetDefinitionState)[]
   bottomWidgets: (WidgetDefinition & WidgetDefinitionState)[]
-  showWorkspaceSettings?: boolean
-}>(), {
-  showWorkspaceSettings: true,
-})
+}>()
 
 const { t } = useI18n()
 
@@ -88,16 +82,6 @@ const topWidgets = computed(() =>
   ),
 )
 
-const workspaceSettingsActive = computed(() => {
-  return EndgeIDE.tabs.activeTabId.value === 'workspace-settings'
-    && isEditorTabSurfaceVisible(widgetsState.value)
-})
-const workspaceSettingsAnchorId = computed(() => {
-  return topWidgets.value.some(widget => widget.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
-    ? ENDGE_IDE_RUNTIME_TREE_WIDGET_ID
-    : topWidgets.value[0]?.id ?? null
-})
-
 const bottomWidgetsFiltered = computed(() =>
   sortByOrder(
     props.bottomWidgets.filter(w => getWidgetInstances(w.id).length > 0),
@@ -122,10 +106,6 @@ function getWidgetIconClass(widget: WidgetDefinition): string {
 
 function handleWidgetClick(widget: WidgetDefinition & WidgetDefinitionState) {
   toggleWidget(widget.id)
-}
-
-function openWorkspaceSettings() {
-  EndgeIDE.tabs.openWorkspaceSettings()
 }
 
 function handlePopupWidgetClick(group: PopupWidgetGroup) {
@@ -234,25 +214,6 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
             </TooltipTrigger>
             <TooltipContent :side="position === 'left' ? 'right' : 'left'">
               {{ widget.title }}
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip v-if="showWorkspaceSettings && position === 'left' && widget.id === workspaceSettingsAnchorId">
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="size-8 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground"
-                :class="{
-                  'bg-muted-foreground/15 dark:bg-muted-foreground/25 text-card-foreground': workspaceSettingsActive,
-                }"
-                @click="openWorkspaceSettings"
-              >
-                <component :is="getIconComponent('Orbit')" class="size-4 text-lime-600 dark:text-[#C3E88D]" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              Рабочее пространство
             </TooltipContent>
           </Tooltip>
         </template>
