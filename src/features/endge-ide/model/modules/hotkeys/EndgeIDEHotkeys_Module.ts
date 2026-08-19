@@ -88,8 +88,8 @@ export class EndgeIDEHotkeys_Module {
           this._onSave?.()
         })
       }
-      else if (item.action === 'closeTab') {
-        // Cmd/Ctrl+W is registered only in capture phase below, before the browser closes its tab.
+      else if (item.action === 'closeTab' || item.action === 'returnToProject') {
+        // These shortcuts use dedicated listeners below to preserve their event-phase semantics.
         continue
       }
       else if (item.action === 'createDocument') {
@@ -101,13 +101,6 @@ export class EndgeIDEHotkeys_Module {
       else if (item.action === 'runRuntime') {
         this._manager.on(keys, (e) => {
           if (this._onRunRuntime?.()) {
-            e.preventDefault()
-          }
-        })
-      }
-      else if (item.action === 'returnToProject') {
-        this._manager.on(keys, (e) => {
-          if (this._onReturnToProject?.()) {
             e.preventDefault()
           }
         })
