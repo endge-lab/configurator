@@ -15,6 +15,7 @@ import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
 import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'
 import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
+import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.vue'
 
 const context = useEndgeIDEContext()
 const { state: domainVersionState, refresh: refreshDomainVersion } = useDomainVersions()
@@ -108,6 +109,7 @@ onBeforeUnmount(() => {
         <EnvironmentSwitcher />
         <LocaleSwitcher />
         <ThemeSwitcher />
+        <TimezoneSwitcher />
       </div>
     </div>
 

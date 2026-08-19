@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
 
@@ -156,6 +157,7 @@ function removeTarget(index: number): void {
     <template v-if="activeTab === 'general'">
       <ScrollArea class="h-full min-h-0 flex-1">
         <div class="mx-auto max-w-3xl space-y-4 p-6">
+          <DocumentIdField :document-id="editor.id" />
           <div
             v-if="isOverridden"
             class="rounded-md border border-violet-300/60 bg-violet-500/10 p-3 text-sm"

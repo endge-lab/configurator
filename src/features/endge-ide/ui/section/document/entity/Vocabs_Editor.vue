@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -114,6 +115,7 @@ async function save(): Promise<void> {
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
           <div class="font-semibold">Основное</div>
+          <DocumentIdField :document-id="editor!.id" />
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
             Активен

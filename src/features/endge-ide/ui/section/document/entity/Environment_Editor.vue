@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const tabs = EndgeIDE.tabs
@@ -131,6 +132,7 @@ async function save(): Promise<void> {
         <ScrollArea v-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
+              <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
                 <Label for="environment-identity">Identity</Label>
                 <Input

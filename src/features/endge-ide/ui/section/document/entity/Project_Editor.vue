@@ -33,6 +33,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -233,6 +234,7 @@ async function launchRuntimePreview(): Promise<void> {
         <ScrollArea v-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
+              <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
                 <Label for="project-identity">Identity</Label>
                 <Input

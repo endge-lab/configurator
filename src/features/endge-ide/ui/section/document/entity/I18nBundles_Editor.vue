@@ -41,6 +41,7 @@ import {
 import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
@@ -449,6 +450,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
           <div class="font-semibold">
             Основное
           </div>
+          <DocumentIdField :document-id="editor!.id" />
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
             Активен

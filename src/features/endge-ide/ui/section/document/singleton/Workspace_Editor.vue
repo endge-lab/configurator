@@ -8,21 +8,26 @@ import { onScopeDispose, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const configuration = ref<EndgeConfiguration>(clone(Endge.workspace.current.configuration))
 const dataMode = ref<EndgeDataMode>(Endge.workspace.current.dataMode)
 const workspaceIdentity = ref(Endge.workspace.current.identity)
+const workspaceDisplayName = ref(Endge.workspace.current.displayName)
 const workspaceDocumentId = ref(resolveWorkspaceDocumentId())
 
 const offWorkspace = Endge.workspace.subscribe(() => {
   configuration.value = clone(Endge.workspace.current.configuration)
   dataMode.value = Endge.workspace.current.dataMode
   workspaceIdentity.value = Endge.workspace.current.identity
+  workspaceDisplayName.value = Endge.workspace.current.displayName
   workspaceDocumentId.value = resolveWorkspaceDocumentId()
 })
 onScopeDispose(offWorkspace)
@@ -94,36 +99,49 @@ function resolveWorkspaceDocumentId(): string | null {
     <div class="min-h-0 flex-1 overflow-hidden p-4">
       <ConfigurationSettingsEditor v-model="configuration" variant="root">
         <template #general>
-          <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">
-            <div class="flex min-w-0 items-center gap-1.5">
-              <p class="text-sm font-medium text-foreground">
-                Mock-данные по умолчанию
-              </p>
-              <TooltipProvider :delay-duration="200">
-                <Tooltip>
-                  <TooltipTrigger as-child>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      class="size-6 shrink-0 text-muted-foreground"
-                      aria-label="О mock-данных Workspace"
-                    >
-                      <CircleHelp class="size-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" class="max-w-80 text-xs leading-5">
-                    Режим по умолчанию для runtime-приложений. При включении внешние Query не выполняются, а Store использует RMock. Локальное переопределение конфигуратора имеет приоритет.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div class="max-w-2xl space-y-4">
+            <DocumentIdField :document-id="workspaceDocumentId" />
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="workspace-identity">Identity</Label>
+                <Input id="workspace-identity" :model-value="workspaceIdentity" disabled />
+              </div>
+              <div class="space-y-2">
+                <Label for="workspace-display-name">Название</Label>
+                <Input id="workspace-display-name" :model-value="workspaceDisplayName" disabled />
+              </div>
             </div>
-            <Switch
-              :checked="dataMode === 'mock'"
-              aria-label="Включить mock-данные Workspace по умолчанию"
-              @update:checked="setWorkspaceMockMode"
-            />
-          </section>
+            <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">
+              <div class="flex min-w-0 items-center gap-1.5">
+                <p class="text-sm font-medium text-foreground">
+                  Mock-данные по умолчанию
+                </p>
+                <TooltipProvider :delay-duration="200">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        class="size-6 shrink-0 text-muted-foreground"
+                        aria-label="О mock-данных Workspace"
+                      >
+                        <CircleHelp class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" class="max-w-80 text-xs leading-5">
+                      Режим по умолчанию для runtime-приложений. При включении внешние Query не выполняются, а Store использует RMock. Локальное переопределение конфигуратора имеет приоритет.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Switch
+                :checked="dataMode === 'mock'"
+                aria-label="Включить mock-данные Workspace по умолчанию"
+                @update:checked="setWorkspaceMockMode"
+              />
+            </section>
+          </div>
         </template>
       </ConfigurationSettingsEditor>
     </div>

@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -354,6 +355,7 @@ function normalizeErrorMessage(error: unknown): string {
           </div>
 
           <div class="space-y-4">
+            <DocumentIdField :document-id="editor.id" />
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">identity</Label>
               <Input v-model="editor.identity" autocomplete="off" />

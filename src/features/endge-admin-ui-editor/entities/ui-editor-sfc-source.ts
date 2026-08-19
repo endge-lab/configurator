@@ -17,7 +17,7 @@ import type {
 } from '@endge/core'
 import type { SFCVueRenderContext } from '@endge/ui-vue'
 
-import { compileComponentSFC, parseComponentSFC } from '@endge/core'
+import { compileComponentSFC, Endge, parseComponentSFC } from '@endge/core'
 import { evaluateSFCExpression } from '@endge/ui-vue'
 
 import { printUIEditorDocumentSFC, printUIEditorDocumentTemplate } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
@@ -591,6 +591,7 @@ function formatPreviewValue(value: unknown): string {
 function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | null): SFCVueRenderContext {
   return {
     props: materializeLiteralPreviewProps(previewProps),
+    context: Object.freeze(Endge.context.serialize()),
     locals: {},
     iteration: null,
     renderVersion: 0,
@@ -604,6 +605,7 @@ function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | nul
     styleOwnerScopeId: undefined,
     runtimeScopeIds: [],
     metadata: null,
+    tooltipManager: null,
   }
 }
 

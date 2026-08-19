@@ -6,10 +6,11 @@ import type {
   EndgeConfigurationPatch,
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsConfigurationPatch,
+  EndgeTooltipConfiguration,
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution } from '@endge/core'
-import { Braces, HeartPulse, Languages, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
+import { Braces, Clock3, HeartPulse, Languages, MessageSquareText, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -31,10 +32,11 @@ import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
-type CollectionName = 'vars' | 'locales' | 'themes' | 'sfcAdapterIds'
-type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
-type ConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'auth' | 'locales' | 'themes' | 'diagnostics'
+type CollectionName = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
+type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultTimezone' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
+type ConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'tooltips' | 'auth' | 'locales' | 'themes' | 'timezones' | 'diagnostics'
 type SFCEditingField = 'cancelOn' | 'commitOn'
+type TooltipField = keyof EndgeTooltipConfiguration
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -52,7 +54,7 @@ const excludedRowDrafts = new WeakMap<object, unknown>()
 const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
-  ['general', 'environment', 'ui', 'editing', 'auth', 'locales', 'themes', 'diagnostics'],
+  ['general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics'],
 )
 const sections = [
   {
@@ -76,6 +78,11 @@ const sections = [
     icon: Pencil,
   },
   {
+    id: 'tooltips',
+    label: 'Тултипы',
+    icon: MessageSquareText,
+  },
+  {
     id: 'auth',
     label: 'Авторизация',
     icon: ShieldCheck,
@@ -89,6 +96,11 @@ const sections = [
     id: 'themes',
     label: 'Темы',
     icon: Palette,
+  },
+  {
+    id: 'timezones',
+    label: 'Временные зоны',
+    icon: Clock3,
   },
   {
     id: 'diagnostics',
@@ -218,6 +230,46 @@ function setSFCEditingTriggers(name: SFCEditingField, value: ComponentSFCInterac
   notifyRootMutation()
 }
 
+function hasTooltipOverride(name: TooltipField): boolean {
+  return patch.value?.tooltips?.[name]?.op === 'set'
+}
+
+function tooltipValue(name: TooltipField): EndgeTooltipConfiguration[TooltipField] {
+  if (isInherit.value) {
+    const override = patch.value?.tooltips?.[name]
+    return override?.op === 'set' ? override.value : effective.value.tooltips[name]
+  }
+  return editableConfiguration.value.tooltips[name]
+}
+
+function enableTooltipOverride(name: TooltipField): void {
+  const target = patch.value as EndgeConfigurationPatch
+  target.tooltips ??= {}
+  ;(target.tooltips as any)[name] = { op: 'set', value: props.upstream!.tooltips[name] }
+  notifyRootMutation()
+}
+
+function resetTooltipOverride(name: TooltipField): void {
+  if (!patch.value?.tooltips) return
+  delete patch.value.tooltips[name]
+  if (!Object.keys(patch.value.tooltips).length) delete patch.value.tooltips
+  notifyRootMutation()
+}
+
+function setTooltipValue(name: TooltipField, value: string | number): void {
+  const normalized = name === 'openDelay' || name === 'closeDelay'
+    ? Math.max(0, Math.min(60_000, Number(value) || 0))
+    : value
+  if (isInherit.value) {
+    if (!hasTooltipOverride(name)) return
+    ;(patch.value!.tooltips as any)[name] = { op: 'set', value: normalized }
+  }
+  else {
+    ;(editableConfiguration.value.tooltips as any)[name] = normalized
+  }
+  notifyRootMutation()
+}
+
 function collectionRows(name: CollectionName): any[] {
   if (!isInherit.value)
     return editableConfiguration.value[name] as any[]
@@ -228,13 +280,14 @@ function createCollectionValue(name: CollectionName, index: number): unknown {
   if (name === 'vars') return { name: `ENV_VAR_${index + 1}`, defaultValue: '' }
   if (name === 'locales') return { code: `locale-${index + 1}`, displayName: '', shortLabel: '', direction: 'ltr' }
   if (name === 'themes') return { identity: `theme-${index + 1}`, displayName: '' }
+  if (name === 'timezones') return { identity: index === 0 ? 'UTC' : `Etc/GMT${index}`, displayName: '' }
   return `adapter-${index + 1}`
 }
 
 function collectionKey(name: CollectionName, value: any): string {
   if (name === 'vars') return String(value?.name ?? '')
   if (name === 'locales') return String(value?.code ?? '')
-  if (name === 'themes') return String(value?.identity ?? '')
+  if (name === 'themes' || name === 'timezones') return String(value?.identity ?? '')
   return String(value ?? '')
 }
 
@@ -309,7 +362,7 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
     return
   if (name === 'vars') entry.value.name = value
   else if (name === 'locales') entry.value.code = value
-  else if (name === 'themes') entry.value.identity = value
+  else if (name === 'themes' || name === 'timezones') entry.value.identity = value
   else entry.value = value
   notifyRootMutation()
 }
@@ -577,6 +630,56 @@ function isEqual(left: unknown, right: unknown): boolean {
             </ConfigurationOverrideField>
           </TabsContent>
 
+          <TabsContent value="tooltips" class="m-0 space-y-5 p-5 outline-none">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">Поведение тултипов</h3>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                Значения наследуются Workspace → Tenant → Project → Environment. Фон, скругление и другие параметры темы задаются стилями через <code>.endge-tooltip</code>, <code>data-endge-tooltip-*</code> и CSS-переменные.
+              </p>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <ConfigurationOverrideField label="Предпочтительная сторона" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('side')" @enable="enableTooltipOverride('side')" @reset="resetTooltipOverride('side')">
+                <template #default="{ disabled: fieldDisabled }">
+                  <Select :model-value="String(tooltipValue('side'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('side', String($event))">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">Сверху</SelectItem>
+                      <SelectItem value="right">Справа</SelectItem>
+                      <SelectItem value="bottom">Снизу</SelectItem>
+                      <SelectItem value="left">Слева</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+              </ConfigurationOverrideField>
+
+              <ConfigurationOverrideField label="Выравнивание" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('align')" @enable="enableTooltipOverride('align')" @reset="resetTooltipOverride('align')">
+                <template #default="{ disabled: fieldDisabled }">
+                  <Select :model-value="String(tooltipValue('align'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('align', String($event))">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="start">По началу</SelectItem>
+                      <SelectItem value="center">По центру</SelectItem>
+                      <SelectItem value="end">По концу</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+              </ConfigurationOverrideField>
+
+              <ConfigurationOverrideField label="Задержка появления, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('openDelay')" @enable="enableTooltipOverride('openDelay')" @reset="resetTooltipOverride('openDelay')">
+                <template #default="{ disabled: fieldDisabled }">
+                  <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('openDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('openDelay', String($event ?? '0'))" />
+                </template>
+              </ConfigurationOverrideField>
+
+              <ConfigurationOverrideField label="Задержка исчезновения, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('closeDelay')" @enable="enableTooltipOverride('closeDelay')" @reset="resetTooltipOverride('closeDelay')">
+                <template #default="{ disabled: fieldDisabled }">
+                  <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('closeDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('closeDelay', String($event ?? '0'))" />
+                </template>
+              </ConfigurationOverrideField>
+            </div>
+          </TabsContent>
+
           <TabsContent value="auth" class="m-0 p-5 outline-none">
             <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
               <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
@@ -639,6 +742,46 @@ function isEqual(left: unknown, right: unknown): boolean {
             </div>
           </div>
           <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.</div>
+          </TabsContent>
+
+          <TabsContent value="timezones" class="m-0 space-y-5 p-5 outline-none">
+            <ConfigurationOverrideField label="Временная зона по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTimezone')" @enable="enableScalar('defaultTimezone')" @reset="resetScalar('defaultTimezone')">
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                <Select :model-value="scalarValue('defaultTimezone')" :disabled="disabled || fieldDisabled" @update:model-value="setScalar('defaultTimezone', String($event ?? ''))">
+                  <SelectTrigger><SelectValue :placeholder="fieldDisabled ? parentValuePlaceholder : 'Выберите временную зону'" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="timezone in effective.timezones" :key="timezone.identity" :value="timezone.identity">
+                      {{ timezone.displayName || timezone.identity }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </template>
+            </ConfigurationOverrideField>
+            <div class="flex items-center justify-between">
+              <div>
+                <Label>Доступные временные зоны</Label>
+                <p class="mt-1 text-xs text-muted-foreground">Используйте IANA identity или системное значение local.</p>
+              </div>
+              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('timezones')">
+                <Plus class="mr-2 size-4" />Добавить
+              </Button>
+            </div>
+            <div class="rounded-md border">
+              <div v-for="(row, index) in collectionRows('timezones')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
+                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="IANA identity" @update:model-value="updateEntryKey('timezones', row, String($event ?? ''))" />
+                <Input v-else v-model="row.identity" :disabled="disabled" placeholder="IANA identity" />
+                <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображаемое имя" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
+                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+                <ConfigurationCollectionRowActions
+                  :excluded="isCollectionRowExcluded(row)"
+                  :excludable="isInherit"
+                  :disabled="disabled"
+                  @toggle-excluded="toggleCollectionRowExclusion('timezones', row)"
+                  @remove="removeCollectionRow('timezones', index)"
+                />
+              </div>
+            </div>
+            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.timezones.length }} zones, default — {{ effective.defaultTimezone }}.</div>
           </TabsContent>
 
           <TabsContent value="diagnostics" class="m-0 min-h-full p-0 outline-none">

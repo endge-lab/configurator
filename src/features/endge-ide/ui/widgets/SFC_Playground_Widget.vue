@@ -65,7 +65,7 @@ definePreviewProps({
   </Flex>
 
   <Flex row gap="4" if="!compact">
-    <DateTime :value="flight.std" format="HH:mm" />
+    <DateTime :value="flight.std" format="HH:mm" :timezone="$context.timezone" />
     <Text color="muted">{{ flight.route }}</Text>
   </Flex>
 </Flex>`,
@@ -143,7 +143,7 @@ const LEGACY_DEMO_OPTIONS: SFCDemoOption[] = [
   </Flex>
 
   <Flex row gap="4" if="!compact">
-    <DateTime :value="flight.std" format="HH:mm" />
+    <DateTime :value="flight.std" format="HH:mm" :timezone="$context.timezone" />
     <Text color="muted">{{ flight.route }}</Text>
   </Flex>
 </Flex>`,

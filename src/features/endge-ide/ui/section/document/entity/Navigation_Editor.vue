@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const props = defineProps<{
@@ -439,6 +440,7 @@ async function save(): Promise<void> {
 
     <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-y-auto p-6">
       <div class="mx-auto max-w-3xl space-y-4">
+        <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label>Идентификатор</Label>

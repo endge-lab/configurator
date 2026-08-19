@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DomainDocumentType } from '@endge/core'
 
 import { useSmartTabViewState } from '@/components/ui/smart-tabs'
@@ -38,21 +37,7 @@ const dependencySplitRatio = useSmartTabViewState<number>(
     <header class="source-document-editor-shell__header">
       <div class="source-document-editor-shell__left">
         <slot name="left">
-          <div class="source-document-editor-shell__metadata">
-            <div class="source-document-editor-shell__metadata-row">
-              <span class="source-document-editor-shell__metadata-label">id:</span>
-              <span class="source-document-editor-shell__metadata-value">{{
-                documentId ?? "-"
-              }}</span>
-            </div>
-            <div class="source-document-editor-shell__metadata-row">
-              <span class="source-document-editor-shell__metadata-label">identity:</span>
-              <span class="source-document-editor-shell__metadata-value">{{
-                identity || "-"
-              }}</span>
-            </div>
-            <slot name="metadata-after" />
-          </div>
+          <slot name="metadata-after" />
         </slot>
       </div>
 
@@ -118,36 +103,6 @@ const dependencySplitRatio = useSmartTabViewState<number>(
   gap: 0.75rem;
   border-bottom: 1px solid hsl(var(--border));
   padding: 0.25rem 0.375rem;
-}
-
-.source-document-editor-shell__metadata {
-  min-width: 0;
-  padding-inline: 0.25rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-.source-document-editor-shell__metadata-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.source-document-editor-shell__metadata-label {
-  flex: 0 0 auto;
-  color: hsl(var(--muted-foreground));
-}
-
-.source-document-editor-shell__metadata-value {
-  min-width: 0;
-  overflow: hidden;
-  color: hsl(var(--foreground) / 0.82);
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    monospace;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .source-document-editor-shell__left,

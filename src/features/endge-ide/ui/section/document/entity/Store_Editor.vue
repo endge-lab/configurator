@@ -29,6 +29,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
@@ -253,6 +254,7 @@ async function launchPreview(): Promise<void> {
     <div class="min-h-0 flex-1 overflow-hidden">
       <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
         <div class="max-w-xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
             <Label for="store-display-name">Название</Label>
             <Input

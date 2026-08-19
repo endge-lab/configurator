@@ -38,6 +38,7 @@ interface BindingField extends RComponentContractInput {
 const props = defineProps<{
   editor: ComponentSFCTableEditableElementProjection | null
   implicit: boolean
+  selecting?: boolean
   componentOptions: TableCellComponentOption[]
 }>()
 
@@ -91,7 +92,9 @@ watch(
       ? 'component'
       : editor?.kind === 'tag'
         ? 'tag'
-        : 'source'
+        : props.selecting
+          ? 'tag'
+          : 'source'
     const nextBindings = editor?.kind === 'component' || editor?.kind === 'tag' ? editor.bindings : []
     drafts.value = Object.fromEntries(nextBindings.map(binding => [binding.name, sourceValue(binding.value)]))
     kinds.value = Object.fromEntries(nextBindings.map(binding => [
@@ -182,12 +185,18 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
           <Badge v-if="implicit" variant="secondary" class="h-5 text-[10px]">
             Встроенный
           </Badge>
-          <Badge v-else variant="outline" class="h-5 text-[10px]">
+          <Badge v-else-if="editor" variant="outline" class="h-5 text-[10px]">
             Variant edit
+          </Badge>
+          <Badge v-else variant="secondary" class="h-5 text-[10px]">
+            Не выбран
           </Badge>
         </div>
         <p v-if="implicit" class="mt-0.5 text-[10px] text-muted-foreground">
           Сейчас отображение и editor используют один tag.
+        </p>
+        <p v-else-if="selecting" class="mt-0.5 text-[10px] text-muted-foreground">
+          Выбор создаст подходящее представление в Source.
         </p>
       </div>
 
@@ -286,10 +295,12 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
     <div v-else class="flex min-h-28 items-center justify-between gap-4 px-4 py-3">
       <div>
         <div class="text-sm font-medium">
-          Произвольный editor
+          {{ selecting ? 'Создать editor вручную' : 'Произвольный editor' }}
         </div>
         <div class="mt-0.5 text-xs text-muted-foreground">
-          Сложную разметку Variant edit можно изменить без преобразования в Source.
+          {{ selecting
+            ? 'Откройте Source и задайте Editable с вариантами default и edit.'
+            : 'Сложную разметку Variant edit можно изменить без преобразования в Source.' }}
         </div>
       </div>
       <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="emit('openSource')">

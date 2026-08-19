@@ -34,6 +34,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import DataViewSourceEditor from '@/features/endge-ide/ui/components/DataViewSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
@@ -310,15 +311,7 @@ async function runPreview(): Promise<void> {
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
         <div class="max-w-2xl space-y-5">
-          <div class="space-y-2">
-            <Label for="data-view-id">ID</Label>
-            <Input
-              id="data-view-id"
-              :model-value="String(editor.id ?? '')"
-              class="bg-muted/40 font-mono"
-              readonly
-            />
-          </div>
+          <DocumentIdField :document-id="editor.id" />
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">

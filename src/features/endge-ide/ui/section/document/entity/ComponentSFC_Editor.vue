@@ -11,9 +11,10 @@ import {
   inspectComponentSFCVisual,
 } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
-import { Code2, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
+import { AlertCircle, Code2, Columns3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,6 +37,7 @@ import { createExtractTypeContribution } from '@/features/endge-ide/source-edito
 import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
@@ -54,6 +56,11 @@ const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'visual',
   ['general', 'visual', 'source', 'diagnostics'] as const,
+)
+const tableVisualTab = useSmartTabSelection(
+  'component-sfc.visual.active-tab',
+  'table',
+  ['table', 'columns'] as const,
 )
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
@@ -81,6 +88,14 @@ const visualInspection = computed(() => {
 })
 const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
 const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)
+const tableVisualDiagnostics = computed(() => (
+  visualInspection.value?.diagnostics.filter(item => (
+    item.sourcePath?.startsWith('template') || item.code.startsWith('sfc-table')
+  )) ?? []
+))
+const tableVisualErrorCount = computed(() => (
+  tableVisualDiagnostics.value.filter(item => item.severity === 'error').length
+))
 const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.domain.getComponentSFCs()
   .filter((component: RComponentSFC) => component.id !== editor.value?.id && Boolean(component.identity?.trim()))
   .map((component: RComponentSFC) => ({
@@ -181,6 +196,11 @@ async function openSourceAt(offset: number): Promise<void> {
   sourceEditorRef.value?.focusOffset(offset)
 }
 
+function openTableVisualTab(tab: 'table' | 'columns'): void {
+  activeTab.value = 'visual'
+  tableVisualTab.value = tab
+}
+
 watch(
   [
     () => tabs.sourceNavigationRequest.value,
@@ -271,17 +291,36 @@ async function launchPreview(): Promise<void> {
                 variant="ghost"
                 class="h-7 w-7"
                 :class="
-                  activeTab === 'visual'
+                  activeTab === 'visual' && tableVisualTab === 'table'
                     ? 'bg-editor-control shadow-sm'
                     : 'text-muted-foreground'
                 "
-                aria-label="Visual Table"
-                @click="activeTab = 'visual'"
+                aria-label="Таблица"
+                @click="openTableVisualTab('table')"
               >
                 <Table2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Visual Table</TooltipContent>
+            <TooltipContent>Таблица</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="hasTableVisual">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'visual' && tableVisualTab === 'columns'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Колонки"
+                @click="openTableVisualTab('columns')"
+              >
+                <Columns3 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Колонки</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -301,25 +340,6 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>Source</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                :class="
-                  activeTab === 'diagnostics'
-                    ? 'bg-editor-control shadow-sm'
-                    : 'text-muted-foreground'
-                "
-                aria-label="Диагностика"
-                @click="activeTab = 'diagnostics'"
-              >
-                <TriangleAlert class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
           </Tooltip>
         </div>
 
@@ -341,10 +361,6 @@ async function launchPreview(): Promise<void> {
             </TooltipTrigger>
             <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
           </Tooltip>
-        </div>
-
-        <Separator orientation="vertical" class="mx-0.5 h-5" />
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
@@ -355,11 +371,48 @@ async function launchPreview(): Promise<void> {
             <TooltipContent>Сохранить</TooltipContent>
           </Tooltip>
         </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Диагностика</TooltipContent>
+          </Tooltip>
+        </div>
       </TooltipProvider>
     </template>
 
     <template #right>
       <TooltipProvider>
+        <div v-if="activeTab === 'visual' && hasTableVisual" class="flex items-center gap-2">
+          <Badge variant="outline" class="gap-1 font-normal">
+            <Columns3 class="size-3" />
+            {{ tableVisualProjection?.columns.length ?? 0 }}
+          </Badge>
+          <Badge
+            v-if="tableVisualDiagnostics.length"
+            :variant="tableVisualErrorCount ? 'destructive' : 'secondary'"
+            class="gap-1 font-normal"
+          >
+            <AlertCircle class="size-3" />
+            {{ tableVisualDiagnostics.length }}
+          </Badge>
+        </div>
         <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
         </div>
@@ -368,6 +421,7 @@ async function launchPreview(): Promise<void> {
 
     <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
       <div class="max-w-2xl space-y-5">
+        <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
             <Label for="component-sfc-display-name">Название</Label>
@@ -412,13 +466,13 @@ async function launchPreview(): Promise<void> {
 
     <ComponentSFCTableVisualEditor
       v-else-if="activeTab === 'visual' && tableVisualProjection"
+      v-model:mode="tableVisualTab"
       :source="editor.source"
       :identity="editor.identity"
       :projection="tableVisualProjection"
       :component-options="tableComponentOptions"
       :prop-types="tablePropTypes"
       :sfc-editing="sfcEditing"
-      :diagnostics="visualInspection?.diagnostics"
       class="min-h-0 flex-1"
       @update:source="updateVisualSource"
       @open-source="openSourceAt"
@@ -426,6 +480,7 @@ async function launchPreview(): Promise<void> {
     >
       <template #general>
         <div class="max-w-2xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <Label for="component-sfc-display-name-visual">Название</Label>
