@@ -220,6 +220,11 @@ const columnSection = useSmartTabSelection(
   'general',
   ['general', 'data', 'editing', 'events', 'sorting'] as const,
 )
+const editingSection = useSmartTabSelection(
+  'component-sfc.visual.column-editing-section',
+  'editor',
+  ['editor', 'triggers', 'reaction'] as const,
+)
 const activeMenuKind = useSmartTabSelection(
   'component-sfc.visual.table-menu-kind',
   'column',
@@ -245,8 +250,14 @@ const columnSections = [
   { id: 'events', label: 'События', icon: Radio, description: 'Обработчики событий ячейки получают row, rowIndex, rowKey, columnKey, value и event().' },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Цепочки сравниваются последовательно. Используйте dot paths без префикса row; если список пуст, используется key колонки.' },
 ] as const
+const editingSections = [
+  { id: 'editor', label: 'Редактор', description: 'Включение редактирования, выбор editor-а и его входные параметры.' },
+  { id: 'triggers', label: 'Триггеры', description: 'Начало, сохранение и отмена режима редактирования.' },
+  { id: 'reaction', label: 'После сохранения', description: 'Реакция на семантическое событие edited после commit.' },
+] as const
 const activeTableSection = computed(() => tableSections.find(section => section.id === tableSection.value) ?? tableSections[0])
 const activeColumnSection = computed(() => columnSections.find(section => section.id === columnSection.value) ?? columnSections[0])
+const activeEditingSection = computed(() => editingSections.find(section => section.id === editingSection.value) ?? editingSections[0])
 const inputWorkspaceState = useSmartTabViewState(
   'component-sfc.visual.table-input-workspace',
   {
@@ -486,6 +497,9 @@ watch(
     if (column?.id !== previousColumn?.id) {
       pendingEditingColumnId.value = null
     }
+    if (!column?.editing.enabled) {
+      editingSection.value = 'editor'
+    }
     titleDraft.value = columnTitleText(column?.title)
     keyDraft.value = sourceValueText(column?.key)
     widthDraft.value = sourceValueText(column?.width)
@@ -505,6 +519,9 @@ watch(
   (enabled) => {
     if (enabled) {
       pendingEditingColumnId.value = null
+    }
+    else {
+      editingSection.value = 'editor'
     }
   },
 )
@@ -802,6 +819,17 @@ function updateColumnSection(value: string | null): void {
   if (columnSections.some(section => section.id === value)) {
     columnSection.value = value as typeof columnSection.value
   }
+}
+
+function updateEditingSection(value: string | null): void {
+  const section = editingSections.find(item => item.id === value)
+  if (!section) {
+    return
+  }
+  if (section.id !== 'editor' && !selectedColumn.value?.editing.enabled) {
+    return
+  }
+  editingSection.value = section.id
 }
 
 function syncCellBindingDrafts(column: ComponentSFCTableColumnProjection | null): void {
@@ -1752,6 +1780,7 @@ function setSelectedCellEditingEnabled(enabled: boolean): void {
   }
   if (!enabled) {
     pendingEditingColumnId.value = null
+    editingSection.value = 'editor'
   }
   if (column.editing.enabled === enabled) {
     return
@@ -2991,20 +3020,37 @@ onBeforeUnmount(() => {
             >
               <aside class="hidden min-h-0 overflow-hidden border-r border-border/70 bg-muted/20 lg:flex lg:flex-col">
                 <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
-                  <TabsTrigger
-                    v-for="section in columnSections"
-                    :key="section.id"
-                    :value="section.id"
-                    class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-                  >
-                    <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
-                    <span class="truncate">{{ section.label }}</span>
-                  </TabsTrigger>
+                  <template v-for="section in columnSections" :key="section.id">
+                    <TabsTrigger
+                      :value="section.id"
+                      class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                    >
+                      <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                      <span class="truncate">{{ section.label }}</span>
+                    </TabsTrigger>
+
+                    <div
+                      v-if="section.id === 'editing' && columnSection === 'editing'"
+                      class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
+                    >
+                      <button
+                        v-for="editingItem in editingSections"
+                        :key="editingItem.id"
+                        type="button"
+                        class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                        :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                        :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                        @click="updateEditingSection(editingItem.id)"
+                      >
+                        {{ editingItem.label }}
+                      </button>
+                    </div>
+                  </template>
                 </TabsList>
               </aside>
 
               <main class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background/35">
-                <div class="border-b border-border/70 p-3 lg:hidden">
+                <div class="grid gap-2 border-b border-border/70 p-3 lg:hidden">
                   <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
                     <SelectTrigger class="editor-control w-full">
                       <SelectValue />
@@ -3015,11 +3061,30 @@ onBeforeUnmount(() => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select
+                    v-if="columnSection === 'editing'"
+                    :model-value="editingSection"
+                    @update:model-value="value => updateEditingSection(value == null ? null : String(value))"
+                  >
+                    <SelectTrigger class="editor-control w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="editingItem in editingSections"
+                        :key="editingItem.id"
+                        :value="editingItem.id"
+                        :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                      >
+                        {{ editingItem.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <ComponentSFCSettingsSectionHeader
-                  :label="activeColumnSection.label"
-                  :description="activeColumnSection.description"
+                  :label="columnSection === 'editing' ? activeEditingSection.label : activeColumnSection.label"
+                  :description="columnSection === 'editing' ? activeEditingSection.description : activeColumnSection.description"
                 >
                   <template v-if="columnSection === 'data' && selectedColumn" #actions>
                     <TooltipProvider :delay-duration="120">
@@ -3316,18 +3381,19 @@ onBeforeUnmount(() => {
                     </Button>
                   </div>
 
-                  <div v-else class="space-y-4">
-                    <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
-                      <span class="text-sm font-medium">Сделать редактируемым</span>
-                      <Switch
-                        :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
-                        aria-label="Сделать содержимое ячейки редактируемым"
-                        @update:checked="setSelectedCellEditingEnabled"
-                      />
-                    </div>
+                  <div v-else>
+                    <div v-if="editingSection === 'editor'" class="space-y-4">
+                      <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
+                        <span class="text-sm font-medium">Сделать редактируемым</span>
+                        <Switch
+                          :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
+                          aria-label="Сделать содержимое ячейки редактируемым"
+                          @update:checked="setSelectedCellEditingEnabled"
+                        />
+                      </div>
 
-                    <template v-if="selectedColumn.editing.enabled || selectedCellEditingPending">
                       <ComponentSFCEditableVariantEditor
+                        v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
                         :editor="selectedColumn.editing.editor"
                         :implicit="selectedColumn.editing.editorImplicit"
                         :selecting="selectedCellEditingPending"
@@ -3338,97 +3404,106 @@ onBeforeUnmount(() => {
                         @separate="separateSelectedCellEditor"
                         @open-source="openSelectedCellEditingSource"
                       />
+                    </div>
 
-                      <template v-if="selectedColumn.editing.enabled">
-                        <ComponentSFCEditOutcomeEditor
-                          :cancel="selectedColumn.editing.cancel"
-                          :commit="selectedColumn.editing.commit"
-                          @update-cancel="setSelectedCellCancelTriggers"
-                          @update-commit="setSelectedCellCommitTriggers"
-                        />
+                    <div
+                      v-else-if="!selectedColumn.editing.enabled"
+                      class="editor-control rounded-lg border border-border/70 px-4 py-3 text-sm text-muted-foreground"
+                    >
+                      Сначала включите редактирование в разделе «Редактор».
+                    </div>
 
-                        <div class="flex justify-end">
-                          <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
-                            <Plus class="size-3.5" />
-                            Альтернативный trigger
-                          </Button>
-                        </div>
+                    <div v-else-if="editingSection === 'triggers'" class="space-y-4">
+                      <div class="flex justify-end">
+                        <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
+                          <Plus class="size-3.5" />
+                          Альтернативный trigger
+                        </Button>
+                      </div>
 
-                        <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                          Используется <code>click</code> по умолчанию; атрибут <code>edit-on</code> в Source не требуется.
-                        </div>
+                      <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                        Используется <code>click</code> по умолчанию; атрибут <code>edit-on</code> в Source не требуется.
+                      </div>
 
-                        <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                          <span>Для всех trigger:</span>
-                          <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
-                        </div>
+                      <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                        <span>Для всех trigger:</span>
+                        <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                      </div>
 
-                        <div class="space-y-3">
-                          <div
-                            v-for="(trigger, index) in selectedColumn.editing.triggers"
-                            :key="`${index}:${trigger.event}`"
-                            class="editor-panel overflow-hidden rounded-lg border border-border/70"
-                          >
-                            <div class="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
-                              <div class="flex min-w-0 items-center gap-2">
-                                <Badge variant="secondary" class="font-mono text-[10px]">
-                                  {{ index + 1 }}
-                                </Badge>
-                                <code class="truncate text-xs font-medium">{{ trigger.event }}</code>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                class="size-7 text-muted-foreground hover:text-destructive"
-                                :aria-label="selectedColumn.editing.triggers.length === 1 ? 'Вернуть click по умолчанию' : 'Удалить альтернативный trigger'"
-                                @click="removeSelectedCellEditTrigger(index)"
-                              >
-                                <Trash2 class="size-3.5" />
-                              </Button>
-                            </div>
-                            <div class="p-3">
-                              <ComponentSFCInteractionTriggerEditor
-                                :model-value="trigger"
-                                :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
-                                @update:model-value="updateSelectedCellEditTrigger(index, $event)"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
-                          <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                            <span>Для edited:</span>
-                            <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
-                          </div>
-                          <ComponentSFCReactionEditor
-                            :model-value="selectedColumn.editing.reaction.source"
-                            event-name="edited"
-                            variant="section"
-                            @save="setSelectedCellEditedReaction"
-                          />
-                        </div>
-
+                      <div class="space-y-3">
                         <div
-                          v-else
-                          class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                          v-for="(trigger, index) in selectedColumn.editing.triggers"
+                          :key="`${index}:${trigger.event}`"
+                          class="editor-panel overflow-hidden rounded-lg border border-border/70"
                         >
-                          <div class="min-w-0">
-                            <div class="text-sm font-medium">
-                              Reaction управляется Source
+                          <div class="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
+                            <div class="flex min-w-0 items-center gap-2">
+                              <Badge variant="secondary" class="font-mono text-[10px]">
+                                {{ index + 1 }}
+                              </Badge>
+                              <code class="truncate text-xs font-medium">{{ trigger.event }}</code>
                             </div>
-                            <div class="mt-0.5 text-xs text-muted-foreground">
-                              {{ selectedColumn.editing.reaction.message }}
-                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              class="size-7 text-muted-foreground hover:text-destructive"
+                              :aria-label="selectedColumn.editing.triggers.length === 1 ? 'Вернуть click по умолчанию' : 'Удалить альтернативный trigger'"
+                              @click="removeSelectedCellEditTrigger(index)"
+                            >
+                              <Trash2 class="size-3.5" />
+                            </Button>
                           </div>
-                          <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
-                            <FileCode2 class="size-3.5" />
-                            Открыть
-                          </Button>
+                          <div class="p-3">
+                            <ComponentSFCInteractionTriggerEditor
+                              :model-value="trigger"
+                              :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+                              @update:model-value="updateSelectedCellEditTrigger(index, $event)"
+                            />
+                          </div>
                         </div>
-                      </template>
-                    </template>
+                      </div>
+
+                      <ComponentSFCEditOutcomeEditor
+                        :cancel="selectedColumn.editing.cancel"
+                        :commit="selectedColumn.editing.commit"
+                        @update-cancel="setSelectedCellCancelTriggers"
+                        @update-commit="setSelectedCellCommitTriggers"
+                      />
+                    </div>
+
+                    <div v-else class="space-y-2">
+                      <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
+                        <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                          <span>Для edited:</span>
+                          <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                        </div>
+                        <ComponentSFCReactionEditor
+                          :model-value="selectedColumn.editing.reaction.source"
+                          event-name="edited"
+                          variant="section"
+                          @save="setSelectedCellEditedReaction"
+                        />
+                      </div>
+
+                      <div
+                        v-else
+                        class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                      >
+                        <div class="min-w-0">
+                          <div class="text-sm font-medium">
+                            Reaction управляется Source
+                          </div>
+                          <div class="mt-0.5 text-xs text-muted-foreground">
+                            {{ selectedColumn.editing.reaction.message }}
+                          </div>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                          <FileCode2 class="size-3.5" />
+                          Открыть
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </section>
 

@@ -27,10 +27,10 @@ import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 const STORAGE_KEY = 'app:grid-layout-state'
 const DEFAULT_LAYOUT_SCOPE = 'endge-ide'
 
-function createDefaultAreaState() {
+function createDefaultAreaState(expanded = false) {
   return {
     size: 250,
-    expanded: true,
+    expanded,
     activeWidget: null as string | null,
   }
 }
@@ -38,7 +38,7 @@ function createDefaultAreaState() {
 function createDefaultWidgetsState(): LayoutWidgetsState {
   return {
     areas: {
-      left: createDefaultAreaState(),
+      left: createDefaultAreaState(true),
       right: createDefaultAreaState(),
       bottom: createDefaultAreaState(),
       floating: {
@@ -90,10 +90,10 @@ interface PersistedState {
   definitionPositions: Record<string, WidgetPosition>
 }
 
-function createDefaultPersistedAreaState(size = 250): PersistedAreaState {
+function createDefaultPersistedAreaState(size = 250, expanded = false): PersistedAreaState {
   return {
     size,
-    expanded: true,
+    expanded,
     activeWidget: null,
     order: [],
   }
@@ -101,7 +101,7 @@ function createDefaultPersistedAreaState(size = 250): PersistedAreaState {
 
 const defaultPersistedState: PersistedState = {
   areas: {
-    left: createDefaultPersistedAreaState(250),
+    left: createDefaultPersistedAreaState(250, true),
     right: createDefaultPersistedAreaState(250),
     bottom: createDefaultPersistedAreaState(200),
     floating: {

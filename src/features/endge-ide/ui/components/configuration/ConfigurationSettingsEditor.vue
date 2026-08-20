@@ -633,9 +633,6 @@ function isEqual(left: unknown, right: unknown): boolean {
           <TabsContent value="tooltips" class="m-0 space-y-5 p-5 outline-none">
             <div>
               <h3 class="text-sm font-semibold text-foreground">Поведение тултипов</h3>
-              <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                Значения наследуются Workspace → Tenant → Project → Environment. Фон, скругление и другие параметры темы задаются стилями через <code>.endge-tooltip</code>, <code>data-endge-tooltip-*</code> и CSS-переменные.
-              </p>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">

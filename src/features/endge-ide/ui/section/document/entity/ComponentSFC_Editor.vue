@@ -98,14 +98,21 @@ const tableVisualErrorCount = computed(() => (
 ))
 const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.domain.getComponentSFCs()
   .filter((component: RComponentSFC) => component.id !== editor.value?.id && Boolean(component.identity?.trim()))
-  .map((component: RComponentSFC) => ({
-    value: component.identity,
-    label: component.displayName || component.name || component.identity,
-    inputs: compileComponentSFC(component.source ?? '', {
+  .map((component: RComponentSFC) => {
+    const compilation = compileComponentSFC(component.source ?? '', {
       resolveTypeDefinition: resolveEndgeTypeDefinition,
       sfcEditing: sfcEditing.value,
-    }).contract.inputs,
-  })))
+    })
+    const isTable = compilation.ir?.template.roots.some(
+      node => node.kind === 'element' && node.tag === 'Table',
+    ) ?? false
+    return {
+      value: component.identity,
+      label: component.displayName || component.name || component.identity,
+      inputs: compilation.contract.inputs,
+      editorEligible: !isTable && compilation.contract.events.some(event => event.name === 'edited'),
+    }
+  }))
 const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
   const primitives: VisualSchemaTypeOption[] = [
     { identity: 'string', label: 'string', category: 'primitive' },

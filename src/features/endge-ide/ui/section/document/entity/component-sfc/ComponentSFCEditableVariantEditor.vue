@@ -13,7 +13,6 @@ import type {
 
 import {
   compileComponentSFCExpression,
-  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
   getComponentSFCTagInputContract,
 } from '@endge/core'
 import { Blocks, ExternalLink, FileCode2, Tags } from 'lucide-vue-next'
@@ -30,6 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { TABLE_CELL_EDITOR_TAGS } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 
 interface BindingField extends RComponentContractInput {
   sourceOnly?: boolean
@@ -55,9 +55,11 @@ const drafts = ref<Record<string, string>>({})
 const kinds = ref<Record<string, TableCellBindingValueKind>>({})
 const errors = ref<Record<string, string>>({})
 
-const componentSelectOptions = computed<SearchableSelectOption[]>(() => props.componentOptions)
+const componentSelectOptions = computed<SearchableSelectOption[]>(() => (
+  props.componentOptions.filter(option => option.editorEligible)
+))
 const tagSelectOptions = computed<SearchableSelectOption[]>(() => (
-  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS.map(tag => ({ value: tag, label: tag }))
+  TABLE_CELL_EDITOR_TAGS.map(tag => ({ value: tag, label: tag }))
 ))
 const selectedComponent = computed(() => props.editor?.kind === 'component' ? props.editor.identity : null)
 const selectedTag = computed(() => props.editor?.kind === 'tag' ? props.editor.tag : null)
