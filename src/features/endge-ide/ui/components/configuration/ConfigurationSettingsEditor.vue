@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  ComponentSFCInteractionKeyboardCondition,
   ComponentSFCInteractionTrigger,
   EndgeConfiguration,
   EndgeConfigurationContribution,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/select'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ComponentSFCKeyboardConditionEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCKeyboardConditionEditor.vue'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
@@ -35,6 +37,7 @@ type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
 type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultTimezone' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
 type ConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'tooltips' | 'auth' | 'locales' | 'themes' | 'timezones' | 'diagnostics'
+type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
 type TooltipField = keyof EndgeTooltipConfiguration
 
@@ -55,6 +58,11 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
   ['general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics'],
+)
+const tooltipSection = useSmartTabSelection<TooltipSection>(
+  'configuration.tooltips-section',
+  'ui',
+  ['ui', 'trigger'],
 )
 const sections = [
   {
@@ -107,6 +115,10 @@ const sections = [
     label: 'Диагностика',
     icon: HeartPulse,
   },
+] as const
+const tooltipSections = [
+  { id: 'ui', label: 'Настройки UI' },
+  { id: 'trigger', label: 'Триггер' },
 ] as const
 
 const contribution = computed(() => props.variant === 'contribution'
@@ -242,10 +254,19 @@ function tooltipValue(name: TooltipField): EndgeTooltipConfiguration[TooltipFiel
   return editableConfiguration.value.tooltips[name]
 }
 
+function setTooltipSection(value: unknown): void {
+  if (value === 'ui' || value === 'trigger') {
+    tooltipSection.value = value
+  }
+}
+
 function enableTooltipOverride(name: TooltipField): void {
   const target = patch.value as EndgeConfigurationPatch
   target.tooltips ??= {}
-  ;(target.tooltips as any)[name] = { op: 'set', value: props.upstream!.tooltips[name] }
+  ;(target.tooltips as any)[name] = {
+    op: 'set',
+    value: name === 'keyboard' ? clone(props.upstream!.tooltips.keyboard ?? {}) : clone(props.upstream!.tooltips[name]),
+  }
   notifyRootMutation()
 }
 
@@ -266,6 +287,28 @@ function setTooltipValue(name: TooltipField, value: string | number): void {
   }
   else {
     ;(editableConfiguration.value.tooltips as any)[name] = normalized
+  }
+  notifyRootMutation()
+}
+
+function tooltipKeyboard(): ComponentSFCInteractionKeyboardCondition | null {
+  return (tooltipValue('keyboard') as ComponentSFCInteractionKeyboardCondition | undefined) ?? null
+}
+
+function setTooltipKeyboard(value: ComponentSFCInteractionKeyboardCondition | null): void {
+  if (isInherit.value) {
+    if (!hasTooltipOverride('keyboard')) {
+      return
+    }
+    patch.value!.tooltips!.keyboard = { op: 'set', value: clone(value ?? {}) }
+  }
+  else {
+    if (value) {
+      editableConfiguration.value.tooltips.keyboard = clone(value)
+    }
+    else {
+      delete editableConfiguration.value.tooltips.keyboard
+    }
   }
   notifyRootMutation()
 }
@@ -494,15 +537,31 @@ function isEqual(left: unknown, right: unknown): boolean {
     >
       <aside class="hidden min-h-0 overflow-hidden overscroll-none border-r border-border/70 bg-muted/25 lg:flex lg:flex-col">
         <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
-          <TabsTrigger
-            v-for="section in sections"
-            :key="section.id"
-            :value="section.id"
-            class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-          >
-            <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
-            <span>{{ section.label }}</span>
-          </TabsTrigger>
+          <template v-for="section in sections" :key="section.id">
+            <TabsTrigger
+              :value="section.id"
+              class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+            >
+              <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
+              <span>{{ section.label }}</span>
+            </TabsTrigger>
+
+            <div
+              v-if="section.id === 'tooltips' && activeSection === 'tooltips'"
+              class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
+            >
+              <button
+                v-for="tooltipItem in tooltipSections"
+                :key="tooltipItem.id"
+                type="button"
+                class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground"
+                :class="tooltipSection === tooltipItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                @click="setTooltipSection(tooltipItem.id)"
+              >
+                {{ tooltipItem.label }}
+              </button>
+            </div>
+          </template>
         </TabsList>
       </aside>
 
@@ -513,6 +572,14 @@ function isEqual(left: unknown, right: unknown): boolean {
             <SelectContent>
               <SelectItem v-for="section in sections" :key="section.id" :value="section.id">
                 {{ section.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-if="activeSection === 'tooltips'" :model-value="tooltipSection" @update:model-value="setTooltipSection">
+            <SelectTrigger class="mt-2 w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="tooltipItem in tooltipSections" :key="tooltipItem.id" :value="tooltipItem.id">
+                {{ tooltipItem.label }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -630,48 +697,71 @@ function isEqual(left: unknown, right: unknown): boolean {
             </ConfigurationOverrideField>
           </TabsContent>
 
-          <TabsContent value="tooltips" class="m-0 space-y-5 p-5 outline-none">
-            <div>
-              <h3 class="text-sm font-semibold text-foreground">Поведение тултипов</h3>
+          <TabsContent value="tooltips" class="m-0 p-5 outline-none">
+            <div v-if="tooltipSection === 'ui'" class="space-y-5">
+              <div>
+                <h3 class="text-sm font-semibold text-foreground">Настройки UI</h3>
+                <p class="mt-1 text-xs leading-5 text-muted-foreground">Положение и задержки единого tooltip overlay.</p>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <ConfigurationOverrideField label="Предпочтительная сторона" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('side')" @enable="enableTooltipOverride('side')" @reset="resetTooltipOverride('side')">
+                  <template #default="{ disabled: fieldDisabled }">
+                    <Select :model-value="String(tooltipValue('side'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('side', String($event))">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Сверху</SelectItem>
+                        <SelectItem value="right">Справа</SelectItem>
+                        <SelectItem value="bottom">Снизу</SelectItem>
+                        <SelectItem value="left">Слева</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </template>
+                </ConfigurationOverrideField>
+
+                <ConfigurationOverrideField label="Выравнивание" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('align')" @enable="enableTooltipOverride('align')" @reset="resetTooltipOverride('align')">
+                  <template #default="{ disabled: fieldDisabled }">
+                    <Select :model-value="String(tooltipValue('align'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('align', String($event))">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="start">По началу</SelectItem>
+                        <SelectItem value="center">По центру</SelectItem>
+                        <SelectItem value="end">По концу</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </template>
+                </ConfigurationOverrideField>
+
+                <ConfigurationOverrideField label="Задержка появления, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('openDelay')" @enable="enableTooltipOverride('openDelay')" @reset="resetTooltipOverride('openDelay')">
+                  <template #default="{ disabled: fieldDisabled }">
+                    <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('openDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('openDelay', String($event ?? '0'))" />
+                  </template>
+                </ConfigurationOverrideField>
+
+                <ConfigurationOverrideField label="Задержка исчезновения, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('closeDelay')" @enable="enableTooltipOverride('closeDelay')" @reset="resetTooltipOverride('closeDelay')">
+                  <template #default="{ disabled: fieldDisabled }">
+                    <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('closeDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('closeDelay', String($event ?? '0'))" />
+                  </template>
+                </ConfigurationOverrideField>
+              </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
-              <ConfigurationOverrideField label="Предпочтительная сторона" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('side')" @enable="enableTooltipOverride('side')" @reset="resetTooltipOverride('side')">
-                <template #default="{ disabled: fieldDisabled }">
-                  <Select :model-value="String(tooltipValue('side'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('side', String($event))">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="top">Сверху</SelectItem>
-                      <SelectItem value="right">Справа</SelectItem>
-                      <SelectItem value="bottom">Снизу</SelectItem>
-                      <SelectItem value="left">Слева</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </template>
-              </ConfigurationOverrideField>
+            <div v-else class="space-y-5">
+              <div>
+                <h3 class="text-sm font-semibold text-foreground">Триггер</h3>
+                <p class="mt-1 text-xs leading-5 text-muted-foreground">Условие на состояние клавиатуры при наведении или фокусе.</p>
+              </div>
 
-              <ConfigurationOverrideField label="Выравнивание" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('align')" @enable="enableTooltipOverride('align')" @reset="resetTooltipOverride('align')">
+              <ConfigurationOverrideField label="Клавиатурное условие появления" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('keyboard')" @enable="enableTooltipOverride('keyboard')" @reset="resetTooltipOverride('keyboard')">
                 <template #default="{ disabled: fieldDisabled }">
-                  <Select :model-value="String(tooltipValue('align'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('align', String($event))">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="start">По началу</SelectItem>
-                      <SelectItem value="center">По центру</SelectItem>
-                      <SelectItem value="end">По концу</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </template>
-              </ConfigurationOverrideField>
-
-              <ConfigurationOverrideField label="Задержка появления, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('openDelay')" @enable="enableTooltipOverride('openDelay')" @reset="resetTooltipOverride('openDelay')">
-                <template #default="{ disabled: fieldDisabled }">
-                  <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('openDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('openDelay', String($event ?? '0'))" />
-                </template>
-              </ConfigurationOverrideField>
-
-              <ConfigurationOverrideField label="Задержка исчезновения, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('closeDelay')" @enable="enableTooltipOverride('closeDelay')" @reset="resetTooltipOverride('closeDelay')">
-                <template #default="{ disabled: fieldDisabled }">
-                  <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('closeDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('closeDelay', String($event ?? '0'))" />
+                  <div class="space-y-2">
+                    <ComponentSFCKeyboardConditionEditor
+                      :model-value="tooltipKeyboard()"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="setTooltipKeyboard"
+                    />
+                    <p class="text-xs text-muted-foreground">Если условие не задано, тултип появляется при обычном наведении или фокусе. Можно записать физическую комбинацию либо настроить её вручную.</p>
+                  </div>
                 </template>
               </ConfigurationOverrideField>
             </div>

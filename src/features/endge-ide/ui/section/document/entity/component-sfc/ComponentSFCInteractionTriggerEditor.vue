@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
+  ComponentSFCInteractionKeyboardCondition,
   ComponentSFCInteractionTriggerProjection,
   ComponentSFCIntrinsicEventDefinition,
   ComponentSFCTableCellInteractionModifier,
@@ -14,6 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+import ComponentSFCKeyboardConditionEditor from './ComponentSFCKeyboardConditionEditor.vue'
 
 const props = defineProps<{
   modelValue: ComponentSFCInteractionTriggerProjection
@@ -326,9 +329,31 @@ function updateEvent(value: unknown): void {
   commit()
 }
 
-function toggleModifier(modifier: ComponentSFCTableCellInteractionModifier): void {
-  const current = draft.value.modifiers[modifier]
-  draft.value.modifiers[modifier] = current == null ? true : current ? false : undefined
+function keyboardCondition(): ComponentSFCInteractionKeyboardCondition {
+  return {
+    ...(Object.keys(draft.value.modifiers).length ? { modifiers: { ...draft.value.modifiers } } : {}),
+    ...(draft.value.held
+      ? {
+          held: {
+            ...draft.value.held,
+            key: [...draft.value.held.key],
+            code: [...draft.value.held.code],
+          },
+        }
+      : {}),
+  }
+}
+
+function updateKeyboardCondition(value: ComponentSFCInteractionKeyboardCondition | null): void {
+  draft.value.modifiers = { ...(value?.modifiers ?? {}) }
+  draft.value.held = value?.held
+    ? {
+        key: [...(value.held.key ?? [])],
+        code: [...(value.held.code ?? [])],
+        match: value.held.match ?? 'all',
+        exact: value.held.exact ?? false,
+      }
+    : null
   commit()
 }
 
@@ -340,34 +365,6 @@ function toggleFlag(flag: keyof ComponentSFCInteractionTriggerProjection['flags'
     return
   }
   draft.value.flags[flag] = draft.value.flags[flag] === true ? undefined : true
-  commit()
-}
-
-function heldCodes(): string {
-  return draft.value.held?.code.join(', ') ?? ''
-}
-
-function updateHeldCodes(raw: string): void {
-  const code = splitList(raw)
-  draft.value.held = code.length
-    ? { key: draft.value.held?.key ?? [], code, match: draft.value.held?.match ?? 'all', exact: draft.value.held?.exact ?? false }
-    : null
-  commit()
-}
-
-function updateHeldMatch(value: unknown): void {
-  if (!draft.value.held) {
-    return
-  }
-  draft.value.held.match = value === 'any' ? 'any' : 'all'
-  commit()
-}
-
-function toggleHeldExact(): void {
-  if (!draft.value.held) {
-    return
-  }
-  draft.value.held.exact = !draft.value.held.exact
   commit()
 }
 
@@ -501,40 +498,12 @@ function splitList(value: string): string[] {
     <details class="rounded-md border border-border/60 px-3 py-2">
       <summary class="cursor-pointer text-xs font-medium text-muted-foreground">Расширенные условия</summary>
       <div class="mt-3 space-y-3">
-        <div class="space-y-1.5">
-          <Label class="text-xs">Модификаторы</Label>
-          <div class="flex min-h-9 flex-wrap items-center gap-1 rounded-md border border-border/70 p-1">
-            <Button
-              v-for="modifier in (['shift', 'ctrl', 'alt', 'meta', 'mod', 'altGraph', 'exact'] as const)"
-              :key="modifier"
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="h-7 px-2 font-mono text-[11px]"
-              :class="draft.modifiers[modifier] === true ? 'bg-primary/12 text-primary' : draft.modifiers[modifier] === false ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300' : 'text-muted-foreground'"
-              :aria-pressed="draft.modifiers[modifier] === true"
-              @click="toggleModifier(modifier)"
-            >
-              {{ draft.modifiers[modifier] === false ? `!${modifier}` : modifier }}
-            </Button>
-          </div>
-        </div>
+        <ComponentSFCKeyboardConditionEditor
+          :model-value="keyboardCondition()"
+          @update:model-value="updateKeyboardCondition"
+        />
 
         <div class="grid gap-3 lg:grid-cols-3">
-          <div class="space-y-1.5">
-            <Label class="text-xs">Удерживаемые code</Label>
-            <Input class="editor-control font-mono text-xs" :model-value="heldCodes()" placeholder="KeyW, KeyE" @change="updateHeldCodes(($event.target as HTMLInputElement).value)" />
-          </div>
-          <div v-if="draft.held" class="space-y-1.5">
-            <Label class="text-xs">Совпадение held</Label>
-            <div class="flex gap-1">
-              <Select :model-value="draft.held.match" @update:model-value="updateHeldMatch">
-                <SelectTrigger class="editor-control"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Все</SelectItem><SelectItem value="any">Любая</SelectItem></SelectContent>
-              </Select>
-              <Button type="button" variant="outline" size="sm" class="h-9" :class="draft.held.exact ? 'border-primary/50 text-primary' : ''" @click="toggleHeldExact">exact</Button>
-            </div>
-          </div>
           <div class="space-y-1.5">
             <Label class="text-xs">Button</Label>
             <Input class="editor-control font-mono text-xs" type="number" min="0" max="4" :model-value="draft.button ?? ''" placeholder="Любая" @change="updateButton(($event.target as HTMLInputElement).value)" />

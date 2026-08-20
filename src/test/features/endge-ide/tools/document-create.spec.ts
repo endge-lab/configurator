@@ -21,5 +21,9 @@ describe('document create helpers', () => {
       supportsFolder: true,
       supportsDescription: false,
     })
+    expect(DOCUMENT_CREATE_DESCRIPTORS.find(item => item.type === 'query-gql')).toMatchObject({
+      supportsFolder: true,
+      supportsDescription: false,
+    })
   })
 })

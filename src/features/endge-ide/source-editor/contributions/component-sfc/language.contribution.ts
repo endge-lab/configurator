@@ -19,7 +19,7 @@ import ts from 'typescript'
 const SCRIPT_PATTERN = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
 const TEMPLATE_OPEN_PATTERN = /<template\b[^>]*>/i
 const TEMPLATE_CLOSE_PATTERN = /<\/template\s*>/gi
-const DYNAMIC_ATTRIBUTE_PATTERN = /(?:^|\s)(?::[\w.-]+|#[\w.-]+|v-bind:[\w.-]+|@[\w.-]+|v-on:[\w.-]+|v-(?:if|else-if|for|show|model|slot|text|html|memo)(?:[:.][\w-]+){0,3})\s*=\s*(["'])([\s\S]*?)\1/gi
+const DYNAMIC_ATTRIBUTE_PATTERN = /(?:^|\s)(?:if|else-if|for|key|:[\w.-]+|#[\w.-]+|v-bind:[\w.-]+|@[\w.-]+|v-on:[\w.-]+|v-(?:if|else-if|for|show|model|slot|text|html|memo)(?:[:.][\w-]+){0,3})\s*=\s*(["'])([\s\S]*?)\1/gi
 const INTERPOLATION_PATTERN = /\{\{([\s\S]*?)\}\}/g
 
 type ExpressionTokenKind = 'comment' | 'identifier' | 'keyword' | 'number' | 'operator' | 'property' | 'string'

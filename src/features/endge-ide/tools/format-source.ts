@@ -274,13 +274,14 @@ async function loadPrettierConfig(
 
   switch (language) {
     case 'typescript': {
-      const [typescriptPlugin, estreePlugin] = await Promise.all([
+      const [typescriptPlugin, estreePlugin, graphQLPlugin] = await Promise.all([
         import('prettier/plugins/typescript').then(module => module.default),
         estree(),
+        import('prettier/plugins/graphql').then(module => module.default),
       ])
       return {
         parser: 'typescript',
-        plugins: [typescriptPlugin, estreePlugin],
+        plugins: [typescriptPlugin, estreePlugin, graphQLPlugin],
       }
     }
     case 'javascript': {

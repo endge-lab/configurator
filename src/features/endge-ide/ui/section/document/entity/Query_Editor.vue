@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, no-console */
+import type { QuerySourceDocument } from '@endge/core'
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 
-import { Endge } from '@endge/core'
+import { Endge, QueryType } from '@endge/core'
 import {
   Code2,
   Loader2,
@@ -52,13 +53,21 @@ const diagnosticsEntityRef = computed(() =>
 )
 const runQueryLoading = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const queryDocumentType = computed(() =>
+  Endge.source.parse<QuerySourceDocument>('query', editor.value?.source ?? '').document?.kind === 'graphql'
+    ? QueryType.GraphQL
+    : QueryType.REST,
+)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
 function resetSource(): void {
-  editor.value?.applySourceText(Endge.source.createDefault('query'))
+  editor.value?.applySourceText(Endge.source.createDefault(
+    'query',
+    queryDocumentType.value === QueryType.GraphQL ? 'graphql' : 'rest',
+  ))
 }
 
 async function runQuery(): Promise<void> {
@@ -132,7 +141,7 @@ async function buildQueryArtifact(
     :document-id="editor.id"
     :identity="editor.identity"
     :display-name="editor.name"
-    document-type="query-rest"
+    :document-type="queryDocumentType"
     :dependency-source="editor.source"
     :dependency-draft="editor"
   >

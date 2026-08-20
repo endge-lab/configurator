@@ -30,6 +30,22 @@ defineProps<{ flight: { id: string } }>()
     ).resolves.toBe('const flight: { id: string } = { id: \'SU100\' }\n')
   })
 
+  it('formats a GraphQL document inside a gql tagged template', async () => {
+    const formatted = await formatSource(
+      'defineQuery({kind:"graphql",request:{document:gql`mutation Update($id:ID!){update(id:$id){id actualTime}}`}})',
+      'typescript',
+    )
+
+    expect(formatted).toContain(`document: gql\`
+      mutation Update($id: ID!) {
+        update(id: $id) {
+          id
+          actualTime
+        }
+      }
+    \``)
+  })
+
   it('formats standalone EndgeCSS with its SCSS-compatible grammar', async () => {
     const source = `Table{&::part(cell){border-right:1px solid #355a82}}// Grid lines
 @theme dark{Table{color:#fff}}`

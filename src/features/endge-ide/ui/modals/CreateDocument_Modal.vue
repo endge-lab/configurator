@@ -308,11 +308,11 @@ function buildPayloadTemplate(): Record<string, unknown> {
     }
   }
 
-  if (activeType.value === QueryType.REST) {
+  if (activeType.value === QueryType.REST || activeType.value === QueryType.GraphQL) {
     return {
       ...base,
-      type: QueryType.REST,
-      source: Endge.source.createDefault('query'),
+      type: activeType.value,
+      source: Endge.source.createDefault('query', activeType.value === QueryType.GraphQL ? 'graphql' : 'rest'),
       sourceVersion: 2,
       meta: {},
     }
