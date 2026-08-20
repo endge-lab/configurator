@@ -7,6 +7,7 @@ import type {
   RComponentTable,
   RDataView,
   RComposition,
+  RConfiguration,
   RStore,
   RStream,
   RUpdate,
@@ -56,6 +57,7 @@ import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnviro
 import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
 import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
 import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
+import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor.ts'
 import { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor.ts'
 import { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor.ts'
 import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
@@ -90,6 +92,7 @@ const Environment_Editor = defineAsyncComponent(() => import('@/features/endge-i
 const Tenant_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Tenant_Editor.vue'))
 const Policy_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Policy_Editor.vue'))
 const Style_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Style_Editor.vue'))
+const Configuration_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Configuration_Editor.vue'))
 const Vocabs_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Vocabs_Editor.vue'))
 const AuthProfile_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/AuthProfile_Editor.vue'))
 const I18nBundles_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/I18nBundles_Editor.vue'))
@@ -810,6 +813,7 @@ export class EndgeIDETabs_Module {
     ['tenant', (documentId) => this._resolveTenant(documentId)],
     ['policy', (documentId) => this._resolvePolicy(documentId)],
     ['style', (documentId) => this._resolveStyle(documentId)],
+    ['configuration', (documentId) => this._resolveConfiguration(documentId)],
     ['vocabs', (documentId) => this._resolveVocabs(documentId)],
     ['auth-profile', (documentId) => this._resolveAuthProfile(documentId)],
     ['i18n-bundles', (documentId) => this._resolveI18nBundle(documentId)],
@@ -1171,6 +1175,23 @@ export class EndgeIDETabs_Module {
       editor,
       model: style,
       syncBeforeSave: () => editor.updateSource(style),
+    }
+  }
+
+  private _resolveConfiguration(documentId: string): EditorSession | null {
+    const configuration = Endge.domain.getConfiguration(documentId) as RConfiguration | null
+    if (!configuration) return null
+    const rawEditor = new RConfigurationEditor()
+    rawEditor.fillFromSource(configuration)
+    const editor = reactive(rawEditor as object) as RConfigurationEditor
+    return {
+      view: {
+        component: markRaw(Configuration_Editor),
+        props: { tabContext: { editor } },
+      },
+      editor,
+      model: configuration,
+      syncBeforeSave: () => editor.updateSource(configuration),
     }
   }
 

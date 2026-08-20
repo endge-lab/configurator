@@ -55,6 +55,8 @@ export function getEntityByDocType(
       return domain.getPolicy(id)
     case 'style':
       return domain.getStyle(id)
+    case 'configuration':
+      return domain.getConfiguration(id)
     case 'page-template':
       return domain.getPageTemplate(id)
     case 'page':

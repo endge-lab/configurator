@@ -23,6 +23,7 @@ const DEFAULT_EDITOR_NAMES = [
   'RComponentSFCEditor',
   'RComponentTableEditor',
   'RCompositionEditor',
+  'RConfigurationEditor',
   'RComputationEditor',
   'RConverterEditor',
   'RDataViewEditor',

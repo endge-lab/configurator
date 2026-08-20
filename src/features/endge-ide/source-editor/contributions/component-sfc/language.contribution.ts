@@ -10,6 +10,7 @@ import type {
 import type * as Monaco from 'monaco-editor'
 
 import {
+  Endge,
   parseComponentSFC,
   resolveComponentSFCTagAttributeContracts,
   validateComponentSFCAttributeValues,
@@ -178,7 +179,10 @@ export function createSFCLanguageContribution(
       const refreshDiagnostics = () => {
         const source = model.getValue()
         const parsed = parseComponentSFC(source)
-        const diagnostics = validateComponentSFCAttributeValues(source, parsed.ast, options)
+        const diagnostics = [
+          ...validateComponentSFCAttributeValues(source, parsed.ast, options),
+          ...validateContextConfigurationPaths(source),
+        ]
         monaco.editor.setModelMarkers(model, 'endge-sfc-attributes', diagnostics.map((diagnostic) => {
           const start = Math.max(0, diagnostic.start ?? 0)
           const end = Math.max(start + 1, diagnostic.end ?? start + 1)
@@ -210,12 +214,14 @@ export function createSFCLanguageContribution(
         },
       })
       const completions = monaco.languages.registerCompletionItemProvider('html', {
-        triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\''],
+        triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\'', '.'],
         provideCompletionItems(currentModel, position) {
           if (currentModel !== model) { return { suggestions: [] } }
           const template = findTemplateContentRange(model.getValue())
           const offset = model.getOffsetAt(position)
           if (!template || offset < template.start || offset > template.end) { return { suggestions: [] } }
+          const configCompletion = contextConfigurationCompletions(monaco, model, offset)
+          if (configCompletion) return configCompletion
           const attributeContext = resolveAttributeCompletionContext(model.getValue(), offset)
           if (attributeContext) {
             const contracts = resolveComponentSFCTagAttributeContracts(attributeContext.tag, options)
@@ -338,6 +344,60 @@ export function createSFCLanguageContribution(
       }
     },
   }
+}
+
+const PUBLIC_SYSTEM_CONFIGURATION_KEYS = [
+  'defaultTheme', 'themes', 'defaultLocale', 'fallbackLocale', 'locales',
+  'defaultTimezone', 'timezones', 'defaultAuthProfileIdentity',
+  'defaultSfcAdapterId', 'sfcAdapterIds', 'sfcEditing', 'tooltips',
+] as const
+
+function contextConfigurationCompletions(monaco: typeof Monaco, model: Monaco.editor.ITextModel, offset: number) {
+  const before = model.getValue().slice(0, offset)
+  const match = /\$context\.config(?:\.([\w$-]*))?(?:\.([\w$-]*))?$/.exec(before)
+  if (!match) return null
+  const categories = Endge.configurationSchema.list().filter(item => item.document)
+  const categoryIdentity = match[1]
+  const fieldPrefix = match[2]
+  const prefix = fieldPrefix ?? categoryIdentity ?? ''
+  const range = monaco.Range.fromPositions(model.getPositionAt(offset - prefix.length), model.getPositionAt(offset))
+  if (!categoryIdentity || fieldPrefix == null) {
+    return {
+      suggestions: [
+        ...PUBLIC_SYSTEM_CONFIGURATION_KEYS.map(key => ({ label: key, insertText: key, detail: 'System configuration', range, kind: monaco.languages.CompletionItemKind.Property })),
+        ...categories.map(category => ({ label: category.identity, insertText: category.identity, detail: category.displayName, range, kind: monaco.languages.CompletionItemKind.Module })),
+      ],
+    }
+  }
+  const category = categories.find(item => item.identity === categoryIdentity)
+  return {
+    suggestions: (category?.document?.values ?? []).map(field => ({
+      label: field.key,
+      insertText: field.key,
+      detail: `${field.label} · ${field.type.kind === 'reference' ? field.type.identity : field.type.kind}`,
+      documentation: field.description,
+      range,
+      kind: monaco.languages.CompletionItemKind.Property,
+    })),
+  }
+}
+
+function validateContextConfigurationPaths(source: string): Array<{ code: string, message: string, start: number, end: number }> {
+  const categories = new Map(Endge.configurationSchema.list().filter(item => item.document).map(item => [item.identity, item]))
+  const diagnostics: Array<{ code: string, message: string, start: number, end: number }> = []
+  for (const match of source.matchAll(/\$context\.config\.([\w$-]+)(?:\.([\w$-]+))?/g)) {
+    const identity = match[1]!
+    if ((PUBLIC_SYSTEM_CONFIGURATION_KEYS as readonly string[]).includes(identity)) continue
+    const category = categories.get(identity)
+    if (!category) {
+      diagnostics.push({ code: 'context-config-category-unknown', message: `Configuration "${identity}" не существует.`, start: match.index!, end: match.index! + match[0].length })
+      continue
+    }
+    const field = match[2]
+    if (field && !category.document?.values.some(item => item.key === field))
+      diagnostics.push({ code: 'context-config-field-unknown', message: `Configuration "${identity}" не содержит поле "${field}".`, start: match.index!, end: match.index! + match[0].length })
+  }
+  return diagnostics
 }
 
 function resolveAttributeCompletionContext(

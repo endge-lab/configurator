@@ -71,6 +71,60 @@ export interface FsFileNode extends FsNodeBase {
 
 export type FsNode = FsFolderNode | FsFileNode
 
+export interface WorkspaceTreeProjectionInput {
+  id: string | number
+  identity: string
+  displayName: string
+  role: string
+  active: boolean
+}
+
+export interface ConfigurationTreeProjectionInput {
+  id: string | number
+  identity: string
+  displayName?: string | null
+  deletedAt?: string | null
+}
+
+/** Projects only the active Workspace configurations as flat, folderless children. */
+export function buildWorkspaceTreeNodes(
+  workspaces: readonly WorkspaceTreeProjectionInput[],
+  activeWorkspaceIdentity: string,
+  configurations: readonly ConfigurationTreeProjectionInput[],
+): FsNode[] {
+  return workspaces.filter(workspace => workspace.active).map((workspace): FsNode => {
+    const activeWorkspace = workspace.identity === activeWorkspaceIdentity
+    const common = {
+      id: `workspace:${workspace.id}`,
+      identity: workspace.identity,
+      name: workspace.displayName,
+      virtual: true,
+      workspaceIdentity: workspace.identity,
+      activeWorkspace,
+      badges: [workspace.role],
+    }
+    if (!activeWorkspace) {
+      return { ...common, type: 'file', docType: 'project', sectionType: DomainSectionType.Project }
+    }
+    return {
+      ...common,
+      type: 'folder',
+      sectionType: DomainSectionType.Configuration,
+      children: configurations
+        .filter(item => item.deletedAt == null)
+        .sort((left, right) => (left.displayName || left.identity).localeCompare(right.displayName || right.identity) || left.identity.localeCompare(right.identity))
+        .map(item => ({
+          id: String(item.id),
+          identity: item.identity,
+          name: item.displayName || item.identity,
+          type: 'file' as const,
+          docType: 'configuration' as DomainDocumentType,
+          sectionType: DomainSectionType.Configuration,
+        })),
+    }
+  })
+}
+
 export interface FlatFsItem {
   node: FsNode
   path: string
@@ -250,6 +304,8 @@ export function normalizeDocType(
     return 'policy'
   if (sectionType === DomainSectionType.Style)
     return 'style'
+  if (sectionType === DomainSectionType.Configuration)
+    return 'configuration'
   if (sectionType === DomainSectionType.PageTemplate)
     return 'page-template' as DomainDocumentType
   if (sectionType === DomainSectionType.Page)

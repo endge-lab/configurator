@@ -124,6 +124,8 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
         identity: type.identity,
         displayName: type.displayName,
         category: type.category,
+        definition: type.definition,
+        entityReference: type.entityReference,
       })),
     }
   }

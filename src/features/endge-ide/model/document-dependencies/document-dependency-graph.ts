@@ -681,6 +681,8 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getComposition(identity)
     case 'style':
       return Endge.domain.getStyle(identity)
+    case 'configuration':
+      return Endge.domain.getConfiguration(identity)
     case 'mock':
       return Endge.domain.getMock(identity)
     case 'vocabs':

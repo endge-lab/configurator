@@ -14,7 +14,7 @@ import ComponentSFCInteractionTriggerEditor from '@/features/endge-ide/ui/sectio
 
 const props = defineProps<{
   modelValue: ComponentSFCInteractionTrigger[]
-  kind: 'cancel' | 'commit'
+  kind: 'cancel' | 'commit' | 'generic'
   disabled?: boolean
 }>()
 
@@ -34,7 +34,9 @@ function addTrigger(): void {
   const next = triggers.value.map(cloneProjection)
   next.push(props.kind === 'cancel'
     ? createProjection('focusout')
-    : {
+    : props.kind === 'generic'
+      ? createProjection('click')
+      : {
         ...createProjection('keydown'),
         key: ['Enter'],
         code: ['Enter'],

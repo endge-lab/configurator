@@ -1,9 +1,31 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DomainSectionType } from '@endge/core'
 
-import { buildDomainTree } from '@/features/endge-ide/model/domain/domain-tree'
+import { buildDomainTree, buildWorkspaceTreeNodes } from '@/features/endge-ide/model/domain/domain-tree'
 
 describe('buildDomainTree', () => {
+  it('expands only the active Workspace with flat active Configuration children', () => {
+    const tree = buildWorkspaceTreeNodes([
+      { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true },
+      { id: 2, identity: 'remote', displayName: 'Remote', role: 'viewer', active: true },
+    ], 'default', [
+      { id: 12, identity: 'table', displayName: 'Таблица' },
+      { id: 11, identity: 'editing', displayName: 'Редактирование' },
+      { id: 13, identity: 'deleted', displayName: 'Удалено', deletedAt: '2026-08-20T00:00:00Z' },
+    ])
+
+    expect(tree[0]).toMatchObject({
+      type: 'folder',
+      identity: 'default',
+      children: [
+        { type: 'file', docType: 'configuration', identity: 'editing' },
+        { type: 'file', docType: 'configuration', identity: 'table' },
+      ],
+    })
+    expect(tree[1]).toMatchObject({ type: 'file', identity: 'remote', activeWorkspace: false })
+    expect(tree[1]?.children).toBeUndefined()
+  })
+
   it('places Mock directly after dictionaries in the Data root block', async () => {
     const { getDomainTreeRootBlocks } = await import('@/features/endge-ide/model/domain/domain-tree')
     const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-mocks', 'root-integrations'])

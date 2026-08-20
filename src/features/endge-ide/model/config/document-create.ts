@@ -227,6 +227,17 @@ export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
     supportsDescription: true,
   },
   {
+    type: 'configuration',
+    label: 'Конфигурация',
+    description: 'Типизированная категория настроек Workspace с контекстным наследованием.',
+    keywords: ['configuration', 'settings', 'workspace', 'конфигурация', 'настройки'],
+    defaultName: 'Новая конфигурация',
+    section: DomainSectionType.Configuration,
+    group: 'Система',
+    supportsFolder: false,
+    supportsDescription: true,
+  },
+  {
     type: 'environment',
     label: 'Окружение',
     description: 'Configuration contribution для конкретного runtime environment.',

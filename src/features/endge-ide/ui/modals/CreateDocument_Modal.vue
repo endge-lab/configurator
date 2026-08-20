@@ -60,6 +60,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Tenant]: 'root-tenants',
   [DomainSectionType.Policy]: 'root-policies',
   [DomainSectionType.Style]: 'root-styles',
+  [DomainSectionType.Configuration]: 'root-workspaces',
   [DomainSectionType.PageTemplate]: 'root-page-templates',
   [DomainSectionType.Page]: 'root-pages',
   [DomainSectionType.Navigation]: 'root-navigations',

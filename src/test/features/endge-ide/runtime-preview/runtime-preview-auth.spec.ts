@@ -25,7 +25,7 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-describe('Runtime Preview auth preflight', () => {
+describe('runtime Preview auth preflight', () => {
   beforeEach(() => {
     mocks.mockMode = false
     mocks.artifacts.clear()
@@ -35,9 +35,13 @@ describe('Runtime Preview auth preflight', () => {
     mocks.profiles.set('service-auth', profile('service-auth'))
   })
 
-  it('skips auth entirely in mock preview', () => {
+  it('collects auth profiles in mock preview for a non-blocking warning', () => {
     mocks.mockMode = true
-    expect(collectRuntimePreviewAuthProfiles({ entityType: 'composition', identity: 'root' })).toEqual([])
+    mocks.artifacts.set('composition:root', artifact('composition', [dependency('query', 'inherited')]))
+    mocks.artifacts.set('query:inherited', artifact('query', [], { auth: { mode: 'inherit' } }))
+
+    expect(collectRuntimePreviewAuthProfiles({ entityType: 'composition', identity: 'root' }))
+      .toEqual([mocks.defaultProfile])
   })
 
   it('collects inherited and explicit Query profiles from the program graph', () => {

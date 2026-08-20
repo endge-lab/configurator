@@ -5,8 +5,6 @@ import { Endge } from '@endge/core'
 
 /** Собирает только auth profiles Query, достижимых из запускаемого preview graph. */
 export function collectRuntimePreviewAuthProfiles(request: RuntimePreviewLaunchRequest): AuthProfileSchema[] {
-  if (Endge.context.isMockEnabled)
-    return []
   const starts = request.entityType === 'project'
     ? Endge.domain.getCompositions()
         .filter(item => item.kind === 'project' && item.kindIdentity === request.identity && item.active !== false && !item.deletedAt)

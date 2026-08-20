@@ -103,15 +103,27 @@ export class EndgeIDERuntimePreview_Module {
       toast.error(validation.message ?? 'Runtime Preview недоступен', { description: validation.description })
       return false
     }
+    const mockMode = Endge.context.isMockEnabled
+    let missingMockProfiles: AuthProfileSchema[] = []
+    let mockAuthWarning: string | null = null
     try {
-      if (!await this._ensureProfiles(collectRuntimePreviewAuthProfiles(rawTarget)))
+      const profiles = collectRuntimePreviewAuthProfiles(rawTarget)
+      if (mockMode) {
+        missingMockProfiles = await this._findMissingInteractiveProfiles(profiles)
+      }
+      else if (!await this._ensureProfiles(profiles)) {
         return false
+      }
     }
     catch (error) {
-      toast.error('Не удалось подготовить авторизацию Runtime Preview', {
-        description: error instanceof Error ? error.message : String(error),
-      })
-      return false
+      const description = error instanceof Error ? error.message : String(error)
+      if (mockMode) {
+        mockAuthWarning = description
+      }
+      else {
+        toast.error('Не удалось подготовить авторизацию Runtime Preview', { description })
+        return false
+      }
     }
 
     const key = runtimePreviewKey(target)
@@ -125,7 +137,10 @@ export class EndgeIDERuntimePreview_Module {
     this.selectedEntryKey.value = key
     if (revealTree) { showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) }
     try {
-      await instance.launch(rawTarget.draft, rawTarget.contextual)
+      await instance.launch(rawTarget.draft, rawTarget.contextual, mockMode)
+      if (mockMode && (missingMockProfiles.length > 0 || mockAuthWarning)) {
+        this._warnMockAuthorization(missingMockProfiles, mockAuthWarning)
+      }
       return true
     }
     catch (error) {
@@ -449,6 +464,44 @@ export class EndgeIDERuntimePreview_Module {
     this.cancelAuthorization()
     this.authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
     return new Promise(resolve => { this._resolveAuthPrompt = resolve })
+  }
+
+  /** Проверяет только наличие browser session, не блокируя запуск mock preview. */
+  private async _findMissingInteractiveProfiles(profiles: AuthProfileSchema[]): Promise<AuthProfileSchema[]> {
+    const missing: AuthProfileSchema[] = []
+    for (const profile of profiles) {
+      if (profile.adapterId !== 'oidc') {
+        continue
+      }
+      const source = this._oidcSource(profile)
+      this._oidcSources.set(profile.identity, source)
+      if (!await source.hasSession()) {
+        missing.push(profile)
+      }
+    }
+    return missing
+  }
+
+  private _warnMockAuthorization(profiles: AuthProfileSchema[], warning: string | null): void {
+    const names = profiles.map(profile => profile.displayName || profile.identity).join(', ')
+    toast.warning('Для запроса требуется авторизация', {
+      description: warning
+        ? `Runtime Preview продолжает работу в mock-режиме. ${warning}`
+        : `Runtime Preview продолжает работу в mock-режиме без сессии: ${names}.`,
+      ...(profiles.length > 0
+        ? {
+            action: {
+              label: 'Авторизоваться',
+              onClick: () => this._openAuthorizationPrompt(profiles),
+            },
+          }
+        : {}),
+    })
+  }
+
+  private _openAuthorizationPrompt(profiles: AuthProfileSchema[]): void {
+    this.cancelAuthorization()
+    this.authPrompt.value = { profiles, currentIndex: 0, pending: false, error: null }
   }
 
   private _oidcSource(profile: AuthProfileSchema): OidcBrowserSession_Service {

@@ -8,10 +8,12 @@ import type {
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsConfigurationPatch,
   EndgeTooltipConfiguration,
+  EndgeJSONValue,
+  EndgeConfigurationSchemaEntry,
 } from '@endge/core'
 
-import { applyEndgeConfigurationContribution } from '@endge/core'
-import { Braces, Clock3, HeartPulse, Languages, MessageSquareText, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck } from 'lucide-vue-next'
+import { applyEndgeConfigurationContribution, Endge, validateConfigurationValue } from '@endge/core'
+import { Braces, Clock3, HeartPulse, Languages, MessageSquareText, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck, SlidersHorizontal } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -27,19 +29,28 @@ import {
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ComponentSFCKeyboardConditionEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCKeyboardConditionEditor.vue'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
 import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
+import ConfigValueEditor from './ConfigValueEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
 type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultTimezone' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
-type ConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'tooltips' | 'auth' | 'locales' | 'themes' | 'timezones' | 'diagnostics'
+type SystemConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'tooltips' | 'auth' | 'locales' | 'themes' | 'timezones' | 'diagnostics'
+type ConfigurationSection = SystemConfigurationSection | `configuration:${string}`
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
 type TooltipField = keyof EndgeTooltipConfiguration
+type ConfigurationValueIssue = {
+  identity: string
+  key: string
+  kind: 'stale' | 'invalid'
+  message: string
+}
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -57,7 +68,10 @@ const excludedRowDrafts = new WeakMap<object, unknown>()
 const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
-  ['general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics'],
+  [
+    'general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics',
+    ...Endge.configurationSchema.list().map(item => `configuration:${item.identity}` as const),
+  ],
 )
 const editingSection = useSmartTabSelection<SFCEditingField>(
   'configuration.editing-section',
@@ -69,7 +83,7 @@ const tooltipSection = useSmartTabSelection<TooltipSection>(
   'ui',
   ['ui', 'trigger'],
 )
-const sections = [
+const systemSections = [
   {
     id: 'general',
     label: 'Основное',
@@ -121,6 +135,48 @@ const sections = [
     icon: HeartPulse,
   },
 ] as const
+const configurationCategories = computed(() => Endge.configurationSchema.list()
+  .filter((entry): entry is EndgeConfigurationSchemaEntry & { document: NonNullable<EndgeConfigurationSchemaEntry['document']> } => entry.document != null))
+const sections = computed(() => [
+  ...systemSections,
+  ...configurationCategories.value.map(category => ({
+    id: `configuration:${category.identity}` as const,
+    label: category.displayName,
+    icon: SlidersHorizontal,
+  })),
+])
+const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
+  const known = new Map(configurationCategories.value.map(category => [category.identity, new Map(category.document.values.map(field => [field.key, field]))]))
+  const authored: Record<string, Record<string, EndgeJSONValue>> = {}
+  if (isInherit.value) {
+    for (const [identity, fields] of Object.entries(patch.value?.values ?? {})) {
+      authored[identity] = Object.fromEntries(Object.entries(fields)
+        .filter(([, operation]) => operation.op === 'set')
+        .map(([key, operation]) => [key, operation.op === 'set' ? operation.value : null]))
+    }
+  }
+  else Object.assign(authored, editableConfiguration.value.values ?? {})
+
+  const issues: ConfigurationValueIssue[] = []
+  for (const [identity, fields] of Object.entries(authored)) {
+    for (const [key, value] of Object.entries(fields)) {
+      const field = known.get(identity)?.get(key)
+      if (!field) {
+        issues.push({ identity, key, kind: 'stale', message: 'Документ или поле сейчас отсутствует; значение сохранено, но не входит в effective config.' })
+        continue
+      }
+      const validation = validateConfigurationValue(field.type, value, Endge.configurationSchema.typeCatalog, `${identity}.${key}`)
+      if (!validation.ok) {
+        issues.push({ identity, key, kind: 'invalid', message: validation.diagnostics[0]?.message ?? 'Значение несовместимо с Type.' })
+      }
+    }
+  }
+  return issues
+})
+
+function openConfigurationDocument(identity: string): void {
+  if (Endge.domain.getConfiguration(identity)) EndgeIDE.tabs.openDocument(identity, 'configuration')
+}
 const editingSections = [
   {
     id: 'cancelOn',
@@ -164,16 +220,18 @@ function clone<T>(value: T): T {
 }
 
 function setActiveSection(value: unknown): void {
-  if (sections.some(section => section.id === value)) {
+  if (sections.value.some(section => section.id === value)) {
     activeSection.value = value as ConfigurationSection
   }
 }
 
 function setContributionMode(mode: string): void {
   if (mode === 'replace') {
+    const replacement = clone(props.upstream!)
+    replacement.values = Endge.configurationSchema.resolveValues({})
     emit('update:modelValue', {
       mode: 'replace',
-      value: clone(props.upstream!),
+      value: replacement,
     })
     return
   }
@@ -182,6 +240,49 @@ function setContributionMode(mode: string): void {
 
 function notifyRootMutation(): void {
   emit('update:modelValue', props.modelValue)
+}
+
+function hasConfigurationValueOverride(identity: string, key: string): boolean {
+  return patch.value?.values?.[identity]?.[key]?.op === 'set'
+}
+
+function configurationValue(identity: string, key: string, fallback: EndgeJSONValue): EndgeJSONValue {
+  if (isInherit.value) {
+    const local = patch.value?.values?.[identity]?.[key]
+    return local?.op === 'set'
+      ? local.value
+      : effective.value.values?.[identity]?.[key] ?? fallback
+  }
+  return editableConfiguration.value.values?.[identity]?.[key] ?? fallback
+}
+
+function setConfigurationValue(identity: string, key: string, value: EndgeJSONValue): void {
+  if (isInherit.value) {
+    const target = patch.value as EndgeConfigurationPatch
+    target.values ??= {}
+    target.values[identity] ??= {}
+    target.values[identity][key] = { op: 'set', value: clone(value) }
+  }
+  else {
+    editableConfiguration.value.values ??= {}
+    editableConfiguration.value.values[identity] ??= {}
+    editableConfiguration.value.values[identity][key] = clone(value)
+  }
+  notifyRootMutation()
+}
+
+function enableConfigurationValueOverride(identity: string, key: string, fallback: EndgeJSONValue): void {
+  const inherited = props.upstream?.values?.[identity]?.[key] ?? fallback
+  setConfigurationValue(identity, key, inherited)
+}
+
+function resetConfigurationValueOverride(identity: string, key: string): void {
+  const values = patch.value?.values
+  if (!values?.[identity]) return
+  delete values[identity][key]
+  if (!Object.keys(values[identity]).length) delete values[identity]
+  if (!Object.keys(values).length) delete patch.value!.values
+  notifyRootMutation()
 }
 
 function hasScalarOverride(name: ScalarName): boolean {
@@ -556,6 +657,14 @@ function isEqual(left: unknown, right: unknown): boolean {
       </Select>
     </section>
 
+    <section v-if="configurationValueIssues.length" class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3">
+      <p class="text-sm font-semibold">Проблемы пользовательской конфигурации</p>
+      <div v-for="issue in configurationValueIssues" :key="`${issue.identity}.${issue.key}`" class="mt-2 flex items-start justify-between gap-3 text-xs">
+        <div><code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span></div>
+        <Button v-if="Endge.domain.getConfiguration(issue.identity)" type="button" size="sm" variant="ghost" class="h-6 px-2" @click="openConfigurationDocument(issue.identity)">Открыть</Button>
+      </div>
+    </section>
+
     <Tabs
       v-model="activeSection"
       orientation="vertical"
@@ -638,6 +747,44 @@ function isEqual(left: unknown, right: unknown): boolean {
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
             <slot name="general" />
+          </TabsContent>
+
+          <TabsContent
+            v-for="category in configurationCategories"
+            :key="category.identity"
+            :value="`configuration:${category.identity}`"
+            class="m-0 space-y-5 p-5 outline-none"
+          >
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">{{ category.displayName }}</h3>
+              <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">{{ category.description }}</p>
+              <code class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
+            </div>
+            <div class="space-y-4">
+              <ConfigurationOverrideField
+                v-for="field in category.document.values"
+                :key="field.key"
+                :label="field.label"
+                :uses-parent-value="isInherit"
+                :overridden="hasConfigurationValueOverride(category.identity, field.key)"
+                @enable="enableConfigurationValueOverride(category.identity, field.key, field.defaultValue)"
+                @reset="resetConfigurationValueOverride(category.identity, field.key)"
+              >
+                <template #default="{ disabled: fieldDisabled }">
+                  <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">{{ field.description }}</p>
+                  <ConfigValueEditor
+                    :model-value="configurationValue(category.identity, field.key, field.defaultValue)"
+                    :type="field.type"
+                    :min="field.min"
+                    :max="field.max"
+                    :step="field.step"
+                    :disabled="disabled || fieldDisabled"
+                    @update:model-value="setConfigurationValue(category.identity, field.key, $event)"
+                  />
+                  <code class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
+                </template>
+              </ConfigurationOverrideField>
+            </div>
           </TabsContent>
 
           <TabsContent value="environment" class="m-0 p-5 outline-none">

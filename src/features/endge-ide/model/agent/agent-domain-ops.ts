@@ -61,6 +61,7 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   tenants: DomainSectionType.Tenant,
   policies: DomainSectionType.Policy,
   styles: DomainSectionType.Style,
+  configurations: DomainSectionType.Configuration,
   vocabs: DomainSectionType.Vocabs,
   navigations: DomainSectionType.Navigation,
   pageTemplates: DomainSectionType.PageTemplate,
@@ -103,6 +104,8 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getPolicyById?.(numId) : null) ?? domain.getPolicy?.(id)
     case DomainSectionType.Style:
       return (numId != null ? domain.getStyleById?.(numId) : null) ?? domain.getStyle?.(id)
+    case DomainSectionType.Configuration:
+      return (numId != null ? domain.getConfigurationById?.(numId) : null) ?? domain.getConfiguration?.(id)
     case DomainSectionType.PageTemplate:
       return (numId != null ? domain.getPageTemplateById?.(numId) : null) ?? domain.getPageTemplate?.(id)
     case DomainSectionType.Page:
@@ -166,6 +169,9 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.Style:
       rem(domain.removeStyle?.bind(domain))
+      break
+    case DomainSectionType.Configuration:
+      rem(domain.removeConfiguration?.bind(domain))
       break
     case DomainSectionType.PageTemplate:
       rem(domain.removePageTemplate?.bind(domain))

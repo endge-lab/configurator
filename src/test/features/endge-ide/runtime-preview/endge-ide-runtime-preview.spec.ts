@@ -5,8 +5,16 @@ import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/module
 
 const mocks = vi.hoisted(() => ({
   valid: true,
+  mockMode: false,
   showWidget: vi.fn(),
   toastError: vi.fn(),
+  toastWarning: vi.fn(),
+  runtimeAuthProfiles: [] as any[],
+  authConnect: vi.fn(),
+  oidcSource: {
+    hasSession: vi.fn(async () => false),
+    loginPopup: vi.fn(async () => undefined),
+  },
   instances: [] as any[],
   rememberedTargets: [] as Array<{ entityType: string, identity: string }>,
   readHistory: vi.fn(),
@@ -24,10 +32,20 @@ vi.mock('@endge/core', () => ({
     public constructor(public readonly profileIdentity: string) { super('Authentication required') }
   },
   Endge: {
+    context: {
+      get isMockEnabled() { return mocks.mockMode },
+    },
     auth: {
+      createOidcSessionSource: vi.fn(() => mocks.oidcSource),
+      session: {
+        connect: mocks.authConnect,
+        ensureProfile: vi.fn(async () => ({ accessToken: 'token' })),
+      },
       onInteractionRequired: vi.fn((listener) => {
         mocks.authInteractionListener = listener
-        return () => { mocks.authInteractionListener = null }
+        return () => {
+          mocks.authInteractionListener = null
+        }
       }),
     },
     runtime: {
@@ -38,10 +56,10 @@ vi.mock('@endge/core', () => ({
 }))
 
 vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-auth', () => ({
-  collectRuntimePreviewAuthProfiles: () => [],
+  collectRuntimePreviewAuthProfiles: () => mocks.runtimeAuthProfiles,
 }))
 
-vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError } }))
+vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError, warning: mocks.toastWarning } }))
 vi.mock('@/components/layouts/grid/layout', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
@@ -102,8 +120,15 @@ function createManager(): EndgeIDERuntimePreview_Module {
 describe('endgeIDE Runtime Preview manager', () => {
   beforeEach(() => {
     mocks.valid = true
+    mocks.mockMode = false
     mocks.showWidget.mockReset()
     mocks.toastError.mockReset()
+    mocks.toastWarning.mockReset()
+    mocks.runtimeAuthProfiles = []
+    mocks.authConnect.mockReset()
+    mocks.oidcSource.hasSession.mockReset()
+    mocks.oidcSource.hasSession.mockResolvedValue(false)
+    mocks.oidcSource.loginPopup.mockClear()
     mocks.instances.splice(0)
     mocks.rememberedTargets = []
     mocks.readHistory.mockReset()
@@ -121,7 +146,7 @@ describe('endgeIDE Runtime Preview manager', () => {
 
     await manager.launch({ entityType: 'component-sfc', identity: 'table', draft })
 
-    expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft, undefined)
+    expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft, undefined, false)
   })
 
   it('returns from Runtime Tree to Project without disposing runtimes', async () => {
@@ -343,5 +368,35 @@ describe('endgeIDE Runtime Preview manager', () => {
       action: expect.objectContaining({ label: 'Авторизоваться и повторить' }),
     }))
     manager.reset()
+  })
+
+  it('launches mock preview and offers optional authorization as a warning', async () => {
+    mocks.mockMode = true
+    mocks.runtimeAuthProfiles = [{
+      id: 'keycloak-default',
+      identity: 'keycloak-default',
+      displayName: 'Keycloak',
+      adapterId: 'oidc',
+      active: true,
+      config: {},
+      credentials: {},
+      session: { storage: 'memory', persistRefreshToken: false },
+    }]
+    const manager = createManager()
+
+    expect(await manager.launch({ entityType: 'composition', identity: 'entry' })).toBe(true)
+    expect(mocks.instances[0].status.value).toBe('active')
+    expect(mocks.toastError).not.toHaveBeenCalled()
+    expect(mocks.toastWarning).toHaveBeenCalledWith('Для запроса требуется авторизация', expect.objectContaining({
+      action: expect.objectContaining({ label: 'Авторизоваться' }),
+    }))
+    expect(mocks.authConnect).not.toHaveBeenCalled()
+
+    const warning = mocks.toastWarning.mock.calls[0]?.[1]
+    warning?.action?.onClick()
+    expect(manager.authPrompt.value?.profiles[0]?.identity).toBe('keycloak-default')
+    await manager.authorizeNextProfile()
+    expect(mocks.authConnect).toHaveBeenCalledWith('keycloak-default', mocks.oidcSource)
+    expect(manager.authPrompt.value).toBeNull()
   })
 })

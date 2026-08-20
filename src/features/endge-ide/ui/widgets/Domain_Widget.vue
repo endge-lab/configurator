@@ -59,6 +59,7 @@ import {
   Send,
   ServerCog,
   Shield,
+  SlidersHorizontal,
   SquareFunction,
   Table2,
   Trash2,
@@ -95,6 +96,7 @@ import {
   attachResolvedActionTree,
   attachResolvedTypeTree,
   buildDomainTree,
+  buildWorkspaceTreeNodes,
   flattenTree,
   getDomainTreeRootBlocks,
   getRootFolderOrder,
@@ -745,6 +747,7 @@ const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
   Send,
   ServerCog,
   Shield,
+  SlidersHorizontal,
   SquareFunction,
   Table2,
   Type,
@@ -806,6 +809,7 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   'tenant',
   'policy',
   'style',
+  'configuration',
   'page-template',
   'page',
   'navigation',
@@ -905,20 +909,11 @@ const fsTree = computed<FsNode[]>(() => {
   const sessionState = Configurator.session.state
   if (workspaceRoot?.type === 'folder' && sessionState.status === 'authenticated') {
     workspaceRoot.virtual = true
-    workspaceRoot.children = sessionState.session.workspaces
-      .filter(workspace => workspace.active)
-      .map(workspace => ({
-        id: `workspace:${workspace.id}`,
-        identity: workspace.identity,
-        name: workspace.displayName,
-        type: 'file' as const,
-        docType: 'project' as DomainDocumentType,
-        sectionType: DomainSectionType.Project,
-        virtual: true,
-        workspaceIdentity: workspace.identity,
-        activeWorkspace: workspace.identity === Endge.workspace.current.identity,
-        badges: [workspace.role],
-      }))
+    workspaceRoot.children = buildWorkspaceTreeNodes(
+      sessionState.session.workspaces,
+      Endge.workspace.current.identity,
+      Endge.domain.getConfigurations(),
+    )
   }
 
   return tree

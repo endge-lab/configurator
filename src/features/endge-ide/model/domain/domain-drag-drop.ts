@@ -659,6 +659,8 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
     return (numId != null ? Endge.domain.getPolicyById(numId) : null) ?? Endge.domain.getPolicy(id)
   if (sectionType === DomainSectionType.Style)
     return (numId != null ? Endge.domain.getStyleById(numId) : null) ?? Endge.domain.getStyle(id)
+  if (sectionType === DomainSectionType.Configuration)
+    return (numId != null ? Endge.domain.getConfigurationById(numId) : null) ?? Endge.domain.getConfiguration(id)
   if (sectionType === DomainSectionType.PageTemplate)
     return (numId != null ? Endge.domain.getPageTemplateById(numId) : null) ?? Endge.domain.getPageTemplate(id)
   if (sectionType === DomainSectionType.Page)

@@ -32,6 +32,7 @@ const DOCUMENT_KEYS = [
   'auth-profiles',
   'navigations',
   'styles',
+  'configurations',
 ] as const
 
 function snapshot(): Record<string, unknown> {

@@ -12,6 +12,7 @@ import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview
 import type {
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
+  CompositionProgramPayload,
   CompositionRuntimeHost,
   CompositionSession,
   EndgeStyleSheetArtifact,
@@ -38,6 +39,7 @@ import {
   prepareComponentPreviewContext,
   resolveComponentPreviewInput,
 } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
+import { createRuntimePreviewArtifactReader } from '@/features/endge-ide/model/runtime-preview/runtime-preview-data-mode'
 import { buildRuntimePreviewTree } from '@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder'
 import {
   createPreviewArtifact,
@@ -75,6 +77,7 @@ export class RuntimePreviewInstance {
   private _contextual: RuntimePreviewContextualLaunch | null = null
   private _artifactReader: RuntimeArtifactReader = Endge.program
   private _draftStyleElement: HTMLStyleElement | null = null
+  private _previewForcesMock = false
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
 
@@ -89,25 +92,30 @@ export class RuntimePreviewInstance {
   public launch(
     draft?: RuntimePreviewDraft,
     contextual?: RuntimePreviewContextualLaunch,
+    forceMock = Endge.context.isMockEnabled,
   ): Promise<void> {
     if (arguments.length > 0) { this._draft = draft ?? null }
     if (arguments.length > 1) { this._contextual = contextual ?? null }
     const generation = ++this._generation
     const pending = this._queue
       .catch(() => undefined)
-      .then(() => this.performLaunch(generation))
+      .then(() => this.performLaunch(generation, forceMock))
     this._queue = pending.catch(() => undefined)
     return pending
   }
 
-  private async performLaunch(generation: number): Promise<void> {
+  private async performLaunch(generation: number, forceMock: boolean): Promise<void> {
     if (generation !== this._generation) { return }
     this.status.value = 'preparing'
     this.error.value = null
     await this.disposeRuntime()
     if (generation !== this._generation) { return }
     try {
-      this._artifactReader = this.prepareArtifactReader()
+      this._previewForcesMock = forceMock
+      this._artifactReader = createRuntimePreviewArtifactReader(
+        this.prepareArtifactReader(),
+        this._previewForcesMock,
+      )
       this.tree.value = buildRuntimePreviewTree(this.target, this._artifactReader)
       this.selectedNodeId.value = this.tree.value[0]?.id ?? null
       this.contextualFocusComponentIdentity.value = null
@@ -136,6 +144,9 @@ export class RuntimePreviewInstance {
       else if (this.target.entityType === 'composition') {
         if (this._draft) {
           this._composition = await this.mountDraftComposition(this._draft)
+        }
+        else if (this._previewForcesMock) {
+          this._composition = await this.mountComposition(this.target.identity)
         }
         else {
           const artifact = Endge.program.getCompositionArtifact(this.target.identity)
@@ -440,11 +451,43 @@ export class RuntimePreviewInstance {
       throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
         ?? 'Composition source содержит ошибки.')
     }
+    const artifactReader = createRuntimePreviewArtifactReader(
+      createOverlayArtifactReader(artifact),
+      this._previewForcesMock,
+    )
+    const effectiveArtifact = artifactReader.getArtifact<CompositionProgramPayload>('composition', artifact.ref.id)
+    if (!effectiveArtifact || effectiveArtifact.status === 'error') {
+      throw new Error(`[RuntimePreview] Composition "${this.target.identity}" is unavailable.`)
+    }
+    return this.mountCompositionRuntime(
+      model,
+      effectiveArtifact,
+      artifactReader,
+      resolvePreviewStoreRuntimes(effectiveArtifact.payload.data),
+    )
+  }
+
+  private async mountComposition(identity: string): Promise<CompositionSession> {
+    const model = Endge.domain.getComposition(identity)
+    const artifact = this._artifactReader.getArtifact<CompositionProgramPayload>('composition', identity)
+    if (!model || !artifact || artifact.status === 'error') {
+      throw new Error(`[RuntimePreview] Composition "${identity}" is unavailable.`)
+    }
+    return this.mountCompositionRuntime(model, artifact, this._artifactReader)
+  }
+
+  private async mountCompositionRuntime(
+    model: ReturnType<typeof createPreviewComposition>,
+    artifact: ProgramArtifact<CompositionProgramPayload>,
+    artifactReader: RuntimeArtifactReader,
+    dataRuntimes?: Record<string, string>,
+  ): Promise<CompositionSession> {
     const host = Endge.runtime.execute(model, {
+      artifactReader,
       persistence: 'disabled',
       meta: {
         mode: 'debug-preview',
-        dataRuntimes: resolvePreviewStoreRuntimes(artifact.payload.data),
+        ...(dataRuntimes ? { dataRuntimes } : {}),
         input: {
           kind: 'local',
           props: materializeCompositionPreviewProps(
