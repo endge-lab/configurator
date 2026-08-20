@@ -59,6 +59,11 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
   'general',
   ['general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics'],
 )
+const editingSection = useSmartTabSelection<SFCEditingField>(
+  'configuration.editing-section',
+  'cancelOn',
+  ['cancelOn', 'commitOn'],
+)
 const tooltipSection = useSmartTabSelection<TooltipSection>(
   'configuration.tooltips-section',
   'ui',
@@ -116,10 +121,25 @@ const sections = [
     icon: HeartPulse,
   },
 ] as const
+const editingSections = [
+  {
+    id: 'cancelOn',
+    label: 'Отмена',
+    kind: 'cancel',
+    description: 'Альтернативные триггеры отмены для SFC editable-узлов без локального cancel-on.',
+  },
+  {
+    id: 'commitOn',
+    label: 'Сохранение',
+    kind: 'commit',
+    description: 'Альтернативные триггеры сохранения для SFC editable-узлов без локального commit-on.',
+  },
+] as const
 const tooltipSections = [
   { id: 'ui', label: 'Настройки UI' },
   { id: 'trigger', label: 'Триггер' },
 ] as const
+const activeEditingSection = computed(() => editingSections.find(section => section.id === editingSection.value) ?? editingSections[0])
 
 const contribution = computed(() => props.variant === 'contribution'
   ? props.modelValue as EndgeConfigurationContribution
@@ -240,6 +260,12 @@ function setSFCEditingTriggers(name: SFCEditingField, value: ComponentSFCInterac
     editableConfiguration.value.sfcEditing[name] = clone(value)
   }
   notifyRootMutation()
+}
+
+function setEditingSection(value: unknown): void {
+  if (value === 'cancelOn' || value === 'commitOn') {
+    editingSection.value = value
+  }
 }
 
 function hasTooltipOverride(name: TooltipField): boolean {
@@ -547,6 +573,22 @@ function isEqual(left: unknown, right: unknown): boolean {
             </TabsTrigger>
 
             <div
+              v-if="section.id === 'editing' && activeSection === 'editing'"
+              class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
+            >
+              <button
+                v-for="editingItem in editingSections"
+                :key="editingItem.id"
+                type="button"
+                class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground"
+                :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                @click="setEditingSection(editingItem.id)"
+              >
+                {{ editingItem.label }}
+              </button>
+            </div>
+
+            <div
               v-if="section.id === 'tooltips' && activeSection === 'tooltips'"
               class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
             >
@@ -572,6 +614,14 @@ function isEqual(left: unknown, right: unknown): boolean {
             <SelectContent>
               <SelectItem v-for="section in sections" :key="section.id" :value="section.id">
                 {{ section.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-if="activeSection === 'editing'" :model-value="editingSection" @update:model-value="setEditingSection">
+            <SelectTrigger class="mt-2 w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="editingItem in editingSections" :key="editingItem.id" :value="editingItem.id">
+                {{ editingItem.label }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -654,44 +704,26 @@ function isEqual(left: unknown, right: unknown): boolean {
 
           <TabsContent value="editing" class="m-0 space-y-5 p-5 outline-none">
             <div>
-              <h3 class="text-sm font-semibold text-foreground">Завершение редактирования</h3>
+              <h3 class="text-sm font-semibold text-foreground">{{ activeEditingSection.label }}</h3>
               <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                Эти triggers используют SFC editable-узлы без локальных cancel-on и commit-on.
+                {{ activeEditingSection.description }}
               </p>
             </div>
 
             <ConfigurationOverrideField
-              label="Отмена"
+              :label="activeEditingSection.label"
               label-class="font-semibold"
               :uses-parent-value="isInherit"
-              :overridden="hasSFCEditingOverride('cancelOn')"
-              @enable="enableSFCEditingOverride('cancelOn')"
-              @reset="resetSFCEditingOverride('cancelOn')"
+              :overridden="hasSFCEditingOverride(activeEditingSection.id)"
+              @enable="enableSFCEditingOverride(activeEditingSection.id)"
+              @reset="resetSFCEditingOverride(activeEditingSection.id)"
             >
               <template #default="{ disabled: fieldDisabled }">
                 <SFCEditingTriggerListEditor
-                  :model-value="sfcEditingTriggers('cancelOn')"
-                  kind="cancel"
+                  :model-value="sfcEditingTriggers(activeEditingSection.id)"
+                  :kind="activeEditingSection.kind"
                   :disabled="disabled || fieldDisabled"
-                  @update:model-value="setSFCEditingTriggers('cancelOn', $event)"
-                />
-              </template>
-            </ConfigurationOverrideField>
-
-            <ConfigurationOverrideField
-              label="Сохранение"
-              label-class="font-semibold"
-              :uses-parent-value="isInherit"
-              :overridden="hasSFCEditingOverride('commitOn')"
-              @enable="enableSFCEditingOverride('commitOn')"
-              @reset="resetSFCEditingOverride('commitOn')"
-            >
-              <template #default="{ disabled: fieldDisabled }">
-                <SFCEditingTriggerListEditor
-                  :model-value="sfcEditingTriggers('commitOn')"
-                  kind="commit"
-                  :disabled="disabled || fieldDisabled"
-                  @update:model-value="setSFCEditingTriggers('commitOn', $event)"
+                  @update:model-value="setSFCEditingTriggers(activeEditingSection.id, $event)"
                 />
               </template>
             </ConfigurationOverrideField>
