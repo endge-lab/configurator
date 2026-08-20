@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { resolveConfigValueEditor } from '@/features/endge-ide/model/config/ConfigValueEditorRegistry'
 
 import ConfigurationJSONEditor from './ConfigurationJSONEditor.vue'
+import ConfigurationReferenceValueEditor from './ConfigurationReferenceValueEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
 
 const props = defineProps<{
@@ -38,18 +39,6 @@ const unionVariants = computed(() => effectiveType.value.kind === 'union' ? effe
 const recordValueType = computed(() => effectiveType.value.kind === 'record' ? effectiveType.value.values : { kind: 'reference' as const, identity: 'Any' })
 const unionIndex = computed(() => Math.max(0, unionVariants.value.findIndex(variant => validateConfigurationValue(variant, props.modelValue, catalog.value).ok)))
 const referenceType = computed(() => registeredType.value?.category === 'reference' ? registeredType.value : null)
-const referenceOptions = computed(() => {
-  const target = referenceType.value?.entityReference?.target
-  if (!target) return []
-  const plain = Endge.domain.toPlain() as unknown as Record<string, unknown>
-  const normalized = target.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
-  const candidates = [target, normalized, `${normalized}s`, `${normalized.replace(/-/g, '')}s`]
-  const collection = candidates.map(key => plain[key]).find(Array.isArray) as Array<Record<string, unknown>> | undefined
-  return (collection ?? []).map(item => ({
-    value: String(item.identity ?? item.id ?? ''),
-    label: String(item.displayName ?? item.name ?? item.identity ?? item.id ?? ''),
-  })).filter(item => item.value)
-})
 function emitText(value: unknown): void { emit('update:modelValue', String(value ?? '')) }
 function emitNumber(value: unknown): void { emit('update:modelValue', Number(value)) }
 function triggerValue(): ComponentSFCInteractionTrigger[] { return props.modelValue as unknown as ComponentSFCInteractionTrigger[] }
@@ -98,10 +87,7 @@ function fieldType(field: (typeof objectFields.value)[number]): TypeSourceExpres
     <SelectTrigger><SelectValue /></SelectTrigger>
     <SelectContent><SelectItem v-for="item in enumValues" :key="JSON.stringify(item)" :value="JSON.stringify(item)">{{ String(item) }}</SelectItem></SelectContent>
   </Select>
-  <Select v-else-if="referenceType" :model-value="String(modelValue ?? '')" :disabled="disabled" @update:model-value="emitText">
-    <SelectTrigger><SelectValue placeholder="Выберите сущность" /></SelectTrigger>
-    <SelectContent><SelectItem v-for="option in referenceOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem></SelectContent>
-  </Select>
+  <ConfigurationReferenceValueEditor v-else-if="referenceType" :model-value="modelValue" :type="referenceType" :disabled="disabled" @update:model-value="$emit('update:modelValue', $event)" />
   <SFCEditingTriggerListEditor v-else-if="kind === 'trigger-set'" :model-value="triggerValue()" kind="generic" :disabled="disabled" @update:model-value="emitTriggers" />
   <div v-else-if="kind === 'array'" class="space-y-2">
     <div v-for="(item, index) in arrayValue()" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-md border p-2">

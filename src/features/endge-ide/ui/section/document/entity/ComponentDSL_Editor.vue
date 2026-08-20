@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
 const tabs = EndgeIDE.tabs
@@ -86,6 +87,10 @@ function addInputField(): void {
                 <div class="space-y-2">
                   <Label>ID компонента</Label>
                   <Input :model-value="editor.id" readonly />
+                </div>
+                <div class="space-y-2">
+                  <Label>Identity</Label>
+                  <DocumentIdentityInput :model-value="editor.identity" readonly />
                 </div>
                 <div class="space-y-2">
                   <Label>Название компонента</Label>

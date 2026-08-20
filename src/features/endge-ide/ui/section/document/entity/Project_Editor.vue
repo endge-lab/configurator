@@ -33,6 +33,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -237,7 +238,7 @@ async function launchRuntimePreview(): Promise<void> {
               <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
                 <Label for="project-identity">Identity</Label>
-                <Input
+                <DocumentIdentityInput
                   id="project-identity"
                   v-model="editor.identity"
                   placeholder="my-project"

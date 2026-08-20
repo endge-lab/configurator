@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -444,7 +445,7 @@ async function save(): Promise<void> {
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
             <Label>Идентификатор</Label>
-            <Input v-model="editor.identity" :disabled="externallyManaged" />
+            <DocumentIdentityInput v-model="editor.identity" :disabled="externallyManaged" />
           </div>
           <div class="space-y-2">
             <Label>Название</Label>

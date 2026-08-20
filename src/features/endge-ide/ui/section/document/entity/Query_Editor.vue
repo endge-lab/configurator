@@ -31,6 +31,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -292,7 +293,7 @@ async function buildQueryArtifact(
             </div>
             <div class="space-y-2">
               <Label for="query-identity">Identity</Label>
-              <Input
+              <DocumentIdentityInput
                 id="query-identity"
                 v-model="editor.identity"
                 spellcheck="false"

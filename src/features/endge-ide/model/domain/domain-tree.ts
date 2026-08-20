@@ -101,7 +101,6 @@ export function buildWorkspaceTreeNodes(
       virtual: true,
       workspaceIdentity: workspace.identity,
       activeWorkspace,
-      badges: [workspace.role],
     }
     if (!activeWorkspace) {
       return { ...common, type: 'file', docType: 'project', sectionType: DomainSectionType.Project }

@@ -22,6 +22,7 @@ import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
 
 type FilterValueType =
@@ -493,7 +494,7 @@ function applyFilter(): void {
             <div class="p-4 space-y-4 max-w-2xl">
               <div class="space-y-2">
                 <Label>Identity</Label>
-                <Input v-model="editor.identity" />
+                <DocumentIdentityInput v-model="editor.identity" />
               </div>
               <div class="space-y-2">
                 <Label>Название</Label>

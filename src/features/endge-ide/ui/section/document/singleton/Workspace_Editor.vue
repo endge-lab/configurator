@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -104,7 +105,7 @@ function resolveWorkspaceDocumentId(): string | null {
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <Label for="workspace-identity">Identity</Label>
-                <Input id="workspace-identity" :model-value="workspaceIdentity" disabled />
+                <DocumentIdentityInput id="workspace-identity" :model-value="workspaceIdentity" disabled />
               </div>
               <div class="space-y-2">
                 <Label for="workspace-display-name">Название</Label>

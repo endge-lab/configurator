@@ -1,4 +1,4 @@
-import type { ConfigurationSourceValueDefinition, ManagedBy, RConfiguration } from '@endge/core'
+import type { ConfigurationSourceValueDefinition, ManagedBy, ProgramDiagnostic, RConfiguration } from '@endge/core'
 
 import { compileConfigurationSource, Endge, isSystemManaged, patchConfigurationSource } from '@endge/core'
 
@@ -12,6 +12,7 @@ export class RConfigurationEditor {
   sourceVersion = 1
   managedBy: ManagedBy = 'user'
   managedById: string | null = null
+  sourceDiagnostics: ProgramDiagnostic[] = []
   diagnostics: string[] = []
 
   fillFromSource(source: RConfiguration): void {
@@ -41,7 +42,8 @@ export class RConfigurationEditor {
   get systemManaged(): boolean { return this.managedBy === 'system' }
 
   get values(): ConfigurationSourceValueDefinition[] {
-    return compileConfigurationSource(this.source, Endge.configurationSchema.typeCatalog).document?.values ?? []
+    const result = compileConfigurationSource(this.source, Endge.configurationSchema.typeCatalog)
+    return (result.document ?? result.draftDocument)?.values ?? []
   }
 
   applySourceText(value: string): void {
@@ -59,12 +61,24 @@ export class RConfigurationEditor {
     this.refreshDiagnostics()
   }
 
+  renameValue(key: string, nextKey: string): void {
+    this.source = patchConfigurationSource(this.source, { op: 'rename', key, nextKey })
+    this.refreshDiagnostics()
+  }
+
   refreshDiagnostics(): void {
     const result = compileConfigurationSource(this.source, Endge.configurationSchema.typeCatalog)
-    this.diagnostics = [
-      ...(!this.identity.trim() ? ['Identity не может быть пустым.'] : []),
-      ...(this.sourceVersion !== 1 ? ['Configuration поддерживает только sourceVersion 1.'] : []),
-      ...result.diagnostics.filter(item => item.severity === 'error').map(item => item.message),
+    this.sourceDiagnostics = [
+      ...(!this.identity.trim()
+        ? [{ severity: 'error' as const, code: 'configuration-identity-empty', message: 'Identity не может быть пустым.', sourcePath: 'identity' }]
+        : []),
+      ...(this.sourceVersion !== 1
+        ? [{ severity: 'error' as const, code: 'configuration-source-version-invalid', message: 'Configuration поддерживает только sourceVersion 1.', sourcePath: 'sourceVersion' }]
+        : []),
+      ...result.diagnostics,
     ]
+    this.diagnostics = this.sourceDiagnostics
+      .filter(item => item.severity === 'error')
+      .map(item => item.message)
   }
 }

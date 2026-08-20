@@ -37,6 +37,7 @@ import { createExtractTypeContribution } from '@/features/endge-ide/source-edito
 import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -439,7 +440,7 @@ async function launchPreview(): Promise<void> {
           </div>
           <div class="space-y-2">
             <Label for="component-sfc-identity">Identity</Label>
-            <Input
+            <DocumentIdentityInput
               id="component-sfc-identity"
               v-model="editor.identity"
               spellcheck="false"
@@ -498,7 +499,7 @@ async function launchPreview(): Promise<void> {
             </div>
             <div class="space-y-2">
               <Label for="component-sfc-identity-visual">Identity</Label>
-              <Input
+              <DocumentIdentityInput
                 id="component-sfc-identity-visual"
                 v-model="editor.identity"
                 spellcheck="false"

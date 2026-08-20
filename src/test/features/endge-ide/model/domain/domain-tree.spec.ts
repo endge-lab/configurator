@@ -22,7 +22,9 @@ describe('buildDomainTree', () => {
         { type: 'file', docType: 'configuration', identity: 'table' },
       ],
     })
+    expect(tree[0]?.badges).toBeUndefined()
     expect(tree[1]).toMatchObject({ type: 'file', identity: 'remote', activeWorkspace: false })
+    expect(tree[1]?.badges).toBeUndefined()
     expect(tree[1]?.children).toBeUndefined()
   })
 

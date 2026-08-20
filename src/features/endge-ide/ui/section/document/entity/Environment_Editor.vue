@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
@@ -135,7 +136,7 @@ async function save(): Promise<void> {
               <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
                 <Label for="environment-identity">Identity</Label>
-                <Input
+                <DocumentIdentityInput
                   id="environment-identity"
                   v-model="editor.identity"
                   :disabled="externallyManaged"

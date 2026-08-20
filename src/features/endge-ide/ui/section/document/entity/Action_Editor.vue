@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
@@ -175,7 +176,7 @@ function removeTarget(index: number): void {
           </div>
           <div class="space-y-2">
             <Label>{{ uiText.identity }}</Label>
-            <Input
+            <DocumentIdentityInput
               v-model="editor!.identity"
               :disabled="isOverridden"
               placeholder="app.configurator.ready"

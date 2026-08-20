@@ -13,6 +13,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
 const props = defineProps<{
@@ -142,7 +143,7 @@ async function save(): Promise<void> {
               <Label class="text-xs text-muted-foreground">
                 identity
               </Label>
-              <Input
+              <DocumentIdentityInput
                 v-model="editor!.identity"
                 placeholder="page-template.default"
               />

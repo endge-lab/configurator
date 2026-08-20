@@ -41,6 +41,7 @@ import {
 import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -458,7 +459,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">identity</Label>
-              <Input v-model="editor!.identity" placeholder="base" />
+              <DocumentIdentityInput v-model="editor!.identity" placeholder="base" />
             </div>
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">Название</Label>

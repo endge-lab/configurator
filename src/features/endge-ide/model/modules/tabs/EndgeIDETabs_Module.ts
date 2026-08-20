@@ -613,6 +613,8 @@ export class EndgeIDETabs_Module {
       return 'ti ti-shield text-sky-500 text-2xl'
     if (key === 'style')
       return 'ti ti-palette text-fuchsia-500 text-2xl'
+    if (key === 'configuration')
+      return 'ti ti-adjustments-horizontal text-slate-500 text-2xl'
     if (key === 'vocabs')
       return 'ti ti-book text-teal-500 text-2xl'
     if (key === 'auth-profile')

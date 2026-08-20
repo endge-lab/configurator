@@ -46,6 +46,7 @@ export interface DragPayloadItem {
 export interface FolderDragPayloadItem {
   kind: 'folder'
   id: string
+  identity?: string
   sectionType: DomainSectionType
   rootId: string
 }

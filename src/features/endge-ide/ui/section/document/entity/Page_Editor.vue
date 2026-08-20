@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
 
 const props = defineProps<{
@@ -281,7 +282,7 @@ const previewAreaLabels = computed(() =>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
               <Label>Identity</Label>
-              <Input v-model="editor!.identity" :disabled="externallyManaged" placeholder="page.schedule" />
+              <DocumentIdentityInput v-model="editor!.identity" :disabled="externallyManaged" placeholder="page.schedule" />
             </div>
             <div class="space-y-2">
               <Label>Название</Label>

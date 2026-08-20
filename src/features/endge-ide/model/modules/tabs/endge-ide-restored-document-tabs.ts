@@ -35,6 +35,7 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['tenant', documentId => Endge.domain.getTenant(documentId)],
   ['policy', documentId => Endge.domain.getPolicy(documentId)],
   ['style', documentId => Endge.domain.getStyle(documentId)],
+  ['configuration', documentId => Endge.domain.getConfiguration(documentId)],
   ['vocabs', documentId => Endge.domain.getVocab(documentId)],
   ['auth-profile', documentId => Endge.domain.getAuthProfile(documentId)],
   ['i18n-bundles', documentId => Endge.domain.getI18nBundle(documentId)],

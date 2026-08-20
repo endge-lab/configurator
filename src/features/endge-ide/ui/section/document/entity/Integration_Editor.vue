@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string; description: string } | null ?? null)
@@ -60,7 +61,7 @@ async function save(): Promise<void> {
         <div class="text-sm font-semibold">Основное</div>
         <div class="space-y-2">
           <Label>Идентификатор</Label>
-          <Input v-model="editor!.identity" :disabled="externallyManaged" />
+          <DocumentIdentityInput v-model="editor!.identity" :disabled="externallyManaged" />
         </div>
         <div class="space-y-2">
           <Label>Название</Label>

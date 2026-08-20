@@ -6,10 +6,11 @@ import type {
   DiagnosticsProblem,
   DiagnosticsProblemPhase,
   DiagnosticsProblemSeverity,
+  ProgramDiagnostic,
 } from '@endge/core'
 import type { Component } from 'vue'
 
-import { Endge } from '@endge/core'
+import { createDiagnosticsEntityOwner, Endge } from '@endge/core'
 import {
   Braces,
   CircleAlert,
@@ -22,13 +23,14 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 
 const props = defineProps<{
   entityRef?: DiagnosticsEntityRef
   problems?: readonly DiagnosticsProblem[]
+  authoringDiagnostics?: readonly ProgramDiagnostic[]
 }>()
 
 const problemsRevision = useSubscribableModuleRef(Endge.diagnostics.problems)
@@ -45,7 +47,7 @@ const phaseLabels: Record<DiagnosticsProblemPhase, string> = {
   runtime: 'Runtime',
 }
 
-const entityProblems = computed(() => {
+const registeredProblems = computed(() => {
   if (props.problems) {
     return props.problems
   }
@@ -58,6 +60,29 @@ const entityProblems = computed(() => {
     entityId: props.entityRef.id,
   })
 })
+const authoringProblems = computed<DiagnosticsProblem[]>(() => {
+  if (!props.entityRef || !props.authoringDiagnostics?.length) {
+    return []
+  }
+  const owner = createDiagnosticsEntityOwner(props.entityRef, 'authoring')
+  const updatedAt = Date.now()
+  return props.authoringDiagnostics.map((diagnostic, index) => {
+    const key = `${diagnostic.code}:${diagnostic.sourcePath ?? ''}:${diagnostic.start ?? ''}:${index}`
+    return {
+      id: `${owner.key}:${key}`,
+      key,
+      owner,
+      updatedAt,
+      severity: diagnostic.severity,
+      code: diagnostic.code,
+      message: diagnostic.message,
+      sourcePath: diagnostic.sourcePath,
+      start: diagnostic.start,
+      end: diagnostic.end,
+    }
+  })
+})
+const entityProblems = computed(() => [...registeredProblems.value, ...authoringProblems.value])
 const phases = computed(() => (['authoring', 'build', 'runtime'] as const)
   .filter(phase => entityProblems.value.some(problem => problem.owner.phase === phase)))
 const activeProblems = computed(() => entityProblems.value.filter(problem => problem.owner.phase === activePhase.value))

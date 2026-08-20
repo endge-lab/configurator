@@ -14,6 +14,7 @@ import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StreamSourceEditor from '@/features/endge-ide/ui/components/StreamSourceEditor.vue'
@@ -117,7 +118,7 @@ async function save(): Promise<void> {
           </div>
           <div class="space-y-2">
             <Label>Identity</Label>
-            <Input v-model="editor.identity" spellcheck="false" />
+            <DocumentIdentityInput v-model="editor.identity" spellcheck="false" />
           </div>
           <div v-if="sourceKind === 'update'" class="space-y-2">
             <Label>Store-владелец</Label>

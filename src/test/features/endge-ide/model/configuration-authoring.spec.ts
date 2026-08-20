@@ -2,6 +2,11 @@ import { DomainSectionType } from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
 import { resolveConfigValueEditor } from '@/features/endge-ide/model/config/ConfigValueEditorRegistry'
+import {
+  getConfigurationReferenceDropKinds,
+  getConfigurationReferenceOptions,
+  getConfigurationReferenceSectionTypes,
+} from '@/features/endge-ide/model/config/configuration-reference-options'
 import { buildWorkspaceTreeNodes } from '@/features/endge-ide/model/domain/domain-tree'
 
 describe('Configuration authoring registries', () => {
@@ -11,6 +16,27 @@ describe('Configuration authoring registries', () => {
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'JSON' })).toBe('json')
     expect(resolveConfigValueEditor({ kind: 'array', items: { kind: 'reference', identity: 'String' } })).toBe('array')
     expect(resolveConfigValueEditor({ kind: 'union', variants: [{ kind: 'reference', identity: 'String' }, { kind: 'reference', identity: 'Null' }] })).toBe('union')
+  })
+
+  it('resolves reference options with declared storage and folder drops', () => {
+    const folderType = {
+      id: 'RefFolder',
+      identity: 'RefFolder',
+      displayName: 'Папка',
+      category: 'reference' as const,
+      sourceVersion: 1,
+      definition: null,
+      entityReference: { target: 'folders', storage: 'identity' as const },
+      status: 'valid' as const,
+    }
+    expect(getConfigurationReferenceOptions(folderType, {
+      folders: [
+        { id: 10, identity: 'operations', displayName: 'Операции' },
+        { id: 11, identity: 'deleted', displayName: 'Удалённая', deletedAt: '2026-08-20T00:00:00Z' },
+      ],
+    })).toEqual([{ value: 'operations', label: 'Операции' }])
+    expect(getConfigurationReferenceDropKinds(folderType)).toEqual(['folder'])
+    expect(getConfigurationReferenceSectionTypes(folderType)).toEqual([])
   })
 
   it('nests flat Configuration documents only under the active Workspace', () => {

@@ -127,6 +127,7 @@ import {
 } from '@/features/endge-ide/model/visual-schema-workspace-state'
 import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
 
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
@@ -283,6 +284,26 @@ const dataSplitRatio = useSmartTabViewState<number>(
       && Number.isFinite(value)
       && value >= DATA_SPLIT_MIN_RATIO
       && value <= DATA_SPLIT_MAX_RATIO,
+  },
+)
+const tableNavigationWidth = useSmartTabViewState<number>(
+  'component-sfc.visual.table-navigation-width',
+  {
+    defaultValue: () => 232,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= 192
+      && value <= 420,
+  },
+)
+const columnNavigationWidth = useSmartTabViewState<number>(
+  'component-sfc.visual.column-navigation-width',
+  {
+    defaultValue: () => 232,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= 192
+      && value <= 420,
   },
 )
 const dataSplitContainer = ref<HTMLElement | null>(null)
@@ -2212,12 +2233,15 @@ onBeforeUnmount(() => {
   >
     <Tabs v-model="mainTab" class="flex min-h-0 flex-1 flex-col">
       <TabsContent value="table" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
-        <Tabs
+        <SettingsNavigationPanel
           v-model="tableSection"
-          orientation="vertical"
-          class="editor-panel grid h-full min-h-0 overflow-hidden rounded-xl border border-border/80 lg:grid-cols-[12rem_minmax(0,1fr)]"
+          v-model:sidebar-width="tableNavigationWidth"
+          :default-sidebar-width="232"
+          class="editor-panel h-full"
+          navigation-class="bg-muted/20"
+          separator-label="Изменить ширину меню настроек таблицы"
         >
-          <aside class="hidden min-h-0 overflow-hidden border-r border-border/70 bg-muted/20 lg:flex lg:flex-col">
+          <template #navigation>
             <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
               <TabsTrigger
                 v-for="section in tableSections"
@@ -2236,9 +2260,9 @@ onBeforeUnmount(() => {
                 </Badge>
               </TabsTrigger>
             </TabsList>
-          </aside>
+          </template>
 
-          <main class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background/35">
+          <div class="contents">
             <div class="border-b border-border/70 p-3 lg:hidden">
               <Select :model-value="tableSection" @update:model-value="value => updateTableSection(value == null ? null : String(value))">
                 <SelectTrigger class="editor-control w-full">
@@ -2797,8 +2821,8 @@ onBeforeUnmount(() => {
                 </div>
               </TooltipProvider>
             </ScrollArea>
-          </main>
-        </Tabs>
+          </div>
+        </SettingsNavigationPanel>
       </TabsContent>
 
       <TabsContent value="columns" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
@@ -3013,12 +3037,15 @@ onBeforeUnmount(() => {
               </AlertDialogContent>
             </AlertDialog>
 
-            <Tabs
+            <SettingsNavigationPanel
               v-model="columnSection"
-              orientation="vertical"
-              class="editor-panel grid min-h-0 flex-1 overflow-hidden rounded-xl border border-border/80 lg:grid-cols-[12rem_minmax(0,1fr)]"
+              v-model:sidebar-width="columnNavigationWidth"
+              :default-sidebar-width="232"
+              class="editor-panel min-h-0 flex-1"
+              navigation-class="bg-muted/20"
+              separator-label="Изменить ширину меню настроек колонки"
             >
-              <aside class="hidden min-h-0 overflow-hidden border-r border-border/70 bg-muted/20 lg:flex lg:flex-col">
+              <template #navigation>
                 <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
                   <template v-for="section in columnSections" :key="section.id">
                     <TabsTrigger
@@ -3047,9 +3074,9 @@ onBeforeUnmount(() => {
                     </div>
                   </template>
                 </TabsList>
-              </aside>
+              </template>
 
-              <main class="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background/35">
+              <div class="contents">
                 <div class="grid gap-2 border-b border-border/70 p-3 lg:hidden">
                   <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
                     <SelectTrigger class="editor-control w-full">
@@ -3740,8 +3767,8 @@ onBeforeUnmount(() => {
                 </section>
                   </template>
                 </ScrollArea>
-              </main>
-            </Tabs>
+              </div>
+            </SettingsNavigationPanel>
         </div>
       </TabsContent>
     </Tabs>

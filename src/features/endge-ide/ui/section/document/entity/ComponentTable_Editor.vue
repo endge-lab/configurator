@@ -53,6 +53,7 @@ import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
 import TableDataMappingAssistant from "@/features/endge-ide/ui/components/TableDataMappingAssistant.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
+import DocumentIdentityInput from "@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue";
 import TypeRegistrySelect from "@/features/endge-ide/ui/components/TypeRegistrySelect.vue";
 
 const tabs = EndgeIDE.tabs;
@@ -473,7 +474,7 @@ watch(
                   </div>
                   <div class="space-y-2">
                     <Label>Identity</Label>
-                    <Input v-model="editor.identity" />
+                    <DocumentIdentityInput v-model="editor.identity" />
                   </div>
                   <div class="space-y-2">
                     <Label>Название компонента</Label>

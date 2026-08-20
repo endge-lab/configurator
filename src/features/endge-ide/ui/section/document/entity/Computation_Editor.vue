@@ -32,6 +32,7 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -253,7 +254,7 @@ async function save(): Promise<void> {
             <Label for="computation-name">Название</Label><Input id="computation-name" v-model="editor.name" />
           </div>
           <div class="space-y-2">
-            <Label for="computation-identity">Identity</Label><Input id="computation-identity" v-model="editor.identity" spellcheck="false" />
+            <Label for="computation-identity">Identity</Label><DocumentIdentityInput id="computation-identity" v-model="editor.identity" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">

@@ -22,6 +22,7 @@ import {
   isVisualSchemaWorkspaceState,
   visualSchemaLayoutKey,
 } from '@/features/endge-ide/model/visual-schema-workspace-state'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
@@ -229,7 +230,7 @@ async function save(): Promise<void> {
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
             <Label for="type-identity">Identity</Label>
-            <Input id="type-identity" v-model="editor.identity" class="font-mono" spellcheck="false" />
+            <DocumentIdentityInput id="type-identity" v-model="editor.identity" class="font-mono" spellcheck="false" />
           </div>
           <div class="space-y-2">
             <Label for="type-name">Название типа</Label>

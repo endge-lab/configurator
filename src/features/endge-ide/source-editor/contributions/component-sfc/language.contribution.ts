@@ -142,6 +142,20 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
 }"`,
   },
   {
+    label: ':on configured TriggerSet',
+    detail: 'Effective Configuration triggers with one stable Query reaction',
+    insertText: `:on="{
+  triggers: \$context.config.\${1:configuration}.\${2:triggers},
+  reaction: query({
+    identity: '\${3:query.identity}',
+    input: {
+      value: now(),
+      \${4}
+    },
+  }),
+}"`,
+  },
+  {
     label: ':on sequence',
     detail: 'First-match interaction rules with sequential reactions',
     insertText: `:on.stop.prevent="[{
@@ -250,6 +264,7 @@ export function createSFCLanguageContribution(
                 'cancel-on',
                 'commit-on',
                 ':on interaction',
+                ':on configured TriggerSet',
                 ':on sequence',
                 ':on.stop',
                 ':on.prevent',

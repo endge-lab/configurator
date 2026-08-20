@@ -103,6 +103,10 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
   if (key === 'style') {
     return Endge.domain.getStyle(id)?.name ?? id
   }
+  if (key === 'configuration') {
+    const configuration = Endge.domain.getConfiguration(id)
+    return configuration?.displayName ?? configuration?.name ?? id
+  }
   if (key === 'vocabs') {
     const vocab = Endge.domain.getVocab(id)
     return vocab?.displayName ?? vocab?.name ?? id

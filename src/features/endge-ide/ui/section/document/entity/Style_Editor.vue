@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EndgeStyleSourceEditor from '@/features/endge-ide/ui/components/EndgeStyleSourceEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
@@ -126,7 +127,7 @@ async function save(): Promise<void> {
           </div>
           <div class="space-y-2">
             <Label for="style-identity">Identity</Label>
-            <Input id="style-identity" v-model="editor.identity" :disabled="editor.systemManaged" spellcheck="false" />
+            <DocumentIdentityInput id="style-identity" v-model="editor.identity" :disabled="editor.systemManaged" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">

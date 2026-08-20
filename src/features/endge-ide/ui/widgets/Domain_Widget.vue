@@ -119,6 +119,7 @@ const tabs = EndgeIDE.tabs
 
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
+    | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
@@ -568,6 +569,7 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
   const payload: FolderDragPayloadItem[] = [{
     kind: 'folder',
     id: String(folder.folderId),
+    identity: folder.identity,
     sectionType: folder.sectionType,
     rootId: item.rootId,
   }]
@@ -578,7 +580,7 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
   }
   dragSources.value = []
   EndgeIDE.domainDrag.reset()
-  e.dataTransfer!.effectAllowed = 'move'
+  e.dataTransfer!.effectAllowed = 'copyMove'
   e.dataTransfer!.setData('text/plain', json)
   e.dataTransfer!.setData('application/x-endge-domain-entity', json)
 }
@@ -765,8 +767,10 @@ function createSectionPresentation(sectionType: DomainSectionType): { icon: any,
 }
 
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
+const WORKSPACE_PRESENTATION = { icon: Building2, colorClass: 'text-orange-500' }
+
 const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
-  'root-workspaces': { icon: Building2, colorClass: 'text-orange-500' },
+  'root-workspaces': WORKSPACE_PRESENTATION,
   'root-types': createSectionPresentation(DomainSectionType.Type),
   'root-queries': createSectionPresentation(DomainSectionType.Query),
   'root-data-views': createSectionPresentation(DomainSectionType.DataView),
@@ -823,12 +827,16 @@ function isManagedTypeFolder(node: FsFolderNode): boolean {
 }
 
 function getFolderIcon(node: FsFolderNode): any {
+  if (node.workspaceIdentity)
+    return WORKSPACE_PRESENTATION.icon
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.icon
   return Folder
 }
 
 function getFolderColorClass(node: FsFolderNode): string {
+  if (node.workspaceIdentity)
+    return WORKSPACE_PRESENTATION.colorClass
   if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
   if (node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived') {
@@ -1495,7 +1503,14 @@ function getContextFileNodes(node: FsFileNode): FsFileNode[] {
 function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
   if (node.workspaceIdentity) {
-    if (!node.activeWorkspace) {
+    if (node.activeWorkspace && Endge.domainRepository.capabilities.mutations) {
+      items.push({
+        label: 'Добавить конфигурацию',
+        icon: SlidersHorizontal,
+        action: { type: 'create-configuration' },
+      })
+    }
+    else if (!node.activeWorkspace) {
       items.push({
         label: 'Переключить рабочее место',
         icon: ArrowLeftRight,
@@ -1622,6 +1637,15 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
   if (a.type === 'switch-workspace') {
     Configurator.connections.selectWorkspace(a.workspaceIdentity)
+    return
+  }
+
+  if (a.type === 'create-configuration') {
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: DomainSectionType.Configuration,
+      documentType: 'configuration',
+    })
     return
   }
 

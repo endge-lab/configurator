@@ -26,16 +26,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useSmartTabSelection } from '@/components/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import ComponentSFCKeyboardConditionEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCKeyboardConditionEditor.vue'
+import { useSmartTabSelection, useSmartTabViewState } from '@/components/ui/smart-tabs'
+import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
+import ComponentSFCKeyboardConditionEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCKeyboardConditionEditor.vue'
 
+import ConfigValueEditor from './ConfigValueEditor.vue'
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
 import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
-import ConfigValueEditor from './ConfigValueEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
@@ -72,6 +73,16 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
     'general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics',
     ...Endge.configurationSchema.list().map(item => `configuration:${item.identity}` as const),
   ],
+)
+const navigationWidth = useSmartTabViewState<number>(
+  'configuration.navigation-width',
+  {
+    defaultValue: () => 272,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= 192
+      && value <= 420,
+  },
 )
 const editingSection = useSmartTabSelection<SFCEditingField>(
   'configuration.editing-section',
@@ -665,12 +676,14 @@ function isEqual(left: unknown, right: unknown): boolean {
       </div>
     </section>
 
-    <Tabs
+    <SettingsNavigationPanel
       v-model="activeSection"
-      orientation="vertical"
-      class="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs lg:grid lg:grid-cols-[12rem_minmax(0,1fr)]"
+      v-model:sidebar-width="navigationWidth"
+      :default-sidebar-width="272"
+      separator-label="Изменить ширину меню конфигурации"
+      content-class="bg-background/60"
     >
-      <aside class="hidden min-h-0 overflow-hidden overscroll-none border-r border-border/70 bg-muted/25 lg:flex lg:flex-col">
+      <template #navigation>
         <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
           <template v-for="section in sections" :key="section.id">
             <TabsTrigger
@@ -714,9 +727,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             </div>
           </template>
         </TabsList>
-      </aside>
+      </template>
 
-      <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background/60">
+      <div class="contents">
         <div class="border-b border-border/70 px-4 py-3 lg:hidden">
           <Select :model-value="activeSection" @update:model-value="setActiveSection">
             <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
@@ -1059,7 +1072,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             />
           </TabsContent>
         </div>
-      </main>
-    </Tabs>
+      </div>
+    </SettingsNavigationPanel>
   </div>
 </template>

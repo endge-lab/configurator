@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string; description: string } | null ?? null)
@@ -48,12 +49,11 @@ async function save(): Promise<void> {
       <div class="p-4 space-y-4">
         <div class="space-y-2">
           <Label>Идентификатор</Label>
-          <input
-            :value="editor?.identity ?? ''"
-            class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          <DocumentIdentityInput
+            :model-value="editor?.identity ?? ''"
             placeholder="например: default-policy"
-            @input="editor && (editor.identity = (($event.target as HTMLInputElement).value ?? ''))"
-          >
+            @update:model-value="editor && (editor.identity = $event)"
+          />
         </div>
         <div class="space-y-2">
           <Label>Название</Label>
