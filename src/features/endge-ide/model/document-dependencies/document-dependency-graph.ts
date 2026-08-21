@@ -53,6 +53,7 @@ const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
   'computation',
   'action',
   'query',
+  'vocab',
   'data-view',
   'store',
   'filter',
@@ -64,6 +65,7 @@ const SOURCE_DOCUMENT_TYPES = new Set([
   'type',
   'store',
   'query',
+  'vocab',
   'data-view',
   'filter',
   'computation',
@@ -179,7 +181,7 @@ function buildOutgoingIndex(
     }
     const [entityType, ...identityParts] = key.split(':')
     const identity = identityParts.join(':')
-    appendProgramEdges(index, makeRef(entityType, identity, identity), dependencies, 'source')
+    appendProgramEdges(index, makeRef(entityType ?? '', identity, identity), dependencies, 'source')
   }
 
   for (const composition of Endge.domain.getCompositions()) {
@@ -197,22 +199,11 @@ function buildOutgoingIndex(
   }
 
   for (const vocab of Endge.domain.getVocabs()) {
-    const from = makeRef('vocabs', vocab.id ?? vocab.identity, vocab.identity)
+    const from = makeRef('vocab', vocab.id ?? vocab.identity, vocab.identity)
     if (overlay.has(refKey(from))) {
       continue
     }
-    const identity = vocab.authMode === 'profile'
-      ? String(vocab.authProfileIdentity ?? '').trim()
-      : ''
     index.set(refKey(from), [])
-    if (identity) {
-      appendEdge(index, {
-        from,
-        to: makeRef('auth-profile', identity, identity),
-        role: 'vocab-auth',
-        origin: 'model',
-      })
-    }
   }
 
   return index
@@ -358,17 +349,6 @@ function makeGroupNode(
 
 function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDependencies | null {
   const documentType = normalizeDomainWorkingSetEntityType(String(input.documentType))
-  if (documentType === 'vocabs' && input.draft && typeof input.draft === 'object') {
-    const draft = input.draft as Record<string, unknown>
-    const identity = draft.authMode === 'profile'
-      ? String(draft.authProfileIdentity ?? '').trim()
-      : ''
-    return {
-      dependencies: identity ? [makeDependency('auth-profile', identity, 'vocab-auth')] : [],
-      diagnostics: [],
-      compilable: true,
-    }
-  }
   if (!input.source || !SOURCE_DOCUMENT_TYPES.has(documentType)) {
     return null
   }
@@ -466,6 +446,23 @@ function extractArtifactDependencies(
   }
   else if (entityType === 'style') {
     dependencies.push(...(payload.dependencies ?? []))
+  }
+  else if (entityType === 'vocab') {
+    const profile = payload.provider?.auth?.mode === 'profile'
+      ? String(payload.provider.auth.profile ?? '').trim()
+      : ''
+    if (profile)
+      dependencies.push(makeDependency('auth-profile', profile, 'vocab-provider-auth'))
+    if (payload.mock?.identity)
+      dependencies.push(makeDependency('mock', payload.mock.identity, 'vocab-mock'))
+    for (const output of payload.outputs ?? []) {
+      for (const transform of output.transforms ?? []) {
+        if (transform.kind === 'converter')
+          dependencies.push(makeDependency('converter', transform.identity, 'output-converter'))
+        else if (transform.ref?.kind === 'external')
+          dependencies.push(makeDependency('data-view', transform.ref.identity, 'output-data-view'))
+      }
+    }
   }
 
   return dedupeDependencies(dependencies)
@@ -617,6 +614,9 @@ function resolveDocumentType(entityType: string, identity: string): DomainDocume
   if (normalized === 'component-sfc') {
     return ComponentType.SFC
   }
+  if (normalized === 'vocab') {
+    return 'vocabs'
+  }
   if (normalized === 'workspace') {
     return null
   }
@@ -685,7 +685,7 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getConfiguration(identity)
     case 'mock':
       return Endge.domain.getMock(identity)
-    case 'vocabs':
+    case 'vocab':
       return Endge.domain.getVocab(identity)
     case 'auth-profile':
       return Endge.domain.getAuthProfile(identity)

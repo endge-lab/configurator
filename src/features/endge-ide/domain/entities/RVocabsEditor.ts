@@ -1,4 +1,6 @@
-import type { RVocabs } from '@endge/core'
+import type { ProgramDiagnostic, RVocabs } from '@endge/core'
+
+import { Endge } from '@endge/core'
 
 /**
  * Модель редактора для RVocabs (коллекция vocabs).
@@ -14,6 +16,9 @@ export class RVocabsEditor {
   authMode: 'inherit' | 'profile' | 'none' = 'inherit'
   authProfileIdentity: string = ''
   active: boolean = true
+  source: string = ''
+  sourceVersion: number = 1
+  diagnostics: ProgramDiagnostic[] = []
 
   fillFromSource(source: RVocabs): void {
     this.id = source.id
@@ -26,6 +31,9 @@ export class RVocabsEditor {
     this.authMode = normalizeAuthMode(source.authMode)
     this.authProfileIdentity = String(source.authProfileIdentity ?? '')
     this.active = source.active !== false
+    this.source = String(source.source ?? '')
+    this.sourceVersion = Number(source.sourceVersion ?? 1) || 1
+    this.refreshDiagnostics()
   }
 
   updateSource(source: RVocabs): void {
@@ -40,6 +48,21 @@ export class RVocabsEditor {
     source.authMode = this.authMode
     source.authProfileIdentity = this.authMode === 'profile' ? this.authProfileIdentity || null : null
     source.active = this.active !== false
+    source.source = this.source
+    source.sourceVersion = 1
+  }
+
+  applySourceText(value: string): void {
+    this.source = value
+    this.refreshDiagnostics()
+  }
+
+  resetSource(): void {
+    this.applySourceText(Endge.source.createDefault('vocab'))
+  }
+
+  refreshDiagnostics(): void {
+    this.diagnostics = (Endge.source.validate('vocab', this.source).diagnostics ?? []) as ProgramDiagnostic[]
   }
 }
 

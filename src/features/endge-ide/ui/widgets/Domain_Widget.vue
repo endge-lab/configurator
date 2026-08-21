@@ -65,6 +65,7 @@ import {
   Trash2,
   Type,
   X,
+  WandSparkles,
   Zap,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -74,7 +75,9 @@ import { Button } from '@/components/ui/button'
 import { Configurator } from '@/app'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
@@ -112,6 +115,11 @@ import {
 import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
+import {
+  commitVocabMockGeneration,
+  prepareVocabMockGeneration,
+  type PreparedVocabMockGeneration,
+} from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -131,12 +139,94 @@ type MenuAction
     | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
     | { type: 'download-selected' }
+    | { type: 'generate-vocab-mock' }
 
 const domainStore = useDomainStore()
+const vocabMockDialog = ref({
+  open: false,
+  mode: 'existing' as 'existing' | 'new',
+  existingIdentity: '',
+  newIdentity: '',
+  loading: false,
+  prepared: null as PreparedVocabMockGeneration | null,
+})
+const jsonMockOptions = computed(() => Endge.domain.getMocks()
+  .filter(mock => mock.active !== false && !mock.deletedAt && mock.contentType === 'application/json')
+  .map(mock => ({ value: mock.identity, label: mock.displayName || mock.name || mock.identity })))
+const vocabMockTargetIdentity = computed(() => vocabMockDialog.value.mode === 'existing'
+  ? vocabMockDialog.value.existingIdentity
+  : vocabMockDialog.value.newIdentity)
 const actionRegistryVersion = ref(0)
 const unsubscribeActions = Endge.actions.subscribe(() => {
   actionRegistryVersion.value += 1
 })
+
+function openVocabMockGenerator(): void {
+  vocabMockDialog.value = {
+    open: true,
+    mode: jsonMockOptions.value.length ? 'existing' : 'new',
+    existingIdentity: jsonMockOptions.value[0]?.value ?? '',
+    newIdentity: '',
+    loading: false,
+    prepared: null,
+  }
+}
+
+function closeVocabMockGenerator(): void {
+  if (vocabMockDialog.value.loading)
+    return
+  vocabMockDialog.value.open = false
+  vocabMockDialog.value.prepared = null
+}
+
+async function prepareAndSaveVocabMock(): Promise<void> {
+  vocabMockDialog.value.loading = true
+  try {
+    const prepared = await prepareVocabMockGeneration(vocabMockTargetIdentity.value)
+    if (prepared.overwrittenKeys.length) {
+      vocabMockDialog.value.prepared = prepared
+      return
+    }
+    await savePreparedVocabMock(prepared)
+  }
+  catch (error) {
+    toast.error('Не удалось подготовить Mock словарей', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    vocabMockDialog.value.loading = false
+  }
+}
+
+async function confirmVocabMockOverwrite(): Promise<void> {
+  const prepared = vocabMockDialog.value.prepared
+  if (!prepared)
+    return
+  vocabMockDialog.value.loading = true
+  try {
+    await savePreparedVocabMock(prepared)
+  }
+  catch (error) {
+    toast.error('Mock сохранён не полностью', {
+      description: error instanceof Error ? error.message : String(error),
+      duration: 10000,
+    })
+  }
+  finally {
+    vocabMockDialog.value.loading = false
+  }
+}
+
+async function savePreparedVocabMock(prepared: PreparedVocabMockGeneration): Promise<void> {
+  const result = await commitVocabMockGeneration(prepared)
+  toast.success('Mock-данные словарей сохранены', {
+    description: `${result.mockIdentity}: ${result.savedVocabs.length} Vocab`,
+  })
+  vocabMockDialog.value.open = false
+  vocabMockDialog.value.prepared = null
+  Endge.domain.notify()
+}
 
 // ---------- temporary identity labels (Option/Alt) ----------
 const showIdentityLabels = ref(false)
@@ -1531,6 +1621,14 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     if (!Endge.domainRepository.capabilities.mutations)
       return items
 
+    if (isRoot && node.sectionType === DomainSectionType.Vocabs) {
+      items.push({
+        label: 'Сформировать Mock-данные',
+        icon: WandSparkles,
+        action: { type: 'generate-vocab-mock' },
+      })
+    }
+
     if (supportsFolders && !isRoot && node.folderId) {
       items.push({
         label: 'Удалить папку',
@@ -1646,6 +1744,12 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
       sectionType: DomainSectionType.Configuration,
       documentType: 'configuration',
     })
+    return
+  }
+
+  if (a.type === 'generate-vocab-mock') {
+    closeContextMenu()
+    openVocabMockGenerator()
     return
   }
 
@@ -2055,6 +2159,97 @@ function rowClasses(item: FlatFsItem): string {
         </button>
       </div>
     </Teleport>
+
+    <Dialog v-model:open="vocabMockDialog.open">
+      <DialogContent class="sm:max-w-xl" @escape-key-down="closeVocabMockGenerator">
+        <DialogHeader>
+          <DialogTitle>Mock-данные словарей</DialogTitle>
+        </DialogHeader>
+
+        <div v-if="!vocabMockDialog.prepared" class="space-y-5 py-2">
+          <p class="text-sm leading-6 text-muted-foreground">
+            Будут предварительно загружены до 10 raw Payload-элементов каждого активного Vocab. Запись начнётся только после успешной загрузки всех словарей.
+          </p>
+          <div class="flex rounded-md border bg-muted/30 p-1">
+            <Button
+              type="button"
+              size="sm"
+              class="flex-1"
+              :variant="vocabMockDialog.mode === 'existing' ? 'secondary' : 'ghost'"
+              :disabled="!jsonMockOptions.length"
+              @click="vocabMockDialog.mode = 'existing'"
+            >
+              Существующий Mock
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              class="flex-1"
+              :variant="vocabMockDialog.mode === 'new' ? 'secondary' : 'ghost'"
+              @click="vocabMockDialog.mode = 'new'"
+            >
+              Новый Mock
+            </Button>
+          </div>
+          <div v-if="vocabMockDialog.mode === 'existing'" class="space-y-2">
+            <Label>JSON Mock</Label>
+            <Select v-model="vocabMockDialog.existingIdentity">
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Mock" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in jsonMockOptions" :key="option.value" :value="option.value">
+                  {{ option.label }} · {{ option.value }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div v-else class="space-y-2">
+            <Label for="vocab-mock-identity">Identity нового Mock</Label>
+            <Input id="vocab-mock-identity" v-model="vocabMockDialog.newIdentity" placeholder="aodb-vocab-fixtures" spellcheck="false" />
+          </div>
+          <div class="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            Каждый Vocab получит ссылку <code>mock('{{ vocabMockTargetIdentity || 'identity' }}').path('&lt;vocab-identity&gt;')</code>.
+          </div>
+        </div>
+
+        <div v-else class="space-y-4 py-2">
+          <div class="rounded-md border border-amber-500/35 bg-amber-500/5 p-3">
+            <div class="text-sm font-medium text-amber-700 dark:text-amber-300">
+              Следующие ключи уже существуют и будут перезаписаны
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <code
+                v-for="key in vocabMockDialog.prepared.overwrittenKeys"
+                :key="key"
+                class="rounded border bg-background px-1.5 py-0.5 text-xs"
+              >{{ key }}</code>
+            </div>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            Остальные верхнеуровневые ключи Mock будут сохранены без изменений.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" :disabled="vocabMockDialog.loading" @click="closeVocabMockGenerator">
+            Отмена
+          </Button>
+          <Button
+            v-if="!vocabMockDialog.prepared"
+            :disabled="vocabMockDialog.loading || !vocabMockTargetIdentity.trim()"
+            @click="prepareAndSaveVocabMock"
+          >
+            <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
+            Загрузить и сохранить
+          </Button>
+          <Button v-else :disabled="vocabMockDialog.loading" @click="confirmVocabMockOverwrite">
+            <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
+            Перезаписать ключи
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <!-- create folder dialog -->
     <Dialog v-model:open="createFolderDialog.open">

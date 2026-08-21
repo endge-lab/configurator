@@ -1,85 +1,104 @@
 <script setup lang="ts">
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor'
 
 import { Endge } from '@endge/core'
-import { useSubscribableRefAuto } from '@endge/utils'
-import { Database, Loader2 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import {
+  Code2,
+  Database,
+  FileJson,
+  Loader2,
+  RotateCcw,
+  Save,
+  Settings2,
+  TriangleAlert,
+} from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import VocabSourceEditor from '@/features/endge-ide/ui/components/VocabSourceEditor.vue'
 
-const props = defineProps<{
-  tabContext?: { editor?: RVocabsEditor }
-}>()
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
+type VocabEditorTab = 'general' | 'source' | 'artifact' | 'diagnostics'
+const tabButtons = [
+  { id: 'general', label: 'Общее', icon: Settings2 },
+  { id: 'source', label: 'Source', icon: Code2 },
+  { id: 'artifact', label: 'Артефакт', icon: FileJson },
+  { id: 'diagnostics', label: 'Диагностика', icon: TriangleAlert },
+] as const
 
+const props = defineProps<{ tabContext?: { editor?: RVocabsEditor } }>()
 const editor = computed<RVocabsEditor | null>(() => props.tabContext?.editor ?? null)
-const vocabsRef = useSubscribableRefAuto(Endge.vocabs)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'source', 'artifact', 'diagnostics'] as const,
+)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const loading = ref(false)
 const activeModel = computed<boolean>({
   get: () => editor.value?.active !== false,
   set: value => { if (editor.value) editor.value.active = value === true },
 })
+const compiled = computed(() => editor.value ? Endge.source.compile('vocab', editor.value.source) : null)
+const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
+const canLoadVocab = computed(() => Boolean(compiled.value?.ok && compiled.value?.artifact?.provider))
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('vocab', editor.value))
 
-const modeModel = computed<'external_payload' | 'internal'>({
-  get: () => editor.value?.mode ?? 'internal',
-  set: (value) => {
-    if (!editor.value)
-      return
-    editor.value.mode = value === 'external_payload' ? 'external_payload' : 'internal'
-  },
-})
-
-const authModeModel = computed<'inherit' | 'profile' | 'none'>({
-  get: () => editor.value?.authMode ?? 'inherit',
-  set: (value) => {
-    if (!editor.value)
-      return
-    editor.value.authMode = value
-    if (value !== 'profile')
-      editor.value.authProfileIdentity = ''
-  },
-})
-
-const canLoadVocab = computed(() => {
-  if (editor.value?.mode !== 'external_payload')
-    return false
-
-  const id: unknown = editor.value.id
-  return typeof id === 'number'
-    ? Number.isFinite(id) && id > 0
-    : String(id ?? '').trim().length > 0
-})
-const isVocabLoading = computed(() => vocabsRef.value.loading === true)
+function selectTab(tab: VocabEditorTab): void {
+  activeTab.value = tab
+}
 
 async function loadVocab(): Promise<void> {
-  if (!canLoadVocab.value || !editor.value?.id)
+  const current = editor.value
+  if (!current || !canLoadVocab.value)
     return
+  const vocab = Endge.domain.getVocab(current.id ?? current.identity)
+  if (!vocab) {
+    toast.error('Словарь не найден в домене')
+    return
+  }
 
+  loading.value = true
   try {
-    const docs = await Endge.vocabs.loadVocab(editor.value.id)
-    toast.success('Словарь загружен и добавлен в локальное хранилище')
+    current.updateSource(vocab)
+    Endge.compiler.buildVocab(vocab)
+    const docs = await Endge.vocabs.loadVocab(vocab.id ?? vocab.identity, {
+      dataMode: 'live',
+      throwOnError: true,
+    })
     EndgeIDE.modals.openVocabJsonPreview({
-      title: editor.value.displayName || editor.value.identity || 'Словарь',
+      title: current.displayName || current.identity || 'Словарь',
       data: docs,
     })
-  }
-  catch (error: any) {
-    toast.error('Не удалось получить доступ к справочнику', {
-      description: String(error?.message ?? 'Ошибка загрузки словаря'),
+    toast.success('Payload загружен, output pipeline выполнен', {
+      description: `items: ${docs.length}`,
     })
+  }
+  catch (error) {
+    toast.error('Не удалось выполнить полную загрузку словаря', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    loading.value = false
   }
 }
 
@@ -95,101 +114,121 @@ async function save(): Promise<void> {
     :identity="editor.identity"
     :display-name="editor.displayName"
     document-type="vocabs"
+    :dependency-source="editor.source"
     :dependency-draft="editor"
   >
-    <template #right>
-      <div class="flex items-center gap-2">
-        <TooltipProvider :delay-duration="300">
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-for="tab in tabButtons" :key="tab.id">
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="activeTab === tab.id ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                :aria-label="tab.label"
+                @click="selectTab(tab.id)"
+              >
+                <component :is="tab.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ tab.label }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                class="h-9 w-9 shrink-0"
-                :disabled="!canLoadVocab || isVocabLoading"
+                class="h-7 w-7"
+                :disabled="!canLoadVocab || loading"
+                aria-label="Полная загрузка словаря"
                 @click="loadVocab"
               >
-                <Loader2 v-if="isVocabLoading" class="size-4 animate-spin" />
+                <Loader2 v-if="loading" class="size-4 animate-spin" />
                 <Database v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Полная загрузка словаря</TooltipContent>
+            <TooltipContent>Полная загрузка provider и итогового items</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
-      </div>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сохранить</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </template>
 
-    <ScrollArea class="flex-1 px-4 py-3">
-      <div class="max-w-3xl space-y-6">
-        <Card class="p-4 space-y-4">
-          <div class="font-semibold">Основное</div>
-          <DocumentIdField :document-id="editor!.id" />
+    <template #right>
+      <TooltipProvider v-if="activeTab === 'source'">
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Сбросить source" @click="editor.resetSource()">
+                <RotateCcw class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Сбросить source</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+        <div class="max-w-2xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
             Активен
           </label>
           <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">identity</Label>
-              <DocumentIdentityInput v-model="editor!.identity" placeholder="base-airlines" />
+            <div class="space-y-2">
+              <Label for="vocab-identity">Identity</Label>
+              <DocumentIdentityInput id="vocab-identity" v-model="editor.identity" spellcheck="false" />
             </div>
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Название</Label>
-              <Input v-model="editor!.displayName" placeholder="Авиакомпании" />
-            </div>
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">Описание</Label>
-            <Textarea v-model="editor!.description" :rows="2" placeholder="Краткое описание словаря" />
-          </div>
-
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">Режим</Label>
-            <Select v-model="modeModel">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="external_payload">Внешний Payload</SelectItem>
-                <SelectItem value="internal">Внутренний</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div v-if="editor?.mode === 'external_payload'" class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Base API URL</Label>
-              <Input v-model="editor!.baseApiUrl" placeholder="https://api.example.com" />
-            </div>
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Collection slug</Label>
-              <Input v-model="editor!.collectionSlug" placeholder="airlines" />
+            <div class="space-y-2">
+              <Label for="vocab-name">Название</Label>
+              <Input id="vocab-name" v-model="editor.displayName" />
             </div>
           </div>
-
-          <div v-if="editor?.mode === 'external_payload'" class="grid grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Авторизация</Label>
-              <Select v-model="authModeModel">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inherit">inherit</SelectItem>
-                  <SelectItem value="profile">profile</SelectItem>
-                  <SelectItem value="none">none</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div v-if="editor.authMode === 'profile'" class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Auth profile identity</Label>
-              <Input v-model="editor.authProfileIdentity" placeholder="payload-cms-auth" />
-            </div>
+          <div class="space-y-2">
+            <Label for="vocab-description">Описание</Label>
+            <Textarea id="vocab-description" v-model="editor.description" :rows="3" />
           </div>
-        </Card>
+          <div class="max-w-xs space-y-2">
+            <Label for="vocab-source-version">Source version</Label>
+            <Input id="vocab-source-version" :model-value="editor.sourceVersion" type="number" disabled />
+          </div>
+        </div>
       </div>
-    </ScrollArea>
+      <VocabSourceEditor
+        v-else-if="activeTab === 'source'"
+        ref="sourceEditorRef"
+        :model-value="editor.source"
+        @update:model-value="editor.applySourceText"
+      />
+      <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto bg-muted/30 p-4 text-xs">{{ artifactJson }}</pre>
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        :authoring-diagnostics="editor.diagnostics"
+        class="min-h-0 flex-1"
+      />
+    </div>
   </SourceDocumentEditorShell>
 </template>

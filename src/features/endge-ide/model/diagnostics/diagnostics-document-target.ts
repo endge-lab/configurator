@@ -52,6 +52,10 @@ export function resolveDiagnosticsDocumentTarget(reference: DiagnosticsEntityRef
       ?? resolveComponentDocument(reference.identity)
   }
 
+  if (reference.entityType === 'vocab') {
+    return { documentId: fallbackId, documentType: 'vocabs' }
+  }
+
   return {
     documentId: fallbackId,
     documentType: reference.entityType as DomainDocumentType,

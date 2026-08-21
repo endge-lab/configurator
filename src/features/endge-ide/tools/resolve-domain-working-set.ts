@@ -16,6 +16,9 @@ export function normalizeDomainWorkingSetEntityType(documentType: string): strin
   if (documentType === 'mock-data') {
     return 'mock'
   }
+  if (documentType === 'vocabs') {
+    return 'vocab'
+  }
   return documentType
 }
 
