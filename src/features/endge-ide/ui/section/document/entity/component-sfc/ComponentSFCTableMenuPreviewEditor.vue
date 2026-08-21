@@ -53,6 +53,8 @@ interface MenuItemDraft {
   action: string
   input: string
   icon: string
+  visible: string
+  disabled: string
 }
 
 interface MenuLabelUpdate {
@@ -66,6 +68,7 @@ const props = defineProps<{
   kind: ComponentSFCTableVisualMenuKind
   menu: ComponentSFCTableMenuProjection
   actions: ComponentSFCTableMenuActionOption[]
+  allowInherit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -76,7 +79,7 @@ const emit = defineEmits<{
   (event: 'removeItem', index: number): void
   (event: 'saveLabel', payload: MenuLabelUpdate): void
   (event: 'setAction', payload: { index: number, value: string | null }): void
-  (event: 'saveDetails', payload: { index: number, input: string, icon: string }): void
+  (event: 'saveDetails', payload: { index: number, input: string, icon: string, visible: string, disabled: string }): void
   (event: 'openSource', item?: ComponentSFCTableMenuNodeProjection): void
 }>()
 
@@ -91,6 +94,8 @@ const translationKeyDraft = ref('')
 const translationDraft = ref(false)
 const inputDraft = ref('')
 const iconDraft = ref('')
+const visibleDraft = ref('')
+const disabledDraft = ref('')
 const creatingItem = ref(false)
 const newItemDraft = reactive<MenuItemDraft>({
   labelMode: 'text',
@@ -99,6 +104,8 @@ const newItemDraft = reactive<MenuItemDraft>({
   action: '',
   input: '',
   icon: '',
+  visible: '',
+  disabled: '',
 })
 
 const menuIsCustom = computed(() => props.menu.mode === 'custom')
@@ -275,6 +282,8 @@ function closeActionInspector(): void {
   actionInspectorIndex.value = null
   inputDraft.value = ''
   iconDraft.value = ''
+  visibleDraft.value = ''
+  disabledDraft.value = ''
 }
 
 function syncInspectorDrafts(item: ComponentSFCTableMenuNodeProjection): void {
@@ -283,6 +292,8 @@ function syncInspectorDrafts(item: ComponentSFCTableMenuNodeProjection): void {
   }
   inputDraft.value = sourceValueText(item.input)
   iconDraft.value = sourceValueText(item.icon)
+  visibleDraft.value = sourceValueText(item.visible)
+  disabledDraft.value = sourceValueText(item.disabled)
 }
 
 function saveActionDetails(): void {
@@ -293,6 +304,8 @@ function saveActionDetails(): void {
     index: actionInspectorIndex.value,
     input: inputDraft.value,
     icon: iconDraft.value,
+    visible: visibleDraft.value,
+    disabled: disabledDraft.value,
   })
   closeActionInspector()
 }
@@ -308,6 +321,8 @@ function startCreateItem(): void {
     action: '',
     input: '',
     icon: '',
+    visible: '',
+    disabled: '',
   } satisfies MenuItemDraft)
   void nextTick(() => root.value?.querySelector<HTMLInputElement>('[data-menu-new-label]')?.select())
 }
@@ -375,6 +390,9 @@ function resetDrag(): void {
             </SelectItem>
           </template>
           <template v-else>
+            <SelectItem v-if="allowInherit" value="default">
+              Inherit
+            </SelectItem>
             <SelectItem value="none">
               None
             </SelectItem>
@@ -603,6 +621,10 @@ function resetDrag(): void {
                 <Input v-model="newItemDraft.input" class="editor-control h-8 font-mono text-xs" placeholder="Input expression" />
                 <Input v-model="newItemDraft.icon" class="editor-control h-8 font-mono text-xs" placeholder="Icon" />
               </div>
+              <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                <Input v-model="newItemDraft.visible" class="editor-control h-8 font-mono text-xs" placeholder="Показывать, когда" />
+                <Input v-model="newItemDraft.disabled" class="editor-control h-8 font-mono text-xs" placeholder="Отключать, когда" />
+              </div>
               <div class="mt-3 flex justify-end gap-2">
                 <Button variant="ghost" size="sm" class="h-7" @click="creatingItem = false">
                   Отмена
@@ -650,6 +672,16 @@ function resetDrag(): void {
 
         <div class="mt-4 space-y-4">
           <div class="space-y-1.5">
+            <Label class="text-[11px]">Показывать, когда</Label>
+            <Input v-model="visibleDraft" class="editor-control h-8 font-mono text-xs" placeholder="$row.data.status === 'active'" />
+          </div>
+
+          <div class="space-y-1.5">
+            <Label class="text-[11px]">Отключать, когда</Label>
+            <Input v-model="disabledDraft" class="editor-control h-8 font-mono text-xs" placeholder="!$row.data.canEdit" />
+          </div>
+
+          <div class="space-y-1.5">
             <Label class="text-[11px]">Action identity</Label>
             <SearchableSelect
               :model-value="itemAction(inspectedItem) || null"
@@ -666,9 +698,9 @@ function resetDrag(): void {
               <Label class="text-[11px]">Input mapping</Label>
               <Braces class="size-3.5 text-muted-foreground" />
             </div>
-            <Input v-model="inputDraft" class="editor-control h-8 font-mono text-xs" placeholder="{ rowId, columnKey, value }" />
+            <Input v-model="inputDraft" class="editor-control h-8 font-mono text-xs" placeholder="{ id: $row.id, value: $cell.value }" />
             <div class="flex flex-wrap gap-1">
-              <code v-for="token in ['row', 'rowId', 'rowIndex', 'columnKey', 'value']" :key="token" class="rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+              <code v-for="token in ['$table', '$row', '$column', '$cell', '$context', 'props']" :key="token" class="rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
                 {{ token }}
               </code>
             </div>

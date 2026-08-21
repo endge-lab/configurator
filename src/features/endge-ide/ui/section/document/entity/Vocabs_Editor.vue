@@ -53,7 +53,15 @@ const authModeModel = computed<'inherit' | 'profile' | 'none'>({
   },
 })
 
-const canLoadVocab = computed(() => editor.value?.mode === 'external_payload' && Number(editor.value?.id) > 0)
+const canLoadVocab = computed(() => {
+  if (editor.value?.mode !== 'external_payload')
+    return false
+
+  const id: unknown = editor.value.id
+  return typeof id === 'number'
+    ? Number.isFinite(id) && id > 0
+    : String(id ?? '').trim().length > 0
+})
 const isVocabLoading = computed(() => vocabsRef.value.loading === true)
 
 async function loadVocab(): Promise<void> {

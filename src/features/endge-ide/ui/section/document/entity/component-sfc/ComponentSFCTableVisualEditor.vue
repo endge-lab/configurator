@@ -187,7 +187,7 @@ const SORT_COMPARATOR_OPTIONS = ENDGE_SFC_TABLE_SORT_COMPARATORS.map(value => ({
 }))
 const MENU_KIND_OPTIONS = [
   { kind: 'column', label: 'Меню заголовков' },
-  { kind: 'row', label: 'Меню строк' },
+  { kind: 'row', label: 'Меню ячеек' },
 ] as const
 
 type EditableTableAttributeName
@@ -202,6 +202,8 @@ interface MenuItemDraft {
   action: string
   input: string
   icon: string
+  visible: string
+  disabled: string
 }
 
 interface MenuLabelUpdate {
@@ -623,7 +625,9 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
       }
       return defaultSortItems.value.length ? String(defaultSortItems.value.length) : null
     case 'menus': {
-      const count = props.projection.menus.column.items.length + props.projection.menus.row.items.length
+      const count = props.projection.menus.column.items.length
+        + props.projection.menus.row.items.length
+        + props.projection.columns.reduce((total, column) => total + column.cellMenu.items.length, 0)
       return count ? String(count) : null
     }
     case 'metadata':
@@ -631,32 +635,37 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
   }
 }
 
-function setMenuMode(kind: ComponentSFCTableVisualMenuKind, value: unknown): void {
+function menuProjection(kind: ComponentSFCTableVisualMenuKind, columnIndex?: number) {
+  return columnIndex == null ? props.projection.menus[kind] : props.projection.columns[columnIndex]?.cellMenu
+}
+
+function setMenuMode(kind: ComponentSFCTableVisualMenuKind, value: unknown, columnIndex?: number): void {
   const mode = String(value ?? '') as 'default' | 'disabled' | 'none' | 'custom'
-  applyPatch({ type: 'set-menu-mode', menu: kind, mode })
+  applyPatch({ type: 'set-menu-mode', menu: kind, mode, ...(columnIndex == null ? {} : { columnIndex }) })
 }
 
-function addMenuNode(kind: ComponentSFCTableVisualMenuKind, node: 'item' | 'separator'): void {
-  applyPatch({ type: 'add-menu-node', menu: kind, node })
+function addMenuNode(kind: ComponentSFCTableVisualMenuKind, node: 'item' | 'separator', columnIndex?: number): void {
+  applyPatch({ type: 'add-menu-node', menu: kind, node, ...(columnIndex == null ? {} : { columnIndex }) })
 }
 
-function removeMenuNode(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number): void {
-  applyPatch({ type: 'remove-menu-node', menu: kind, nodeIndex })
+function removeMenuNode(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, columnIndex?: number): void {
+  applyPatch({ type: 'remove-menu-node', menu: kind, nodeIndex, ...(columnIndex == null ? {} : { columnIndex }) })
 }
 
 function setMenuItemAttribute(
   kind: ComponentSFCTableVisualMenuKind,
   nodeIndex: number,
-  name: 'label' | 'action' | 'input' | 'icon',
+  name: 'label' | 'action' | 'input' | 'icon' | 'visible' | 'disabled',
   value: string | null,
   valueKind: 'expression' | 'literal',
+  columnIndex?: number,
 ): void {
-  applyPatch({ type: 'set-menu-item-attribute', menu: kind, nodeIndex, name, value: value?.trim() || null, valueKind })
+  applyPatch({ type: 'set-menu-item-attribute', menu: kind, nodeIndex, name, value: value?.trim() || null, valueKind, ...(columnIndex == null ? {} : { columnIndex }) })
 }
 
-function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown): void {
+function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown, columnIndex?: number): void {
   const identity = typeof value === 'string' || typeof value === 'number' ? String(value) : null
-  setMenuItemAttribute(kind, nodeIndex, 'action', identity, menuActionValueKind(identity))
+  setMenuItemAttribute(kind, nodeIndex, 'action', identity, menuActionValueKind(identity), columnIndex)
 }
 
 function menuActionValueKind(identity: string | null): 'expression' | 'literal' {
@@ -666,7 +675,7 @@ function menuActionValueKind(identity: string | null): 'expression' | 'literal' 
     : 'literal'
 }
 
-function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDraft): void {
+function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDraft, columnIndex?: number): void {
   const label = draft.label.trim()
   const action = draft.action.trim()
   if (!label || !action) {
@@ -674,13 +683,14 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
     return
   }
 
-  const nodeIndex = props.projection.menus[kind].items.length
+  const nodeIndex = menuProjection(kind, columnIndex)?.items.length ?? 0
+  const scope = columnIndex == null ? {} : { columnIndex }
   const translationKey = draft.translationKey.trim() || `table:menu.item-${nodeIndex + 1}`
   const labelValue = draft.labelMode === 'translation'
     ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
     : label
   const patches: ComponentSFCTableSourcePatch[] = [
-    { type: 'add-menu-node', menu: kind, node: 'item' },
+    { type: 'add-menu-node', menu: kind, node: 'item', ...scope },
     {
       type: 'set-menu-item-attribute',
       menu: kind,
@@ -688,6 +698,7 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
       name: 'label',
       value: labelValue,
       valueKind: draft.labelMode === 'translation' ? 'expression' : 'literal',
+      ...scope,
     },
     {
       type: 'set-menu-item-attribute',
@@ -696,6 +707,7 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
       name: 'action',
       value: action,
       valueKind: menuActionValueKind(action),
+      ...scope,
     },
   ]
 
@@ -707,6 +719,7 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
       name: 'input',
       value: draft.input.trim(),
       valueKind: 'expression',
+      ...scope,
     })
   }
   if (draft.icon.trim()) {
@@ -717,13 +730,36 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
       name: 'icon',
       value: draft.icon.trim(),
       valueKind: 'literal',
+      ...scope,
+    })
+  }
+  if (draft.visible.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'visible',
+      value: draft.visible.trim(),
+      valueKind: 'expression',
+      ...scope,
+    })
+  }
+  if (draft.disabled.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'disabled',
+      value: draft.disabled.trim(),
+      valueKind: 'expression',
+      ...scope,
     })
   }
 
   applyPatches(patches)
 }
 
-function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelUpdate): void {
+function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelUpdate, columnIndex?: number): void {
   const label = update.label.trim()
   if (!label) {
     return
@@ -737,13 +773,16 @@ function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelU
       ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
       : label,
     update.mode === 'translation' ? 'expression' : 'literal',
+    columnIndex,
   )
 }
 
 function saveMenuDetails(
   kind: ComponentSFCTableVisualMenuKind,
-  payload: { index: number, input: string, icon: string },
+  payload: { index: number, input: string, icon: string, visible: string, disabled: string },
+  columnIndex?: number,
 ): void {
+  const scope = columnIndex == null ? {} : { columnIndex }
   applyPatches([
     {
       type: 'set-menu-item-attribute',
@@ -752,6 +791,7 @@ function saveMenuDetails(
       name: 'input',
       value: payload.input.trim() || null,
       valueKind: 'expression',
+      ...scope,
     },
     {
       type: 'set-menu-item-attribute',
@@ -760,6 +800,25 @@ function saveMenuDetails(
       name: 'icon',
       value: payload.icon.trim() || null,
       valueKind: 'literal',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'visible',
+      value: payload.visible.trim() || null,
+      valueKind: 'expression',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'disabled',
+      value: payload.disabled.trim() || null,
+      valueKind: 'expression',
+      ...scope,
     },
   ])
 }
@@ -767,12 +826,14 @@ function saveMenuDetails(
 function moveMenuItem(
   kind: ComponentSFCTableVisualMenuKind,
   payload: { fromIndex: number, toIndex: number },
+  columnIndex?: number,
 ): void {
   applyPatch({
     type: 'move-menu-node',
     menu: kind,
     fromIndex: payload.fromIndex,
     toIndex: payload.toIndex,
+    ...(columnIndex == null ? {} : { columnIndex }),
   })
 }
 
@@ -780,8 +841,8 @@ function escapeExpressionString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
 }
 
-function openMenuSource(kind: ComponentSFCTableVisualMenuKind, item?: ComponentSFCTableMenuNodeProjection): void {
-  emit('openSource', item?.sourceRange.start ?? props.projection.menus[kind].sourceRange?.start ?? props.projection.sourceRange.start)
+function openMenuSource(kind: ComponentSFCTableVisualMenuKind, item?: ComponentSFCTableMenuNodeProjection, columnIndex?: number): void {
+  emit('openSource', item?.sourceRange.start ?? menuProjection(kind, columnIndex)?.sourceRange?.start ?? props.projection.sourceRange.start)
 }
 
 function updateMetadataDraft(value: string): void {
@@ -2693,6 +2754,32 @@ onBeforeUnmount(() => {
                         />
                       </TabsContent>
                     </Tabs>
+
+                    <div v-if="selectedColumn" class="space-y-2 border-t pt-4">
+                      <div>
+                        <h3 class="text-sm font-medium">
+                          Меню ячеек выбранной колонки
+                        </h3>
+                        <p class="text-xs text-muted-foreground">
+                          Inherit использует Table &gt; CellMenu, Custom заменяет его, None отключает меню в колонке.
+                        </p>
+                      </div>
+                      <ComponentSFCTableMenuPreviewEditor
+                        kind="row"
+                        :menu="selectedColumn.cellMenu"
+                        :actions="projection.menuActions"
+                        allow-inherit
+                        @set-mode="value => setMenuMode('row', value, selectedColumn!.index)"
+                        @create-item="draft => createMenuItem('row', draft, selectedColumn!.index)"
+                        @add-separator="addMenuNode('row', 'separator', selectedColumn!.index)"
+                        @move-item="payload => moveMenuItem('row', payload, selectedColumn!.index)"
+                        @remove-item="index => removeMenuNode('row', index, selectedColumn!.index)"
+                        @save-label="update => saveMenuLabel('row', update, selectedColumn!.index)"
+                        @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumn!.index)"
+                        @save-details="payload => saveMenuDetails('row', payload, selectedColumn!.index)"
+                        @open-source="item => openMenuSource('row', item, selectedColumn!.index)"
+                      />
+                    </div>
                   </section>
 
                   <section v-show="tableSection === 'sorting'" class="space-y-3">
