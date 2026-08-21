@@ -11,6 +11,7 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,6 +32,16 @@ const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection('editor.configuration.active-tab', 'visual', ['general', 'visual', 'source', 'diagnostics'] as const)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('configuration', editor.value))
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
+const configurationInlineTypeOptions = [
+  { value: 'enum', label: 'Enum', group: 'Inline-типы' },
+]
+const enumValueKindOptions = [
+  { value: 'string', label: 'String' },
+  { value: 'number', label: 'Number' },
+  { value: 'boolean', label: 'Boolean' },
+] as const
+type EnumValue = string | number | boolean
+type EnumValueKind = typeof enumValueKindOptions[number]['value']
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -45,6 +56,20 @@ function updateDefault(value: ConfigurationSourceValueDefinition, defaultValue: 
   updateValue(value, { defaultValue })
 }
 function updateType(value: ConfigurationSourceValueDefinition, identity: string): void {
+  if (identity === 'enum') {
+    if (value.type.kind === 'enum') {
+      return
+    }
+    const type = { kind: 'enum' as const, values: ['value'] }
+    updateValue(value, {
+      type,
+      defaultValue: 'value',
+      min: undefined,
+      max: undefined,
+      step: undefined,
+    })
+    return
+  }
   const type = { kind: 'reference' as const, identity }
   const inferred = inferConfigurationDefault(type, Endge.configurationSchema.typeCatalog)
   const registeredType = Endge.configurationSchema.typeCatalog.find(item => item.identity === identity)
@@ -66,6 +91,95 @@ function updateType(value: ConfigurationSourceValueDefinition, identity: string)
     max: undefined,
     step: undefined,
   })
+}
+function enumValueKind(value: ConfigurationSourceValueDefinition): EnumValueKind {
+  if (value.type.kind !== 'enum') {
+    return 'string'
+  }
+  const first = value.type.values[0]
+  if (typeof first === 'number') {
+    return 'number'
+  }
+  if (typeof first === 'boolean') {
+    return 'boolean'
+  }
+  return 'string'
+}
+function updateEnumValues(value: ConfigurationSourceValueDefinition, values: EnumValue[]): void {
+  if (!values.length) {
+    return
+  }
+  const defaultValue = values.some(item => Object.is(item, value.defaultValue))
+    ? value.defaultValue
+    : values[0]
+  updateValue(value, {
+    type: { kind: 'enum', values },
+    defaultValue,
+    min: undefined,
+    max: undefined,
+    step: undefined,
+  })
+}
+function updateEnumValueKind(value: ConfigurationSourceValueDefinition, kind: EnumValueKind): void {
+  updateEnumValues(value, kind === 'number'
+    ? [0]
+    : kind === 'boolean'
+      ? [true, false]
+      : ['value'])
+}
+function updateEnumValue(value: ConfigurationSourceValueDefinition, index: number, rawValue: unknown): void {
+  if (value.type.kind !== 'enum') {
+    return
+  }
+  const values = [...value.type.values]
+  const kind = enumValueKind(value)
+  if (kind === 'number') {
+    const numberValue = Number(rawValue)
+    if (!Number.isFinite(numberValue)) {
+      return
+    }
+    values[index] = numberValue
+  }
+  else if (kind === 'boolean') {
+    values[index] = String(rawValue) === 'true'
+  }
+  else {
+    values[index] = String(rawValue ?? '')
+  }
+  updateEnumValues(value, values)
+}
+function canAddEnumValue(value: ConfigurationSourceValueDefinition): boolean {
+  return value.type.kind === 'enum'
+    && (enumValueKind(value) !== 'boolean' || value.type.values.length < 2)
+}
+function addEnumValue(value: ConfigurationSourceValueDefinition): void {
+  if (value.type.kind !== 'enum' || !canAddEnumValue(value)) {
+    return
+  }
+  const values = [...value.type.values]
+  const kind = enumValueKind(value)
+  if (kind === 'number') {
+    const numbers = values.filter((item): item is number => typeof item === 'number')
+    values.push(Math.max(-1, ...numbers) + 1)
+  }
+  else if (kind === 'boolean') {
+    values.push(!values.includes(true))
+  }
+  else {
+    let next = 'value'
+    let suffix = 0
+    while (values.includes(next)) {
+      next = `value${++suffix}`
+    }
+    values.push(next)
+  }
+  updateEnumValues(value, values)
+}
+function removeEnumValue(value: ConfigurationSourceValueDefinition, index: number): void {
+  if (value.type.kind !== 'enum' || value.type.values.length <= 1) {
+    return
+  }
+  updateEnumValues(value, value.type.values.filter((_, itemIndex) => itemIndex !== index))
 }
 function addValue(): void {
   const values = editor.value?.values ?? []
@@ -154,10 +268,34 @@ async function save(): Promise<void> {
         <section v-for="value in editor.values" :key="value.key" class="space-y-4 rounded-lg border p-4">
           <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_auto]">
             <div class="space-y-1.5"><Label>Key</Label><Input :model-value="value.key" spellcheck="false" @change="renameValueFromEvent(value, $event)" /></div>
-            <div class="space-y-1.5"><Label>Тип</Label><TypeRegistrySelect :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind" @update:model-value="updateType(value, $event)" /></div>
+            <div class="space-y-1.5"><Label>Тип</Label><TypeRegistrySelect :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind" :additional-options="configurationInlineTypeOptions" @update:model-value="updateType(value, $event)" /></div>
             <Button size="icon" variant="ghost" class="mt-6 text-muted-foreground hover:text-destructive" @click="editor.removeValue(value.key)"><Trash2 class="size-4" /></Button>
           </div>
           <div class="grid gap-3 md:grid-cols-2"><div class="space-y-1.5"><Label>Label</Label><Input :model-value="value.label" @update:model-value="updateValue(value, { label: String($event ?? '') })" /></div><div class="space-y-1.5"><Label>Description</Label><Input :model-value="value.description ?? ''" @update:model-value="updateValue(value, { description: String($event ?? '') || undefined })" /></div></div>
+          <div v-if="value.type.kind === 'enum'" class="space-y-3 rounded-md border p-3">
+            <div class="flex items-end justify-between gap-3">
+              <div class="w-48 space-y-1.5">
+                <Label>Тип значений Enum</Label>
+                <Select :model-value="enumValueKind(value)" @update:model-value="updateEnumValueKind(value, String($event) as EnumValueKind)">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="option in enumValueKindOptions" :key="option.value" :value="option.value">{{ option.label }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" variant="outline" :disabled="!canAddEnumValue(value)" @click="addEnumValue(value)"><Plus class="mr-1.5 size-4" />Добавить вариант</Button>
+            </div>
+            <div class="space-y-2">
+              <div v-for="(item, index) in value.type.values" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <Select v-if="typeof item === 'boolean'" :model-value="String(item)" @update:model-value="updateEnumValue(value, index, $event)">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="true">true</SelectItem><SelectItem value="false">false</SelectItem></SelectContent>
+                </Select>
+                <Input v-else :model-value="String(item)" :type="typeof item === 'number' ? 'number' : 'text'" spellcheck="false" @change="updateEnumValue(value, index, ($event.target as HTMLInputElement).value)" />
+                <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :disabled="value.type.values.length <= 1" @click="removeEnumValue(value, index)"><Trash2 class="size-4" /></Button>
+              </div>
+            </div>
+          </div>
           <div class="space-y-1.5"><Label>Default</Label><ConfigValueEditor :model-value="value.defaultValue" :type="value.type" :min="value.min" :max="value.max" :step="value.step" @update:model-value="updateDefault(value, $event)" /></div>
           <div v-if="value.type.kind === 'reference' && value.type.identity === 'Number'" class="grid grid-cols-3 gap-3"><div><Label>Min</Label><Input :model-value="value.min" type="number" @update:model-value="updateValue(value, { min: $event === '' ? undefined : Number($event) })" /></div><div><Label>Max</Label><Input :model-value="value.max" type="number" @update:model-value="updateValue(value, { max: $event === '' ? undefined : Number($event) })" /></div><div><Label>Step</Label><Input :model-value="value.step" type="number" @update:model-value="updateValue(value, { step: $event === '' ? undefined : Number($event) })" /></div></div>
         </section>

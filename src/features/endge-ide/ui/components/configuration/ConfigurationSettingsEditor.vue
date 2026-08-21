@@ -773,30 +773,34 @@ function isEqual(left: unknown, right: unknown): boolean {
               <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">{{ category.description }}</p>
               <code class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
             </div>
-            <div class="space-y-4">
-              <ConfigurationOverrideField
+            <div class="divide-y divide-border/60">
+              <div
                 v-for="field in category.document.values"
                 :key="field.key"
-                :label="field.label"
-                :uses-parent-value="isInherit"
-                :overridden="hasConfigurationValueOverride(category.identity, field.key)"
-                @enable="enableConfigurationValueOverride(category.identity, field.key, field.defaultValue)"
-                @reset="resetConfigurationValueOverride(category.identity, field.key)"
+                class="py-5 first:pt-0 last:pb-0"
               >
-                <template #default="{ disabled: fieldDisabled }">
-                  <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">{{ field.description }}</p>
-                  <ConfigValueEditor
-                    :model-value="configurationValue(category.identity, field.key, field.defaultValue)"
-                    :type="field.type"
-                    :min="field.min"
-                    :max="field.max"
-                    :step="field.step"
-                    :disabled="disabled || fieldDisabled"
-                    @update:model-value="setConfigurationValue(category.identity, field.key, $event)"
-                  />
-                  <code class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
-                </template>
-              </ConfigurationOverrideField>
+                <ConfigurationOverrideField
+                  :label="field.label"
+                  :uses-parent-value="isInherit"
+                  :overridden="hasConfigurationValueOverride(category.identity, field.key)"
+                  @enable="enableConfigurationValueOverride(category.identity, field.key, field.defaultValue)"
+                  @reset="resetConfigurationValueOverride(category.identity, field.key)"
+                >
+                  <template #default="{ disabled: fieldDisabled }">
+                    <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">{{ field.description }}</p>
+                    <ConfigValueEditor
+                      :model-value="configurationValue(category.identity, field.key, field.defaultValue)"
+                      :type="field.type"
+                      :min="field.min"
+                      :max="field.max"
+                      :step="field.step"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="setConfigurationValue(category.identity, field.key, $event)"
+                    />
+                    <code class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
+                  </template>
+                </ConfigurationOverrideField>
+              </div>
             </div>
           </TabsContent>
 

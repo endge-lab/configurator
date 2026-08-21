@@ -1,5 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable style/max-statements-per-line */
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type { TypeProgramCatalogEntry } from '@endge/core'
 import type { HTMLAttributes } from 'vue'
 
 import { useDomainStore } from '@endge/ui-vue'
@@ -14,11 +16,13 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   size?: 'default' | 'compact'
   triggerClass?: HTMLAttributes['class']
+  additionalOptions?: SearchableSelectOption[]
 }>(), {
   modelValue: '',
   placeholder: 'Выберите тип',
   disabled: false,
   size: 'default',
+  additionalOptions: () => [],
 })
 
 const emit = defineEmits<{
@@ -26,15 +30,18 @@ const emit = defineEmits<{
 }>()
 
 const domainStore = useDomainStore()
-const options = computed(() => domainStore.typeCatalog.map(type => ({
-  value: type.identity,
-  label: type.displayName || type.identity,
-  group: type.category === 'primitive'
-    ? 'Primitive types'
-    : type.category === 'reference'
-      ? 'Entity references'
-      : 'User types',
-})))
+const options = computed(() => [
+  ...props.additionalOptions,
+  ...domainStore.typeCatalog.map((type: TypeProgramCatalogEntry) => ({
+    value: type.identity,
+    label: type.displayName || type.identity,
+    group: type.category === 'primitive'
+      ? 'Primitive types'
+      : type.category === 'reference'
+        ? 'Entity references'
+        : 'User types',
+  })),
+])
 
 function update(value: string | string[] | null): void {
   emit('update:modelValue', typeof value === 'string' ? value : '')
@@ -42,7 +49,7 @@ function update(value: string | string[] | null): void {
 
 function openType(event: MouseEvent): void {
   if (!event.ctrlKey && !event.metaKey) { return }
-  const type = domainStore.typeCatalog.find(item => item.identity === props.modelValue)
+  const type = domainStore.typeCatalog.find((item: TypeProgramCatalogEntry) => item.identity === props.modelValue)
   if (!type || type.category !== 'user') { return }
   event.preventDefault()
   event.stopPropagation()
