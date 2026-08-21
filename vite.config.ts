@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { dirname } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
@@ -22,6 +23,8 @@ export default defineConfig(({ mode, command }) => {
   const isDevServer = command === 'serve'
   const testIntegrationsEnabled = isDevServer || mode === 'test-integrations'
   const testIntegrationsRoot = fileURLToPath(new URL('../integrations/test', import.meta.url))
+  const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url))
+  const runsFromParentWorkspace = existsSync(new URL('../../pnpm-workspace.yaml', import.meta.url))
   const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
   const codegenEnabled
     = isDevServer
@@ -44,7 +47,12 @@ export default defineConfig(({ mode, command }) => {
     ],
     server: {
       fs: {
-        allow: [cwd, testIntegrationsRoot, packagesRoot],
+        allow: [
+          cwd,
+          testIntegrationsRoot,
+          packagesRoot,
+          ...(runsFromParentWorkspace ? [workspaceRoot] : []),
+        ],
       },
     },
     optimizeDeps: {
