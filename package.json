@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@endge/codegen": "0.1.8",
-    "@endge/computation-sandbox": "0.1.9",
+    "@endge/computation-sandbox": "0.1.10",
     "@endge/core": "2.0.4",
     "@endge/raph": "3.0.10",
     "@endge/utils": "0.24.12",

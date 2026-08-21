@@ -12,8 +12,8 @@ importers:
         specifier: 0.1.8
         version: 0.1.8
       '@endge/computation-sandbox':
-        specifier: 0.1.9
-        version: 0.1.9(@endge/core@2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3)))
+        specifier: 0.1.10
+        version: 0.1.10(@endge/core@2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3)))
       '@endge/core':
         specifier: 2.0.4
         version: 2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3))
@@ -447,8 +447,8 @@ packages:
     resolution: {integrity: sha512-xroGxKJ3mrUnrZO6NZh1Rdga05yPOtybu19vMeB7RfUPGeJGs27YKnewhRzv236VzFlX4Ci0FIRV575nqNKl8Q==}
     hasBin: true
 
-  '@endge/computation-sandbox@0.1.9':
-    resolution: {integrity: sha512-nzCdHAeMl4I1I2j5j5OoOqO0fFJZtoey4wYTT3T/New1Ywl/NLMBKZuQVgnb0GSOY+KGycUczrU2borFUYgHbQ==}
+  '@endge/computation-sandbox@0.1.10':
+    resolution: {integrity: sha512-YgRrgVFF4qGpUqpdX33pZ3Hha9XshpAy1QFD3j5Uu2WagPrXw907DfFjo4TcJwlSX77mOj9zRlC9wZOZ94Fdqg==}
     peerDependencies:
       '@endge/core': ^2.0.3
 
@@ -4587,7 +4587,7 @@ snapshots:
 
   '@endge/codegen@0.1.8': {}
 
-  '@endge/computation-sandbox@0.1.9(@endge/core@2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3)))':
+  '@endge/computation-sandbox@0.1.10(@endge/core@2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3)))':
     dependencies:
       '@endge/core': 2.0.4(@endge/raph@3.0.10)(@endge/utils@0.24.12(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(vue@3.5.38(typescript@5.9.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.38(typescript@5.9.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@5.9.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@5.9.3))
       '@jitl/quickjs-ng-wasmfile-release-sync': 0.32.0
