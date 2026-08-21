@@ -14,4 +14,4 @@ export type {
 } from '@/components/ui/smart-tabs/types'
 
 export { useSmartTabs } from '@/components/ui/smart-tabs/useSmartTabs'
-export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState, useSmartTabVolatileViewState } from '@/components/ui/smart-tabs/useSmartTabViewState'
+export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState, useSmartTabViewStateFlush, useSmartTabVolatileViewState } from '@/components/ui/smart-tabs/useSmartTabViewState'

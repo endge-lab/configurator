@@ -416,6 +416,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     getSharedViewState,
     setSharedViewState,
     clearSharedViewState,
+    flushStorage: persistNow,
     clearStorage,
   }
 }

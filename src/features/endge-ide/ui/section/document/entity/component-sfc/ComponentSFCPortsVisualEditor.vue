@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { ComponentSFCEventPort, ComponentSFCPortRole, RAction } from '@endge/core'
+import type { ComponentSFCEventPort, ComponentSFCPortRole, QueryProgramPayload, RAction } from '@endge/core'
 import {
   DomainSectionType,
   Endge,
@@ -98,11 +98,12 @@ const requiredPorts = computed(() => [
   ...projection.value.manifest.require.actions,
   ...projection.value.manifest.require.computations,
   ...projection.value.manifest.require.components,
+  ...projection.value.manifest.require.queries,
 ])
 const providedPorts = computed(() => projection.value.manifest.provides.actions)
 
 const portRole = ref<ComponentSFCPortRole>('require')
-const portKind = ref<'action' | 'computation' | 'component'>('action')
+const portKind = ref<'action' | 'computation' | 'component' | 'query'>('action')
 const portName = ref('')
 const portIdentity = ref('')
 const forwardDraft = ref('')
@@ -232,10 +233,17 @@ function addPort(): void {
   if (!name) return
   const role = portRole.value
   const kind = role === 'provides' ? 'action' : portKind.value
+  const queryDeclaration = kind === 'query' ? createQueryPortDeclaration(identity) : null
+  if (kind === 'query' && !queryDeclaration) {
+    fail('Query должна существовать и компилироваться, чтобы получить её input contract.')
+    return
+  }
   const declaration = kind === 'component'
     ? `component<Record<string, unknown>>({ default: ${JSON.stringify(identity)}, tag: ${JSON.stringify(name)} })`
     : kind === 'computation'
       ? `computation<unknown, unknown>({ default: ${JSON.stringify(identity)} })`
+      : kind === 'query'
+        ? queryDeclaration!
       : role === 'require'
         ? `action<unknown, unknown>({ default: ${JSON.stringify(identity)} })`
         : `action<unknown, unknown>()`
@@ -244,6 +252,19 @@ function addPort(): void {
     portName.value = ''
     portIdentity.value = ''
   }
+}
+
+function createQueryPortDeclaration(identity: string): string | null {
+  const query = Endge.domain.getQuery(identity)
+  if (!query) return null
+  const payload = Endge.source.compile('query', query.source).artifact as QueryProgramPayload | undefined
+  if (!payload) return null
+  const fields = payload.props.map((field) => {
+    const type = field.array ? `Array<${field.type}>` : field.type
+    return `${field.key}${field.optional ? '?' : ''}: ${type}`
+  })
+  const inputType = fields.length ? `{ ${fields.join('; ')} }` : 'Record<string, never>'
+  return `query<${inputType}, void>({ default: ${JSON.stringify(identity)} })`
 }
 
 function removePort(role: ComponentSFCPortRole, name: string): void {
@@ -260,14 +281,18 @@ function onEntityDrop(payload: { id: string | number, sectionType: DomainSection
     ? Endge.domain.getActions().find(item => String(item.id) === String(payload.id))
     : payload.sectionType === DomainSectionType.Computation
       ? Endge.domain.getComputations().find(item => String(item.id) === String(payload.id))
-      : Endge.domain.getComponentSFCs().find(item => String(item.id) === String(payload.id))
+      : payload.sectionType === DomainSectionType.Query
+        ? Endge.domain.getQueries().find(item => String(item.id) === String(payload.id))
+        : Endge.domain.getComponentSFCs().find(item => String(item.id) === String(payload.id))
   if (!entity) return
   portIdentity.value = entity.identity
   portName.value = toPortName(entity.identity)
   portRole.value = 'require'
   portKind.value = payload.sectionType === DomainSectionType.Action
     ? 'action'
-    : payload.sectionType === DomainSectionType.Computation ? 'computation' : 'component'
+    : payload.sectionType === DomainSectionType.Computation
+      ? 'computation'
+      : payload.sectionType === DomainSectionType.Query ? 'query' : 'component'
 }
 
 function serializeDirectAction(action: RAction | undefined): string | null {
@@ -434,10 +459,10 @@ function toPortName(identity: string): string {
         </section>
       </div>
 
-      <DomainEntityDropTarget :accept-section-types="[DomainSectionType.Component, DomainSectionType.Action, DomainSectionType.Computation]" hint-text="Перетащите Component, Action или Computation из домена" @entity-drop="onEntityDrop">
+      <DomainEntityDropTarget :accept-section-types="[DomainSectionType.Component, DomainSectionType.Action, DomainSectionType.Computation, DomainSectionType.Query]" hint-text="Перетащите Component, Action, Computation или Query из домена" @entity-drop="onEntityDrop">
         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
           <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm"><option value="require">Required</option><option value="provides">Provided</option></select>
-          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'"><option value="action">Action</option><option value="computation">Computation</option><option value="component">Component</option></select>
+          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'"><option value="action">Action</option><option value="query">Query</option><option value="computation">Computation</option><option value="component">Component</option></select>
           <Input v-model="portName" placeholder="portName" />
           <Input v-model="portIdentity" placeholder="domain.identity" :disabled="portRole === 'provides'" />
           <Button :disabled="!projection.editable" @click="addPort"><Plus class="mr-1 size-4" />Добавить</Button>

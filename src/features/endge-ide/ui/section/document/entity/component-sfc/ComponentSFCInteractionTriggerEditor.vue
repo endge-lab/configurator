@@ -394,11 +394,13 @@ function splitList(value: string): string[] {
 
 <template>
   <div class="space-y-4">
-    <div class="grid gap-3 md:grid-cols-[minmax(180px,0.55fr)_minmax(260px,1.45fr)]">
-      <div class="space-y-1.5">
+    <div class="grid min-w-0 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div class="min-w-0 space-y-1.5">
         <Label class="text-xs">Событие</Label>
         <Select :model-value="draft.event" @update:model-value="updateEvent">
-          <SelectTrigger class="editor-control"><SelectValue /></SelectTrigger>
+          <SelectTrigger class="editor-control w-full min-w-0 overflow-hidden [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="event in events" :key="event.name" :value="event.name">
               {{ event.displayName }} · {{ event.name }}
@@ -407,9 +409,9 @@ function splitList(value: string): string[] {
         </Select>
       </div>
 
-      <div class="space-y-1.5">
+      <div class="min-w-0 space-y-1.5">
         <Label class="text-xs">Комбинация</Label>
-        <div class="editor-control flex min-h-9 items-center gap-2 rounded-md border border-border/70 p-1 pl-2">
+        <div class="editor-control flex min-h-9 min-w-0 items-center gap-2 rounded-md border border-border/70 p-1 pl-2">
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
             <span v-if="!triggerTokens().length" class="text-xs text-muted-foreground">Без условий</span>
             <code

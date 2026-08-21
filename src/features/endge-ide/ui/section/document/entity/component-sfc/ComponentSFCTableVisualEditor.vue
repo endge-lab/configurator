@@ -2480,13 +2480,14 @@ onBeforeUnmount(() => {
                             <Label for="sfc-table-page-size">Строк на странице</Label>
                             <Input
                               id="sfc-table-page-size"
-                              v-model="pageSizeDraft"
+                              :model-value="pageSizeDraft"
                               type="number"
                               min="1"
                               step="1"
                               class="editor-control"
                               placeholder="10"
                               :disabled="!canEdit(projection.pageSize)"
+                              @update:model-value="pageSizeDraft = String($event)"
                               @blur="commitPageSize"
                               @keydown.enter="blurInput"
                             />

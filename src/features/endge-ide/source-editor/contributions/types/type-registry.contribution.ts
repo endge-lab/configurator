@@ -87,6 +87,7 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
           ...result.contract.inputs.map(input => input.type),
           ...(result.ir?.script.ports.require.computations.flatMap(port => [port.inputType, port.outputType]) ?? []),
           ...(result.ir?.script.ports.require.actions.flatMap(port => [port.inputType, port.outputType]) ?? []),
+          ...(result.ir?.script.ports.require.queries.flatMap(port => [port.inputType, port.outputType]) ?? []),
           ...(result.ir?.script.ports.require.components.map(port => port.propsType) ?? []),
           ...(result.ir?.script.ports.provides.actions.flatMap(port => [port.inputType, port.outputType]) ?? []),
           ...(result.ir?.script.ports.emits.events.map(port => port.payloadType) ?? []),

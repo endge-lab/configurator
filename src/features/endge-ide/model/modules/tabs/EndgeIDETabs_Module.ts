@@ -263,6 +263,7 @@ export class EndgeIDETabs_Module {
   public getSharedViewState(key: string) { return this._tabsApi.getSharedViewState(key) }
   public setSharedViewState(key: string, slice: Parameters<SmartTabsApi['setSharedViewState']>[1]): void { this._tabsApi.setSharedViewState(key, slice) }
   public clearSharedViewState(key?: string): void { this._tabsApi.clearSharedViewState(key) }
+  public flushStorage(): void { this._tabsApi.flushStorage() }
   public clearStorage(): void { this._tabsApi.clearStorage() }
 
   /** Returns true when the active editor differs from its last successful save. */

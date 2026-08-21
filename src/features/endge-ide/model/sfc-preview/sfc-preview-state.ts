@@ -1,9 +1,11 @@
 import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import type {
   ComponentSFCProgramPayload,
+  ComputationProgramPayload,
   ComponentSFCRuntimeHost,
   EndgeStyleSheetArtifact,
   ProgramArtifact,
+  QueryProgramPayload,
   RuntimeHostInputSource,
 } from '@endge/core'
 
@@ -14,6 +16,8 @@ import {
   parseComponentSFC,
   RComponentSFC,
   RComputation,
+  RAction,
+  RQuery,
 } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, shallowRef } from 'vue'
@@ -206,19 +210,26 @@ export function createPreviewArtifact(model: RComponentSFC): ProgramArtifact<Com
   }
 }
 
-function resolvePreviewPortProvider(identity: string, expectedKind: 'computation' | 'component') {
+function resolvePreviewPortProvider(identity: string, expectedKind: 'computation' | 'component' | 'action' | 'query') {
   const computation = Endge.domain.getComputation(identity)
   const component = Endge.domain.getComponentSFC(identity)
+  const action = Endge.domain.getAction(identity)
+  const query = Endge.domain.getQuery(identity)
   const target = expectedKind === 'computation'
-    ? computation ?? component
-    : component ?? computation
+    ? computation ?? component ?? action ?? query
+    : expectedKind === 'component'
+      ? component ?? computation ?? action ?? query
+      : expectedKind === 'action'
+        ? action ?? computation ?? component ?? query
+        : query ?? action ?? computation ?? component
   if (target instanceof RComputation) {
+    const payload = Endge.source.compile('computation', target.source).artifact as ComputationProgramPayload | undefined
     return {
       kind: 'computation' as const,
       identity: target.identity,
       active: target.active !== false && !target.deletedAt,
-      input: target.input ? { type: target.input.type, isArray: target.input.isArray, optional: target.input.optional } : null,
-      output: target.output ? { type: target.output.type, isArray: target.output.isArray, optional: target.output.optional } : null,
+      input: previewFieldContract(payload?.input),
+      output: previewFieldContract(payload?.output),
     }
   }
   if (target instanceof RComponentSFC) {
@@ -230,7 +241,47 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
       inputs: analyzeComponentSFCScript(parsed.ast?.script ?? null).contract.inputs,
     }
   }
+  if (target instanceof RAction) {
+    return {
+      kind: 'action' as const,
+      identity: target.identity,
+      active: target.active !== false && !target.deletedAt,
+      input: previewFieldContract(target.input),
+      output: previewFieldContract(target.output),
+    }
+  }
+  if (target instanceof RQuery) {
+    const payload = Endge.source.compile('query', target.source).artifact as QueryProgramPayload | undefined
+    return {
+      kind: 'query' as const,
+      identity: target.identity,
+      active: target.active !== false && !target.deletedAt,
+      inputs: payload?.props.map(field => previewQueryFieldContract(field)) ?? [],
+      outputs: payload?.outputs.map(output => previewQueryFieldContract(output.contract, output.key)) ?? [],
+    }
+  }
   return null
+}
+
+function previewFieldContract(field: { type: string, isArray?: boolean, optional?: boolean } | null | undefined) {
+  if (!field) return null
+  return {
+    type: field.type,
+    isArray: field.isArray === true,
+    optional: field.optional === true,
+  }
+}
+
+function previewQueryFieldContract(
+  field: { key?: string, type: string, array?: boolean, optional?: boolean } | null | undefined,
+  fallbackName?: string,
+) {
+  return {
+    name: String(field?.key ?? fallbackName ?? '').trim(),
+    type: field?.type ?? 'Any',
+    isArray: field?.array === true,
+    optional: field?.optional === true,
+  }
 }
 
 export function ensurePreviewPortArtifacts(

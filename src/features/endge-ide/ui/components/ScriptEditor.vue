@@ -7,9 +7,9 @@ import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { useSmartTabVolatileViewState } from '@/components/ui/smart-tabs'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import { usePersistedMonacoViewState } from '@/features/endge-ide/tools/source-editor/use-persisted-monaco-view-state'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
@@ -43,10 +43,7 @@ const emit = defineEmits<{
 
 const ui = useUI()
 const container = ref<HTMLDivElement | null>(null)
-const viewState = useSmartTabVolatileViewState<monaco.editor.ICodeEditorViewState | null>(
-  `monaco.${props.viewStateKey}`,
-  { defaultValue: () => null },
-)
+const viewState = usePersistedMonacoViewState(`monaco.${props.viewStateKey}`)
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let extensionDisposables: monaco.IDisposable[] = []
 
@@ -125,9 +122,7 @@ onMounted(() => {
       scrollBeyondLastLine: false,
       wordWrap: 'on',
     })
-    if (viewState.value) {
-      editor.restoreViewState(viewState.value)
-    }
+    viewState.attach(editor)
 
     editor.onDidChangeModelContent(() => {
       emit('update:modelValue', editor!.getValue())
@@ -187,10 +182,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  const savedViewState = editor?.saveViewState()
-  if (savedViewState) {
-    viewState.value = savedViewState
-  }
+  viewState.detach()
   extensionDisposables.forEach(disposable => disposable.dispose())
   extensionDisposables = []
   editor?.dispose()

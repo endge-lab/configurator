@@ -103,5 +103,6 @@ export interface SmartTabsApi {
   getSharedViewState: (key: string) => SmartTabViewStateSlice | undefined
   setSharedViewState: (key: string, slice: SmartTabViewStateSlice) => void
   clearSharedViewState: (key?: string) => void
+  flushStorage: () => void
   clearStorage: () => void
 }

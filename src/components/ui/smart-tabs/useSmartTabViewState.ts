@@ -13,6 +13,7 @@ export interface SmartTabViewStateScope {
   readShared: (key: string) => SmartTabViewStateSlice | undefined
   writeShared: (key: string, slice: SmartTabViewStateSlice) => void
   clearShared: (key: string) => void
+  flush: () => void
 }
 
 export interface SmartTabViewStateOptions<T> {
@@ -136,6 +137,11 @@ export function useSmartTabSharedViewState<T>(
   }
 
   return useViewStateFromScope(key, options, sharedScope)
+}
+
+export function useSmartTabViewStateFlush(): () => void {
+  const scope = inject(SMART_TAB_VIEW_STATE_SCOPE, null)
+  return () => scope?.flush()
 }
 
 export function useSmartTabSelection<T extends string>(

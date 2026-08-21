@@ -20,6 +20,7 @@ provide(SMART_TAB_VIEW_STATE_SCOPE, {
   readShared: key => props.api.getSharedViewState(key),
   writeShared: (key, slice) => props.api.setSharedViewState(key, slice),
   clearShared: key => props.api.clearSharedViewState(key),
+  flush: () => props.api.flushStorage(),
 })
 </script>
 
