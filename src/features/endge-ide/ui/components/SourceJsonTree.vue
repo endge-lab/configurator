@@ -1,8 +1,17 @@
 <script setup lang="ts">
 /* eslint-disable style/max-statements-per-line */
-import type { LazyJsonValueNode } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
+import type { LazyJsonNodeDescriptor, LazyJsonValueNode } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
 
+import { Braces, Copy, KeyRound } from 'lucide-vue-next'
+import {
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuPortal,
+  ContextMenuRoot,
+  ContextMenuTrigger,
+} from 'reka-ui'
 import { computed, provide, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 
 import {
   DEFAULT_JSON_TREE_EAGER_LIMIT,
@@ -34,6 +43,17 @@ const allocatedNodes = ref(1)
 const command = ref<'expand-visible' | 'collapse-all' | null>(null)
 const commandRevision = ref(0)
 const notice = ref<string | null>(null)
+const contextNode = ref<LazyJsonNodeDescriptor | null>(null)
+const copyLabels = {
+  key: 'Скопировать ключ',
+  value: 'Скопировать значение',
+  entry: 'Скопировать ключ и значение',
+} as const
+const copySuccessLabels = {
+  key: 'Ключ скопирован',
+  value: 'Значение скопировано',
+  entry: 'Ключ и значение скопированы',
+} as const
 const eagerLimit = ref(normalizePositiveInteger(props.eagerLimit, DEFAULT_JSON_TREE_EAGER_LIMIT))
 const pageSize = ref(normalizePositiveInteger(props.pageSize, DEFAULT_JSON_TREE_PAGE_SIZE))
 const maxMountedNodes = ref(normalizePositiveInteger(props.maxMountedNodes, DEFAULT_JSON_TREE_NODE_BUDGET))
@@ -71,6 +91,49 @@ function collapseAll(): void {
   notice.value = null
 }
 
+function closeContextMenu(open: boolean): void {
+  if (!open) { contextNode.value = null }
+}
+
+async function copyContextNode(mode: 'key' | 'value' | 'entry'): Promise<void> {
+  const node = contextNode.value
+  if (!node) { return }
+
+  try {
+    const value = copyableNodeValue(node)
+    const text = mode === 'key'
+      ? node.key
+      : mode === 'value'
+        ? serializeClipboardValue(value, false)
+        : `${JSON.stringify(node.key)}: ${serializeClipboardValue(value, true)}`
+    await navigator.clipboard.writeText(text)
+    toast.success(copySuccessLabels[mode])
+  }
+  catch {
+    toast.error('Не удалось скопировать данные JSON')
+  }
+}
+
+function copyableNodeValue(node: LazyJsonNodeDescriptor): unknown {
+  if (node.kind === 'value') { return node.value }
+  const source = node.source
+  if (Array.isArray(source)) { return source.slice(node.start, node.end) }
+
+  const keys = (node.keys ?? Object.keys(source)).slice(node.start, node.end)
+  return Object.fromEntries(keys.map(key => [key, source[key]]))
+}
+
+function serializeClipboardValue(value: unknown, quoteStrings: boolean): string {
+  if (typeof value === 'string') { return quoteStrings ? JSON.stringify(value) : value }
+  if (value instanceof Date) { return quoteStrings ? JSON.stringify(value.toISOString()) : value.toISOString() }
+  if (value === undefined) { return 'undefined' }
+  if (typeof value === 'bigint') { return `${value}n` }
+  if (typeof value === 'function' || typeof value === 'symbol') { return String(value) }
+
+  const serialized = JSON.stringify(value, null, 2)
+  return serialized ?? String(value)
+}
+
 function normalizeRootValue(value: unknown): unknown {
   if (typeof value === 'symbol' || typeof value === 'function') { return String(value) }
   return value
@@ -84,12 +147,48 @@ defineExpose({ expandAll, collapseAll })
 </script>
 
 <template>
-  <div class="source-json-tree">
-    <SourceJsonTreeNode
-      :node="rootNode"
-      :depth="0"
-      :initial-depth="Math.max(0, deep)"
-    />
+  <div class="source-json-tree" data-copyable>
+    <ContextMenuRoot @update:open="closeContextMenu">
+      <ContextMenuTrigger as-child>
+        <SourceJsonTreeNode
+          :node="rootNode"
+          :depth="0"
+          :initial-depth="Math.max(0, deep)"
+          @open-context-menu="contextNode = $event"
+        />
+      </ContextMenuTrigger>
+
+      <ContextMenuPortal>
+        <ContextMenuContent
+          v-if="contextNode"
+          class="z-[10001] min-w-52 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          :collision-padding="8"
+        >
+          <ContextMenuItem
+            class="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+            @select="copyContextNode('key')"
+          >
+            <KeyRound class="size-3.5 text-muted-foreground" />
+            {{ copyLabels.key }}
+          </ContextMenuItem>
+          <ContextMenuItem
+            class="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+            @select="copyContextNode('value')"
+          >
+            <Copy class="size-3.5 text-muted-foreground" />
+            {{ copyLabels.value }}
+          </ContextMenuItem>
+          <ContextMenuItem
+            class="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+            @select="copyContextNode('entry')"
+          >
+            <Braces class="size-3.5 text-muted-foreground" />
+            {{ copyLabels.entry }}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenuPortal>
+    </ContextMenuRoot>
+
     <div v-if="notice" class="source-json-tree__notice" role="status">
       {{ notice }}
     </div>

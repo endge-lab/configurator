@@ -24,8 +24,13 @@ const props = defineProps<{
   initialDepth: number
 }>()
 
-const controller = inject(LazyJsonTreeControllerKey)
-if (!controller) { throw new Error('[SourceJsonTreeNode] Lazy tree controller is missing.') }
+const emit = defineEmits<{
+  openContextMenu: [node: LazyJsonNodeDescriptor]
+}>()
+
+const injectedController = inject(LazyJsonTreeControllerKey)
+if (!injectedController) { throw new Error('[SourceJsonTreeNode] Lazy tree controller is missing.') }
+const controller = injectedController
 
 const value = computed(() => lazyJsonNodeValue(props.node))
 const circular = computed(() => props.node.kind === 'value'
@@ -83,8 +88,10 @@ onBeforeUnmount(() => {
   releaseChildren()
 })
 
-function toggle(): void {
+function toggle(event?: MouseEvent): void {
   if (!container.value) { return }
+  const selection = event ? window.getSelection() : null
+  if (selection && !selection.isCollapsed) { return }
   if (expanded.value) {
     releaseChildren()
     expanded.value = false
@@ -137,15 +144,18 @@ function releaseChildren(): void {
 
 <template>
   <div class="source-json-tree-node">
-    <button
-      type="button"
+    <div
       class="source-json-tree-node__row"
       :class="{ 'source-json-tree-node__row--scalar': !container }"
       :style="{ paddingLeft: `${8 + depth * 16}px` }"
+      :role="container ? 'button' : undefined"
+      :tabindex="container ? 0 : undefined"
       :aria-expanded="container ? expanded : undefined"
       :aria-label="container ? `${keyLabel}: ${summary}` : undefined"
-      :disabled="!container"
-      @click="toggle"
+      @click="toggle($event)"
+      @keydown.enter.prevent="toggle()"
+      @keydown.space.prevent="toggle()"
+      @contextmenu="emit('openContextMenu', node)"
     >
       <span class="source-json-tree-node__caret">
         <ChevronDown v-if="container && expanded" class="size-3.5" />
@@ -157,7 +167,7 @@ function releaseChildren(): void {
         {{ summary }}
       </span>
       <span v-else class="source-json-tree-node__value" :data-tone="scalarTone">{{ scalarValue }}</span>
-    </button>
+    </div>
 
     <div v-if="expanded" class="source-json-tree-node__children">
       <SourceJsonTreeNode
@@ -166,6 +176,7 @@ function releaseChildren(): void {
         :node="child"
         :depth="depth + 1"
         :initial-depth="initialDepth"
+        @open-context-menu="emit('openContextMenu', $event)"
       />
     </div>
   </div>
@@ -198,11 +209,7 @@ function releaseChildren(): void {
 }
 
 .source-json-tree-node__row--scalar {
-  cursor: default;
-}
-
-.source-json-tree-node__row:disabled {
-  opacity: 1;
+  cursor: text;
 }
 
 .source-json-tree-node__caret {

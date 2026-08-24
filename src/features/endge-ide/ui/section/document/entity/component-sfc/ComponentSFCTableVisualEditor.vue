@@ -227,7 +227,7 @@ const tableSection = useSmartTabSelection(
 const columnSection = useSmartTabSelection(
   'component-sfc.visual.column-section',
   'general',
-  ['general', 'data', 'editing', 'events', 'sorting'] as const,
+  ['general', 'data', 'editing', 'events', 'sorting', 'cell-menu'] as const,
 )
 const editingSection = useSmartTabSelection(
   'component-sfc.visual.column-editing-section',
@@ -249,7 +249,7 @@ const tableSections = [
   { id: 'visibility', label: 'Видимость', icon: Eye, description: 'Управляет колонками, видимыми при первом открытии таблицы; ту же настройку можно менять на вкладке «Колонки».' },
   { id: 'pinning', label: 'Закрепления', icon: Pin, description: 'Задаёт колонки, закреплённые слева или справа по умолчанию; порядок берётся со вкладки «Колонки».' },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Строки сортировки идут в порядке приоритета; поля и comparator задаются в настройках колонок.' },
-  { id: 'menus', label: 'Меню', icon: SquareMenu, description: 'Настройка пунктов меню заголовков колонок и строк таблицы.' },
+  { id: 'menus', label: 'Меню', icon: SquareMenu, description: 'Настройка меню заголовков колонок и меню ячеек таблицы по умолчанию.' },
   { id: 'metadata', label: 'Метаданные', icon: FileJson2, description: 'Редактирование metadata компонента как JSON-объекта.' },
 ] as const
 const columnSections = [
@@ -258,6 +258,7 @@ const columnSections = [
   { id: 'editing', label: 'Редактирование', icon: PencilLine, description: 'Editor, trigger входа и реакция после изменения.' },
   { id: 'events', label: 'События', icon: Radio, description: 'Обработчики событий ячейки получают row, rowIndex, rowKey, columnKey, value и event().' },
   { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Цепочки сравниваются последовательно. Используйте dot paths без префикса row; если список пуст, используется key колонки.' },
+  { id: 'cell-menu', label: 'Меню ячеек', icon: SquareMenu, description: 'Наследование, переопределение или отключение Table > CellMenu для ячеек выбранной колонки.' },
 ] as const
 const editingSections = [
   { id: 'editor', label: 'Редактор', description: 'Включение редактирования, выбор editor-а и его входные параметры.' },
@@ -647,7 +648,6 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
     case 'menus': {
       const count = props.projection.menus.column.items.length
         + props.projection.menus.row.items.length
-        + props.projection.columns.reduce((total, column) => total + column.cellMenu.items.length, 0)
       return count ? String(count) : null
     }
     case 'metadata':
@@ -2835,32 +2835,6 @@ onBeforeUnmount(() => {
                         />
                       </TabsContent>
                     </Tabs>
-
-                    <div v-if="selectedColumn" class="space-y-2 border-t pt-4">
-                      <div>
-                        <h3 class="text-sm font-medium">
-                          Меню ячеек выбранной колонки
-                        </h3>
-                        <p class="text-xs text-muted-foreground">
-                          Inherit использует Table &gt; CellMenu, Custom заменяет его, None отключает меню в колонке.
-                        </p>
-                      </div>
-                      <ComponentSFCTableMenuPreviewEditor
-                        kind="row"
-                        :menu="selectedColumn.cellMenu"
-                        :actions="projection.menuActions"
-                        allow-inherit
-                        @set-mode="value => setMenuMode('row', value, selectedColumn!.index)"
-                        @create-item="draft => createMenuItem('row', draft, selectedColumn!.index)"
-                        @add-separator="addMenuNode('row', 'separator', selectedColumn!.index)"
-                        @move-item="payload => moveMenuItem('row', payload, selectedColumn!.index)"
-                        @remove-item="index => removeMenuNode('row', index, selectedColumn!.index)"
-                        @save-label="update => saveMenuLabel('row', update, selectedColumn!.index)"
-                        @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumn!.index)"
-                        @save-details="payload => saveMenuDetails('row', payload, selectedColumn!.index)"
-                        @open-source="item => openMenuSource('row', item, selectedColumn!.index)"
-                      />
-                    </div>
                   </section>
 
                   <section v-show="tableSection === 'sorting'" class="space-y-3">
@@ -3923,6 +3897,24 @@ onBeforeUnmount(() => {
                     </aside>
                   </div>
                 </section>
+
+                  <section v-show="columnSection === 'cell-menu'" class="px-5 py-4">
+                    <ComponentSFCTableMenuPreviewEditor
+                      kind="row"
+                      :menu="selectedColumn.cellMenu"
+                      :actions="projection.menuActions"
+                      allow-inherit
+                      @set-mode="value => setMenuMode('row', value, selectedColumn.index)"
+                      @create-item="draft => createMenuItem('row', draft, selectedColumn.index)"
+                      @add-separator="addMenuNode('row', 'separator', selectedColumn.index)"
+                      @move-item="payload => moveMenuItem('row', payload, selectedColumn.index)"
+                      @remove-item="index => removeMenuNode('row', index, selectedColumn.index)"
+                      @save-label="update => saveMenuLabel('row', update, selectedColumn.index)"
+                      @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumn.index)"
+                      @save-details="payload => saveMenuDetails('row', payload, selectedColumn.index)"
+                      @open-source="item => openMenuSource('row', item, selectedColumn.index)"
+                    />
+                  </section>
                   </template>
                 </ScrollArea>
               </div>
