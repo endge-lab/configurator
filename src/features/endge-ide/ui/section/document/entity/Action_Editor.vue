@@ -1,100 +1,65 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
-
 import { Endge } from '@endge/core'
-import { Loader2, Plus, Save, Settings2, Trash2, Workflow } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-
+import { Code2, FileJson, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import ActionSourceEditor from '@/features/endge-ide/ui/components/ActionSourceEditor.vue'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import EndgeFlowEditor from '@/features/endge-ide/ui/section/action/EndgeFlowEditor.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
-const props = defineProps<{
-  tabContext?: { editor?: RActionEditor }
-}>()
-
-const uiText = {
-  tabGeneral: 'Основное',
-  tabFlow: 'Flow',
-  identity: 'Идентификатор',
-  displayName: 'Название',
-  description: 'Описание',
-  active: 'Активно',
-  steps: 'Количество шагов',
-}
-
-const editor = computed<RActionEditor | null>(
-  () => props.tabContext?.editor ?? null,
-)
-const flowEditorModel = computed<RActionEditor>({
-  get: () => editor.value!,
-  set: (value) => {
-    if (editor.value && value && value !== editor.value) {
-      Object.assign(editor.value, value)
-    }
-  },
-})
-const activeTab = useSmartTabSelection('editor.active-tab', 'general', ['general', 'flow'] as const)
-const overrideVersion = ref(0)
-const unsubscribeActions = Endge.actions.subscribe(() => {
-  overrideVersion.value += 1
-  const effective = Endge.actions.listResolved().find(action => action.identity === editor.value?.identity)
-  if (!editor.value) return
-  editor.value.overridden = effective?.overridden === true
-  editor.value.effectiveProviderKey = effective?.effectiveProviderKey ?? null
-  editor.value.effectiveProviderOrigin = effective?.effectiveProviderOrigin?.kind ?? null
-  editor.value.bindingScope = effective?.bindingScope ?? null
-  if (editor.value.overridden && activeTab.value === 'flow')
-    activeTab.value = 'general'
-})
-onBeforeUnmount(unsubscribeActions)
-const isOverridden = computed(() => {
-  void overrideVersion.value
-  return editor.value?.overridden === true
-})
-watch(isOverridden, (overridden) => {
-  if (overridden && activeTab.value === 'flow')
-    activeTab.value = 'general'
-}, { immediate: true })
-const stepsCount = computed(() => editor.value?.definition?.nodes?.length ?? 0)
-const tabButtons = computed(() => [
-  { value: 'general' as const, icon: Settings2, label: uiText.tabGeneral },
-  ...(!isOverridden.value
-    ? [{ value: 'flow' as const, icon: Workflow, label: uiText.tabFlow }]
-    : []),
-])
-
-async function save(): Promise<void> {
-  await EndgeIDE.tabs.save()
-}
+const props = defineProps<{ tabContext?: { editor?: RActionEditor } }>()
+const editor = computed(() => props.tabContext?.editor ?? null)
+const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source', 'artifact', 'diagnostics'] as const)
+const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('action', editor.value))
+const artifactJson = computed(() => JSON.stringify(editor.value ? Endge.source.compile('action', editor.value.source).artifact ?? null : null, null, 2))
+const tabGroups = [
+  [
+    { value: 'general', icon: Settings2, label: 'Основное' },
+    { value: 'source', icon: Code2, label: 'Source' },
+  ],
+  [
+    { value: 'artifact', icon: FileJson, label: 'Артефакт' },
+    { value: 'diagnostics', icon: TriangleAlert, label: 'Диагностика' },
+  ],
+] as const
 
 function addTarget(): void {
-  if (!editor.value || isOverridden.value) return
+  if (!editor.value || editor.value.readOnly) return
   editor.value.target = [...(editor.value.target ?? []), { type: '' }]
 }
-
 function removeTarget(index: number): void {
-  if (!editor.value || isOverridden.value) return
+  if (!editor.value || editor.value.readOnly) return
   const next = [...(editor.value.target ?? [])]
   next.splice(index, 1)
   editor.value.target = next.length ? next : null
+}
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current || current.readOnly) return
+  current.refreshDiagnostics()
+  const error = current.diagnostics.find(item => item.severity === 'error')
+  if (error) {
+    toast.error('Action не сохранён', { description: error.message })
+    activeTab.value = 'source'
+    return
+  }
+  await EndgeIDE.tabs.save()
 }
 </script>
 
@@ -103,150 +68,72 @@ function removeTarget(index: number): void {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.displayName"
+    document-type="action"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip v-for="item in tabButtons" :key="item.value">
-            <TooltipTrigger as-child>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                :class="
-                  activeTab === item.value
-                    ? 'bg-editor-control shadow-sm'
-                    : 'text-muted-foreground'
-                "
-                :aria-label="item.label"
-                @click="activeTab = item.value"
-              >
-                <component :is="item.icon" class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{{ item.label }}</TooltipContent>
-          </Tooltip>
-        </div>
-
+        <template v-for="(group, groupIndex) in tabGroups" :key="groupIndex">
+          <Separator v-if="groupIndex" orientation="vertical" class="mx-0.5 h-5" />
+          <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+            <Tooltip v-for="item in group" :key="item.value">
+              <TooltipTrigger as-child>
+                <Button type="button" size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === item.value ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" :aria-label="item.label" @click="activeTab = item.value">
+                  <component :is="item.icon" class="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ item.label }}</TooltipContent>
+            </Tooltip>
+          </div>
+        </template>
         <Separator orientation="vertical" class="mx-0.5 h-5" />
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                :disabled="EndgeIDE.busy.value"
-                aria-label="Сохранить"
-                @click="save"
-              >
-                <Loader2
-                  v-if="EndgeIDE.busy.value"
-                  class="size-4 animate-spin"
-                />
-                <Save v-else class="size-4" />
+              <Button type="button" size="icon" variant="ghost" class="h-7 w-7" :disabled="EndgeIDE.busy.value || editor.readOnly" aria-label="Сохранить Action" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" /><Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ editor.readOnly ? 'Code-owned Action доступен только для чтения' : 'Сохранить' }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
     </template>
 
-    <template v-if="activeTab === 'general'">
-      <ScrollArea class="h-full min-h-0 flex-1">
-        <div class="mx-auto max-w-3xl space-y-4 p-6">
-          <DocumentIdField :document-id="editor.id" />
-          <div
-            v-if="isOverridden"
-            class="rounded-md border border-violet-300/60 bg-violet-500/10 p-3 text-sm"
-          >
-            <div class="font-medium">Логика Action переопределена локальным provider</div>
-            <div class="mt-1 text-muted-foreground">
-              {{ editor.effectiveProviderKey }} · {{ editor.effectiveProviderOrigin }} · {{ editor.bindingScope }}
-            </div>
-            <div class="mt-1 text-muted-foreground">
-              Default: {{ JSON.stringify(editor.defaultImplementation) }}
-            </div>
-            <div class="mt-1 text-muted-foreground">
-              Identity, target и сохранённый Flow доступны только для чтения.
-            </div>
-          </div>
-          <div class="space-y-2">
-            <Label>{{ uiText.identity }}</Label>
-            <DocumentIdentityInput
-              v-model="editor!.identity"
-              :disabled="isOverridden"
-              placeholder="app.configurator.ready"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label>{{ uiText.displayName }}</Label>
-            <Input
-              v-model="editor!.displayName"
-              placeholder="Configurator ready"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label>{{ uiText.description }}</Label>
-            <Textarea
-              :model-value="editor?.description ?? ''"
-              placeholder="Описание действия"
-              @update:model-value="
-                (value: string | number) =>
-                  editor && (editor.description = String(value || '') || null)
-              "
-            />
-          </div>
-
-          <div class="space-y-2 rounded-lg border p-3">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <Label>Runtime target</Label>
-                <p class="text-xs text-muted-foreground">Селекторы являются альтернативами; один запуск получает одну цель.</p>
-              </div>
-              <Button v-if="!isOverridden" type="button" size="sm" variant="outline" @click="addTarget">
-                <Plus class="mr-1 size-3.5" /> Добавить
-              </Button>
-            </div>
-            <div v-if="!editor.target?.length" class="text-sm text-muted-foreground">Target не требуется</div>
-            <div v-for="(target, index) in editor.target ?? []" :key="index" class="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
-              <Input v-model="target.type" :disabled="isOverridden" placeholder="component.table" />
-              <Input v-model="target.identity" :disabled="isOverridden" placeholder="identity (optional)" />
-              <Button v-if="!isOverridden" type="button" size="icon" variant="ghost" @click="removeTarget(index)">
-                <Trash2 class="size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Checkbox
-              :checked="editor?.active ?? true"
-              @update:checked="
-                (value: boolean) => editor && (editor.active = value)
-              "
-            />
-            <Label class="text-sm">
-              {{ uiText.active }}
-            </Label>
-          </div>
-          <div class="space-y-2">
-            <Label>{{ uiText.steps }}</Label>
-            <Input :model-value="String(stepsCount)" disabled />
-          </div>
-        </div>
-      </ScrollArea>
+    <template #right>
+      <SourceFormatButton v-if="activeTab === 'source' && !editor.readOnly" @click="sourceEditorRef?.formatDocument()" />
     </template>
 
-    <div v-else class="flex h-full min-h-0 flex-col p-4">
-      <EndgeFlowEditor
-        v-model="flowEditorModel"
-        class="h-full min-h-0 flex-1"
-      />
+    <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-auto p-6">
+      <div class="max-w-3xl space-y-5">
+        <DocumentIdField :document-id="editor.id" />
+        <div v-if="editor.readOnly" class="rounded-md border bg-muted/40 p-3 text-sm">
+          Code-owned Action · {{ editor.origin.kind }} · owner: {{ JSON.stringify(editor.owner) }} · provider: {{ editor.effectiveProviderKey ?? 'не установлен' }}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2"><Label>Название</Label><Input v-model="editor.displayName" :disabled="editor.readOnly" /></div>
+          <div class="space-y-2"><Label>Identity</Label><DocumentIdentityInput v-model="editor.identity" :disabled="editor.readOnly" /></div>
+        </div>
+        <div class="space-y-2"><Label>Описание</Label><Textarea v-model="editor.description" :disabled="editor.readOnly" /></div>
+        <div class="space-y-2"><Label>Source version</Label><Input v-model.number="editor.sourceVersion" type="number" min="1" :disabled="editor.readOnly" /></div>
+        <div class="space-y-3 rounded-lg border p-3">
+          <div class="flex items-center justify-between"><Label>Runtime targets</Label><Button v-if="!editor.readOnly" size="sm" variant="outline" @click="addTarget"><Plus class="mr-1 size-3.5" />Добавить</Button></div>
+          <div v-for="(target, index) in editor.target ?? []" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <Input v-model="target.type" :disabled="editor.readOnly" placeholder="component.table" />
+            <Input v-model="target.identity" :disabled="editor.readOnly" placeholder="optional identity" />
+            <Button v-if="!editor.readOnly" size="icon" variant="ghost" @click="removeTarget(index)"><Trash2 class="size-4" /></Button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2"><Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>Активно</Label></div>
+      </div>
     </div>
+
+    <div v-else-if="activeTab === 'source'" class="flex min-h-0 flex-1 flex-col">
+      <ActionSourceEditor ref="sourceEditorRef" :model-value="editor.source" :read-only="editor.readOnly" @update:model-value="editor.applySourceText" />
+    </div>
+    <pre v-else-if="activeTab === 'artifact'" class="min-h-0 flex-1 overflow-auto bg-muted/30 p-4 text-xs">{{ artifactJson }}</pre>
+    <EntityProblemsPanel v-else-if="diagnosticsEntityRef" :entity-ref="diagnosticsEntityRef" class="min-h-0 flex-1" />
   </SourceDocumentEditorShell>
 </template>

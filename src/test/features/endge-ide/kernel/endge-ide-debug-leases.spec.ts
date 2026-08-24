@@ -42,10 +42,6 @@ const harness = vi.hoisted(() => {
       setRunRuntimeHandler: method(),
       setReturnToProjectHandler: method(),
     },
-    flowCatalog: {
-      init: method(),
-      reset: method(),
-    },
     runtimePreview: {
       init: method(),
       reset: method(),

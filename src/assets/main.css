@@ -5,7 +5,6 @@
 
 /* Endge */
 @import "./endge.scss";
-@import "../features/endge-ide/assets/endge-flow-editor.css";
 
 /* Table */
 @import "./sections/table/table.scss";

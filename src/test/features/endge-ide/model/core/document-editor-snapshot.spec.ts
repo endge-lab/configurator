@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { EndgeFlowEditorModel } from '@/features/endge-ide/domain/action-flow/EndgeFlowEditorModel'
 import {
   createDocumentEditorSnapshot,
   DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS,
@@ -71,25 +70,14 @@ describe('document editor snapshot', () => {
     expect(createDocumentEditorSnapshot(editor)).toBe(saved)
   })
 
-  it('uses the live Action flow definition instead of its last synchronized copy', () => {
-    const flowEditor = new EndgeFlowEditorModel()
-    flowEditor.fillFromDefinition({ version: 1, entrypoint: 'entry', nodes: [], edges: [] })
+  it('tracks canonical Action Source directly', () => {
     const editor = {
       constructor: { name: 'RActionEditor' },
       identity: 'orders.refresh',
-      overridden: false,
-      definition: { version: 1, entrypoint: 'entry', nodes: [], edges: [] },
-      flowEditor,
+      source: `defineAction({ steps: { result: input() } })`,
     }
     const saved = createDocumentEditorSnapshot(editor)
-
-    flowEditor.fillFromDefinition({
-      version: 1,
-      entrypoint: 'entry',
-      nodes: [{ id: 'entry', title: 'Entry', blockId: 'flow.entry', kind: 'action' }],
-      edges: [],
-    })
-
+    editor.source = `defineAction({ steps: { result: input().trim() } })`
     expect(createDocumentEditorSnapshot(editor)).not.toBe(saved)
   })
 })

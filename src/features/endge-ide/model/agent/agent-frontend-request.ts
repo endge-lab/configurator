@@ -740,7 +740,6 @@ export async function executeDuplicateDocument(
 const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "dsl-playground": () => EndgeIDE.tabs.openDSLPlayground(),
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
-  "action-playgrounds": () => EndgeIDE.tabs.openActionPlaygroundsSingleton(),
   demonstration: () => EndgeIDE.tabs.openDemonstrationTab(),
 };
 

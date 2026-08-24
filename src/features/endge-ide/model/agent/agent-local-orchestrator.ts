@@ -144,11 +144,6 @@ const SINGLETON_ALIASES: Array<{
     summary: "Открываю вкладку DSL Playground.",
   },
   {
-    viewId: "action-playgrounds",
-    patterns: [/\baction[\s-]*playgrounds?\b/i],
-    summary: "Открываю вкладку Action Playgrounds.",
-  },
-  {
     viewId: "demonstration",
     patterns: [/\bдемонстрац/i],
     summary: "Открываю вкладку Demonstration.",

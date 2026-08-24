@@ -1,86 +1,72 @@
-import type { ActionDefinition, ActionImplementation, ActionTargetSelector, EndgeFlowDefinition, ImplementationBindingScope, RAction } from '@endge/core'
-
+import type { ActionImplementation, ActionTargetSelector, EntityOrigin, ImplementationBindingScope, ProgramDiagnostic, RAction } from '@endge/core'
 import { Endge } from '@endge/core'
 
-import { EndgeFlowEditorModel } from '@/features/endge-ide/domain/action-flow/EndgeFlowEditorModel'
-
-function normalizeFlowDefinition(rawDefinition: unknown): EndgeFlowDefinition {
-  if (!rawDefinition || typeof rawDefinition !== 'object' || Array.isArray(rawDefinition)) {
-    return {
-      version: 1,
-      entrypoint: 'flow-entry',
-      nodes: [],
-      edges: [],
-    }
-  }
-
-  const flow = rawDefinition as Record<string, unknown>
-  return {
-    version: Number(flow.version ?? 1) || 1,
-    entrypoint: String(flow.entrypoint ?? 'flow-entry').trim() || 'flow-entry',
-    nodes: Array.isArray(flow.nodes) ? flow.nodes as EndgeFlowDefinition['nodes'] : [],
-    edges: Array.isArray(flow.edges) ? flow.edges as EndgeFlowDefinition['edges'] : [],
-  }
-}
-
+/** Source-like editor state for a persisted or read-only code-owned Action. */
 export class RActionEditor {
-  id!: number
+  id!: string | number
   identity!: string
   displayName!: string
-  description: string | null = null
-  active: boolean = true
+  description: string = ''
+  active = true
+  source = ''
+  sourceVersion = 1
   target: ActionTargetSelector[] | null = null
-  defaultImplementation: ActionImplementation = { kind: 'flow' }
+  defaultImplementation: ActionImplementation = { kind: 'source' }
+  origin: EntityOrigin = { kind: 'storage' }
+  owner: unknown = null
   overridden = false
   effectiveProviderKey: string | null = null
   effectiveProviderOrigin: string | null = null
   bindingScope: ImplementationBindingScope | null = null
-  definition: ActionDefinition = {
-    version: 1,
-    entrypoint: 'flow-entry',
-    nodes: [],
-    edges: [],
-  }
+  diagnostics: ProgramDiagnostic[] = []
 
-  flowEditor: EndgeFlowEditorModel = new EndgeFlowEditorModel()
+  get readOnly(): boolean { return this.origin.kind !== 'storage' }
 
   fillFromSource(source: RAction): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
-    this.displayName = String(source.displayName ?? source.name ?? '').trim()
-    this.description = source.description ?? null
+    this.displayName = String(source.displayName ?? source.name ?? this.identity)
+    this.description = String(source.description ?? '')
     this.active = source.active !== false
+    this.source = String(source.source ?? '')
+    this.sourceVersion = Math.max(1, Number(source.sourceVersion ?? 1) || 1)
     this.target = source.target?.map(selector => ({ ...selector })) ?? null
     this.defaultImplementation = { ...source.defaultImplementation }
-    const resolved = Endge.actions.listResolved().find(action => action.identity === source.identity)
+    this.origin = source.origin
+    this.owner = source.owner ?? null
+    this.refreshEffectiveImplementation()
+    this.refreshDiagnostics()
+  }
+
+  updateSource(source: RAction): void {
+    if (this.readOnly) return
+    source.id = this.id as any
+    source.identity = this.identity.trim()
+    source.name = this.displayName.trim() || source.identity
+    source.displayName = source.name
+    source.description = this.description.trim() || null
+    source.active = this.active
+    source.source = this.source
+    source.sourceVersion = Math.max(1, Number(this.sourceVersion) || 1)
+    source.target = this.target?.map(selector => ({ ...selector })) ?? null
+  }
+
+  applySourceText(value: string): void {
+    if (this.readOnly) return
+    this.source = value
+    this.refreshDiagnostics()
+  }
+
+  refreshEffectiveImplementation(): void {
+    const resolved = Endge.actions.listResolved().find(action => action.identity === this.identity)
     this.overridden = resolved?.overridden === true
     this.effectiveProviderKey = resolved?.effectiveProviderKey ?? null
     this.effectiveProviderOrigin = resolved?.effectiveProviderOrigin?.kind ?? null
     this.bindingScope = resolved?.bindingScope ?? null
-    this.definition = normalizeFlowDefinition(source.definition)
-    this.rebuildFlowEditorFromDefinition()
   }
 
-  updateSource(source: RAction): void {
-    if (!this.overridden)
-      this.syncDefinitionFromFlowEditor()
-    source.id = this.id
-    source.identity = this.identity
-    source.name = this.displayName
-    source.displayName = this.displayName
-    source.description = this.description ?? null
-    if (!this.overridden) {
-      source.target = this.target?.map(selector => ({ ...selector })) ?? null
-      source.definition = normalizeFlowDefinition(this.definition)
-    }
-    source.active = this.active
-  }
-
-  rebuildFlowEditorFromDefinition(): void {
-    this.flowEditor.fillFromDefinition(normalizeFlowDefinition(this.definition))
-  }
-
-  syncDefinitionFromFlowEditor(): void {
-    this.definition = this.flowEditor.toDefinition()
+  refreshDiagnostics(): void {
+    const result = Endge.source.validate('action', this.source)
+    this.diagnostics = (result.diagnostics ?? []) as ProgramDiagnostic[]
   }
 }

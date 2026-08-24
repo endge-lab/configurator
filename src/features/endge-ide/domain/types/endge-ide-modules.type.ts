@@ -1,7 +1,6 @@
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/busy/EndgeIDEBusy_Module'
 import type { EndgeIDEDemonstration_Module } from '@/features/endge-ide/model/modules/demonstration/EndgeIDEDemonstration_Module'
 import type { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/model/modules/domain-drag/EndgeIDEDomainDrag_Module'
-import type { EndgeIDEFlowCatalog_Module } from '@/features/endge-ide/model/modules/flow-catalog/EndgeIDEFlowCatalog_Module'
 import type { EndgeIDEHotkeys_Module } from '@/features/endge-ide/model/modules/hotkeys/EndgeIDEHotkeys_Module'
 import type { EndgeIDEIntegrations_Module } from '@/features/endge-ide/model/modules/integrations/EndgeIDEIntegrations_Module'
 import type { EndgeIDEModals_Module } from '@/features/endge-ide/model/modules/modals/EndgeIDEModals_Module'
@@ -30,7 +29,6 @@ export interface EndgeIDEModules {
   tabs: EndgeIDETabs_Module
   widgets: EndgeIDEWidgets_Module
   hotkeys: EndgeIDEHotkeys_Module
-  flowCatalog: EndgeIDEFlowCatalog_Module
   runtimePreview: EndgeIDERuntimePreview_Module
   problems: EndgeIDEProblems_Module
   sourceEditorDialogs: SourceEditorDialogs_Module

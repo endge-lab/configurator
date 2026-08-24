@@ -52,18 +52,9 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
   return editor
 }
 
-function captureActionEditorState(editor: Record<string, unknown>): unknown {
-  const state = { ...editor }
-  const flowEditor = editor.flowEditor as { toDefinition?: () => unknown } | null | undefined
-  if (editor.overridden !== true && typeof flowEditor?.toDefinition === 'function') {
-    state.definition = flowEditor.toDefinition()
-  }
-  return state
-}
-
 /** Explicit coverage registry for every persisted document editor family. */
 export const DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS: ReadonlyMap<string, SnapshotAdapter> = new Map([
-  ['RActionEditor', captureActionEditorState],
+  ['RActionEditor', captureDefaultEditorState],
   ...DEFAULT_EDITOR_NAMES.map(name => [name, captureDefaultEditorState] as const),
 ])
 

@@ -80,10 +80,6 @@ function openSFCPlayground(): void {
   tabs.openSFCPlayground()
 }
 
-function openActionPlaygroundsSingleton(): void {
-  tabs.openActionPlaygroundsSingleton()
-}
-
 function toggleProblems(): void {
   toggleWidget(ENDGE_IDE_PROBLEMS_WIDGET_ID)
 }
@@ -216,9 +212,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DropdownMenuItem @click="openActionPlaygroundsSingleton">
-            Action Playgrounds
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

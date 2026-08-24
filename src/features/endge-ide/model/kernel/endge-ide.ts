@@ -47,10 +47,6 @@ export class EndgeIDE {
     return this._requireModules().hotkeys
   }
 
-  public static get flowCatalog() {
-    return this._requireModules().flowCatalog
-  }
-
   public static get runtimePreview() {
     return this._requireModules().runtimePreview
   }
@@ -114,7 +110,6 @@ export class EndgeIDE {
       modules.sourceEditorDialogs.reset()
       modules.authProfileEditors.reset()
       modules.runtimePreview.reset()
-      modules.flowCatalog.reset()
       modules.hotkeys.reset()
       modules.tabs.reset()
       if (!isIDEWidgetsDisabled()) {
@@ -154,7 +149,6 @@ export class EndgeIDE {
       modules.tabs.init()
       this._configureHotkeys()
       modules.hotkeys.init()
-      modules.flowCatalog.init()
       modules.runtimePreview.init()
       modules.problems.init()
       await modules.integrations.init()

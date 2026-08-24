@@ -49,6 +49,7 @@ export interface UseEndgeSourceMonacoOptions {
   onReady?: (editor: Monaco.editor.IStandaloneCodeEditor) => void
   extensions?: readonly ScriptEditorExtension[]
   viewStateKey?: string
+  readOnly?: boolean
 }
 
 export type SourceEditorRefreshTrigger = (refresh: () => void) => () => void
@@ -238,6 +239,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       formatOnType: true,
       scrollBeyondLastLine: true,
       padding: { bottom: 10 },
+      readOnly: options.readOnly === true,
     })
     viewState.attach(editor.value)
     semanticHighlights = editor.value.createDecorationsCollection()

@@ -102,7 +102,6 @@ const Navigation_Editor = defineAsyncComponent(() => import('@/features/endge-id
 const Project_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'))
 const Filter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'))
 const Workspace_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'))
-const ActionPlaygrounds_Singleton = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/singleton/ActionPlaygrounds_Singleton.vue'))
 const DSL_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'))
 const SFC_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'))
 const DemonstrationTab_View = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'))
@@ -114,7 +113,6 @@ const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
-const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
 
@@ -510,19 +508,6 @@ export class EndgeIDETabs_Module {
     this.openTab(tabRef)
   }
 
-  public openActionPlaygroundsSingleton(): void {
-    const tabRef: SmartTabRef = {
-      id: 'action-playgrounds-singleton',
-      label: 'Action Playgrounds',
-      viewId: VIEW_ID_ACTION_PLAYGROUNDS,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-route-square text-sky-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
   /** Открыть вкладку «Демонстрация» в единственном экземпляре. */
   public openDemonstrationTab(): void {
     const tabRef: SmartTabRef = {
@@ -718,10 +703,6 @@ export class EndgeIDETabs_Module {
     }))
     this._tabsApi.viewRegistry.register(VIEW_ID_SFC_PLAYGROUND, (): SmartTabViewResolved => ({
       component: markRaw(SFC_Playground_Widget),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_ACTION_PLAYGROUNDS, (): SmartTabViewResolved => ({
-      component: markRaw(ActionPlaygrounds_Singleton),
       props: {},
     }))
     this._tabsApi.viewRegistry.register(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({
