@@ -69,6 +69,7 @@ const SOURCE_DOCUMENT_TYPES = new Set([
   'data-view',
   'filter',
   'computation',
+  'action',
   'style',
   'component-sfc',
 ])
@@ -369,7 +370,9 @@ function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDepe
   }
 
   return {
-    dependencies: extractArtifactDependencies(documentType, result.artifact, input.draft),
+    dependencies: documentType === 'action'
+      ? dedupeDependencies(result.dependencies ?? [])
+      : extractArtifactDependencies(documentType, result.artifact, input.draft),
     diagnostics,
     compilable: true,
   }

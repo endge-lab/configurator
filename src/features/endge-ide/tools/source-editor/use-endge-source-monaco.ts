@@ -69,6 +69,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   let contentDisposable: Monaco.IDisposable | null = null
   let referenceNavigationDisposable: Monaco.IDisposable | null = null
   let hoverDisposable: Monaco.IDisposable | null = null
+  let signatureDisposable: Monaco.IDisposable | null = null
   let semanticHighlights: Monaco.editor.IEditorDecorationsCollection | null = null
   let inlineHints: Monaco.editor.IEditorDecorationsCollection | null = null
   let inlineHintsTimer: ReturnType<typeof setTimeout> | null = null
@@ -224,6 +225,21 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
         return { suggestions }
       },
     })
+    signatureDisposable = monaco.languages.registerSignatureHelpProvider(languageId, {
+      signatureHelpTriggerCharacters: ['(', ','],
+      provideSignatureHelp(model, position) {
+        const help = Endge.source.signatureHelp(options.sourceKind, languageContext(model.getValue(), position))
+        if (!help) return null
+        return {
+          value: {
+            activeSignature: help.activeSignature,
+            activeParameter: help.activeParameter,
+            signatures: help.signatures,
+          },
+          dispose() {},
+        }
+      },
+    })
     editor.value = monaco.editor.create(options.container.value, {
       value: options.value(),
       language: languageId,
@@ -327,6 +343,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     completionDisposable?.dispose()
     referenceNavigationDisposable?.dispose()
     hoverDisposable?.dispose()
+    signatureDisposable?.dispose()
     refreshTriggerDisposables.forEach(dispose => dispose())
     refreshTriggerDisposables = []
     extensionDisposables.forEach(disposable => disposable.dispose())

@@ -13,6 +13,7 @@ const EXPECTED_EDITOR_FAMILIES = [
   'RComponentTableEditor',
   'RCompositionEditor',
   'RComputationEditor',
+  'RConfigurationEditor',
   'RConverterEditor',
   'RDataViewEditor',
   'REnvironmentEditor',
@@ -28,9 +29,11 @@ const EXPECTED_EDITOR_FAMILIES = [
   'RProjectEditor',
   'RQueryEditor',
   'RStoreEditor',
+  'RStreamEditor',
   'RStyleEditor',
   'RTenantEditor',
   'RTypeEditor',
+  'RUpdateEditor',
   'RVocabsEditor',
 ]
 
