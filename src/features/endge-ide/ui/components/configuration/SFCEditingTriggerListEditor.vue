@@ -10,7 +10,7 @@ import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import ComponentSFCInteractionTriggerEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionTriggerEditor.vue'
+import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
 
 const props = defineProps<{
   modelValue: ComponentSFCInteractionTrigger[]
@@ -37,11 +37,11 @@ function addTrigger(): void {
     : props.kind === 'generic'
       ? createProjection('click')
       : {
-        ...createProjection('keydown'),
-        key: ['Enter'],
-        code: ['Enter'],
-        flags: { prevent: true },
-      })
+          ...createProjection('keydown'),
+          key: ['Enter'],
+          code: ['Enter'],
+          flags: { prevent: true },
+        })
   publish(next)
 }
 
@@ -51,14 +51,6 @@ function removeTrigger(index: number): void {
 
 function publish(value: ComponentSFCInteractionTriggerProjection[]): void {
   emit('update:modelValue', value.map(fromProjection))
-}
-
-function triggerLabel(trigger: ComponentSFCInteractionTriggerProjection): string {
-  if (trigger.event === 'focusout' || trigger.event === 'blur') {
-    return 'Потеря фокуса'
-  }
-  const keys = trigger.code.length ? trigger.code : trigger.key
-  return keys.length ? `${trigger.event} · ${keys.join(' / ')}` : trigger.event
 }
 
 function createProjection(event: string): ComponentSFCInteractionTriggerProjection {
@@ -152,13 +144,15 @@ function cloneProjection(trigger: ComponentSFCInteractionTriggerProjection): Com
       Trigger-ы не заданы. Режим можно будет завершить только semantic event-ом редактора.
     </div>
 
-    <div
+    <ComponentSFCInteractionBindingEditor
       v-for="(trigger, index) in triggers"
       :key="`${index}:${trigger.event}`"
-      class="overflow-hidden rounded-md border border-border/70"
+      :trigger="trigger"
+      :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+      :disabled="disabled"
+      @update:trigger="updateTrigger(index, $event)"
     >
-      <div class="flex h-8 items-center justify-between border-b border-border/60 bg-muted/15 px-2.5">
-        <code class="text-[10px] font-medium">{{ triggerLabel(trigger) }}</code>
+      <template #actions>
         <Button
           type="button"
           variant="ghost"
@@ -170,15 +164,8 @@ function cloneProjection(trigger: ComponentSFCInteractionTriggerProjection): Com
         >
           <Trash2 class="size-3.5" />
         </Button>
-      </div>
-      <div class="p-3" :class="disabled ? 'pointer-events-none opacity-60' : ''">
-        <ComponentSFCInteractionTriggerEditor
-          :model-value="trigger"
-          :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
-          @update:model-value="updateTrigger(index, $event)"
-        />
-      </div>
-    </div>
+      </template>
+    </ComponentSFCInteractionBindingEditor>
 
     <Button
       type="button"

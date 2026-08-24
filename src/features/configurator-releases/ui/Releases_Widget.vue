@@ -519,7 +519,7 @@ onBeforeUnmount(stop)
                       variant="outline"
                       class="h-4 border-amber-500/35 px-1.5 text-[9px] text-amber-700 dark:text-amber-300"
                     >
-                      База
+                      Последний
                     </Badge>
                   </div>
                   <p class="mt-1 truncate text-[10px] text-muted-foreground">

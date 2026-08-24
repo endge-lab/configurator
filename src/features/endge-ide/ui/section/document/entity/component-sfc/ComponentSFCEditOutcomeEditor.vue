@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 
-import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
+import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 
 const props = defineProps<{
   cancel: ComponentSFCEditOutcomeProjection
@@ -190,17 +190,19 @@ function cloneTrigger(trigger: ComponentSFCInteractionTriggerProjection): Compon
             <p class="text-xs text-muted-foreground">
               {{ row.description }}
             </p>
-            <div v-for="(trigger, index) in row.projection.triggers" :key="`${index}:${trigger.event}`" class="overflow-hidden rounded-md border border-border/70">
-              <div class="flex items-center justify-between border-b border-border/60 bg-muted/15 px-2.5 py-1.5">
-                <code class="text-[10px] font-medium">{{ triggerLabel(trigger) }}</code>
+            <ComponentSFCInteractionBindingEditor
+              v-for="(trigger, index) in row.projection.triggers"
+              :key="`${index}:${trigger.event}`"
+              :trigger="trigger"
+              :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+              @update:trigger="updateTrigger(row.kind, index, $event)"
+            >
+              <template #actions>
                 <Button type="button" variant="ghost" size="icon" class="size-6 text-muted-foreground hover:text-destructive" :aria-label="`Удалить trigger ${index + 1}`" @click="removeTrigger(row.kind, index)">
                   <Trash2 class="size-3.5" />
                 </Button>
-              </div>
-              <div class="p-3">
-                <ComponentSFCInteractionTriggerEditor :model-value="trigger" :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS" @update:model-value="updateTrigger(row.kind, index, $event)" />
-              </div>
-            </div>
+              </template>
+            </ComponentSFCInteractionBindingEditor>
             <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addTrigger(row.kind)">
               <Plus class="size-3.5" />
               Альтернативный trigger

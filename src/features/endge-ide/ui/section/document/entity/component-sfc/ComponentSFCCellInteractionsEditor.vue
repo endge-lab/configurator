@@ -2,19 +2,17 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCInteractionTriggerProjection,
-  ComponentSFCTableCellInteractionModifier,
   ComponentSFCTableCellInteractionRuleProjection,
   ComponentSFCTableCellInteractionsProjection,
 } from '@endge/core'
 
 import { getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
-import { ChevronDown, FileCode2, Plus, Trash2 } from 'lucide-vue-next'
+import { FileCode2, Plus, Trash2 } from 'lucide-vue-next'
 import { ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 
-import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
+import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 
 const props = defineProps<{
@@ -27,8 +25,8 @@ const emit = defineEmits<{
 }>()
 
 const events = getComponentSFCIntrinsicEventDefinitions('Cell')
+const LEGACY_REACTION_PLACEHOLDER = `action({ identity: 'action.identity', input: { rowId: rowKey, row, rowIndex, columnKey, value, event: event() } })`
 const drafts = ref<ComponentSFCTableCellInteractionRuleProjection[]>([])
-const expanded = ref<Set<number>>(new Set())
 
 watch(
   () => props.modelValue,
@@ -48,7 +46,10 @@ function cloneTrigger(value: ComponentSFCInteractionTriggerProjection): Componen
 }
 
 function cloneRule(rule: ComponentSFCTableCellInteractionRuleProjection): ComponentSFCTableCellInteractionRuleProjection {
-  return { ...cloneTrigger(rule), reactionSource: rule.reactionSource }
+  return {
+    ...cloneTrigger(rule),
+    reactionSource: rule.reactionSource.trim() === LEGACY_REACTION_PLACEHOLDER ? '' : rule.reactionSource,
+  }
 }
 
 function createRule(): ComponentSFCTableCellInteractionRuleProjection {
@@ -62,29 +63,19 @@ function createRule(): ComponentSFCTableCellInteractionRuleProjection {
     composing: null,
     button: 0,
     flags: {},
-    reactionSource: defaultReactionSource(),
+    reactionSource: '',
   }
 }
 
 function addRule(): void {
-  const next = [...drafts.value, createRule()]
-  drafts.value = next
-  expanded.value = new Set([...expanded.value, next.length - 1])
-  commit()
+  drafts.value = [...drafts.value, createRule()]
 }
 
 function removeRule(index: number): void {
   const next = [...drafts.value]
   next.splice(index, 1)
   drafts.value = next
-  expanded.value = new Set([...expanded.value].filter(item => item !== index).map(item => item > index ? item - 1 : item))
   commit()
-}
-
-function setExpanded(index: number, open: boolean): void {
-  const next = new Set(expanded.value)
-  open ? next.add(index) : next.delete(index)
-  expanded.value = next
 }
 
 function updateTrigger(index: number, trigger: ComponentSFCInteractionTriggerProjection): void {
@@ -93,66 +84,24 @@ function updateTrigger(index: number, trigger: ComponentSFCInteractionTriggerPro
     return
   }
   drafts.value[index] = { ...cloneTrigger(trigger), reactionSource: rule.reactionSource }
-  commit()
-}
-
-function ruleGestureSummary(rule: ComponentSFCInteractionTriggerProjection): string {
-  const held = rule.held?.code.length ? rule.held.code : rule.held?.key ?? []
-  const trigger = rule.code.length ? rule.code : rule.key
-  const tokens = uniqueTokens([
-    ...modifierTokens(rule.modifiers),
-    ...held.map(displayCode),
-    ...trigger.map(displayCode),
-    ...(rule.button == null ? [] : [buttonLabel(rule.button)]),
-  ])
-  return tokens.length ? tokens.join(' + ') : 'Без условий'
-}
-
-function modifierTokens(modifiers: Partial<Record<ComponentSFCTableCellInteractionModifier, boolean>>): string[] {
-  const labels: Array<[ComponentSFCTableCellInteractionModifier, string]> = [
-    ['mod', 'Ctrl/Cmd'],
-    ['ctrl', 'Ctrl'],
-    ['shift', 'Shift'],
-    ['alt', 'Alt'],
-    ['meta', 'Meta'],
-    ['altGraph', 'AltGr'],
-  ]
-  return labels.filter(([name]) => modifiers[name] === true).map(([, label]) => label)
-}
-
-function displayCode(code: string): string {
-  if (/^Key[A-Z]$/.test(code)) {
-    return code.slice(3)
+  if (rule.reactionSource.trim()) {
+    commit()
   }
-  if (/^Digit\d$/.test(code)) {
-    return code.slice(5)
-  }
-  return code
-}
-
-function buttonLabel(button: number): string {
-  return ['ЛКМ', 'Колесо', 'ПКМ', 'Назад', 'Вперёд'][button] ?? `Button ${button}`
-}
-
-function uniqueTokens(tokens: string[]): string[] {
-  return [...new Set(tokens.filter(Boolean))]
 }
 
 function updateReaction(index: number, value: string | null): void {
   const rule = drafts.value[index]
-  if (!rule) {
+  const reactionSource = value?.trim() ?? ''
+  if (!rule || !reactionSource) {
     return
   }
-  rule.reactionSource = value?.trim() || defaultReactionSource()
+  rule.reactionSource = reactionSource
   commit()
 }
 
-function defaultReactionSource(): string {
-  return `action({ identity: 'action.identity', input: { rowId: rowKey, row, rowIndex, columnKey, value, event: event() } })`
-}
-
 function commit(): void {
-  emit('update', drafts.value.length ? serializeRules(drafts.value) : null)
+  const completeRules = drafts.value.filter(rule => Boolean(rule.reactionSource.trim()))
+  emit('update', completeRules.length ? serializeRules(completeRules) : null)
 }
 
 function serializeRules(rules: ComponentSFCTableCellInteractionRuleProjection[]): string {
@@ -206,7 +155,7 @@ function serializeRule(rule: ComponentSFCTableCellInteractionRuleProjection): st
       fields.push(`${flag}: true`)
     }
   }
-  fields.push(`reaction: ${rule.reactionSource.trim() || serializeAction(undefined)}`)
+  fields.push(`reaction: ${rule.reactionSource.trim()}`)
   return `{ ${fields.join(', ')} }`
 }
 
@@ -231,8 +180,12 @@ function quote(value: string): string {
 
     <div v-if="!modelValue.editable" class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
       <div class="min-w-0">
-        <div class="text-sm font-medium">Аннотация управляется Source</div>
-        <div class="mt-0.5 text-xs text-muted-foreground">{{ modelValue.message }}</div>
+        <div class="text-sm font-medium">
+          Аннотация управляется Source
+        </div>
+        <div class="mt-0.5 text-xs text-muted-foreground">
+          {{ modelValue.message }}
+        </div>
       </div>
       <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="$emit('openSource')">
         <FileCode2 class="size-3.5" />
@@ -250,42 +203,26 @@ function quote(value: string): string {
         <code v-for="suffix in modelValue.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
       </div>
 
-      <Collapsible
+      <ComponentSFCInteractionBindingEditor
         v-for="(rule, index) in drafts"
         :key="`${index}:${rule.event}`"
-        :open="expanded.has(index)"
-        class="editor-panel overflow-hidden rounded-lg border border-border/70"
-        @update:open="setExpanded(index, $event)"
+        :trigger="rule"
+        :events="events"
+        @update:trigger="updateTrigger(index, $event)"
       >
-        <div class="flex min-h-14 items-center gap-2 p-2.5">
-          <button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" @click="setExpanded(index, !expanded.has(index))">
-            <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ '-rotate-90': !expanded.has(index) }" />
-            <span class="min-w-0 flex-1">
-              <span class="block font-mono text-sm">{{ rule.event }}</span>
-              <span class="block truncate text-[11px] text-muted-foreground">{{ ruleGestureSummary(rule) }}</span>
-            </span>
-          </button>
+        <template #actions>
           <Button type="button" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-destructive" aria-label="Удалить обработчик" @click="removeRule(index)">
             <Trash2 class="size-3.5" />
           </Button>
-        </div>
-
-        <CollapsibleContent>
-          <div class="space-y-4 border-t border-border/60 p-3">
-            <ComponentSFCInteractionTriggerEditor
-              :model-value="rule"
-              :events="events"
-              @update:model-value="updateTrigger(index, $event)"
-            />
-
-            <ComponentSFCReactionEditor
-              :model-value="rule.reactionSource"
-              :event-name="rule.event"
-              @save="updateReaction(index, $event)"
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </template>
+        <template #reaction>
+          <ComponentSFCReactionEditor
+            :model-value="rule.reactionSource"
+            :event-name="rule.event"
+            @save="updateReaction(index, $event)"
+          />
+        </template>
+      </ComponentSFCInteractionBindingEditor>
     </div>
   </section>
 </template>

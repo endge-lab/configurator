@@ -40,7 +40,11 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', id: string | number): void
-  (e: 'entity-drop', payload: { id: string | number; sectionType: DomainSectionType }): void
+  (e: 'entity-drop', payload: {
+    id: string | number
+    identity?: string
+    sectionType: DomainSectionType
+  }): void
 }>()
 
 const dropOver = ref(false)
@@ -106,7 +110,11 @@ function onDrop(e: DragEvent): void {
     const value = props.valueField === 'identity' ? first.identity : first.id
     if (value == null || String(value).trim() === '') return
     emit('update:modelValue', value)
-    emit('entity-drop', { id: first.id, sectionType: first.sectionType as DomainSectionType })
+    emit('entity-drop', {
+      id: first.id,
+      ...(first.identity ? { identity: first.identity } : {}),
+      sectionType: first.sectionType as DomainSectionType,
+    })
   }
 }
 </script>

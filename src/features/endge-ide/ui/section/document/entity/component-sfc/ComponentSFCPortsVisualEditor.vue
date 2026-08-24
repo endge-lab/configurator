@@ -1,6 +1,14 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { ComponentSFCEventPort, ComponentSFCPortRole, QueryProgramPayload, RAction } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type {
+  ComponentSFCEventAction,
+  ComponentSFCEventInputValue,
+  ComponentSFCEventPort,
+  ComponentSFCPortRole,
+  QueryProgramPayload,
+} from '@endge/core'
+
 import {
   DomainSectionType,
   Endge,
@@ -9,18 +17,19 @@ import {
   patchComponentSFCTableSource,
   TABLE_EVENT_DEFINITIONS,
 } from '@endge/core'
+import { Braces, ChevronDown, Plus, Radio, Trash2, Zap } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
-import { Braces, ChevronDown, Plus, Radio, Trash2, Zap } from 'lucide-vue-next'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+
+import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 
 const props = defineProps<{
   source: string
@@ -33,15 +42,11 @@ const emit = defineEmits<{
   (event: 'openSource', offset: number): void
 }>()
 
-const eventPickerOpen = ref(false)
-const eventSearch = ref('')
 const expandedEvents = ref<Set<string>>(new Set())
 
 const projection = computed(() => inspectComponentSFCPortsSource(props.source, {
   resolveComponentPortManifest: (identity: string) => Endge.program.getArtifact<any>('component-sfc', identity)?.payload?.ir?.script.ports ?? null,
 }))
-const actions = computed(() => Endge.domain.getActions()
-  .filter(action => action.active !== false && Boolean(action.identity?.trim())))
 const eventPorts = computed(() => projection.value.manifest.emits.events)
 const configuredEvents = computed(() => eventPorts.value
   .filter(isExplicitEvent)
@@ -82,18 +87,14 @@ const availableEvents = computed(() => {
   const configuredNames = new Set(configuredEvents.value.map(event => event.name))
   return [...catalog.values()].filter(event => !configuredNames.has(event.name))
 })
-const filteredAvailableEvents = computed(() => {
-  const query = eventSearch.value.trim().toLowerCase()
-  if (!query) {
-    return availableEvents.value
-  }
-  return availableEvents.value.filter(event => (
-    event.name.toLowerCase().includes(query)
-    || event.displayName.toLowerCase().includes(query)
-    || event.payloadType.toLowerCase().includes(query)
-    || event.description.toLowerCase().includes(query)
-  ))
-})
+const eventOptions = computed<SearchableSelectOption[]>(() => availableEvents.value.map(event => ({
+  value: event.name,
+  label: `${event.displayName} · ${event.name}`,
+  group: TABLE_EVENT_DEFINITIONS.some(definition => definition.name === event.name)
+    ? 'Table events'
+    : 'Forwarded events',
+  searchText: `${event.payloadType} ${event.description}`,
+})))
 const requiredPorts = computed(() => [
   ...projection.value.manifest.require.actions,
   ...projection.value.manifest.require.computations,
@@ -107,29 +108,25 @@ const portKind = ref<'action' | 'computation' | 'component' | 'query'>('action')
 const portName = ref('')
 const portIdentity = ref('')
 const forwardDraft = ref('')
-const typescriptDrafts = ref<Record<string, string>>({})
-
 watch(
   () => projection.value.manifest.forward.rules,
   rules => forwardDraft.value = serializeForwardRules(rules),
   { immediate: true, deep: true },
 )
 
-function reactionValue(event: ComponentSFCEventPort | null): string {
-  if (event?.action?.kind === 'typescript') return '__typescript__'
-  return event?.action?.kind === 'action' ? event.action.identity : '__none__'
-}
-
 function reactionLabel(event: ComponentSFCEventPort): string {
   const reaction = event.action
   if (reaction?.kind === 'typescript') {
     return 'TypeScript sandbox'
   }
+  if (reaction?.kind === 'query') {
+    return reaction.identity
+  }
   if (reaction?.kind !== 'action') {
     return 'Без реакции'
   }
-  const action = actions.value.find(item => item.identity === reaction.identity)
-  return action?.displayName || action?.name || reaction.identity
+  const action = Endge.actions.listResolved().find(item => item.identity === reaction.identity)
+  return action?.displayName || reaction.identity
 }
 
 function isExplicitEvent(event: ComponentSFCEventPort): boolean {
@@ -152,23 +149,13 @@ function describeEvent(event: ComponentSFCEventPort): string {
   return 'Событие компонента.'
 }
 
-function changeReaction(name: string, payloadType: string, port: ComponentSFCEventPort | null, value: string): void {
-  if (value === '__typescript__') {
-    typescriptDrafts.value[name] = port?.action?.kind === 'typescript'
-      ? (port.action.definitionSource ?? port.action.source)
-      : `typescript({\n  inputs: { event: event() },\n  compute({ event }, api) {\n    return api.action('action.identity', event)\n  },\n})`
-    return
-  }
-  if (value === '__none__') {
-    applyEvent(name, payloadType, port, null)
-    return
-  }
-  const action = actions.value.find(item => item.identity === value)
-  applyEvent(name, payloadType, port, serializeDirectAction(action))
-}
-
-function saveTypescript(name: string, payloadType: string, port: ComponentSFCEventPort | null): void {
-  applyEvent(name, payloadType, port, typescriptDrafts.value[name] ?? null)
+function saveReaction(
+  name: string,
+  payloadType: string,
+  port: ComponentSFCEventPort | null,
+  value: string | null,
+): void {
+  applyEvent(name, payloadType, port, value)
 }
 
 function applyEvent(name: string, payloadType: string, port: ComponentSFCEventPort | null, actionSource: string | null): boolean {
@@ -202,8 +189,12 @@ function addEvent(name: string): void {
     return
   }
   expandedEvents.value = new Set([...expandedEvents.value, name])
-  eventPickerOpen.value = false
-  eventSearch.value = ''
+}
+
+function selectEvent(value: string | string[] | null): void {
+  if (typeof value === 'string') {
+    addEvent(value)
+  }
 }
 
 function setEventExpanded(name: string, expanded: boolean): void {
@@ -224,7 +215,6 @@ function removeEvent(name: string): void {
   const next = new Set(expandedEvents.value)
   next.delete(name)
   expandedEvents.value = next
-  delete typescriptDrafts.value[name]
 }
 
 function addPort(): void {
@@ -295,13 +285,46 @@ function onEntityDrop(payload: { id: string | number, sectionType: DomainSection
       : payload.sectionType === DomainSectionType.Query ? 'query' : 'component'
 }
 
-function serializeDirectAction(action: RAction | undefined): string | null {
-  if (!action) return null
-  const params = [...(action.input?.params?.values() ?? [])]
-  const input = params.length
-    ? `{ ${params.map(field => `${field.name}: event(${JSON.stringify(field.name)})`).join(', ')} }`
-    : 'event()'
-  return `{ identity: ${JSON.stringify(action.identity)}, input: ${input} }`
+function reactionSource(event: ComponentSFCEventPort): string | null {
+  return event.action ? serializeReaction(event.action) : null
+}
+
+function serializeReaction(reaction: ComponentSFCEventAction): string {
+  if (reaction.kind === 'typescript') {
+    return reaction.definitionSource ?? reaction.source
+  }
+  if (reaction.kind === 'action') {
+    return `{ identity: ${JSON.stringify(reaction.identity)}${reaction.input ? `, input: ${serializeEventInput(reaction.input)}` : ''} }`
+  }
+  if (reaction.kind === 'query') {
+    return `query({ identity: ${JSON.stringify(reaction.identity)}${reaction.input ? `, input: ${serializeEventInput(reaction.input)}` : ''} })`
+  }
+  if (reaction.kind === 'emit') {
+    return `emit(${JSON.stringify(reaction.event)}${reaction.payload ? `, ${serializeEventInput(reaction.payload)}` : ''})`
+  }
+  return `ports.require.${reaction.port}(${reaction.input ? serializeEventInput(reaction.input) : '{}'})`
+}
+
+function serializeEventInput(input: ComponentSFCEventInputValue): string {
+  if (input.kind === 'event') {
+    return input.path == null ? 'event()' : `event(${JSON.stringify(input.path)})`
+  }
+  if (input.kind === 'now') {
+    return 'now()'
+  }
+  if (input.kind === 'scope') {
+    return input.path
+  }
+  if (input.kind === 'literal') {
+    return JSON.stringify(input.value) ?? 'null'
+  }
+  if (input.kind === 'coalesce') {
+    return `${serializeEventInput(input.left)} ?? ${serializeEventInput(input.right)}`
+  }
+  if (input.kind === 'array') {
+    return `[${input.items.map(serializeEventInput).join(', ')}]`
+  }
+  return `{ ${input.entries.map(entry => `${typeof entry.key === 'string' ? JSON.stringify(entry.key) : `[${serializeEventInput(entry.key)}]`}: ${serializeEventInput(entry.value)}`).join(', ')} }`
 }
 
 function serializeForwardRules(rules: any[]): string {
@@ -352,46 +375,16 @@ function toPortName(identity: string): string {
     </div>
 
     <template v-if="mode === 'events'">
-      <div class="flex justify-end">
-        <Popover v-model:open="eventPickerOpen">
-          <PopoverTrigger as-child class="!w-auto">
-            <Button
-              size="sm"
-              :aria-expanded="eventPickerOpen"
-              :disabled="!projection.editable || !availableEvents.length"
-              @click="eventPickerOpen = !eventPickerOpen"
-            >
-              <Plus class="mr-1 size-4" />Событие
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-[min(28rem,calc(100vw-2rem))] p-0" align="end" side-offset="6">
-            <div class="border-b p-2">
-              <Input v-model="eventSearch" class="h-8" placeholder="Найти событие..." @keydown.stop />
-            </div>
-            <div class="max-h-80 overflow-y-auto p-1.5">
-              <button
-                v-for="event in filteredAvailableEvents"
-                :key="event.name"
-                type="button"
-                class="flex w-full items-start gap-3 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
-                @click="addEvent(event.name)"
-              >
-                <Radio class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                <span class="min-w-0">
-                  <span class="flex flex-wrap items-baseline gap-x-2">
-                    <span class="text-sm font-medium">{{ event.displayName }}</span>
-                    <span class="font-mono text-xs text-muted-foreground">{{ event.name }}</span>
-                  </span>
-                  <span class="mt-0.5 block text-xs text-muted-foreground">{{ event.description }}</span>
-                  <span class="mt-1 block font-mono text-[11px] text-muted-foreground/80">{{ event.payloadType }}</span>
-                </span>
-              </button>
-              <div v-if="!filteredAvailableEvents.length" class="px-3 py-8 text-center text-sm text-muted-foreground">
-                {{ availableEvents.length ? 'Ничего не найдено' : 'Все события уже добавлены' }}
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+      <div class="ml-auto max-w-md">
+        <SearchableSelect
+          :model-value="null"
+          :options="eventOptions"
+          :disabled="!projection.editable || !availableEvents.length"
+          :placeholder="availableEvents.length ? 'Добавить событие...' : 'Все события добавлены'"
+          trigger-class="editor-control w-full"
+          size="compact"
+          @update:model-value="selectEvent"
+        />
       </div>
 
       <Collapsible
@@ -422,19 +415,14 @@ function toPortName(identity: string): string {
           </Button>
         </div>
         <CollapsibleContent>
-          <div class="border-t px-3 pb-3 pt-3">
-            <div class="grid gap-2 sm:grid-cols-[12rem_minmax(0,1fr)]">
-              <Label class="self-center text-xs">Реакция</Label>
-              <select class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :value="reactionValue(item.port)" :disabled="!projection.editable" @change="changeReaction(item.name, item.payloadType, item.port, ($event.target as HTMLSelectElement).value)">
-                <option value="__none__">Без реакции</option>
-                <option value="__typescript__">TypeScript sandbox</option>
-                <option v-for="action in actions" :key="action.identity" :value="action.identity">{{ action.displayName || action.name || action.identity }}</option>
-              </select>
-            </div>
-            <div v-if="typescriptDrafts[item.name] != null" class="mt-3 space-y-2">
-              <Textarea v-model="typescriptDrafts[item.name]" class="min-h-40 font-mono text-xs" />
-              <Button size="sm" @click="saveTypescript(item.name, item.payloadType, item.port)">Сохранить sandbox-реакцию</Button>
-            </div>
+          <div class="border-t p-3">
+            <ComponentSFCReactionEditor
+              :model-value="reactionSource(item.port)"
+              :event-name="item.name"
+              action-format="object"
+              allow-remove
+              @save="saveReaction(item.name, item.payloadType, item.port, $event)"
+            />
           </div>
         </CollapsibleContent>
       </Collapsible>

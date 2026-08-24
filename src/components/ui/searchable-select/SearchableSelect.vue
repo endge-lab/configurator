@@ -13,6 +13,7 @@ export interface SearchableSelectOption {
   value: string
   label: string
   group?: string
+  searchText?: string
 }
 
 const props = withDefaults(
@@ -55,6 +56,7 @@ const filteredOptions = computed(() => {
     o.label.toLowerCase().includes(q)
     || o.value.toLowerCase().includes(q)
     || o.group?.toLowerCase().includes(q)
+    || o.searchText?.toLowerCase().includes(q)
   ))
 })
 

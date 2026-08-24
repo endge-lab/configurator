@@ -1,8 +1,14 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type { RComponentDiagnostic } from '@endge/core'
 
-import { compileComponentSFCExpression, Endge } from '@endge/core'
+import {
+  compileComponentSFCLocalEventAction,
+  createEmptyComponentDependencies,
+  DomainSectionType,
+  Endge,
+} from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { ChevronDown, Plus, Save, Trash2, X } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -13,14 +19,19 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { Label } from '@/components/ui/label'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Textarea } from '@/components/ui/textarea'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
 const props = withDefaults(defineProps<{
   modelValue: string | null
   eventName?: string
   variant?: 'field' | 'section'
+  actionFormat?: 'call' | 'object'
+  allowRemove?: boolean
 }>(), {
   eventName: 'edited',
   variant: 'field',
+  actionFormat: 'call',
+  allowRemove: false,
 })
 
 const emit = defineEmits<{
@@ -43,14 +54,21 @@ const queries = computed(() => (domainStore.queries ?? [])
 const templateOptions = computed<SearchableSelectOption[]>(() => [
   ...actions.value.map(action => ({
     value: `action:${action.identity}`,
-    label: actionTitle(action),
-    group: 'Actions',
+    label: actionOptionLabel(action),
+    group: actionGroup(action),
+    searchText: `${action.identity} ${action.description ?? ''}`,
   })),
   ...queries.value.map(query => ({
     value: `query:${query.identity}`,
-    label: entityTitle(query),
+    label: entityOptionLabel(query),
     group: 'Queries',
   })),
+  {
+    value: 'typescript:__sandbox__',
+    label: 'TypeScript sandbox',
+    group: 'Code',
+    searchText: 'typescript code sandbox код',
+  },
 ])
 const hasReaction = computed(() => Boolean(props.modelValue?.trim()))
 const reactionSummary = computed(() => summarizeReaction(props.modelValue))
@@ -88,13 +106,25 @@ function removeReaction(): void {
 function saveReaction(): void {
   const source = draft.value.trim()
   if (!source) {
+    if (props.variant === 'field' && !props.allowRemove) {
+      error.value = 'Выберите Action, Query или TypeScript reaction.'
+      return
+    }
     removeReaction()
     return
   }
-  const validation = compileComponentSFCExpression(source, {
-    sourcePath: `template.on.${props.eventName}`,
-  })
-  const firstError = validation.diagnostics.find(diagnostic => diagnostic.severity === 'error')
+  const diagnostics: RComponentDiagnostic[] = []
+  const validationSource = props.actionFormat === 'object' && source.startsWith('{')
+    ? `(${source})`
+    : source
+  compileComponentSFCLocalEventAction(
+    props.eventName,
+    validationSource,
+    0,
+    createEmptyComponentDependencies(),
+    diagnostics,
+  )
+  const firstError = diagnostics.find(diagnostic => diagnostic.severity === 'error')
   if (firstError) {
     error.value = firstError.message
     return
@@ -111,21 +141,31 @@ function handleReactionKeydown(event: KeyboardEvent): void {
   saveReaction()
 }
 
-function insertTemplate(value: string | string[] | null): void {
+function applyTemplate(value: string | string[] | null): void {
+  const kind = insertTemplate(value)
+  if (kind === 'action' || kind === 'query') {
+    saveReaction()
+  }
+}
+
+function insertTemplate(value: string | string[] | null): 'action' | 'query' | 'typescript' | null {
   if (!value || Array.isArray(value)) {
-    return
+    return null
   }
   const separator = value.indexOf(':')
   const kind = separator > 0 ? value.slice(0, separator) : ''
   const identity = separator > 0 ? value.slice(separator + 1) : ''
   if (!identity) {
-    return
+    return null
   }
   draft.value = kind === 'action'
     ? serializeAction(identity)
-    : serializeQuery(identity)
+    : kind === 'query'
+      ? serializeQuery(identity)
+      : serializeTypescript()
   error.value = null
   expanded.value = true
+  return kind === 'action' || kind === 'query' ? kind : 'typescript'
 }
 
 function serializeAction(identity: string): string {
@@ -133,10 +173,13 @@ function serializeAction(identity: string): string {
   const params = [...(definition?.input?.params?.values() ?? [])]
   const input = params.length
     ? `{ ${params.map(param => `${param.name}: ${eventInputSource(param.name)}`).join(', ')} }`
-    : props.eventName === 'edited'
-      ? `{ value: event('value'), previousValue: event('previousValue') }`
-      : 'event()'
-  return `action({ identity: ${quote(identity)}, input: ${input} })`
+    : definition?.input
+      ? props.eventName === 'edited'
+        ? `{ value: event('value'), previousValue: event('previousValue') }`
+        : 'event()'
+      : null
+  const binding = `{ identity: ${quote(identity)}${input ? `, input: ${input}` : ''} }`
+  return props.actionFormat === 'object' ? binding : `action(${binding})`
 }
 
 function serializeQuery(identity: string): string {
@@ -152,7 +195,41 @@ function serializeQuery(identity: string): string {
 })`
 }
 
+function serializeTypescript(): string {
+  return `typescript({
+  inputs: { event: event() },
+  compute({ event }, api) {
+    return api.action('built-in-console-log', event)
+  },
+})`
+}
+
+function onEntityDrop(payload: {
+  id: string | number
+  identity?: string
+  sectionType: DomainSectionType
+}): void {
+  const identity = String(payload.identity ?? resolveDroppedIdentity(payload) ?? '').trim()
+  if (!identity) {
+    return
+  }
+  applyTemplate(`${payload.sectionType === DomainSectionType.Query ? 'query' : 'action'}:${identity}`)
+}
+
+function resolveDroppedIdentity(payload: { id: string | number, sectionType: DomainSectionType }): string | null {
+  if (payload.sectionType === DomainSectionType.Action) {
+    return Endge.domain.getActions().find(action => String(action.id) === String(payload.id))?.identity ?? null
+  }
+  if (payload.sectionType === DomainSectionType.Query) {
+    return (domainStore.queries ?? []).find(query => String(query.id) === String(payload.id))?.identity ?? null
+  }
+  return null
+}
+
 function eventInputSource(name: string): string {
+  if (props.actionFormat === 'object') {
+    return name === 'event' ? 'event()' : `event(${quote(name)})`
+  }
   if (name === 'rowId' || name === 'rowKey') {
     return 'rowKey'
   }
@@ -168,25 +245,33 @@ function eventInputSource(name: string): string {
   return `event(${quote(name)})`
 }
 
-function summarizeReaction(source: string | null): { kind: 'action' | 'query' | 'custom' | 'none', label: string } {
+function summarizeReaction(source: string | null): { kind: 'action' | 'query' | 'typescript' | 'custom' | 'none', label: string } {
   const value = source?.trim() ?? ''
   if (!value) {
     return { kind: 'none', label: 'Не настроено' }
   }
+  if (/^\s*typescript\s*\(/.test(value)) {
+    return { kind: 'typescript', label: 'TypeScript sandbox' }
+  }
   const match = value.match(/^\s*(action|query)\s*\(\s*\{[\s\S]*?\bidentity\s*:\s*(['"])(.*?)\2/)
+    ?? value.match(/^\s*\{[\s\S]*?\bidentity\s*:\s*(['"])(.*?)\1/)
   if (!match) {
     return { kind: 'custom', label: 'Произвольный код' }
   }
   const kind = match[1] === 'query' ? 'query' : 'action'
-  return { kind, label: match[3] || (kind === 'query' ? 'Query' : 'Action') }
+  const label = match[3] ?? match[2]
+  return { kind, label: label || (kind === 'query' ? 'Query' : 'Action') }
 }
 
-function reactionKindLabel(kind: 'action' | 'query' | 'custom' | 'none'): string {
+function reactionKindLabel(kind: 'action' | 'query' | 'typescript' | 'custom' | 'none'): string {
   if (kind === 'action') {
     return 'Action'
   }
   if (kind === 'query') {
     return 'Query'
+  }
+  if (kind === 'typescript') {
+    return 'TS'
   }
   return 'Code'
 }
@@ -195,10 +280,32 @@ function actionTitle(action: { displayName?: string, identity: string }): string
   return String(action.displayName ?? '').trim() || action.identity
 }
 
+function actionOptionLabel(action: { displayName?: string, identity: string }): string {
+  const title = actionTitle(action)
+  return title === action.identity ? title : `${title} · ${action.identity}`
+}
+
+function actionGroup(action: { origin: { kind: string }, catalogPath?: string[] }): string {
+  const origin = action.origin.kind === 'builtin'
+    ? 'Built-in'
+    : action.origin.kind === 'local'
+      ? 'Local'
+      : action.origin.kind === 'derived'
+        ? 'Provided'
+        : 'Project'
+  return ['Actions', origin, ...(action.catalogPath ?? [])].join(' / ')
+}
+
 function entityTitle(entity: { name?: unknown, identity?: unknown, id?: unknown }): string {
   return String(entity.name ?? '').trim()
     || String(entity.identity ?? '').trim()
     || String(entity.id ?? '').trim()
+}
+
+function entityOptionLabel(entity: { name?: unknown, identity?: unknown, id?: unknown }): string {
+  const title = entityTitle(entity)
+  const identity = String(entity.identity ?? '').trim()
+  return identity && title !== identity ? `${title} · ${identity}` : title
 }
 
 function quote(value: string): string {
@@ -262,29 +369,39 @@ function quote(value: string): string {
     <component :is="variant === 'section' ? CollapsibleContent : 'div'">
       <div :class="variant === 'section' ? 'border-t border-border/60 p-3' : ''">
         <div class="space-y-3">
-          <div class="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <div class="space-y-1.5">
-              <Label class="text-xs">Шаблон</Label>
-              <SearchableSelect
-                :options="templateOptions"
-                :model-value="null"
-                placeholder="Вставить Action или Query..."
-                trigger-class="editor-control w-full"
-                size="compact"
-                @update:model-value="insertTemplate"
-              />
+          <DomainEntityDropTarget
+            :accept-section-types="[DomainSectionType.Action, DomainSectionType.Query]"
+            hint-text="Перетащите Action или Query из виджета Домен"
+            @entity-drop="onEntityDrop"
+          >
+            <div class="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div class="space-y-1.5">
+                <Label class="text-xs">Шаблон</Label>
+                <SearchableSelect
+                  :options="templateOptions"
+                  :model-value="null"
+                  placeholder="Вставить Action, Query или TypeScript..."
+                  trigger-class="editor-control w-full"
+                  size="compact"
+                  @update:model-value="applyTemplate"
+                />
+              </div>
+              <div class="flex justify-end gap-1.5">
+                <Button v-if="allowRemove && hasReaction" type="button" variant="ghost" size="sm" class="h-8 gap-1.5 text-muted-foreground hover:text-destructive" @click="removeReaction">
+                  <Trash2 class="size-3.5" />
+                  Удалить
+                </Button>
+                <Button type="button" variant="ghost" size="sm" class="h-8 gap-1.5" @click="cancelEditing">
+                  <X class="size-3.5" />
+                  Отменить
+                </Button>
+                <Button type="button" size="sm" class="h-8 gap-1.5" @click="saveReaction">
+                  <Save class="size-3.5" />
+                  Сохранить
+                </Button>
+              </div>
             </div>
-            <div class="flex justify-end gap-1.5">
-              <Button type="button" variant="ghost" size="sm" class="h-8 gap-1.5" @click="cancelEditing">
-                <X class="size-3.5" />
-                Отменить
-              </Button>
-              <Button type="button" size="sm" class="h-8 gap-1.5" @click="saveReaction">
-                <Save class="size-3.5" />
-                Сохранить
-              </Button>
-            </div>
-          </div>
+          </DomainEntityDropTarget>
 
           <div class="space-y-1.5">
             <Label class="text-xs">Reaction</Label>

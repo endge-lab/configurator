@@ -23,6 +23,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -30,7 +31,7 @@ import { useSmartTabSelection, useSmartTabViewState } from '@/components/ui/smar
 import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
-import ComponentSFCKeyboardConditionEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCKeyboardConditionEditor.vue'
+import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
 
 import ConfigValueEditor from './ConfigValueEditor.vue'
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
@@ -671,7 +672,7 @@ function isEqual(left: unknown, right: unknown): boolean {
     <section v-if="configurationValueIssues.length" class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3">
       <p class="text-sm font-semibold">Проблемы пользовательской конфигурации</p>
       <div v-for="issue in configurationValueIssues" :key="`${issue.identity}.${issue.key}`" class="mt-2 flex items-start justify-between gap-3 text-xs">
-        <div><code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span></div>
+        <div data-copyable><code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span></div>
         <Button v-if="Endge.domain.getConfiguration(issue.identity)" type="button" size="sm" variant="ghost" class="h-6 px-2" @click="openConfigurationDocument(issue.identity)">Открыть</Button>
       </div>
     </section>
@@ -685,7 +686,12 @@ function isEqual(left: unknown, right: unknown): boolean {
     >
       <template #navigation>
         <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
-          <template v-for="section in sections" :key="section.id">
+          <template v-for="(section, index) in sections" :key="section.id">
+            <div
+              v-if="index === systemSections.length"
+              class="my-1 border-t border-border/70"
+              aria-hidden="true"
+            />
             <TabsTrigger
               :value="section.id"
               class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
@@ -734,9 +740,12 @@ function isEqual(left: unknown, right: unknown): boolean {
           <Select :model-value="activeSection" @update:model-value="setActiveSection">
             <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="section in sections" :key="section.id" :value="section.id">
-                {{ section.label }}
-              </SelectItem>
+              <template v-for="(section, index) in sections" :key="section.id">
+                <SelectSeparator v-if="index === systemSections.length" />
+                <SelectItem :value="section.id">
+                  {{ section.label }}
+                </SelectItem>
+              </template>
             </SelectContent>
           </Select>
           <Select v-if="activeSection === 'editing'" :model-value="editingSection" @update:model-value="setEditingSection">
@@ -769,15 +778,15 @@ function isEqual(left: unknown, right: unknown): boolean {
             class="m-0 space-y-5 p-5 outline-none"
           >
             <div>
-              <h3 class="text-sm font-semibold text-foreground">{{ category.displayName }}</h3>
+              <h3 class="text-base font-semibold tracking-tight text-foreground">{{ category.displayName }}</h3>
               <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">{{ category.description }}</p>
-              <code class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
+              <code data-copyable class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
             </div>
-            <div class="divide-y divide-border/60">
+            <div class="divide-y divide-border/60 border-t border-border/60">
               <div
                 v-for="field in category.document.values"
                 :key="field.key"
-                class="py-5 first:pt-0 last:pb-0"
+                class="py-5 last:pb-0"
               >
                 <ConfigurationOverrideField
                   :label="field.label"
@@ -797,7 +806,7 @@ function isEqual(left: unknown, right: unknown): boolean {
                       :disabled="disabled || fieldDisabled"
                       @update:model-value="setConfigurationValue(category.identity, field.key, $event)"
                     />
-                    <code class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
+                    <code data-copyable class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
                   </template>
                 </ConfigurationOverrideField>
               </div>
@@ -951,10 +960,11 @@ function isEqual(left: unknown, right: unknown): boolean {
               <ConfigurationOverrideField label="Клавиатурное условие появления" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('keyboard')" @enable="enableTooltipOverride('keyboard')" @reset="resetTooltipOverride('keyboard')">
                 <template #default="{ disabled: fieldDisabled }">
                   <div class="space-y-2">
-                    <ComponentSFCKeyboardConditionEditor
-                      :model-value="tooltipKeyboard()"
+                    <ComponentSFCInteractionBindingEditor
+                      mode="condition"
+                      :condition="tooltipKeyboard()"
                       :disabled="disabled || fieldDisabled"
-                      @update:model-value="setTooltipKeyboard"
+                      @update:condition="setTooltipKeyboard"
                     />
                     <p class="text-xs text-muted-foreground">Если условие не задано, тултип появляется при обычном наведении или фокусе. Можно записать физическую комбинацию либо настроить её вручную.</p>
                   </div>

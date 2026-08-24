@@ -20,7 +20,9 @@ const emit = defineEmits<{
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between gap-3">
-      <Label :class="labelClass">{{ label }}</Label>
+      <Label class="text-[15px] font-semibold leading-5 text-foreground" :class="labelClass">
+        {{ label }}
+      </Label>
       <Button
         v-if="usesParentValue"
         type="button"

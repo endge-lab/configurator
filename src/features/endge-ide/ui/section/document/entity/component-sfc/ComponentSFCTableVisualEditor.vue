@@ -27,6 +27,7 @@ import {
   compileComponentSFCExpression,
   COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+  ENDGE_SFC_TABLE_CELL_SELECTION_MODES,
   ENDGE_SFC_TABLE_PAGING_MODES,
   ENDGE_SFC_TABLE_SELECTION_MODES,
   ENDGE_SFC_TABLE_SELECTION_TRIGGERS,
@@ -132,7 +133,7 @@ import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
 import ComponentSFCEditOutcomeEditor from './ComponentSFCEditOutcomeEditor.vue'
-import ComponentSFCInteractionTriggerEditor from './ComponentSFCInteractionTriggerEditor.vue'
+import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 import ComponentSFCSettingsSectionHeader from './ComponentSFCSettingsSectionHeader.vue'
@@ -168,6 +169,10 @@ const SELECTION_MODE_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_MODES[numbe
   single: 'Одна строка',
   multiple: 'Несколько строк',
 }
+const CELL_SELECTION_MODE_LABELS: Record<typeof ENDGE_SFC_TABLE_CELL_SELECTION_MODES[number], string> = {
+  none: 'Без выделения',
+  single: 'Одна ячейка',
+}
 const SELECTION_TRIGGER_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_TRIGGERS[number], string> = {
   auto: 'Auto',
   control: 'Только control слева',
@@ -179,6 +184,7 @@ const PAGING_LABELS: Record<typeof ENDGE_SFC_TABLE_PAGING_MODES[number], string>
   virtual: 'Виртуальный скролл',
 }
 const SELECTION_MODE_OPTIONS = ENDGE_SFC_TABLE_SELECTION_MODES.map(value => ({ value, label: SELECTION_MODE_LABELS[value] }))
+const CELL_SELECTION_MODE_OPTIONS = ENDGE_SFC_TABLE_CELL_SELECTION_MODES.map(value => ({ value, label: CELL_SELECTION_MODE_LABELS[value] }))
 const SELECTION_TRIGGER_OPTIONS = ENDGE_SFC_TABLE_SELECTION_TRIGGERS.map(value => ({ value, label: SELECTION_TRIGGER_LABELS[value] }))
 const PAGING_OPTIONS = ENDGE_SFC_TABLE_PAGING_MODES.map(value => ({ value, label: PAGING_LABELS[value] }))
 const SORT_COMPARATOR_OPTIONS = ENDGE_SFC_TABLE_SORT_COMPARATORS.map(value => ({
@@ -191,7 +197,7 @@ const MENU_KIND_OPTIONS = [
 ] as const
 
 type EditableTableAttributeName
-  = 'selection-mode' | 'selection-trigger'
+  = 'selection-mode' | 'selection-trigger' | 'cell-selection-mode'
     | 'paging' | 'page-size' | 'page-sizes'
     | 'default-pin' | 'default-sort' | 'default-hidden'
 
@@ -418,8 +424,19 @@ const selectionTriggerValue = computed(() => {
     ? source
     : SELECTION_NOT_SET_VALUE
 })
+const cellSelectionModeValue = computed(() => {
+  const value = props.projection.cellSelectionMode
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_CELL_SELECTION_MODES as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
 const selectionModeIsSourceOwned = computed(() => props.projection.selectionMode?.kind === 'expression')
 const selectionTriggerIsSourceOwned = computed(() => props.projection.selectionTrigger?.kind === 'expression')
+const cellSelectionModeIsSourceOwned = computed(() => props.projection.cellSelectionMode?.kind === 'expression')
 const pagingModeValue = computed(() => {
   const value = props.projection.paging
   if (value?.kind === 'expression') {
@@ -591,13 +608,16 @@ function tableSectionSummary(sectionId: typeof tableSections[number]['id']): str
     case 'ports':
       return null
     case 'selection':
-      if (selectionModeIsSourceOwned.value || selectionTriggerIsSourceOwned.value) {
+      if (selectionModeIsSourceOwned.value || selectionTriggerIsSourceOwned.value || cellSelectionModeIsSourceOwned.value) {
         return 'Source'
       }
-      if (selectionModeValue.value === SELECTION_NOT_SET_VALUE) {
+      if (selectionModeValue.value === SELECTION_NOT_SET_VALUE && cellSelectionModeValue.value === SELECTION_NOT_SET_VALUE) {
         return null
       }
-      return `${selectionModeValue.value} / ${selectionTriggerValue.value === SELECTION_NOT_SET_VALUE ? 'auto' : selectionTriggerValue.value}`
+      return [
+        `Строки: ${selectionModeValue.value === SELECTION_NOT_SET_VALUE ? 'none' : selectionModeValue.value}`,
+        `Ячейка: ${cellSelectionModeValue.value === SELECTION_NOT_SET_VALUE ? 'none' : cellSelectionModeValue.value}`,
+      ].join(' · ')
     case 'paging':
       if (pagingIsSourceOwned.value) {
         return 'Source'
@@ -1230,6 +1250,8 @@ function tableProjectionValue(name: EditableTableAttributeName): ComponentSFCVis
       return props.projection.selectionMode
     case 'selection-trigger':
       return props.projection.selectionTrigger
+    case 'cell-selection-mode':
+      return props.projection.cellSelectionMode
     case 'paging':
       return props.projection.paging
     case 'page-size':
@@ -1262,7 +1284,10 @@ function updateSelectionMode(value: string | null): void {
   if (!value || value === SELECTION_SOURCE_VALUE || selectionModeIsSourceOwned.value) {
     return
   }
-  commitTableAttribute('selection-mode', value === SELECTION_NOT_SET_VALUE ? '' : value)
+  const mode = value === SELECTION_NOT_SET_VALUE ? null : value
+  applyPatches([
+    { type: 'set-table-attribute', name: 'selection-mode', value: mode },
+  ])
 }
 
 function updateSelectionTrigger(value: string | null): void {
@@ -1270,6 +1295,16 @@ function updateSelectionTrigger(value: string | null): void {
     return
   }
   commitTableAttribute('selection-trigger', value === SELECTION_NOT_SET_VALUE ? '' : value)
+}
+
+function updateCellSelectionMode(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || cellSelectionModeIsSourceOwned.value) {
+    return
+  }
+  const mode = value === SELECTION_NOT_SET_VALUE ? null : value
+  applyPatches([
+    { type: 'set-table-attribute', name: 'cell-selection-mode', value: mode },
+  ])
 }
 
 function updatePaging(value: string | null): void {
@@ -2446,62 +2481,108 @@ onBeforeUnmount(() => {
                   />
 
                   <section v-show="tableSection === 'selection'" class="space-y-3">
-                    <div class="grid max-w-[720px] gap-3 sm:grid-cols-2">
-                      <div class="space-y-1.5">
-                        <Label for="sfc-table-selection-mode">Режим</Label>
-                        <Select
-                          :model-value="selectionModeValue"
-                          :disabled="selectionModeIsSourceOwned"
-                          @update:model-value="value => updateSelectionMode(value == null ? null : String(value))"
-                        >
-                          <SelectTrigger id="sfc-table-selection-mode" class="editor-control w-full">
-                            <SelectValue placeholder="Выберите режим" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem :value="SELECTION_NOT_SET_VALUE">
-                              Не задано
-                            </SelectItem>
-                            <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
-                              {{ option.label }}
-                            </SelectItem>
-                            <SelectItem v-if="selectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
-                              Настроено в Source
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p v-if="selectionModeIsSourceOwned" class="text-xs text-muted-foreground">
-                          Dynamic selection-mode expression можно изменить только в Source.
-                        </p>
+                    <div class="max-w-[720px] space-y-4">
+                      <div class="rounded-md border p-4">
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 class="text-sm font-medium">Выделение строк</h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">Одна или несколько целых строк.</p>
+                          </div>
+                          <Badge variant="secondary">row</Badge>
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-selection-mode">Количество</Label>
+                            <Select
+                              :model-value="selectionModeValue"
+                              :disabled="selectionModeIsSourceOwned"
+                              @update:model-value="value => updateSelectionMode(value == null ? null : String(value))"
+                            >
+                              <SelectTrigger id="sfc-table-selection-mode" class="editor-control w-full">
+                                <SelectValue placeholder="Выберите режим" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">Не задано</SelectItem>
+                                <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
+                                  {{ option.label }}
+                                </SelectItem>
+                                <SelectItem v-if="selectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                  Настроено в Source
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p v-if="selectionModeIsSourceOwned" class="text-xs text-muted-foreground">
+                              Dynamic selection-mode expression можно изменить только в Source.
+                            </p>
+                          </div>
+
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-selection-trigger">Способ выбора</Label>
+                            <Select
+                              :model-value="selectionTriggerValue"
+                              :disabled="selectionTriggerIsSourceOwned"
+                              @update:model-value="value => updateSelectionTrigger(value == null ? null : String(value))"
+                            >
+                              <SelectTrigger id="sfc-table-selection-trigger" class="editor-control w-full">
+                                <SelectValue placeholder="Выберите способ" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">По умолчанию адаптера</SelectItem>
+                                <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
+                                  {{ option.label }}
+                                </SelectItem>
+                                <SelectItem v-if="selectionTriggerIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                  Настроено в Source
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p v-if="selectionTriggerIsSourceOwned" class="text-xs text-muted-foreground">
+                              Dynamic selection-trigger expression можно изменить только в Source.
+                            </p>
+                            <p v-else class="text-[11px] text-muted-foreground">
+                              <code>auto</code> оставляет выбор конкретного UX адаптеру отрисовки.
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div class="space-y-1.5">
-                        <Label for="sfc-table-selection-trigger">Способ выбора</Label>
-                        <Select
-                          :model-value="selectionTriggerValue"
-                          :disabled="selectionTriggerIsSourceOwned"
-                          @update:model-value="value => updateSelectionTrigger(value == null ? null : String(value))"
-                        >
-                          <SelectTrigger id="sfc-table-selection-trigger" class="editor-control w-full">
-                            <SelectValue placeholder="Выберите способ" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem :value="SELECTION_NOT_SET_VALUE">
-                              По умолчанию адаптера
-                            </SelectItem>
-                            <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
-                              {{ option.label }}
-                            </SelectItem>
-                            <SelectItem v-if="selectionTriggerIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
-                              Настроено в Source
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p v-if="selectionTriggerIsSourceOwned" class="text-xs text-muted-foreground">
-                          Dynamic selection-trigger expression можно изменить только в Source.
-                        </p>
-                        <p v-else class="text-[11px] text-muted-foreground">
-                          <code>auto</code> оставляет выбор конкретного UX адаптеру отрисовки.
-                        </p>
+                      <div class="rounded-md border p-4">
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 class="text-sm font-medium">Выделение ячеек</h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">Одна конкретная ячейка по строке и ключу колонки.</p>
+                          </div>
+                          <Badge variant="secondary">cell</Badge>
+                        </div>
+
+                        <div class="max-w-sm space-y-1.5">
+                          <Label for="sfc-table-cell-selection-mode">Количество</Label>
+                          <Select
+                            :model-value="cellSelectionModeValue"
+                            :disabled="cellSelectionModeIsSourceOwned"
+                            @update:model-value="value => updateCellSelectionMode(value == null ? null : String(value))"
+                          >
+                            <SelectTrigger id="sfc-table-cell-selection-mode" class="editor-control w-full">
+                              <SelectValue placeholder="Выберите режим" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem :value="SELECTION_NOT_SET_VALUE">Не задано</SelectItem>
+                              <SelectItem v-for="option in CELL_SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                              </SelectItem>
+                              <SelectItem v-if="cellSelectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                Настроено в Source
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p v-if="cellSelectionModeIsSourceOwned" class="text-xs text-muted-foreground">
+                            Dynamic cell-selection-mode expression можно изменить только в Source.
+                          </p>
+                          <p v-else class="text-[11px] text-muted-foreground">
+                            Работает независимо от выделения строк. При <code>selection-trigger="row"</code> или <code>both</code> клик по ячейке также меняет выбор её строки.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </section>
@@ -3546,18 +3627,14 @@ onBeforeUnmount(() => {
                       </div>
 
                       <div class="space-y-3">
-                        <div
+                        <ComponentSFCInteractionBindingEditor
                           v-for="(trigger, index) in selectedColumn.editing.triggers"
                           :key="`${index}:${trigger.event}`"
-                          class="editor-panel overflow-hidden rounded-lg border border-border/70"
+                          :trigger="trigger"
+                          :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+                          @update:trigger="updateSelectedCellEditTrigger(index, $event)"
                         >
-                          <div class="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2">
-                            <div class="flex min-w-0 items-center gap-2">
-                              <Badge variant="secondary" class="font-mono text-[10px]">
-                                {{ index + 1 }}
-                              </Badge>
-                              <code class="truncate text-xs font-medium">{{ trigger.event }}</code>
-                            </div>
+                          <template #actions>
                             <Button
                               type="button"
                               variant="ghost"
@@ -3568,15 +3645,8 @@ onBeforeUnmount(() => {
                             >
                               <Trash2 class="size-3.5" />
                             </Button>
-                          </div>
-                          <div class="p-3">
-                            <ComponentSFCInteractionTriggerEditor
-                              :model-value="trigger"
-                              :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
-                              @update:model-value="updateSelectedCellEditTrigger(index, $event)"
-                            />
-                          </div>
-                        </div>
+                          </template>
+                        </ComponentSFCInteractionBindingEditor>
                       </div>
 
                       <ComponentSFCEditOutcomeEditor

@@ -546,11 +546,13 @@ const draggedFolder = ref<{ path: string, rootId: string } | null>(null)
 const dragOverPath = ref<string | null>(null)
 
 function canDragTreeItem(item: FlatFsItem): boolean {
-  if (item.node.virtual)
-    return false
-  if (item.node.type === 'file')
+  if (item.node.virtual) {
+    return canCopyVirtualAction(item.node)
+  }
+  if (item.node.type === 'file') {
     return !(item.node as FsFileNode).isTableColumn
       && (item.node as FsFileNode).docType !== 'update'
+  }
 
   const folder = item.node as FsFolderNode
   return !folder.isRoot
@@ -559,9 +561,23 @@ function canDragTreeItem(item: FlatFsItem): boolean {
     && !isExternallyManaged(folder)
 }
 
+function canCopyVirtualAction(node: FsNode): node is FsFileNode {
+  return node.type === 'file'
+    && node.docType === 'action'
+    && node.sectionType === DomainSectionType.Action
+    && Boolean(node.identity?.trim())
+}
+
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
-  if (!e.dataTransfer || item.node.virtual)
+  if (!e.dataTransfer) {
     return
+  }
+  if (item.node.virtual) {
+    if (canCopyVirtualAction(item.node)) {
+      onVirtualActionDragStart(e, item, item.node)
+    }
+    return
+  }
   if (item.node.type === 'folder') {
     onFolderDragStart(e, item, item.node as FsFolderNode)
     return
@@ -640,6 +656,53 @@ function onDragStart(e: DragEvent, item: FlatFsItem): void {
     }
   })
   EndgeIDE.domainDrag.start(sources.map(n => n.sectionType), tree)
+}
+
+function onVirtualActionDragStart(e: DragEvent, item: FlatFsItem, node: FsFileNode): void {
+  const identity = node.identity?.trim()
+  if (!identity) {
+    e.dataTransfer!.effectAllowed = 'none'
+    return
+  }
+
+  const payload: DragPayloadItem[] = [{
+    id: node.id,
+    identity,
+    sectionType: DomainSectionType.Action,
+    docType: 'action',
+    rootId: item.rootId,
+  }]
+  const json = JSON.stringify(payload)
+  const pathSegments = item.path.split('/').filter(Boolean)
+  const tree: DomainDragTreeItem[] = [{
+    id: node.id,
+    identity,
+    name: node.name ?? identity,
+    sectionType: DomainSectionType.Action,
+    docType: 'action',
+    rootId: item.rootId,
+    path: item.path,
+    pathSegments,
+    depth: item.depth,
+    parentPath: pathSegments.length > 1 ? pathSegments.slice(0, -1).join('/') : null,
+    hierarchy: [{
+      path: item.path,
+      depth: item.depth,
+      type: 'file',
+      id: node.id,
+      identity,
+      name: node.name ?? identity,
+      sectionType: DomainSectionType.Action,
+      docType: 'action',
+    }],
+  }]
+
+  dragSources.value = []
+  draggedFolder.value = null
+  e.dataTransfer!.effectAllowed = 'copy'
+  e.dataTransfer!.setData('text/plain', json)
+  e.dataTransfer!.setData('application/x-endge-domain-entity', json)
+  EndgeIDE.domainDrag.start([DomainSectionType.Action], tree)
 }
 
 function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode): void {
