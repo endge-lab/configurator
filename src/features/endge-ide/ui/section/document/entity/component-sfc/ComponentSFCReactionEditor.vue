@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'save', value: string | null): void
+  (event: 'save', value: string | null, complete?: (saved: boolean) => void): void
 }>()
 
 const domainStore = useDomainStore()
@@ -96,22 +96,25 @@ function cancelEditing(): void {
   }
 }
 
-function removeReaction(): void {
+function removeReaction(): boolean {
   draft.value = ''
   error.value = null
-  expanded.value = false
-  emit('save', null)
+  let saved = true
+  emit('save', null, result => saved = result)
+  if (saved) {
+    expanded.value = false
+  }
+  return saved
 }
 
-function saveReaction(): void {
+function saveReaction(): boolean {
   const source = draft.value.trim()
   if (!source) {
     if (props.variant === 'field' && !props.allowRemove) {
       error.value = 'Выберите Action, Query или TypeScript reaction.'
-      return
+      return false
     }
-    removeReaction()
-    return
+    return removeReaction()
   }
   const diagnostics: RComponentDiagnostic[] = []
   const validationSource = props.actionFormat === 'object' && source.startsWith('{')
@@ -127,11 +130,23 @@ function saveReaction(): void {
   const firstError = diagnostics.find(diagnostic => diagnostic.severity === 'error')
   if (firstError) {
     error.value = firstError.message
-    return
+    return false
   }
   error.value = null
-  emit('save', source)
+  let saved = true
+  emit('save', source, result => saved = result)
+  return saved
 }
+
+/** Применяет изменённую существующую reaction перед сохранением документа. */
+function flushPendingEdits(): boolean {
+  if (draft.value.trim() === (props.modelValue ?? '').trim()) {
+    return true
+  }
+  return saveReaction()
+}
+
+defineExpose({ flushPendingEdits })
 
 function handleReactionKeydown(event: KeyboardEvent): void {
   if (event.key !== 'Enter' || (!event.metaKey && !event.ctrlKey)) {

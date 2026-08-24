@@ -16,7 +16,7 @@ import {
   getComponentSFCTagInputContract,
 } from '@endge/core'
 import { Blocks, ExternalLink, FileCode2, Tags } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,7 +45,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'setComponent', identity: string): void
   (event: 'setTag', tag: ComponentSFCTableVisualCellTag): void
-  (event: 'setBinding', payload: { name: string, value: string | null, valueKind: TableCellBindingValueKind }): void
+  (event: 'setBinding', payload: { name: string, value: string | null, valueKind: TableCellBindingValueKind }, complete?: (saved: boolean) => void): void
   (event: 'separate'): void
   (event: 'openSource'): void
 }>()
@@ -145,9 +145,9 @@ function resetBinding(name: string): void {
   delete errors.value[name]
 }
 
-function commitBinding(name: string): void {
+function commitBinding(name: string): boolean {
   if (props.implicit) {
-    return
+    return true
   }
   const valueKind = bindingKind(name)
   const value = drafts.value[name]?.trim() || null
@@ -158,12 +158,33 @@ function commitBinding(name: string): void {
     const error = validation.diagnostics.find(item => item.severity === 'error')
     if (error) {
       errors.value[name] = error.message
-      return
+      return false
     }
   }
   delete errors.value[name]
-  emit('setBinding', { name, value, valueKind })
+  let saved = true
+  emit('setBinding', { name, value, valueKind }, result => saved = result)
+  return saved
 }
+
+/** Проверяет и публикует все изменённые binding-черновики перед сохранением документа. */
+async function flushPendingEdits(): Promise<boolean> {
+  for (const field of fields.value) {
+    const binding = bindings.value.find(item => item.name === field.name)
+    const currentValue = binding ? sourceValue(binding.value) : ''
+    const currentKind = binding?.value.kind === 'expression' ? 'expression' : 'literal'
+    if ((drafts.value[field.name] ?? '').trim() === currentValue && bindingKind(field.name) === currentKind) {
+      continue
+    }
+    if (!commitBinding(field.name)) {
+      return false
+    }
+    await nextTick()
+  }
+  return true
+}
+
+defineExpose({ flushPendingEdits })
 
 function handleFocusOut(event: FocusEvent, name: string): void {
   const owner = event.currentTarget as HTMLElement | null

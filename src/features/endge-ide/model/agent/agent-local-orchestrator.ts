@@ -92,6 +92,11 @@ const WIDGET_ALIASES: Array<{
     summary: "Открываю виджет Проект.",
   },
   {
+    widgetId: "problems",
+    patterns: [/проблем/i, /\bproblems?\b/i, /\bdomain[\s-]*analysis\b/i, /анализ домена/i],
+    summary: "Открываю виджет Problems.",
+  },
+  {
     widgetId: "errors",
     patterns: [/\bошибк/i, /\berrors?\b/i],
     summary: "Открываю виджет Ошибки.",
@@ -147,16 +152,6 @@ const SINGLETON_ALIASES: Array<{
     viewId: "demonstration",
     patterns: [/\bдемонстрац/i],
     summary: "Открываю вкладку Demonstration.",
-  },
-  {
-    viewId: "domain-analysis",
-    patterns: [/\banalysis\b/i, /\bпоиск проблем\b/i, /\bанализ домена\b/i],
-    summary: "Открываю вкладку Domain Analysis.",
-  },
-  {
-    viewId: "architecture",
-    patterns: [/\bархитектур/i, /\barchitecture\b/i],
-    summary: "Открываю вкладку Архитектура.",
   },
 ];
 

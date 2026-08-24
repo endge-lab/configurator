@@ -77,9 +77,9 @@ const emit = defineEmits<{
   (event: 'addSeparator'): void
   (event: 'moveItem', payload: { fromIndex: number, toIndex: number }): void
   (event: 'removeItem', index: number): void
-  (event: 'saveLabel', payload: MenuLabelUpdate): void
+  (event: 'saveLabel', payload: MenuLabelUpdate, complete?: (saved: boolean) => void): void
   (event: 'setAction', payload: { index: number, value: string | null }): void
-  (event: 'saveDetails', payload: { index: number, input: string, icon: string, visible: string, disabled: string }): void
+  (event: 'saveDetails', payload: { index: number, input: string, icon: string, visible: string, disabled: string }, complete?: (saved: boolean) => void): void
   (event: 'openSource', item?: ComponentSFCTableMenuNodeProjection): void
 }>()
 
@@ -225,18 +225,22 @@ function beginLabelEdit(index: number, item: ComponentSFCTableMenuNodeProjection
   void nextTick(() => root.value?.querySelector<HTMLInputElement>(`[data-menu-label="${index}"]`)?.focus())
 }
 
-function saveLabelEdit(): void {
+function saveLabelEdit(): boolean {
   const index = editingIndex.value
   if (index == null || !labelDraft.value.trim()) {
-    return
+    return false
   }
-  editingIndex.value = null
+  let saved = true
   emit('saveLabel', {
     index,
     mode: translationDraft.value ? 'translation' : 'text',
     label: labelDraft.value.trim(),
     translationKey: translationKeyDraft.value.trim(),
-  })
+  }, result => saved = result)
+  if (saved) {
+    editingIndex.value = null
+  }
+  return saved
 }
 
 function cancelLabelEdit(): void {
@@ -296,19 +300,33 @@ function syncInspectorDrafts(item: ComponentSFCTableMenuNodeProjection): void {
   disabledDraft.value = sourceValueText(item.disabled)
 }
 
-function saveActionDetails(): void {
+function saveActionDetails(): boolean {
   if (actionInspectorIndex.value == null) {
-    return
+    return true
   }
+  let saved = true
   emit('saveDetails', {
     index: actionInspectorIndex.value,
     input: inputDraft.value,
     icon: iconDraft.value,
     visible: visibleDraft.value,
     disabled: disabledDraft.value,
-  })
-  closeActionInspector()
+  }, result => saved = result)
+  if (saved) {
+    closeActionInspector()
+  }
+  return saved
 }
+
+/** Применяет редактирование существующего пункта, но не создаёт новый пункт автоматически. */
+function flushPendingEdits(): boolean {
+  if (editingIndex.value != null && !saveLabelEdit()) {
+    return false
+  }
+  return saveActionDetails()
+}
+
+defineExpose({ flushPendingEdits })
 
 function startCreateItem(): void {
   closeActionInspector()

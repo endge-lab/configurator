@@ -561,6 +561,7 @@ const ALLOWED_WIDGET_IDS = new Set([
   "events",
   "runtime-debug",
   "raph",
+  "problems",
   "help",
   "agent",
 ]);
@@ -741,8 +742,6 @@ const SINGLETON_VIEW_METHODS: Record<string, () => void> = {
   "sfc-playground": () => EndgeIDE.tabs.openSFCPlayground(),
   "action-playgrounds": () => EndgeIDE.tabs.openActionPlaygroundsSingleton(),
   demonstration: () => EndgeIDE.tabs.openDemonstrationTab(),
-  "domain-analysis": () => EndgeIDE.tabs.openDomainAnalysis(),
-  architecture: () => EndgeIDE.tabs.openArchitecture(),
 };
 
 function getActiveTableColumnTitles(): string[] {

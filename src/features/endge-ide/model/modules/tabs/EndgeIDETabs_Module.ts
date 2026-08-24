@@ -106,8 +106,6 @@ const ActionPlaygrounds_Singleton = defineAsyncComponent(() => import('@/feature
 const DSL_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'))
 const SFC_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'))
 const DemonstrationTab_View = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'))
-const Architecture_Tab = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/architecture/Architecture_Tab.vue'))
-const Domain_Analysis_Tab = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/domain-analysis/Domain_Analysis_Tab.vue'))
 const Runtime_Debug_Tab = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/runtime-debug/Runtime_Debug_Tab.vue'))
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -118,8 +116,6 @@ const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_ACTION_PLAYGROUNDS = 'endge-action-playgrounds' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
-const VIEW_ID_ARCHITECTURE = 'endge-architecture' as const
-const VIEW_ID_DOMAIN_ANALYSIS = 'endge-domain-analysis' as const
 const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
 
 function isQueryDocumentType(value: string): boolean {
@@ -160,6 +156,7 @@ interface EditorSession {
   model: unknown | null
   persistedIdentity?: string
   savedSnapshot?: string
+  prepareBeforeSave?: () => boolean | Promise<boolean>
   syncBeforeSave?: () => void
   syncSystemBeforeSave?: () => void
 }
@@ -222,6 +219,8 @@ export class EndgeIDETabs_Module {
     this._tabsApi.closeTab('docs')
     this._tabsApi.closeTab('ui-editor-demo-singleton')
     this._tabsApi.closeTab('pulse')
+    this._tabsApi.closeTab('architecture')
+    this._tabsApi.closeTab('domain-analysis')
     this._removeMissingDocumentTabs()
     this._registerSystemViews()
     this._refreshPersistedDocumentTabs()
@@ -319,6 +318,22 @@ export class EndgeIDETabs_Module {
     await this._busy.run(this._doSave(activeTab))
   }
 
+  /** Регистрирует подготовку UI-черновиков активной вкладки перед любым способом сохранения. */
+  public registerSavePreparation(handler: () => boolean | Promise<boolean>): () => void {
+    const tabId = this.activeTab.value?.id
+    const session = tabId ? this._sessionByTabId.get(tabId) : null
+    if (!session) {
+      return () => {}
+    }
+
+    session.prepareBeforeSave = handler
+    return () => {
+      if (session.prepareBeforeSave === handler) {
+        session.prepareBeforeSave = undefined
+      }
+    }
+  }
+
   private async _doSave(activeTab: SmartTabRef): Promise<void> {
     const viewId = activeTab.viewId as SupportedViewId
     try {
@@ -343,6 +358,9 @@ export class EndgeIDETabs_Module {
         }
       }
       else {
+        if (session?.prepareBeforeSave && !await session.prepareBeforeSave()) {
+          return
+        }
         session?.syncBeforeSave?.()
       }
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
@@ -515,34 +533,6 @@ export class EndgeIDETabs_Module {
       closable: true,
       singleton: true,
       meta: { icon: 'ti ti-table text-green-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
-  /** Открыть вкладку «Поиск проблем» в единственном экземпляре. */
-  public openDomainAnalysis(): void {
-    const tabRef: SmartTabRef = {
-      id: 'domain-analysis',
-      label: 'Поиск проблем',
-      viewId: VIEW_ID_DOMAIN_ANALYSIS,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-report-search text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
-  /** Открыть вкладку «Архитектура» в single tone (singleton) режиме. */
-  public openArchitecture(): void {
-    const tabRef: SmartTabRef = {
-      id: 'architecture',
-      label: 'Архитектура',
-      viewId: VIEW_ID_ARCHITECTURE,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-git-merge text-cyan-500 text-xl' },
     }
     this.openTab(tabRef)
   }
@@ -736,14 +726,6 @@ export class EndgeIDETabs_Module {
     }))
     this._tabsApi.viewRegistry.register(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({
       component: markRaw(DemonstrationTab_View),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_ARCHITECTURE, (): SmartTabViewResolved => ({
-      component: markRaw(Architecture_Tab),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_DOMAIN_ANALYSIS, (): SmartTabViewResolved => ({
-      component: markRaw(Domain_Analysis_Tab),
       props: {},
     }))
     this._tabsApi.viewRegistry.register(VIEW_ID_RUNTIME_DEBUG, (tab: SmartTabRef): SmartTabViewResolved => {

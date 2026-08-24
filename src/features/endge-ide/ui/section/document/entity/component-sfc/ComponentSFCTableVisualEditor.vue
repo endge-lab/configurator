@@ -68,7 +68,7 @@ import {
   Trash2,
   Unplug,
 } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import {
@@ -219,6 +219,10 @@ interface MenuLabelUpdate {
   translationKey: string
 }
 
+interface PendingEditsHandle {
+  flushPendingEdits: () => boolean | Promise<boolean>
+}
+
 const tableSection = useSmartTabSelection(
   'component-sfc.visual.table-section',
   'general',
@@ -336,6 +340,12 @@ const sortPathDrafts = ref<string[]>([])
 const metadataDraft = ref('{}')
 const metadataError = ref<string | null>(null)
 const pendingEditingColumnId = ref<string | null>(null)
+const portsVisualEditorRef = ref<PendingEditsHandle | null>(null)
+const tableMenuEditorRefs = ref<PendingEditsHandle[]>([])
+const editableVariantEditorRef = ref<PendingEditsHandle | null>(null)
+const editedReactionEditorRef = ref<PendingEditsHandle | null>(null)
+const cellInteractionsEditorRef = ref<PendingEditsHandle | null>(null)
+const columnMenuEditorRef = ref<PendingEditsHandle | null>(null)
 
 watch(dataSplitRatio, (ratio) => {
   if (!isDataSplitResizing.value) {
@@ -392,6 +402,7 @@ const selectedColumn = computed(() => {
   const index = selectedColumnIndex.value
   return index == null ? null : columns.value[index] ?? null
 })
+const selectedColumnMenuIndex = computed(() => selectedColumn.value?.index ?? -1)
 const selectedCellEditingPending = computed(() => {
   const column = selectedColumn.value
   return Boolean(
@@ -679,8 +690,8 @@ function setMenuItemAttribute(
   value: string | null,
   valueKind: 'expression' | 'literal',
   columnIndex?: number,
-): void {
-  applyPatch({ type: 'set-menu-item-attribute', menu: kind, nodeIndex, name, value: value?.trim() || null, valueKind, ...(columnIndex == null ? {} : { columnIndex }) })
+): boolean {
+  return applyPatch({ type: 'set-menu-item-attribute', menu: kind, nodeIndex, name, value: value?.trim() || null, valueKind, ...(columnIndex == null ? {} : { columnIndex }) })
 }
 
 function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown, columnIndex?: number): void {
@@ -779,13 +790,19 @@ function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDr
   applyPatches(patches)
 }
 
-function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelUpdate, columnIndex?: number): void {
+function saveMenuLabel(
+  kind: ComponentSFCTableVisualMenuKind,
+  update: MenuLabelUpdate,
+  columnIndex?: number,
+  complete?: (saved: boolean) => void,
+): void {
   const label = update.label.trim()
   if (!label) {
+    complete?.(false)
     return
   }
   const translationKey = update.translationKey.trim() || `table:menu.item-${update.index + 1}`
-  setMenuItemAttribute(
+  const saved = setMenuItemAttribute(
     kind,
     update.index,
     'label',
@@ -795,15 +812,17 @@ function saveMenuLabel(kind: ComponentSFCTableVisualMenuKind, update: MenuLabelU
     update.mode === 'translation' ? 'expression' : 'literal',
     columnIndex,
   )
+  complete?.(saved)
 }
 
 function saveMenuDetails(
   kind: ComponentSFCTableVisualMenuKind,
   payload: { index: number, input: string, icon: string, visible: string, disabled: string },
   columnIndex?: number,
+  complete?: (saved: boolean) => void,
 ): void {
   const scope = columnIndex == null ? {} : { columnIndex }
-  applyPatches([
+  const saved = applyPatches([
     {
       type: 'set-menu-item-attribute',
       menu: kind,
@@ -841,6 +860,7 @@ function saveMenuDetails(
       ...scope,
     },
   ])
+  complete?.(saved)
 }
 
 function moveMenuItem(
@@ -1243,6 +1263,34 @@ function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
   }
   return true
 }
+
+/** Применяет локальные черновики вложенных визуальных редакторов перед persistence. */
+async function flushPendingEdits(): Promise<boolean> {
+  if (metadataError.value || Object.keys(cellBindingErrors.value).length) {
+    return false
+  }
+
+  const handles = [
+    portsVisualEditorRef.value,
+    ...tableMenuEditorRefs.value,
+    editableVariantEditorRef.value,
+    editedReactionEditorRef.value,
+    cellInteractionsEditorRef.value,
+    columnMenuEditorRef.value,
+  ]
+  for (const handle of handles) {
+    if (!handle) {
+      continue
+    }
+    if (!await handle.flushPendingEdits()) {
+      return false
+    }
+    await nextTick()
+  }
+  return !metadataError.value && Object.keys(cellBindingErrors.value).length === 0
+}
+
+defineExpose({ flushPendingEdits })
 
 function tableProjectionValue(name: EditableTableAttributeName): ComponentSFCVisualSourceValue | null {
   switch (name) {
@@ -1955,16 +2003,18 @@ function applySelectedCellEditTriggers(triggers: ComponentSFCInteractionTriggerP
   })
 }
 
-function setSelectedCellEditedReaction(value: string | null): void {
+function setSelectedCellEditedReaction(value: string | null, complete?: (saved: boolean) => void): void {
   const column = selectedColumn.value
   if (!column || !column.editing.editable || !column.editing.enabled || !column.editing.reaction.editable) {
+    complete?.(false)
     return
   }
-  applyPatch({
+  const saved = applyPatch({
     type: 'set-column-cell-edited-reaction',
     columnIndex: column.index,
     value,
   })
+  complete?.(saved)
 }
 
 function setSelectedCellCancelTriggers(triggers: ComponentSFCInteractionTriggerProjection[] | null): void {
@@ -2031,16 +2081,18 @@ function setSelectedCellEditorBinding(payload: {
   name: string
   value: string | null
   valueKind: TableCellBindingValueKind
-}): void {
+}, complete?: (saved: boolean) => void): void {
   const column = selectedColumn.value
   if (!column) {
+    complete?.(false)
     return
   }
-  applyPatch({
+  const saved = applyPatch({
     type: 'set-column-cell-editor-attribute',
     columnIndex: column.index,
     ...payload,
   })
+  complete?.(saved)
 }
 
 function separateSelectedCellEditor(): void {
@@ -2078,16 +2130,18 @@ function cloneInteractionTrigger(trigger: ComponentSFCInteractionTriggerProjecti
   }
 }
 
-function updateSelectedCellInteractions(value: string | null): void {
+function updateSelectedCellInteractions(value: string | null, complete?: (saved: boolean) => void): void {
   const column = selectedColumn.value
   if (!column) {
+    complete?.(false)
     return
   }
-  applyPatch({
+  const saved = applyPatch({
     type: 'set-column-cell-on',
     columnIndex: column.index,
     value,
   })
+  complete?.(saved)
 }
 
 function openColumnContextMenu(event: MouseEvent, columnIndex: number): void {
@@ -2473,6 +2527,7 @@ onBeforeUnmount(() => {
 
                   <ComponentSFCPortsVisualEditor
                     v-if="tableSection === 'events' || tableSection === 'ports'"
+                    ref="portsVisualEditorRef"
                     :source="source"
                     :mode="tableSection"
                     :table-ref="sourceValueText(projection.ref) || null"
@@ -2820,6 +2875,7 @@ onBeforeUnmount(() => {
                         class="m-0 mt-4"
                       >
                         <ComponentSFCTableMenuPreviewEditor
+                          ref="tableMenuEditorRefs"
                           :kind="menuOption.kind"
                           :menu="projection.menus[menuOption.kind]"
                           :actions="projection.menuActions"
@@ -2828,9 +2884,9 @@ onBeforeUnmount(() => {
                           @add-separator="addMenuNode(menuOption.kind, 'separator')"
                           @move-item="payload => moveMenuItem(menuOption.kind, payload)"
                           @remove-item="index => removeMenuNode(menuOption.kind, index)"
-                          @save-label="update => saveMenuLabel(menuOption.kind, update)"
+                          @save-label="(update, complete) => saveMenuLabel(menuOption.kind, update, undefined, complete)"
                           @set-action="payload => setMenuItemAction(menuOption.kind, payload.index, payload.value)"
-                          @save-details="payload => saveMenuDetails(menuOption.kind, payload)"
+                          @save-details="(payload, complete) => saveMenuDetails(menuOption.kind, payload, undefined, complete)"
                           @open-source="item => openMenuSource(menuOption.kind, item)"
                         />
                       </TabsContent>
@@ -3564,6 +3620,7 @@ onBeforeUnmount(() => {
 
                       <ComponentSFCEditableVariantEditor
                         v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
+                        ref="editableVariantEditorRef"
                         :editor="selectedColumn.editing.editor"
                         :implicit="selectedColumn.editing.editorImplicit"
                         :selecting="selectedCellEditingPending"
@@ -3638,6 +3695,7 @@ onBeforeUnmount(() => {
                           <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
                         </div>
                         <ComponentSFCReactionEditor
+                          ref="editedReactionEditorRef"
                           :model-value="selectedColumn.editing.reaction.source"
                           event-name="edited"
                           variant="section"
@@ -3668,6 +3726,7 @@ onBeforeUnmount(() => {
 
                 <div v-show="columnSection === 'events'">
                   <ComponentSFCCellInteractionsEditor
+                    ref="cellInteractionsEditorRef"
                     :model-value="selectedColumn.interactions"
                     @update="updateSelectedCellInteractions"
                     @open-source="openSelectedColumnSource"
@@ -3900,19 +3959,20 @@ onBeforeUnmount(() => {
 
                   <section v-show="columnSection === 'cell-menu'" class="px-5 py-4">
                     <ComponentSFCTableMenuPreviewEditor
+                      ref="columnMenuEditorRef"
                       kind="row"
                       :menu="selectedColumn.cellMenu"
                       :actions="projection.menuActions"
                       allow-inherit
-                      @set-mode="value => setMenuMode('row', value, selectedColumn.index)"
-                      @create-item="draft => createMenuItem('row', draft, selectedColumn.index)"
-                      @add-separator="addMenuNode('row', 'separator', selectedColumn.index)"
-                      @move-item="payload => moveMenuItem('row', payload, selectedColumn.index)"
-                      @remove-item="index => removeMenuNode('row', index, selectedColumn.index)"
-                      @save-label="update => saveMenuLabel('row', update, selectedColumn.index)"
-                      @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumn.index)"
-                      @save-details="payload => saveMenuDetails('row', payload, selectedColumn.index)"
-                      @open-source="item => openMenuSource('row', item, selectedColumn.index)"
+                      @set-mode="value => setMenuMode('row', value, selectedColumnMenuIndex)"
+                      @create-item="draft => createMenuItem('row', draft, selectedColumnMenuIndex)"
+                      @add-separator="addMenuNode('row', 'separator', selectedColumnMenuIndex)"
+                      @move-item="payload => moveMenuItem('row', payload, selectedColumnMenuIndex)"
+                      @remove-item="index => removeMenuNode('row', index, selectedColumnMenuIndex)"
+                      @save-label="(update, complete) => saveMenuLabel('row', update, selectedColumnMenuIndex, complete)"
+                      @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumnMenuIndex)"
+                      @save-details="(payload, complete) => saveMenuDetails('row', payload, selectedColumnMenuIndex, complete)"
+                      @open-source="item => openMenuSource('row', item, selectedColumnMenuIndex)"
                     />
                   </section>
                   </template>

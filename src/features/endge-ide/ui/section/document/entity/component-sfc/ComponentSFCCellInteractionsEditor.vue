@@ -8,7 +8,7 @@ import type {
 
 import { getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
 import { FileCode2, Plus, Trash2 } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 
@@ -20,13 +20,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'update', value: string | null): void
+  (event: 'update', value: string | null, complete?: (saved: boolean) => void): void
   (event: 'openSource'): void
 }>()
 
 const events = getComponentSFCIntrinsicEventDefinitions('Cell')
 const LEGACY_REACTION_PLACEHOLDER = `action({ identity: 'action.identity', input: { rowId: rowKey, row, rowIndex, columnKey, value, event: event() } })`
 const drafts = ref<ComponentSFCTableCellInteractionRuleProjection[]>([])
+const reactionEditorRefs = ref<Array<{ flushPendingEdits: () => boolean }>>([])
 
 watch(
   () => props.modelValue,
@@ -89,20 +90,34 @@ function updateTrigger(index: number, trigger: ComponentSFCInteractionTriggerPro
   }
 }
 
-function updateReaction(index: number, value: string | null): void {
+function updateReaction(index: number, value: string | null, complete?: (saved: boolean) => void): void {
   const rule = drafts.value[index]
   const reactionSource = value?.trim() ?? ''
   if (!rule || !reactionSource) {
+    complete?.(false)
     return
   }
   rule.reactionSource = reactionSource
-  commit()
+  commit(complete)
 }
 
-function commit(): void {
+function commit(complete?: (saved: boolean) => void): void {
   const completeRules = drafts.value.filter(rule => Boolean(rule.reactionSource.trim()))
-  emit('update', completeRules.length ? serializeRules(completeRules) : null)
+  emit('update', completeRules.length ? serializeRules(completeRules) : null, complete)
 }
+
+/** Последовательно применяет открытые reaction-черновики, не теряя Source между patches. */
+async function flushPendingEdits(): Promise<boolean> {
+  for (const editor of [...reactionEditorRefs.value]) {
+    if (!editor.flushPendingEdits()) {
+      return false
+    }
+    await nextTick()
+  }
+  return true
+}
+
+defineExpose({ flushPendingEdits })
 
 function serializeRules(rules: ComponentSFCTableCellInteractionRuleProjection[]): string {
   const serialized = rules.map(serializeRule)
@@ -217,9 +232,10 @@ function quote(value: string): string {
         </template>
         <template #reaction>
           <ComponentSFCReactionEditor
+            ref="reactionEditorRefs"
             :model-value="rule.reactionSource"
             :event-name="rule.event"
-            @save="updateReaction(index, $event)"
+            @save="(value, complete) => updateReaction(index, value, complete)"
           />
         </template>
       </ComponentSFCInteractionBindingEditor>

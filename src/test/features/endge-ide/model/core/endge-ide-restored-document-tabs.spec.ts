@@ -43,9 +43,9 @@ describe('endge IDE restored document tabs', () => {
         payload: { documentId: 'existing-configuration', documentType: 'configuration' },
       },
       {
-        id: 'architecture',
-        label: 'Архитектура',
-        viewId: 'endge-architecture',
+        id: 'demonstration',
+        label: 'Demonstration',
+        viewId: 'endge-demonstration',
       },
     ])).toEqual([
       'query-missing-query',

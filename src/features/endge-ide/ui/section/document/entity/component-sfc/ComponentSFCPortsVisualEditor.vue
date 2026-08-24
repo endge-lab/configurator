@@ -18,7 +18,7 @@ import {
   TABLE_EVENT_DEFINITIONS,
 } from '@endge/core'
 import { Braces, ChevronDown, Plus, Radio, Trash2, Zap } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Badge } from '@/components/ui/badge'
@@ -108,6 +108,7 @@ const portKind = ref<'action' | 'computation' | 'component' | 'query'>('action')
 const portName = ref('')
 const portIdentity = ref('')
 const forwardDraft = ref('')
+const reactionEditorRefs = ref<Array<{ flushPendingEdits: () => boolean }>>([])
 watch(
   () => projection.value.manifest.forward.rules,
   rules => forwardDraft.value = serializeForwardRules(rules),
@@ -154,8 +155,10 @@ function saveReaction(
   payloadType: string,
   port: ComponentSFCEventPort | null,
   value: string | null,
+  complete?: (saved: boolean) => void,
 ): void {
-  applyEvent(name, payloadType, port, value)
+  const saved = applyEvent(name, payloadType, port, value)
+  complete?.(saved)
 }
 
 function applyEvent(name: string, payloadType: string, port: ComponentSFCEventPort | null, actionSource: string | null): boolean {
@@ -261,10 +264,31 @@ function removePort(role: ComponentSFCPortRole, name: string): void {
   commit(patchComponentSFCPortsSource(props.source, { type: 'remove-port', role, name }))
 }
 
-function saveForward(): void {
+function saveForward(): boolean {
   const declaration = forwardDraft.value.trim() || null
-  commit(patchComponentSFCPortsSource(props.source, { type: 'set-forward', declaration }))
+  return commit(patchComponentSFCPortsSource(props.source, { type: 'set-forward', declaration }))
 }
+
+/** Применяет reaction и forwarding существующих ports перед сохранением документа. */
+async function flushPendingEdits(): Promise<boolean> {
+  for (const editor of [...reactionEditorRefs.value]) {
+    if (!editor.flushPendingEdits()) {
+      return false
+    }
+    await nextTick()
+  }
+
+  const persistedForward = serializeForwardRules(projection.value.manifest.forward.rules).trim()
+  if (forwardDraft.value.trim() !== persistedForward) {
+    if (!saveForward()) {
+      return false
+    }
+    await nextTick()
+  }
+  return true
+}
+
+defineExpose({ flushPendingEdits })
 
 function onEntityDrop(payload: { id: string | number, sectionType: DomainSectionType }): void {
   const entity = payload.sectionType === DomainSectionType.Action
@@ -417,11 +441,12 @@ function toPortName(identity: string): string {
         <CollapsibleContent>
           <div class="border-t p-3">
             <ComponentSFCReactionEditor
+              ref="reactionEditorRefs"
               :model-value="reactionSource(item.port)"
               :event-name="item.name"
               action-format="object"
               allow-remove
-              @save="saveReaction(item.name, item.payloadType, item.port, $event)"
+              @save="(value, complete) => saveReaction(item.name, item.payloadType, item.port, value, complete)"
             />
           </div>
         </CollapsibleContent>

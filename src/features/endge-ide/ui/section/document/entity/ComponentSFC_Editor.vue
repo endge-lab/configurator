@@ -12,7 +12,7 @@ import {
 } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { AlertCircle, Code2, Columns3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
-import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,11 +65,18 @@ const tableVisualTab = useSmartTabSelection(
 )
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const tableVisualEditorRef = ref<{ flushPendingEdits: () => boolean | Promise<boolean> } | null>(null)
 const configurationRevision = ref(0)
 const offConfiguration = Endge.configuration.subscribe(() => {
   configurationRevision.value += 1
 })
 onScopeDispose(offConfiguration)
+
+let unregisterSavePreparation: (() => void) | null = null
+onMounted(() => {
+  unregisterSavePreparation = tabs.registerSavePreparation(prepareBeforeSave)
+})
+onScopeDispose(() => unregisterSavePreparation?.())
 const sfcEditing = computed<EndgeSFCEditingConfiguration>(() => {
   void configurationRevision.value
   return Endge.configuration.isResolved
@@ -187,6 +194,17 @@ watch(hasTableVisual, (supported) => {
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
+}
+
+/** Завершает активный field edit и применяет вложенные visual drafts до sync модели. */
+async function prepareBeforeSave(): Promise<boolean> {
+  const activeElement = document.activeElement
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur()
+    await nextTick()
+  }
+  const visualEditor = tableVisualEditorRef.value
+  return visualEditor ? await visualEditor.flushPendingEdits() : true
 }
 
 function updateVisualSource(source: string): void {
@@ -474,6 +492,7 @@ async function launchPreview(): Promise<void> {
 
     <ComponentSFCTableVisualEditor
       v-else-if="activeTab === 'visual' && tableVisualProjection"
+      ref="tableVisualEditorRef"
       v-model:mode="tableVisualTab"
       :source="editor.source"
       :identity="editor.identity"

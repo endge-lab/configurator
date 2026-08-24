@@ -7,12 +7,11 @@ import { Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-
 import { computed, ref } from 'vue'
 
 import { Configurator } from '@/app'
-import { getIconComponent } from '@/components/layouts/grid'
+import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -22,6 +21,7 @@ import {
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -84,8 +84,8 @@ function openActionPlaygroundsSingleton(): void {
   tabs.openActionPlaygroundsSingleton()
 }
 
-function openDomainAnalysis(): void {
-  EndgeIDE.tabs.openDomainAnalysis()
+function toggleProblems(): void {
+  toggleWidget(ENDGE_IDE_PROBLEMS_WIDGET_ID)
 }
 
 async function launchCurrentProjectRuntime(): Promise<void> {
@@ -107,10 +107,6 @@ async function launchCurrentProjectRuntime(): Promise<void> {
   finally {
     isLaunchingProjectRuntime.value = false
   }
-}
-
-function openArchitecture(): void {
-  EndgeIDE.tabs.openArchitecture()
 }
 
 async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): Promise<void> {
@@ -166,14 +162,39 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Плагины -->
+      <!-- Отладка -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
             type="button"
             class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            Плагины
+            Отладка
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem @click="toggleProblems">
+            Поиск проблем
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            Компиляция проекта
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Дополнительно -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            Дополнительно
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -197,58 +218,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           </DropdownMenuSub>
           <DropdownMenuItem @click="openActionPlaygroundsSingleton">
             Action Playgrounds
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <!-- Отладка -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <button
-            type="button"
-            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            Отладка
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          class="w-56"
-          align="start"
-          side="bottom"
-          :side-offset="4"
-        >
-          <DropdownMenuItem @click="openDomainAnalysis">
-            Поиск проблем
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            Компиляция проекта
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <!-- Справка -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <button
-            type="button"
-            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            title="Endge Framework v1.0"
-          >
-            Справка
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          class="w-56"
-          align="start"
-          side="bottom"
-          :side-offset="4"
-        >
-          <DropdownMenuLabel class="text-[11px] text-muted-foreground">
-            Endge Framework v1.0
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @click="openArchitecture">
-            Архитектура
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
