@@ -2,6 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
+  ComponentSFCExpressionCompletionScope,
   ComponentSFCTableMenuActionOption,
   ComponentSFCTableMenuNodeProjection,
   ComponentSFCTableMenuProjection,
@@ -45,6 +46,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import ComponentSFCExpressionInput from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCExpressionInput.vue'
 
 interface MenuItemDraft {
   labelMode: 'text' | 'translation'
@@ -109,6 +111,9 @@ const newItemDraft = reactive<MenuItemDraft>({
 })
 
 const menuIsCustom = computed(() => props.menu.mode === 'custom')
+const expressionScope = computed<ComponentSFCExpressionCompletionScope>(() => props.kind === 'row'
+  ? 'table-row-menu'
+  : 'table-column-menu')
 const inspectedItem = computed(() => {
   if (actionInspectorIndex.value == null) {
     return null
@@ -640,8 +645,18 @@ function resetDrag(): void {
                 <Input v-model="newItemDraft.icon" class="editor-control h-8 font-mono text-xs" placeholder="Icon" />
               </div>
               <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                <Input v-model="newItemDraft.visible" class="editor-control h-8 font-mono text-xs" placeholder="Показывать, когда" />
-                <Input v-model="newItemDraft.disabled" class="editor-control h-8 font-mono text-xs" placeholder="Отключать, когда" />
+                <ComponentSFCExpressionInput
+                  v-model="newItemDraft.visible"
+                  :scope="expressionScope"
+                  input-class="editor-control h-8 font-mono text-xs"
+                  placeholder="Показывать, когда"
+                />
+                <ComponentSFCExpressionInput
+                  v-model="newItemDraft.disabled"
+                  :scope="expressionScope"
+                  input-class="editor-control h-8 font-mono text-xs"
+                  placeholder="Отключать, когда"
+                />
               </div>
               <div class="mt-3 flex justify-end gap-2">
                 <Button variant="ghost" size="sm" class="h-7" @click="creatingItem = false">
@@ -691,12 +706,22 @@ function resetDrag(): void {
         <div class="mt-4 space-y-4">
           <div class="space-y-1.5">
             <Label class="text-[11px]">Показывать, когда</Label>
-            <Input v-model="visibleDraft" class="editor-control h-8 font-mono text-xs" placeholder="$row.data.status === 'active'" />
+            <ComponentSFCExpressionInput
+              v-model="visibleDraft"
+              :scope="expressionScope"
+              input-class="editor-control h-8 font-mono text-xs"
+              placeholder="$row.data.status === 'active'"
+            />
           </div>
 
           <div class="space-y-1.5">
             <Label class="text-[11px]">Отключать, когда</Label>
-            <Input v-model="disabledDraft" class="editor-control h-8 font-mono text-xs" placeholder="!$row.data.canEdit" />
+            <ComponentSFCExpressionInput
+              v-model="disabledDraft"
+              :scope="expressionScope"
+              input-class="editor-control h-8 font-mono text-xs"
+              placeholder="!$row.data.canEdit"
+            />
           </div>
 
           <div class="space-y-1.5">

@@ -12,6 +12,7 @@ import type * as Monaco from 'monaco-editor'
 import {
   Endge,
   parseComponentSFC,
+  resolveComponentSFCExpressionCompletions,
   resolveComponentSFCTagAttributeContracts,
   validateComponentSFCAttributeValues,
 } from '@endge/core'
@@ -235,7 +236,9 @@ export function createSFCLanguageContribution(
           const offset = model.getOffsetAt(position)
           if (!template || offset < template.start || offset > template.end) { return { suggestions: [] } }
           const configCompletion = contextConfigurationCompletions(monaco, model, offset)
-          if (configCompletion) return configCompletion
+          if (configCompletion) {
+            return configCompletion
+          }
           const attributeContext = resolveAttributeCompletionContext(model.getValue(), offset)
           if (attributeContext) {
             const contracts = resolveComponentSFCTagAttributeContracts(attributeContext.tag, options)
@@ -361,56 +364,57 @@ export function createSFCLanguageContribution(
   }
 }
 
-const PUBLIC_SYSTEM_CONFIGURATION_KEYS = [
-  'defaultTheme', 'themes', 'defaultLocale', 'fallbackLocale', 'locales',
-  'defaultTimezone', 'timezones', 'defaultAuthProfileIdentity',
-  'defaultSfcAdapterId', 'sfcAdapterIds', 'sfcEditing', 'tooltips',
-] as const
-
 function contextConfigurationCompletions(monaco: typeof Monaco, model: Monaco.editor.ITextModel, offset: number) {
   const before = model.getValue().slice(0, offset)
-  const match = /\$context\.config(?:\.([\w$-]*))?(?:\.([\w$-]*))?$/.exec(before)
-  if (!match) return null
-  const categories = Endge.configurationSchema.list().filter(item => item.document)
-  const categoryIdentity = match[1]
-  const fieldPrefix = match[2]
-  const prefix = fieldPrefix ?? categoryIdentity ?? ''
-  const range = monaco.Range.fromPositions(model.getPositionAt(offset - prefix.length), model.getPositionAt(offset))
-  if (!categoryIdentity || fieldPrefix == null) {
-    return {
-      suggestions: [
-        ...PUBLIC_SYSTEM_CONFIGURATION_KEYS.map(key => ({ label: key, insertText: key, detail: 'System configuration', range, kind: monaco.languages.CompletionItemKind.Property })),
-        ...categories.map(category => ({ label: category.identity, insertText: category.identity, detail: category.displayName, range, kind: monaco.languages.CompletionItemKind.Module })),
-      ],
-    }
+  const match = /\$context\.config(?:\.[A-Za-z_$][\w$]*)*\.?$/.exec(before)
+  if (!match) {
+    return null
   }
-  const category = categories.find(item => item.identity === categoryIdentity)
+  const expressionStart = offset - match[0].length
+  const completions = resolveComponentSFCExpressionCompletions({
+    source: match[0],
+    cursor: match[0].length,
+    scope: 'table-row-menu',
+    context: Endge.context.runtimeSnapshot(),
+    configurations: Endge.configurationSchema.list(),
+  })
   return {
-    suggestions: (category?.document?.values ?? []).map(field => ({
-      label: field.key,
-      insertText: field.key,
-      detail: `${field.label} · ${field.type.kind === 'reference' ? field.type.identity : field.type.kind}`,
-      documentation: field.description,
-      range,
-      kind: monaco.languages.CompletionItemKind.Property,
+    suggestions: completions.map(item => ({
+      label: item.label,
+      insertText: item.insertText,
+      detail: item.detail,
+      documentation: item.documentation,
+      range: monaco.Range.fromPositions(
+        model.getPositionAt(expressionStart + item.replace.start),
+        model.getPositionAt(expressionStart + item.replace.end),
+      ),
+      kind: item.kind === 'configuration'
+        ? monaco.languages.CompletionItemKind.Module
+        : monaco.languages.CompletionItemKind.Property,
     })),
   }
 }
 
 function validateContextConfigurationPaths(source: string): Array<{ code: string, message: string, start: number, end: number }> {
   const categories = new Map(Endge.configurationSchema.list().filter(item => item.document).map(item => [item.identity, item]))
+  const publicConfigurationKeys = new Set(
+    Object.keys(Endge.context.runtimeSnapshot().config).filter(key => !categories.has(key)),
+  )
   const diagnostics: Array<{ code: string, message: string, start: number, end: number }> = []
   for (const match of source.matchAll(/\$context\.config\.([\w$-]+)(?:\.([\w$-]+))?/g)) {
     const identity = match[1]!
-    if ((PUBLIC_SYSTEM_CONFIGURATION_KEYS as readonly string[]).includes(identity)) continue
+    if (publicConfigurationKeys.has(identity)) {
+      continue
+    }
     const category = categories.get(identity)
     if (!category) {
       diagnostics.push({ code: 'context-config-category-unknown', message: `Configuration "${identity}" не существует.`, start: match.index!, end: match.index! + match[0].length })
       continue
     }
     const field = match[2]
-    if (field && !category.document?.values.some(item => item.key === field))
+    if (field && !category.document?.values.some(item => item.key === field)) {
       diagnostics.push({ code: 'context-config-field-unknown', message: `Configuration "${identity}" не содержит поле "${field}".`, start: match.index!, end: match.index! + match[0].length })
+    }
   }
   return diagnostics
 }

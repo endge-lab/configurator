@@ -62,6 +62,7 @@ const commitDetails = ref<ConfiguratorCommit | null>(null)
 const restoreDialogOpen = ref(false)
 const restoreTarget = ref<RestoreTarget | null>(null)
 const restorePlan = ref<ConfiguratorRestorePlan | null>(null)
+const restoreHasPendingRevisions = ref(false)
 
 const role = computed(() => Configurator.context.workspaceRole)
 const canWrite = computed(
@@ -231,16 +232,15 @@ async function requestRestore(target: RestoreTarget): Promise<void> {
   if (!canRestore.value) {
     return
   }
-  if (hasPendingRevisions.value) {
-    activeTab.value = 'commits'
-    toast.error('Перед восстановлением создайте коммит текущих изменений')
-    return
-  }
   try {
+    await configuratorReleases.load()
     const plan
       = target.kind === 'commit'
         ? await configuratorReleases.planCommitRestore(target.id)
         : await configuratorReleases.planReleaseRestore(target.id)
+    restoreHasPendingRevisions.value
+      = hasPendingRevisions.value
+        || plan.expectedHeadSequence > (latestCommit.value?.headSequence ?? 0)
     restoreTarget.value = target
     restorePlan.value = plan
     restoreDialogOpen.value = true
@@ -811,11 +811,21 @@ onBeforeUnmount(stop)
             </div>
           </div>
           <div
+            v-if="restoreHasPendingRevisions"
+            class="flex gap-2 rounded-md border border-destructive/35 bg-destructive/[0.07] p-2.5 text-[11px] leading-4 text-destructive"
+          >
+            <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
+            Есть незакоммиченные изменения. После восстановления выбранной
+            версии они будут потеряны. Домен будет полностью перезагружен для всех
+            пользователей.
+          </div>
+          <div
+            v-else
             class="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-2.5 text-[11px] leading-4 text-amber-800 dark:text-amber-200"
           >
             <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
-            Убедитесь, что изменения в открытых редакторах сохранены. После
-            восстановления домен будет полностью перезагружен.
+            После восстановления домен будет полностью перезагружен для всех
+            пользователей.
           </div>
         </div>
 
