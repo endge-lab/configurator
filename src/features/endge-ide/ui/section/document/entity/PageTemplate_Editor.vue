@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -10,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
@@ -25,7 +25,7 @@ const editor = computed<RPageTemplateEditor | null>(() => props.tabContext?.edit
 const areaLabels = computed(() =>
   editor.value?.areas?.map(a => ({ identity: a.identity, title: a.title || a.identity })) ?? [],
 )
-const debuggerRef = useSubscribableModuleRef(Endge.runtimeDebugger)
+const debuggerRef = useSubscribableRefAuto(Endge.runtimeDebugger)
 const firstRuntimeTab = computed(() => debuggerRef.value.tabs[0] ?? null)
 const runtimeTargets = computed(() => {
   const tab = firstRuntimeTab.value

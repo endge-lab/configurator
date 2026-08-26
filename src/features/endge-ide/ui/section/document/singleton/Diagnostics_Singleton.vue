@@ -6,6 +6,7 @@
 import { Activity, Eraser } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { Endge } from '@endge/core'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,10 +14,9 @@ import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
 import { buildDiagnosticsTree } from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
-import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 
-const telemetryRef = useSubscribableModuleRef(Endge.diagnostics.telemetry)
-const problemsRef = useSubscribableModuleRef(Endge.diagnostics.problems)
+const telemetryRef = useSubscribableRefAuto(Endge.diagnostics.telemetry)
+const problemsRef = useSubscribableRefAuto(Endge.diagnostics.problems)
 const records = computed(() => {
   void telemetryRef.value
   return Endge.diagnostics.telemetry.query()

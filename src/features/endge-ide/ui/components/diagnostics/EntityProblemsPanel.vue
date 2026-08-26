@@ -11,6 +11,7 @@ import type {
 import type { Component } from 'vue'
 
 import { createDiagnosticsEntityOwner, Endge } from '@endge/core'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 import {
   Braces,
   CircleAlert,
@@ -25,7 +26,6 @@ import { computed, ref, watch } from 'vue'
 
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useSubscribableModuleRef } from '@/features/endge-ide/model/diagnostics/use-subscribable-module-ref'
 
 const props = defineProps<{
   entityRef?: DiagnosticsEntityRef
@@ -33,7 +33,7 @@ const props = defineProps<{
   authoringDiagnostics?: readonly ProgramDiagnostic[]
 }>()
 
-const problemsRevision = useSubscribableModuleRef(Endge.diagnostics.problems)
+const problemsRevision = useSubscribableRefAuto(Endge.diagnostics.problems)
 const activePhase = useSmartTabSelection<DiagnosticsProblemPhase>(
   'diagnostics.active-phase',
   'build',

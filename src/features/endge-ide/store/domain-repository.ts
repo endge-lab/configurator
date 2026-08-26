@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { useSubscribableRef } from '@endge/utils'
 import { Endge } from '@endge/core'
+import { useSubscribableRef } from '@endge/ui-vue'
 import { ref } from 'vue'
 
 export const useDomainRepository = defineStore('endge-domain-repository', () => {

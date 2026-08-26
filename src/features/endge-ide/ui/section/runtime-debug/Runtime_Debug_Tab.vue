@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { Play } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { Endge } from '@endge/core'
-import { useSubscribableRefAuto } from '@endge/utils'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -116,4 +116,3 @@ function runTemplateAnalysis(): void {
     </div>
   </div>
 </template>
-

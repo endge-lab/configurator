@@ -1,4 +1,6 @@
-import { Endge } from '@endge/core'
+import type { Component } from 'vue'
+
+import { registerVueUIRenderer } from '@endge/ui-vue'
 
 import UIEditorNodeRendererBadge from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererBadge.vue'
 import UIEditorNodeRendererButton from '@/features/endge-admin-ui-editor/ui/renderers/UIEditorNodeRendererButton.vue'
@@ -9,8 +11,8 @@ import UIEditorNodeRendererTextRuntime from '@/features/endge-admin-ui-editor/ui
 
 let isRegistered = false
 
-function registerRendererPair(definitionRef: string, adminRef: string, runtimeRef: string, component: any): void {
-  Endge.uiRegistry.registerRenderer({
+function registerRendererPair(definitionRef: string, adminRef: string, runtimeRef: string, component: Component): void {
+  registerVueUIRenderer({
     ref: adminRef,
     definitionRef,
     surface: 'admin',
@@ -18,7 +20,7 @@ function registerRendererPair(definitionRef: string, adminRef: string, runtimeRe
     component,
   })
 
-  Endge.uiRegistry.registerRenderer({
+  registerVueUIRenderer({
     ref: runtimeRef,
     definitionRef,
     surface: 'runtime',
@@ -32,7 +34,7 @@ export function ensureUIEditorDemoCoreRenderersRegistered(): void {
     return
   }
 
-  Endge.uiRegistry.registerRenderer({
+  registerVueUIRenderer({
     ref: 'ui.text.admin.main',
     definitionRef: 'ui.text',
     surface: 'admin',
@@ -40,7 +42,7 @@ export function ensureUIEditorDemoCoreRenderersRegistered(): void {
     component: UIEditorNodeRendererText,
   })
 
-  Endge.uiRegistry.registerRenderer({
+  registerVueUIRenderer({
     ref: 'ui.text.runtime.main',
     definitionRef: 'ui.text',
     surface: 'runtime',

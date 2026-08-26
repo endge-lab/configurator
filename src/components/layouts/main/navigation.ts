@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 import { Endge } from '@endge/core'
-import { useSubscribableRefAuto } from '@endge/utils'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
