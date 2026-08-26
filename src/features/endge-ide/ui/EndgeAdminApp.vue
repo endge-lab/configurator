@@ -23,11 +23,12 @@ import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Moda
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
+import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/model/config/documentation.config'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
-import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
+import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
@@ -214,6 +215,16 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           </DropdownMenuSub>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <a
+        v-if="ENDGE_IDE_DOCUMENTATION_URL"
+        :href="ENDGE_IDE_DOCUMENTATION_URL"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-md px-2 py-1 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        Документация
+      </a>
 
       <span
         v-if="configuratorMenuItems.length"
