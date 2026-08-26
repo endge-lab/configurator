@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@endge/codegen':
-        specifier: 0.1.9
-        version: 0.1.9
+        specifier: 0.1.10
+        version: 0.1.10
       '@endge/computation-sandbox':
         specifier: 0.1.12
         version: 0.1.12(@endge/core@3.2.1(@endge/raph@3.0.12)(@endge/utils@0.24.14(pinia@2.3.1(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3)))(vue@3.5.38(typescript@6.0.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3)))
@@ -434,8 +434,8 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@endge/codegen@0.1.9':
-    resolution: {integrity: sha512-EzM63A/hYH4SgdG2RGF1JsCzSx9HXJu+JwDzEGdrKnI9sPT91xhTD2CCqkxkoDADcS0A8waGYS5m1zFEo1OQjQ==}
+  '@endge/codegen@0.1.10':
+    resolution: {integrity: sha512-OL67BF0D+q88AshR+TfjDPjK7aPIBBAZbUJw2DCgodTzWcJzjbc7RMThXMvLd+pjFx9iZ2k4j2wSG23ikBuhiw==}
     hasBin: true
 
   '@endge/computation-sandbox@0.1.12':
@@ -4521,7 +4521,7 @@ snapshots:
   '@csstools/css-tokenizer@3.0.4':
     optional: true
 
-  '@endge/codegen@0.1.9': {}
+  '@endge/codegen@0.1.10': {}
 
   '@endge/computation-sandbox@0.1.12(@endge/core@3.2.1(@endge/raph@3.0.12)(@endge/utils@0.24.14(pinia@2.3.1(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3)))(vue@3.5.38(typescript@6.0.3)))(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(pinia@2.3.1(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3)))(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3)))':
     dependencies:
