@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@axios": [
-        "src/plugins/axios"
+        "./src/plugins/axios"
       ]
     }
   },
