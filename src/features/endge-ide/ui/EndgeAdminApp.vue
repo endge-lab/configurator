@@ -3,8 +3,8 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { Bot, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { Configurator } from '@/app'
 import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
+import { AIWorkbench } from '@/features/ai-assistant'
+import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
@@ -43,11 +45,13 @@ const isLaunchingProjectRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
+const aiManagementModal = ref<InstanceType<typeof AIManagement_Modal> | null>(null)
+const isPlatformAdmin = computed(() => Configurator.session.state.status === 'authenticated' && Configurator.session.state.session.platformAdmin)
 const canManageAccess = computed(() => {
   const state = Configurator.session.state
   return canManageAccessPolicy(
     state.status === 'authenticated' && state.session.platformAdmin,
-    Configurator.context.workspaceRole,
+    Configurator.context.workspaceRole ?? '',
   )
 })
 const transferService = new ServiceBackendDomainTransfer_Service(Configurator.context.backendConfig!.serviceBackendURL)
@@ -72,6 +76,16 @@ function openBackendConnections(): void {
 function openAccessControl(): void {
   accessControlModal.value?.open()
 }
+
+function openAIManagement(): void {
+  void aiManagementModal.value?.open()
+}
+
+onMounted(() => {
+  void AIWorkbench.init(Configurator.context.backendConfig!.serviceBackendURL, Configurator.context.workspaceIdentity)
+})
+
+onBeforeUnmount(() => AIWorkbench.reset())
 
 function openDSLPlayground(): void {
   tabs.openDSLPlayground()
@@ -253,6 +267,16 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
     <div class="flex items-center gap-2">
       <button
+        v-if="isPlatformAdmin"
+        type="button"
+        class="inline-flex h-8 items-center gap-2 rounded-md border bg-background px-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        title="Управление AI connections и model profiles"
+        @click="openAIManagement"
+      >
+        <Bot class="size-4 text-fuchsia-500" />
+        Управление AI
+      </button>
+      <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
         :disabled="!currentProjectIdentity || context.isSwitching() || isLaunchingProjectRuntime"
@@ -270,5 +294,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <DomainImport_Modal ref="domainImportModal" />
   <BackendConnections_Modal ref="backendConnectionsModal" />
   <AccessControl_Modal ref="accessControlModal" />
+  <AIManagement_Modal ref="aiManagementModal" />
   <RuntimePreviewAuthDialog />
 </template>

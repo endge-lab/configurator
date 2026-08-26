@@ -8,7 +8,6 @@ import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/ty
 
 const UIEditorLibrary_Widget = defineAsyncComponent(() => import('@/features/endge-admin-ui-editor/ui/UIEditorLibrary_Widget.vue'))
 const Releases_Widget = defineAsyncComponent(() => import('@/features/configurator-releases/ui/Releases_Widget.vue'))
-const Agent_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Agent_Widget.vue'))
 const Domain_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Domain_Widget.vue'))
 const Events_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Events_Widget.vue'))
 const Problems_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/Problems_Widget.vue'))
@@ -171,25 +170,6 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
       maxHeight: 800,
       defaultWidth: 400,
       defaultHeight: 600,
-    },
-  },
-  {
-    id: 'agent',
-    title: 'Агент',
-    icon: 'Bot',
-    iconClass: 'text-fuchsia-600 dark:text-[#C792EA]',
-    content: 'component',
-    defaultComponent: markRaw(Agent_Widget),
-    singleton: true,
-    defaultPosition: 'right',
-    allowedPositions: ['left', 'right', 'floating'],
-    floatingConstraints: {
-      minWidth: 320,
-      maxWidth: 600,
-      minHeight: 400,
-      maxHeight: 800,
-      defaultWidth: 420,
-      defaultHeight: 560,
     },
   },
 ]

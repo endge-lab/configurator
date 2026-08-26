@@ -284,6 +284,11 @@ export class ConfiguratorContext_Module {
     return this._workspaceRole
   }
 
+  /** Workspace selected during authenticated Configurator bootstrap. */
+  public get workspaceIdentity(): string {
+    return this._workspaceIdentity ?? Endge.workspace.current.identity
+  }
+
   /** Returns the effective data mode used by Store fixtures and Query execution. */
   public get isMockEnabled(): boolean {
     return Endge.context.isMockEnabled

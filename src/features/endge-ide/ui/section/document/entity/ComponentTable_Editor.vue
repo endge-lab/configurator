@@ -50,7 +50,6 @@ import {
 import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor";
 import { EndgeIDE } from "@/features/endge-ide";
 import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
-import TableDataMappingAssistant from "@/features/endge-ide/ui/components/TableDataMappingAssistant.vue";
 import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
 import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
 import DocumentIdentityInput from "@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue";
@@ -377,7 +376,7 @@ const columnDetailTab = useSmartTabSelection(
 const mainTab = useSmartTabSelection(
   "editor.active-tab",
   "columns",
-  ["general", "columns", "data", "settings", "assistant"] as const,
+  ["general", "columns", "data", "settings"] as const,
 );
 
 /** Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора */
@@ -458,7 +457,6 @@ watch(
             <TabsTrigger value="columns"> Колонки </TabsTrigger>
             <TabsTrigger value="data"> Данные </TabsTrigger>
             <TabsTrigger value="settings"> Таблица </TabsTrigger>
-            <TabsTrigger value="assistant"> Помощь </TabsTrigger>
           </TabsList>
 
           <TabsContent
@@ -1041,15 +1039,6 @@ watch(
                   </div>
                 </div>
               </ScrollArea>
-            </Card>
-          </TabsContent>
-
-          <TabsContent
-            value="assistant"
-            class="flex-1 min-h-0 mt-3 data-[state=inactive]:hidden"
-          >
-            <Card class="h-full min-h-0 overflow-hidden py-0">
-              <TableDataMappingAssistant />
             </Card>
           </TabsContent>
 
