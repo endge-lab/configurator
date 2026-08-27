@@ -5,6 +5,7 @@ import type {
   AIMessage,
   AIModelProfile,
   AIProviderConnection,
+  AIVisibility,
 } from '@/features/ai-assistant/domain/types'
 
 import { computed, reactive, readonly } from 'vue'
@@ -23,6 +24,7 @@ interface State {
   running: boolean
   error: string
   selectedModelId: string
+  managementOpen: boolean
 }
 
 class AIWorkbench_Module {
@@ -41,6 +43,7 @@ class AIWorkbench_Module {
     running: false,
     error: '',
     selectedModelId: '',
+    managementOpen: false,
   })
 
   /** Readonly reactive views для UI. */
@@ -73,7 +76,7 @@ class AIWorkbench_Module {
     this._unregisterWidget()
     this._initialized = false
     this._service = null
-    Object.assign(this._state, { capabilities: null, conversation: null, messages: [], previousCursor: '', streamingText: '', loading: false, running: false, error: '', selectedModelId: '' })
+    Object.assign(this._state, { capabilities: null, conversation: null, messages: [], previousCursor: '', streamingText: '', loading: false, running: false, error: '', selectedModelId: '', managementOpen: false })
   }
 
   public async refreshCapabilities(): Promise<void> {
@@ -195,6 +198,16 @@ class AIWorkbench_Module {
     }
   }
 
+  /** Открывает общее окно настройки public/private AI connections. */
+  public openManagement(): void {
+    this._state.managementOpen = true
+  }
+
+  /** Закрывает окно настройки AI connections. */
+  public closeManagement(): void {
+    this._state.managementOpen = false
+  }
+
   /** Загружает доступные provider adapters для management UI. */
   public listProviderAdapters(): Promise<{ items: AIAdapter[] }> {
     return this._transport.adapters()
@@ -211,7 +224,7 @@ class AIWorkbench_Module {
   }
 
   /** Создаёт provider connection через transport adapter. */
-  public createProviderConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, enabled: boolean }): Promise<AIProviderConnection> {
+  public createProviderConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, visibility: AIVisibility, enabled: boolean }): Promise<AIProviderConnection> {
     return this._transport.createConnection(value)
   }
 

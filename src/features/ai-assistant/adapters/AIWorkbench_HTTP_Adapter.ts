@@ -6,6 +6,7 @@ import type {
   AIModelProfile,
   AIProviderConnection,
   AIRunEvent,
+  AIVisibility,
 } from '@/features/ai-assistant/domain/types'
 
 export class AIWorkbenchHTTPError extends Error {
@@ -116,7 +117,7 @@ export class AIWorkbench_HTTP_Adapter {
     return this._json('/api/v1/ai/model-profiles')
   }
 
-  public createConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, enabled: boolean }): Promise<AIProviderConnection> {
+  public createConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, visibility: AIVisibility, enabled: boolean }): Promise<AIProviderConnection> {
     return this._json('/api/v1/ai/provider-connections', { method: 'POST', body: value })
   }
 

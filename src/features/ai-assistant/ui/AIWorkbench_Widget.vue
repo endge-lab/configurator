@@ -16,6 +16,7 @@ const currentModelAvailable = computed(() => models.value.some(model => model.id
 const hasMessages = computed(() => (state.conversation?.messageCount ?? state.messages.length) > 0)
 const readOnly = computed(() => hasMessages.value && !currentModelAvailable.value)
 const canSend = computed(() => state.capabilities?.canRun === true && !!state.selectedModelId && !readOnly.value && !state.running)
+const showConfigurationEmptyState = computed(() => models.value.length === 0 && !hasMessages.value && !state.streamingText && !state.loading)
 
 watch(() => [state.messages.length, state.streamingText], async () => {
   await nextTick()
@@ -41,6 +42,24 @@ function onKeydown(event: KeyboardEvent): void {
 
 <template>
   <section class="flex h-full min-h-0 flex-col bg-background">
+    <Loader2 v-if="state.loading && models.length === 0 && !hasMessages" class="m-auto size-5 animate-spin text-muted-foreground" />
+
+    <div v-else-if="showConfigurationEmptyState" class="m-auto flex max-w-xs flex-col items-center px-5 text-center">
+      <span class="flex size-12 items-center justify-center rounded-xl bg-fuchsia-500/10">
+        <Bot class="size-6 text-fuchsia-500" />
+      </span>
+      <p class="mt-4 text-sm font-semibold">
+        Модели не настроены
+      </p>
+      <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+        Добавьте личное подключение или попросите Platform Admin настроить общее.
+      </p>
+      <Button class="mt-5 w-full" size="lg" @click="AIWorkbench.openManagement()">
+        Настроить подключение
+      </Button>
+    </div>
+
+    <template v-else>
     <header class="flex items-center gap-2 border-b px-3 py-2">
       <Bot class="size-4 text-fuchsia-500" />
       <select
@@ -70,13 +89,7 @@ function onKeydown(event: KeyboardEvent): void {
 
         <div v-if="!state.loading && state.messages.length === 0 && !state.streamingText" class="m-auto max-w-xs text-center text-sm text-muted-foreground">
           <Bot class="mx-auto mb-3 size-8 opacity-50" />
-          <p v-if="models.length === 0" class="font-medium text-foreground">
-            Модели не настроены
-          </p>
-          <p v-if="models.length === 0" class="mt-1 text-xs">
-            Platform Admin должен добавить connection и model profile.
-          </p>
-          <p v-else>
+          <p>
             Задайте вопрос о текущем Workspace.
           </p>
         </div>
@@ -116,5 +129,6 @@ function onKeydown(event: KeyboardEvent): void {
         </Button>
       </div>
     </footer>
+    </template>
   </section>
 </template>

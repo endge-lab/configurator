@@ -45,7 +45,13 @@ const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(nu
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
 const aiManagementModal = ref<InstanceType<typeof AIManagement_Modal> | null>(null)
-const isPlatformAdmin = computed(() => Configurator.session.state.status === 'authenticated' && Configurator.session.state.session.platformAdmin)
+const canConfigureAI = computed(() => {
+  if (Configurator.session.state.status !== 'authenticated') {
+    return false
+  }
+  return Configurator.session.state.session.platformAdmin
+    || ['viewer', 'editor', 'admin'].includes(Configurator.context.workspaceRole ?? '')
+})
 const canManageAccess = computed(() => {
   const state = Configurator.session.state
   return canManageAccessPolicy(
@@ -168,7 +174,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             <ShieldCheck class="size-3.5" />
             Управление доступом
           </DropdownMenuItem>
-          <DropdownMenuItem v-if="isPlatformAdmin" @click="openAIManagement">
+          <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
             <Bot class="size-3.5 text-fuchsia-500" />
             Настройки AI
           </DropdownMenuItem>

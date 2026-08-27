@@ -1,4 +1,5 @@
 export type AIAdapter = 'anthropic' | 'ollama'
+export type AIVisibility = 'public' | 'private'
 
 export interface AIModelProfile {
   id: string
@@ -9,6 +10,9 @@ export interface AIModelProfile {
   displayName: string
   enabled: boolean
   isDefault: boolean
+  visibility: AIVisibility
+  ownedByMe: boolean
+  canManage: boolean
 }
 
 export interface AIModelSnapshot {
@@ -55,6 +59,9 @@ export interface AIProviderConnection {
   hasCredential: boolean
   enabled: boolean
   modelCount: number
+  visibility: AIVisibility
+  ownedByMe: boolean
+  canManage: boolean
 }
 
 export interface AIRunEvent {
