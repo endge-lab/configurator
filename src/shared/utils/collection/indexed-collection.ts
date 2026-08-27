@@ -6,21 +6,21 @@ export class IndexedCollection<
   ID = string,
   K extends keyof T = 'id',
 > {
-  private list: Array<T> = []
-  private filteredList: Array<T> = []
-  private readonly map: Map<T[K], T> = new Map()
+  private _list: Array<T> = []
+  private _filteredList: Array<T> = []
+  private readonly _map: Map<T[K], T> = new Map()
 
-  private dirtySort = false
-  private dirtyFilter = false
+  private _dirtySort = false
+  private _dirtyFilter = false
 
-  private sortFn?: (a: T, b: T) => number
-  private filterFn?: (item: T) => boolean
-  private indexEnabled = false
-  private filterIndexEnabled = false
+  private _sortFn?: (a: T, b: T) => number
+  private _filterFn?: (item: T) => boolean
+  private _indexEnabled = false
+  private _filterIndexEnabled = false
 
   constructor(
     opts: Partial<CollectionOptions<T, ID>> | null = null,
-    private readonly key: K = 'id' as K,
+    private readonly _key: K = 'id' as K,
   ) {
     if (opts) {
       this.options(opts)
@@ -29,20 +29,20 @@ export class IndexedCollection<
 
   options(opts: Partial<CollectionOptions<T, ID>>): this {
     if (opts.sortFn) {
-      this.sortFn = opts.sortFn
-      this.dirtySort = true
+      this._sortFn = opts.sortFn
+      this._dirtySort = true
     }
     if (opts.filterFn) {
-      this.filterFn = opts.filterFn
-      this.dirtyFilter = true
+      this._filterFn = opts.filterFn
+      this._dirtyFilter = true
     }
     if (opts.indexEnabled !== undefined) {
-      this.indexEnabled = opts.indexEnabled
-      this.dirtySort = true
+      this._indexEnabled = opts.indexEnabled
+      this._dirtySort = true
     }
     if (opts.filterIndexEnabled !== undefined) {
-      this.filterIndexEnabled = opts.filterIndexEnabled
-      this.dirtyFilter = true
+      this._filterIndexEnabled = opts.filterIndexEnabled
+      this._dirtyFilter = true
     }
 
     return this
@@ -50,26 +50,26 @@ export class IndexedCollection<
 
   markDirty(opts: { filter?: boolean, sort?: boolean }): void {
     if (opts.filter) {
-      this.dirtyFilter = true
+      this._dirtyFilter = true
     }
     if (opts.sort) {
-      this.dirtySort = true
+      this._dirtySort = true
     }
   }
 
   add(items: OneOrMany<T>): void {
     const toAdd = Array.isArray(items) ? items : [items]
     for (const item of toAdd) {
-      const keyValue = item[this.key]
-      if (this.map.has(keyValue)) {
+      const keyValue = item[this._key]
+      if (this._map.has(keyValue)) {
         continue
       }
-      this.map.set(keyValue, item)
-      this.list.push(item)
+      this._map.set(keyValue, item)
+      this._list.push(item)
     }
 
-    this.dirtySort = true
-    this.dirtyFilter = true
+    this._dirtySort = true
+    this._dirtyFilter = true
   }
 
   remove(ids: OneOrMany<T[K]>): void {
@@ -77,13 +77,13 @@ export class IndexedCollection<
     const removeSet = new Set(toRemove)
 
     for (const id of removeSet) {
-      this.map.delete(id)
+      this._map.delete(id)
     }
 
-    this.list = this.list.filter(item => !removeSet.has(item[this.key]))
+    this._list = this._list.filter(item => !removeSet.has(item[this._key]))
 
-    this.dirtySort = true
-    this.dirtyFilter = true
+    this._dirtySort = true
+    this._dirtyFilter = true
   }
 
   all(): Array<T> {
@@ -92,12 +92,12 @@ export class IndexedCollection<
 
   unfiltered(): Array<T> {
     this.ensureSorted()
-    return this.list
+    return this._list
   }
 
   filtered(): Array<T> {
     this.ensure()
-    return this.filterFn ? this.filteredList : this.list
+    return this._filterFn ? this._filteredList : this._list
   }
 
   pos(index: number): T | null {
@@ -125,11 +125,11 @@ export class IndexedCollection<
   }
 
   has(id: T[K]): boolean {
-    return this.map.has(id)
+    return this._map.has(id)
   }
 
   get(id: T[K]): T | undefined {
-    return this.map.get(id)
+    return this._map.get(id)
   }
 
   forEach(callback: (item: T, index: number) => void): void {
@@ -141,12 +141,12 @@ export class IndexedCollection<
   }
 
   clear(): void {
-    this.list = []
-    this.filteredList = []
-    this.map.clear()
+    this._list = []
+    this._filteredList = []
+    this._map.clear()
 
-    this.dirtySort = false
-    this.dirtyFilter = false
+    this._dirtySort = false
+    this._dirtyFilter = false
   }
 
   //
@@ -159,43 +159,43 @@ export class IndexedCollection<
   }
 
   ensureSorted(): void {
-    if (!this.dirtySort) {
+    if (!this._dirtySort) {
       return
     }
 
-    if (this.sortFn) {
-      this.list.sort(this.sortFn)
+    if (this._sortFn) {
+      this._list.sort(this._sortFn)
     }
 
-    if (this.indexEnabled) {
-      this.list.forEach((item, i) => {
+    if (this._indexEnabled) {
+      this._list.forEach((item, i) => {
         item.index = i
       })
     }
 
-    this.dirtySort = false
+    this._dirtySort = false
   }
 
   ensureFiltered(): void {
-    if (!this.filterFn) {
+    if (!this._filterFn) {
       return
     }
 
-    if (!this.dirtyFilter) {
+    if (!this._dirtyFilter) {
       return
     }
 
-    this.filteredList = this.list.filter(this.filterFn)
+    this._filteredList = this._list.filter(this._filterFn)
 
-    if (this.filterIndexEnabled) {
-      this.list.forEach((item) => {
+    if (this._filterIndexEnabled) {
+      this._list.forEach((item) => {
         item.filteredIndex = -1
       })
-      this.filteredList.forEach((item, i) => {
+      this._filteredList.forEach((item, i) => {
         item.filteredIndex = i
       })
     }
 
-    this.dirtyFilter = false
+    this._dirtyFilter = false
   }
 }

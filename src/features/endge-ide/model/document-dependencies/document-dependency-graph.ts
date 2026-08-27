@@ -381,7 +381,7 @@ function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDepe
 function extractArtifactDependencies(
   entityType: string,
   payload: any,
-  draft: any,
+  _draft: any,
 ): ProgramDependency[] {
   const dependencies: ProgramDependency[] = []
 

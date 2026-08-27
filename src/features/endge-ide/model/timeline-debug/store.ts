@@ -188,7 +188,7 @@ export function useTimelineDebug() {
     })
   }
 
-  function applyGeneratedData(): void {
+  function _applyGeneratedData(): void {
     const base = Date.now()
 
     // helpers
@@ -328,7 +328,7 @@ export function useTimelineDebug() {
       }
     }
 
-    if (!isFinite(minTs) || !isFinite(maxTs)) {
+    if (!Number.isFinite(minTs) || !Number.isFinite(maxTs)) {
       // нет задач -  просто очистим и выходим
       timeline.data({ groups: [], tasks: [] })
       return
@@ -350,7 +350,7 @@ export function useTimelineDebug() {
     timeline.data({ groups, tasks })
   }
 
-  function addTimeNow(): void {
+  function _addTimeNow(): void {
     // Не забываем в продакшене очистить таймер
     offIntervals.push(
       setInterval(() => {

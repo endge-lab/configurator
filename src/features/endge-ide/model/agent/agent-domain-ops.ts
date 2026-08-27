@@ -45,9 +45,8 @@ export function parseDomainOpsFromMessage(text: string): DomainOp[] | null {
   if (!text?.trim()) {
     return null
   }
-  let m: RegExpExecArray | null
   DOMAIN_OPS_BLOCK_REG.lastIndex = 0
-  while ((m = DOMAIN_OPS_BLOCK_REG.exec(text)) !== null) {
+  for (let m = DOMAIN_OPS_BLOCK_REG.exec(text); m !== null; m = DOMAIN_OPS_BLOCK_REG.exec(text)) {
     const ops = parseDomainOpsFromBlock(m[1])
     if (ops?.length) {
       return ops

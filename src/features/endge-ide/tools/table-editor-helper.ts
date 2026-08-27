@@ -249,7 +249,7 @@ export function detectSamplePrimitiveKind(value: unknown): PrimitiveKind {
     return 'boolean'
   }
   if (value instanceof Date) {
-    return isNaN(value.getTime()) ? 'unknown' : 'datetime'
+    return Number.isNaN(value.getTime()) ? 'unknown' : 'datetime'
   }
   if (typeof value === 'number') {
     if (Number.isInteger(value) && value >= TIMESTAMP_MS_MIN && value <= TIMESTAMP_MS_MAX) {

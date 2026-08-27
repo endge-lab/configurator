@@ -6,5 +6,5 @@ export interface OidcDiscoveryMetadata {
 
 /** Контракт transport-адаптера OIDC discovery. */
 export interface OidcDiscoveryAdapter {
-  load(issuer: string): Promise<OidcDiscoveryMetadata>
+  load: (issuer: string) => Promise<OidcDiscoveryMetadata>
 }

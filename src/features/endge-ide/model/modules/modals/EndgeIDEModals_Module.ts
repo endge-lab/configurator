@@ -36,62 +36,62 @@ export class EndgeIDEModals_Module {
   }
 
   /** Открыта ли модалка «Создать документ» */
-  get isCreateDocumentOpen() {
+  public get isCreateDocumentOpen() {
     return this._createDocumentOpen
   }
 
   /** Контекст открытия: секция, папка или typed owner для связанного документа. */
-  get createDocumentContext() {
+  public get createDocumentContext() {
     return this._createDocumentContext
   }
 
-  openCreateDocument(options?: CreateDocumentContext): void {
+  public openCreateDocument(options?: CreateDocumentContext): void {
     this._createDocumentContext.value = options ?? null
     this._createDocumentOpen.value = true
   }
 
-  closeCreateDocument(): void {
+  public closeCreateDocument(): void {
     this._createDocumentOpen.value = false
     this._createDocumentContext.value = null
   }
 
-  get isDuplicateDocumentOpen() {
+  public get isDuplicateDocumentOpen() {
     return this._duplicateDocumentOpen
   }
 
-  get duplicateSourceNode() {
+  public get duplicateSourceNode() {
     return this._duplicateSourceNode
   }
 
-  openDuplicateDocument(payload: { id: string, docType: string, name: string }): void {
+  public openDuplicateDocument(payload: { id: string, docType: string, name: string }): void {
     this._duplicateSourceNode.value = payload
     this._duplicateDocumentOpen.value = true
   }
 
-  closeDuplicateDocument(): void {
+  public closeDuplicateDocument(): void {
     this._duplicateDocumentOpen.value = false
     this._duplicateSourceNode.value = null
   }
 
-  get isVocabJsonPreviewOpen() {
+  public get isVocabJsonPreviewOpen() {
     return this._vocabJsonPreviewOpen
   }
 
-  get vocabJsonPreviewTitle() {
+  public get vocabJsonPreviewTitle() {
     return this._vocabJsonPreviewTitle
   }
 
-  get vocabJsonPreviewData() {
+  public get vocabJsonPreviewData() {
     return this._vocabJsonPreviewData
   }
 
-  openVocabJsonPreview(payload: { title?: string, data: unknown }): void {
+  public openVocabJsonPreview(payload: { title?: string, data: unknown }): void {
     this._vocabJsonPreviewTitle.value = String(payload?.title ?? '').trim() || 'Словарь'
     this._vocabJsonPreviewData.value = payload?.data ?? null
     this._vocabJsonPreviewOpen.value = true
   }
 
-  closeVocabJsonPreview(): void {
+  public closeVocabJsonPreview(): void {
     this._vocabJsonPreviewOpen.value = false
   }
 }

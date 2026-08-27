@@ -12,8 +12,25 @@ import type {
   EndgeTooltipConfiguration,
 } from '@endge/core'
 
-import { applyEndgeConfigurationContribution, Endge, validateConfigurationValue } from '@endge/core'
-import { Braces, Clock3, HeartPulse, Languages, MessageSquareText, Palette, PanelsTopLeft, Pencil, Plus, Settings2, ShieldCheck, SlidersHorizontal } from 'lucide-vue-next'
+import {
+  applyEndgeConfigurationContribution,
+  Endge,
+  validateConfigurationValue,
+} from '@endge/core'
+import {
+  Braces,
+  Clock3,
+  HeartPulse,
+  Languages,
+  MessageSquareText,
+  Palette,
+  PanelsTopLeft,
+  Pencil,
+  Plus,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+} from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -27,7 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useSmartTabSelection, useSmartTabViewState } from '@/components/ui/smart-tabs'
+import {
+  useSmartTabSelection,
+  useSmartTabViewState,
+} from '@/components/ui/smart-tabs'
 import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
@@ -40,10 +60,28 @@ import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
-type CollectionName = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
-type ScalarName = 'defaultLocale' | 'fallbackLocale' | 'defaultTheme' | 'defaultTimezone' | 'defaultAuthProfileIdentity' | 'defaultSfcAdapterId'
-type SystemConfigurationSection = 'general' | 'environment' | 'ui' | 'editing' | 'tooltips' | 'auth' | 'locales' | 'themes' | 'timezones' | 'diagnostics'
-type ConfigurationSection = SystemConfigurationSection | `configuration:${string}`
+type CollectionName
+  = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
+type ScalarName
+  = | 'defaultLocale'
+    | 'fallbackLocale'
+    | 'defaultTheme'
+    | 'defaultTimezone'
+    | 'defaultAuthProfileIdentity'
+    | 'defaultSfcAdapterId'
+type SystemConfigurationSection
+  = | 'general'
+    | 'environment'
+    | 'ui'
+    | 'editing'
+    | 'tooltips'
+    | 'auth'
+    | 'locales'
+    | 'themes'
+    | 'timezones'
+    | 'diagnostics'
+type ConfigurationSection
+  = SystemConfigurationSection | `configuration:${string}`
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
 type TooltipField = keyof EndgeTooltipConfiguration
@@ -81,14 +119,17 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
     'themes',
     'timezones',
     'diagnostics',
-    ...Endge.configurationSchema.list().map(item => `configuration:${item.identity}` as const),
+    ...Endge.configurationSchema
+      .list()
+      .map(item => `configuration:${item.identity}` as const),
   ],
 )
 const navigationWidth = useSmartTabViewState<number>(
   'configuration.navigation-width',
   {
     defaultValue: () => 272,
-    validate: value => typeof value === 'number'
+    validate: value =>
+      typeof value === 'number'
       && Number.isFinite(value)
       && value >= 192
       && value <= 420,
@@ -156,8 +197,17 @@ const systemSections = [
     icon: HeartPulse,
   },
 ] as const
-const configurationCategories = computed(() => Endge.configurationSchema.list()
-  .filter((entry): entry is EndgeConfigurationSchemaEntry & { document: NonNullable<EndgeConfigurationSchemaEntry['document']> } => entry.document != null))
+const configurationCategories = computed(() =>
+  Endge.configurationSchema
+    .list()
+    .filter(
+      (
+        entry,
+      ): entry is EndgeConfigurationSchemaEntry & {
+        document: NonNullable<EndgeConfigurationSchemaEntry['document']>
+      } => entry.document != null,
+    ),
+)
 const sections = computed(() => [
   ...systemSections,
   ...configurationCategories.value.map(category => ({
@@ -167,13 +217,25 @@ const sections = computed(() => [
   })),
 ])
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
-  const known = new Map(configurationCategories.value.map(category => [category.identity, new Map(category.document.values.map(field => [field.key, field]))]))
+  const known = new Map(
+    configurationCategories.value.map(category => [
+      category.identity,
+      new Map(category.document.values.map(field => [field.key, field])),
+    ]),
+  )
   const authored: Record<string, Record<string, EndgeJSONValue>> = {}
   if (isInherit.value) {
-    for (const [identity, fields] of Object.entries(patch.value?.values ?? {})) {
-      authored[identity] = Object.fromEntries(Object.entries(fields)
-        .filter(([, operation]) => operation.op === 'set')
-        .map(([key, operation]) => [key, operation.op === 'set' ? operation.value : null]))
+    for (const [identity, fields] of Object.entries(
+      patch.value?.values ?? {},
+    )) {
+      authored[identity] = Object.fromEntries(
+        Object.entries(fields)
+          .filter(([, operation]) => operation.op === 'set')
+          .map(([key, operation]) => [
+            key,
+            operation.op === 'set' ? operation.value : null,
+          ]),
+      )
     }
   }
   else {
@@ -185,12 +247,30 @@ const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
     for (const [key, value] of Object.entries(fields)) {
       const field = known.get(identity)?.get(key)
       if (!field) {
-        issues.push({ identity, key, kind: 'stale', message: 'Документ или поле сейчас отсутствует; значение сохранено, но не входит в effective config.' })
+        issues.push({
+          identity,
+          key,
+          kind: 'stale',
+          message:
+            'Документ или поле сейчас отсутствует; значение сохранено, но не входит в effective config.',
+        })
         continue
       }
-      const validation = validateConfigurationValue(field.type, value, Endge.configurationSchema.typeCatalog, `${identity}.${key}`)
+      const validation = validateConfigurationValue(
+        field.type,
+        value,
+        Endge.configurationSchema.typeCatalog,
+        `${identity}.${key}`,
+      )
       if (!validation.ok) {
-        issues.push({ identity, key, kind: 'invalid', message: validation.diagnostics[0]?.message ?? 'Значение несовместимо с Type.' })
+        issues.push({
+          identity,
+          key,
+          kind: 'invalid',
+          message:
+            validation.diagnostics[0]?.message
+            ?? 'Значение несовместимо с Type.',
+        })
       }
     }
   }
@@ -207,38 +287,58 @@ const editingSections = [
     id: 'cancelOn',
     label: 'Отмена',
     kind: 'cancel',
-    description: 'Альтернативные триггеры отмены для SFC editable-узлов без локального cancel-on.',
+    description:
+      'Альтернативные триггеры отмены для SFC editable-узлов без локального cancel-on.',
   },
   {
     id: 'commitOn',
     label: 'Сохранение',
     kind: 'commit',
-    description: 'Альтернативные триггеры сохранения для SFC editable-узлов без локального commit-on.',
+    description:
+      'Альтернативные триггеры сохранения для SFC editable-узлов без локального commit-on.',
   },
 ] as const
 const tooltipSections = [
   { id: 'ui', label: 'Настройки UI' },
   { id: 'trigger', label: 'Триггер' },
 ] as const
-const activeEditingSection = computed(() => editingSections.find(section => section.id === editingSection.value) ?? editingSections[0])
+const activeEditingSection = computed(
+  () =>
+    editingSections.find(section => section.id === editingSection.value)
+    ?? editingSections[0],
+)
 
-const contribution = computed(() => props.variant === 'contribution'
-  ? props.modelValue as EndgeConfigurationContribution
-  : null)
+const contribution = computed(() =>
+  props.variant === 'contribution'
+    ? (props.modelValue as EndgeConfigurationContribution)
+    : null,
+)
 const isInherit = computed(() => contribution.value?.mode === 'inherit')
-const patch = computed(() => isInherit.value
-  ? (contribution.value as Extract<EndgeConfigurationContribution, { mode: 'inherit' }>).patch
-  : null)
-const editableConfiguration = computed(() => props.variant === 'root'
-  ? props.modelValue as EndgeConfiguration
-  : contribution.value?.mode === 'replace'
-    ? contribution.value.value
-    : props.upstream!)
+const patch = computed(() =>
+  isInherit.value
+    ? (
+        contribution.value as Extract<
+          EndgeConfigurationContribution,
+          { mode: 'inherit' }
+        >
+      ).patch
+    : null,
+)
+const editableConfiguration = computed(() =>
+  props.variant === 'root'
+    ? (props.modelValue as EndgeConfiguration)
+    : contribution.value?.mode === 'replace'
+      ? contribution.value.value
+      : props.upstream!,
+)
 const effective = computed(() => {
   if (props.variant === 'root') {
     return props.modelValue as EndgeConfiguration
   }
-  return applyEndgeConfigurationContribution(props.upstream!, props.modelValue as EndgeConfigurationContribution)
+  return applyEndgeConfigurationContribution(
+    props.upstream!,
+    props.modelValue as EndgeConfigurationContribution,
+  )
 })
 
 function clone<T>(value: T): T {
@@ -272,17 +372,25 @@ function hasConfigurationValueOverride(identity: string, key: string): boolean {
   return patch.value?.values?.[identity]?.[key]?.op === 'set'
 }
 
-function configurationValue(identity: string, key: string, fallback: EndgeJSONValue): EndgeJSONValue {
+function configurationValue(
+  identity: string,
+  key: string,
+  fallback: EndgeJSONValue,
+): EndgeJSONValue {
   if (isInherit.value) {
     const local = patch.value?.values?.[identity]?.[key]
     return local?.op === 'set'
       ? local.value
-      : effective.value.values?.[identity]?.[key] ?? fallback
+      : (effective.value.values?.[identity]?.[key] ?? fallback)
   }
   return editableConfiguration.value.values?.[identity]?.[key] ?? fallback
 }
 
-function setConfigurationValue(identity: string, key: string, value: EndgeJSONValue): void {
+function setConfigurationValue(
+  identity: string,
+  key: string,
+  value: EndgeJSONValue,
+): void {
   if (isInherit.value) {
     const target = patch.value as EndgeConfigurationPatch
     target.values ??= {}
@@ -297,7 +405,11 @@ function setConfigurationValue(identity: string, key: string, value: EndgeJSONVa
   notifyRootMutation()
 }
 
-function enableConfigurationValueOverride(identity: string, key: string, fallback: EndgeJSONValue): void {
+function enableConfigurationValueOverride(
+  identity: string,
+  key: string,
+  fallback: EndgeJSONValue,
+): void {
   const inherited = props.upstream?.values?.[identity]?.[key] ?? fallback
   setConfigurationValue(identity, key, inherited)
 }
@@ -331,10 +443,11 @@ function scalarValue(name: ScalarName): string {
 
 function setScalar(name: ScalarName, value: string): void {
   if (isInherit.value) {
-    ;(patch.value as Record<string, unknown>)[name] = { op: 'set', value }
+    (patch.value as Record<string, unknown>)[name] = { op: 'set', value }
   }
   else {
-    ;(editableConfiguration.value as unknown as Record<string, unknown>)[name] = name === 'defaultAuthProfileIdentity' && !value ? null : value
+    (editableConfiguration.value as unknown as Record<string, unknown>)[name]
+      = name === 'defaultAuthProfileIdentity' && !value ? null : value
   }
   notifyRootMutation()
 }
@@ -354,10 +467,14 @@ function hasSFCEditingOverride(name: SFCEditingField): boolean {
   return patch.value?.sfcEditing?.[name]?.op === 'set'
 }
 
-function sfcEditingTriggers(name: SFCEditingField): ComponentSFCInteractionTrigger[] {
+function sfcEditingTriggers(
+  name: SFCEditingField,
+): ComponentSFCInteractionTrigger[] {
   if (isInherit.value) {
     const override = patch.value?.sfcEditing?.[name]
-    return override?.op === 'set' ? override.value : effective.value.sfcEditing[name]
+    return override?.op === 'set'
+      ? override.value
+      : effective.value.sfcEditing[name]
   }
   return editableConfiguration.value.sfcEditing[name]
 }
@@ -383,7 +500,10 @@ function resetSFCEditingOverride(name: SFCEditingField): void {
   notifyRootMutation()
 }
 
-function setSFCEditingTriggers(name: SFCEditingField, value: ComponentSFCInteractionTrigger[]): void {
+function setSFCEditingTriggers(
+  name: SFCEditingField,
+  value: ComponentSFCInteractionTrigger[],
+): void {
   if (isInherit.value) {
     if (!hasSFCEditingOverride(name)) {
       return
@@ -406,10 +526,14 @@ function hasTooltipOverride(name: TooltipField): boolean {
   return patch.value?.tooltips?.[name]?.op === 'set'
 }
 
-function tooltipValue(name: TooltipField): EndgeTooltipConfiguration[TooltipField] {
+function tooltipValue(
+  name: TooltipField,
+): EndgeTooltipConfiguration[TooltipField] {
   if (isInherit.value) {
     const override = patch.value?.tooltips?.[name]
-    return override?.op === 'set' ? override.value : effective.value.tooltips[name]
+    return override?.op === 'set'
+      ? override.value
+      : effective.value.tooltips[name]
   }
   return editableConfiguration.value.tooltips[name]
 }
@@ -422,10 +546,13 @@ function setTooltipSection(value: unknown): void {
 
 function enableTooltipOverride(name: TooltipField): void {
   const target = patch.value as EndgeConfigurationPatch
-  target.tooltips ??= {}
-  ;(target.tooltips as any)[name] = {
+  target.tooltips ??= {};
+  (target.tooltips as any)[name] = {
     op: 'set',
-    value: name === 'keyboard' ? clone(props.upstream!.tooltips.keyboard ?? {}) : clone(props.upstream!.tooltips[name]),
+    value:
+      name === 'keyboard'
+        ? clone(props.upstream!.tooltips.keyboard ?? {})
+        : clone(props.upstream!.tooltips[name]),
   }
   notifyRootMutation()
 }
@@ -442,25 +569,32 @@ function resetTooltipOverride(name: TooltipField): void {
 }
 
 function setTooltipValue(name: TooltipField, value: string | number): void {
-  const normalized = name === 'openDelay' || name === 'closeDelay'
-    ? Math.max(0, Math.min(60_000, Number(value) || 0))
-    : value
+  const normalized
+    = name === 'openDelay' || name === 'closeDelay'
+      ? Math.max(0, Math.min(60_000, Number(value) || 0))
+      : value
   if (isInherit.value) {
     if (!hasTooltipOverride(name)) {
       return
-    }(patch.value!.tooltips as any)[name] = { op: 'set', value: normalized }
+    }
+    (patch.value!.tooltips as any)[name] = { op: 'set', value: normalized }
   }
   else {
-    ;(editableConfiguration.value.tooltips as any)[name] = normalized
+    (editableConfiguration.value.tooltips as any)[name] = normalized
   }
   notifyRootMutation()
 }
 
 function tooltipKeyboard(): ComponentSFCInteractionKeyboardCondition | null {
-  return (tooltipValue('keyboard') as ComponentSFCInteractionKeyboardCondition | undefined) ?? null
+  return (
+    (tooltipValue('keyboard') as
+      ComponentSFCInteractionKeyboardCondition | undefined) ?? null
+  )
 }
 
-function setTooltipKeyboard(value: ComponentSFCInteractionKeyboardCondition | null): void {
+function setTooltipKeyboard(
+  value: ComponentSFCInteractionKeyboardCondition | null,
+): void {
   if (isInherit.value) {
     if (!hasTooltipOverride('keyboard')) {
       return
@@ -490,13 +624,21 @@ function createCollectionValue(name: CollectionName, index: number): unknown {
     return { name: `ENV_VAR_${index + 1}`, defaultValue: '' }
   }
   if (name === 'locales') {
-    return { code: `locale-${index + 1}`, displayName: '', shortLabel: '', direction: 'ltr' }
+    return {
+      code: `locale-${index + 1}`,
+      displayName: '',
+      shortLabel: '',
+      direction: 'ltr',
+    }
   }
   if (name === 'themes') {
     return { identity: `theme-${index + 1}`, displayName: '' }
   }
   if (name === 'timezones') {
-    return { identity: index === 0 ? 'UTC' : `Etc/GMT${index}`, displayName: '' }
+    return {
+      identity: index === 0 ? 'UTC' : `Etc/GMT${index}`,
+      displayName: '',
+    }
   }
   return `adapter-${index + 1}`
 }
@@ -517,7 +659,7 @@ function collectionKey(name: CollectionName, value: any): string {
 function ensureCollectionPatch(name: CollectionName): { entries: any[] } {
   const target = patch.value as EndgeConfigurationPatch
   if (!target[name]) {
-    ;(target as any)[name] = { entries: [] }
+    (target as any)[name] = { entries: [] }
   }
   return target[name] as { entries: any[] }
 }
@@ -544,7 +686,7 @@ function addCollectionValue(name: CollectionName): void {
     })
   }
   else {
-    ;(editableConfiguration.value[name] as any[]).push(value)
+    (editableConfiguration.value[name] as any[]).push(value)
   }
   notifyRootMutation()
 }
@@ -553,9 +695,7 @@ function removeCollectionRow(name: CollectionName, index: number): void {
   if (isInherit.value) {
     ensureCollectionPatch(name).entries.splice(index, 1)
   }
-  else {
-    ;
-  }(editableConfiguration.value[name] as any[]).splice(index, 1)
+  (editableConfiguration.value[name] as any[]).splice(index, 1)
   notifyRootMutation()
 }
 
@@ -570,7 +710,9 @@ function toggleCollectionRowExclusion(name: CollectionName, row: any): void {
 
   if (row.op === 'remove') {
     row.op = 'upsert'
-    row.value = excludedRowDrafts.get(row) ?? createCollectionValue(name, collectionRows(name).indexOf(row))
+    row.value
+      = excludedRowDrafts.get(row)
+        ?? createCollectionValue(name, collectionRows(name).indexOf(row))
     updateEntryKey(name, row, row.key)
   }
   else {
@@ -595,14 +737,21 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
   else if (name === 'themes' || name === 'timezones') {
     entry.value.identity = value
   }
-  else { entry.value = value }
+  else {
+    entry.value = value
+  }
   notifyRootMutation()
 }
 
 /** Применяет полную diagnostics model к root/replace или переводит её в минимальный inherit patch. */
-function setDiagnosticsConfiguration(value: EndgeDiagnosticsConfiguration): void {
+function setDiagnosticsConfiguration(
+  value: EndgeDiagnosticsConfiguration,
+): void {
   if (isInherit.value) {
-    const diagnosticsPatch = createDiagnosticsPatch(props.upstream!.diagnostics, value)
+    const diagnosticsPatch = createDiagnosticsPatch(
+      props.upstream!.diagnostics,
+      value,
+    )
     if (diagnosticsPatch) {
       patch.value!.diagnostics = diagnosticsPatch
     }
@@ -622,27 +771,73 @@ function createDiagnosticsPatch(
   value: EndgeDiagnosticsConfiguration,
 ): EndgeDiagnosticsConfigurationPatch | undefined {
   const collection = compactObject({
-    enabled: scalarPatch(upstream.telemetry.collection.enabled, value.telemetry.collection.enabled),
-    signals: collectionPatch(upstream.telemetry.collection.signals, value.telemetry.collection.signals, item => item),
-    minSeverity: scalarPatch(upstream.telemetry.collection.minSeverity, value.telemetry.collection.minSeverity),
-    maxRecords: scalarPatch(upstream.telemetry.collection.maxRecords, value.telemetry.collection.maxRecords),
+    enabled: scalarPatch(
+      upstream.telemetry.collection.enabled,
+      value.telemetry.collection.enabled,
+    ),
+    signals: collectionPatch(
+      upstream.telemetry.collection.signals,
+      value.telemetry.collection.signals,
+      item => item,
+    ),
+    minSeverity: scalarPatch(
+      upstream.telemetry.collection.minSeverity,
+      value.telemetry.collection.minSeverity,
+    ),
+    maxRecords: scalarPatch(
+      upstream.telemetry.collection.maxRecords,
+      value.telemetry.collection.maxRecords,
+    ),
   })
   const telemetry = compactObject({
     collection: hasKeys(collection) ? collection : undefined,
-    outputs: collectionPatch(upstream.telemetry.outputs, value.telemetry.outputs, item => item.id),
-    routes: collectionPatch(upstream.telemetry.routes, value.telemetry.routes, item => item.id),
+    outputs: collectionPatch(
+      upstream.telemetry.outputs,
+      value.telemetry.outputs,
+      item => item.id,
+    ),
+    routes: collectionPatch(
+      upstream.telemetry.routes,
+      value.telemetry.routes,
+      item => item.id,
+    ),
   })
   const content = compactObject({
-    telemetry: scalarPatch(upstream.snapshots.content.telemetry, value.snapshots.content.telemetry),
-    problems: scalarPatch(upstream.snapshots.content.problems, value.snapshots.content.problems),
-    configuration: scalarPatch(upstream.snapshots.content.configuration, value.snapshots.content.configuration),
+    telemetry: scalarPatch(
+      upstream.snapshots.content.telemetry,
+      value.snapshots.content.telemetry,
+    ),
+    problems: scalarPatch(
+      upstream.snapshots.content.problems,
+      value.snapshots.content.problems,
+    ),
+    configuration: scalarPatch(
+      upstream.snapshots.content.configuration,
+      value.snapshots.content.configuration,
+    ),
   })
   const automatic = compactObject({
-    enabled: scalarPatch(upstream.snapshots.automatic.enabled, value.snapshots.automatic.enabled),
-    errorCount: scalarPatch(upstream.snapshots.automatic.errorCount, value.snapshots.automatic.errorCount),
-    windowSeconds: scalarPatch(upstream.snapshots.automatic.windowSeconds, value.snapshots.automatic.windowSeconds),
-    cooldownSeconds: scalarPatch(upstream.snapshots.automatic.cooldownSeconds, value.snapshots.automatic.cooldownSeconds),
-    outputIds: collectionPatch(upstream.snapshots.automatic.outputIds, value.snapshots.automatic.outputIds, item => item),
+    enabled: scalarPatch(
+      upstream.snapshots.automatic.enabled,
+      value.snapshots.automatic.enabled,
+    ),
+    errorCount: scalarPatch(
+      upstream.snapshots.automatic.errorCount,
+      value.snapshots.automatic.errorCount,
+    ),
+    windowSeconds: scalarPatch(
+      upstream.snapshots.automatic.windowSeconds,
+      value.snapshots.automatic.windowSeconds,
+    ),
+    cooldownSeconds: scalarPatch(
+      upstream.snapshots.automatic.cooldownSeconds,
+      value.snapshots.automatic.cooldownSeconds,
+    ),
+    outputIds: collectionPatch(
+      upstream.snapshots.automatic.outputIds,
+      value.snapshots.automatic.outputIds,
+      item => item,
+    ),
   })
   const snapshots = compactObject({
     content: hasKeys(content) ? content : undefined,
@@ -656,12 +851,21 @@ function createDiagnosticsPatch(
 }
 
 /** Создаёт required scalar override только при фактическом отличии. */
-function scalarPatch<T>(upstream: T, value: T): { op: 'set', value: T } | undefined {
-  return isEqual(upstream, value) ? undefined : { op: 'set', value: clone(value) }
+function scalarPatch<T>(
+  upstream: T,
+  value: T,
+): { op: 'set', value: T } | undefined {
+  return isEqual(upstream, value)
+    ? undefined
+    : { op: 'set', value: clone(value) }
 }
 
 /** Строит keyed upsert/remove operations относительно upstream collection. */
-function collectionPatch<T>(upstream: T[], value: T[], getKey: (item: T) => string): { entries: any[] } | undefined {
+function collectionPatch<T>(
+  upstream: T[],
+  value: T[],
+  getKey: (item: T) => string,
+): { entries: any[] } | undefined {
   const upstreamByKey = new Map(upstream.map(item => [getKey(item), item]))
   const valueByKey = new Map(value.map(item => [getKey(item), item]))
   const entries: any[] = []
@@ -679,8 +883,12 @@ function collectionPatch<T>(upstream: T[], value: T[], getKey: (item: T) => stri
 }
 
 /** Удаляет отсутствующие поля из вложенного diagnostics patch. */
-function compactObject<T extends Record<string, unknown>>(value: T): Partial<T> {
-  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined)) as Partial<T>
+function compactObject<T extends Record<string, unknown>>(
+  value: T,
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as Partial<T>
 }
 
 /** Проверяет, содержит ли patch хотя бы одну операцию. */
@@ -705,12 +913,18 @@ function isEqual(left: unknown, right: unknown): boolean {
           Режим конфигурации
         </p>
         <p class="mt-0.5 text-xs leading-5 text-muted-foreground">
-          {{ isInherit
-            ? 'Наследуем родительскую конфигурацию и сохраняем только локальные уточнения.'
-            : 'Полностью заменяем родительскую конфигурацию значениями этого слоя.' }}
+          {{
+            isInherit
+              ? "Наследуем родительскую конфигурацию и сохраняем только локальные уточнения."
+              : "Полностью заменяем родительскую конфигурацию значениями этого слоя."
+          }}
         </p>
       </div>
-      <Select :model-value="contribution?.mode" :disabled="disabled" @update:model-value="setContributionMode(String($event))">
+      <Select
+        :model-value="contribution?.mode"
+        :disabled="disabled"
+        @update:model-value="setContributionMode(String($event))"
+      >
         <SelectTrigger class="w-full bg-background">
           <SelectValue />
         </SelectTrigger>
@@ -725,15 +939,36 @@ function isEqual(left: unknown, right: unknown): boolean {
       </Select>
     </section>
 
-    <section v-if="configurationValueIssues.length" class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3">
+    <section
+      v-if="configurationValueIssues.length"
+      class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3"
+    >
       <p class="text-sm font-semibold">
         Проблемы пользовательской конфигурации
       </p>
-      <div v-for="issue in configurationValueIssues" :key="`${issue.identity}.${issue.key}`" class="mt-2 flex items-start justify-between gap-3 text-xs">
+      <div
+        v-for="issue in configurationValueIssues"
+        :key="`${issue.identity}.${issue.key}`"
+        class="mt-2 flex items-start justify-between gap-3 text-xs"
+      >
         <div data-copyable>
-          <code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span>
+          <code>{{ issue.identity }}.{{ issue.key }}</code><span
+            class="ml-2"
+            :class="
+              issue.kind === 'invalid'
+                ? 'text-destructive'
+                : 'text-muted-foreground'
+            "
+          >{{ issue.message }}</span>
         </div>
-        <Button v-if="Endge.domain.getConfiguration(issue.identity)" type="button" size="sm" variant="ghost" class="h-6 px-2" @click="openConfigurationDocument(issue.identity)">
+        <Button
+          v-if="Endge.domain.getConfiguration(issue.identity)"
+          type="button"
+          size="sm"
+          variant="ghost"
+          class="h-6 px-2"
+          @click="openConfigurationDocument(issue.identity)"
+        >
           Открыть
         </Button>
       </div>
@@ -747,7 +982,9 @@ function isEqual(left: unknown, right: unknown): boolean {
       content-class="bg-background/60"
     >
       <template #navigation>
-        <TabsList class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2">
+        <TabsList
+          class="flex h-auto w-full shrink-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none bg-transparent p-2"
+        >
           <template v-for="(section, index) in sections" :key="section.id">
             <div
               v-if="index === systemSections.length"
@@ -758,7 +995,10 @@ function isEqual(left: unknown, right: unknown): boolean {
               :value="section.id"
               class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
-              <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary" />
+              <component
+                :is="section.icon"
+                class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary"
+              />
               <span>{{ section.label }}</span>
             </TabsTrigger>
 
@@ -771,7 +1011,11 @@ function isEqual(left: unknown, right: unknown): boolean {
                 :key="editingItem.id"
                 type="button"
                 class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground"
-                :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                :class="
+                  editingSection === editingItem.id
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground'
+                "
                 @click="setEditingSection(editingItem.id)"
               >
                 {{ editingItem.label }}
@@ -787,7 +1031,11 @@ function isEqual(left: unknown, right: unknown): boolean {
                 :key="tooltipItem.id"
                 type="button"
                 class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground"
-                :class="tooltipSection === tooltipItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                :class="
+                  tooltipSection === tooltipItem.id
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground'
+                "
                 @click="setTooltipSection(tooltipItem.id)"
               >
                 {{ tooltipItem.label }}
@@ -799,7 +1047,10 @@ function isEqual(left: unknown, right: unknown): boolean {
 
       <div class="contents">
         <div class="border-b border-border/70 px-4 py-3 lg:hidden">
-          <Select :model-value="activeSection" @update:model-value="setActiveSection">
+          <Select
+            :model-value="activeSection"
+            @update:model-value="setActiveSection"
+          >
             <SelectTrigger class="w-full bg-background">
               <SelectValue />
             </SelectTrigger>
@@ -812,22 +1063,38 @@ function isEqual(left: unknown, right: unknown): boolean {
               </template>
             </SelectContent>
           </Select>
-          <Select v-if="activeSection === 'editing'" :model-value="editingSection" @update:model-value="setEditingSection">
+          <Select
+            v-if="activeSection === 'editing'"
+            :model-value="editingSection"
+            @update:model-value="setEditingSection"
+          >
             <SelectTrigger class="mt-2 w-full bg-background">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="editingItem in editingSections" :key="editingItem.id" :value="editingItem.id">
+              <SelectItem
+                v-for="editingItem in editingSections"
+                :key="editingItem.id"
+                :value="editingItem.id"
+              >
                 {{ editingItem.label }}
               </SelectItem>
             </SelectContent>
           </Select>
-          <Select v-if="activeSection === 'tooltips'" :model-value="tooltipSection" @update:model-value="setTooltipSection">
+          <Select
+            v-if="activeSection === 'tooltips'"
+            :model-value="tooltipSection"
+            @update:model-value="setTooltipSection"
+          >
             <SelectTrigger class="mt-2 w-full bg-background">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="tooltipItem in tooltipSections" :key="tooltipItem.id" :value="tooltipItem.id">
+              <SelectItem
+                v-for="tooltipItem in tooltipSections"
+                :key="tooltipItem.id"
+                :value="tooltipItem.id"
+              >
                 {{ tooltipItem.label }}
               </SelectItem>
             </SelectContent>
@@ -846,13 +1113,21 @@ function isEqual(left: unknown, right: unknown): boolean {
             class="m-0 space-y-5 p-5 outline-none"
           >
             <div>
-              <h3 class="text-base font-semibold tracking-tight text-foreground">
+              <h3
+                class="text-base font-semibold tracking-tight text-foreground"
+              >
                 {{ category.displayName }}
               </h3>
-              <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">
+              <p
+                v-if="category.description"
+                class="mt-1 text-xs leading-5 text-muted-foreground"
+              >
                 {{ category.description }}
               </p>
-              <code data-copyable class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
+              <code
+                data-copyable
+                class="mt-1 block text-[10px] text-muted-foreground"
+              >$context.config.{{ category.identity }}</code>
             </div>
             <div class="divide-y divide-border/60 border-t border-border/60">
               <div
@@ -863,24 +1138,55 @@ function isEqual(left: unknown, right: unknown): boolean {
                 <ConfigurationOverrideField
                   :label="field.label"
                   :uses-parent-value="isInherit"
-                  :overridden="hasConfigurationValueOverride(category.identity, field.key)"
-                  @enable="enableConfigurationValueOverride(category.identity, field.key, field.defaultValue)"
-                  @reset="resetConfigurationValueOverride(category.identity, field.key)"
+                  :overridden="
+                    hasConfigurationValueOverride(category.identity, field.key)
+                  "
+                  @enable="
+                    enableConfigurationValueOverride(
+                      category.identity,
+                      field.key,
+                      field.defaultValue,
+                    )
+                  "
+                  @reset="
+                    resetConfigurationValueOverride(
+                      category.identity,
+                      field.key,
+                    )
+                  "
                 >
                   <template #default="{ disabled: fieldDisabled }">
-                    <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">
+                    <p
+                      v-if="field.description"
+                      class="mb-2 text-xs text-muted-foreground"
+                    >
                       {{ field.description }}
                     </p>
                     <ConfigValueEditor
-                      :model-value="configurationValue(category.identity, field.key, field.defaultValue)"
+                      :model-value="
+                        configurationValue(
+                          category.identity,
+                          field.key,
+                          field.defaultValue,
+                        )
+                      "
                       :type="field.type"
                       :min="field.min"
                       :max="field.max"
                       :step="field.step"
                       :disabled="disabled || fieldDisabled"
-                      @update:model-value="setConfigurationValue(category.identity, field.key, $event)"
+                      @update:model-value="
+                        setConfigurationValue(
+                          category.identity,
+                          field.key,
+                          $event,
+                        )
+                      "
                     />
-                    <code data-copyable class="mt-1.5 block text-[10px] text-muted-foreground">{{ category.identity }}.{{ field.key }}</code>
+                    <code
+                      data-copyable
+                      class="mt-1.5 block text-[10px] text-muted-foreground"
+                    >{{ category.identity }}.{{ field.key }}</code>
                   </template>
                 </ConfigurationOverrideField>
               </div>
@@ -891,16 +1197,51 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <Label>Environment variables</Label>
-                <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('vars')">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  :disabled="disabled"
+                  @click="addCollectionValue('vars')"
+                >
                   <Plus class="mr-2 size-4" />Добавить
                 </Button>
               </div>
               <div class="rounded-md border">
-                <div v-for="(row, index) in collectionRows('vars')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                  <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Имя переменной" @update:model-value="updateEntryKey('vars', row, String($event ?? ''))" />
-                  <Input v-else v-model="row.name" :disabled="disabled" placeholder="Имя переменной" />
-                  <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'defaultValue')" :disabled="disabled" placeholder="Default value" @update:model-value="setRowValue(row, 'defaultValue', String($event ?? ''))" />
-                  <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+                <div
+                  v-for="(row, index) in collectionRows('vars')"
+                  :key="index"
+                  class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0"
+                >
+                  <Input
+                    v-if="isInherit"
+                    :model-value="row.key"
+                    :disabled="disabled"
+                    placeholder="Имя переменной"
+                    @update:model-value="
+                      updateEntryKey('vars', row, String($event ?? ''))
+                    "
+                  />
+                  <Input
+                    v-else
+                    v-model="row.name"
+                    :disabled="disabled"
+                    placeholder="Имя переменной"
+                  />
+                  <Input
+                    v-if="!isCollectionRowExcluded(row)"
+                    :model-value="rowValue(row, 'defaultValue')"
+                    :disabled="disabled"
+                    placeholder="Default value"
+                    @update:model-value="
+                      setRowValue(row, 'defaultValue', String($event ?? ''))
+                    "
+                  />
+                  <Input
+                    v-else
+                    :model-value="EXCLUDED_VALUE_LABEL"
+                    disabled
+                    class="text-destructive"
+                  />
                   <ConfigurationCollectionRowActions
                     :excluded="isCollectionRowExcluded(row)"
                     :excludable="isInherit"
@@ -917,34 +1258,89 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <Label>Доступные SFC-адаптеры</Label>
-                <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('sfcAdapterIds')">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  :disabled="disabled"
+                  @click="addCollectionValue('sfcAdapterIds')"
+                >
                   <Plus class="mr-2 size-4" />Добавить
                 </Button>
               </div>
               <div class="rounded-md border">
-                <div v-for="(row, index) in collectionRows('sfcAdapterIds')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                  <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Adapter id" @update:model-value="updateEntryKey('sfcAdapterIds', row, String($event ?? ''))" />
-                  <Input v-else class="col-span-2" :model-value="String(row)" :disabled="disabled" placeholder="Adapter id" @update:model-value="editableConfiguration.sfcAdapterIds[index] = String($event ?? '')" />
+                <div
+                  v-for="(row, index) in collectionRows('sfcAdapterIds')"
+                  :key="index"
+                  class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0"
+                >
                   <Input
                     v-if="isInherit"
-                    :model-value="isCollectionRowExcluded(row) ? EXCLUDED_VALUE_LABEL : 'Добавляется или переопределяется'"
+                    :model-value="row.key"
+                    :disabled="disabled"
+                    placeholder="Adapter id"
+                    @update:model-value="
+                      updateEntryKey('sfcAdapterIds', row, String($event ?? ''))
+                    "
+                  />
+                  <Input
+                    v-else
+                    class="col-span-2"
+                    :model-value="String(row)"
+                    :disabled="disabled"
+                    placeholder="Adapter id"
+                    @update:model-value="
+                      editableConfiguration.sfcAdapterIds[index] = String(
+                        $event ?? '',
+                      )
+                    "
+                  />
+                  <Input
+                    v-if="isInherit"
+                    :model-value="
+                      isCollectionRowExcluded(row)
+                        ? EXCLUDED_VALUE_LABEL
+                        : 'Добавляется или переопределяется'
+                    "
                     disabled
-                    :class="isCollectionRowExcluded(row) ? 'text-destructive' : 'text-muted-foreground'"
+                    :class="
+                      isCollectionRowExcluded(row)
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
+                    "
                   />
                   <ConfigurationCollectionRowActions
                     :excluded="isCollectionRowExcluded(row)"
                     :excludable="isInherit"
                     :disabled="disabled"
-                    @toggle-excluded="toggleCollectionRowExclusion('sfcAdapterIds', row)"
+                    @toggle-excluded="
+                      toggleCollectionRowExclusion('sfcAdapterIds', row)
+                    "
                     @remove="removeCollectionRow('sfcAdapterIds', index)"
                   />
                 </div>
               </div>
             </div>
 
-            <ConfigurationOverrideField label="SFC-адаптер по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultSfcAdapterId')" @enable="enableScalar('defaultSfcAdapterId')" @reset="resetScalar('defaultSfcAdapterId')">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                <Input :model-value="scalarValue('defaultSfcAdapterId')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultSfcAdapterId', String($event ?? ''))" />
+            <ConfigurationOverrideField
+              label="SFC-адаптер по умолчанию"
+              :uses-parent-value="isInherit"
+              :overridden="hasScalarOverride('defaultSfcAdapterId')"
+              @enable="enableScalar('defaultSfcAdapterId')"
+              @reset="resetScalar('defaultSfcAdapterId')"
+            >
+              <template
+                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+              >
+                <Input
+                  :model-value="scalarValue('defaultSfcAdapterId')"
+                  :disabled="disabled || fieldDisabled"
+                  :placeholder="
+                    fieldDisabled ? parentValuePlaceholder : undefined
+                  "
+                  @update:model-value="
+                    setScalar('defaultSfcAdapterId', String($event ?? ''))
+                  "
+                />
               </template>
             </ConfigurationOverrideField>
           </TabsContent>
@@ -972,7 +1368,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                   :model-value="sfcEditingTriggers(activeEditingSection.id)"
                   :kind="activeEditingSection.kind"
                   :disabled="disabled || fieldDisabled"
-                  @update:model-value="setSFCEditingTriggers(activeEditingSection.id, $event)"
+                  @update:model-value="
+                    setSFCEditingTriggers(activeEditingSection.id, $event)
+                  "
                 />
               </template>
             </ConfigurationOverrideField>
@@ -990,9 +1388,21 @@ function isEqual(left: unknown, right: unknown): boolean {
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
-                <ConfigurationOverrideField label="Предпочтительная сторона" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('side')" @enable="enableTooltipOverride('side')" @reset="resetTooltipOverride('side')">
+                <ConfigurationOverrideField
+                  label="Предпочтительная сторона"
+                  :uses-parent-value="isInherit"
+                  :overridden="hasTooltipOverride('side')"
+                  @enable="enableTooltipOverride('side')"
+                  @reset="resetTooltipOverride('side')"
+                >
                   <template #default="{ disabled: fieldDisabled }">
-                    <Select :model-value="String(tooltipValue('side'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('side', String($event))">
+                    <Select
+                      :model-value="String(tooltipValue('side'))"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="
+                        setTooltipValue('side', String($event))
+                      "
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="top">
@@ -1012,9 +1422,21 @@ function isEqual(left: unknown, right: unknown): boolean {
                   </template>
                 </ConfigurationOverrideField>
 
-                <ConfigurationOverrideField label="Выравнивание" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('align')" @enable="enableTooltipOverride('align')" @reset="resetTooltipOverride('align')">
+                <ConfigurationOverrideField
+                  label="Выравнивание"
+                  :uses-parent-value="isInherit"
+                  :overridden="hasTooltipOverride('align')"
+                  @enable="enableTooltipOverride('align')"
+                  @reset="resetTooltipOverride('align')"
+                >
                   <template #default="{ disabled: fieldDisabled }">
-                    <Select :model-value="String(tooltipValue('align'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('align', String($event))">
+                    <Select
+                      :model-value="String(tooltipValue('align'))"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="
+                        setTooltipValue('align', String($event))
+                      "
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="start">
@@ -1031,15 +1453,45 @@ function isEqual(left: unknown, right: unknown): boolean {
                   </template>
                 </ConfigurationOverrideField>
 
-                <ConfigurationOverrideField label="Задержка появления, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('openDelay')" @enable="enableTooltipOverride('openDelay')" @reset="resetTooltipOverride('openDelay')">
+                <ConfigurationOverrideField
+                  label="Задержка появления, мс"
+                  :uses-parent-value="isInherit"
+                  :overridden="hasTooltipOverride('openDelay')"
+                  @enable="enableTooltipOverride('openDelay')"
+                  @reset="resetTooltipOverride('openDelay')"
+                >
                   <template #default="{ disabled: fieldDisabled }">
-                    <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('openDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('openDelay', String($event ?? '0'))" />
+                    <Input
+                      type="number"
+                      min="0"
+                      max="60000"
+                      :model-value="String(tooltipValue('openDelay'))"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="
+                        setTooltipValue('openDelay', String($event ?? '0'))
+                      "
+                    />
                   </template>
                 </ConfigurationOverrideField>
 
-                <ConfigurationOverrideField label="Задержка исчезновения, мс" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('closeDelay')" @enable="enableTooltipOverride('closeDelay')" @reset="resetTooltipOverride('closeDelay')">
+                <ConfigurationOverrideField
+                  label="Задержка исчезновения, мс"
+                  :uses-parent-value="isInherit"
+                  :overridden="hasTooltipOverride('closeDelay')"
+                  @enable="enableTooltipOverride('closeDelay')"
+                  @reset="resetTooltipOverride('closeDelay')"
+                >
                   <template #default="{ disabled: fieldDisabled }">
-                    <Input type="number" min="0" max="60000" :model-value="String(tooltipValue('closeDelay'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('closeDelay', String($event ?? '0'))" />
+                    <Input
+                      type="number"
+                      min="0"
+                      max="60000"
+                      :model-value="String(tooltipValue('closeDelay'))"
+                      :disabled="disabled || fieldDisabled"
+                      @update:model-value="
+                        setTooltipValue('closeDelay', String($event ?? '0'))
+                      "
+                    />
                   </template>
                 </ConfigurationOverrideField>
               </div>
@@ -1055,7 +1507,13 @@ function isEqual(left: unknown, right: unknown): boolean {
                 </p>
               </div>
 
-              <ConfigurationOverrideField label="Клавиатурное условие появления" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('keyboard')" @enable="enableTooltipOverride('keyboard')" @reset="resetTooltipOverride('keyboard')">
+              <ConfigurationOverrideField
+                label="Клавиатурное условие появления"
+                :uses-parent-value="isInherit"
+                :overridden="hasTooltipOverride('keyboard')"
+                @enable="enableTooltipOverride('keyboard')"
+                @reset="resetTooltipOverride('keyboard')"
+              >
                 <template #default="{ disabled: fieldDisabled }">
                   <div class="space-y-2">
                     <ComponentSFCInteractionBindingEditor
@@ -1065,7 +1523,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                       @update:condition="setTooltipKeyboard"
                     />
                     <p class="text-xs text-muted-foreground">
-                      Если условие не задано, тултип появляется при обычном наведении или фокусе. Можно записать физическую комбинацию либо настроить её вручную.
+                      Если условие не задано, тултип появляется при обычном
+                      наведении или фокусе. Можно записать физическую комбинацию
+                      либо настроить её вручную.
                     </p>
                   </div>
                 </template>
@@ -1074,41 +1534,139 @@ function isEqual(left: unknown, right: unknown): boolean {
           </TabsContent>
 
           <TabsContent value="auth" class="m-0 p-5 outline-none">
-            <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                <Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" />
+            <ConfigurationOverrideField
+              label="Профиль авторизации по умолчанию"
+              :uses-parent-value="isInherit"
+              :overridden="hasScalarOverride('defaultAuthProfileIdentity')"
+              @enable="enableScalar('defaultAuthProfileIdentity')"
+              @reset="resetScalar('defaultAuthProfileIdentity')"
+            >
+              <template
+                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+              >
+                <Input
+                  :model-value="scalarValue('defaultAuthProfileIdentity')"
+                  :disabled="disabled || fieldDisabled"
+                  :placeholder="
+                    fieldDisabled ? parentValuePlaceholder : 'Не задан'
+                  "
+                  @update:model-value="
+                    setScalar(
+                      'defaultAuthProfileIdentity',
+                      String($event ?? ''),
+                    )
+                  "
+                />
               </template>
             </ConfigurationOverrideField>
           </TabsContent>
 
           <TabsContent value="locales" class="m-0 space-y-5 p-5 outline-none">
             <div class="grid gap-4 md:grid-cols-2">
-              <ConfigurationOverrideField label="Локаль по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')">
-                <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                  <Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" />
+              <ConfigurationOverrideField
+                label="Локаль по умолчанию"
+                :uses-parent-value="isInherit"
+                :overridden="hasScalarOverride('defaultLocale')"
+                @enable="enableScalar('defaultLocale')"
+                @reset="resetScalar('defaultLocale')"
+              >
+                <template
+                  #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+                >
+                  <Input
+                    :model-value="scalarValue('defaultLocale')"
+                    :disabled="disabled || fieldDisabled"
+                    :placeholder="
+                      fieldDisabled ? parentValuePlaceholder : undefined
+                    "
+                    @update:model-value="
+                      setScalar('defaultLocale', String($event ?? ''))
+                    "
+                  />
                 </template>
               </ConfigurationOverrideField>
-              <ConfigurationOverrideField label="Резервная локаль" :uses-parent-value="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')">
-                <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                  <Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" />
+              <ConfigurationOverrideField
+                label="Резервная локаль"
+                :uses-parent-value="isInherit"
+                :overridden="hasScalarOverride('fallbackLocale')"
+                @enable="enableScalar('fallbackLocale')"
+                @reset="resetScalar('fallbackLocale')"
+              >
+                <template
+                  #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+                >
+                  <Input
+                    :model-value="scalarValue('fallbackLocale')"
+                    :disabled="disabled || fieldDisabled"
+                    :placeholder="
+                      fieldDisabled ? parentValuePlaceholder : undefined
+                    "
+                    @update:model-value="
+                      setScalar('fallbackLocale', String($event ?? ''))
+                    "
+                  />
                 </template>
               </ConfigurationOverrideField>
             </div>
             <div class="flex items-center justify-between">
               <Label>Доступные локали</Label>
-              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('locales')">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="disabled"
+                @click="addCollectionValue('locales')"
+              >
                 <Plus class="mr-2 size-4" />Добавить
               </Button>
             </div>
             <div class="rounded-md border">
-              <div v-for="(row, index) in collectionRows('locales')" :key="index" class="grid grid-cols-[0.7fr_1.4fr_0.7fr_0.8fr_auto] gap-2 border-b p-2 last:border-0">
-                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Код" @update:model-value="updateEntryKey('locales', row, String($event ?? ''))" />
-                <Input v-else v-model="row.code" :disabled="disabled" placeholder="Код" />
+              <div
+                v-for="(row, index) in collectionRows('locales')"
+                :key="index"
+                class="grid grid-cols-[0.7fr_1.4fr_0.7fr_0.8fr_auto] gap-2 border-b p-2 last:border-0"
+              >
+                <Input
+                  v-if="isInherit"
+                  :model-value="row.key"
+                  :disabled="disabled"
+                  placeholder="Код"
+                  @update:model-value="
+                    updateEntryKey('locales', row, String($event ?? ''))
+                  "
+                />
+                <Input
+                  v-else
+                  v-model="row.code"
+                  :disabled="disabled"
+                  placeholder="Код"
+                />
                 <template v-if="!isCollectionRowExcluded(row)">
-                  <Input :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
-                  <Input :model-value="rowValue(row, 'shortLabel')" :disabled="disabled" placeholder="Кратко" @update:model-value="setRowValue(row, 'shortLabel', String($event ?? ''))" />
-                  <Select :model-value="rowValue(row, 'direction') || 'ltr'" :disabled="disabled" @update:model-value="setRowValue(row, 'direction', String($event ?? 'ltr'))">
-                    <SelectTrigger><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent>
+                  <Input
+                    :model-value="rowValue(row, 'displayName')"
+                    :disabled="disabled"
+                    placeholder="Отображение"
+                    @update:model-value="
+                      setRowValue(row, 'displayName', String($event ?? ''))
+                    "
+                  />
+                  <Input
+                    :model-value="rowValue(row, 'shortLabel')"
+                    :disabled="disabled"
+                    placeholder="Кратко"
+                    @update:model-value="
+                      setRowValue(row, 'shortLabel', String($event ?? ''))
+                    "
+                  />
+                  <Select
+                    :model-value="rowValue(row, 'direction') || 'ltr'"
+                    :disabled="disabled"
+                    @update:model-value="
+                      setRowValue(row, 'direction', String($event ?? 'ltr'))
+                    "
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Direction" />
+                    </SelectTrigger><SelectContent>
                       <SelectItem value="ltr">
                         LTR
                       </SelectItem><SelectItem value="rtl">
@@ -1117,12 +1675,19 @@ function isEqual(left: unknown, right: unknown): boolean {
                     </SelectContent>
                   </Select>
                 </template>
-                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="col-span-3 text-destructive" />
+                <Input
+                  v-else
+                  :model-value="EXCLUDED_VALUE_LABEL"
+                  disabled
+                  class="col-span-3 text-destructive"
+                />
                 <ConfigurationCollectionRowActions
                   :excluded="isCollectionRowExcluded(row)"
                   :excludable="isInherit"
                   :disabled="disabled"
-                  @toggle-excluded="toggleCollectionRowExclusion('locales', row)"
+                  @toggle-excluded="
+                    toggleCollectionRowExclusion('locales', row)
+                  "
                   @remove="removeCollectionRow('locales', index)"
                 />
               </div>
@@ -1130,23 +1695,75 @@ function isEqual(left: unknown, right: unknown): boolean {
           </TabsContent>
 
           <TabsContent value="themes" class="m-0 space-y-5 p-5 outline-none">
-            <ConfigurationOverrideField label="Тема по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                <Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" />
+            <ConfigurationOverrideField
+              label="Тема по умолчанию"
+              :uses-parent-value="isInherit"
+              :overridden="hasScalarOverride('defaultTheme')"
+              @enable="enableScalar('defaultTheme')"
+              @reset="resetScalar('defaultTheme')"
+            >
+              <template
+                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+              >
+                <Input
+                  :model-value="scalarValue('defaultTheme')"
+                  :disabled="disabled || fieldDisabled"
+                  :placeholder="
+                    fieldDisabled ? parentValuePlaceholder : undefined
+                  "
+                  @update:model-value="
+                    setScalar('defaultTheme', String($event ?? ''))
+                  "
+                />
               </template>
             </ConfigurationOverrideField>
             <div class="flex items-center justify-between">
               <Label>Доступные темы</Label>
-              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('themes')">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="disabled"
+                @click="addCollectionValue('themes')"
+              >
                 <Plus class="mr-2 size-4" />Добавить
               </Button>
             </div>
             <div class="rounded-md border">
-              <div v-for="(row, index) in collectionRows('themes')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Identity" @update:model-value="updateEntryKey('themes', row, String($event ?? ''))" />
-                <Input v-else v-model="row.identity" :disabled="disabled" placeholder="Identity" />
-                <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
-                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+              <div
+                v-for="(row, index) in collectionRows('themes')"
+                :key="index"
+                class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0"
+              >
+                <Input
+                  v-if="isInherit"
+                  :model-value="row.key"
+                  :disabled="disabled"
+                  placeholder="Identity"
+                  @update:model-value="
+                    updateEntryKey('themes', row, String($event ?? ''))
+                  "
+                />
+                <Input
+                  v-else
+                  v-model="row.identity"
+                  :disabled="disabled"
+                  placeholder="Identity"
+                />
+                <Input
+                  v-if="!isCollectionRowExcluded(row)"
+                  :model-value="rowValue(row, 'displayName')"
+                  :disabled="disabled"
+                  placeholder="Отображение"
+                  @update:model-value="
+                    setRowValue(row, 'displayName', String($event ?? ''))
+                  "
+                />
+                <Input
+                  v-else
+                  :model-value="EXCLUDED_VALUE_LABEL"
+                  disabled
+                  class="text-destructive"
+                />
                 <ConfigurationCollectionRowActions
                   :excluded="isCollectionRowExcluded(row)"
                   :excludable="isInherit"
@@ -1156,18 +1773,48 @@ function isEqual(left: unknown, right: unknown): boolean {
                 />
               </div>
             </div>
-            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
-              Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.
+            <div
+              class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground"
+            >
+              Effective: {{ effective.locales.length }} locales,
+              {{ effective.themes.length }} themes, default theme —
+              {{ effective.defaultTheme }}.
             </div>
           </TabsContent>
 
           <TabsContent value="timezones" class="m-0 space-y-5 p-5 outline-none">
-            <ConfigurationOverrideField label="Временная зона по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTimezone')" @enable="enableScalar('defaultTimezone')" @reset="resetScalar('defaultTimezone')">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
-                <Select :model-value="scalarValue('defaultTimezone')" :disabled="disabled || fieldDisabled" @update:model-value="setScalar('defaultTimezone', String($event ?? ''))">
-                  <SelectTrigger><SelectValue :placeholder="fieldDisabled ? parentValuePlaceholder : 'Выберите временную зону'" /></SelectTrigger>
+            <ConfigurationOverrideField
+              label="Временная зона по умолчанию"
+              :uses-parent-value="isInherit"
+              :overridden="hasScalarOverride('defaultTimezone')"
+              @enable="enableScalar('defaultTimezone')"
+              @reset="resetScalar('defaultTimezone')"
+            >
+              <template
+                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+              >
+                <Select
+                  :model-value="scalarValue('defaultTimezone')"
+                  :disabled="disabled || fieldDisabled"
+                  @update:model-value="
+                    setScalar('defaultTimezone', String($event ?? ''))
+                  "
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      :placeholder="
+                        fieldDisabled
+                          ? parentValuePlaceholder
+                          : 'Выберите временную зону'
+                      "
+                    />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem v-for="timezone in effective.timezones" :key="timezone.identity" :value="timezone.identity">
+                    <SelectItem
+                      v-for="timezone in effective.timezones"
+                      :key="timezone.identity"
+                      :value="timezone.identity"
+                    >
                       {{ timezone.displayName || timezone.identity }}
                     </SelectItem>
                   </SelectContent>
@@ -1181,31 +1828,74 @@ function isEqual(left: unknown, right: unknown): boolean {
                   Используйте IANA identity или системное значение local.
                 </p>
               </div>
-              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('timezones')">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="disabled"
+                @click="addCollectionValue('timezones')"
+              >
                 <Plus class="mr-2 size-4" />Добавить
               </Button>
             </div>
             <div class="rounded-md border">
-              <div v-for="(row, index) in collectionRows('timezones')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="IANA identity" @update:model-value="updateEntryKey('timezones', row, String($event ?? ''))" />
-                <Input v-else v-model="row.identity" :disabled="disabled" placeholder="IANA identity" />
-                <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображаемое имя" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
-                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+              <div
+                v-for="(row, index) in collectionRows('timezones')"
+                :key="index"
+                class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0"
+              >
+                <Input
+                  v-if="isInherit"
+                  :model-value="row.key"
+                  :disabled="disabled"
+                  placeholder="IANA identity"
+                  @update:model-value="
+                    updateEntryKey('timezones', row, String($event ?? ''))
+                  "
+                />
+                <Input
+                  v-else
+                  v-model="row.identity"
+                  :disabled="disabled"
+                  placeholder="IANA identity"
+                />
+                <Input
+                  v-if="!isCollectionRowExcluded(row)"
+                  :model-value="rowValue(row, 'displayName')"
+                  :disabled="disabled"
+                  placeholder="Отображаемое имя"
+                  @update:model-value="
+                    setRowValue(row, 'displayName', String($event ?? ''))
+                  "
+                />
+                <Input
+                  v-else
+                  :model-value="EXCLUDED_VALUE_LABEL"
+                  disabled
+                  class="text-destructive"
+                />
                 <ConfigurationCollectionRowActions
                   :excluded="isCollectionRowExcluded(row)"
                   :excludable="isInherit"
                   :disabled="disabled"
-                  @toggle-excluded="toggleCollectionRowExclusion('timezones', row)"
+                  @toggle-excluded="
+                    toggleCollectionRowExclusion('timezones', row)
+                  "
                   @remove="removeCollectionRow('timezones', index)"
                 />
               </div>
             </div>
-            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
-              Effective: {{ effective.timezones.length }} zones, default — {{ effective.defaultTimezone }}.
+            <div
+              class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground"
+            >
+              Effective: {{ effective.timezones.length }} zones, default —
+              {{ effective.defaultTimezone }}.
             </div>
           </TabsContent>
 
-          <TabsContent value="diagnostics" class="m-0 min-h-full p-0 outline-none">
+          <TabsContent
+            value="diagnostics"
+            class="m-0 min-h-full p-0 outline-none"
+          >
             <DiagnosticsConfigurationEditor
               :model-value="effective.diagnostics"
               :variant="variant"

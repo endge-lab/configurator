@@ -5,6 +5,7 @@
 
 import type { EndgeDomainBundle } from '@endge/codegen'
 import type { Plugin } from 'vite'
+import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { generateDomainArtifacts } from '@endge/codegen'
 

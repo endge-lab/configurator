@@ -658,7 +658,7 @@ export class UIEditorDemoState {
   public contextMenu: { nodeId: string, x: number, y: number } | null = null
 
   public constructor() {
-    this.restorePersistedState()
+    this._restorePersistedState()
     const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
     this.sourceDiagnostics = projection.diagnostics
     this.sourceLocations = projection.sourceLocations
@@ -687,12 +687,12 @@ export class UIEditorDemoState {
     this.nodeDragSession = null
     this.showGridOverlay = false
     this.contextMenu = null
-    this.persistState()
+    this._persistState()
   }
 
   public setBreakpoint(breakpoint: UIEditorBreakpoint): void {
     this.activeBreakpoint = breakpoint
-    this.persistState()
+    this._persistState()
   }
 
   public get activePanels(): UIEditorPanel[] {
@@ -716,7 +716,7 @@ export class UIEditorDemoState {
       ...this.visiblePanels,
       [panel]: !this.visiblePanels[panel],
     }
-    this.persistState()
+    this._persistState()
     return true
   }
 
@@ -746,7 +746,7 @@ export class UIEditorDemoState {
       [key]: sizes,
     }
     if (persist) {
-      this.persistState()
+      this._persistState()
     }
   }
 
@@ -763,12 +763,12 @@ export class UIEditorDemoState {
       ...this.panelLayouts,
       [key]: [...DEFAULT_PANEL_LAYOUTS[key]],
     }
-    this.persistState()
+    this._persistState()
   }
 
   public toggleGridOverlay(): void {
     this.showGridOverlay = !this.showGridOverlay
-    this.persistState()
+    this._persistState()
   }
 
   public beginGridDrag(payload: UIEditorDragPayload, nodeId?: string | null): void {
@@ -832,7 +832,7 @@ export class UIEditorDemoState {
       return false
     }
 
-    const parentId = this.findParentId(nodeId)
+    const parentId = this._findParentId(nodeId)
     if (!parentId) {
       return false
     }
@@ -868,7 +868,7 @@ export class UIEditorDemoState {
       || !targetParent
       || !isUIEditorContainer(targetParent.kind)
       || session.nodeId === targetParentId
-      || this.isDescendant(session.nodeId, targetParentId)
+      || this._isDescendant(session.nodeId, targetParentId)
     ) {
       return false
     }
@@ -914,13 +914,13 @@ export class UIEditorDemoState {
 
     this.nodeDragSession = null
     const node = this.getNode(session.nodeId)
-    const currentParent = this.getNode(this.findParentId(session.nodeId))
+    const currentParent = this.getNode(this._findParentId(session.nodeId))
     const targetParent = this.getNode(session.targetParentId)
     if (!node || !currentParent || !targetParent || !isUIEditorContainer(targetParent.kind)) {
       return false
     }
 
-    if (session.nodeId === targetParent.id || this.isDescendant(session.nodeId, targetParent.id)) {
+    if (session.nodeId === targetParent.id || this._isDescendant(session.nodeId, targetParent.id)) {
       return false
     }
 
@@ -930,7 +930,7 @@ export class UIEditorDemoState {
     targetParent.children.splice(targetIndex, 0, session.nodeId)
     this.selectedNodeId = session.nodeId
     this.selectionOrigin = 'visual'
-    this.persistDocumentState()
+    this._persistDocumentState()
     return true
   }
 
@@ -943,7 +943,7 @@ export class UIEditorDemoState {
   }
 
   public getParentNode(nodeId: string): UIEditorNode | null {
-    return this.getNode(this.findParentId(nodeId))
+    return this.getNode(this._findParentId(nodeId))
   }
 
   public selectNode(nodeId: string, origin: UIEditorSelectionOrigin = 'visual'): void {
@@ -955,7 +955,7 @@ export class UIEditorDemoState {
       this.selectedNodeId = nodeId
       this.selectionOrigin = origin
       if (selectionChanged) {
-        this.persistState()
+        this._persistState()
       }
     }
   }
@@ -1027,7 +1027,7 @@ export class UIEditorDemoState {
     this.cancelInlineEdit()
     this.selectedNodeId = null
     this.selectionOrigin = 'visual'
-    this.persistState()
+    this._persistState()
   }
 
   public openContextMenu(nodeId: string, clientX: number, clientY: number): boolean {
@@ -1079,7 +1079,7 @@ export class UIEditorDemoState {
       node.layout = {
         ...node.layout,
         colStart: 1,
-        rowStart: this.getNextGridRowStart(parent.id),
+        rowStart: this._getNextGridRowStart(parent.id),
       }
     }
     this.document.nodes[node.id] = node
@@ -1087,7 +1087,7 @@ export class UIEditorDemoState {
     parent.children.splice(targetIndex, 0, node.id)
     this.selectedNodeId = node.id
     this.selectionOrigin = 'visual'
-    this.persistDocumentState()
+    this._persistDocumentState()
     return node
   }
 
@@ -1101,7 +1101,7 @@ export class UIEditorDemoState {
     }
 
     if (payload.paletteSource === 'jsx' && payload.itemId) {
-      return this.addJsxComponent(payload.itemId, parentId, index)
+      return this._addJsxComponent(payload.itemId, parentId, index)
     }
 
     const definitionRef = payload.definitionRef ?? payload.kind
@@ -1152,11 +1152,11 @@ export class UIEditorDemoState {
     if (!node || !targetParent || !isUIEditorContainer(targetParent.kind)) {
       return false
     }
-    if (nodeId === targetParentId || this.isDescendant(nodeId, targetParentId)) {
+    if (nodeId === targetParentId || this._isDescendant(nodeId, targetParentId)) {
       return false
     }
 
-    const currentParentId = this.findParentId(nodeId)
+    const currentParentId = this._findParentId(nodeId)
     if (!currentParentId) {
       return false
     }
@@ -1182,7 +1182,7 @@ export class UIEditorDemoState {
     targetParent.children.splice(effectiveTargetIndex, 0, nodeId)
     this.selectedNodeId = nodeId
     this.selectionOrigin = 'visual'
-    this.persistDocumentState()
+    this._persistDocumentState()
     return true
   }
 
@@ -1201,7 +1201,7 @@ export class UIEditorDemoState {
       this.cancelInlineEdit()
     }
 
-    const parentId = this.findParentId(nodeId)
+    const parentId = this._findParentId(nodeId)
     if (parentId) {
       const parent = this.getNode(parentId)
       if (parent) {
@@ -1209,10 +1209,10 @@ export class UIEditorDemoState {
       }
     }
 
-    this.removeNodeRecursive(nodeId)
+    this._removeNodeRecursive(nodeId)
     this.selectedNodeId = parentId ?? this.document.rootId
     this.selectionOrigin = 'visual'
-    this.persistDocumentState()
+    this._persistDocumentState()
   }
 
   public patchNodeProps(
@@ -1232,7 +1232,7 @@ export class UIEditorDemoState {
       ...patch,
     } as UIEditorNode['props']
     ;(node as UIEditorNode).props = normalizeNodeProps(node)
-    this.persistDocumentState()
+    this._persistDocumentState()
   }
 
   public patchNodeSourceAttribute(
@@ -1270,7 +1270,7 @@ export class UIEditorDemoState {
       span,
       rowSpan: clampRowSpan(patch.rowSpan ?? node.layout?.rowSpan ?? 4),
     }
-    this.persistDocumentState()
+    this._persistDocumentState()
   }
 
   public patchNodeReferences(
@@ -1294,11 +1294,11 @@ export class UIEditorDemoState {
     if (patch.assetRef !== undefined) {
       node.assetRef = String(patch.assetRef ?? '').trim() || null
     }
-    this.persistDocumentState()
+    this._persistDocumentState()
   }
 
   public toTree(): UIEditorTreeNode {
-    return this.toTreeNode(this.document.rootId)!
+    return this._toTreeNode(this.document.rootId)!
   }
 
   public toJsx(): string {
@@ -1324,7 +1324,7 @@ export class UIEditorDemoState {
       }
     }
 
-    this.persistState()
+    this._persistState()
     return projection.document != null
   }
 
@@ -1333,7 +1333,7 @@ export class UIEditorDemoState {
     console.log('[UIEditorDemo] AST tree inspection is available in the editor UI.')
   }
 
-  private findParentId(nodeId: string): string | null {
+  private _findParentId(nodeId: string): string | null {
     for (const node of Object.values(this.document.nodes)) {
       if (node.children.includes(nodeId)) {
         return node.id
@@ -1342,7 +1342,7 @@ export class UIEditorDemoState {
     return null
   }
 
-  private isDescendant(nodeId: string, possibleChildId: string): boolean {
+  private _isDescendant(nodeId: string, possibleChildId: string): boolean {
     const node = this.getNode(nodeId)
     if (!node) {
       return false
@@ -1350,22 +1350,22 @@ export class UIEditorDemoState {
     if (node.children.includes(possibleChildId)) {
       return true
     }
-    return node.children.some(childId => this.isDescendant(childId, possibleChildId))
+    return node.children.some(childId => this._isDescendant(childId, possibleChildId))
   }
 
-  private removeNodeRecursive(nodeId: string): void {
+  private _removeNodeRecursive(nodeId: string): void {
     const node = this.getNode(nodeId)
     if (!node) {
       return
     }
 
     for (const childId of [...node.children]) {
-      this.removeNodeRecursive(childId)
+      this._removeNodeRecursive(childId)
     }
     delete this.document.nodes[nodeId]
   }
 
-  private toTreeNode(nodeId: string): UIEditorTreeNode | null {
+  private _toTreeNode(nodeId: string): UIEditorTreeNode | null {
     const node = this.getNode(nodeId)
     if (!node) {
       return null
@@ -1381,12 +1381,12 @@ export class UIEditorDemoState {
       props: node.props,
       layout: node.layout,
       children: node.children
-        .map(childId => this.toTreeNode(childId))
+        .map(childId => this._toTreeNode(childId))
         .filter((child): child is UIEditorTreeNode => child != null),
     }
   }
 
-  private getNextGridRowStart(containerNodeId: string): number {
+  private _getNextGridRowStart(containerNodeId: string): number {
     const containerNode = this.getNode(containerNodeId)
     if (!containerNode || !isUIEditorGridContainer(containerNode)) {
       return 1
@@ -1402,7 +1402,7 @@ export class UIEditorDemoState {
     }, 1)
   }
 
-  private restorePersistedState(): void {
+  private _restorePersistedState(): void {
     const persistedState = readPersistedState()
     if (!persistedState) {
       return
@@ -1427,15 +1427,15 @@ export class UIEditorDemoState {
     }
   }
 
-  private persistDocumentState(): void {
+  private _persistDocumentState(): void {
     this.source = patchUIEditorSFCTemplate(this.source, this.document)
     const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
     this.sourceDiagnostics = projection.diagnostics
     this.sourceLocations = projection.sourceLocations
-    this.persistState()
+    this._persistState()
   }
 
-  private persistState(): void {
+  private _persistState(): void {
     if (!hasBrowserStorage()) {
       return
     }
@@ -1456,7 +1456,7 @@ export class UIEditorDemoState {
     }
   }
 
-  private addJsxComponent(
+  private _addJsxComponent(
     componentId: string,
     parentId?: string,
     index?: number,
@@ -1475,7 +1475,7 @@ export class UIEditorDemoState {
       return null
     }
 
-    const rootNode = this.cloneJsxSubtree(
+    const rootNode = this._cloneJsxSubtree(
       component.ast.rootId,
       component.ast.nodes as unknown as Record<string, UIEditorNode>,
       {
@@ -1493,7 +1493,7 @@ export class UIEditorDemoState {
       rootNode.layout = {
         ...rootNode.layout,
         colStart: 1,
-        rowStart: this.getNextGridRowStart(parent.id),
+        rowStart: this._getNextGridRowStart(parent.id),
       }
     }
 
@@ -1501,11 +1501,11 @@ export class UIEditorDemoState {
     parent.children.splice(targetIndex, 0, rootNode.id)
     this.selectedNodeId = rootNode.id
     this.selectionOrigin = 'visual'
-    this.persistDocumentState()
+    this._persistDocumentState()
     return rootNode
   }
 
-  private cloneJsxSubtree(
+  private _cloneJsxSubtree(
     nodeId: string,
     nodes: Record<string, UIEditorNode>,
     input: {
@@ -1522,7 +1522,7 @@ export class UIEditorDemoState {
 
     const clonedNodeId = createNodeId()
     const clonedChildren = sourceNode.children
-      .map(childId => this.cloneJsxSubtree(childId, nodes, input))
+      .map(childId => this._cloneJsxSubtree(childId, nodes, input))
       .filter((child): child is UIEditorNode => child != null)
 
     const clonedNode = Endge.uiRegistry.normalizeNodeDefinition({

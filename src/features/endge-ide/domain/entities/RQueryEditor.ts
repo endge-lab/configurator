@@ -17,7 +17,7 @@ export class RQueryEditor {
     this.name = source.name
     this.source = source.source ?? ''
     this.sourceVersion = Number(source.sourceVersion ?? 2) || 2
-    this.refreshDiagnostics()
+    this._refreshDiagnostics()
   }
 
   updateSource(target: RQuery): void {
@@ -31,10 +31,10 @@ export class RQueryEditor {
 
   applySourceText(source: string): void {
     this.source = source
-    this.refreshDiagnostics()
+    this._refreshDiagnostics()
   }
 
-  private refreshDiagnostics(): void {
+  private _refreshDiagnostics(): void {
     try {
       const result = Endge.source.validate('query', this.source)
       this.diagnostics = result.diagnostics ?? []

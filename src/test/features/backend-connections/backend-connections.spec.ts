@@ -2,6 +2,7 @@ import type { BackendConnectionListResponse, BackendConnectionsService } from '@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/model/adapters/BackendConnectionsHttp_Adapter'
 import {
   ACTIVE_BACKEND_STORAGE_KEY,
   BackendConnectionStorage,
@@ -9,7 +10,6 @@ import {
   workspaceStorageKey,
 } from '@/features/backend-connections/model/backend-connection-storage'
 import { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
-import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/model/adapters/BackendConnectionsHttp_Adapter'
 import { resolveConfiguratorWorkspace } from '@/features/backend-connections/model/resolve-configurator-workspace'
 
 class MemoryStorage implements Storage {

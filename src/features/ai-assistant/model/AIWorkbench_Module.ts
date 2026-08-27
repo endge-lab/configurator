@@ -1,8 +1,8 @@
 import type {
   AIAdapter,
   AICapabilities,
-  AICreateConnectionWithModel,
   AIConversation,
+  AICreateConnectionWithModel,
   AIMessage,
   AIModelProfile,
   AIProviderConnection,

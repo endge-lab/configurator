@@ -2,7 +2,7 @@ export function disableConsole(): void {
   for (const key in window.console) {
     if (typeof window.console[key as keyof typeof window.console] === 'function') {
       try {
-        // @ts-ignore
+        // @ts-expect-error console methods can be readonly in the DOM typings.
         window.console[key as keyof typeof window.console] = (): void => {}
       }
       catch {

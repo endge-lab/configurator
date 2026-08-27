@@ -57,7 +57,7 @@ import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistryS
 
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-const previewModel = computed<any>(() => tabs.documentModel.value)
+const _previewModel = computed<any>(() => tabs.documentModel.value)
 function normalizeRelationId(value: unknown): number | null {
   if (value == null) {
     return null

@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { AIAdapter, AIModelProfile, AIProviderConnection, AIVisibility } from '@/features/ai-assistant/domain/types'
 
-import { Bot, Check, ChevronDown, ChevronRight, Globe2, KeyRound, Loader2, LockKeyhole, Pencil, Plus, Server, Sparkles, Trash2, TriangleAlert, UserRound, X } from 'lucide-vue-next'
+import { Bot, Check, ChevronDown, ChevronRight, Globe2, KeyRound, Loader2, LockKeyhole, Pencil, Plus, Server, Sparkles, Star, Trash2, TriangleAlert, UserRound, X } from 'lucide-vue-next'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { Configurator } from '@/app/model/kernel/configurator'
@@ -105,7 +105,7 @@ async function open(): Promise<void> {
 
 watch(
   () => AIWorkbench.state.managementOpen,
-  visible => {
+  (visible) => {
     if (visible) {
       void reload()
     }
@@ -367,9 +367,9 @@ async function saveModel(model: AIModelProfile): Promise<void> {
   const providerModelId = modelEditForm.providerModelId.trim()
   const displayName = modelEditForm.displayName.trim()
   if (
-    providerModelId &&
-    displayName &&
-    (await act(() =>
+    providerModelId
+    && displayName
+    && (await act(() =>
       AIWorkbench.updateModelProfile(model.id, {
         providerModelId,
         displayName,
@@ -448,10 +448,7 @@ defineExpose({ open })
           <span class="flex size-9 items-center justify-center rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/10">
             <Bot class="size-4 text-fuchsia-500" />
           </span>
-          <span>
-            <span class="block text-base">AI-подключения</span>
-            <span class="mt-0.5 block text-xs font-normal text-muted-foreground">Подключения и доступные в них модели</span>
-          </span>
+          <span class="text-base">AI-подключения</span>
         </DialogTitle>
       </DialogHeader>
 
@@ -472,9 +469,7 @@ defineExpose({ open })
               {{ filter.label }}
             </button>
           </div>
-          <p v-else class="text-xs text-muted-foreground">
-            {{ connections.length ? `${connections.length} подключений` : 'Подключений пока нет' }}
-          </p>
+          <span v-else />
           <Button
             size="sm"
             :variant="showConnectionForm ? 'outline' : 'default'"
@@ -502,7 +497,9 @@ defineExpose({ open })
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" class="w-48">
-                  <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">Тип подключения</DropdownMenuLabel>
+                  <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">
+                    Тип подключения
+                  </DropdownMenuLabel>
                   <DropdownMenuItem v-for="adapter in adapters" :key="adapter" class="gap-2" @select="selectConnectionAdapter(adapter)">
                     <Sparkles v-if="adapter === 'anthropic'" class="size-3.5 text-fuchsia-500" />
                     <Server v-else class="size-3.5 text-sky-500" />
@@ -532,7 +529,7 @@ defineExpose({ open })
                 <Globe2 v-if="connectionForm.visibility === 'public'" class="size-3.5" />
                 <LockKeyhole v-else class="size-3.5" />
                 {{ connectionForm.visibility === 'public' ? 'Для всех' : 'Только мне' }}
-                <Switch :model-value="connectionForm.visibility === 'public'" @update:model-value="connectionForm.visibility = $event ? 'public' : 'private'" />
+                <Switch :checked="connectionForm.visibility === 'public'" @update:checked="connectionForm.visibility = $event ? 'public' : 'private'" />
               </label>
               <span v-else class="flex items-center justify-end gap-1.5 px-1 text-[11px] text-muted-foreground"><LockKeyhole class="size-3.5" /> Только мне</span>
             </div>
@@ -540,12 +537,24 @@ defineExpose({ open })
             <div class="mt-2 grid gap-2 border-l-2 border-muted-foreground/20 pl-4 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_auto_auto]">
               <Input v-model="initialModelForm.providerModelId" placeholder="ID первой модели" autocomplete="off" />
               <Input v-model="initialModelForm.displayName" placeholder="Название модели" autocomplete="off" />
-              <label v-if="connectionForm.visibility === 'public'" class="flex items-center justify-end gap-2 whitespace-nowrap px-1 text-[11px] text-muted-foreground">
-                <Switch v-model="initialModelForm.isDefault" /> По умолчанию
-              </label>
-              <span v-else class="flex items-center justify-end px-1 text-[11px] text-muted-foreground">Личная модель</span>
+              <div class="flex items-center justify-end">
+                <Button
+                  v-if="connectionForm.visibility === 'public'"
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  class="size-8"
+                  :class="initialModelForm.isDefault && 'text-amber-500'"
+                  :title="initialModelForm.isDefault ? 'Снять модель по умолчанию' : 'Назначить модель по умолчанию'"
+                  @click="initialModelForm.isDefault = !initialModelForm.isDefault"
+                >
+                  <Star class="size-4" :class="initialModelForm.isDefault && 'fill-current'" />
+                </Button>
+              </div>
               <div class="flex items-center justify-end gap-1">
-                <Button type="button" size="icon" variant="ghost" class="size-9" title="Отменить" @click="cancelConnectionCreate"><X class="size-4" /></Button>
+                <Button type="button" size="icon" variant="ghost" class="size-9" title="Отменить" @click="cancelConnectionCreate">
+                  <X class="size-4" />
+                </Button>
                 <Button type="submit" size="sm" class="h-9" :disabled="loading || !canCreateConnection">
                   <Loader2 v-if="loading" class="size-4 animate-spin" /><Check v-else class="size-4" />
                   Создать
@@ -565,31 +574,27 @@ defineExpose({ open })
               >
                 <Sparkles v-if="connection.adapter === 'anthropic'" class="size-3.5" /><Server v-else class="size-3.5" />
               </span>
-              <div class="min-w-0 flex-1">
-                <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                  <span class="font-medium">{{ adapterPresentation[connection.adapter].label }}</span
-                  ><span class="text-muted-foreground/50">·</span> <span class="truncate font-medium">{{ connection.name }}</span
-                  ><span class="text-muted-foreground/50">·</span>
-                  <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Globe2 v-if="connection.visibility === 'public'" class="size-3" /><UserRound v-else class="size-3" />
-                    {{ connection.visibility === 'public' ? 'Для всех' : 'Только мне' }}
-                  </span>
-                  <span class="text-muted-foreground/50">·</span><span class="text-xs text-muted-foreground">{{ modelCountLabel(connection.modelCount) }}</span>
-                </div>
-                <div class="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span class="inline-flex items-center gap-1" :class="connection.enabled ? 'text-emerald-600 dark:text-emerald-400' : ''"
-                    ><span class="size-1.5 rounded-full" :class="connection.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'" />{{
-                      connection.enabled ? 'Включено' : 'Отключено'
-                    }}</span
-                  >
-                  <span class="text-muted-foreground/40">·</span
-                  ><span class="inline-flex items-center gap-1"><KeyRound class="size-3" /> {{ connection.hasCredential ? 'Ключ установлен' : 'Без ключа' }}</span>
-                </div>
+              <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <span class="truncate text-sm font-medium">{{ connection.name }}</span>
+                <span class="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {{ adapterPresentation[connection.adapter].label }}
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  <Globe2 v-if="connection.visibility === 'public'" class="size-3" />
+                  <UserRound v-else class="size-3" />
+                  {{ connection.visibility === 'public' ? 'Общее' : 'Моё' }}
+                </span>
               </div>
-              <Switch :model-value="connection.enabled" :disabled="loading || !connection.canManage" @update:model-value="toggleConnection(connection)" />
-              <Button v-if="connection.canManage" size="icon" variant="ghost" class="size-8" title="Редактировать подключение" @click="beginConnectionEdit(connection)"
-                ><Pencil class="size-3.5"
-              /></Button>
+              <Switch
+                :checked="connection.enabled"
+                :disabled="loading || !connection.canManage"
+                :aria-label="connection.enabled ? 'Отключить подключение' : 'Включить подключение'"
+                :title="connection.enabled ? 'Отключить подключение' : 'Включить подключение'"
+                @update:checked="toggleConnection(connection)"
+              />
+              <Button v-if="connection.canManage" size="icon" variant="ghost" class="size-8" title="Редактировать подключение" @click="beginConnectionEdit(connection)">
+                <Pencil class="size-3.5" />
+              </Button>
               <Button
                 v-if="connection.canManage"
                 size="icon"
@@ -597,8 +602,9 @@ defineExpose({ open })
                 class="size-8 text-destructive hover:text-destructive"
                 title="Удалить подключение"
                 @click="deleteConnection(connection)"
-                ><Trash2 class="size-3.5"
-              /></Button>
+              >
+                <Trash2 class="size-3.5" />
+              </Button>
             </div>
 
             <div
@@ -608,8 +614,11 @@ defineExpose({ open })
               <Input v-model="connectionEditForm.name" aria-label="Название подключения" />
               <Input v-model="connectionEditForm.baseUrl" :placeholder="adapterPresentation[connection.adapter].endpointPlaceholder" />
               <div class="flex justify-end gap-1">
-                <Button size="sm" variant="ghost" @click="cancelConnectionEdit">Отмена</Button
-                ><Button size="sm" :disabled="loading || !canSaveConnection(connection)" @click="saveConnection(connection)">Сохранить</Button>
+                <Button size="sm" variant="ghost" @click="cancelConnectionEdit">
+                  Отмена
+                </Button><Button size="sm" :disabled="loading || !canSaveConnection(connection)" @click="saveConnection(connection)">
+                  Сохранить
+                </Button>
               </div>
               <div class="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
                 <KeyRound class="size-3.5 shrink-0 text-muted-foreground" />
@@ -620,38 +629,47 @@ defineExpose({ open })
                   autocomplete="new-password"
                   :placeholder="connection.adapter === 'anthropic' ? 'Новый API key' : 'Новый API key (необязательно)'"
                 />
-                <Button size="sm" variant="outline" :disabled="loading || !credentialValue.trim()" @click="saveCredential(connection)">Заменить ключ</Button>
+                <Button size="sm" variant="outline" :disabled="loading || !credentialValue.trim()" @click="saveCredential(connection)">
+                  Заменить ключ
+                </Button>
               </div>
             </div>
 
             <div v-if="isExpanded(connection.id)" class="border-t bg-muted/10">
               <div v-for="model in modelsForConnection(connection.id)" :key="model.id" class="border-b border-dashed px-4 py-2.5 last:border-b-0">
                 <div class="flex items-center gap-2 pl-10">
-                  <span class="mr-1 h-px w-4 shrink-0 bg-border" /><span
-                    class="size-2 shrink-0 rounded-full"
-                    :class="model.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/35'"
-                  />
+                  <span class="mr-1 h-px w-4 shrink-0 bg-border" />
+                  <Button
+                    v-if="model.visibility === 'public' && model.canManage"
+                    size="icon"
+                    variant="ghost"
+                    class="size-7 shrink-0"
+                    :class="model.isDefault ? 'text-amber-500' : 'text-muted-foreground'"
+                    :disabled="loading || !model.enabled"
+                    :title="model.isDefault ? 'Снять модель по умолчанию' : 'Назначить модель по умолчанию'"
+                    @click="makeDefault(model)"
+                  >
+                    <Star class="size-3.5" :class="model.isDefault && 'fill-current'" />
+                  </Button>
+                  <span v-else class="flex size-7 shrink-0 items-center justify-center">
+                    <Star v-if="model.isDefault" class="size-3.5 fill-current text-amber-500" aria-label="Модель по умолчанию" />
+                  </span>
                   <div class="min-w-0 flex-1">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span class="truncate text-sm font-medium">{{ model.displayName }}</span
-                      ><span v-if="model.isDefault" class="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">По умолчанию</span>
-                    </div>
-                    <p class="truncate font-mono text-[11px] text-muted-foreground">
+                    <span class="block truncate text-sm font-medium">{{ model.displayName }}</span>
+                    <p v-if="model.providerModelId !== model.displayName" class="truncate font-mono text-[11px] text-muted-foreground">
                       {{ model.providerModelId }}
                     </p>
                   </div>
-                  <button
-                    v-if="model.visibility === 'public' && model.canManage"
-                    class="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-                    :disabled="!model.enabled"
-                    @click="makeDefault(model)"
-                  >
-                    {{ model.isDefault ? 'Снять default' : 'Сделать default' }}
-                  </button>
-                  <Switch :model-value="model.enabled" :disabled="loading || !model.canManage" @update:model-value="toggleModel(model)" />
-                  <Button v-if="model.canManage" size="icon" variant="ghost" class="size-8" title="Редактировать модель" @click="beginModelEdit(model)"
-                    ><Pencil class="size-3.5"
-                  /></Button>
+                  <Switch
+                    :checked="model.enabled"
+                    :disabled="loading || !model.canManage"
+                    :aria-label="model.enabled ? 'Отключить модель' : 'Включить модель'"
+                    :title="model.enabled ? 'Отключить модель' : 'Включить модель'"
+                    @update:checked="toggleModel(model)"
+                  />
+                  <Button v-if="model.canManage" size="icon" variant="ghost" class="size-8" title="Редактировать модель" @click="beginModelEdit(model)">
+                    <Pencil class="size-3.5" />
+                  </Button>
                   <Button
                     v-if="model.canManage"
                     size="icon"
@@ -659,14 +677,18 @@ defineExpose({ open })
                     class="size-8 text-destructive hover:text-destructive"
                     title="Удалить модель"
                     @click="deleteModel(model)"
-                    ><Trash2 class="size-3.5"
-                  /></Button>
+                  >
+                    <Trash2 class="size-3.5" />
+                  </Button>
                 </div>
                 <div v-if="editingModelId === model.id" class="mt-2 grid gap-2 pl-[4.75rem] sm:grid-cols-[1fr_1fr_auto]">
                   <Input v-model="modelEditForm.providerModelId" aria-label="ID модели у провайдера" /><Input v-model="modelEditForm.displayName" aria-label="Название модели" />
                   <div class="flex justify-end gap-1">
-                    <Button size="sm" variant="ghost" @click="editingModelId = ''">Отмена</Button
-                    ><Button size="sm" :disabled="!modelEditForm.providerModelId.trim() || !modelEditForm.displayName.trim()" @click="saveModel(model)">Сохранить</Button>
+                    <Button size="sm" variant="ghost" @click="editingModelId = ''">
+                      Отмена
+                    </Button><Button size="sm" :disabled="!modelEditForm.providerModelId.trim() || !modelEditForm.displayName.trim()" @click="saveModel(model)">
+                      Сохранить
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -676,20 +698,34 @@ defineExpose({ open })
                 class="grid gap-2 border-t border-dashed px-4 py-3 pl-[4.75rem] sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_auto_auto]"
               >
                 <Input v-model="modelForm.providerModelId" placeholder="ID модели у провайдера" /><Input v-model="modelForm.displayName" placeholder="Название модели" />
-                <label v-if="connection.visibility === 'public'" class="flex items-center justify-end gap-2 whitespace-nowrap px-1 text-[11px] text-muted-foreground"
-                  ><Switch v-model="modelForm.isDefault" /> По умолчанию</label
-                >
-                <span v-else class="flex items-center justify-end px-1 text-[11px] text-muted-foreground">Личная модель</span>
+                <div class="flex items-center justify-end">
+                  <Button
+                    v-if="connection.visibility === 'public'"
+                    size="icon"
+                    variant="ghost"
+                    class="size-8"
+                    :class="modelForm.isDefault && 'text-amber-500'"
+                    :title="modelForm.isDefault ? 'Снять модель по умолчанию' : 'Назначить модель по умолчанию'"
+                    @click="modelForm.isDefault = !modelForm.isDefault"
+                  >
+                    <Star class="size-4" :class="modelForm.isDefault && 'fill-current'" />
+                  </Button>
+                </div>
                 <div class="flex justify-end gap-1">
-                  <Button size="sm" variant="ghost" @click="cancelModelCreate">Отмена</Button
-                  ><Button size="sm" :disabled="loading || !modelForm.providerModelId.trim() || !modelForm.displayName.trim()" @click="createModel(connection)">Добавить</Button>
+                  <Button size="sm" variant="ghost" @click="cancelModelCreate">
+                    Отмена
+                  </Button><Button size="sm" :disabled="loading || !modelForm.providerModelId.trim() || !modelForm.displayName.trim()" @click="createModel(connection)">
+                    Добавить
+                  </Button>
                 </div>
               </div>
               <div v-else-if="connection.canManage" class="border-t border-dashed px-4 py-2 pl-[4.75rem]">
-                <Button size="sm" variant="ghost" class="text-muted-foreground" @click="beginModelCreate(connection)"><Plus class="size-3.5" /> Добавить модель</Button>
+                <Button size="sm" variant="ghost" class="text-muted-foreground" @click="beginModelCreate(connection)">
+                  <Plus class="size-3.5" /> Добавить модель
+                </Button>
               </div>
-              <div v-if="!modelsForConnection(connection.id).length && creatingModelConnectionId !== connection.id" class="px-4 py-3 pl-[4.75rem] text-xs text-muted-foreground">
-                В подключении пока нет моделей.
+              <div v-if="!connection.canManage && !modelsForConnection(connection.id).length" class="px-4 py-3 pl-[4.75rem] text-xs text-muted-foreground">
+                Нет моделей
               </div>
             </div>
           </div>
@@ -697,10 +733,7 @@ defineExpose({ open })
           <div v-if="!filteredConnections.length && !showConnectionForm && !loading" class="px-6 py-12 text-center">
             <span class="mx-auto flex size-10 items-center justify-center rounded-xl border bg-muted/30"><Server class="size-4 text-muted-foreground" /></span>
             <p class="mt-3 text-sm font-medium">
-              {{ connections.length ? 'Подключения не найдены' : 'Добавьте первое подключение' }}
-            </p>
-            <p class="mt-1 text-xs text-muted-foreground">
-              {{ connections.length ? 'Измените выбранный фильтр.' : 'Подключение создаётся сразу с первой моделью.' }}
+              {{ connections.length ? 'Ничего не найдено' : 'Нет подключений' }}
             </p>
           </div>
         </div>
