@@ -324,7 +324,7 @@ watch(contextMenu, (v) => {
               @click="runContextAction('close')"
             >
               <X class="size-4 shrink-0" />
-              Закрыть
+              {{ $t('uiText.close4ae50d30') }}
             </button>
             <button
               type="button"
@@ -332,7 +332,7 @@ watch(contextMenu, (v) => {
               @click="runContextAction('closeAll')"
             >
               <CircleX class="size-4 shrink-0" />
-              Закрыть все
+              {{ $t('uiText.closeAll94f4eda1') }}
             </button>
             <button
               type="button"
@@ -340,7 +340,7 @@ watch(contextMenu, (v) => {
               @click="runContextAction('closeOthers')"
             >
               <CopyX class="size-4 shrink-0" />
-              Закрыть другие
+              {{ $t('uiText.closeOthersCa2b308e') }}
             </button>
             <button
               type="button"
@@ -348,7 +348,7 @@ watch(contextMenu, (v) => {
               @click="runContextAction('closeAllToLeft')"
             >
               <PanelLeftClose class="size-4 shrink-0" />
-              Закрыть все слева
+              {{ $t('uiText.closeAllToTheLeft570f3eda') }}
             </button>
             <button
               type="button"
@@ -356,7 +356,7 @@ watch(contextMenu, (v) => {
               @click="runContextAction('closeAllToRight')"
             >
               <PanelRightClose class="size-4 shrink-0" />
-              Закрыть все справа
+              {{ $t('uiText.closeAllToTheRight70fb3267') }}
             </button>
           </div>
         </template>
@@ -390,7 +390,7 @@ watch(contextMenu, (v) => {
               />
             </SmartTabViewStateScope>
             <div v-else class="p-4 text-sm text-muted-foreground">
-              Загрузка редактора...
+              {{ $t('uiText.loadingEditorFa7ec6c0') }}
             </div>
           </div>
         </TabsContent>

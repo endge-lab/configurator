@@ -163,7 +163,7 @@ function dropClass(): string {
                   <PlusSquare class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Добавить соседнюю группу</TooltipContent>
+              <TooltipContent>{{ $t('uiText.addAdjacentGroup8d60c992') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -172,7 +172,7 @@ function dropClass(): string {
                   <Plus class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Добавить соседнюю ссылку</TooltipContent>
+              <TooltipContent>{{ $t('uiText.addAdjacentLink264c6f8a') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip v-if="node.type === 'section'">
@@ -186,7 +186,7 @@ function dropClass(): string {
                   <FolderTree class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Добавить дочернюю группу</TooltipContent>
+              <TooltipContent>{{ $t('uiText.addChildGroup057bebe5') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip v-if="node.type !== 'link'">
@@ -200,16 +200,16 @@ function dropClass(): string {
                   <Link2 class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Добавить дочернюю ссылку</TooltipContent>
+              <TooltipContent>{{ $t('uiText.addChildLink74b7cad5') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button draggable="false" size="icon-sm" variant="ghost" @click.stop="emit('remove', node.id)">
-                  <span class="text-sm leading-none">×</span>
+                  <span class="text-sm leading-none">{{ $t('uiText.symbol67fba2f3') }}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Удалить</TooltipContent>
+              <TooltipContent>{{ $t('uiText.delete86ea33ae') }}</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>

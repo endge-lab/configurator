@@ -51,7 +51,7 @@ function runTemplateAnalysis(): void {
   <div class="flex h-full min-h-0">
     <nav class="w-48 shrink-0 border-r flex flex-col bg-muted/20">
       <div class="p-2 border-b text-xs font-medium text-muted-foreground">
-        Анализ (Runtime Debug)
+        {{ $t('uiText.analysisRuntimeDebug8f2c7a17') }}
       </div>
       <ScrollArea class="flex-1">
         <ul class="p-1 space-y-0.5">
@@ -60,7 +60,7 @@ function runTemplateAnalysis(): void {
               type="button"
               class="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left bg-accent text-accent-foreground"
             >
-              <span class="truncate">Анализ шаблона</span>
+              <span class="truncate">{{ $t('uiText.templateAnalysis80bcfd49') }}</span>
             </button>
           </li>
         </ul>
@@ -69,7 +69,7 @@ function runTemplateAnalysis(): void {
 
     <div class="flex-1 min-w-0 flex flex-col">
       <div class="shrink-0 flex items-center justify-between gap-2 px-4 py-2 border-b text-xs text-muted-foreground">
-        <span class="font-medium">ID вкладки</span>
+        <span class="font-medium">{{ $t('uiText.text1905129f') }}</span>
         <span class="px-2 py-1 rounded bg-muted text-foreground text-[11px]">
           {{ debugTab?.id || '-' }}
         </span>
@@ -82,26 +82,26 @@ function runTemplateAnalysis(): void {
           @click="runTemplateAnalysis"
         >
           <Play class="size-4 mr-1" />
-          Запустить анализ
+          {{ $t('uiText.runAnalysisF0789caf') }}
         </Button>
       </div>
 
       <ScrollArea class="flex-1">
         <div class="p-4 space-y-3 text-sm text-muted-foreground">
           <p>
-            Команда анализа шаблона будет отправлена в клиент по каналу Runtime Debug для выбранной вкладки.
+            {{ $t('uiText.theTemplateAnalysisCommandWillBeSent94d1e400') }}
           </p>
           <p>
-            Сейчас клиентская часть должна просто вывести тестовое сообщение в консоль при получении команды
-            <code class="px-1 rounded bg-muted text-xs">template-analysis</code>.
+            {{ $t('uiText.nowTheClientPartShouldSimplyOutputA6ccd00b0') }}
+            <code class="px-1 rounded bg-muted text-xs">{{ $t('uiText.templateAnalysisF9a144cf') }}</code>{{ $t('uiText.symbol3a52ce78') }}
           </p>
           <p v-if="debugTab?.url" class="text-xs text-muted-foreground">
-            URL вкладки: {{ debugTab.url }}
+            {{ $t('uiText.textB62797ed') }} {{ debugTab.url }}
           </p>
 
           <div v-if="targets.length" class="pt-1 space-y-1">
             <p class="text-xs text-muted-foreground">
-              Доступные области шаблона (data-target):
+              {{ $t('uiText.availableTemplateAreasDataTargetA45779f5') }}
             </p>
             <ul class="list-disc list-inside text-xs text-muted-foreground">
               <li

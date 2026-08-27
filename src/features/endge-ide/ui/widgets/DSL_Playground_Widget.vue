@@ -47,10 +47,10 @@ async function formatSource(): Promise<void> {
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-lg font-semibold">
-          Legacy DSL source
+          {{ $t('uiText.legacyDslSource6fcced0e') }}
         </div>
         <div class="text-xs text-muted-foreground">
-          Документ доступен для просмотра и редактирования, runtime preview удалён.
+          {{ $t('uiText.documentIsAvailableForViewingAndEditF67af9d5') }}
         </div>
       </div>
       <Select v-model="selectedDemoId">
@@ -64,7 +64,7 @@ async function formatSource(): Promise<void> {
         </SelectContent>
       </Select>
       <Button variant="outline" :disabled="!selectedDemoId" @click="insertDemo">
-        Вставить
+        {{ $t('uiText.insertEeb8caeb') }}
       </Button>
       <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
         <SourceFormatButton @click="formatSource" />
@@ -72,7 +72,7 @@ async function formatSource(): Promise<void> {
     </div>
 
     <Card class="flex-1 min-h-0 flex flex-col p-4">
-      <Label class="font-semibold mb-2">JSX source</Label>
+      <Label class="font-semibold mb-2">{{ $t('uiText.jsxSource79d23f25') }}</Label>
       <ScriptEditor v-model="jsxScript" view-state-key="dsl-playground.source" class="flex-1 min-h-0" />
     </Card>
   </div>

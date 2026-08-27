@@ -29,6 +29,6 @@ const view = computed(() => {
     v-else
     class="h-full p-4 text-sm text-muted-foreground"
   >
-    Нет данных для вкладки
+    {{ $t('uiText.noDataForTab9c4b4a5b') }}
   </div>
 </template>

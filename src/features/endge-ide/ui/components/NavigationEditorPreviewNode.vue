@@ -36,7 +36,7 @@ function toggle(): void {
         </span>
       </span>
       <span class="text-xs text-muted-foreground">
-        {{ openedIds.has(node.id) ? 'открыть' : 'закрыть' }}
+        {{ openedIds.has(node.id) ? открыть : закрыть }}
       </span>
     </button>
 

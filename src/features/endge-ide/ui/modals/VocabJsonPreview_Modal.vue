@@ -37,8 +37,8 @@ function close(): void {
   <Dialog v-model:open="openModel">
     <DialogContent class="sm:max-w-[900px]">
       <DialogHeader>
-        <DialogTitle>JSON словаря: {{ title || 'Словарь' }}</DialogTitle>
-        <DialogDescription>Ленивый просмотр загруженных данных словаря из локального хранилища.</DialogDescription>
+        <DialogTitle>{{ $t('uiText.text52a06913') }} {{ title || 'Словарь' }}</DialogTitle>
+        <DialogDescription>{{ $t('uiText.lazyLoadingOfDictionaryDataFromLocal9f89eb2a') }}</DialogDescription>
       </DialogHeader>
 
       <div class="rounded-md border">
@@ -51,7 +51,7 @@ function close(): void {
 
       <DialogFooter>
         <Button variant="outline" @click="close">
-          Закрыть
+          {{ $t('uiText.close4ae50d30') }}
         </Button>
       </DialogFooter>
     </DialogContent>

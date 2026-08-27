@@ -280,14 +280,14 @@ function fieldType(
       :disabled="disabled"
       @click="addArrayItem"
     >
-      <Plus class="mr-1.5 size-4" />Добавить
+      <Plus class="mr-1.5 size-4" />{{ $t('uiText.add559a87f7') }}
     </Button>
   </div>
   <div v-else-if="kind === 'object'" class="space-y-3 rounded-md border p-3">
     <div v-for="field in objectFields" :key="field.key" class="space-y-1.5">
       <label class="text-xs font-medium">{{ field.key
       }}<span v-if="field.optional" class="text-muted-foreground">
-        · optional</span></label>
+        {{ $t('uiText.optional6e88b41b') }}</span></label>
       <ConfigValueEditor
         :model-value="objectValue()[field.key] ?? null"
         :type="fieldType(field)"
@@ -309,7 +309,7 @@ function fieldType(
           :key="index"
           :value="String(index)"
         >
-          Вариант {{ index + 1 }} ·
+          {{ $t('uiText.option794e06ab') }} {{ index + 1 }} {{ $t('uiText.symbol1fdf0d90') }}
           {{ variant.kind === "reference" ? variant.identity : variant.kind }}
         </SelectItem>
       </SelectContent>
@@ -358,7 +358,7 @@ function fieldType(
       :disabled="disabled"
       @click="addRecordEntry"
     >
-      <Plus class="mr-1.5 size-4" />Добавить поле
+      <Plus class="mr-1.5 size-4" />{{ $t('uiText.addFieldDb0b1cb3') }}
     </Button>
   </div>
   <ConfigurationJSONEditor

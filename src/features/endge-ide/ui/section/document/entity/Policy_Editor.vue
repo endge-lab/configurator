@@ -26,10 +26,10 @@ async function save(): Promise<void> {
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-lg font-semibold truncate">
-          Политика - {{ editor?.displayName ?? '-' }}
+          {{ $t('uiText.policyB20ca962') }} {{ editor?.displayName ?? '-' }}
         </div>
         <div class="text-xs text-muted-foreground truncate">
-          id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
+          {{ $t('uiText.idA078622f') }} {{ editor?.id ?? '-' }} {{ $t('uiText.identityD63b139a') }} {{ editor?.identity ?? '-' }}
         </div>
       </div>
       <TooltipProvider>
@@ -40,7 +40,7 @@ async function save(): Promise<void> {
               <Save v-else class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Сохранить</TooltipContent>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
@@ -48,7 +48,7 @@ async function save(): Promise<void> {
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
         <div class="space-y-2">
-          <Label>Идентификатор</Label>
+          <Label>{{ $t('uiText.identifier754cbaf5') }}</Label>
           <DocumentIdentityInput
             :model-value="editor?.identity ?? ''"
             placeholder="например: default-policy"
@@ -56,7 +56,7 @@ async function save(): Promise<void> {
           />
         </div>
         <div class="space-y-2">
-          <Label>Название</Label>
+          <Label>{{ $t('uiText.name3de49828') }}</Label>
           <input
             :value="editor?.displayName ?? ''"
             class="flex h-9 w-full rounded-md border border-input bg-editor-control px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -65,7 +65,7 @@ async function save(): Promise<void> {
           >
         </div>
         <div class="space-y-2">
-          <Label>Описание</Label>
+          <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <Textarea
             :model-value="editor?.description ?? ''"
             class="min-h-[80px] resize-y"

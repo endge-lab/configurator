@@ -51,18 +51,18 @@ function clearDiagnostics(): void {
     <Card class="shrink-0 p-3">
       <div class="flex flex-wrap items-center gap-3">
         <Activity class="size-4 text-muted-foreground" />
-        <span class="text-sm font-medium">Текущая diagnostics session</span>
+        <span class="text-sm font-medium">{{ $t('uiText.currentDiagnosticsSessionBfed2a58') }}</span>
         <Badge variant="secondary" class="font-mono text-xs">
-          записей: {{ records.length }}
+          {{ $t('uiText.records22771701') }} {{ records.length }}
         </Badge>
         <Badge variant="outline" class="font-mono text-xs">
-          logs: {{ signalCounters.logs }}
+          {{ $t('uiText.logsB24be82f') }} {{ signalCounters.logs }}
         </Badge>
         <Badge variant="outline" class="font-mono text-xs">
-          spans: {{ signalCounters.spans }}
+          {{ $t('uiText.spansAaefe63c') }} {{ signalCounters.spans }}
         </Badge>
         <Badge variant="outline" class="font-mono text-xs">
-          problems: {{ problemCount }}
+          {{ $t('uiText.problems3137c927') }} {{ problemCount }}
         </Badge>
         <Button
           variant="outline"
@@ -72,7 +72,7 @@ function clearDiagnostics(): void {
           @click="clearDiagnostics"
         >
           <Eraser class="size-3.5" />
-          Очистить
+          {{ $t('uiText.clear98b2073e') }}
         </Button>
       </div>
     </Card>
@@ -80,15 +80,15 @@ function clearDiagnostics(): void {
     <Card class="min-h-0 flex-1 overflow-hidden p-0">
       <div class="border-b px-3 py-2">
         <div class="text-sm font-medium">
-          Логи и завершённые spans
+          {{ $t('uiText.logsAndCompletedSpans46b6f7d4') }}
         </div>
         <div class="text-xs text-muted-foreground">
-          Дерево строится в configurator-е из независимых core records.
+          {{ $t('uiText.theTreeIsBuiltInTheConfiguratorFrom9672ff86') }}
         </div>
       </div>
       <ScrollArea class="h-[calc(100%-3.25rem)]">
         <div v-if="nodes.length === 0" class="p-4 text-sm text-muted-foreground">
-          Диагностических записей пока нет.
+          {{ $t('uiText.noDiagnosticRecordsYetD9a79334') }}
         </div>
         <div v-else class="p-2">
           <LogTree :nodes="nodes" />

@@ -26,30 +26,6 @@ export function workspaceStorageKey(backendURL: string): string {
   return `${ACTIVE_WORKSPACE_STORAGE_KEY_PREFIX}:${encodeURIComponent(normalizeBackendURL(backendURL))}`
 }
 
-/** Возвращает target namespace для browser state без зависимости от application kernel. */
-export function currentTargetStorageNamespace(workspaceIdentity?: string): string {
-  let backend = 'detached'
-  try {
-    const primary = normalizeBackendURL(import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL)
-    backend = new BackendConnectionStorage().readActiveBackend(primary)
-  }
-  catch {
-    // Build/test окружение без backend env получает изолированный detached namespace.
-  }
-  const workspace = String(
-    workspaceIdentity
-    ?? new BackendConnectionStorage().readWorkspace(backend)
-    ?? import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY
-    ?? 'detached',
-  ).trim() || 'detached'
-  return [backend, workspace].map(value => encodeURIComponent(value)).join(':')
-}
-
-export function currentActiveBackendURL(): string {
-  const namespace = currentTargetStorageNamespace()
-  return decodeURIComponent(namespace.split(':')[0] ?? 'detached')
-}
-
 /** Browser persistence repository. Повреждённые значения никогда не восстанавливаются. */
 export class BackendConnectionStorage {
   public readActiveBackend(primaryBackendURL: string): string {
@@ -107,6 +83,29 @@ export class BackendConnectionStorage {
   }
 }
 
+/** Возвращает target namespace для browser state без зависимости от application kernel. */
+export function currentTargetStorageNamespace(workspaceIdentity?: string): string {
+  let backend = 'detached'
+  try {
+    const primary = normalizeBackendURL(import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL)
+    backend = new BackendConnectionStorage().readActiveBackend(primary)
+  }
+  catch {
+    // Build/test окружение без backend env получает изолированный detached namespace.
+  }
+  const workspace = String(
+    workspaceIdentity
+    ?? new BackendConnectionStorage().readWorkspace(backend)
+    ?? import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY
+    ?? 'detached',
+  ).trim() || 'detached'
+  return [backend, workspace].map(value => encodeURIComponent(value)).join(':')
+}
+
+export function currentActiveBackendURL(): string {
+  const namespace = currentTargetStorageNamespace()
+  return decodeURIComponent(namespace.split(':')[0] ?? 'detached')
+}
 function normalizeIdentity(value: unknown): string | null {
   const identity = String(value ?? '').trim()
   return identity || null

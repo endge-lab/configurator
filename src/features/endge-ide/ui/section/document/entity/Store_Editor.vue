@@ -131,7 +131,7 @@ async function launchPreview(): Promise<void> {
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -150,7 +150,7 @@ async function launchPreview(): Promise<void> {
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.source6da13add') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -170,7 +170,7 @@ async function launchPreview(): Promise<void> {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
+            <TooltipContent>{{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -189,7 +189,7 @@ async function launchPreview(): Promise<void> {
                 <FileJson class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Артифакт</TooltipContent>
+            <TooltipContent>{{ $t('uiText.artifactA171cb33') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -208,7 +208,7 @@ async function launchPreview(): Promise<void> {
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -221,7 +221,7 @@ async function launchPreview(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -246,7 +246,7 @@ async function launchPreview(): Promise<void> {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сбросить source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -257,7 +257,7 @@ async function launchPreview(): Promise<void> {
         <div class="max-w-xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
-            <Label for="store-display-name">Название</Label>
+            <Label for="store-display-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input
               id="store-display-name"
               v-model="editor.name"
@@ -265,7 +265,7 @@ async function launchPreview(): Promise<void> {
             />
           </div>
           <div class="space-y-2">
-            <Label for="store-identity">Identity</Label>
+            <Label for="store-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput
               id="store-identity"
               v-model="editor.identity"
@@ -273,8 +273,7 @@ async function launchPreview(): Promise<void> {
               spellcheck="false"
             />
             <p class="text-xs text-muted-foreground">
-              Identity используется для ссылок на документ хранилища и должен
-              быть уникальным.
+              {{ $t('uiText.text1b3fa2a3') }}
             </p>
           </div>
         </div>

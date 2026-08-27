@@ -101,7 +101,7 @@ async function save(): Promise<void> {
     <template #right>
       <div class="flex items-center gap-1">
         <Button v-if="activeTab === 'source'" size="sm" variant="ghost" class="h-7" @click="sourceEditorRef?.formatDocument()">
-          Форматировать
+          {{ $t('uiText.format64a03c67') }}
         </Button>
         <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сбросить source" @click="resetSource">
           <RotateCcw class="size-4" />
@@ -114,18 +114,18 @@ async function save(): Promise<void> {
         <div class="max-w-xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
-            <Label>Название</Label>
+            <Label>{{ $t('uiText.name3de49828') }}</Label>
             <Input v-model="editor.name" :placeholder="title" />
           </div>
           <div class="space-y-2">
-            <Label>Identity</Label>
+            <Label>{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput v-model="editor.identity" spellcheck="false" />
           </div>
           <div v-if="sourceKind === 'update'" class="space-y-2">
-            <Label>Store-владелец</Label>
+            <Label>{{ $t('uiText.text372b1514') }}</Label>
             <Input :model-value="ownerStore" disabled />
             <p class="text-xs text-muted-foreground">
-              Владение задаётся при создании и не меняется в редакторе.
+              {{ $t('uiText.ownershipIsSetDuringCreationAndCanno85b4d857') }}
             </p>
           </div>
         </div>

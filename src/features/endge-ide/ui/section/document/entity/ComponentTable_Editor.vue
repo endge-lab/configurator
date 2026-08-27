@@ -462,7 +462,7 @@ watch(
 <template>
   <div class="w-full h-full flex flex-col min-h-0">
     <div v-if="!editor" class="p-5 text-sm text-muted-foreground">
-      Нет данных редактора.
+      {{ $t('uiText.noEditorDataCec798d8') }}
     </div>
     <template v-else>
       <div class="p-3 border-b flex items-center gap-3 shrink-0">
@@ -473,10 +473,10 @@ watch(
         </div>
         <div class="min-w-0 flex-1">
           <div class="text-lg font-semibold truncate">
-            Таблица - {{ editor.name }}
+            {{ $t('uiText.table24e97b16') }} {{ editor.name }}
           </div>
           <div class="text-xs text-muted-foreground truncate">
-            id: {{ editor.id }} · identity: {{ editor.identity ?? "-" }}
+            {{ $t('uiText.idA078622f') }} {{ editor.id }} {{ $t('uiText.identityD63b139a') }} {{ editor.identity ?? "-" }}
           </div>
         </div>
         <TooltipProvider :delay-duration="120">
@@ -497,7 +497,7 @@ watch(
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -506,16 +506,16 @@ watch(
         <Tabs v-model="mainTab" class="flex-1 min-h-0 flex flex-col">
           <TabsList class="grid grid-cols-5 w-full max-w-[560px] shrink-0">
             <TabsTrigger value="general">
-              Основное
+              {{ $t('uiText.basic127492c2') }}
             </TabsTrigger>
             <TabsTrigger value="columns">
-              Колонки
+              {{ $t('uiText.columnsE9516417') }}
             </TabsTrigger>
             <TabsTrigger value="data">
-              Данные
+              {{ $t('uiText.dataD8e5fd81') }}
             </TabsTrigger>
             <TabsTrigger value="settings">
-              Таблица
+              {{ $t('uiText.tableF2729fd7') }}
             </TabsTrigger>
           </TabsList>
 
@@ -527,15 +527,15 @@ watch(
               <ScrollArea class="flex-1">
                 <div class="p-4 space-y-4 max-w-2xl">
                   <div class="space-y-2">
-                    <Label>ID компонента</Label>
+                    <Label>{{ $t('uiText.text1b7b3b8a') }}</Label>
                     <Input :model-value="editor.id" readonly />
                   </div>
                   <div class="space-y-2">
-                    <Label>Identity</Label>
+                    <Label>{{ $t('uiText.identity7e5a975b') }}</Label>
                     <DocumentIdentityInput v-model="editor.identity" />
                   </div>
                   <div class="space-y-2">
-                    <Label>Название компонента</Label>
+                    <Label>{{ $t('uiText.componentName00651df7') }}</Label>
                     <Input v-model="editor.name" />
                   </div>
                 </div>
@@ -551,7 +551,7 @@ watch(
               <div
                 class="p-2 border-b flex items-center justify-between gap-2 flex-wrap"
               >
-                <span class="text-xs font-medium">Колонки таблицы</span>
+                <span class="text-xs font-medium">{{ $t('uiText.tableColumnsB0cc3715') }}</span>
                 <div class="flex items-center gap-1">
                   <TooltipProvider :delay-duration="120">
                     <Tooltip>
@@ -565,7 +565,7 @@ watch(
                           <Plus class="size-3.5" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Добавить колонку</TooltipContent>
+                      <TooltipContent>{{ $t('uiText.addColumnAf4484cb') }}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger as-child>
@@ -579,8 +579,7 @@ watch(
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        Очистить все привязки данных (dataPaths) во всех
-                        колонках
+                        {{ $t('uiText.clearAllDataBindingsDatapathsInAllC63388676') }}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -617,7 +616,7 @@ watch(
                   v-if="columns.length === 0"
                   class="px-3 py-2 text-xs text-muted-foreground"
                 >
-                  Нет колонок. Нажмите «+» вверху.
+                  {{ $t('uiText.noColumnsClickAtTheTop0593fa97') }}
                 </div>
               </div>
             </Card>
@@ -628,29 +627,29 @@ watch(
                   v-if="selectedColumn === null"
                   class="p-4 text-sm text-muted-foreground"
                 >
-                  Выберите колонку выше для настройки.
+                  {{ $t('uiText.selectTheColumnAboveToConfigure017c6705') }}
                 </div>
                 <div v-else class="p-4">
                   <Tabs v-model="columnDetailTab" class="w-full">
                     <TabsList class="grid grid-cols-3 w-full">
                       <TabsTrigger value="interface">
-                        Интерфейс
+                        {{ $t('uiText.interface8d7038f8') }}
                       </TabsTrigger>
                       <TabsTrigger value="data">
-                        Данные
+                        {{ $t('uiText.dataD8e5fd81') }}
                       </TabsTrigger>
                       <TabsTrigger value="events">
-                        События
+                        {{ $t('uiText.eventsBb9ac875') }}
                       </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="interface" class="space-y-4 mt-4">
                       <div class="space-y-2">
-                        <Label>Заголовок</Label>
+                        <Label>{{ $t('uiText.titleA8504d51') }}</Label>
                         <Input v-model="selectedColumn!.title" />
                       </div>
                       <div class="space-y-2">
-                        <Label>Связный компонент</Label>
+                        <Label>{{ $t('uiText.connectedComponentC30beaaf') }}</Label>
                         <DomainEntityDropTarget
                           :accept-section-types="[DomainSectionType.Component]"
                           @update:model-value="
@@ -686,25 +685,25 @@ watch(
                       </div>
                       <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                          <Label>Ширина</Label>
+                          <Label>{{ $t('uiText.widthD73c1c19') }}</Label>
                           <Input
                             v-model="selectedColumn!.width"
                             type="number"
                           />
                         </div>
                         <div class="space-y-2">
-                          <Label>Закрепление</Label>
+                          <Label>{{ $t('uiText.pinD3873910') }}</Label>
                           <Select v-model="selectedColumn!.pin">
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">
-                                Нет
+                                {{ $t('uiText.noF82a8219') }}
                               </SelectItem>
                               <SelectItem value="left">
-                                Слева
+                                {{ $t('uiText.left4af2530f') }}
                               </SelectItem>
                               <SelectItem value="right">
-                                Справа
+                                {{ $t('uiText.right600c48eb') }}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -732,19 +731,19 @@ watch(
                             }
                           "
                         />
-                        <Label>Активна</Label>
+                        <Label>{{ $t('uiText.activeFeminineC1ae5163') }}</Label>
                       </div>
                     </TabsContent>
 
                     <TabsContent value="data" class="space-y-4 mt-4">
                       <div class="flex items-center justify-between">
-                        <Label>Привязка данных (dataPaths) и конвертеры</Label>
+                        <Label>{{ $t('uiText.dataBindingDatapathsAndConverters7928ecc4') }}</Label>
                         <Button
                           variant="outline"
                           size="sm"
                           @click="addAccessor(selectedColumn!)"
                         >
-                          <Plus class="size-3.5 mr-1" />Добавить
+                          <Plus class="size-3.5 mr-1" />{{ $t('uiText.add559a87f7') }}
                         </Button>
                       </div>
                       <div class="rounded-lg border overflow-hidden">
@@ -752,13 +751,13 @@ watch(
                           class="bg-muted/40 border-b grid grid-cols-[1fr_1.5fr_2fr_40px] text-xs font-medium text-muted-foreground"
                         >
                           <div class="px-3 py-2">
-                            Имя поля
+                            {{ $t('uiText.fieldNameEe6ca9d7') }}
                           </div>
                           <div class="px-3 py-2">
-                            Путь (accessor)
+                            {{ $t('uiText.pathAccessorC0c258c3') }}
                           </div>
                           <div class="px-3 py-2">
-                            Конвертеры (цепочка)
+                            {{ $t('uiText.convertersChain5883cd3c') }}
                           </div>
                           <div class="px-3 py-2" />
                         </div>
@@ -856,7 +855,7 @@ watch(
                       <div
                         class="flex flex-wrap items-center gap-3 pt-3 border-t"
                       >
-                        <Label class="shrink-0 text-muted-foreground">Сортировка</Label>
+                        <Label class="shrink-0 text-muted-foreground">{{ $t('uiText.sortingEd030118') }}</Label>
                         <Select
                           :model-value="
                             selectedColumn!.sort?.by
@@ -905,13 +904,13 @@ watch(
 
                     <TabsContent value="events" class="space-y-4 mt-4">
                       <div class="flex items-center justify-between">
-                        <Label>Обработчики событий</Label>
+                        <Label>{{ $t('uiText.eventHandlers00fc86d8') }}</Label>
                         <Button
                           variant="outline"
                           size="sm"
                           @click="addEventHandler(selectedColumn!)"
                         >
-                          <Plus class="size-3.5 mr-1" />Добавить
+                          <Plus class="size-3.5 mr-1" />{{ $t('uiText.add559a87f7') }}
                         </Button>
                       </div>
                       <div class="rounded-lg border overflow-hidden">
@@ -919,10 +918,10 @@ watch(
                           class="bg-muted/40 border-b grid grid-cols-[1fr_1fr_40px] text-xs font-medium text-muted-foreground"
                         >
                           <div class="px-3 py-2">
-                            Событие
+                            {{ $t('uiText.eventBb92633b') }}
                           </div>
                           <div class="px-3 py-2">
-                            ID действия
+                            {{ $t('uiText.text01a8d8c5') }}
                           </div>
                           <div class="px-3 py-2" />
                         </div>
@@ -981,7 +980,7 @@ watch(
                         selectedColumn && removeColumn(selectedColumnIndex!)
                       "
                     >
-                      <Trash2 class="size-4 mr-1" />Удалить колонку
+                      <Trash2 class="size-4 mr-1" />{{ $t('uiText.deleteColumnD658cb4a') }}
                     </Button>
                   </div>
                 </div>
@@ -997,29 +996,29 @@ watch(
               <ScrollArea class="flex-1">
                 <div class="p-4 space-y-4">
                   <div class="space-y-2">
-                    <Label>Source index</Label>
+                    <Label>{{ $t('uiText.sourceIndex8605d5c6') }}</Label>
                     <Input v-model="editor.sourceIndex" placeholder="rows" />
                   </div>
                   <div class="space-y-2">
-                    <Label>Входные переменные и привязки (PK/FK)</Label>
+                    <Label>{{ $t('uiText.inputVariablesAndBindingsPkFkF79eaa9b') }}</Label>
                     <div class="rounded-lg border overflow-hidden">
                       <div
                         class="bg-muted/40 border-b grid grid-cols-[1.2fr_1fr_120px_1fr_1fr_56px] text-xs font-medium text-muted-foreground"
                       >
                         <div class="px-3 py-2">
-                          Имя
+                          {{ $t('uiText.nameAee78fe8') }}
                         </div>
                         <div class="px-3 py-2">
-                          Тип
+                          {{ $t('uiText.typeD25691ca') }}
                         </div>
                         <div class="px-3 py-2">
-                          Массив?
+                          {{ $t('uiText.arrayE03e0002') }}
                         </div>
                         <div class="px-3 py-2">
-                          PK
+                          {{ $t('uiText.pkE14e7438') }}
                         </div>
                         <div class="px-3 py-2">
-                          FK
+                          {{ $t('uiText.fk03f7d5a3') }}
                         </div>
                         <div class="px-3 py-2" />
                       </div>
@@ -1074,7 +1073,7 @@ watch(
                       </div>
                     </div>
                     <Button variant="outline" size="sm" @click="addInputField">
-                      <Plus class="size-3.5 mr-1" />Добавить переменную
+                      <Plus class="size-3.5 mr-1" />{{ $t('uiText.addVariable12dceaa7') }}
                     </Button>
                   </div>
                 </div>
@@ -1090,7 +1089,7 @@ watch(
               <ScrollArea class="flex-1">
                 <div class="p-4 space-y-4">
                   <div class="space-y-2">
-                    <Label>Высота строки</Label>
+                    <Label>{{ $t('uiText.rowHeightC561ee90') }}</Label>
                     <div class="flex flex-wrap items-center gap-3">
                       <Input
                         v-if="editor.rowSize !== 'zoom'"
@@ -1109,22 +1108,22 @@ watch(
                             (val) => (editor.rowSize = val ? 'zoom' : 40)
                           "
                         />
-                        <Label class="font-normal">Зависит от zoom</Label>
+                        <Label class="font-normal">{{ $t('uiText.dependsOnZoomE9378b95') }}</Label>
                       </div>
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <Label>Runtime filters (persisted only)</Label>
+                    <Label>{{ $t('uiText.runtimeFiltersPersistedOnlyAa6b8c31') }}</Label>
                     <Input
                       :model-value="(editor.runtimeFilters ?? []).join(', ')"
                       @update:model-value="(value) => editor.runtimeFilters = String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean)"
                     />
                   </div>
                   <div class="space-y-2">
-                    <Label>Legacy setup source (data only)</Label>
+                    <Label>{{ $t('uiText.legacySetupSourceDataOnly5a6ad2e7') }}</Label>
                     <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-table.setup" />
                     <p class="text-xs text-muted-foreground">
-                      This field is preserved in the document but is no longer executed.
+                      {{ $t('uiText.thisFieldIsPreservedInTheDocumentBuEed553e4') }}
                     </p>
                   </div>
                 </div>

@@ -245,7 +245,7 @@ function normalizeErrorMessage(error: unknown): string {
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет редактора
+    {{ $t('uiText.noEditorF03cf60f') }}
   </div>
   <SourceDocumentEditorShell
     v-else
@@ -269,7 +269,7 @@ function normalizeErrorMessage(error: unknown): string {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Тестовый запуск авторизации</TooltipContent>
+            <TooltipContent>{{ $t('uiText.testAuthenticationLaunch1e21be85') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -289,7 +289,7 @@ function normalizeErrorMessage(error: unknown): string {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -301,7 +301,7 @@ function normalizeErrorMessage(error: unknown): string {
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="text-sm font-semibold">
-                Настройки адаптера
+                {{ $t('uiText.adapterSettings0ba8a812') }}
               </div>
               <div class="truncate text-xs text-muted-foreground">
                 {{ selectedAdapterEditor?.label ?? adapterModel }}
@@ -311,7 +311,7 @@ function normalizeErrorMessage(error: unknown): string {
 
           <div class="grid gap-3 md:grid-cols-2">
             <div class="min-w-0 space-y-1">
-              <Label class="text-xs text-muted-foreground">Адаптер</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.adapter5958a2f2') }}</Label>
               <Select v-model="adapterModel">
                 <SelectTrigger class="w-full">
                   <SelectValue />
@@ -329,35 +329,35 @@ function normalizeErrorMessage(error: unknown): string {
             </div>
 
             <div v-if="supportsSession" class="min-w-0 space-y-1">
-              <Label class="text-xs text-muted-foreground">Хранение</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.storage96f4113e') }}</Label>
               <Select v-model="storageModel">
                 <SelectTrigger class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="localStorage">
-                    localStorage
+                    {{ $t('uiText.localstorage81c61b31') }}
                   </SelectItem>
                   <SelectItem value="sessionStorage">
-                    sessionStorage
+                    {{ $t('uiText.sessionstorageC8df5359') }}
                   </SelectItem>
                   <SelectItem value="memory">
-                    memory
+                    {{ $t('uiText.memory81c5d49b') }}
                   </SelectItem>
                 </SelectContent>
               </Select>
               <p class="text-xs text-muted-foreground">
-                memory — до перезагрузки, sessionStorage — до закрытия вкладки, localStorage — между запусками.
+                {{ $t('uiText.text41e7f2ec') }}
               </p>
             </div>
           </div>
 
           <div v-if="supportsSession" class="space-y-2 rounded-md border bg-muted/30 p-3">
             <div class="flex items-center justify-between gap-4">
-              <Label class="text-sm">Сохранять refresh token</Label><Switch v-model:checked="editor.persistRefreshToken" />
+              <Label class="text-sm">{{ $t('uiText.saveRefreshTokenF71fbe79') }}</Label><Switch v-model:checked="editor.persistRefreshToken" />
             </div>
             <p class="text-xs text-destructive">
-              Включайте только осознанно: refresh token будет доступен JavaScript-коду и browser storage.
+              {{ $t('uiText.enableOnlyConsciouslyRefreshTokenWill5239484f') }}
             </p>
           </div>
 
@@ -372,27 +372,27 @@ function normalizeErrorMessage(error: unknown): string {
         <Card class="min-w-0 space-y-4 p-4 xl:sticky xl:top-5 xl:self-start">
           <div>
             <div class="text-sm font-semibold">
-              Документ
+              {{ $t('uiText.document0fd26103') }}
             </div>
             <div class="text-xs text-muted-foreground">
-              Служебные свойства профиля
+              {{ $t('uiText.profileUtilityPropertiesA8894f18') }}
             </div>
           </div>
 
           <div class="space-y-4">
             <DocumentIdField :document-id="editor.id" />
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">identity</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.identity1db089a9') }}</Label>
               <DocumentIdentityInput v-model="editor.identity" autocomplete="off" />
             </div>
 
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Название</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.name3de49828') }}</Label>
               <Input v-model="editor.displayName" autocomplete="off" />
             </div>
 
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Описание</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.descriptionF5441f6a') }}</Label>
               <Textarea v-model="editor.description" :rows="5" />
             </div>
 
@@ -401,7 +401,7 @@ function normalizeErrorMessage(error: unknown): string {
                 :checked="editor.active"
                 @update:checked="setActive"
               />
-              <Label class="text-sm">Активен</Label>
+              <Label class="text-sm">{{ $t('uiText.active667904ef') }}</Label>
             </div>
           </div>
         </Card>

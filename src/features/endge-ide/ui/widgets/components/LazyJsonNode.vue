@@ -94,7 +94,7 @@ function primitivePreview(val: unknown): string {
       >
         <i :class="expanded ? 'ti ti-chevron-down' : 'ti ti-chevron-right'" class="shrink-0 text-muted-foreground" />
         <span v-if="name" class="text-muted-foreground">{{ name }}: </span>
-        <span class="text-blue-600 dark:text-blue-400">Array({{ arrayLength }})</span>
+        <span class="text-blue-600 dark:text-blue-400">{{ $t('uiText.arrayEcbfa07a') }}{{ arrayLength }})</span>
       </button>
       <div v-if="expanded" class="mt-0.5 space-y-0.5 border-l border-border pl-2">
         <LazyJsonNode
@@ -111,7 +111,7 @@ function primitivePreview(val: unknown): string {
           class="text-muted-foreground hover:text-foreground py-0.5"
           @click="showMore"
         >
-          + ещё {{ moreCount }} из {{ arrayLength }}
+          {{ $t('uiText.text83d5cb7a') }} {{ moreCount }} {{ $t('uiText.fromBeed1688') }} {{ arrayLength }}
         </button>
       </div>
     </template>
@@ -125,7 +125,7 @@ function primitivePreview(val: unknown): string {
       >
         <i :class="expanded ? 'ti ti-chevron-down' : 'ti ti-chevron-right'" class="shrink-0 text-muted-foreground" />
         <span v-if="name" class="text-muted-foreground">{{ name }}: </span>
-        <span class="text-amber-600 dark:text-amber-400">Object</span>
+        <span class="text-amber-600 dark:text-amber-400">{{ $t('uiText.object2883f191') }}</span>
         <span class="text-muted-foreground">({{ allObjectKeys.length }})</span>
       </button>
       <div v-if="expanded" class="mt-0.5 space-y-0.5 border-l border-border pl-2">
@@ -143,7 +143,7 @@ function primitivePreview(val: unknown): string {
           class="text-muted-foreground hover:text-foreground py-0.5"
           @click="showMoreKeys"
         >
-          + ещё {{ objectMoreCount }} ключей (всего {{ allObjectKeys.length }})
+          {{ $t('uiText.text83d5cb7a') }} {{ objectMoreCount }} {{ $t('uiText.keysTotalBd78625f') }} {{ allObjectKeys.length }})
         </button>
       </div>
     </template>

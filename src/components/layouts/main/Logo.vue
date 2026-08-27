@@ -56,8 +56,8 @@ const iconStyle = computed<Record<string, string> | undefined>(() => {
 
       <TooltipContent side="bottom" align="start">
         <div class="text-xs">
-          Version {{ appVersion }} <br>
-          Updated {{ appVersionUpdated }}
+          {{ $t('uiText.text2da600bf') }} {{ appVersion }} <br>
+          {{ $t('uiText.textA001860e') }} {{ appVersionUpdated }}
         </div>
       </TooltipContent>
     </Tooltip>

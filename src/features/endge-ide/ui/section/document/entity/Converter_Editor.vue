@@ -31,16 +31,16 @@ async function save(): Promise<void> {
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-lg font-semibold truncate">
-          Конвертер - {{ editor?.displayName ?? '-' }}
+          {{ $t('uiText.converter70a62567') }} {{ editor?.displayName ?? '-' }}
         </div>
         <div class="text-xs text-muted-foreground truncate">
-          id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
+          {{ $t('uiText.idA078622f') }} {{ editor?.id ?? '-' }} {{ $t('uiText.identityD63b139a') }} {{ editor?.identity ?? '-' }}
         </div>
         <Badge v-if="systemManaged" variant="outline" class="rounded-full border-orange-200 bg-amber-500/10 text-amber-700 font-normal dark:border-orange-300/50 dark:bg-amber-500/15 dark:text-amber-600">
-          Системный
+          {{ $t('uiText.systemEca17171') }}
         </Badge>
         <Badge v-if="integrationManaged" variant="outline" class="rounded-full border-violet-200 bg-violet-500/10 text-violet-700 font-normal dark:border-violet-300/50 dark:bg-violet-500/15 dark:text-violet-300">
-          Управляется интеграцией
+          {{ $t('uiText.managedByIntegration45690f30') }}
         </Badge>
       </div>
       <TooltipProvider>
@@ -51,7 +51,7 @@ async function save(): Promise<void> {
               <Save v-else class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Сохранить</TooltipContent>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
@@ -59,18 +59,18 @@ async function save(): Promise<void> {
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
         <div class="text-sm font-semibold">
-          Основное
+          {{ $t('uiText.basic127492c2') }}
         </div>
         <div class="space-y-2">
-          <Label>Идентификатор</Label>
+          <Label>{{ $t('uiText.identifier754cbaf5') }}</Label>
           <DocumentIdentityInput v-model="editor!.identity" :disabled="externallyManaged" />
         </div>
         <div class="space-y-2">
-          <Label>Название</Label>
+          <Label>{{ $t('uiText.name3de49828') }}</Label>
           <Input v-model="editor!.displayName" :disabled="externallyManaged" />
         </div>
         <div class="space-y-2">
-          <Label>Описание</Label>
+          <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <textarea
             :value="editor?.description ?? ''"
             :disabled="externallyManaged"

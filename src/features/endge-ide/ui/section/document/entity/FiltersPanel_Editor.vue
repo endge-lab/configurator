@@ -515,7 +515,7 @@ function applyFilter(): void {
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет данных для вкладки
+    {{ $t('uiText.noDataForTab9c4b4a5b') }}
   </div>
   <div v-else class="w-full h-full flex flex-col">
     <div class="flex items-center justify-between gap-3 px-4 py-3 border-b bg-editor-panel">
@@ -532,7 +532,7 @@ function applyFilter(): void {
               <Save v-else class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Сохранить</TooltipContent>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <div v-if="identity" class="text-xs text-muted-foreground font-mono shrink-0">
@@ -545,13 +545,13 @@ function applyFilter(): void {
         <div class="border-b px-3 py-2">
           <TabsList class="grid w-full grid-cols-3">
             <TabsTrigger value="general">
-              Основное
+              {{ $t('uiText.basic127492c2') }}
             </TabsTrigger>
             <TabsTrigger value="form">
-              Форма
+              {{ $t('uiText.form22af8f93') }}
             </TabsTrigger>
             <TabsTrigger value="json">
-              JSON
+              {{ $t('uiText.json031a4e76') }}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -560,15 +560,15 @@ function applyFilter(): void {
           <ScrollArea class="h-full">
             <div class="p-4 space-y-4 max-w-2xl">
               <div class="space-y-2">
-                <Label>Identity</Label>
+                <Label>{{ $t('uiText.identity7e5a975b') }}</Label>
                 <DocumentIdentityInput v-model="editor.identity" />
               </div>
               <div class="space-y-2">
-                <Label>Название</Label>
+                <Label>{{ $t('uiText.name3de49828') }}</Label>
                 <Input v-model="editor.displayName" />
               </div>
               <div class="space-y-2">
-                <Label>Описание</Label>
+                <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
                 <Textarea v-model="editor.description" />
               </div>
             </div>
@@ -580,15 +580,15 @@ function applyFilter(): void {
             <div class="p-4 space-y-4">
               <div class="flex items-center justify-between">
                 <Label class="text-xs font-semibold uppercase text-muted-foreground">
-                  Поля фильтра
+                  {{ $t('uiText.filterFieldsCadad478') }}
                 </Label>
                 <Button size="sm" @click="applyFilter">
-                  Применить
+                  {{ $t('uiText.apply768af677') }}
                 </Button>
               </div>
 
               <div v-if="!fields.length" class="text-sm text-muted-foreground">
-                Для этого фильтра пока не задано ни одного поля.
+                {{ $t('uiText.noFieldsAreSetForThisFilterYetA11bb693') }}
               </div>
 
               <div v-else class="flex flex-col gap-3">
@@ -602,9 +602,7 @@ function applyFilter(): void {
                       <div class="flex flex-col">
                         <span class="text-sm font-medium">{{ fieldLabel(field) }}</span>
                         <span class="text-xs text-muted-foreground">
-                          key: <span class="font-mono">{{ field.key }}</span> ·
-                          type: <span class="font-mono">{{ field.valueType }}</span> ·
-                          mode: <span class="font-mono">{{ field.mode }}</span>
+                          {{ $t('uiText.keyF07e85f4') }} <span class="font-mono">{{ field.key }}</span> {{ $t('uiText.type77f95a6e') }} <span class="font-mono">{{ field.valueType }}</span> {{ $t('uiText.modeFeed5096') }} <span class="font-mono">{{ field.mode }}</span>
                         </span>
                       </div>
                     </div>
@@ -672,7 +670,7 @@ function applyFilter(): void {
                         :model-value="!!form[field.key]"
                         @update:model-value="(v) => (form[field.key] = !!v)"
                       />
-                      <span class="text-sm">Включено</span>
+                      <span class="text-sm">{{ $t('uiText.enabled2e304ad8') }}</span>
                     </div>
 
                     <!-- MANUAL STRING -->
@@ -729,7 +727,7 @@ function applyFilter(): void {
                     <!-- EXPRESSION -->
                     <div v-else-if="isExpression(field)" class="mt-1">
                       <div class="text-xs text-muted-foreground mb-1">
-                        Выражение (readonly)
+                        {{ $t('uiText.expressionReadonlyB258bf34') }}
                       </div>
                       <Input
                         :model-value="field.expression"
@@ -748,10 +746,10 @@ function applyFilter(): void {
             <div class="p-4 space-y-4">
               <div class="flex items-center justify-between">
                 <Label class="text-xs font-semibold uppercase text-muted-foreground">
-                  Итоговый JSON фильтра
+                  {{ $t('uiText.finalFilterJson15ace063') }}
                 </Label>
                 <Button size="sm" @click="applyFilter">
-                  Применить
+                  {{ $t('uiText.apply768af677') }}
                 </Button>
               </div>
               <pre class="text-xs rounded-md border p-3 overflow-auto bg-muted/30">{{ JSON.stringify(resultJson, null, 2) }}</pre>

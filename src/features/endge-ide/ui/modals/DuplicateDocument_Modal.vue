@@ -85,15 +85,15 @@ function onCancel(): void {
   <Dialog v-model:open="openModel">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Дублировать документ</DialogTitle>
+        <DialogTitle>{{ $t('uiText.duplicateDocument041a414a') }}</DialogTitle>
       </DialogHeader>
 
       <div v-if="source" class="space-y-4 py-2">
         <p class="text-sm text-muted-foreground">
-          Создаётся копия «{{ source.name }}» в корне секции. Укажите новый идентификатор и название.
+          {{ $t('uiText.copy15da5cd8') }}{{ source.name }}{{ $t('uiText.atTheRootOfTheSectionSpecifyANewI2f73f8c3') }}
         </p>
         <div class="grid gap-2">
-          <Label for="dup-identity">Identity</Label>
+          <Label for="dup-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
           <Input
             id="dup-identity"
             v-model="identity"
@@ -101,7 +101,7 @@ function onCancel(): void {
           />
         </div>
         <div class="grid gap-2">
-          <Label for="dup-name">Название</Label>
+          <Label for="dup-name">{{ $t('uiText.name3de49828') }}</Label>
           <Input
             id="dup-name"
             v-model="name"
@@ -112,10 +112,10 @@ function onCancel(): void {
 
       <DialogFooter class="gap-2">
         <Button variant="outline" :disabled="loading" @click="onCancel">
-          Отменить
+          {{ $t('uiText.cancel555ad1c0') }}
         </Button>
         <Button :disabled="loading" @click="onSubmit">
-          Дублировать
+          {{ $t('uiText.duplicateC9a3458c') }}
         </Button>
       </DialogFooter>
     </DialogContent>

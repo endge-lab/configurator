@@ -41,14 +41,14 @@ const projectLabel = computed(() => {
       :side-offset="4"
     >
       <DropdownMenuLabel class="text-xs text-muted-foreground">
-        Проекты
+        {{ $t('uiText.projectsB90d9f72') }}
       </DropdownMenuLabel>
       <DropdownMenuItem
         :class="{ 'bg-accent': !currentProject }"
         class="cursor-pointer"
         @click="setCurrentProject(null)"
       >
-        Все
+        {{ $t('uiText.allFd08da7a') }}
       </DropdownMenuItem>
       <DropdownMenuItem
         v-for="p in domainStore.projects"

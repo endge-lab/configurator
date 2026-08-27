@@ -216,6 +216,34 @@ const sections = computed(() => [
     icon: SlidersHorizontal,
   })),
 ])
+
+const contribution = computed(() =>
+  props.variant === 'contribution'
+    ? (props.modelValue as EndgeConfigurationContribution)
+    : null,
+)
+
+const isInherit = computed(() => contribution.value?.mode === 'inherit')
+
+const patch = computed(() =>
+  isInherit.value
+    ? (
+        contribution.value as Extract<
+          EndgeConfigurationContribution,
+          { mode: 'inherit' }
+        >
+      ).patch
+    : null,
+)
+
+const editableConfiguration = computed(() =>
+  props.variant === 'root'
+    ? (props.modelValue as EndgeConfiguration)
+    : contribution.value?.mode === 'replace'
+      ? contribution.value.value
+      : props.upstream!,
+)
+
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
   const known = new Map(
     configurationCategories.value.map(category => [
@@ -306,30 +334,6 @@ const activeEditingSection = computed(
   () =>
     editingSections.find(section => section.id === editingSection.value)
     ?? editingSections[0],
-)
-
-const contribution = computed(() =>
-  props.variant === 'contribution'
-    ? (props.modelValue as EndgeConfigurationContribution)
-    : null,
-)
-const isInherit = computed(() => contribution.value?.mode === 'inherit')
-const patch = computed(() =>
-  isInherit.value
-    ? (
-        contribution.value as Extract<
-          EndgeConfigurationContribution,
-          { mode: 'inherit' }
-        >
-      ).patch
-    : null,
-)
-const editableConfiguration = computed(() =>
-  props.variant === 'root'
-    ? (props.modelValue as EndgeConfiguration)
-    : contribution.value?.mode === 'replace'
-      ? contribution.value.value
-      : props.upstream!,
 )
 const effective = computed(() => {
   if (props.variant === 'root') {
@@ -910,13 +914,13 @@ function isEqual(left: unknown, right: unknown): boolean {
     >
       <div class="min-w-0">
         <p class="text-sm font-semibold text-foreground">
-          Режим конфигурации
+          {{ $t('uiText.configurationMode7281a3fc') }}
         </p>
         <p class="mt-0.5 text-xs leading-5 text-muted-foreground">
           {{
             isInherit
-              ? "Наследуем родительскую конфигурацию и сохраняем только локальные уточнения."
-              : "Полностью заменяем родительскую конфигурацию значениями этого слоя."
+              ? $t('uiText.weInheritTheParentConfigurationAndSa73e4f196')
+              : $t('uiText.fullyReplaceTheParentConfigurationWit21936c21')
           }}
         </p>
       </div>
@@ -930,10 +934,10 @@ function isEqual(left: unknown, right: unknown): boolean {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="inherit">
-            Наследовать и уточнить
+            {{ $t('uiText.inheritAndRefineD6217727') }}
           </SelectItem>
           <SelectItem value="replace">
-            Полностью заменить
+            {{ $t('uiText.fullyReplace5aff8faf') }}
           </SelectItem>
         </SelectContent>
       </Select>
@@ -944,7 +948,7 @@ function isEqual(left: unknown, right: unknown): boolean {
       class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3"
     >
       <p class="text-sm font-semibold">
-        Проблемы пользовательской конфигурации
+        {{ $t('uiText.userConfigurationIssuesB5566f9a') }}
       </p>
       <div
         v-for="issue in configurationValueIssues"
@@ -952,7 +956,7 @@ function isEqual(left: unknown, right: unknown): boolean {
         class="mt-2 flex items-start justify-between gap-3 text-xs"
       >
         <div data-copyable>
-          <code>{{ issue.identity }}.{{ issue.key }}</code><span
+          <code>{{ issue.identity }}{{ $t('uiText.symbol3a52ce78') }}{{ issue.key }}</code><span
             class="ml-2"
             :class="
               issue.kind === 'invalid'
@@ -969,7 +973,7 @@ function isEqual(left: unknown, right: unknown): boolean {
           class="h-6 px-2"
           @click="openConfigurationDocument(issue.identity)"
         >
-          Открыть
+          {{ $t('uiText.open1259571a') }}
         </Button>
       </div>
     </section>
@@ -1127,7 +1131,7 @@ function isEqual(left: unknown, right: unknown): boolean {
               <code
                 data-copyable
                 class="mt-1 block text-[10px] text-muted-foreground"
-              >$context.config.{{ category.identity }}</code>
+              >{{ $t('uiText.contextConfig3c20919b') }}{{ category.identity }}</code>
             </div>
             <div class="divide-y divide-border/60 border-t border-border/60">
               <div
@@ -1186,7 +1190,7 @@ function isEqual(left: unknown, right: unknown): boolean {
                     <code
                       data-copyable
                       class="mt-1.5 block text-[10px] text-muted-foreground"
-                    >{{ category.identity }}.{{ field.key }}</code>
+                    >{{ category.identity }}{{ $t('uiText.symbol3a52ce78') }}{{ field.key }}</code>
                   </template>
                 </ConfigurationOverrideField>
               </div>
@@ -1196,14 +1200,14 @@ function isEqual(left: unknown, right: unknown): boolean {
           <TabsContent value="environment" class="m-0 p-5 outline-none">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <Label>Environment variables</Label>
+                <Label>{{ $t('uiText.environmentVariables1173b2e1') }}</Label>
                 <Button
                   size="sm"
                   variant="outline"
                   :disabled="disabled"
                   @click="addCollectionValue('vars')"
                 >
-                  <Plus class="mr-2 size-4" />Добавить
+                  <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
                 </Button>
               </div>
               <div class="rounded-md border">
@@ -1257,14 +1261,14 @@ function isEqual(left: unknown, right: unknown): boolean {
           <TabsContent value="ui" class="m-0 space-y-6 p-5 outline-none">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <Label>Доступные SFC-адаптеры</Label>
+                <Label>{{ $t('uiText.availableSfcAdapters49d716ec') }}</Label>
                 <Button
                   size="sm"
                   variant="outline"
                   :disabled="disabled"
                   @click="addCollectionValue('sfcAdapterIds')"
                 >
-                  <Plus class="mr-2 size-4" />Добавить
+                  <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
                 </Button>
               </div>
               <div class="rounded-md border">
@@ -1380,10 +1384,10 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div v-if="tooltipSection === 'ui'" class="space-y-5">
               <div>
                 <h3 class="text-sm font-semibold text-foreground">
-                  Настройки UI
+                  {{ $t('uiText.uiSettingsAb73ee20') }}
                 </h3>
                 <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                  Положение и задержки единого tooltip overlay.
+                  {{ $t('uiText.positionAndDelaysOfASingleTooltipOvF8e242aa') }}
                 </p>
               </div>
 
@@ -1406,16 +1410,16 @@ function isEqual(left: unknown, right: unknown): boolean {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="top">
-                          Сверху
+                          {{ $t('uiText.topAa6b22c2') }}
                         </SelectItem>
                         <SelectItem value="right">
-                          Справа
+                          {{ $t('uiText.right600c48eb') }}
                         </SelectItem>
                         <SelectItem value="bottom">
-                          Снизу
+                          {{ $t('uiText.bottomFa188130') }}
                         </SelectItem>
                         <SelectItem value="left">
-                          Слева
+                          {{ $t('uiText.left4af2530f') }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1440,13 +1444,13 @@ function isEqual(left: unknown, right: unknown): boolean {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="start">
-                          По началу
+                          {{ $t('uiText.byStartE6b5ff44') }}
                         </SelectItem>
                         <SelectItem value="center">
-                          По центру
+                          {{ $t('uiText.byCenterFd17e2f9') }}
                         </SelectItem>
                         <SelectItem value="end">
-                          По концу
+                          {{ $t('uiText.byEnd2f852391') }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1500,10 +1504,10 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div v-else class="space-y-5">
               <div>
                 <h3 class="text-sm font-semibold text-foreground">
-                  Триггер
+                  {{ $t('uiText.trigger3ea1ce35') }}
                 </h3>
                 <p class="mt-1 text-xs leading-5 text-muted-foreground">
-                  Условие на состояние клавиатуры при наведении или фокусе.
+                  {{ $t('uiText.conditionOnKeyboardStateOnHoverOrFoA1955e03') }}
                 </p>
               </div>
 
@@ -1523,9 +1527,7 @@ function isEqual(left: unknown, right: unknown): boolean {
                       @update:condition="setTooltipKeyboard"
                     />
                     <p class="text-xs text-muted-foreground">
-                      Если условие не задано, тултип появляется при обычном
-                      наведении или фокусе. Можно записать физическую комбинацию
-                      либо настроить её вручную.
+                      {{ $t('uiText.ifNoConditionIsSpecifiedTheTooltipA84d2dc3b') }}
                     </p>
                   </div>
                 </template>
@@ -1609,14 +1611,14 @@ function isEqual(left: unknown, right: unknown): boolean {
               </ConfigurationOverrideField>
             </div>
             <div class="flex items-center justify-between">
-              <Label>Доступные локали</Label>
+              <Label>{{ $t('uiText.availableLocalesFdfa58e1') }}</Label>
               <Button
                 size="sm"
                 variant="outline"
                 :disabled="disabled"
                 @click="addCollectionValue('locales')"
               >
-                <Plus class="mr-2 size-4" />Добавить
+                <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
               </Button>
             </div>
             <div class="rounded-md border">
@@ -1668,9 +1670,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                       <SelectValue placeholder="Direction" />
                     </SelectTrigger><SelectContent>
                       <SelectItem value="ltr">
-                        LTR
+                        {{ $t('uiText.ltr04d126ee') }}
                       </SelectItem><SelectItem value="rtl">
-                        RTL
+                        {{ $t('uiText.rtl031bb873') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -1718,14 +1720,14 @@ function isEqual(left: unknown, right: unknown): boolean {
               </template>
             </ConfigurationOverrideField>
             <div class="flex items-center justify-between">
-              <Label>Доступные темы</Label>
+              <Label>{{ $t('uiText.availableThemesEbf412c9') }}</Label>
               <Button
                 size="sm"
                 variant="outline"
                 :disabled="disabled"
                 @click="addCollectionValue('themes')"
               >
-                <Plus class="mr-2 size-4" />Добавить
+                <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
               </Button>
             </div>
             <div class="rounded-md border">
@@ -1776,9 +1778,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div
               class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground"
             >
-              Effective: {{ effective.locales.length }} locales,
-              {{ effective.themes.length }} themes, default theme —
-              {{ effective.defaultTheme }}.
+              {{ $t('uiText.effectiveB1e1d441') }} {{ effective.locales.length }} {{ $t('uiText.localesAbddac97') }}
+              {{ effective.themes.length }} {{ $t('uiText.themesDefaultTheme56304001') }}
+              {{ effective.defaultTheme }}{{ $t('uiText.symbol3a52ce78') }}
             </div>
           </TabsContent>
 
@@ -1823,9 +1825,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             </ConfigurationOverrideField>
             <div class="flex items-center justify-between">
               <div>
-                <Label>Доступные временные зоны</Label>
+                <Label>{{ $t('uiText.availableTimeZonesA11abca9') }}</Label>
                 <p class="mt-1 text-xs text-muted-foreground">
-                  Используйте IANA identity или системное значение local.
+                  {{ $t('uiText.useIanaIdentityOrSystemLocalValue5fd6e760') }}
                 </p>
               </div>
               <Button
@@ -1834,7 +1836,7 @@ function isEqual(left: unknown, right: unknown): boolean {
                 :disabled="disabled"
                 @click="addCollectionValue('timezones')"
               >
-                <Plus class="mr-2 size-4" />Добавить
+                <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
               </Button>
             </div>
             <div class="rounded-md border">
@@ -1887,8 +1889,8 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div
               class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground"
             >
-              Effective: {{ effective.timezones.length }} zones, default —
-              {{ effective.defaultTimezone }}.
+              {{ $t('uiText.effectiveB1e1d441') }} {{ effective.timezones.length }} {{ $t('uiText.text6560ed5e') }}
+              {{ effective.defaultTimezone }}{{ $t('uiText.symbol3a52ce78') }}
             </div>
           </TabsContent>
 

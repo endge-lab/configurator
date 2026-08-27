@@ -138,7 +138,7 @@ async function save(): Promise<void> {
   <div class="w-full h-full flex flex-col min-h-0">
     <div class="p-3 border-b flex items-center justify-between gap-3 shrink-0">
       <div class="text-lg font-semibold truncate">
-        Шаблон страницы - {{ editor?.displayName ?? '-' }}
+        {{ $t('uiText.pageTemplateE92cbb03') }} {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
         <SaveDocumentButton :loading="EndgeIDE.busy.value" @click="save" />
@@ -151,7 +151,7 @@ async function save(): Promise<void> {
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">
-                identity
+                {{ $t('uiText.identity1db089a9') }}
               </Label>
               <DocumentIdentityInput
                 v-model="editor!.identity"
@@ -161,7 +161,7 @@ async function save(): Promise<void> {
 
             <div class="space-y-1">
               <Label class="text-xs text-muted-foreground">
-                Название
+                {{ $t('uiText.name3de49828') }}
               </Label>
               <Input
                 v-model="editor!.displayName"
@@ -172,7 +172,7 @@ async function save(): Promise<void> {
 
           <div class="space-y-1">
             <Label class="text-xs text-muted-foreground">
-              Описание
+              {{ $t('uiText.descriptionF5441f6a') }}
             </Label>
             <Textarea
               v-model="editor!.description"
@@ -184,10 +184,10 @@ async function save(): Promise<void> {
 
         <Card class="p-4 space-y-3">
           <div class="font-semibold">
-            Превью раскладки
+            {{ $t('uiText.layoutPreview585b5098') }}
           </div>
           <p class="text-xs text-muted-foreground">
-            Миниатюра для редактора страницы: строки и колонки областей.
+            {{ $t('uiText.thumbnailForPageEditorRowsAndColumns6ba08e9b') }}
           </p>
           <div v-if="editor?.preview?.rows?.length" class="max-w-md">
             <TemplatePreviewGrid
@@ -196,7 +196,7 @@ async function save(): Promise<void> {
             />
           </div>
           <div v-else class="text-xs text-muted-foreground">
-            Превью не задано.
+            {{ $t('uiText.noPreviewIsSet8816481a') }}
           </div>
           <div class="flex flex-wrap gap-2">
             <Button
@@ -205,14 +205,14 @@ async function save(): Promise<void> {
               :disabled="!editor?.areas?.length"
               @click="fillDefaultPreview"
             >
-              Заполнить превью по умолчанию
+              {{ $t('uiText.fillPreviewByDefault4604e614') }}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               @click="showPreviewJson = !showPreviewJson"
             >
-              {{ showPreviewJson ? 'Скрыть JSON' : 'Редактировать JSON' }}
+              {{ showPreviewJson ? $t('uiText.hideJson195d8d30') : $t('uiText.editJsonC715198c') }}
             </Button>
           </div>
           <Textarea
@@ -226,22 +226,22 @@ async function save(): Promise<void> {
         <Card class="p-4 space-y-3">
           <div class="flex items-center justify-between gap-2">
             <div class="font-semibold">
-              Области (зоны layout)
+              {{ $t('uiText.areasLayoutZones105229e7') }}
             </div>
             <Button size="sm" variant="outline" @click="addArea">
-              Добавить область
+              {{ $t('uiText.addAreaE2905414') }}
             </Button>
           </div>
 
           <div class="rounded-md border bg-muted/20 p-3 space-y-2">
             <div class="text-sm font-medium">
-              Области из Runtime Debug
+              {{ $t('uiText.areasFromRuntimeDebug2957e786') }}
             </div>
             <p class="text-xs text-muted-foreground">
-              Анализ выполняется по первой зарегистрированной runtime-вкладке.
+              {{ $t('uiText.analysisIsPerformedOnTheFirstRegiste1b6ec440') }}
             </p>
             <div v-if="firstRuntimeTab" class="text-xs text-muted-foreground">
-              Вкладка: {{ firstRuntimeTab.title || firstRuntimeTab.url || firstRuntimeTab.id }}
+              {{ $t('uiText.tab13e9402e') }} {{ firstRuntimeTab.title || firstRuntimeTab.url || firstRuntimeTab.id }}
             </div>
             <template v-if="runtimeTargets.length">
               <ul class="list-disc list-inside text-xs text-muted-foreground">
@@ -250,11 +250,11 @@ async function save(): Promise<void> {
                 </li>
               </ul>
               <Button size="sm" variant="outline" @click="applyRuntimeTargets">
-                Вставить области в шаблон
+                {{ $t('uiText.insertAreasIntoTemplateDe5b1370') }}
               </Button>
             </template>
             <p v-else class="text-xs text-muted-foreground">
-              Области пока не найдены.
+              {{ $t('uiText.noAreasFoundYetA4fcc86d') }}
             </p>
           </div>
 
@@ -266,7 +266,7 @@ async function save(): Promise<void> {
             >
               <div class="space-y-1">
                 <Label class="text-xs text-muted-foreground">
-                  identity области
+                  {{ $t('uiText.text63db3f20') }}
                 </Label>
                 <Input
                   v-model="area.identity"
@@ -280,13 +280,13 @@ async function save(): Promise<void> {
                   class="text-destructive"
                   @click="removeArea(idx)"
                 >
-                  ✕
+                  {{ $t('uiText.symbol0951b9a0') }}
                 </Button>
               </div>
             </div>
           </div>
           <p v-else class="text-xs text-muted-foreground">
-            Областей пока нет. Добавьте хотя бы одну область, чтобы связать layout с зонами.
+            {{ $t('uiText.noAreasYetAddAtLeastOneAreaToLinkCc80d706') }}
           </p>
         </Card>
       </div>

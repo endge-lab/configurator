@@ -360,10 +360,10 @@ async function save(): Promise<void> {
       <div class="min-w-0 flex-1">
         <div class="min-w-0">
           <div class="text-lg font-semibold truncate">
-            Фильтр - {{ editor?.displayName ?? '-' }}
+            {{ $t('uiText.filter6b353180') }} {{ editor?.displayName ?? '-' }}
           </div>
           <div class="text-xs text-muted-foreground truncate">
-            id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
+            {{ $t('uiText.idA078622f') }} {{ editor?.id ?? '-' }} {{ $t('uiText.identityD63b139a') }} {{ editor?.identity ?? '-' }}
           </div>
         </div>
       </div>
@@ -375,7 +375,7 @@ async function save(): Promise<void> {
               <Save v-else class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Сохранить</TooltipContent>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
@@ -386,11 +386,11 @@ async function save(): Promise<void> {
         <div class="p-2 border-b flex items-center justify-between gap-2 flex-wrap">
           <span class="text-xs font-medium flex items-center gap-1">
             <ListChecks class="size-3.5" />
-            Поля фильтра
+            {{ $t('uiText.filterFieldsCadad478') }}
           </span>
           <Button variant="outline" size="sm" class="h-7" @click="addField">
             <Plus class="size-3.5 mr-1" />
-            Добавить
+            {{ $t('uiText.add559a87f7') }}
           </Button>
         </div>
         <div class="p-2 flex flex-wrap gap-1">
@@ -417,7 +417,7 @@ async function save(): Promise<void> {
             {{ fieldSummary(field) }}
           </button>
           <div v-if="fields.length === 0" class="px-3 py-2 text-xs text-muted-foreground">
-            Нет полей. Нажмите «Добавить».
+            {{ $t('uiText.noFieldsClickAddA2c4a7c9') }}
           </div>
         </div>
       </Card>
@@ -426,12 +426,12 @@ async function save(): Promise<void> {
       <Card class="flex-1 min-h-0 flex flex-col overflow-hidden">
         <ScrollArea class="flex-1">
           <div v-if="selectedField === null" class="p-8 text-sm text-muted-foreground text-center">
-            Выберите поле в списке или добавьте новое
+            {{ $t('uiText.selectAFieldFromTheListOrAddANew6551cdd4') }}
           </div>
           <div v-else class="p-4 space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label>Ключ</Label>
+                <Label>{{ $t('uiText.keyCc6ec0f0') }}</Label>
                 <Input
                   v-if="selectedIndex !== null"
                   :model-value="selectedField?.key ?? ''"
@@ -439,7 +439,7 @@ async function save(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label>Label</Label>
+                <Label>{{ $t('uiText.label74341e3c') }}</Label>
                 <Input
                   v-if="selectedIndex !== null"
                   :model-value="selectedField?.label ?? ''"
@@ -450,7 +450,7 @@ async function save(): Promise<void> {
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label>Тип поля</Label>
+                <Label>{{ $t('uiText.fieldTypeC22457c4') }}</Label>
                 <Select
                   v-if="selectedIndex !== null"
                   :model-value="selectedField?.mode ?? 'static'"
@@ -461,34 +461,34 @@ async function save(): Promise<void> {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="static">
-                      Статический список
+                      {{ $t('uiText.staticList4a86d3c0') }}
                     </SelectItem>
                     <SelectItem value="vocab">
-                      Словарь
+                      {{ $t('uiText.dictionary2366dfdb') }}
                     </SelectItem>
                     <SelectItem value="date">
-                      Только дата
+                      {{ $t('uiText.onlyDate1620af28') }}
                     </SelectItem>
                     <SelectItem value="time">
-                      Только время
+                      {{ $t('uiText.onlyTime67776558') }}
                     </SelectItem>
                     <SelectItem value="datetime">
-                      Дата и время
+                      {{ $t('uiText.dateAndTime0011621b') }}
                     </SelectItem>
                     <SelectItem value="boolean">
-                      Булево
+                      {{ $t('uiText.booleanE8fbe226') }}
                     </SelectItem>
                     <SelectItem value="string">
-                      Текст
+                      {{ $t('uiText.text93970437') }}
                     </SelectItem>
                     <SelectItem value="number">
-                      Число
+                      {{ $t('uiText.number4d0f3e5c') }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div class="space-y-2">
-                <Label>Значение по умолчанию</Label>
+                <Label>{{ $t('uiText.defaultValueA027b1fa') }}</Label>
                 <div class="flex flex-wrap gap-2 items-center">
                   <Input
                     v-if="selectedIndex !== null"
@@ -508,7 +508,7 @@ async function save(): Promise<void> {
                     @click="setDefaultToToday"
                   >
                     <Clock class="size-4 mr-1" />
-                    +0d
+                    {{ $t('uiText.text63e1a37c') }}
                   </Button>
                   <Button
                     v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
@@ -519,7 +519,7 @@ async function save(): Promise<void> {
                     title="Минус 7 дней"
                     @click="setDefaultToRelative(-7)"
                   >
-                    (-7d)
+                    {{ $t('uiText.text783fa7f6') }}
                   </Button>
                   <Button
                     v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
@@ -530,24 +530,24 @@ async function save(): Promise<void> {
                     title="Плюс 7 дней"
                     @click="setDefaultToRelative(7)"
                   >
-                    (+7d)
+                    {{ $t('uiText.text83cc015c') }}
                   </Button>
                 </div>
                 <p
                   v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
                   class="text-xs text-muted-foreground"
                 >
-                  Для дат: +0d (сегодня), ±Nd (дни), ±Nw (недели), ±Nm (месяцы), ±Ny (годы). Пример: -7d, +2w, +1m.
+                  {{ $t('uiText.forDates0dTodayNdDaysNwWeeksNmMon6db57c95') }}
                 </p>
               </div>
             </div>
 
             <div v-if="selectedField?.mode === 'static'" class="space-y-4 border-t pt-4">
               <div class="flex items-center justify-between gap-2">
-                <span class="text-sm font-medium text-muted-foreground">Допустимые значения</span>
+                <span class="text-sm font-medium text-muted-foreground">{{ $t('uiText.allowedValues968e6be8') }}</span>
                 <Button variant="outline" size="sm" class="h-7" @click="addStaticOption">
                   <Plus class="size-3.5 mr-1" />
-                  Добавить вариант
+                  {{ $t('uiText.addOptionEba2247e') }}
                 </Button>
               </div>
               <div class="space-y-2">
@@ -580,7 +580,7 @@ async function save(): Promise<void> {
                   </Button>
                 </div>
                 <p v-if="selectedStaticOptions.length === 0" class="text-xs text-muted-foreground">
-                  Нет вариантов. Нажмите «Добавить вариант».
+                  {{ $t('uiText.noOptionsClickAddOptionC1df9673') }}
                 </p>
               </div>
               <div class="flex items-center gap-2">
@@ -589,17 +589,17 @@ async function save(): Promise<void> {
                   :model-value="selectedField?.multiple !== false"
                   @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'multiple', v === true)"
                 />
-                <Label>Разрешить множественный ввод</Label>
+                <Label>{{ $t('uiText.allowMultipleInputAae45832') }}</Label>
               </div>
             </div>
 
             <div v-if="selectedField?.mode === 'vocab'" class="space-y-4 border-t pt-4">
               <div class="text-sm font-medium text-muted-foreground">
-                Словарь
+                {{ $t('uiText.dictionary2366dfdb') }}
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
-                  <Label>Справочник</Label>
+                  <Label>{{ $t('uiText.referenceC497de39') }}</Label>
                   <Select
                     v-if="selectedIndex !== null"
                     :key="`vocab-identity-${selectedIndex}-${selectedField?.vocabIdentity ?? ''}`"
@@ -621,7 +621,7 @@ async function save(): Promise<void> {
                   </Select>
                 </div>
                 <div class="space-y-2">
-                  <Label>Коллекция</Label>
+                  <Label>{{ $t('uiText.collectionB71a4a6a') }}</Label>
                   <Select
                     v-if="selectedIndex !== null"
                     :key="`vocab-collection-${selectedIndex}-${selectedField?.vocabIdentity}-${selectedField?.vocabCollection ?? ''}`"
@@ -645,7 +645,7 @@ async function save(): Promise<void> {
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
-                  <Label>Путь до поля значения (valuePath)</Label>
+                  <Label>{{ $t('uiText.pathToValueFieldValuepath0ca08187') }}</Label>
                   <Input
                     v-if="selectedIndex !== null"
                     :model-value="selectedField?.valuePath ?? ''"
@@ -654,7 +654,7 @@ async function save(): Promise<void> {
                   />
                 </div>
                 <div class="space-y-2">
-                  <Label>Путь до поля подписи (displayNamePath)</Label>
+                  <Label>{{ $t('uiText.pathToDisplayNameFieldDisplaynamepathB400fec4') }}</Label>
                   <Input
                     v-if="selectedIndex !== null"
                     :model-value="selectedField?.displayNamePath ?? ''"
@@ -669,13 +669,13 @@ async function save(): Promise<void> {
                   :model-value="selectedField?.multiple !== false"
                   @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'multiple', v === true)"
                 />
-                <Label>Разрешить множественный ввод</Label>
+                <Label>{{ $t('uiText.allowMultipleInputAae45832') }}</Label>
               </div>
             </div>
 
             <!-- Цепочка конвертеров (в конце, перед Активно) -->
             <div class="space-y-2 border-t pt-4">
-              <Label>Конвертеры (по порядку)</Label>
+              <Label>{{ $t('uiText.convertersInOrder7bf4a81c') }}</Label>
               <div class="flex flex-wrap items-center gap-2">
                 <template v-for="(id, i) in selectedConverterIds" :key="`${id}-${i}`">
                   <span class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
@@ -723,7 +723,7 @@ async function save(): Promise<void> {
                   :model-value="activeChecked"
                   @update:model-value="onActiveModelValue"
                 />
-                <Label>Активно</Label>
+                <Label>{{ $t('uiText.activeNeuter76ddd792') }}</Label>
               </div>
               <Button
                 variant="ghost"
@@ -732,7 +732,7 @@ async function save(): Promise<void> {
                 @click="selectedIndex != null && removeField(selectedIndex)"
               >
                 <Trash2 class="size-4 mr-1" />
-                Удалить
+                {{ $t('uiText.delete86ea33ae') }}
               </Button>
             </div>
           </div>

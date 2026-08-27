@@ -226,7 +226,7 @@ function selectorTypeLabel(t?: TableTreeRow['selectorType']): string {
         </div>
       </div>
       <div v-if="!flatRows.length" class="px-3 py-4 text-xs text-muted-foreground">
-        Нет строк.
+        {{ $t('uiText.noRows4c5a4697') }}
       </div>
     </div>
   </div>

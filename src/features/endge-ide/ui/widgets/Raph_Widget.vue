@@ -133,9 +133,9 @@ onBeforeUnmount(() => {
   <div class="flex flex-col h-full">
     <div class="shrink-0 px-3 py-2 border-b flex items-center justify-between gap-2">
       <div class="text-xs text-muted-foreground flex items-center gap-3">
-        <span>UPS: {{ metrics.ups.toFixed(1) }}/с</span>
-        <span>EPS: {{ metrics.eps.toFixed(1) }}/с</span>
-        <span>NPS: {{ metrics.nps.toFixed(1) }}/с</span>
+        <span>{{ $t('uiText.upsCc125e24') }} {{ metrics.ups.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
+        <span>{{ $t('uiText.eps58704b29') }} {{ metrics.eps.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
+        <span>{{ $t('uiText.npsC6038aa1') }} {{ metrics.nps.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
       </div>
       <div class="flex items-center gap-1">
         <TooltipProvider>
@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
                 <i class="ti ti-refresh text-base" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Обновить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.updateC2f668e5') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
                 <i :class="recordingEnabled ? 'ti ti-player-record-filled' : 'ti ti-player-record'" class="text-base" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{{ recordingEnabled ? 'Выключить' : 'Включить' }} запись событий</TooltipContent>
+            <TooltipContent>{{ recordingEnabled ? $t('uiText.disable5ee528dc') : $t('uiText.enable66be7e0c') }} {{ $t('uiText.eventRecordingEcf33cb2') }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -168,13 +168,13 @@ onBeforeUnmount(() => {
     <Tabs v-model="activeTab" class="flex-1 flex flex-col min-h-0">
       <TabsList class="shrink-0 w-full grid grid-cols-3 rounded-none border-b">
         <TabsTrigger value="phases" class="rounded-none">
-          Фазы
+          {{ $t('uiText.phases8d0528a2') }}
         </TabsTrigger>
         <TabsTrigger value="nodes" class="rounded-none">
-          Узлы
+          {{ $t('uiText.nodes3293ac18') }}
         </TabsTrigger>
         <TabsTrigger value="events" class="rounded-none">
-          События
+          {{ $t('uiText.eventsBb9ac875') }}
         </TabsTrigger>
       </TabsList>
 
@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
               >
                 <span class="truncate">
                   {{ (phase as any).name }} - {{ (phase as any).traversal }}
-                  <span class="text-muted"> ({{ (phase as any).routes?.length ?? 0 }} routes)</span>
+                  <span class="text-muted"> ({{ (phase as any).routes?.length ?? 0 }} {{ $t('uiText.routes8289d505') }}</span>
                 </span>
               </summary>
               <ul class="pl-4 py-1 text-xs text-destructive list-disc">
@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
               </ul>
             </details>
             <p v-if="!phases.length" class="text-xs text-muted-foreground">
-              Пусто
+              {{ $t('uiText.empty1526c020') }}
             </p>
           </div>
         </ScrollArea>
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
           <div class="p-3 space-y-1">
             <RaphTreeItem v-for="root in tree" :key="root.id" :node="root" :depth="0" />
             <p v-if="!tree.length" class="text-xs text-muted-foreground">
-              Пусто
+              {{ $t('uiText.empty1526c020') }}
             </p>
           </div>
         </ScrollArea>
@@ -228,7 +228,7 @@ onBeforeUnmount(() => {
                 title="Запись идёт"
               />
               <span class="text-xs" :class="recordingEnabled ? 'text-red-500' : 'text-muted-foreground'">
-                {{ recordingEnabled ? 'Запись идёт…' : 'Запись остановлена' }}
+                {{ recordingEnabled ? $t('uiText.recordingInProgressD97363a1') : $t('uiText.recordingStopped4613e383') }}
               </span>
               <span class="text-xs text-muted-foreground">({{ events.length }})</span>
             </div>
@@ -244,14 +244,14 @@ onBeforeUnmount(() => {
                   <span class="text-primary">{{ g.phase }}</span>
                   <span class="text-muted"> - </span>
                   <span class="font-mono">{{ g.path }}</span>
-                  <span class="text-muted"> - nodes: {{ g.nodes.length }}</span>
-                  <span v-if="g.resolvedSamples?.length" class="text-muted"> • params: {{ g.resolvedSamples.length }}</span>
+                  <span class="text-muted"> {{ $t('uiText.nodes30d987fd') }} {{ g.nodes.length }}</span>
+                  <span v-if="g.resolvedSamples?.length" class="text-muted"> {{ $t('uiText.paramsD51f9495') }} {{ g.resolvedSamples.length }}</span>
                 </span>
               </summary>
               <div class="px-3 py-2 text-xs space-y-3">
                 <div>
                   <div class="text-muted mb-1">
-                    Сработавшие узлы (id):
+                    {{ $t('uiText.triggeredNodesId2a9c1bfd') }}
                   </div>
                   <div class="flex flex-wrap gap-1">
                     <span
@@ -265,7 +265,7 @@ onBeforeUnmount(() => {
                 </div>
                 <div v-if="g.resolvedSamples?.length">
                   <div class="text-muted mb-1">
-                    Параметры (resolved)
+                    {{ $t('uiText.parametersResolved951a68bf') }}
                   </div>
                   <div
                     v-for="(sample, si) in g.resolvedSamples"
@@ -273,22 +273,22 @@ onBeforeUnmount(() => {
                     class="overflow-auto"
                   >
                     <div v-if="g.resolvedSamples.length > 1" class="text-muted mb-1">
-                      вариант #{{ si + 1 }}
+                      {{ $t('uiText.option761dd472') }}{{ si + 1 }}
                     </div>
                     <table class="w-full text-left border-collapse min-w-[320px] text-xs">
                       <thead class="text-muted">
                         <tr>
                           <th class="py-1 pr-2 border-b border-border">
-                            segment
+                            {{ $t('uiText.segment6a80eba8') }}
                           </th>
                           <th class="py-1 px-2 border-b border-border">
-                            keyField
+                            {{ $t('uiText.keyfieldBdfd29d1') }}
                           </th>
                           <th class="py-1 px-2 border-b border-border">
-                            keyValue
+                            {{ $t('uiText.keyvalue8b98b6f3') }}
                           </th>
                           <th class="py-1 pl-2 border-b border-border">
-                            index
+                            {{ $t('uiText.indexE540cdd1') }}
                           </th>
                         </tr>
                       </thead>
@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
               </div>
             </details>
             <p v-if="!events.length" class="text-xs text-muted-foreground">
-              Пусто
+              {{ $t('uiText.empty1526c020') }}
             </p>
           </div>
         </ScrollArea>

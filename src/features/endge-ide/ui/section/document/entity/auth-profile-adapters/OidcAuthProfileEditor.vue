@@ -32,12 +32,12 @@ async function checkDiscovery(): Promise<void> {
 <template>
   <div class="grid gap-3">
     <div class="space-y-1.5">
-      <Label class="text-xs text-muted-foreground">Issuer</Label>
+      <Label class="text-xs text-muted-foreground">{{ $t('uiText.issuer2587e48b') }}</Label>
       <div class="flex gap-2">
         <Input v-model="issuer" placeholder="{OIDC_ISSUER}" autocomplete="off" />
         <Button type="button" variant="outline" :disabled="discovery.status === 'checking'" @click="checkDiscovery">
           <Loader2 v-if="discovery.status === 'checking'" class="mr-2 size-4 animate-spin" />
-          Проверить
+          {{ $t('uiText.check52dec92e') }}
         </Button>
       </div>
       <p class="flex items-center gap-1.5 text-xs" :class="discovery.status === 'error' ? 'text-destructive' : 'text-muted-foreground'">
@@ -48,10 +48,10 @@ async function checkDiscovery(): Promise<void> {
     </div>
     <div class="grid gap-3 sm:grid-cols-2">
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Client ID</Label><Input v-model="clientId" autocomplete="off" />
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.clientIdA766cd7f') }}</Label><Input v-model="clientId" autocomplete="off" />
       </div>
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Scopes</Label><Input v-model="scopes" placeholder="openid profile" autocomplete="off" />
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.scopesC23540e5') }}</Label><Input v-model="scopes" placeholder="openid profile" autocomplete="off" />
       </div>
     </div>
   </div>

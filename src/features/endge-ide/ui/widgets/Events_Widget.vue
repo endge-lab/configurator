@@ -48,10 +48,10 @@ function pretty(v: unknown): string {
   <div class="flex flex-col h-full">
     <div class="shrink-0 px-3 py-2 border-b">
       <h3 class="text-sm font-semibold">
-        События
+        {{ $t('uiText.eventsBb9ac875') }}
       </h3>
       <p class="text-xs text-muted-foreground mt-0.5">
-        Кеш событий Endge ({{ items.length }})
+        {{ $t('uiText.eventCacheEndge95e061e6') }}{{ items.length }})
       </p>
     </div>
     <ScrollArea class="flex-1 min-h-0">
@@ -74,7 +74,7 @@ function pretty(v: unknown): string {
           >{{ pretty(e.payload) }}</pre>
         </details>
         <p v-if="items.length === 0" class="text-xs text-muted-foreground p-4">
-          Пусто
+          {{ $t('uiText.empty1526c020') }}
         </p>
       </div>
     </ScrollArea>

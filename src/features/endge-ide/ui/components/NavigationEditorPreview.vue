@@ -87,10 +87,10 @@ const previewStats = computed(() => stats(visibleTree.value))
   <div class="flex h-full min-h-0 flex-col rounded-2xl border bg-gradient-to-b from-background to-muted/30 p-4">
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <Badge variant="outline">
-        Превью результата
+        {{ $t('uiText.resultPreviewC5d3d7bc') }}
       </Badge>
       <span class="ml-auto text-xs text-muted-foreground">
-        {{ previewStats.sections }} секции · {{ previewStats.groups }} группы · {{ previewStats.links }} ссылки
+        {{ previewStats.sections }} {{ $t('uiText.sections203f88f5') }} {{ previewStats.groups }} {{ $t('uiText.groupsF4042427') }} {{ previewStats.links }} {{ $t('uiText.links83d0a467') }}
       </span>
     </div>
 
@@ -98,7 +98,7 @@ const previewStats = computed(() => stats(visibleTree.value))
       <div class="flex h-full min-h-0 flex-col rounded-[22px] border bg-background p-4 text-foreground">
         <ScrollArea class="h-full min-h-0 flex-1 pr-2">
           <div v-if="!visibleTree.length" class="rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-            Добавьте элементы в tree view, чтобы увидеть визуализацию.
+            {{ $t('uiText.addItemsToTreeViewToSeeTheVisualiz206bc702') }}
           </div>
 
           <div v-else class="space-y-2">

@@ -13,7 +13,7 @@ import { Bug } from 'lucide-vue-next'
         </div>
         <div class="min-w-0">
           <div class="text-lg font-semibold truncate">
-            Таймлайн журнала отладки
+            {{ $t('uiText.debugLogTimelineF0549ef4') }}
           </div>
         </div>
       </div>

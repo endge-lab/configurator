@@ -51,7 +51,7 @@ refresh()
           </CollapsibleContent>
         </Collapsible>
         <p v-if="!entries.length" class="text-sm text-muted-foreground p-4">
-          Пусто
+          {{ $t('uiText.empty1526c020') }}
         </p>
       </div>
     </ScrollArea>

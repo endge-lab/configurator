@@ -80,7 +80,7 @@ function open(): void {
       </Button>
     </TooltipTrigger>
     <TooltipContent side="top">
-      Открыть
+      {{ $t('uiText.open1259571a') }}
     </TooltipContent>
   </Tooltip>
 </template>

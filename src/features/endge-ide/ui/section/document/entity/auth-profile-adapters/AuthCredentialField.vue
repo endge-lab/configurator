@@ -28,7 +28,7 @@ const literal = computed(() => {
       </Button>
     </div>
     <p v-if="literal" class="text-xs text-destructive">
-      Литеральное значение будет открыто храниться в workspace, API, истории и экспортах и останется доступно через DevTools.
+      {{ $t('uiText.theLiteralValueWillBeStoredInWorkspBa20e310') }}
     </p>
   </div>
 </template>

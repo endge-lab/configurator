@@ -142,7 +142,7 @@ watch(
                 class="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-muted-foreground/10"
                 @click.stop="removeOne(c.value)"
               >
-                ×
+                {{ $t('uiText.symbol67fba2f3') }}
               </span>
             </span>
 
@@ -159,7 +159,7 @@ watch(
           {{ placeholder }}
         </span>
 
-        <span class="ml-auto text-muted-foreground text-xs">▼</span>
+        <span class="ml-auto text-muted-foreground text-xs">{{ $t('uiText.symbol535a8b58') }}</span>
       </button>
     </PopoverTrigger>
 
@@ -176,7 +176,7 @@ watch(
 
         <div class="max-h-[260px] overflow-auto pr-1">
           <div v-if="!filteredOptions.length" class="px-2 py-3 text-sm text-muted-foreground">
-            Ничего не найдено
+            {{ $t('uiText.nothingFound1e1b70b1') }}
           </div>
 
           <label
@@ -204,7 +204,7 @@ watch(
 
         <div class="mt-2 flex items-center justify-between gap-2">
           <div class="text-xs text-muted-foreground">
-            Выбрано: {{ chips.length }}
+            {{ $t('uiText.selectedE3c7726b') }} {{ chips.length }}
           </div>
 
           <button
@@ -213,7 +213,7 @@ watch(
             :disabled="disabled || !chips.length"
             @click="clearAll"
           >
-            Очистить
+            {{ $t('uiText.clear98b2073e') }}
           </button>
         </div>
       </div>

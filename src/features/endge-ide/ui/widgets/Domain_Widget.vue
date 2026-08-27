@@ -579,6 +579,157 @@ function canCopyVirtualAction(node: FsNode): node is FsFileNode {
     && Boolean(node.identity?.trim())
 }
 
+const selectedFileKeys = ref<Set<string>>(new Set())
+
+/** Маппинг: identity корневой папки — секция и активные документы домена. */
+const ROOT_TO_SECTION = computed(() => {
+  const compositions = withoutDeleted<any>((Endge.domain as any).getCompositions?.() ?? [])
+  return {
+    'root-workspaces': { section: DomainSectionType.Project, items: () => [] },
+    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? []) },
+    'root-queries': {
+      section: DomainSectionType.Query,
+      items: () => withoutDeleted([
+        ...(domainStore.queries ?? []),
+        ...((Endge.domain as any).getStreams?.() ?? []),
+      ]),
+    },
+    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? []) },
+    'root-compositions': {
+      section: DomainSectionType.Composition,
+      items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
+    },
+    'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
+    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
+    'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
+    'root-events': { section: DomainSectionType.Event, items: () => [] },
+    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters) },
+    'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
+    'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
+    'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters) },
+    'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations) },
+    'root-environments': { section: DomainSectionType.Environment, items: () => withoutDeleted(domainStore.environments) },
+    'root-tenants': { section: DomainSectionType.Tenant, items: () => withoutDeleted(domainStore.tenants) },
+    'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies) },
+    'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles) },
+    'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates) },
+    'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages) },
+    'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations) },
+    'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs) },
+    'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks) },
+    'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
+    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
+    'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects) },
+  }
+})
+
+/** Порядок корневых папок. */
+const ROOT_FOLDER_ORDER = computed(() => getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)))
+
+// ---------- дерево ----------
+const fsTree = computed<FsNode[]>(() => {
+  void actionRegistryVersion.value
+  const allFolders = Array.isArray(domainStore.folders) ? domainStore.folders : []
+  const tree = buildDomainTree({
+    rootToSection: ROOT_TO_SECTION.value,
+    rootOrder: ROOT_FOLDER_ORDER.value,
+    rootLabels: ROOT_FOLDER_LABELS,
+    allFolders,
+    contextualCompositions: withoutDeleted<any>(
+      (Endge.domain as any).getCompositions?.() ?? [],
+    ).filter(composition => String(composition.kind ?? 'library') !== 'library') as Array<{
+      id?: string | number
+      identity?: string
+      name?: string
+      displayName?: string
+      kind?: RCompositionKind
+      kindIdentity?: string | null
+      folderId?: string | number | null
+    }>,
+    storeUpdates: withoutDeleted(
+      (Endge.domain as any).getUpdates?.() ?? [],
+    ),
+  })
+
+  attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
+  attachResolvedActionTree(tree, Endge.actions.listResolved())
+
+  const eventRoot = buildEventCatalogRoot(
+    listBuiltInComponentPortManifests(),
+    Endge.domain.getComponentSFCs().flatMap((component) => {
+      const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', component.identity)
+      const manifest = artifact?.payload?.ir?.script.ports
+      return manifest
+        ? [{ identity: component.identity, displayName: component.displayName || component.name || component.identity, manifest }]
+        : []
+    }),
+  )
+  const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
+  if (eventRootIndex >= 0) {
+    tree[eventRootIndex] = eventRoot
+  }
+  else { tree.push(eventRoot) }
+
+  const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
+  const sessionState = Configurator.session.state
+  if (workspaceRoot?.type === 'folder' && sessionState.status === 'authenticated') {
+    workspaceRoot.virtual = true
+    workspaceRoot.children = buildWorkspaceTreeNodes(
+      sessionState.session.workspaces,
+      Endge.workspace.current.identity,
+      Endge.domain.getConfigurations(),
+    )
+  }
+
+  return tree
+})
+
+const workingSetResult = computed(() => {
+  // Дерево служит reactive boundary для обновлённых документов и program artifacts.
+  void fsTree.value
+  return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
+})
+
+const flatFs = computed<FlatFsItem[]>(() => {
+  if (workingSetFilterEnabled.value) {
+    const expandedPaths = searchFilteringEnabled.value
+      ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
+      : workingSetExpandedFolders.value
+    const projectedItems = projectDomainWorkingSetItems(
+      fsTree.value,
+      workingSetResult.value,
+      expandedPaths,
+      DEPENDENCY_FILTER_PROJECTION,
+    )
+
+    if (searchFilteringEnabled.value) {
+      const matchedRootIds = new Set(
+        projectedItems
+          .filter(item => item.node.type === 'file' && nodeMatchesSearch(item.node, normalizedSearchQuery.value))
+          .map(item => item.rootId),
+      )
+
+      return projectedItems.filter(item => item.node.type === 'file'
+        ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+        : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+          || matchedRootIds.has(item.rootId)
+          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
+    }
+
+    return projectedItems
+  }
+
+  if (searchFilteringEnabled.value) {
+    return projectDomainSearchItems(
+      fsTree.value,
+      normalizedSearchQuery.value,
+      PROJECT_SEARCH_FILTER_OPTIONS,
+    ).items
+  }
+
+  return flattenTree(fsTree.value, expandedFolders.value)
+})
+
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
   if (!e.dataTransfer) {
     return
@@ -851,52 +1002,6 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
     }
   }
 }
-
-/** Маппинг: identity корневой папки — секция и активные документы домена. */
-const ROOT_TO_SECTION = computed(() => {
-  const compositions = withoutDeleted<any>((Endge.domain as any).getCompositions?.() ?? [])
-  return {
-    'root-workspaces': { section: DomainSectionType.Project, items: () => [] },
-    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? []) },
-    'root-queries': {
-      section: DomainSectionType.Query,
-      items: () => withoutDeleted([
-        ...(domainStore.queries ?? []),
-        ...((Endge.domain as any).getStreams?.() ?? []),
-      ]),
-    },
-    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? []) },
-    'root-compositions': {
-      section: DomainSectionType.Composition,
-      items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
-    },
-    'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
-    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
-    'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
-    'root-events': { section: DomainSectionType.Event, items: () => [] },
-    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters) },
-    'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
-    'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
-    'root-parameters': { section: DomainSectionType.Parameters, items: () => withoutDeleted(domainStore.parameters) },
-    'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations) },
-    'root-environments': { section: DomainSectionType.Environment, items: () => withoutDeleted(domainStore.environments) },
-    'root-tenants': { section: DomainSectionType.Tenant, items: () => withoutDeleted(domainStore.tenants) },
-    'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies) },
-    'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles) },
-    'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates) },
-    'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages) },
-    'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations) },
-    'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs) },
-    'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks) },
-    'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
-    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
-    'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects) },
-  }
-})
-
-/** Порядок корневых папок. */
-const ROOT_FOLDER_ORDER = computed(() => getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)))
-
 const ROOT_BLOCKS = computed(() => getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value))
 
 const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
@@ -1049,65 +1154,6 @@ function getRootDocumentBadgeIcon(node: FsFileNode): any | null {
   const badgeIcon = getDomainDocumentPresentation(node.docType, node.presentationKind).badgeIcon
   return badgeIcon == null ? null : DOMAIN_ICON_COMPONENTS[badgeIcon] ?? null
 }
-
-// ---------- дерево ----------
-const fsTree = computed<FsNode[]>(() => {
-  void actionRegistryVersion.value
-  const allFolders = Array.isArray(domainStore.folders) ? domainStore.folders : []
-  const tree = buildDomainTree({
-    rootToSection: ROOT_TO_SECTION.value,
-    rootOrder: ROOT_FOLDER_ORDER.value,
-    rootLabels: ROOT_FOLDER_LABELS,
-    allFolders,
-    contextualCompositions: withoutDeleted<any>(
-      (Endge.domain as any).getCompositions?.() ?? [],
-    ).filter(composition => String(composition.kind ?? 'library') !== 'library') as Array<{
-      id?: string | number
-      identity?: string
-      name?: string
-      displayName?: string
-      kind?: RCompositionKind
-      kindIdentity?: string | null
-      folderId?: string | number | null
-    }>,
-    storeUpdates: withoutDeleted(
-      (Endge.domain as any).getUpdates?.() ?? [],
-    ),
-  })
-
-  attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
-  attachResolvedActionTree(tree, Endge.actions.listResolved())
-
-  const eventRoot = buildEventCatalogRoot(
-    listBuiltInComponentPortManifests(),
-    Endge.domain.getComponentSFCs().flatMap((component) => {
-      const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', component.identity)
-      const manifest = artifact?.payload?.ir?.script.ports
-      return manifest
-        ? [{ identity: component.identity, displayName: component.displayName || component.name || component.identity, manifest }]
-        : []
-    }),
-  )
-  const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
-  if (eventRootIndex >= 0) {
-    tree[eventRootIndex] = eventRoot
-  }
-  else { tree.push(eventRoot) }
-
-  const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
-  const sessionState = Configurator.session.state
-  if (workspaceRoot?.type === 'folder' && sessionState.status === 'authenticated') {
-    workspaceRoot.virtual = true
-    workspaceRoot.children = buildWorkspaceTreeNodes(
-      sessionState.session.workspaces,
-      Endge.workspace.current.identity,
-      Endge.domain.getConfigurations(),
-    )
-  }
-
-  return tree
-})
-
 interface DomainSearchProjection {
   items: FlatFsItem[]
   hasMatch: boolean
@@ -1162,53 +1208,6 @@ function projectDomainSearchItems(
 
   return { items, hasMatch }
 }
-
-const workingSetResult = computed(() => {
-  // Дерево служит reactive boundary для обновлённых документов и program artifacts.
-  void fsTree.value
-  return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
-})
-
-const flatFs = computed<FlatFsItem[]>(() => {
-  if (workingSetFilterEnabled.value) {
-    const expandedPaths = searchFilteringEnabled.value
-      ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
-      : workingSetExpandedFolders.value
-    const projectedItems = projectDomainWorkingSetItems(
-      fsTree.value,
-      workingSetResult.value,
-      expandedPaths,
-      DEPENDENCY_FILTER_PROJECTION,
-    )
-
-    if (searchFilteringEnabled.value) {
-      const matchedRootIds = new Set(
-        projectedItems
-          .filter(item => item.node.type === 'file' && nodeMatchesSearch(item.node, normalizedSearchQuery.value))
-          .map(item => item.rootId),
-      )
-
-      return projectedItems.filter(item => item.node.type === 'file'
-        ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
-        : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
-          || matchedRootIds.has(item.rootId)
-          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
-    }
-
-    return projectedItems
-  }
-
-  if (searchFilteringEnabled.value) {
-    return projectDomainSearchItems(
-      fsTree.value,
-      normalizedSearchQuery.value,
-      PROJECT_SEARCH_FILTER_OPTIONS,
-    ).items
-  }
-
-  return flattenTree(fsTree.value, expandedFolders.value)
-})
-
 const groupedFlatFs = computed(() => {
   if (workingSetFilterEnabled.value) {
     return groupDomainWorkingSetItems(
@@ -1312,8 +1311,6 @@ function getTreeItemRenderKey(item: FlatFsItem): string {
   const folder = item.node as FsFolderNode
   return `folder:${item.rootId}:${String(folder.folderId ?? folder.id)}:${item.path}`
 }
-
-const selectedFileKeys = ref<Set<string>>(new Set())
 const lastClickedSelection = ref<{ key: string, rootId: string } | null>(null)
 
 const selectedExportNodes = computed<FsFileNode[]>(() => {
@@ -1993,7 +1990,7 @@ function rowClasses(item: FlatFsItem): string {
                   <Download class="size-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Скачать JSON</TooltipContent>
+              <TooltipContent>{{ $t('uiText.downloadJson2007ff2d') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -2003,7 +2000,7 @@ function rowClasses(item: FlatFsItem): string {
                   <Save v-else class="size-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Сохранить</TooltipContent>
+              <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -2012,7 +2009,7 @@ function rowClasses(item: FlatFsItem): string {
                   <ChevronsDown class="size-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Развернуть все блоки</TooltipContent>
+              <TooltipContent>{{ $t('uiText.expandAllBlocks1119dd7e') }}</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -2021,7 +2018,7 @@ function rowClasses(item: FlatFsItem): string {
                   <ChevronsUp class="size-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Свернуть все блоки</TooltipContent>
+              <TooltipContent>{{ $t('uiText.collapseAllBlocks81a9cc06') }}</TooltipContent>
             </Tooltip>
           </div>
 
@@ -2099,7 +2096,7 @@ function rowClasses(item: FlatFsItem): string {
                   <Plus class="size-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Создать</TooltipContent>
+              <TooltipContent>{{ $t('uiText.create84370a20') }}</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -2230,7 +2227,7 @@ function rowClasses(item: FlatFsItem): string {
                 <span
                   v-if="it.node.managedBy === 'integration'"
                   class="shrink-0 rounded border border-violet-300/60 bg-violet-500/10 px-1 text-[9px] leading-4 text-violet-700 dark:text-violet-300"
-                >integration</span>
+                >{{ $t('uiText.integration06eff510') }}</span>
               </div>
             </div>
           </div>
@@ -2271,12 +2268,12 @@ function rowClasses(item: FlatFsItem): string {
     <Dialog v-model:open="vocabMockDialog.open">
       <DialogContent class="sm:max-w-xl" @escape-key-down="closeVocabMockGenerator">
         <DialogHeader>
-          <DialogTitle>Mock-данные словарей</DialogTitle>
+          <DialogTitle>{{ $t('uiText.text58a9f14f') }}</DialogTitle>
         </DialogHeader>
 
         <div v-if="!vocabMockDialog.prepared" class="space-y-5 py-2">
           <p class="text-sm leading-6 text-muted-foreground">
-            Будут предварительно загружены до 10 raw Payload-элементов каждого активного Vocab. Запись начнётся только после успешной загрузки всех словарей.
+            {{ $t('uiText.upTo10RawPayloadElementsOfEachActiB8298dce') }}
           </p>
           <div class="flex rounded-md border bg-muted/30 p-1">
             <Button
@@ -2287,7 +2284,7 @@ function rowClasses(item: FlatFsItem): string {
               :disabled="!jsonMockOptions.length"
               @click="vocabMockDialog.mode = 'existing'"
             >
-              Существующий Mock
+              {{ $t('uiText.existingMock7895db7d') }}
             </Button>
             <Button
               type="button"
@@ -2296,35 +2293,35 @@ function rowClasses(item: FlatFsItem): string {
               :variant="vocabMockDialog.mode === 'new' ? 'secondary' : 'ghost'"
               @click="vocabMockDialog.mode = 'new'"
             >
-              Новый Mock
+              {{ $t('uiText.newMockFfdb19c5') }}
             </Button>
           </div>
           <div v-if="vocabMockDialog.mode === 'existing'" class="space-y-2">
-            <Label>JSON Mock</Label>
+            <Label>{{ $t('uiText.jsonMock994e1594') }}</Label>
             <Select v-model="vocabMockDialog.existingIdentity">
               <SelectTrigger>
                 <SelectValue placeholder="Выберите Mock" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="option in jsonMockOptions" :key="option.value" :value="option.value">
-                  {{ option.label }} · {{ option.value }}
+                  {{ option.label }} {{ $t('uiText.symbol1fdf0d90') }} {{ option.value }}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div v-else class="space-y-2">
-            <Label for="vocab-mock-identity">Identity нового Mock</Label>
+            <Label for="vocab-mock-identity">{{ $t('uiText.text1001ff29') }}</Label>
             <Input id="vocab-mock-identity" v-model="vocabMockDialog.newIdentity" placeholder="aodb-vocab-fixtures" spellcheck="false" />
           </div>
           <div class="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-            Каждый Vocab получит ссылку <code>mock('{{ vocabMockTargetIdentity || 'identity' }}').path('&lt;vocab-identity&gt;')</code>.
+            {{ $t('uiText.eachVocabWillGetAReference635c09db') }} <code>{{ $t('uiText.mock84509e5f') }}{{ vocabMockTargetIdentity || 'identity' }}{{ $t('uiText.pathVocabIdentity4874f135') }}</code>{{ $t('uiText.symbol3a52ce78') }}
           </div>
         </div>
 
         <div v-else class="space-y-4 py-2">
           <div class="rounded-md border border-amber-500/35 bg-amber-500/5 p-3">
             <div class="text-sm font-medium text-amber-700 dark:text-amber-300">
-              Следующие ключи уже существуют и будут перезаписаны
+              {{ $t('uiText.theFollowingKeysAlreadyExistAndWillDeaa2fae') }}
             </div>
             <div class="mt-2 flex flex-wrap gap-1.5">
               <code
@@ -2335,13 +2332,13 @@ function rowClasses(item: FlatFsItem): string {
             </div>
           </div>
           <p class="text-sm text-muted-foreground">
-            Остальные верхнеуровневые ключи Mock будут сохранены без изменений.
+            {{ $t('uiText.allTopLevelMockKeysWillBePreservedBc470981') }}
           </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" :disabled="vocabMockDialog.loading" @click="closeVocabMockGenerator">
-            Отмена
+            {{ $t('uiText.cancel0ec753be') }}
           </Button>
           <Button
             v-if="!vocabMockDialog.prepared"
@@ -2349,11 +2346,11 @@ function rowClasses(item: FlatFsItem): string {
             @click="prepareAndSaveVocabMock"
           >
             <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
-            Загрузить и сохранить
+            {{ $t('uiText.loadAndSave2a5f0488') }}
           </Button>
           <Button v-else :disabled="vocabMockDialog.loading" @click="confirmVocabMockOverwrite">
             <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
-            Перезаписать ключи
+            {{ $t('uiText.overwriteKeys19f6d0ea') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2367,12 +2364,12 @@ function rowClasses(item: FlatFsItem): string {
         @escape-key-down="closeCreateFolderDialog"
       >
         <DialogHeader>
-          <DialogTitle>Создать папку</DialogTitle>
+          <DialogTitle>{{ $t('uiText.createFolder944b559c') }}</DialogTitle>
         </DialogHeader>
 
         <div class="space-y-2 py-2">
           <div class="text-sm text-muted-foreground">
-            Название папки:
+            {{ $t('uiText.folderName2662a610') }}
           </div>
           <Input
             v-model="createFolderDialog.name"
@@ -2389,13 +2386,13 @@ function rowClasses(item: FlatFsItem): string {
             :disabled="createFolderDialog.loading"
             @click="closeCreateFolderDialog"
           >
-            Отменить
+            {{ $t('uiText.cancel555ad1c0') }}
           </Button>
           <Button
             :disabled="createFolderDialog.loading || !createFolderDialog.name.trim()"
             @click="confirmCreateFolder"
           >
-            {{ createFolderDialog.loading ? 'Создание…' : 'Создать' }}
+            {{ createFolderDialog.loading ? $t('uiText.creating5e172131') : $t('uiText.create84370a20') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2409,29 +2406,29 @@ function rowClasses(item: FlatFsItem): string {
         @escape-key-down="closeFolderDeletionDialog"
       >
         <DialogHeader>
-          <DialogTitle>Удалить папку «{{ folderDeletionDialog.plan?.root.name }}»?</DialogTitle>
+          <DialogTitle>{{ $t('uiText.deleteFolderCdef0c65') }}{{ folderDeletionDialog.plan?.root.name }}{{ $t('uiText.symbolAd4e2955') }}</DialogTitle>
         </DialogHeader>
 
         <div class="space-y-3 py-2 text-sm">
           <p class="text-muted-foreground">
-            Папка и всё её содержимое будут удалены. Восстановление будет доступно через ревизии.
+            {{ $t('uiText.theFolderAndAllItsContentsWillBeDe8ad26432') }}
           </p>
           <div class="rounded-md border bg-muted/40 px-3 py-2">
-            <div>Будет удалено сущностей: <strong>{{ folderDeletionEntityCount }}</strong></div>
-            <div>Вложенных папок: <strong>{{ folderDeletionNestedFolderCount }}</strong></div>
+            <div>{{ $t('uiText.willBeRemovedEntitiesA87d81b1') }} <strong>{{ folderDeletionEntityCount }}</strong></div>
+            <div>{{ $t('uiText.nestedFolders283c1c2c') }} <strong>{{ folderDeletionNestedFolderCount }}</strong></div>
           </div>
         </div>
 
         <DialogFooter class="gap-2">
           <Button variant="outline" :disabled="folderDeletionDialog.loading" @click="closeFolderDeletionDialog">
-            Отменить
+            {{ $t('uiText.cancel555ad1c0') }}
           </Button>
           <Button
             variant="destructive"
             :disabled="folderDeletionDialog.loading"
             @click="confirmFolderDeletion"
           >
-            {{ folderDeletionDialog.loading ? 'Удаление…' : 'Удалить всё' }}
+            {{ folderDeletionDialog.loading ? $t('uiText.deletingEa76db24') : $t('uiText.deleteAllE311ec3b') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2441,22 +2438,22 @@ function rowClasses(item: FlatFsItem): string {
     <Dialog v-model:open="renameDialog.open">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Переименовать папку</DialogTitle>
+          <DialogTitle>{{ $t('uiText.renameFolder037143b4') }}</DialogTitle>
         </DialogHeader>
 
         <div class="space-y-2 py-2">
           <div class="text-sm text-muted-foreground">
-            Новое название папки:
+            {{ $t('uiText.newFolderName5b5225d5') }}
           </div>
           <Input v-model="renameDialog.newName" placeholder="Введите новое название" />
         </div>
 
         <DialogFooter class="gap-2">
           <Button variant="outline" @click="renameDialog.open = false">
-            Отменить
+            {{ $t('uiText.cancel555ad1c0') }}
           </Button>
           <Button @click="() => EndgeIDE.runBusy(confirmRename())">
-            Сохранить
+            {{ $t('uiText.save4864057d') }}
           </Button>
         </DialogFooter>
       </DialogContent>

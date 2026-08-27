@@ -20,21 +20,21 @@ const clientSecret = computed({ get: () => String(props.credentials.clientSecret
 <template>
   <div class="grid gap-3">
     <div class="space-y-1.5">
-      <Label class="text-xs text-muted-foreground">Token endpoint</Label><Input v-model="tokenEndpoint" placeholder="{SERVICE_TOKEN_ENDPOINT}" autocomplete="off" />
+      <Label class="text-xs text-muted-foreground">{{ $t('uiText.tokenEndpoint6949fda7') }}</Label><Input v-model="tokenEndpoint" placeholder="{SERVICE_TOKEN_ENDPOINT}" autocomplete="off" />
     </div><div class="grid gap-3 sm:grid-cols-2">
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Client ID</Label><Input v-model="clientId" autocomplete="off" />
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.clientIdA766cd7f') }}</Label><Input v-model="clientId" autocomplete="off" />
       </div><div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Scopes</Label><Input v-model="scopes" autocomplete="off" />
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.scopesC23540e5') }}</Label><Input v-model="scopes" autocomplete="off" />
       </div>
     </div><div class="grid gap-3 sm:grid-cols-2">
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Client authentication</Label><Select v-model="clientAuthentication">
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.clientAuthentication0253321a') }}</Label><Select v-model="clientAuthentication">
           <SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="client_secret_basic">
-              client_secret_basic
+              {{ $t('uiText.clientSecretBasic976329cd') }}
             </SelectItem><SelectItem value="client_secret_post">
-              client_secret_post
+              {{ $t('uiText.clientSecretPost577d033f') }}
             </SelectItem>
           </SelectContent>
         </Select>

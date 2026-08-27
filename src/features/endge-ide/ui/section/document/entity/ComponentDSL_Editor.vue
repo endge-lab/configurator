@@ -32,7 +32,7 @@ function addInputField(): void {
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет редактора
+    {{ $t('uiText.noEditorF03cf60f') }}
   </div>
   <div v-else class="w-full h-full">
     <div class="p-5 flex flex-col gap-5 h-full min-h-0">
@@ -42,10 +42,10 @@ function addInputField(): void {
         </div>
         <div class="min-w-0 flex-1">
           <div class="text-lg font-semibold truncate">
-            DSL - {{ editor?.name ?? '-' }}
+            {{ $t('uiText.dsl7bbb4bb9') }} {{ editor?.name ?? '-' }}
           </div>
           <div class="text-xs text-muted-foreground truncate">
-            id: {{ editor?.id ?? '-' }} · identity: {{ editor?.identity ?? '-' }}
+            {{ $t('uiText.idA078622f') }} {{ editor?.id ?? '-' }} {{ $t('uiText.identityD63b139a') }} {{ editor?.identity ?? '-' }}
           </div>
         </div>
         <TooltipProvider>
@@ -56,7 +56,7 @@ function addInputField(): void {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -66,16 +66,16 @@ function addInputField(): void {
           <div class="border-b px-3 py-2">
             <TabsList class="flex flex-wrap gap-1">
               <TabsTrigger value="general">
-                Основное
+                {{ $t('uiText.basic127492c2') }}
               </TabsTrigger>
               <TabsTrigger value="0">
-                JSX шаблон
+                {{ $t('uiText.text5e83ab73') }}
               </TabsTrigger>
               <TabsTrigger value="2">
-                Данные
+                {{ $t('uiText.dataD8e5fd81') }}
               </TabsTrigger>
               <TabsTrigger value="parameters">
-                Фильтры
+                {{ $t('uiText.filters67e16da2') }}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -84,15 +84,15 @@ function addInputField(): void {
             <ScrollArea class="h-full">
               <div class="p-4 space-y-4 max-w-2xl">
                 <div class="space-y-2">
-                  <Label>ID компонента</Label>
+                  <Label>{{ $t('uiText.text1b7b3b8a') }}</Label>
                   <Input :model-value="editor.id" readonly />
                 </div>
                 <div class="space-y-2">
-                  <Label>Identity</Label>
+                  <Label>{{ $t('uiText.identity7e5a975b') }}</Label>
                   <DocumentIdentityInput :model-value="editor.identity" readonly />
                 </div>
                 <div class="space-y-2">
-                  <Label>Название компонента</Label>
+                  <Label>{{ $t('uiText.componentName00651df7') }}</Label>
                   <Input v-model="editor.name" />
                 </div>
               </div>
@@ -103,14 +103,14 @@ function addInputField(): void {
             <ScrollArea class="h-full">
               <div class="p-4 space-y-3">
                 <div class="space-y-2">
-                  <Label class="font-semibold">JSX шаблон</Label>
+                  <Label class="font-semibold">{{ $t('uiText.text5e83ab73') }}</Label>
                   <ScriptEditor v-model="editor.jsxScript" :type="editor.type" view-state-key="component-dsl.jsx" />
                 </div>
                 <div class="space-y-2">
-                  <Label class="font-semibold">Legacy setup source (data only)</Label>
+                  <Label class="font-semibold">{{ $t('uiText.legacySetupSourceDataOnly5a6ad2e7') }}</Label>
                   <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-dsl.setup" />
                   <p class="text-xs text-muted-foreground">
-                    This field is preserved in the document but is no longer executed.
+                    {{ $t('uiText.thisFieldIsPreservedInTheDocumentBuEed553e4') }}
                   </p>
                 </div>
               </div>
@@ -121,14 +121,14 @@ function addInputField(): void {
             <ScrollArea class="h-full">
               <div class="p-4 space-y-4">
                 <div class="space-y-2">
-                  <Label class="font-semibold">Runtime filters (persisted only)</Label>
+                  <Label class="font-semibold">{{ $t('uiText.runtimeFiltersPersistedOnlyAa6b8c31') }}</Label>
                   <Input
                     :model-value="(editor.runtimeFilters ?? []).join(', ')"
                     placeholder="schedule, telegraph"
                     @update:model-value="(value) => editor.runtimeFilters = String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean)"
                   />
                   <p class="text-xs text-muted-foreground">
-                    Stored for document fidelity; this list no longer starts legacy component runtime.
+                    {{ $t('uiText.storedForDocumentFidelityThisListNoD3e80248') }}
                   </p>
                 </div>
               </div>
@@ -139,19 +139,19 @@ function addInputField(): void {
             <ScrollArea class="h-full">
               <div class="p-4 space-y-4">
                 <p class="text-sm text-muted-foreground">
-                  Входные требования для компонента.
+                  {{ $t('uiText.inputRequirementsForTheComponent2bc2ede5') }}
                 </p>
                 <div class="rounded-lg border overflow-hidden">
                   <div class="bg-muted/40 border-b">
                     <div class="grid grid-cols-[1.2fr_1fr_80px_56px] gap-0 text-xs font-medium text-muted-foreground">
                       <div class="px-3 py-2">
-                        Имя переменной
+                        {{ $t('uiText.variableNameC2cd13eb') }}
                       </div>
                       <div class="px-3 py-2">
-                        Тип данных
+                        {{ $t('uiText.dataType3822a6c6') }}
                       </div>
                       <div class="px-3 py-2">
-                        Массив?
+                        {{ $t('uiText.arrayE03e0002') }}
                       </div>
                       <div class="px-3 py-2" />
                     </div>
@@ -189,12 +189,12 @@ function addInputField(): void {
                       v-if="editor.inputFields.length === 0"
                       class="p-6 text-sm text-muted-foreground"
                     >
-                      Полей пока нет.
+                      {{ $t('uiText.noFieldsYetDdc4125b') }}
                     </div>
                   </div>
                 </div>
                 <Button variant="outline" @click="addInputField">
-                  Добавить переменную
+                  {{ $t('uiText.addVariable12dceaa7') }}
                 </Button>
               </div>
             </ScrollArea>

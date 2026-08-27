@@ -503,7 +503,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -514,16 +514,16 @@ async function save(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
-            <Label>Идентификатор</Label>
+            <Label>{{ $t('uiText.identifier754cbaf5') }}</Label>
             <DocumentIdentityInput v-model="editor.identity" :disabled="externallyManaged" />
           </div>
           <div class="space-y-2">
-            <Label>Название</Label>
+            <Label>{{ $t('uiText.name3de49828') }}</Label>
             <Input v-model="editor.displayName" :disabled="externallyManaged" />
           </div>
         </div>
         <div class="mt-4 space-y-2">
-          <Label>Описание</Label>
+          <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <Textarea v-model="editor.description" :disabled="externallyManaged" :rows="2" />
         </div>
       </div>
@@ -532,16 +532,16 @@ async function save(): Promise<void> {
     <div v-else class="min-h-0 flex-1 overflow-y-auto p-3">
       <div class="mb-3 flex flex-wrap gap-2">
         <Badge variant="outline">
-          {{ treeStats.sections }} sections
+          {{ treeStats.sections }} {{ $t('uiText.sections063b1141') }}
         </Badge>
         <Badge variant="outline">
-          {{ treeStats.groups }} groups
+          {{ treeStats.groups }} {{ $t('uiText.groups0a894db7') }}
         </Badge>
         <Badge variant="outline">
-          {{ treeStats.links }} links
+          {{ treeStats.links }} {{ $t('uiText.links379e75c8') }}
         </Badge>
         <Badge variant="outline">
-          {{ treeStats.total }} total
+          {{ treeStats.total }} {{ $t('uiText.total5a537e20') }}
         </Badge>
       </div>
       <div class="grid min-h-full items-start gap-3 xl:grid-cols-[minmax(420px,1fr)_minmax(420px,0.95fr)]">
@@ -550,7 +550,7 @@ async function save(): Promise<void> {
             <div class="border-b px-4 py-3">
               <div class="flex items-center gap-2 text-sm font-semibold">
                 <FolderTree class="size-4 text-sky-500" />
-                Навигация
+                {{ $t('uiText.navigationE3782498') }}
               </div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <TooltipProvider>
@@ -560,7 +560,7 @@ async function save(): Promise<void> {
                         <FolderTree class="size-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Добавить корневую секцию</TooltipContent>
+                    <TooltipContent>{{ $t('uiText.addRootSectionD16455c8') }}</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
@@ -569,7 +569,7 @@ async function save(): Promise<void> {
                         <FolderTree class="size-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Добавить корневую группу</TooltipContent>
+                    <TooltipContent>{{ $t('uiText.addRootGroupFfccdf32') }}</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
@@ -578,7 +578,7 @@ async function save(): Promise<void> {
                         <Link2 class="size-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Добавить корневую ссылку</TooltipContent>
+                    <TooltipContent>{{ $t('uiText.addRootLink0470896b') }}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
@@ -609,14 +609,14 @@ async function save(): Promise<void> {
                   @dragover.prevent
                   @drop.prevent="moveNodeToRootEnd"
                 >
-                  Перетащите сюда, чтобы переместить в конец корня
+                  {{ $t('uiText.dragHereToMoveToTheEndOfTheRoot26442b19') }}
                 </div>
 
                 <div
                   v-if="!editor.tree.length"
                   class="rounded-2xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
                 >
-                  Начните со структуры: добавьте root group или root link.
+                  {{ $t('uiText.startWithAStructureAddARootGroupOrC682f09b') }}
                 </div>
               </div>
             </div>
@@ -628,10 +628,10 @@ async function save(): Promise<void> {
             <div class="border-b px-4 py-3">
               <div class="flex items-center gap-2 text-sm font-semibold">
                 <Link2 class="size-4 text-emerald-500" />
-                Детали
+                {{ $t('uiText.details85a76a73') }}
               </div>
               <div class="mt-1 text-xs text-muted-foreground">
-                Выберите элемент в дереве слева, чтобы редактировать его свойства.
+                {{ $t('uiText.selectAnItemInTheTreeOnTheLeftTo2a664314') }}
               </div>
             </div>
 
@@ -639,7 +639,7 @@ async function save(): Promise<void> {
               <div v-if="selectedNode" class="space-y-4 p-4">
                 <div class="flex items-center justify-between gap-2">
                   <div class="text-sm font-semibold">
-                    Выбранный элемент
+                    {{ $t('uiText.selectedItemC42c1dd3') }}
                   </div>
                   <Badge variant="outline">
                     {{ nodeTypeLabel(selectedNode.type) }}
@@ -647,80 +647,80 @@ async function save(): Promise<void> {
                 </div>
 
                 <div class="space-y-2">
-                  <Label>Тип</Label>
+                  <Label>{{ $t('uiText.typeD25691ca') }}</Label>
                   <Select :model-value="selectedNode.type" @update:model-value="changeSelectedNodeTypeFromSelect">
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="section">
-                        Секция
+                        {{ $t('uiText.sectionE44390bd') }}
                       </SelectItem>
                       <SelectItem value="group">
-                        Группа
+                        {{ $t('uiText.groupAe8ad7b5') }}
                       </SelectItem>
                       <SelectItem value="link">
-                        Ссылка
+                        {{ $t('uiText.link046e475e') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div class="space-y-2">
-                  <Label>Название</Label>
+                  <Label>{{ $t('uiText.name3de49828') }}</Label>
                   <Input v-model="selectedNode.title" placeholder="Панель управления" />
                 </div>
 
                 <div class="space-y-2">
-                  <Label>Иконка</Label>
+                  <Label>{{ $t('uiText.icon25b8ac0d') }}</Label>
                   <Input v-model="selectedNode.icon" placeholder="ti ti-layout-grid" />
                 </div>
 
                 <div v-if="selectedNode.type === 'section'" class="space-y-2">
-                  <Label>Короткое название</Label>
+                  <Label>{{ $t('uiText.shortNameEb2e3d0e') }}</Label>
                   <Input v-model="selectedNode.collapsedTitle" placeholder="Demo" />
                 </div>
 
                 <template v-if="selectedNode.type === 'group'">
-                  <Label>Путь группы</Label>
+                  <Label>{{ $t('uiText.groupPath71b529f6') }}</Label>
                   <Input v-model="selectedNode.path" placeholder="/schedule" />
 
                   <div class="space-y-2">
-                    <Label>Имя роута группы</Label>
+                    <Label>{{ $t('uiText.groupRouteNameF536911b') }}</Label>
                     <Input v-model="selectedNode.routeName" placeholder="schedule" />
                   </div>
                 </template>
 
                 <template v-if="selectedNode.type === 'link'">
                   <div class="space-y-2">
-                    <Label>Путь</Label>
+                    <Label>{{ $t('uiText.path1b46c650') }}</Label>
                     <Input v-model="selectedNode.path" placeholder="/dashboard" />
                   </div>
 
                   <div class="space-y-2">
-                    <Label>Имя роута</Label>
+                    <Label>{{ $t('uiText.routeName2f82279e') }}</Label>
                     <Input v-model="selectedNode.routeName" placeholder="dashboard" />
                   </div>
 
                   <Label class="flex items-center gap-2 text-sm">
                     <Checkbox :model-value="!!selectedNode.external" @update:model-value="(value) => updateSelectedFlag('external', value)" />
-                    Внешняя ссылка
+                    {{ $t('uiText.externalLinkF7788e8b') }}
                   </Label>
                 </template>
 
                 <div class="grid gap-2 sm:grid-cols-2">
                   <Label class="flex items-center gap-2 text-sm">
                     <Checkbox :model-value="!!selectedNode.hidden" @update:model-value="(value) => updateSelectedFlag('hidden', value)" />
-                    Скрыт
+                    {{ $t('uiText.hidden8ceffc13') }}
                   </Label>
                   <Label class="flex items-center gap-2 text-sm">
                     <Checkbox :model-value="!!selectedNode.disabled" @update:model-value="(value) => updateSelectedFlag('disabled', value)" />
-                    Отключен
+                    {{ $t('uiText.disabledCadea015') }}
                   </Label>
                 </div>
 
                 <div class="rounded-2xl border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
-                  Секция разделяет меню на блоки. Группа отображается как пункт с вложенными ссылками. Ссылка ведёт на маршрут или внешний URL.
+                  {{ $t('uiText.aSectionDividesTheMenuIntoBlocksAG4aaba8dc') }}
                 </div>
               </div>
 
@@ -728,7 +728,7 @@ async function save(): Promise<void> {
                 v-else
                 class="flex h-full min-h-[260px] items-center justify-center px-6 text-center text-sm text-muted-foreground"
               >
-                Ничего не выбрано. Нажмите на любой элемент слева, чтобы открыть детали.
+                {{ $t('uiText.nothingSelectedClickAnyItemOnTheLef939e99d7') }}
               </div>
             </div>
           </div>
@@ -738,6 +738,6 @@ async function save(): Promise<void> {
   </SourceDocumentEditorShell>
 
   <div v-else class="flex h-full items-center justify-center text-sm text-muted-foreground">
-    Выберите navigation документ.
+    {{ $t('uiText.selectANavigationDocument8b4f266b') }}
   </div>
 </template>

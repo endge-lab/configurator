@@ -112,13 +112,13 @@ defineExpose({ expandAll, collapseAll })
             "
           >
             <div class="flex items-center gap-2">
-              <span>▶</span>
-              <span>[{{ fmtTime(node.timestamp) }}]</span>
+              <span>{{ $t('uiText.symbol867c2bf8') }}</span>
+              <span>{{ $t('uiText.symbol1e5c2f36') }}{{ fmtTime(node.timestamp) }}{{ $t('uiText.symbol4ff447b8') }}</span>
               <span>{{ rowMsg(node) }}</span>
               <span class="text-muted">- {{ node.scope }}</span>
             </div>
             <div class="text-muted">
-              <span>{{ node.durationMs }} ms</span>
+              <span>{{ node.durationMs }} {{ $t('uiText.ms26cc3217') }}</span>
             </div>
           </summary>
 
@@ -139,8 +139,8 @@ defineExpose({ expandAll, collapseAll })
           :class="levelClass(node.severityNumber)"
         >
           <div class="flex items-center gap-2">
-            <span>•</span>
-            <span>[{{ fmtTime(node.timestamp) }}]</span>
+            <span>{{ $t('uiText.symbolEcf727ea') }}</span>
+            <span>{{ $t('uiText.symbol1e5c2f36') }}{{ fmtTime(node.timestamp) }}{{ $t('uiText.symbol4ff447b8') }}</span>
             <span>{{ rowMsg(node) }}</span>
             <span class="text-muted">- {{ node.scope }}</span>
           </div>

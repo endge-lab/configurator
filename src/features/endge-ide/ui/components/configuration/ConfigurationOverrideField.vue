@@ -41,7 +41,7 @@ const emit = defineEmits<{
       parent-value-placeholder="Значение определяется контекстом"
     />
     <p v-if="usesParentValue && !overridden" class="text-xs text-muted-foreground">
-      Наследуется из предыдущих слоёв конфигурации
+      {{ $t('uiText.inheritedFromPreviousConfigurationLaye07e8f674') }}
     </p>
   </div>
 </template>

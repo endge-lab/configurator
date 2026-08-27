@@ -170,17 +170,17 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
     <!-- header -->
     <div class="flex items-center justify-end gap-2">
       <Button variant="outline" @click="loadCurrentJournal">
-        Загрузить текущий журнал
+        {{ $t('uiText.loadCurrentLog86fda088') }}
       </Button>
     </div>
 
     <Tabs v-model="activeTab" class="flex flex-col gap-3 min-h-0">
       <TabsList class="grid grid-cols-2 w-full">
         <TabsTrigger value="timeline">
-          Timeline
+          {{ $t('uiText.timeline018514a3') }}
         </TabsTrigger>
         <TabsTrigger value="details">
-          Детализация
+          {{ $t('uiText.detailing610db9a9') }}
         </TabsTrigger>
       </TabsList>
 
@@ -197,20 +197,20 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
       <TabsContent value="details" class="m-0 flex flex-col gap-3 min-h-0">
         <div class="flex items-center justify-end gap-2">
           <Button variant="outline" @click="expandAll">
-            Развернуть всё
+            {{ $t('uiText.expandAll097a4f4c') }}
           </Button>
           <Button variant="secondary" @click="collapseAll">
-            Свернуть всё
+            {{ $t('uiText.collapseAll7786c314') }}
           </Button>
         </div>
 
         <Card class="p-0 flex-1 min-h-0">
           <div class="border-b px-4 py-3">
             <div class="text-sm font-medium">
-              Дерево логов
+              {{ $t('uiText.logTree120a0184') }}
             </div>
             <div class="text-xs text-muted-foreground">
-              Выберите span на таймлайне, чтобы увидеть детали.
+              {{ $t('uiText.selectASpanOnTheTimelineToViewDeta576940a3') }}
             </div>
           </div>
 
@@ -220,15 +220,15 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
                 v-if="flatRows.length === 0"
                 class="p-4 text-sm text-muted-foreground"
               >
-                Нет данных для отображения.
+                {{ $t('uiText.noDataToDisplay50a4e4c4') }}
               </div>
 
               <div v-else class="divide-y">
                 <!-- header row -->
                 <div class="grid grid-cols-[1fr_140px] gap-4 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <div>Операция</div>
+                  <div>{{ $t('uiText.operation33ba2227') }}</div>
                   <div class="text-right">
-                    Время
+                    {{ $t('uiText.timeC80d7e81') }}
                   </div>
                 </div>
 
@@ -247,7 +247,7 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
                       @click="toggleNode(node.key)"
                     >
                       <span class="text-muted-foreground text-xs">
-                        {{ isExpanded(node.key) ? '▾' : '▸' }}
+                        {{ isExpanded(node.key) ? $t('uiText.collapseMarker') : $t('uiText.expandMarker') }}
                       </span>
                     </button>
                     <span v-else class="size-6" />
@@ -275,7 +275,7 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
                       v-if="node.data.kind === 'log' && node.data.message"
                       class="text-xs text-muted-foreground truncate"
                     >
-                      · {{ node.data.message }}
+                      {{ $t('uiText.symbol1fdf0d90') }} {{ node.data.message }}
                     </span>
                   </div>
 

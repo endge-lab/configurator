@@ -27,10 +27,10 @@ const hasRoutes = computed(() => (props.node?.routes?.length ?? 0) > 0)
     >
       <span class="truncate">
         {{ node.id }}
-        <span v-if="hasRoutes" class="text-muted"> ({{ node.routes.length }} routes)</span>
+        <span v-if="hasRoutes" class="text-muted"> ({{ node.routes.length }} {{ $t('uiText.routes8289d505') }}</span>
       </span>
       <span class="text-xs text-muted-foreground">
-        {{ hasChildren ? `${node.children.length} children` : 'leaf' }}
+        {{ hasChildren ? `${node.children.length} children` : $t('uiText.leaf98798241') }}
       </span>
     </summary>
     <div v-if="hasChildren" class="pl-3 pb-1">
@@ -48,7 +48,7 @@ const hasRoutes = computed(() => (props.node?.routes?.length ?? 0) > 0)
         </li>
       </ul>
       <div v-else class="pl-6 text-xs text-muted-foreground">
-        Нет подписок
+        {{ $t('uiText.noSubscriptions6ca21905') }}
       </div>
     </div>
   </details>
