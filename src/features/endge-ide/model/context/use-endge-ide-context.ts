@@ -2,7 +2,7 @@ import type { EndgeExecutionContext } from '@endge/core'
 
 import { onScopeDispose, ref } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 /** Thin Vue bridge к IDE context reboot orchestration. */
 export function useEndgeIDEContext() {

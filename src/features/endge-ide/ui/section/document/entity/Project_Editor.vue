@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 import type { EndgeConfigurationContribution } from '@endge/core'
+import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 
 import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'

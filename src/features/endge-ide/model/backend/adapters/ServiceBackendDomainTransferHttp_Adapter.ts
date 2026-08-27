@@ -3,6 +3,7 @@ import type {
   ServiceBackendDomainImportPlanRequest,
   ServiceBackendDomainImportRequest,
   ServiceBackendDomainImportResult,
+  ServiceBackendDomainTransferAdapter,
 } from '@/features/endge-ide/domain/types/domain-transfer.type'
 
 type UnknownRecord = Record<string, unknown>
@@ -31,7 +32,7 @@ export class ServiceBackendDomainTransferError extends Error {
 }
 
 /** Выполняет двухфазный ревизионный import нового backend. */
-export class ServiceBackendDomainTransfer_Service {
+export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendDomainTransferAdapter {
   private readonly _baseURL: string
 
   public constructor(baseURL: string) {

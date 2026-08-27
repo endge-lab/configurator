@@ -44,7 +44,7 @@ export function analyzeCompositionRuntimeProps(
     const requiredProps = target.props.filter(prop => !prop.optional && prop.defaultValue === undefined)
     const missingProps = requiredProps
       .map(prop => prop.key)
-      .filter(prop => !Object.prototype.hasOwnProperty.call(runtime.props, prop))
+      .filter(prop => !Object.hasOwn(runtime.props, prop))
 
     if (!missingProps.length) { return [] }
 
@@ -65,7 +65,7 @@ export function analyzeCompositionRuntimeProps(
       }),
     ) as Record<string, CompositionPreviewLiteral>
     const canGenerate = hasPreviewForAll && Object.keys(generatedProps).length === missingProps.length
-    const missingPreviewProps = missingProps.filter(prop => !Object.prototype.hasOwnProperty.call(previewProps, prop))
+    const missingPreviewProps = missingProps.filter(prop => !Object.hasOwn(previewProps, prop))
     const locations = runtime.sourceLocations
     const range = locations?.call ?? locations?.runtime ?? { start: 0, end: 1 }
 

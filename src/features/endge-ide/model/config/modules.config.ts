@@ -1,9 +1,13 @@
-import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type { IntegrationModule } from '@endge/integration-api'
+import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 
+import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/model/adapters/EndgeIDEHotkeysBrowser_Adapter'
+import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
+import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 import { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/busy/EndgeIDEBusy_Module'
 import { EndgeIDEDemonstration_Module } from '@/features/endge-ide/model/modules/demonstration/EndgeIDEDemonstration_Module'
 import { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/model/modules/domain-drag/EndgeIDEDomainDrag_Module'
+import { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/model/modules/domain-transfer/EndgeIDEDomainTransfer_Module'
 import { EndgeIDEHotkeys_Module } from '@/features/endge-ide/model/modules/hotkeys/EndgeIDEHotkeys_Module'
 import { EndgeIDEIntegrations_Module } from '@/features/endge-ide/model/modules/integrations/EndgeIDEIntegrations_Module'
 import { EndgeIDEModals_Module } from '@/features/endge-ide/model/modules/modals/EndgeIDEModals_Module'
@@ -31,10 +35,13 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     agentTableActions: new AgentTableActions_Module(),
     demonstration: new EndgeIDEDemonstration_Module(),
     domainDrag: new EndgeIDEDomainDrag_Module(),
+    domainTransfer: new EndgeIDEDomainTransfer_Module(
+      new ServiceBackendDomainTransferHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
+    ),
     modals: new EndgeIDEModals_Module(),
     tabs: new EndgeIDETabs_Module(busy),
     widgets: new EndgeIDEWidgets_Module(),
-    hotkeys: new EndgeIDEHotkeys_Module(),
+    hotkeys: new EndgeIDEHotkeys_Module(new EndgeIDEHotkeysBrowser_Adapter()),
     runtimePreview: new EndgeIDERuntimePreview_Module(context),
     problems: new EndgeIDEProblems_Module(),
     sourceEditorDialogs: new SourceEditorDialogs_Module(),

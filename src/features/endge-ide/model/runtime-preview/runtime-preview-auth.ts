@@ -15,20 +15,25 @@ export function collectRuntimePreviewAuthProfiles(request: RuntimePreviewLaunchR
   const identities = new Set<string>()
   while (queue.length) {
     const current = queue.shift()!
-    if (current.entityType === 'project')
+    if (current.entityType === 'project') {
       continue
+    }
     const key = `${current.entityType}:${current.identity}`
-    if (visited.has(key))
+    if (visited.has(key)) {
       continue
+    }
     visited.add(key)
     const artifact = Endge.program.getArtifact(current.entityType as any, current.identity) as ProgramArtifact | null
-    if (!artifact || artifact.status === 'error')
+    if (!artifact || artifact.status === 'error') {
       continue
-    if (current.entityType === 'query')
+    }
+    if (current.entityType === 'query') {
       collectQueryProfile(artifact as ProgramArtifact<QueryProgramPayload>, identities)
+    }
     for (const dependency of artifact.dependencies) {
-      if (['query', 'composition', 'component-sfc', 'store', 'data-view', 'filter', 'computation'].includes(dependency.entityType))
+      if (['query', 'composition', 'component-sfc', 'store', 'data-view', 'filter', 'computation'].includes(dependency.entityType)) {
         queue.push({ entityType: dependency.entityType, identity: dependency.identity ?? String(dependency.id) })
+      }
     }
   }
   return [...identities].map(identity => Endge.auth.profiles.requireActive(identity))
@@ -38,20 +43,24 @@ function collectQueryProfile(artifact: ProgramArtifact<QueryProgramPayload>, ide
   const auth = artifact.payload.auth
   if (!auth || typeof auth !== 'object' || Array.isArray(auth) || 'type' in auth) {
     const profile = Endge.auth.profiles.getDefault()
-    if (profile)
+    if (profile) {
       identities.add(profile.identity)
+    }
     return
   }
   const policy = auth as Record<string, unknown>
-  if (policy.mode === 'none')
+  if (policy.mode === 'none') {
     return
+  }
   if (policy.mode === 'profile') {
     const identity = String(policy.profile ?? '').trim()
-    if (identity)
+    if (identity) {
       identities.add(identity)
+    }
     return
   }
   const profile = Endge.auth.profiles.getDefault()
-  if (profile)
+  if (profile) {
     identities.add(profile.identity)
+  }
 }

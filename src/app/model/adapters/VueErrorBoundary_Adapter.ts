@@ -1,6 +1,6 @@
-import type { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
 import type { App, ComponentPublicInstance } from 'vue'
 import type { Router } from 'vue-router'
+import type { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
 
 /** Connects Vue and browser error boundaries to Configurator diagnostics. */
 export class VueErrorBoundary_Adapter {

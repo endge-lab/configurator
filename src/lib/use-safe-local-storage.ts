@@ -4,8 +4,9 @@ import { useStorage } from '@vueuse/core'
 let safeLocalStorage: StorageLike | undefined
 
 function getSafeLocalStorage(): StorageLike | undefined {
-  if (typeof window === 'undefined')
+  if (typeof window === 'undefined') {
     return undefined
+  }
 
   if (!safeLocalStorage) {
     const storage = window.localStorage

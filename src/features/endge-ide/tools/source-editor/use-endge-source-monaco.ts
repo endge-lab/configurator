@@ -1,6 +1,4 @@
 /* eslint-disable style/max-statements-per-line */
-import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
-import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 import type {
   SourceKind,
   SourceLanguageContext,
@@ -10,6 +8,8 @@ import type {
 } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { Ref } from 'vue'
+import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
+import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
 import { Endge } from '@endge/core'
 import { useUI } from '@endge/ui-vue'
@@ -229,7 +229,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       signatureHelpTriggerCharacters: ['(', ','],
       provideSignatureHelp(model, position) {
         const help = Endge.source.signatureHelp(options.sourceKind, languageContext(model.getValue(), position))
-        if (!help) return null
+        if (!help) { return null }
         return {
           value: {
             activeSignature: help.activeSignature,

@@ -31,17 +31,19 @@ export async function prepareVocabMockGeneration(targetIdentity: string): Promis
   const vocabs = compiled
     .filter(item => Boolean(item.artifact.payload.provider))
     .map(item => item.vocab)
-  if (!vocabs.length)
+  if (!vocabs.length) {
     throw new Error('В домене нет активных Vocab с Payload provider.')
+  }
 
   const loaded = await Promise.all(vocabs.map(async (vocab) => {
     const raw = await Endge.vocabs.loadRawVocab(vocab.identity, { limit: 10, throwOnError: true })
-    if (!Array.isArray(raw))
-      throw new Error(`Payload Vocab "${vocab.identity}" должен вернуть массив или { docs }.`)
+    if (!Array.isArray(raw)) {
+      throw new TypeError(`Payload Vocab "${vocab.identity}" должен вернуть массив или { docs }.`)
+    }
     return [vocab.identity, raw.slice(0, 10)] as const
   }))
   const generated = Object.fromEntries(loaded)
-  const overwrittenKeys = Object.keys(generated).filter(key => Object.prototype.hasOwnProperty.call(existingDocument, key))
+  const overwrittenKeys = Object.keys(generated).filter(key => Object.hasOwn(existingDocument, key))
 
   return {
     targetIdentity: identity,
@@ -76,8 +78,9 @@ export async function commitVocabMockGeneration(prepared: PreparedVocabMockGener
     const patched = Endge.source.patch('vocab', vocab.source, {
       mock: { identity: prepared.targetIdentity, path: vocab.identity },
     })
-    if (!patched.ok)
+    if (!patched.ok) {
       throw partialFailure(prepared.targetIdentity, savedVocabs, vocab.identity, patched.message)
+    }
     vocab.source = patched.source
     vocab.sourceVersion = 1
     try {
@@ -93,11 +96,13 @@ export async function commitVocabMockGeneration(prepared: PreparedVocabMockGener
 }
 
 function readExistingMock(mock: RMock): Record<string, unknown> {
-  if (mock.contentType !== 'application/json')
+  if (mock.contentType !== 'application/json') {
     throw new Error(`Mock "${mock.identity}" должен иметь contentType application/json.`)
+  }
   const value = Endge.mock.get(mock.identity)
-  if (!value || typeof value !== 'object' || Array.isArray(value))
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`Mock "${mock.identity}" должен содержать JSON object.`)
+  }
   return value as Record<string, unknown>
 }
 
@@ -112,10 +117,12 @@ function createMock(identity: string): RMock {
 
 function normalizeIdentity(value: string): string {
   const identity = String(value ?? '').trim()
-  if (!identity)
+  if (!identity) {
     throw new Error('Укажите identity Mock-документа.')
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(identity))
+  }
+  if (!/^[A-Z0-9][\w.-]*$/i.test(identity)) {
     throw new Error('Identity Mock может содержать буквы, цифры, точку, дефис и подчёркивание.')
+  }
   return identity
 }
 

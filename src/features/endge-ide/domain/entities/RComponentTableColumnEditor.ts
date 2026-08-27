@@ -1,26 +1,27 @@
-import type { AccessorDescriptor, ColumnComponentType, ColumnSortConfig } from '@endge/core'
-import { randomString } from '@endge/utils'
-import type { RComponentTableColumn } from '@endge/core'
+import type { AccessorDescriptor, ColumnComponentType, ColumnSortConfig, EndgeEventBinding, RComponentTableColumn } from '@endge/core'
 import {
-  RComponentTableColumn_isHtml,
   RComponentTableColumn_isComponent,
+  RComponentTableColumn_isHtml,
   RComponentTableColumn_TypeCtor,
 } from '@endge/core'
-import type { EndgeEventBinding } from '@endge/core'
+import { randomString } from '@endge/utils'
 
 function normalizeRelationId(value: unknown): number | null {
-  if (value == null)
+  if (value == null) {
     return null
-  if (typeof value === 'number')
+  }
+  if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null
+  }
   if (typeof value === 'object') {
     const raw = value as Record<string, unknown>
     const nested = raw.id ?? raw.value ?? raw.componentId ?? null
     return nested == null ? null : normalizeRelationId(nested)
   }
   const text = String(value).trim()
-  if (!text)
+  if (!text) {
     return null
+  }
   const id = Number(text)
   return Number.isFinite(id) ? id : null
 }
@@ -54,7 +55,9 @@ export class RComponentTableColumnEditor {
   // Сериализация в доменную сущность
   toSource(): RComponentTableColumn | null {
     const ColumnCtor = RComponentTableColumn_TypeCtor(this.type)
-    if (!ColumnCtor) return null
+    if (!ColumnCtor) {
+      return null
+    }
 
     const source = new ColumnCtor()
     source.id = this.id
@@ -76,7 +79,8 @@ export class RComponentTableColumnEditor {
     source.sort = this.sort ? { by: this.sort.by, type: this.sort.type } : null
     if (RComponentTableColumn_isHtml(source)) {
       source.template = this.template
-    } else if (RComponentTableColumn_isComponent(source)) {
+    }
+    else if (RComponentTableColumn_isComponent(source)) {
       source.componentId = this.componentId
     }
     return source
@@ -101,7 +105,7 @@ export class RComponentTableColumnEditor {
       }),
     )
     Object.entries(source.dataConverters || {}).forEach(([name, converter]) => {
-      const accessor = this.accessors.find((x) => x.name === name)
+      const accessor = this.accessors.find(x => x.name === name)
       if (accessor) {
         accessor.converter = converter
       }
@@ -110,7 +114,8 @@ export class RComponentTableColumnEditor {
     this.sort = source.sort ? { by: source.sort.by, type: source.sort.type } : null
     if (RComponentTableColumn_isHtml(source)) {
       this.template = source.template
-    } else if (RComponentTableColumn_isComponent(source)) {
+    }
+    else if (RComponentTableColumn_isComponent(source)) {
       this.componentId = normalizeRelationId(source.componentId)
     }
   }

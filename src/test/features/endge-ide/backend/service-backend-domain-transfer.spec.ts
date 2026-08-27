@@ -1,9 +1,9 @@
-import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import type { EndgeDomainBundle } from '@endge/core'
+import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
+import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
 
 const snapshot = {
   kind: 'workspace-snapshot',
@@ -33,7 +33,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
       warnings: ['Documents absent from snapshot will be marked as deleted: 3'],
     }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ServiceBackendDomainTransfer_Service('https://backend.test/')
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test/')
 
     await expect(service.planImport({
       workspaceIdentity: 'workspace-a',
@@ -72,7 +72,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
       parentCommitId: 'parent-commit-id',
     }, 201))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ServiceBackendDomainTransfer_Service('https://backend.test')
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
 
     await service.import({
       workspaceIdentity: 'workspace-a',
@@ -103,7 +103,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
       code: 'workspace_admin_required',
       message: 'Workspace Admin role is required',
     }, 403)))
-    const service = new ServiceBackendDomainTransfer_Service('https://backend.test')
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
 
     await expect(service.planImport({
       workspaceIdentity: 'workspace-a',

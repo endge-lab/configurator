@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
 import type { DiagnosticsSeverityNumber } from '@endge/core'
 import type {
   DiagnosticsSpanTreeNode,
   DiagnosticsTreeNode,
 } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
+import { computed, ref, watch } from 'vue'
 
 defineOptions({ name: 'LogTree' })
 
@@ -51,8 +51,9 @@ function defaultRowMessage(node: DiagnosticsTreeNode): string {
     : node.body
 }
 
-const rowMsg = (node: DiagnosticsTreeNode) =>
-  props.rowMessage ? props.rowMessage(node) : defaultRowMessage(node)
+function rowMsg(node: DiagnosticsTreeNode) {
+  return props.rowMessage ? props.rowMessage(node) : defaultRowMessage(node)
+}
 
 const openStates = ref<Record<string, boolean>>({})
 

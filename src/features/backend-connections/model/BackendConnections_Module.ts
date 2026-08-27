@@ -19,7 +19,7 @@ export class BackendConnections_Module {
     primaryBackendURL: string,
     private readonly _service: BackendConnectionsService,
     private readonly _storage = new BackendConnectionStorage(),
-    private readonly _reload: () => void = () => window.location.reload(),
+    private readonly _reload: () => void = () => undefined,
   ) {
     this.primaryBackendURL = normalizeBackendURL(primaryBackendURL)
     this._activeBackendURL = this._storage.readActiveBackend(this.primaryBackendURL)

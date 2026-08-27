@@ -1,24 +1,24 @@
-import { TimelineChart, TimelineEvents } from '@endge/timeline-chart'
-import { addMinutes, addSeconds } from 'date-fns'
-import { defineStore } from 'pinia'
-import { markRaw, ref } from 'vue'
-import { TimelineChartTemplatesDebug } from '@/features/@endge-admin/app/timeline-debug/templates'
+import type { DiagnosticsSpanRecord } from '@endge/core'
+import type { DiagnosticsSpanTreeNode } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 import type {
   TimelineDebugGroup,
   TimelineDebugTask,
-} from '@/features/@endge-admin/app/timeline-debug/types'
+} from '@/features/endge-ide/model/timeline-debug/types'
 import { Endge } from '@endge/core'
-import type { DiagnosticsSpanRecord } from '@endge/core'
-import type { DiagnosticsSpanTreeNode } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
+import { TimelineChart, TimelineEvents } from '@endge/timeline-chart'
+import { addMinutes, addSeconds } from 'date-fns'
+import { markRaw, ref } from 'vue'
 import {
   buildDiagnosticsTree,
   findDiagnosticsSpanNode,
 } from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
+import { TimelineChartTemplatesDebug } from '@/features/endge-ide/model/timeline-debug/templates'
 
 export const CANVAS_DEBUG_ID = 'endge-timeline-debug-id'
 
-export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
-  let timeline: TimelineChart<TimelineDebugGroup, TimelineDebugTask> = markRaw(
+/** Создаёт локальную модель timeline-debug для единственного UI-компонента. */
+export function useTimelineDebug() {
+  const timeline: TimelineChart<TimelineDebugGroup, TimelineDebugTask> = markRaw(
     new TimelineChart(),
   )
   const offFns: (() => void)[] = []
@@ -28,8 +28,6 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
   const details = ref<DiagnosticsSpanTreeNode | null>(null)
 
   async function init(): Promise<void> {
-    timeline = markRaw(new TimelineChart())
-
     // Инициализируем таймлайн
     timeline.attach(CANVAS_DEBUG_ID)
     timeline.init()
@@ -42,8 +40,8 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
   }
 
   function destroy(): void {
-    offFns.forEach((fn) => fn())
-    offIntervals.forEach((fn) => clearInterval(fn))
+    offFns.forEach(fn => fn())
+    offIntervals.forEach(fn => clearInterval(fn))
 
     offFns.length = 0
     offIntervals.length = 0
@@ -297,7 +295,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
     const laneIds = Array.from(
       new Set(rootSpans.map(groupOf)),
     )
-    const groups: TimelineDebugGroup[] = laneIds.map((lane) => ({
+    const groups: TimelineDebugGroup[] = laneIds.map(lane => ({
       id: lane,
       displayName: lane,
     }))
@@ -322,8 +320,12 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
         editable: false,
       })
 
-      if (t0 < minTs) minTs = t0
-      if (endTime > maxTs) maxTs = endTime
+      if (t0 < minTs) {
+        minTs = t0
+      }
+      if (endTime > maxTs) {
+        maxTs = endTime
+      }
     }
 
     if (!isFinite(minTs) || !isFinite(maxTs)) {
@@ -354,7 +356,7 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
       setInterval(() => {
         timeline.clearCustom('now') // УДАЛИМ СТАРЫЙ!
         timeline.addCustomTime('now', () => ({
-          time: new Date().getTime(),
+          time: Date.now(),
           color: 'red',
           width: 1,
           // cover: {
@@ -383,4 +385,4 @@ export const useTimelineDebugStore = defineStore('timeline-debug-store', () => {
     destroy,
     applyCurrentJournal,
   }
-})
+}

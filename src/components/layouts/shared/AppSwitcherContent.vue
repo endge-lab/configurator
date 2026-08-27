@@ -5,7 +5,7 @@ import type { BackendConnection } from '@/features/backend-connections'
 import { ChevronsUpDown, Server } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,

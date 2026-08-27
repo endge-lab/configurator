@@ -3,7 +3,7 @@
 import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

@@ -1,15 +1,15 @@
 import { DomainSectionType } from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
-import { resolveConfigValueEditor } from '@/features/endge-ide/model/config/ConfigValueEditorRegistry'
 import {
   getConfigurationReferenceDropKinds,
   getConfigurationReferenceOptions,
   getConfigurationReferenceSectionTypes,
 } from '@/features/endge-ide/model/config/configuration-reference-options'
+import { resolveConfigValueEditor } from '@/features/endge-ide/model/config/ConfigValueEditorRegistry'
 import { buildWorkspaceTreeNodes } from '@/features/endge-ide/model/domain/domain-tree'
 
-describe('Configuration authoring registries', () => {
+describe('configuration authoring registries', () => {
   it('dispatches specialized and recursive JSON-safe editors', () => {
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'Boolean' })).toBe('boolean')
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'TriggerSet' })).toBe('trigger-set')

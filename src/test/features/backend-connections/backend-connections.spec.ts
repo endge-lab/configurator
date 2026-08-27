@@ -9,7 +9,7 @@ import {
   workspaceStorageKey,
 } from '@/features/backend-connections/model/backend-connection-storage'
 import { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
-import { BackendConnections_Service } from '@/features/backend-connections/model/BackendConnections_Service'
+import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/model/adapters/BackendConnectionsHttp_Adapter'
 import { resolveConfiguratorWorkspace } from '@/features/backend-connections/model/resolve-configurator-workspace'
 
 class MemoryStorage implements Storage {
@@ -99,7 +99,7 @@ describe('backend connections', () => {
       canManage: false,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new BackendConnections_Service('https://primary.test/')
+    const service = new BackendConnectionsHttp_Adapter('https://primary.test/')
 
     await service.list()
 
@@ -137,7 +137,7 @@ describe('backend connections', () => {
       headers: { 'Content-Type': 'application/json' },
     }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new BackendConnections_Service('https://primary.test/')
+    const service = new BackendConnectionsHttp_Adapter('https://primary.test/')
 
     await service.create('Production', 'https://remote.test')
 

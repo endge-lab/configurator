@@ -1,4 +1,3 @@
-import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import type {
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
@@ -7,6 +6,7 @@ import type {
   ProgramDiagnostic,
   RuntimeHostInputSource,
 } from '@endge/core'
+import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 
 import { Endge, RComponentSFC } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'

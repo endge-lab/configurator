@@ -13,7 +13,7 @@ export class DomainVersionServiceError extends Error {
   }
 }
 
-export class DomainVersion_Service {
+export class DomainVersionHttp_Adapter {
   public async get(target: DomainVersionTarget): Promise<DomainStatus> {
     const baseURL = normalizeBackendURL(target.backendURL)
     let response: Response

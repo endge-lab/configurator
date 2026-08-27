@@ -1,4 +1,3 @@
-import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
   IntegrationConfiguratorLifecycleApi,
   IntegrationContext,
@@ -6,6 +5,7 @@ import type {
   IntegrationDomainApi,
   IntegrationModule,
 } from '@endge/integration-api'
+import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 
 import { Endge, RIntegration } from '@endge/core'
 

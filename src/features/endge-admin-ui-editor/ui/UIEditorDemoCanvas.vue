@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 import type { SFCRenderInspectionNode, SFCRenderInspectionTreeNode } from '@endge/core'
 import type { CSSProperties } from 'vue'
+import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
+import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 
 import { SFCRenderInspectionSession } from '@endge/core'
 import { AlertTriangle, Code2, GripVertical, LoaderCircle, MousePointer2, Play, RefreshCw, Settings2, Trash2 } from 'lucide-vue-next'

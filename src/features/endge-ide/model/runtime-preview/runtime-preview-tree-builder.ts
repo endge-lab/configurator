@@ -1,15 +1,15 @@
 /* eslint-disable style/max-statements-per-line */
 import type {
-  RuntimePreviewCompositionAddress,
-  RuntimePreviewTarget,
-  RuntimePreviewTreeNode,
-} from '@/features/endge-ide/domain/types/runtime-preview.types'
-import type {
   CompositionProgramPayload,
   CompositionRuntimeDescriptor,
   DomainDocumentType,
   RuntimeArtifactReader,
 } from '@endge/core'
+import type {
+  RuntimePreviewCompositionAddress,
+  RuntimePreviewTarget,
+  RuntimePreviewTreeNode,
+} from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 

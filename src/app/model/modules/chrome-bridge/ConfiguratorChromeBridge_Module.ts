@@ -5,6 +5,7 @@ import type {
   EndgeAdminBridgeBundle,
 } from '@/app/domain/types/configurator-chrome-bridge.type'
 
+import type { ConfiguratorChromeBridge_Adapter } from '@/app/model/adapters/ConfiguratorChromeBridge_Adapter'
 import { Endge } from '@endge/core'
 
 const REQUEST_SOURCE = 'endge-chrome-extension'
@@ -13,32 +14,11 @@ const BRIDGE_VERSION = '1.0.0'
 
 /** Owns the browser bridge for the complete Configurator application lifetime. */
 export class ConfiguratorChromeBridge_Module {
+  /** Browser adapter, installation state и stable event callback. */
+  private readonly _browser: ConfiguratorChromeBridge_Adapter
   private _installed = false
-
-  public setup(): void {
-    if (this._installed || typeof window === 'undefined') {
-      return
-    }
-
-    document.documentElement.dataset.endgeAdminBridge = '1'
-    window.__ENDGE_ADMIN_BRIDGE__ = this._createBridgeApi()
-    window.addEventListener('message', this._handleBridgeMessage as EventListener)
-    this._installed = true
-  }
-
-  public destroy(): void {
-    if (!this._installed || typeof window === 'undefined') {
-      return
-    }
-
-    window.removeEventListener('message', this._handleBridgeMessage as EventListener)
-    delete window.__ENDGE_ADMIN_BRIDGE__
-    delete document.documentElement.dataset.endgeAdminBridge
-    this._installed = false
-  }
-
   private readonly _handleBridgeMessage = (event: MessageEvent<ConfiguratorChromeBridgeRequest>): void => {
-    if (event.source !== window) {
+    if (!this._browser.isCurrentContext(event)) {
       return
     }
 
@@ -85,28 +65,65 @@ export class ConfiguratorChromeBridge_Module {
     }
   }
 
+  /**
+   * ----------------------------------------
+   * PUBLIC
+   * ----------------------------------------
+   */
+
+  /** Создаёт bridge-модуль с явным browser adapter. */
+  public constructor(browser: ConfiguratorChromeBridge_Adapter) {
+    this._browser = browser
+  }
+
+  /** Устанавливает browser bridge один раз на lifecycle приложения. */
+  public setup(): void {
+    if (this._installed) {
+      return
+    }
+    this._installed = this._browser.install(this._createBridgeApi(), this._handleBridgeMessage)
+  }
+
+  /** Освобождает browser bridge и его event listener. */
+  public destroy(): void {
+    if (!this._installed) {
+      return
+    }
+    this._browser.destroy(this._handleBridgeMessage)
+    this._installed = false
+  }
+
+  /**
+   * ----------------------------------------
+   * PRIVATE
+   * ----------------------------------------
+   */
+
+  /** Собирает readonly domain bundle для browser extension. */
   private _buildBundle(): EndgeAdminBridgeBundle {
     return {
       version: BRIDGE_VERSION,
       exportedAt: new Date().toISOString(),
-      sourceUrl: window.location.href,
+      sourceUrl: this._browser.page().url,
       projectId: Endge.context.getCurrentProject(),
       environment: Endge.context.getCurrentEnvironment(),
       domain: Endge.domain.toPlain(),
     }
   }
 
+  /** Возвращает метаданные текущего bridge context. */
   private _buildPingPayload() {
     return {
       platform: 'endge-admin' as const,
       version: BRIDGE_VERSION,
-      url: window.location.href,
-      title: document.title,
+      url: this._browser.page().url,
+      title: this._browser.page().title,
       projectId: Endge.context.getCurrentProject(),
       environment: Endge.context.getCurrentEnvironment(),
     }
   }
 
+  /** Создаёт стабильный public contract для browser extension. */
   private _createBridgeApi(): EndgeAdminBridgeApi {
     return {
       platform: 'endge-admin',
@@ -116,7 +133,8 @@ export class ConfiguratorChromeBridge_Module {
     }
   }
 
+  /** Отправляет ответ через browser adapter. */
   private _postBridgeResponse(message: ConfiguratorChromeBridgeResponse): void {
-    window.postMessage(message, window.location.origin)
+    this._browser.post(message)
   }
 }

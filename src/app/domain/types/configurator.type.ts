@@ -3,6 +3,7 @@ import type { ConfiguratorContext_Module } from '@/app/model/modules/context/Con
 import type { ConfiguratorDiagnostics_Module } from '@/app/model/modules/diagnostics/ConfiguratorDiagnostics_Module'
 import type { ConfiguratorI18n_Module } from '@/app/model/modules/i18n/ConfiguratorI18n_Module'
 import type { Layout_Module } from '@/app/model/modules/layout/Layout_Module'
+import type { OidcDiscovery_Module } from '@/app/model/modules/oidc-discovery/OidcDiscovery_Module'
 import type { Questions_Module } from '@/app/model/modules/questions/Questions_Module'
 import type { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
 import type { BackendVersions_Module } from '@/features/backend-connections/model/BackendVersions_Module'
@@ -38,4 +39,5 @@ export interface ConfiguratorModules {
   chromeBridge: ConfiguratorChromeBridge_Module
   questions: Questions_Module
   layout: Layout_Module
+  oidcDiscovery: OidcDiscovery_Module
 }

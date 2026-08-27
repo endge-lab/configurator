@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
+import { Endge } from '@endge/core'
 import {
   AppWindowMac,
   Ellipsis,
@@ -13,8 +14,20 @@ import {
   X,
 } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, provide, ref, toValue } from 'vue'
-import { Endge } from '@endge/core'
 import { useI18n } from 'vue-i18n'
+import { getIconComponent } from '@/components/layouts/grid/icons.ts'
+import {
+  addHeaderAction,
+  addOptionsAction,
+  destroyAllWidgetInstances,
+  destroyWidgetInstance,
+  hideWidget,
+  moveWidget,
+  removeHeaderAction,
+  removeOptionsAction,
+  setWidgetInstanceLoading,
+  setWidgetInstanceTitle,
+} from '@/components/layouts/grid/layout.ts'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,19 +42,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { getIconComponent } from '@/components/layouts/grid/icons.ts'
-import {
-  addHeaderAction,
-  addOptionsAction,
-  destroyAllWidgetInstances,
-  destroyWidgetInstance,
-  hideWidget,
-  moveWidget,
-  removeHeaderAction,
-  removeOptionsAction,
-  setWidgetInstanceLoading,
-  setWidgetInstanceTitle,
-} from '@/components/layouts/grid/layout.ts'
 
 const props = defineProps<{
   definition: WidgetDefinition & WidgetDefinitionState
@@ -104,8 +104,9 @@ function handleMoveTo(position: WidgetPosition) {
 }
 
 function isActionDisabled(action: { disabled?: unknown }): boolean {
-  if (!action.disabled)
+  if (!action.disabled) {
     return false
+  }
   const value = toValue(action.disabled)
   return typeof value === 'function' ? value() : Boolean(value)
 }
@@ -129,13 +130,15 @@ function setIframeRef(instanceId: string, el: HTMLIFrameElement | null) {
 // Handle messages from iframe content
 function handleIframeMessage(event: MessageEvent) {
   const data = event.data
-  if (!data || typeof data !== 'object' || !activeInstance.value)
+  if (!data || typeof data !== 'object' || !activeInstance.value) {
     return
+  }
 
   // Verify the message came from our iframe
   const iframe = iframeRefs.value.get(activeInstance.value.id)
-  if (!iframe || event.source !== iframe.contentWindow)
+  if (!iframe || event.source !== iframe.contentWindow) {
     return
+  }
 
   const instanceId = activeInstance.value.id
 

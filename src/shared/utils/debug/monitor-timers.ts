@@ -42,8 +42,12 @@ export function monitorTimers() {
       console.log(`[Timers] timeouts: ${c.timeouts}, intervals: ${c.intervals}, total: ${c.total}`)
     },
     clearAll() {
-      for (const id of activeTimeouts) clearTimeout(id)
-      for (const id of activeIntervals) clearInterval(id)
+      for (const id of activeTimeouts) {
+        clearTimeout(id)
+      }
+      for (const id of activeIntervals) {
+        clearInterval(id)
+      }
       activeTimeouts.clear()
       activeIntervals.clear()
     },

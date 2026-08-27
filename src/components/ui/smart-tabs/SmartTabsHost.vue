@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { SmartTabRef, SmartTabsApi, SmartTabsOptions } from '@/components/ui/smart-tabs/types'
 import type { Component } from 'vue'
+import type { SmartTabRef, SmartTabsApi, SmartTabsOptions } from '@/components/ui/smart-tabs/types'
 
 import { CircleX, CopyX, PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, h, ref, watch } from 'vue'
@@ -13,13 +13,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const props = defineProps<{
   options?: SmartTabsOptions
   api?: SmartTabsApi
-  getIconClass?: (tab: SmartTabRef) => string | null,
-  getTooltip?: (tab: SmartTabRef) => string | null,
+  getIconClass?: (tab: SmartTabRef) => string | null
+  getTooltip?: (tab: SmartTabRef) => string | null
 }>()
 const dragTabId = ref<string | null>(null)
 const dragOverIndex = ref<number | null>(null)
 const tabsStripRef = ref<HTMLElement | null>(null)
-const contextMenu = ref<{ tabId: string; x: number; y: number } | null>(null)
+const contextMenu = ref<{ tabId: string, x: number, y: number } | null>(null)
 
 if (!props.api && !props.options) {
   throw new Error('[SmartTabsHost] options are required when api is not provided')
@@ -70,23 +70,27 @@ function getTabIconRaw(tab: SmartTabRef): unknown {
 }
 
 function resolveLucideIcon(iconRaw: unknown): Component | null {
-  if (typeof iconRaw !== 'string')
+  if (typeof iconRaw !== 'string') {
     return null
+  }
 
   const iconName = iconRaw.trim()
   // class-string (tabler/css) оставляем прежним путем через <i :class="...">
-  if (!iconName || iconName.includes(' ') || iconName.startsWith('ti-') || iconName.startsWith('ti '))
+  if (!iconName || iconName.includes(' ') || iconName.startsWith('ti-') || iconName.startsWith('ti ')) {
     return null
+  }
 
   const cached = tabIconComponentCache.get(iconName)
-  if (cached)
+  if (cached) {
     return cached
+  }
 
   const component = defineAsyncComponent(() =>
     import('lucide-vue-next').then((mod) => {
       const icon = (mod as unknown as Record<string, Component>)[iconName]
-      if (!icon)
+      if (!icon) {
         throw new Error(`[SmartTabsHost] Lucide icon "${iconName}" not found`)
+      }
       return icon
     }),
   )
@@ -104,15 +108,17 @@ function getIconBadgeComponent(tab: SmartTabRef): Component | null {
 
 function getIconComponentClass(tab: SmartTabRef): string {
   const iconClass = tab.meta?.iconClass
-  if (typeof iconClass === 'string' && iconClass.trim())
+  if (typeof iconClass === 'string' && iconClass.trim()) {
     return iconClass
+  }
   return 'size-4'
 }
 
 function getIconBadgeComponentClass(tab: SmartTabRef): string {
   const iconBadgeClass = tab.meta?.iconBadgeClass
-  if (typeof iconBadgeClass === 'string' && iconBadgeClass.trim())
+  if (typeof iconBadgeClass === 'string' && iconBadgeClass.trim()) {
     return iconBadgeClass
+  }
   return 'size-2.5'
 }
 
@@ -180,7 +186,9 @@ function closeContextMenu(): void {
 
 function runContextAction(action: 'close' | 'closeAll' | 'closeOthers' | 'closeAllToLeft' | 'closeAllToRight'): void {
   const tabId = contextMenu.value?.tabId
-  if (!tabId) return
+  if (!tabId) {
+    return
+  }
   switch (action) {
     case 'close':
       close(tabId)
@@ -202,13 +210,15 @@ function runContextAction(action: 'close' | 'closeAll' | 'closeOthers' | 'closeA
 }
 
 function onContextMenuKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape')
+  if (e.key === 'Escape') {
     closeContextMenu()
+  }
 }
 watch(contextMenu, (v) => {
   if (v) {
     document.addEventListener('keydown', onContextMenuKeydown)
-  } else {
+  }
+  else {
     document.removeEventListener('keydown', onContextMenuKeydown)
   }
 }, { flush: 'sync' })

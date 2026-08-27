@@ -5,7 +5,7 @@ import { BellDot, DatabaseZap, RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
 import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'

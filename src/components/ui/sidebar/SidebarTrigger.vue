@@ -3,9 +3,9 @@ import type { HTMLAttributes } from 'vue'
 
 import { Menu } from 'lucide-vue-next'
 
-import { cn } from '@/lib/utils.ts'
-
 import { useSidebar } from '@/components/ui/sidebar/utils.ts'
+
+import { cn } from '@/lib/utils.ts'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']

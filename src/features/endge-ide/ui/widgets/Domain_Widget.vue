@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
+import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type {
   DomainWorkingSetFilterState,
   DomainWorkingSetRef,
@@ -9,11 +11,10 @@ import type {
   FolderDeletionPlan,
   FolderDragPayloadItem,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
-import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
-import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
 
+import type { PreparedVocabMockGeneration } from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
 import { DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
@@ -64,28 +65,27 @@ import {
   Table2,
   Trash2,
   Type,
-  X,
   WandSparkles,
+  X,
   Zap,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
 
+import { toast } from 'vue-sonner'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Button } from '@/components/ui/button'
-import { Configurator } from '@/app'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
 } from '@/features/endge-ide/model/domain/domain-document-presentation'
-import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
-import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
 import {
   canDelete,
   createSubfolder as createDomainSubfolder,
@@ -95,6 +95,7 @@ import {
   executeDrop,
   getDropFolderId,
 } from '@/features/endge-ide/model/domain/domain-drag-drop'
+import { buildEventCatalogRoot } from '@/features/endge-ide/model/domain/domain-event-catalog'
 import {
   attachResolvedActionTree,
   attachResolvedTypeTree,
@@ -106,20 +107,20 @@ import {
   ROOT_FOLDER_LABELS,
   withoutDeleted,
 } from '@/features/endge-ide/model/domain/domain-tree'
-import { buildEventCatalogRoot } from '@/features/endge-ide/model/domain/domain-event-catalog'
 import {
   domainFileNodeToWorkingSetRef,
   groupDomainWorkingSetItems,
   projectDomainWorkingSetItems,
 } from '@/features/endge-ide/model/domain/domain-tree-working-set'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
-import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
-import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 import {
   commitVocabMockGeneration,
+
   prepareVocabMockGeneration,
-  type PreparedVocabMockGeneration,
 } from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
+import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
+import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -173,8 +174,9 @@ function openVocabMockGenerator(): void {
 }
 
 function closeVocabMockGenerator(): void {
-  if (vocabMockDialog.value.loading)
+  if (vocabMockDialog.value.loading) {
     return
+  }
   vocabMockDialog.value.open = false
   vocabMockDialog.value.prepared = null
 }
@@ -201,8 +203,9 @@ async function prepareAndSaveVocabMock(): Promise<void> {
 
 async function confirmVocabMockOverwrite(): Promise<void> {
   const prepared = vocabMockDialog.value.prepared
-  if (!prepared)
+  if (!prepared) {
     return
+  }
   vocabMockDialog.value.loading = true
   try {
     await savePreparedVocabMock(prepared)
@@ -363,14 +366,17 @@ const expandedFolders = computed<Set<string>>({
   get(): Set<string> {
     const s = new Set<string>()
     for (const [k, v] of Object.entries(expandedKeys.value)) {
-      if (v)
+      if (v) {
         s.add(k)
+      }
     }
     return s
   },
   set(next: Set<string>) {
     const obj: Record<string, boolean> = {}
-    for (const p of next) obj[p] = true
+    for (const p of next) {
+      obj[p] = true
+    }
     expandedKeys.value = obj
   },
 })
@@ -479,10 +485,12 @@ const contextMenu = ref<{
 
 function openContextMenu(e: MouseEvent, node: FsNode, path: string): void {
   const folderNode = node.type === 'folder' ? (node as FsFolderNode) : null
-  if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot)
+  if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
     return
-  if (getMenuActions(node).length === 0)
+  }
+  if (getMenuActions(node).length === 0) {
     return
+  }
   e.preventDefault()
   e.stopPropagation()
   contextMenu.value = {
@@ -502,18 +510,21 @@ function closeContextMenu(): void {
 
 // close context menu on global scroll/resize for “nice”
 function onWindowChange(): void {
-  if (contextMenu.value.open)
+  if (contextMenu.value.open) {
     closeContextMenu()
+  }
 }
 function onContextMenuClickOutside(e: MouseEvent): void {
-  if (contextMenuRef.value?.contains(e.target as Node))
+  if (contextMenuRef.value?.contains(e.target as Node)) {
     return
+  }
   closeContextMenu()
 }
 
 function onContextMenuKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape')
+  if (e.key === 'Escape') {
     closeContextMenu()
+  }
 }
 
 watch(() => contextMenu.value.open, (open) => {
@@ -739,13 +750,16 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
 }
 
 function onDragOver(e: DragEvent, item: FlatFsItem): void {
-  if (item.node.type !== 'folder')
+  if (item.node.type !== 'folder') {
     return
+  }
   const folderNode = item.node as FsFolderNode
-  if (folderNode.sectionType === DomainSectionType.Integration)
+  if (folderNode.sectionType === DomainSectionType.Integration) {
     return
-  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot)
+  }
+  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
     return
+  }
   const folderSource = draggedFolder.value
   if (
     folderSource
@@ -758,14 +772,16 @@ function onDragOver(e: DragEvent, item: FlatFsItem): void {
     return
   }
   e.preventDefault()
-  if (e.dataTransfer)
+  if (e.dataTransfer) {
     e.dataTransfer.dropEffect = 'move'
+  }
   dragOverPath.value = item.path
 }
 
 function onDragLeave(item: FlatFsItem): void {
-  if (dragOverPath.value === item.path)
+  if (dragOverPath.value === item.path) {
     dragOverPath.value = null
+  }
 }
 
 function clearDragSources(): void {
@@ -777,8 +793,9 @@ function clearDragSources(): void {
 async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   e.preventDefault()
   const dropNode = item.node
-  if (dropNode.type !== 'folder')
+  if (dropNode.type !== 'folder') {
     return
+  }
   const folderNode = dropNode as FsFolderNode
   if (folderNode.sectionType === DomainSectionType.Integration) {
     clearDragSources()
@@ -796,8 +813,9 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   let payload: DomainDragPayloadItem[] = []
   try {
     const raw = e.dataTransfer?.getData('text/plain')
-    if (raw)
+    if (raw) {
       payload = JSON.parse(raw)
+    }
   }
   catch { /* ignore */ }
   if (!payload.length) {
@@ -822,12 +840,15 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
     result.errors.forEach(msg => toast.error(msg))
   }
   if (payload.length > 1) {
-    if (result.moved && result.skipped)
+    if (result.moved && result.skipped) {
       toast.success(`Перенесено: ${result.moved}`, { description: `Не перенесено: ${result.skipped}` })
-    else if (result.moved)
+    }
+    else if (result.moved) {
       toast.success(`Перенесено: ${result.moved}`)
-    else if (result.skipped && !result.errors.length)
+    }
+    else if (result.skipped && !result.errors.length) {
       toast.info('Ничего не перенесено', { description: `Не подходят правила для выбранных сущностей (${result.skipped})` })
+    }
   }
 }
 
@@ -980,18 +1001,22 @@ function isManagedTypeFolder(node: FsFolderNode): boolean {
 }
 
 function getFolderIcon(node: FsFolderNode): any {
-  if (node.workspaceIdentity)
+  if (node.workspaceIdentity) {
     return WORKSPACE_PRESENTATION.icon
-  if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
+  }
+  if (node.isRoot && node.id in ROOT_FOLDER_ICONS) {
     return ROOT_FOLDER_ICONS[node.id]?.icon
+  }
   return Folder
 }
 
 function getFolderColorClass(node: FsFolderNode): string {
-  if (node.workspaceIdentity)
+  if (node.workspaceIdentity) {
     return WORKSPACE_PRESENTATION.colorClass
-  if (node.isRoot && node.id in ROOT_FOLDER_ICONS)
+  }
+  if (node.isRoot && node.id in ROOT_FOLDER_ICONS) {
     return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
+  }
   if (node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived') {
     return 'fill-sky-500/30 text-sky-600 dark:text-sky-400'
   }
@@ -1014,8 +1039,9 @@ function getRootDocumentIcon(node: FsFileNode): any | null {
 }
 
 function getRootDocumentIconColor(node: FsFileNode): string {
-  if (node.origin?.kind === 'derived')
+  if (node.origin?.kind === 'derived') {
     return 'text-sky-500'
+  }
   return getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
 }
 
@@ -1063,8 +1089,10 @@ const fsTree = computed<FsNode[]>(() => {
     }),
   )
   const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
-  if (eventRootIndex >= 0) tree[eventRootIndex] = eventRoot
-  else tree.push(eventRoot)
+  if (eventRootIndex >= 0) {
+    tree[eventRootIndex] = eventRoot
+  }
+  else { tree.push(eventRoot) }
 
   const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
   const sessionState = Configurator.session.state
@@ -1271,8 +1299,9 @@ function getFileSelectionKey(node: FsFileNode): string {
 }
 
 function getSelectionKey(item: FlatFsItem): string {
-  if (item.node.type !== 'file')
+  if (item.node.type !== 'file') {
     return ''
+  }
   return getFileSelectionKey(item.node as FsFileNode)
 }
 
@@ -1360,15 +1389,17 @@ function selectRange(anchorKey: string, targetKey: string, rootId: string): void
   const keys = fileItems.map(getSelectionKey)
   const i = keys.indexOf(anchorKey)
   const j = keys.indexOf(targetKey)
-  if (i === -1 || j === -1)
+  if (i === -1 || j === -1) {
     return
+  }
   const [lo, hi] = i <= j ? [i, j] : [j, i]
   const next = new Set(selectedFileKeys.value)
   for (let k = lo; k <= hi; k++) {
     const fi = fileItems[k]
     const key = fi ? getSelectionKey(fi) : ''
-    if (key)
+    if (key) {
       next.add(key)
+    }
   }
   selectedFileKeys.value = next
 }
@@ -1428,9 +1459,10 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   if (isMulti) {
     const next = new Set(selectedFileKeys.value)
     if (selectionKey) {
-      if (next.has(selectionKey))
+      if (next.has(selectionKey)) {
         next.delete(selectionKey)
-      else next.add(selectionKey)
+      }
+      else { next.add(selectionKey) }
     }
     selectedFileKeys.value = next
     lastClickedSelection.value = selectionKey
@@ -1497,8 +1529,9 @@ function openCreateFolderDialog(targetFolder: FsFolderNode, targetPath: string):
 }
 
 function closeCreateFolderDialog(): void {
-  if (createFolderDialog.value.loading)
+  if (createFolderDialog.value.loading) {
     return
+  }
 
   createFolderDialog.value.open = false
   createFolderDialog.value.targetFolder = null
@@ -1507,14 +1540,16 @@ function closeCreateFolderDialog(): void {
 }
 
 async function confirmCreateFolder(): Promise<void> {
-  if (createFolderDialog.value.loading)
+  if (createFolderDialog.value.loading) {
     return
+  }
 
   const targetFolder = createFolderDialog.value.targetFolder
   const targetPath = createFolderDialog.value.targetPath
   const name = createFolderDialog.value.name.trim()
-  if (!targetFolder || !targetPath)
+  if (!targetFolder || !targetPath) {
     return
+  }
   if (!name) {
     toast.error('Введите название папки')
     return
@@ -1549,16 +1584,18 @@ function openFolderDeletionDialog(node: FsFolderNode): void {
 }
 
 function closeFolderDeletionDialog(): void {
-  if (folderDeletionDialog.value.loading)
+  if (folderDeletionDialog.value.loading) {
     return
+  }
   folderDeletionDialog.value.open = false
   folderDeletionDialog.value.plan = null
 }
 
 async function confirmFolderDeletion(): Promise<void> {
   const plan = folderDeletionDialog.value.plan
-  if (!plan)
+  if (!plan) {
     return
+  }
 
   folderDeletionDialog.value.loading = true
   try {
@@ -1590,8 +1627,9 @@ async function confirmFolderDeletion(): Promise<void> {
 }
 
 function openRenameDialog(node: FsFolderNode): void {
-  if (!node.folderId)
+  if (!node.folderId) {
     return
+  }
   renameDialog.value.folderId = String(node.folderId)
   renameDialog.value.newName = node.name
   renameDialog.value.open = true
@@ -1599,8 +1637,9 @@ function openRenameDialog(node: FsFolderNode): void {
 
 async function confirmRename(): Promise<void> {
   const folder = Endge.domain.getFolder(renameDialog.value.folderId)
-  if (!folder)
+  if (!folder) {
     return
+  }
   const newName = renameDialog.value.newName.trim()
   if (!newName) {
     toast.error('Введите название папки')
@@ -1672,17 +1711,20 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     }
     return items
   }
-  if (node.virtual)
+  if (node.virtual) {
     return items
+  }
 
   if (node.type === 'folder') {
     const isRoot = node.isRoot === true
     const supportsFolders = node.sectionType !== DomainSectionType.Integration
-    if (isManagedTypeFolder(node) && !isRoot)
+    if (isManagedTypeFolder(node) && !isRoot) {
       return items
+    }
 
-    if (!Endge.domainRepository.capabilities.mutations)
+    if (!Endge.domainRepository.capabilities.mutations) {
       return items
+    }
 
     if (isRoot && node.sectionType === DomainSectionType.Vocabs) {
       items.push({
@@ -1721,8 +1763,9 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
   }
   else {
     const fileNode = node as FsFileNode
-    if (fileNode.isTableColumn)
+    if (fileNode.isTableColumn) {
       return items
+    }
 
     const contextNodes = getContextFileNodes(fileNode)
     items.push({
@@ -1752,8 +1795,9 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
 
-    if (!Endge.domainRepository.capabilities.mutations)
+    if (!Endge.domainRepository.capabilities.mutations) {
       return items
+    }
 
     const externallyManagedDoc = isExternallyManaged(fileNode)
     const canDeleteDoc = canDelete(fileNode.sectionType, fileNode.docType)
@@ -1827,8 +1871,9 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   }
 
   if (a.type === 'create-folder') {
-    if (!ctxPath)
+    if (!ctxPath) {
       return
+    }
     openCreateFolderDialog(a.node, ctxPath)
     return
   }

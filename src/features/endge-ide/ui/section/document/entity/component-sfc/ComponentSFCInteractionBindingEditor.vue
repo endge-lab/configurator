@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
   ComponentSFCInteractionKeyboardCondition,
   ComponentSFCInteractionTriggerHeldKeys,
@@ -9,6 +8,7 @@ import type {
   ComponentSFCIntrinsicEventDefinition,
   ComponentSFCTableCellInteractionModifier,
 } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
 import { ChevronDown, CircleDot, X } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, ref, useSlots, watch } from 'vue'

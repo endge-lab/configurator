@@ -1,3 +1,4 @@
+import type { ComputedRef, Ref } from 'vue'
 import type {
   CreateWidgetInstanceOptions,
   FloatingWidgetState,
@@ -10,7 +11,6 @@ import type {
   WidgetPosition,
 } from '@/components/layouts/grid/types.ts'
 import type { WidgetChannelMessage, WidgetPopupState } from '@/components/layouts/grid/widget-channel.ts'
-import type { ComputedRef, Ref } from 'vue'
 
 import { computed, isRef, onBeforeUnmount, reactive, ref, toValue, watch } from 'vue'
 
@@ -150,7 +150,7 @@ function getPersistedState(scope = activeLayoutScope.value): Ref<PersistedState>
 
 const persistedState = computed<PersistedState>({
   get: () => getPersistedState().value,
-  set: value => { getPersistedState().value = value },
+  set: (value) => { getPersistedState().value = value },
 })
 
 let nextZIndex = 1000
@@ -181,8 +181,9 @@ export function getLayoutScope(): string {
 }
 
 function hydrateLayoutFromPersisted(): void {
-  if (_isLayoutHydrated)
+  if (_isLayoutHydrated) {
     return
+  }
 
   const positions: DockablePosition[] = ['left', 'right', 'bottom']
 
@@ -294,8 +295,9 @@ export function endWidgetDrag() {
 }
 
 export function getWidgetOrder(position: WidgetPosition): string[] {
-  if (position === 'floating' || position === 'popup')
+  if (position === 'floating' || position === 'popup') {
     return []
+  }
   return persistedState.value.areas[position]?.order ?? []
 }
 
@@ -303,8 +305,9 @@ export function getWidgetOrder(position: WidgetPosition): string[] {
 export function migratePersistedWidgetId(previousId: string, nextId: string): void {
   const previous = String(previousId ?? '').trim()
   const next = String(nextId ?? '').trim()
-  if (!previous || !next || previous === next)
+  if (!previous || !next || previous === next) {
     return
+  }
 
   const current = persistedState.value
   const state: PersistedState = {
@@ -323,10 +326,12 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
     const area = state.areas[position]
     area.order = area.order.map(id => id === previous ? next : id)
     area.order = area.order.filter((id, index, values) => values.indexOf(id) === index)
-    if (area.activeWidget === previous)
+    if (area.activeWidget === previous) {
       area.activeWidget = next
-    if (layoutState.widgets.areas[position].activeWidget === previous)
+    }
+    if (layoutState.widgets.areas[position].activeWidget === previous) {
       layoutState.widgets.areas[position].activeWidget = next
+    }
   }
   if (state.definitionPositions[previous]) {
     state.definitionPositions[next] ??= state.definitionPositions[previous]
@@ -374,8 +379,9 @@ export function removePersistedWidgetId(widgetId: string): void {
 }
 
 export function reorderWidget(widgetId: string, targetWidgetId: string, position: WidgetPosition): void {
-  if (position === 'floating' || position === 'popup')
+  if (position === 'floating' || position === 'popup') {
     return
+  }
 
   const areaState = persistedState.value.areas[position]
   if (!areaState.order) {
@@ -398,8 +404,9 @@ export function reorderWidget(widgetId: string, targetWidgetId: string, position
   const fromIndex = order.indexOf(widgetId)
   const toIndex = order.indexOf(targetWidgetId)
 
-  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex)
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
     return
+  }
 
   order.splice(fromIndex, 1)
   order.splice(toIndex, 0, widgetId)
@@ -496,46 +503,57 @@ export function setAreaActiveWidget(position: DockablePosition, widgetId: string
 
 export function registerWidget(definition: WidgetDefinition): void {
   // Validate required fields
-  if (!definition.id || typeof definition.id !== 'string')
+  if (!definition.id || typeof definition.id !== 'string') {
     throw new Error('Widget definition must have a valid string id')
-  if (!definition.title || typeof definition.title !== 'string')
+  }
+  if (!definition.title || typeof definition.title !== 'string') {
     throw new Error('Widget definition must have a valid string title')
-  if (!definition.icon)
+  }
+  if (!definition.icon) {
     throw new Error('Widget definition must have an icon')
-  if (definition.content !== 'component' && definition.content !== 'iframe')
+  }
+  if (definition.content !== 'component' && definition.content !== 'iframe') {
     throw new Error('Widget definition content must be "component" or "iframe"')
+  }
 
   // Validate content-specific fields
   if (definition.content === 'iframe') {
-    if ('defaultComponent' in definition && definition.defaultComponent !== undefined)
+    if ('defaultComponent' in definition && definition.defaultComponent !== undefined) {
       throw new Error('iframe widget cannot have defaultComponent')
-    if ('defaultProps' in definition && definition.defaultProps !== undefined)
+    }
+    if ('defaultProps' in definition && definition.defaultProps !== undefined) {
       throw new Error('iframe widget cannot have defaultProps')
+    }
   }
   if (definition.content === 'component') {
-    if ('defaultUrl' in definition && definition.defaultUrl !== undefined)
+    if ('defaultUrl' in definition && definition.defaultUrl !== undefined) {
       throw new Error('component widget cannot have defaultUrl')
+    }
   }
 
   // Validate popup restrictions for component widgets
   if (definition.content === 'component') {
-    if (definition.allowedPositions?.includes('popup'))
+    if (definition.allowedPositions?.includes('popup')) {
       throw new Error('component widget cannot include "popup" in allowedPositions')
-    if (definition.defaultPosition === 'popup')
+    }
+    if (definition.defaultPosition === 'popup') {
       throw new Error('component widget cannot have "popup" as defaultPosition')
+    }
   }
 
   // Validate defaultPosition is in allowedPositions
   if (definition.allowedPositions && definition.defaultPosition) {
-    if (!definition.allowedPositions.includes(definition.defaultPosition))
+    if (!definition.allowedPositions.includes(definition.defaultPosition)) {
       throw new Error(`defaultPosition "${definition.defaultPosition}" must be included in allowedPositions`)
+    }
   }
 
   // Validate floatingConstraints only when floating is allowed
   if (definition.floatingConstraints) {
     const allowedPositions = definition.allowedPositions ?? ['left', 'right', 'bottom', 'floating']
-    if (!allowedPositions.includes('floating'))
+    if (!allowedPositions.includes('floating')) {
       throw new Error('floatingConstraints can only be specified when "floating" is in allowedPositions')
+    }
   }
 
   const savedPosition = persistedState.value.definitionPositions[definition.id]
@@ -609,8 +627,9 @@ export function registerWidget(definition: WidgetDefinition): void {
 
 export function unregisterWidget(definitionId: string): void {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return
+  }
 
   const position = definition.position
 
@@ -657,8 +676,9 @@ export function unregisterAllWidgets(): void {
 
 export function getWidget(definitionId: string) {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return null
+  }
 
   const instances = Object.values(layoutState.widgets.instances)
     .filter(i => i.definitionId === definitionId)
@@ -687,15 +707,18 @@ const popupCloseCheckIntervals = new Map<string, ReturnType<typeof setInterval>>
 
 export function moveWidget(definitionId: string, position: WidgetPosition): void {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return
+  }
 
   const allowedPositions = definition.allowedPositions ?? ['left', 'right', 'bottom', 'floating']
-  if (!allowedPositions.includes(position))
+  if (!allowedPositions.includes(position)) {
     return
+  }
 
-  if (definition.content === 'component' && position === 'popup')
+  if (definition.content === 'component' && position === 'popup') {
     return
+  }
 
   const oldPosition = definition.position
 
@@ -801,8 +824,9 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
 
 export function showWidget(definitionId: string): void {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return
+  }
 
   definition.minimized = false
   const position = definition.position
@@ -832,8 +856,9 @@ export function showWidget(definitionId: string): void {
 
 export function hideWidget(definitionId: string): void {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return
+  }
 
   const position = definition.position
 
@@ -855,8 +880,9 @@ export function hideWidget(definitionId: string): void {
 
 export function toggleWidget(definitionId: string): void {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     return
+  }
 
   const position = definition.position
 
@@ -894,32 +920,38 @@ export function createWidgetInstance(
   options?: CreateWidgetInstanceOptions,
 ): string {
   const definition = layoutState.widgets.definitions[definitionId]
-  if (!definition)
+  if (!definition) {
     throw new Error(`Widget definition "${definitionId}" not found`)
+  }
 
   // Validate content-specific instance fields
   if (definition.content === 'iframe') {
-    if ('component' in instance && instance.component !== undefined)
+    if ('component' in instance && instance.component !== undefined) {
       throw new Error('iframe widget instance cannot have component')
-    if ('props' in instance && instance.props !== undefined)
+    }
+    if ('props' in instance && instance.props !== undefined) {
       throw new Error('iframe widget instance cannot have props')
+    }
 
     // Check if url is required (no default url in definition)
     const hasUrl = 'url' in instance && instance.url !== undefined
     const hasDefaultUrl = 'defaultUrl' in definition && definition.defaultUrl !== undefined
-    if (!hasUrl && !hasDefaultUrl)
+    if (!hasUrl && !hasDefaultUrl) {
       throw new Error('iframe widget instance requires url (no defaultUrl in definition)')
+    }
   }
 
   if (definition.content === 'component') {
-    if ('url' in instance && instance.url !== undefined)
+    if ('url' in instance && instance.url !== undefined) {
       throw new Error('component widget instance cannot have url')
+    }
 
     // Check if component is required (no default component in definition)
     const hasComponent = 'component' in instance && instance.component !== undefined
     const hasDefaultComponent = 'defaultComponent' in definition && definition.defaultComponent !== undefined
-    if (!hasComponent && !hasDefaultComponent)
+    if (!hasComponent && !hasDefaultComponent) {
       throw new Error('component widget instance requires component (no defaultComponent in definition)')
+    }
   }
 
   if (definition.singleton) {
@@ -949,8 +981,9 @@ export function createWidgetInstance(
 
 export function destroyWidgetInstance(instanceId: string): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return
+  }
 
   const definition = layoutState.widgets.definitions[instance.definitionId]
   const definitionId = instance.definitionId
@@ -1006,8 +1039,9 @@ export function getWidgetInstance(instanceId: string): WidgetInstance | null {
 
 export function focusWidgetInstance(instanceId: string): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return
+  }
 
   showWidget(instance.definitionId)
 }
@@ -1028,8 +1062,9 @@ export function setWidgetInstanceLoading(instanceId: string, isLoading: boolean)
 
 export function addHeaderAction(instanceId: string, action: WidgetHeaderAction): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return
+  }
 
   if (!instance.headerActions) {
     instance.headerActions = { header: [], options: [] }
@@ -1039,16 +1074,18 @@ export function addHeaderAction(instanceId: string, action: WidgetHeaderAction):
 
 export function removeHeaderAction(instanceId: string, actionId: string): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance?.headerActions)
+  if (!instance?.headerActions) {
     return
+  }
 
   instance.headerActions.header = instance.headerActions.header.filter(a => a.id !== actionId)
 }
 
 export function addOptionsAction(instanceId: string, action: WidgetHeaderAction): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return
+  }
 
   if (!instance.headerActions) {
     instance.headerActions = { header: [], options: [] }
@@ -1058,8 +1095,9 @@ export function addOptionsAction(instanceId: string, action: WidgetHeaderAction)
 
 export function removeOptionsAction(instanceId: string, actionId: string): void {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance?.headerActions)
+  if (!instance?.headerActions) {
     return
+  }
 
   instance.headerActions.options = instance.headerActions.options.filter(a => a.id !== actionId)
 }
@@ -1098,12 +1136,14 @@ export function resetLayout() {
 // Popup window management
 export function openWidgetPopup(instanceId: string): Window | null {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return null
+  }
 
   const definition = layoutState.widgets.definitions[instance.definitionId]
-  if (!definition || definition.content !== 'iframe')
+  if (!definition || definition.content !== 'iframe') {
     return null
+  }
 
   // Check if popup is already open
   if (isPopupOpen(instanceId)) {
@@ -1138,8 +1178,9 @@ export function openWidgetPopup(instanceId: string): Window | null {
 }
 
 function serializeHeaderActions(actions?: { header: WidgetHeaderAction[], options: WidgetHeaderAction[] }) {
-  if (!actions)
+  if (!actions) {
     return undefined
+  }
 
   const serialize = (action: WidgetHeaderAction) => ({
     id: action.id,
@@ -1157,12 +1198,14 @@ function serializeHeaderActions(actions?: { header: WidgetHeaderAction[], option
 
 export function getWidgetPopupState(instanceId: string): WidgetPopupState | null {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return null
+  }
 
   const definition = layoutState.widgets.definitions[instance.definitionId]
-  if (!definition || definition.content !== 'iframe')
+  if (!definition || definition.content !== 'iframe') {
     return null
+  }
 
   const iframeInstance = instance as { url?: string }
   const iframeDefinition = definition as { defaultUrl?: string }
@@ -1373,8 +1416,9 @@ function schedulePopupCloseCheck(instanceId: string) {
 let channelInitialized = false
 
 export function initWidgetChannel() {
-  if (channelInitialized)
+  if (channelInitialized) {
     return
+  }
 
   channelInitialized = true
   const channel = getHostWidgetChannel()
@@ -1432,12 +1476,14 @@ export function cleanupWidgetChannel() {
 
 export function restorePopupInstance(instanceId: string) {
   const instance = layoutState.widgets.instances[instanceId]
-  if (!instance)
+  if (!instance) {
     return
+  }
 
   const definition = layoutState.widgets.definitions[instance.definitionId]
-  if (!definition || definition.content !== 'iframe')
+  if (!definition || definition.content !== 'iframe') {
     return
+  }
 
   // Clear minimized state
   if (layoutState.widgets.areas.popup.states[instanceId]) {

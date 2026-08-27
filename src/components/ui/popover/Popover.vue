@@ -24,8 +24,9 @@ function toggle(): void {
 watch(
   () => props.open,
   (v) => {
-    if (typeof v === 'boolean')
+    if (typeof v === 'boolean') {
       open.value = v
+    }
   },
   { immediate: true },
 )
@@ -37,12 +38,15 @@ watch(open, (v) => {
 
 function onDocPointerDown(e: PointerEvent): void {
   const t = e.target as Node | null
-  if (!t)
+  if (!t) {
     return
-  if (triggerEl.value?.contains(t))
+  }
+  if (triggerEl.value?.contains(t)) {
     return
-  if (contentEl.value?.contains(t))
+  }
+  if (contentEl.value?.contains(t)) {
     return
+  }
   close()
 }
 

@@ -14,13 +14,13 @@ const props = withDefaults(defineProps<Props>(), {})
     severity="success"
     value="Компонент"
     class="text-xs"
-  ></Tag>
+  />
   <Tag
     v-else-if="props.value === ComponentType.Html"
     severity="info"
     value="html"
     class="text-xs"
-  ></Tag>
+  />
 </template>
 
 <style scoped lang="scss"></style>

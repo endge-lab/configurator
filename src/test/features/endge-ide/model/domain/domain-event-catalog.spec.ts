@@ -1,6 +1,6 @@
 import {
-  createEmptyComponentSFCPortManifest,
   createBuiltInComponentPortManifest,
+  createEmptyComponentSFCPortManifest,
   DomainSectionType,
   TABLE_EVENT_DEFINITIONS,
 } from '@endge/core'

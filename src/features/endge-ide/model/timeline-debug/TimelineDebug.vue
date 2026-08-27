@@ -1,26 +1,22 @@
 <script setup lang="ts">
+import type {
+  DiagnosticsLogTreeNode,
+  DiagnosticsSpanTreeNode,
+  DiagnosticsTreeNode,
+} from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 import { Endge } from '@endge/core'
-import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   CANVAS_DEBUG_ID,
-  useTimelineDebugStore,
+  useTimelineDebug,
 } from '@/features/endge-ide/model/timeline-debug/store.ts'
-import type {
-  DiagnosticsLogTreeNode,
-  DiagnosticsSpanTreeNode,
-  DiagnosticsTreeNode,
-} from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 
 // -------------------- store --------------------
-const tlStore = useTimelineDebugStore()
-const { timeline, init, destroy, applyCurrentJournal } = tlStore
-const { details } = storeToRefs(tlStore)
+const { timeline, details, init, destroy, applyCurrentJournal } = useTimelineDebug()
 
 // -------------------- lifecycle --------------------
 onMounted(async () => {
@@ -36,16 +32,18 @@ onBeforeUnmount(() => {
 
 // -------------------- helpers --------------------
 function fmtMs(ms: number): string {
-  if (ms < 1)
+  if (ms < 1) {
     return `${ms.toFixed(2)} ms`
-  if (ms < 1000)
+  }
+  if (ms < 1000) {
     return `${Math.round(ms)} ms`
+  }
   const s = ms / 1000
   return `${s.toFixed(s < 10 ? 2 : 1)} s`
 }
 
 // -------------------- tree model --------------------
-type RowData = {
+interface RowData {
   name: string
   kind: 'span' | 'log'
   scope?: string
@@ -53,7 +51,7 @@ type RowData = {
   message?: string
 }
 
-type TreeNode = {
+interface TreeNode {
   key: string
   data: RowData
   children?: TreeNode[]
@@ -99,8 +97,9 @@ function toTreeNode(node: DiagnosticsTreeNode, idx?: number): TreeNode {
 }
 
 const treeNodes = computed<TreeNode[]>(() => {
-  if (!details.value)
+  if (!details.value) {
     return []
+  }
   return [toTreeNode(details.value)]
 })
 
@@ -124,8 +123,9 @@ function expandAll(): void {
   const walk = (arr: TreeNode[]) => {
     for (const n of arr) {
       all[n.key] = true
-      if (n.children?.length)
+      if (n.children?.length) {
         walk(n.children)
+      }
     }
   }
   walk(treeNodes.value)
@@ -137,7 +137,7 @@ function collapseAll(): void {
 }
 
 // -------------------- flatten for rendering --------------------
-type FlatRow = {
+interface FlatRow {
   node: TreeNode
   depth: number
 }
@@ -176,15 +176,19 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
 
     <Tabs v-model="activeTab" class="flex flex-col gap-3 min-h-0">
       <TabsList class="grid grid-cols-2 w-full">
-        <TabsTrigger value="timeline">Timeline</TabsTrigger>
-        <TabsTrigger value="details">Детализация</TabsTrigger>
+        <TabsTrigger value="timeline">
+          Timeline
+        </TabsTrigger>
+        <TabsTrigger value="details">
+          Детализация
+        </TabsTrigger>
       </TabsList>
 
       <!-- timeline -->
       <TabsContent value="timeline" class="m-0">
         <Card class="p-3">
           <div class="h-[300px] overflow-hidden rounded-md border bg-muted/20">
-            <canvas :id="CANVAS_DEBUG_ID" class="w-full h-full"></canvas>
+            <canvas :id="CANVAS_DEBUG_ID" class="w-full h-full" />
           </div>
         </Card>
       </TabsContent>
@@ -202,7 +206,9 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
 
         <Card class="p-0 flex-1 min-h-0">
           <div class="border-b px-4 py-3">
-            <div class="text-sm font-medium">Дерево логов</div>
+            <div class="text-sm font-medium">
+              Дерево логов
+            </div>
             <div class="text-xs text-muted-foreground">
               Выберите span на таймлайне, чтобы увидеть детали.
             </div>
@@ -221,7 +227,9 @@ const activeTab = ref<'timeline' | 'details'>('timeline')
                 <!-- header row -->
                 <div class="grid grid-cols-[1fr_140px] gap-4 px-3 py-2 text-xs font-medium text-muted-foreground">
                   <div>Операция</div>
-                  <div class="text-right">Время</div>
+                  <div class="text-right">
+                    Время
+                  </div>
                 </div>
 
                 <!-- rows -->

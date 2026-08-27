@@ -23,8 +23,9 @@ const initialSize = ref({ width: 0, height: 0 })
 const initialPos = ref({ x: 0, y: 0 })
 
 const style = computed(() => {
-  if (!props.state)
+  if (!props.state) {
     return {}
+  }
 
   return {
     left: `${props.state.x}px`,
@@ -40,8 +41,9 @@ const style = computed(() => {
 const constraints = computed(() => props.definition.floatingConstraints ?? {})
 
 function handleMouseDown(event: MouseEvent) {
-  if ((event.target as HTMLElement).closest('[data-resize-handle]'))
+  if ((event.target as HTMLElement).closest('[data-resize-handle]')) {
     return
+  }
 
   emit('focus')
   isDragging.value = true

@@ -13,7 +13,7 @@ export class BackendVersionServiceError extends Error {
   }
 }
 
-export class BackendVersion_Service {
+export class BackendVersionHttp_Adapter {
   public async get(backendURL: string): Promise<BackendVersion> {
     const baseURL = normalizeBackendURL(backendURL)
     let response: Response

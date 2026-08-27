@@ -4,7 +4,7 @@ import type {
   ConfiguratorRelease,
   ConfiguratorRestorePlan,
 } from '@/features/configurator-releases/domain/types/configurator-release.type'
-import type { ConfiguratorReleases_Service } from '@/features/configurator-releases/model/ConfiguratorReleases_Service'
+import type { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/model/adapters/ConfiguratorReleasesHttp_Adapter'
 
 export class ConfiguratorReleases_Module {
   public releases: ConfiguratorRelease[] = []
@@ -14,7 +14,7 @@ export class ConfiguratorReleases_Module {
   public error: string | null = null
   private readonly _listeners = new Set<() => void>()
 
-  public constructor(private readonly _service: ConfiguratorReleases_Service) {}
+  public constructor(private readonly _service: ConfiguratorReleasesHttp_Adapter) {}
 
   public subscribe(listener: () => void): () => void {
     this._listeners.add(listener)

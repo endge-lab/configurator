@@ -1,8 +1,8 @@
 import type { BackendVersionState } from '@/features/backend-connections/domain/types/backend-version.type'
-import type { BackendVersion_Service } from '@/features/backend-connections/model/BackendVersion_Service'
+import type { BackendVersionHttp_Adapter } from '@/features/backend-connections/model/adapters/BackendVersionHttp_Adapter'
 
+import { BackendVersionServiceError } from '@/features/backend-connections/model/adapters/BackendVersionHttp_Adapter'
 import { normalizeBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
-import { BackendVersionServiceError } from '@/features/backend-connections/model/BackendVersion_Service'
 
 const cacheLifetimeMs = 20_000
 
@@ -11,7 +11,7 @@ export class BackendVersions_Module {
   private readonly _requests = new Map<string, Promise<void>>()
   private readonly _listeners = new Set<() => void>()
 
-  public constructor(private readonly _service: BackendVersion_Service) {}
+  public constructor(private readonly _service: BackendVersionHttp_Adapter) {}
 
   public subscribe(listener: () => void): () => void {
     this._listeners.add(listener)

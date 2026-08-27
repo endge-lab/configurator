@@ -6,10 +6,10 @@
 import { DomainSectionType, Endge } from '@endge/core'
 import { Serialize } from '@endge/utils'
 
-export type DomainOpCreate = { op: 'create', type: string, body: Record<string, unknown> }
-export type DomainOpUpdateFull = { op: 'update', type: string, identity: string, body: Record<string, unknown> }
-export type DomainOpUpdatePatch = { op: 'update', type: string, identity: string, patch: Record<string, unknown> }
-export type DomainOpDelete = { op: 'delete', type: string, identity: string }
+export interface DomainOpCreate { op: 'create', type: string, body: Record<string, unknown> }
+export interface DomainOpUpdateFull { op: 'update', type: string, identity: string, body: Record<string, unknown> }
+export interface DomainOpUpdatePatch { op: 'update', type: string, identity: string, patch: Record<string, unknown> }
+export interface DomainOpDelete { op: 'delete', type: string, identity: string }
 
 export type DomainOp = DomainOpCreate | DomainOpUpdateFull | DomainOpUpdatePatch | DomainOpDelete
 
@@ -18,13 +18,18 @@ const DOMAIN_OPS_KEY = 'domainOps'
 
 function parseDomainOpsFromBlock(raw: string): DomainOp[] | null {
   const trimmed = raw.trim()
-  if (!trimmed) return null
+  if (!trimmed) {
+    return null
+  }
   try {
     const json = JSON.parse(trimmed)
-    if (Array.isArray(json) && json.length > 0)
+    if (Array.isArray(json) && json.length > 0) {
       return json as DomainOp[]
+    }
     const ops = (json as { domainOps?: DomainOp[] })[DOMAIN_OPS_KEY]
-    if (!Array.isArray(ops) || ops.length === 0) return null
+    if (!Array.isArray(ops) || ops.length === 0) {
+      return null
+    }
     return ops
   }
   catch {
@@ -37,12 +42,16 @@ function parseDomainOpsFromBlock(raw: string): DomainOp[] | null {
  * Поддерживает формат {"domainOps": [...]} и массив в корне [...].
  */
 export function parseDomainOpsFromMessage(text: string): DomainOp[] | null {
-  if (!text?.trim()) return null
+  if (!text?.trim()) {
+    return null
+  }
   let m: RegExpExecArray | null
   DOMAIN_OPS_BLOCK_REG.lastIndex = 0
   while ((m = DOMAIN_OPS_BLOCK_REG.exec(text)) !== null) {
     const ops = parseDomainOpsFromBlock(m[1])
-    if (ops?.length) return ops
+    if (ops?.length) {
+      return ops
+    }
   }
   return null
 }
@@ -74,7 +83,9 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
 
 function getEntityByMergeKey(type: string, identity: string): unknown {
   const section = MERGE_KEY_TO_SECTION[type]
-  if (section == null) return null
+  if (section == null) {
+    return null
+  }
   const domain = Endge.domain as any
   const id = identity
   const numId = /^\d+$/.test(identity) ? Number(identity) : null
@@ -129,9 +140,13 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
 
 function removeEntityByMergeKey(type: string, entity: any): void {
   const section = MERGE_KEY_TO_SECTION[type]
-  if (section == null) return
+  if (section == null) {
+    return
+  }
   const domain = Endge.domain as any
-  const rem = (fn: (x: any) => void) => { fn(entity) }
+  const rem = (fn: (x: any) => void) => {
+    fn(entity)
+  }
   switch (section) {
     case DomainSectionType.Query:
       rem(domain.removeQuery?.bind(domain))
@@ -207,8 +222,9 @@ function isMergeKeySupported(type: string): boolean {
 }
 
 function toPlain(entity: any): Record<string, unknown> {
-  if (entity && typeof entity.toPlain === 'function')
+  if (entity && typeof entity.toPlain === 'function') {
     return entity.toPlain() as Record<string, unknown>
+  }
   try {
     return Serialize.toPlain(entity) as Record<string, unknown>
   }
@@ -324,8 +340,9 @@ export function applyDomainOps(ops: DomainOp[]): ApplyDomainOpsResult {
     }
   }
 
-  if (applied > 0)
+  if (applied > 0) {
     domain.notify()
+  }
 
   return { applied, errors }
 }

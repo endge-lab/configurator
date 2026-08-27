@@ -10,7 +10,7 @@ export class BackendConnectionServiceError extends Error {
 }
 
 /** Единственный сетевой adapter каталога. Всегда привязан к primary backend. */
-export class BackendConnections_Service implements BackendConnectionsService {
+export class BackendConnectionsHttp_Adapter implements BackendConnectionsService {
   private readonly _baseURL: string
 
   public constructor(primaryBackendURL: string) {

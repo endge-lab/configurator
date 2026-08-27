@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { getCanonicalLocalhostURL, getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 
-describe('Configurator OIDC callback URL', () => {
+describe('configurator OIDC callback URL', () => {
   it('canonicalizes numeric loopback origins to localhost', () => {
     expect(getConfiguratorOidcPopupCallbackURL('http://127.0.0.1:5173'))
       .toBe('http://localhost:5173/auth/oidc/popup-callback')

@@ -24,8 +24,8 @@ import { Separator } from '@/components/ui/separator'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -37,6 +37,8 @@ interface SourceEditorHandle {
   formatDocument: () => Promise<void>
 }
 type VocabEditorTab = 'general' | 'source' | 'artifact' | 'diagnostics'
+const props = defineProps<{ tabContext?: { editor?: RVocabsEditor } }>()
+
 const tabButtons = [
   { id: 'general', label: 'Общее', icon: Settings2 },
   { id: 'source', label: 'Source', icon: Code2 },
@@ -44,7 +46,6 @@ const tabButtons = [
   { id: 'diagnostics', label: 'Диагностика', icon: TriangleAlert },
 ] as const
 
-const props = defineProps<{ tabContext?: { editor?: RVocabsEditor } }>()
 const editor = computed<RVocabsEditor | null>(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
@@ -55,7 +56,11 @@ const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const loading = ref(false)
 const activeModel = computed<boolean>({
   get: () => editor.value?.active !== false,
-  set: value => { if (editor.value) editor.value.active = value === true },
+  set: (value) => {
+    if (editor.value) {
+      editor.value.active = value === true
+    }
+  },
 })
 const compiled = computed(() => editor.value ? Endge.source.compile('vocab', editor.value.source) : null)
 const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
@@ -68,8 +73,9 @@ function selectTab(tab: VocabEditorTab): void {
 
 async function loadVocab(): Promise<void> {
   const current = editor.value
-  if (!current || !canLoadVocab.value)
+  if (!current || !canLoadVocab.value) {
     return
+  }
   const vocab = Endge.domain.getVocab(current.id ?? current.identity)
   if (!vocab) {
     toast.error('Словарь не найден в домене')

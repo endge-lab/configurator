@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { ComponentSFCTagAttributeContract, EndgeSFCEditingConfiguration, RComponentSFC } from '@endge/core'
 import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
-import type { ComponentSFCTagAttributeContract, EndgeSFCEditingConfiguration, RComponentSFC } from '@endge/core'
 
 import {
   compileComponentSFC,

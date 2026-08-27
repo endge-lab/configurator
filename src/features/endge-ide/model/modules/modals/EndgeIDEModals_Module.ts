@@ -1,5 +1,5 @@
-import type { CompositionCreateOwner } from '@/features/endge-ide/model/domain/composition-create'
 import type { DomainDocumentType, DomainSectionType } from '@endge/core'
+import type { CompositionCreateOwner } from '@/features/endge-ide/model/domain/composition-create'
 
 import { ref } from 'vue'
 

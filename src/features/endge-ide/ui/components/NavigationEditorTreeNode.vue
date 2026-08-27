@@ -41,14 +41,20 @@ function select(): void {
 }
 
 function fallbackTitle(type: NavigationTreeNodeType): string {
-  if (type === 'section') { return 'Безымянная секция' }
-  if (type === 'group') { return 'Безымянная группа' }
+  if (type === 'section') {
+    return 'Безымянная секция'
+  }
+  if (type === 'group') {
+    return 'Безымянная группа'
+  }
   return 'Безымянная ссылка'
 }
 
 function resolveDropPosition(event: DragEvent): DropPosition {
   const target = event.currentTarget as HTMLElement | null
-  if (!target) { return 'after' }
+  if (!target) {
+    return 'after'
+  }
 
   const rect = target.getBoundingClientRect()
   const ratio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 1
@@ -57,8 +63,12 @@ function resolveDropPosition(event: DragEvent): DropPosition {
     return ratio < 0.5 ? 'before' : 'after'
   }
 
-  if (ratio < 0.25) { return 'before' }
-  if (ratio > 0.75) { return 'after' }
+  if (ratio < 0.25) {
+    return 'before'
+  }
+  if (ratio > 0.75) {
+    return 'after'
+  }
   return 'inside'
 }
 
@@ -93,9 +103,15 @@ function clearDropPosition(): void {
 }
 
 function dropClass(): string {
-  if (dropPosition.value === 'inside') { return 'border-sky-500 bg-sky-500/10 ring-2 ring-sky-300/70' }
-  if (dropPosition.value === 'before') { return 'border-t-sky-500 border-t-4 bg-sky-500/5' }
-  if (dropPosition.value === 'after') { return 'border-b-sky-500 border-b-4 bg-sky-500/5' }
+  if (dropPosition.value === 'inside') {
+    return 'border-sky-500 bg-sky-500/10 ring-2 ring-sky-300/70'
+  }
+  if (dropPosition.value === 'before') {
+    return 'border-t-sky-500 border-t-4 bg-sky-500/5'
+  }
+  if (dropPosition.value === 'after') {
+    return 'border-b-sky-500 border-b-4 bg-sky-500/5'
+  }
   return ''
 }
 </script>

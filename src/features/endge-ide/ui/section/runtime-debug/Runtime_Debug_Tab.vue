@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Play } from 'lucide-vue-next'
-import { toast } from 'vue-sonner'
 import { Endge } from '@endge/core'
 import { useSubscribableRefAuto } from '@endge/ui-vue'
+import { Play } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -24,8 +24,9 @@ const debuggerRef = useSubscribableRefAuto(Endge.runtimeDebugger)
 
 const targets = computed(() => {
   const tab = debugTab.value
-  if (!tab)
+  if (!tab) {
     return [] as string[]
+  }
   return debuggerRef.value.getAnalysis(tab.id) ?? []
 })
 

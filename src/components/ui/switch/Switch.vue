@@ -28,8 +28,9 @@ const isChecked = computed<boolean>({
 })
 
 function toggle(): void {
-  if (props.disabled)
+  if (props.disabled) {
     return
+  }
   isChecked.value = !isChecked.value
 }
 </script>
@@ -53,4 +54,3 @@ function toggle(): void {
     />
   </button>
 </template>
-

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 import type { Component, CSSProperties } from 'vue'
+import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 
 import { Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'

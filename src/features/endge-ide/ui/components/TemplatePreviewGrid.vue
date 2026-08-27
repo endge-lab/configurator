@@ -62,11 +62,13 @@ const MENU_REMOVE_LABEL = 'Удалить'
 
 const labelsByIdentity = computed(() => {
   const out: Record<string, string> = {}
-  if (!props.areaLabels)
+  if (!props.areaLabels) {
     return out
+  }
   if (Array.isArray(props.areaLabels)) {
-    for (const a of props.areaLabels)
+    for (const a of props.areaLabels) {
       out[a.identity] = a.title ?? a.identity
+    }
   }
   else {
     Object.assign(out, props.areaLabels)
@@ -76,8 +78,9 @@ const labelsByIdentity = computed(() => {
 
 const blocksBySlotId = computed(() => {
   const out: Record<string, PagePreviewBlock[]> = {}
-  for (const a of props.pageAreas ?? [])
+  for (const a of props.pageAreas ?? []) {
     out[a.slotId] = a.blocks ?? []
+  }
   return out
 })
 

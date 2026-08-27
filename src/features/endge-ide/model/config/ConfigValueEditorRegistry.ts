@@ -4,12 +4,24 @@ export type ConfigValueEditorKind = 'string' | 'number' | 'boolean' | 'enum' | '
 
 /** Single dispatch registry for source defaults and effective context values. */
 export function resolveConfigValueEditor(type: TypeSourceExpression): ConfigValueEditorKind {
-  if (type.kind === 'enum') return 'enum'
-  if (type.kind === 'array') return 'array'
-  if (type.kind === 'object') return 'object'
-  if (type.kind === 'record') return 'record'
-  if (type.kind === 'union') return 'union'
-  if (type.kind !== 'reference') return 'json'
+  if (type.kind === 'enum') {
+    return 'enum'
+  }
+  if (type.kind === 'array') {
+    return 'array'
+  }
+  if (type.kind === 'object') {
+    return 'object'
+  }
+  if (type.kind === 'record') {
+    return 'record'
+  }
+  if (type.kind === 'union') {
+    return 'union'
+  }
+  if (type.kind !== 'reference') {
+    return 'json'
+  }
   switch (type.identity) {
     case 'String': case 'ID': return 'string'
     case 'Number': return 'number'

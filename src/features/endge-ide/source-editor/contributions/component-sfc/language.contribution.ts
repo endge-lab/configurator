@@ -1,5 +1,4 @@
 /* eslint-disable style/max-statements-per-line */
-import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type {
   ComponentSFCAttributeAnalysisOptions,
   ComponentSFCTagAttributeContract,
@@ -8,6 +7,7 @@ import type {
   RComponentSFC_AST_TemplateNode,
 } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
+import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
 import {
   Endge,

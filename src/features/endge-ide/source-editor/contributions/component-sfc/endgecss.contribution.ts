@@ -50,13 +50,17 @@ export function createSFCStyleEndgeCSSContribution(): ScriptEditorExtension {
       const completion = monaco.languages.registerCompletionItemProvider('html', {
         triggerCharacters: ['@', ':', '.', '#', '-'],
         provideCompletionItems(currentModel, position) {
-          if (currentModel !== model) return { suggestions: [] }
+          if (currentModel !== model) {
+            return { suggestions: [] }
+          }
           const offset = model.getOffsetAt(position)
           const block = Array.from(model.getValue().matchAll(STYLE_PATTERN)).find((match) => {
             const start = (match.index ?? 0) + match[0].indexOf('>') + 1
             return offset >= start && offset <= start + (match[2]?.length ?? 0)
           })
-          if (!block) return { suggestions: [] }
+          if (!block) {
+            return { suggestions: [] }
+          }
           const word = model.getWordUntilPosition(position)
           const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
           const suggestions = Endge.source.completions('style', { source: block[2] ?? '' }).map(item => ({

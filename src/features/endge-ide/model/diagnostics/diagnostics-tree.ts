@@ -11,8 +11,9 @@ export function buildDiagnosticsTree(records: readonly DiagnosticsRecord[]): Dia
   const spans = new Map<string, DiagnosticsSpanTreeNode>()
 
   for (const record of records) {
-    if (record.signal !== 'span')
+    if (record.signal !== 'span') {
       continue
+    }
     spans.set(record.spanId, {
       id: `span:${record.spanId}`,
       kind: 'span',
@@ -30,15 +31,16 @@ export function buildDiagnosticsTree(records: readonly DiagnosticsRecord[]): Dia
 
   for (const node of spans.values()) {
     const parent = node.record.parentSpanId ? spans.get(node.record.parentSpanId) : undefined
-    if (parent)
+    if (parent) {
       parent.children.push(node)
-    else
-      roots.push(node)
+    }
+    else { roots.push(node) }
   }
 
   for (const record of records) {
-    if (record.signal !== 'log')
+    if (record.signal !== 'log') {
       continue
+    }
     const node: DiagnosticsLogTreeNode = {
       id: `log:${record.id}`,
       kind: 'log',
@@ -51,10 +53,10 @@ export function buildDiagnosticsTree(records: readonly DiagnosticsRecord[]): Dia
       record,
     }
     const parent = record.spanId ? spans.get(record.spanId) : undefined
-    if (parent)
+    if (parent) {
       parent.children.push(node)
-    else
-      roots.push(node)
+    }
+    else { roots.push(node) }
   }
 
   sortDiagnosticsTree(roots)
@@ -67,13 +69,16 @@ export function findDiagnosticsSpanNode(
   spanId: string,
 ): DiagnosticsSpanTreeNode | null {
   for (const node of nodes) {
-    if (node.kind !== 'span')
+    if (node.kind !== 'span') {
       continue
-    if (node.spanId === spanId)
+    }
+    if (node.spanId === spanId) {
       return node
+    }
     const nested = findDiagnosticsSpanNode(node.children, spanId)
-    if (nested)
+    if (nested) {
       return nested
+    }
   }
   return null
 }
@@ -82,7 +87,8 @@ export function findDiagnosticsSpanNode(
 function sortDiagnosticsTree(nodes: DiagnosticsTreeNode[]): void {
   nodes.sort((left, right) => left.timestamp - right.timestamp)
   for (const node of nodes) {
-    if (node.kind === 'span')
+    if (node.kind === 'span') {
       sortDiagnosticsTree(node.children)
+    }
   }
 }

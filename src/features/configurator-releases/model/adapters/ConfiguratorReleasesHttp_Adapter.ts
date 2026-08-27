@@ -19,7 +19,7 @@ export class ConfiguratorVersionsError extends Error {
   }
 }
 
-export class ConfiguratorReleases_Service {
+export class ConfiguratorReleasesHttp_Adapter {
   private readonly _baseURL: string
 
   public constructor(

@@ -8,22 +8,22 @@ import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
 /** Legacy fields editor. Он намеренно не читает и не изменяет Filter source. */
 const tabs = EndgeIDE.tabs
-type EditorWithSelection = { id: number | string; identity: string; displayName: string; fields: FilterFieldItemSchema[]; selectedFieldIndex?: number | null }
+interface EditorWithSelection { id: number | string, identity: string, displayName: string, fields: FilterFieldItemSchema[], selectedFieldIndex?: number | null }
 const editor = computed(() => (tabs.documentEditorModel.value as EditorWithSelection | null) ?? null)
 const fields = computed(() => editor.value?.fields ?? [])
 
@@ -34,18 +34,26 @@ const dragOverFieldIndex = ref<number | null>(null)
 /** Синхронизация выбранного индекса с редактором (инспектор читает для примера словаря) */
 watch(editor, (ed) => {
   const idx = ed?.selectedFieldIndex
-  if (typeof idx === 'number' && idx >= 0) selectedIndex.value = idx
-  else if (ed) selectedIndex.value = null
+  if (typeof idx === 'number' && idx >= 0) {
+    selectedIndex.value = idx
+  }
+  else if (ed) {
+    selectedIndex.value = null
+  }
 }, { immediate: true })
 watch(selectedIndex, (idx) => {
   const ed = editor.value
-  if (ed && 'selectedFieldIndex' in ed) (ed as EditorWithSelection).selectedFieldIndex = idx ?? null
+  if (ed && 'selectedFieldIndex' in ed) {
+    (ed as EditorWithSelection).selectedFieldIndex = idx ?? null
+  }
 }, { flush: 'sync' })
 
 const selectedField = computed(() => {
   const idx = selectedIndex.value
   const arr = fields.value
-  if (idx == null || idx < 0 || !arr?.length || idx >= arr.length) return null
+  if (idx == null || idx < 0 || !arr?.length || idx >= arr.length) {
+    return null
+  }
   return arr[idx]
 })
 
@@ -53,7 +61,9 @@ const selectedField = computed(() => {
 const activeChecked = computed({
   get: () => editor.value?.fields?.[selectedIndex.value ?? -1]?.active === true,
   set: (v: boolean) => {
-    if (selectedIndex.value != null) updateField(selectedIndex.value, 'active', v)
+    if (selectedIndex.value != null) {
+      updateField(selectedIndex.value, 'active', v)
+    }
   },
 })
 
@@ -74,11 +84,12 @@ const vocabIdentityOptions = computed(() =>
 )
 
 function getVocabCollectionOptions(vocabIdentity: string | undefined) {
-  if (!vocabIdentity) return []
+  if (!vocabIdentity) {
+    return []
+  }
   const vocab = vocabDocs.value.find(v => v.identity === vocabIdentity)
   return vocab ? [{ value: vocab.collectionSlug, label: vocab.collectionSlug }] : []
 }
-
 
 const isDateLikeMode = (mode: string) => mode === 'date' || mode === 'time' || mode === 'datetime'
 
@@ -94,33 +105,47 @@ const converterOptions = computed(() => {
 /** Текущий массив identity конвертеров выбранного поля (нормализованный) */
 const selectedConverterIds = computed(() => {
   const f = selectedField.value
-  if (!f) return []
+  if (!f) {
+    return []
+  }
   const raw = f.converterIdentities
-  if (Array.isArray(raw)) return raw.map((c: any) => (typeof c === 'string' ? c : c?.identity)).filter(Boolean)
+  if (Array.isArray(raw)) {
+    return raw.map((c: any) => (typeof c === 'string' ? c : c?.identity)).filter(Boolean)
+  }
   return []
 })
 
 function addConverterToField(converterIdentity: string): void {
-  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) return
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
   const ids = selectedConverterIds.value
-  if (ids.includes(converterIdentity)) return
+  if (ids.includes(converterIdentity)) {
+    return
+  }
   const next = [...ids, converterIdentity]
   updateField(selectedIndex.value, 'converterIdentities', next)
 }
 
 function removeConverterFromField(at: number): void {
-  if (selectedIndex.value == null) return
+  if (selectedIndex.value == null) {
+    return
+  }
   const ids = selectedConverterIds.value.filter((_, i) => i !== at)
   updateField(selectedIndex.value, 'converterIdentities', ids)
 }
 
 function setDefaultToToday(): void {
-  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) return
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
   updateField(selectedIndex.value, 'defaultValue', '+0d')
 }
 
 function setDefaultToRelative(days: number): void {
-  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) return
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
   const sign = days >= 0 ? '+' : '-'
   updateField(selectedIndex.value, 'defaultValue', `${sign}${Math.abs(days)}d`)
 }
@@ -130,7 +155,9 @@ function fieldSummary(field: FilterFieldItemSchema): string {
 }
 
 function addField(): void {
-  if (!editor.value) return
+  if (!editor.value) {
+    return
+  }
   const arr = editor.value.fields
   const newField: FilterFieldItemSchema = {
     key: `field_${arr.length + 1}`,
@@ -145,22 +172,40 @@ function addField(): void {
 }
 
 function removeField(index: number): void {
-  if (!editor.value || index < 0 || index >= editor.value.fields.length) return
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
   editor.value.fields.splice(index, 1)
-  if (selectedIndex.value === index) selectedIndex.value = null
-  else if (selectedIndex.value != null && selectedIndex.value > index) selectedIndex.value -= 1
+  if (selectedIndex.value === index) {
+    selectedIndex.value = null
+  }
+  else if (selectedIndex.value != null && selectedIndex.value > index) {
+    selectedIndex.value -= 1
+  }
 }
 
 function moveField(fromIndex: number, toIndex: number): void {
-  if (!editor.value || fromIndex === toIndex) return
+  if (!editor.value || fromIndex === toIndex) {
+    return
+  }
   const arr = editor.value.fields
-  if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) return
+  if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
+    return
+  }
   const [item] = arr.splice(fromIndex, 1)
-  if (!item) return
+  if (!item) {
+    return
+  }
   arr.splice(toIndex, 0, item)
-  if (selectedIndex.value === fromIndex) selectedIndex.value = toIndex
-  else if (selectedIndex.value != null && selectedIndex.value > fromIndex && selectedIndex.value <= toIndex) selectedIndex.value -= 1
-  else if (selectedIndex.value != null && selectedIndex.value >= toIndex && selectedIndex.value < fromIndex) selectedIndex.value += 1
+  if (selectedIndex.value === fromIndex) {
+    selectedIndex.value = toIndex
+  }
+  else if (selectedIndex.value != null && selectedIndex.value > fromIndex && selectedIndex.value <= toIndex) {
+    selectedIndex.value -= 1
+  }
+  else if (selectedIndex.value != null && selectedIndex.value >= toIndex && selectedIndex.value < fromIndex) {
+    selectedIndex.value += 1
+  }
 }
 
 function onFieldDragStart(e: DragEvent, index: number): void {
@@ -174,7 +219,9 @@ function onFieldDragStart(e: DragEvent, index: number): void {
 
 function onFieldDragOver(e: DragEvent, index: number): void {
   e.preventDefault()
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
   dragOverFieldIndex.value = index
 }
 
@@ -190,7 +237,9 @@ function onFieldDrop(e: DragEvent, dropIndex: number): void {
     dragOverFieldIndex.value = null
     return
   }
-  if (from !== dropIndex) moveField(from, dropIndex)
+  if (from !== dropIndex) {
+    moveField(from, dropIndex)
+  }
   dragFieldIndex.value = null
   dragOverFieldIndex.value = null
 }
@@ -201,14 +250,20 @@ function onFieldDragEnd(): void {
 }
 
 function updateField<K extends keyof FilterFieldItemSchema>(index: number, key: K, value: FilterFieldItemSchema[K]): void {
-  if (!editor.value || index < 0 || index >= editor.value.fields.length) return
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
   const current = editor.value.fields[index]
-  if (!current) return
+  if (!current) {
+    return
+  }
   editor.value.fields[index] = { ...current, [key]: value }
 }
 
 function onModeChange(newMode: FilterFieldItemSchema['mode']): void {
-  if (selectedIndex.value == null) return
+  if (selectedIndex.value == null) {
+    return
+  }
   const cur = selectedField.value?.defaultValue ?? '*'
   updateField(selectedIndex.value, 'mode', newMode)
   if (isDateLikeMode(newMode) && (cur === '*' || cur === '')) {
@@ -217,10 +272,14 @@ function onModeChange(newMode: FilterFieldItemSchema['mode']): void {
 }
 
 function onVocabIdentityChange(index: number, newIdentity: string): void {
-  if (!editor.value || index < 0 || index >= editor.value.fields.length) return
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
   const vocab = vocabDocs.value.find(v => v.identity === newIdentity)
   const current = editor.value.fields[index]
-  if (!current) return
+  if (!current) {
+    return
+  }
   editor.value.fields[index] = {
     ...current,
     vocabIdentity: newIdentity,
@@ -229,18 +288,21 @@ function onVocabIdentityChange(index: number, newIdentity: string): void {
 }
 
 function onModeModelValue(value: unknown): void {
-  if (selectedIndex.value != null)
+  if (selectedIndex.value != null) {
     onModeChange(String(value ?? 'static') as FilterFieldItemSchema['mode'])
+  }
 }
 
 function onVocabModelValue(value: unknown): void {
-  if (selectedIndex.value != null)
+  if (selectedIndex.value != null) {
     onVocabIdentityChange(selectedIndex.value, String(value ?? ''))
+  }
 }
 
 function onVocabCollectionModelValue(value: unknown): void {
-  if (selectedIndex.value != null)
+  if (selectedIndex.value != null) {
     updateField(selectedIndex.value, 'vocabCollection', String(value ?? ''))
+  }
 }
 
 function onConverterDrop(value: string | number): void {
@@ -259,19 +321,25 @@ const selectedStaticOptions = computed(() => {
 })
 
 function addStaticOption(): void {
-  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) return
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
   const opts = [...selectedStaticOptions.value, { value: '', label: '' }]
   updateField(selectedIndex.value, 'staticOptions', opts)
 }
 
 function removeStaticOption(optIndex: number): void {
-  if (selectedIndex.value == null) return
+  if (selectedIndex.value == null) {
+    return
+  }
   const opts = selectedStaticOptions.value.filter((_, i) => i !== optIndex)
   updateField(selectedIndex.value, 'staticOptions', opts)
 }
 
 function updateStaticOption(optIndex: number, key: 'value' | 'label', val: string): void {
-  if (selectedIndex.value == null) return
+  if (selectedIndex.value == null) {
+    return
+  }
   const opts = selectedStaticOptions.value.map((opt, i) =>
     i === optIndex ? { ...opt, [key]: val } : opt,
   )
@@ -392,14 +460,30 @@ async function save(): Promise<void> {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="static">Статический список</SelectItem>
-                    <SelectItem value="vocab">Словарь</SelectItem>
-                    <SelectItem value="date">Только дата</SelectItem>
-                    <SelectItem value="time">Только время</SelectItem>
-                    <SelectItem value="datetime">Дата и время</SelectItem>
-                    <SelectItem value="boolean">Булево</SelectItem>
-                    <SelectItem value="string">Текст</SelectItem>
-                    <SelectItem value="number">Число</SelectItem>
+                    <SelectItem value="static">
+                      Статический список
+                    </SelectItem>
+                    <SelectItem value="vocab">
+                      Словарь
+                    </SelectItem>
+                    <SelectItem value="date">
+                      Только дата
+                    </SelectItem>
+                    <SelectItem value="time">
+                      Только время
+                    </SelectItem>
+                    <SelectItem value="datetime">
+                      Дата и время
+                    </SelectItem>
+                    <SelectItem value="boolean">
+                      Булево
+                    </SelectItem>
+                    <SelectItem value="string">
+                      Текст
+                    </SelectItem>
+                    <SelectItem value="number">
+                      Число
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -510,7 +594,9 @@ async function save(): Promise<void> {
             </div>
 
             <div v-if="selectedField?.mode === 'vocab'" class="space-y-4 border-t pt-4">
-              <div class="text-sm font-medium text-muted-foreground">Словарь</div>
+              <div class="text-sm font-medium text-muted-foreground">
+                Словарь
+              </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <Label>Справочник</Label>
@@ -652,7 +738,6 @@ async function save(): Promise<void> {
           </div>
         </ScrollArea>
       </Card>
-
     </div>
   </div>
 </template>

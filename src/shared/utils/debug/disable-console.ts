@@ -4,7 +4,8 @@ export function disableConsole(): void {
       try {
         // @ts-ignore
         window.console[key as keyof typeof window.console] = (): void => {}
-      } catch {
+      }
+      catch {
         // В некоторых окружениях console может быть только для чтения - игнорируем
       }
     }

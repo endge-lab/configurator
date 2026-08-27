@@ -48,7 +48,7 @@ describe('table visual column sort state', () => {
 
   it('accepts dot paths and DataPath selectors supported by the adapters', () => {
     expect(isTableColumnSortPath('departureLeg.aircraft.tail')).toBe(true)
-    expect(isTableColumnSortPath("departureLeg.attributes[name='ACTail'].text")).toBe(true)
+    expect(isTableColumnSortPath('departureLeg.attributes[name=\'ACTail\'].text')).toBe(true)
     expect(isTableColumnSortPath('row items.value')).toBe(false)
     expect(isTableColumnSortPath('attributes[*].text')).toBe(false)
     expect(isTableColumnSortPath('items..value')).toBe(false)

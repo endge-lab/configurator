@@ -1,24 +1,38 @@
+import type { ShallowRef } from 'vue'
 import type {
   ConfiguratorDiagnosticsConfig,
   ConfiguratorRenderFailure,
   ConfiguratorRenderGuardState,
 } from '@/app/domain/types/configurator-diagnostics.type'
 
+import type { ConfiguratorDiagnosticsStorage_Adapter } from '@/app/model/adapters/ConfiguratorDiagnosticsStorage_Adapter'
 import { shallowRef } from 'vue'
 
 export class ConfiguratorDiagnostics_Module {
+  /** Error window, render guard и injected capabilities. */
   private readonly _recentErrorTimestamps: number[] = []
   private readonly _renderGuard = shallowRef<ConfiguratorRenderGuardState | null>(null)
+  private readonly _config: ConfiguratorDiagnosticsConfig
+  private readonly _shutdownEndgeIDE: () => void
+  private readonly _storage: ConfiguratorDiagnosticsStorage_Adapter
+
+  /**
+   * ----------------------------------------
+   * PUBLIC
+   * ----------------------------------------
+   */
 
   public constructor(
-    private readonly _config: ConfiguratorDiagnosticsConfig,
-    private readonly _shutdownEndgeIDE: () => void,
-  ) {}
-
-  public get renderGuard() {
-    return this._renderGuard
+    config: ConfiguratorDiagnosticsConfig,
+    shutdownEndgeIDE: () => void,
+    storage: ConfiguratorDiagnosticsStorage_Adapter,
+  ) {
+    this._config = config
+    this._shutdownEndgeIDE = shutdownEndgeIDE
+    this._storage = storage
   }
 
+  /** Фиксирует критическую render failure и включает guard при достижении порога. */
   public capture(params: ConfiguratorRenderFailure): ConfiguratorRenderGuardState | null {
     if (this._renderGuard.value) {
       return this._renderGuard.value
@@ -57,11 +71,13 @@ export class ConfiguratorDiagnostics_Module {
     return this._renderGuard.value
   }
 
+  /** Сбрасывает накопленные ошибки и активный render guard. */
   public reset(): void {
     this._recentErrorTimestamps.length = 0
     this._renderGuard.value = null
   }
 
+  /** Запускает контролируемый recursive-update сценарий для diagnostics UI. */
   public triggerTest(params: { routePath?: string, componentName?: string } = {}): ConfiguratorRenderGuardState | null {
     return this.capture({
       err: new Error('Maximum recursive updates exceeded [guard-test]'),
@@ -72,20 +88,18 @@ export class ConfiguratorDiagnostics_Module {
     })
   }
 
-  private _clearEndgeIDEPersistedState(): void {
-    if (typeof window === 'undefined') {
-      return
-    }
+  /**
+   * ----------------------------------------
+   * PRIVATE
+   * ----------------------------------------
+   */
 
-    try {
-      localStorage.removeItem('endge-editor-tabs')
-      localStorage.removeItem('app:grid-layout-state')
-    }
-    catch {
-      // Emergency cleanup is best-effort.
-    }
+  /** Очищает persistent state IDE перед аварийным отключением. */
+  private _clearEndgeIDEPersistedState(): void {
+    this._storage.clearEndgeIDEState()
   }
 
+  /** Обновляет error window и возвращает число актуальных попаданий. */
   private _recordRecentError(now: number): number {
     while (
       this._recentErrorTimestamps.length > 0
@@ -97,6 +111,7 @@ export class ConfiguratorDiagnostics_Module {
     return this._recentErrorTimestamps.length
   }
 
+  /** Нормализует произвольное thrown value в Error. */
   private _normalizeError(err: unknown): Error {
     if (err instanceof Error) {
       return err
@@ -113,9 +128,21 @@ export class ConfiguratorDiagnostics_Module {
     }
   }
 
+  /** Распознаёт recursive Vue update по message и stack. */
   private _looksLikeRecursiveVueUpdate(error: Error): boolean {
     const message = `${error.message}\n${error.stack ?? ''}`.toLowerCase()
 
     return message.includes('maximum recursive updates')
+  }
+
+  /**
+   * ----------------------------------------
+   * ACCESS
+   * ----------------------------------------
+   */
+
+  /** Возвращает readonly reactive render guard. */
+  public get renderGuard(): Readonly<ShallowRef<ConfiguratorRenderGuardState | null>> {
+    return this._renderGuard
   }
 }

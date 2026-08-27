@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
-import type { VisualSchemaDiagnostic, VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 import type {
   TypeSourceDefinition,
   TypeSourceDocument,
@@ -8,6 +7,7 @@ import type {
   TypeSourceField,
 } from '@endge/core'
 import type { CSSProperties } from 'vue'
+import type { VisualSchemaDiagnostic, VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 
 import {
   AlertCircle,

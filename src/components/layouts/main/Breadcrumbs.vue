@@ -61,8 +61,9 @@ const allButLastTwoItems = computed(() => {
   if (effectiveItemsToDisplay.value === 1) {
     return props.items.slice(0, -1) // All items except the last one
   }
-  if (props.items.length <= effectiveItemsToDisplay.value)
+  if (props.items.length <= effectiveItemsToDisplay.value) {
     return []
+  }
   return props.items.slice(1, -(effectiveItemsToDisplay.value - 1))
 })
 

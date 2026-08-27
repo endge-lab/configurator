@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /* eslint-disable style/max-statements-per-line */
 import type {
-  CompositionDropDescriptor,
-  CompositionDropPayloadItem,
-  CompositionDropPlan,
-} from '@/features/endge-ide/model/composition-source-drop'
-import type {
   CompositionSourceDocument,
   CompositionSourcePatchOperation,
 } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
+import type {
+  CompositionDropDescriptor,
+  CompositionDropPayloadItem,
+  CompositionDropPlan,
+} from '@/features/endge-ide/model/composition-source-drop'
 
 import { Endge } from '@endge/core'
 import * as monaco from 'monaco-editor'

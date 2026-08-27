@@ -1,5 +1,4 @@
-import type { RNavigation } from '@endge/core'
-import type { NavigationTreeNodeDoc } from '@endge/core'
+import type { NavigationTreeNodeDoc, RNavigation } from '@endge/core'
 
 export type NavigationTreeNodeType = 'section' | 'group' | 'link'
 
@@ -40,18 +39,21 @@ function cloneNode(node: NavigationTreeNodeEditor | NavigationTreeNodeDoc): Navi
 }
 
 function treeFromUnknown(raw: unknown): NavigationTreeNodeEditor[] | null {
-  if (!Array.isArray(raw))
+  if (!Array.isArray(raw)) {
     return null
+  }
 
   const readNode = (value: unknown): NavigationTreeNodeEditor | null => {
-    if (!value || typeof value !== 'object' || Array.isArray(value))
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return null
+    }
     const source = value as Record<string, unknown>
     const type = source.type === 'section' || source.type === 'group' || source.type === 'link'
       ? source.type
       : null
-    if (!type)
+    if (!type) {
       return null
+    }
 
     return cloneNode({
       id: typeof source.id === 'string' ? source.id : makeNodeId(),
@@ -83,8 +85,9 @@ export class RNavigationEditor {
   migrateTreeFromMeta(): boolean {
     const rawMetaTree = this.meta?.endgeAdminNavigationTree
     const migrated = treeFromUnknown(rawMetaTree)
-    if (!migrated?.length)
+    if (!migrated?.length) {
       return false
+    }
     this.tree = migrated
     return true
   }

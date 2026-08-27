@@ -8,7 +8,7 @@ import {
   prepareVocabMockGeneration,
 } from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
 
-describe('Vocab Mock generator', () => {
+describe('vocab Mock generator', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     Endge.domain.reset()
@@ -30,7 +30,7 @@ describe('Vocab Mock generator', () => {
     Endge.domain.addMock(existing)
 
     vi.spyOn(Endge.compiler, 'buildVocab').mockImplementation(entity => artifact(entity))
-    const load = vi.spyOn(Endge.vocabs, 'loadRawVocab').mockImplementation(async (identity) => (
+    const load = vi.spyOn(Endge.vocabs, 'loadRawVocab').mockImplementation(async identity => (
       String(identity) === 'airlines'
         ? Array.from({ length: 12 }, (_, index) => ({ id: index + 1 }))
         : [{ id: 'LED' }]
@@ -92,8 +92,9 @@ function vocab(id: number, identity: string): RVocabs {
 
 function artifact(value: RVocabs): ProgramArtifact<VocabProgramPayload> {
   const compiled = Endge.source.compile('vocab', value.source)
-  if (!compiled.artifact)
+  if (!compiled.artifact) {
     throw new Error('Test Vocab did not compile.')
+  }
   return {
     ref: { entityType: 'vocab', id: value.id, identity: value.identity },
     sourceHash: 'test',

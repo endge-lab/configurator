@@ -3,14 +3,14 @@
  * Работает только в dev (command === 'serve'); в production build не регистрирует middleware и не отдаёт push-код.
  */
 
-import path from 'node:path'
-import type { Plugin } from 'vite'
-import { generateDomainArtifacts } from '@endge/codegen'
 import type { EndgeDomainBundle } from '@endge/codegen'
+import type { Plugin } from 'vite'
+import path from 'node:path'
+import { generateDomainArtifacts } from '@endge/codegen'
 
 const CODEGEN_ENDPOINT = '/__endge_codegen__/domain'
 const VIRTUAL_MODULE_ID = 'virtual:endge-codegen-push'
-const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_MODULE_ID
+const RESOLVED_VIRTUAL_ID = `\0${VIRTUAL_MODULE_ID}`
 
 export interface EndgeCodegenPluginOptions {
   /** Включить кодогенерацию (middleware + push). По умолчанию true в dev, false при build. */
@@ -38,12 +38,18 @@ export function endgeCodegen(options: EndgeCodegenPluginOptions = {}): Plugin {
       _outputDir = options.outputDir ?? path.join(config.root, 'src', 'gen')
     },
     resolveId(id: string) {
-      if (id === VIRTUAL_MODULE_ID) return RESOLVED_VIRTUAL_ID
+      if (id === VIRTUAL_MODULE_ID) {
+        return RESOLVED_VIRTUAL_ID
+      }
       return null
     },
     load(id: string) {
-      if (id !== RESOLVED_VIRTUAL_ID) return null
-      if (!enabled) return 'export {}'
+      if (id !== RESOLVED_VIRTUAL_ID) {
+        return null
+      }
+      if (!enabled) {
+        return 'export {}'
+      }
       return `
 import { AppBus } from '@endge/utils'
 const EP = '${CODEGEN_ENDPOINT}'
@@ -67,7 +73,9 @@ if (typeof window !== 'undefined') {
 `
     },
     configureServer(server) {
-      if (!enabled) return
+      if (!enabled) {
+        return
+      }
       server.middlewares.use(CODEGEN_ENDPOINT, async (req, res, next) => {
         if (req.method !== 'POST') {
           next()

@@ -22,7 +22,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,7 +42,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { configuratorReleases } from '@/features/configurator-releases'
-import { ConfiguratorVersionsError } from '@/features/configurator-releases/model/ConfiguratorReleases_Service'
+import { ConfiguratorVersionsError } from '@/features/configurator-releases/model/adapters/ConfiguratorReleasesHttp_Adapter'
 
 type VersionTab = 'commits' | 'releases'
 interface RestoreTarget {

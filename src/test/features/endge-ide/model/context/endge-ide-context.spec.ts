@@ -72,7 +72,13 @@ describe('endgeIDE context', () => {
     id: 'service-backend',
     capabilities: { snapshot: true as const, mutations: true, softDelete: true, restore: true },
     etag: null,
-    loadWorkspace: vi.fn(), createDocument: vi.fn(), updateDocument: vi.fn(), softDeleteDocument: vi.fn(), restoreDocument: vi.fn(), moveDocuments: vi.fn(), updateWorkspace: vi.fn(),
+    loadWorkspace: vi.fn(),
+    createDocument: vi.fn(),
+    updateDocument: vi.fn(),
+    softDeleteDocument: vi.fn(),
+    restoreDocument: vi.fn(),
+    moveDocuments: vi.fn(),
+    updateWorkspace: vi.fn(),
   }
 
   beforeEach(async () => {

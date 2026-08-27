@@ -1,7 +1,8 @@
 /** Reads short-lived IDE diagnostics flags from the current route query. */
 function hasFlag(name: string): boolean {
-  if (typeof window === 'undefined')
+  if (typeof window === 'undefined') {
     return false
+  }
 
   try {
     const params = new URLSearchParams(window.location.search)

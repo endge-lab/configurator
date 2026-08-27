@@ -52,7 +52,9 @@ export class HubDebug {
 
   public frameEnd(title?: string, forceColorOrLimits?: FrameColor | FrameTimeLimits): void {
     const ctx = this._stack.pop()
-    if (!ctx) return
+    if (!ctx) {
+      return
+    }
 
     if (title) {
       ctx.title = title
@@ -79,7 +81,8 @@ export class HubDebug {
     const result = callback()
     if (result instanceof Promise) {
       return result.finally(() => this.frameEnd(title, forceColorOrLimits))
-    } else {
+    }
+    else {
       this.frameEnd(title, forceColorOrLimits)
     }
   }
@@ -95,7 +98,9 @@ export class HubDebug {
 
   public phaseEnd(): void {
     const ctx = this._currentCtx()
-    if (!ctx || !this._phaseName) return
+    if (!ctx || !this._phaseName) {
+      return
+    }
     const dur = performance.now() - this._phaseStart
     ctx.phases.push([this._phaseName, dur])
     this._phaseName = ''
@@ -106,7 +111,8 @@ export class HubDebug {
     const result = callback()
     if (result instanceof Promise) {
       return result.finally(() => this.phaseEnd())
-    } else {
+    }
+    else {
       this.phaseEnd()
     }
   }
@@ -148,10 +154,14 @@ export class HubDebug {
   }
 
   private _log(type: PhaseLog['type'], message: unknown, timerLabel?: string): void {
-    if (!this._enabled) return
+    if (!this._enabled) {
+      return
+    }
 
     const ctx = this._currentCtx()
-    if (!ctx) return
+    if (!ctx) {
+      return
+    }
 
     let finalMessage = message
 
@@ -162,9 +172,11 @@ export class HubDebug {
 
       if (typeof message === 'string') {
         finalMessage = `${message} (${elapsed.toFixed(2)}ms)`
-      } else if (Array.isArray(message)) {
+      }
+      else if (Array.isArray(message)) {
         finalMessage = [...message, `(${elapsed.toFixed(2)}ms)`]
-      } else {
+      }
+      else {
         finalMessage = [message, `(${elapsed.toFixed(2)}ms)`]
       }
     }
@@ -174,7 +186,8 @@ export class HubDebug {
         ctx.phaseLogs[this._phaseName] = []
       }
       ctx.phaseLogs[this._phaseName].push({ type, message: finalMessage })
-    } else {
+    }
+    else {
       ctx.logs.push({ type, message: finalMessage })
     }
   }
@@ -189,19 +202,25 @@ export class HubDebug {
       let style = ''
       if (typeof ctx.forceColorOrLimits === 'string') {
         style = this._styleForColor(ctx.forceColorOrLimits)
-      } else if (ctx.forceColorOrLimits) {
+      }
+      else if (ctx.forceColorOrLimits) {
         if (frameTime >= ctx.forceColorOrLimits.error) {
           style = this._styleForColor('error')
-        } else if (frameTime >= ctx.forceColorOrLimits.warn) {
+        }
+        else if (frameTime >= ctx.forceColorOrLimits.warn) {
           style = this._styleForColor('warn')
-        } else {
+        }
+        else {
           style = this._styleForColor('success')
         }
-      } else if (ctx.logs.some(l => l.type === 'error')) {
+      }
+      else if (ctx.logs.some(l => l.type === 'error')) {
         style = this._styleForColor('error')
-      } else if (ctx.logs.some(l => l.type === 'warn')) {
+      }
+      else if (ctx.logs.some(l => l.type === 'warn')) {
         style = this._styleForColor('warn')
-      } else {
+      }
+      else {
         style = this._styleForColor('success')
       }
 
@@ -253,7 +272,8 @@ export class HubDebug {
 
     if (typeof message === 'string') {
       console.log(`%c${message}`, colors[type])
-    } else {
+    }
+    else {
       console.log('%c', colors[type], message)
     }
   }

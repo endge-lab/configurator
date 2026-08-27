@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 import type { TypeSourceDocument } from '@endge/core'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 
 import {
   inspectComponentSFCProps,

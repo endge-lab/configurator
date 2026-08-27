@@ -31,8 +31,9 @@ const domainStore = useDomainStore()
 /** Шаблон страницы по выбранному templateId. */
 const pageTemplate = computed(() => {
   const templateId = editor.value?.templateId
-  if (templateId == null)
+  if (templateId == null) {
     return null
+  }
   const list = domainStore.pageTemplates ?? []
   return list.find((t: any) => t?.id === templateId) ?? null
 })
@@ -46,8 +47,9 @@ const templateOptions = computed(() =>
 )
 
 function setTemplate(value: string | null): void {
-  if (!editor.value)
+  if (!editor.value) {
     return
+  }
   const normalized = String(value ?? '').trim()
   editor.value.templateId = normalized && Number.isFinite(Number(normalized))
     ? Number(normalized)
@@ -60,8 +62,9 @@ watch(
   () => {
     const ed = editor.value
     const tpl = pageTemplate.value
-    if (!ed || !tpl?.areas?.length)
+    if (!ed || !tpl?.areas?.length) {
       return
+    }
     ed.syncAreasFromTemplate(tpl.areas)
   },
   { immediate: true },
@@ -105,10 +108,12 @@ function getEntityKeys(entity: DomainEntity | null | undefined): Set<string> {
   const keys = new Set<string>()
   const id = normalizeKey(entity?.id)
   const identity = normalizeKey(entity?.identity)
-  if (id)
+  if (id) {
     keys.add(id)
-  if (identity)
+  }
+  if (identity) {
     keys.add(identity)
+  }
   return keys
 }
 
@@ -121,8 +126,9 @@ function compactIconClass(iconClass: string): string {
 
 function getEntityByDrop(sectionType: DomainSectionType, id: string): DomainEntity | null {
   const normalizedId = normalizeKey(id)
-  if (!normalizedId)
+  if (!normalizedId) {
     return null
+  }
   if (sectionType === DomainSectionType.Component) {
     return (domainStore.components ?? []).find((component: any) => {
       const keys = getEntityKeys(component as DomainEntity)
@@ -141,8 +147,9 @@ function getEntityByDrop(sectionType: DomainSectionType, id: string): DomainEnti
 function resolveDropPayload(sectionType: DomainSectionType, id: string):
   | { entityType: 'component' | 'filter', entityIdentity: string, entityId: number | null }
   | null {
-  if (sectionType !== DomainSectionType.Component && sectionType !== DomainSectionType.Filters)
+  if (sectionType !== DomainSectionType.Component && sectionType !== DomainSectionType.Filters) {
     return null
+  }
 
   const entity = getEntityByDrop(sectionType, id)
   if (!entity) {
@@ -161,19 +168,23 @@ function resolveDropPayload(sectionType: DomainSectionType, id: string):
 
 function addBlockToArea(areaSlotId: string, payload: AddBlockPayload): void {
   const ed = editor.value
-  if (!ed || !Array.isArray(ed.areas))
+  if (!ed || !Array.isArray(ed.areas)) {
     return
+  }
 
   const area = ed.areas.find(a => a.slotId === areaSlotId)
-  if (!area)
+  if (!area) {
     return
+  }
 
-  if (!Array.isArray(area.blocks))
+  if (!Array.isArray(area.blocks)) {
     area.blocks = []
+  }
 
   const key = `${payload.entityType}:${payload.entityIdentity}`
-  if (area.blocks.some(b => b.key === key))
+  if (area.blocks.some(b => b.key === key)) {
     return
+  }
 
   area.blocks.push({
     key,
@@ -185,11 +196,13 @@ function addBlockToArea(areaSlotId: string, payload: AddBlockPayload): void {
 
 function removeBlock(areaSlotId: string, blockKey: string): void {
   const ed = editor.value
-  if (!ed || !Array.isArray(ed.areas))
+  if (!ed || !Array.isArray(ed.areas)) {
     return
+  }
   const area = ed.areas.find(a => a.slotId === areaSlotId)
-  if (!area || !Array.isArray(area.blocks))
+  if (!area || !Array.isArray(area.blocks)) {
     return
+  }
   area.blocks = area.blocks.filter(b => b.key !== blockKey)
 }
 
@@ -247,11 +260,13 @@ const previewAreas = computed(() => {
 
 function handlePreviewDrop(payload: PreviewDropPayload): void {
   const normalizedId = normalizeKey(payload.id)
-  if (!normalizedId)
+  if (!normalizedId) {
     return
+  }
   const resolved = resolveDropPayload(payload.sectionType, normalizedId)
-  if (!resolved)
+  if (!resolved) {
     return
+  }
   addBlockToArea(payload.slotId, resolved)
 }
 
@@ -278,7 +293,9 @@ const previewAreaLabels = computed(() =>
     <ScrollArea class="flex-1 px-4 py-3">
       <div class="max-w-3xl">
         <Card class="mb-4 p-4 space-y-4">
-          <div class="font-semibold">Основное</div>
+          <div class="font-semibold">
+            Основное
+          </div>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
               <Label>Identity</Label>
@@ -345,7 +362,6 @@ const previewAreaLabels = computed(() =>
             />
           </div>
         </Card>
-
       </div>
     </ScrollArea>
   </div>

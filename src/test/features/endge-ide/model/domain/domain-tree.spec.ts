@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
 import { DomainSectionType } from '@endge/core'
+import { describe, expect, it, vi } from 'vitest'
 
 import { buildDomainTree, buildWorkspaceTreeNodes } from '@/features/endge-ide/model/domain/domain-tree'
 

@@ -23,7 +23,7 @@ interface EventGroup {
   phase: string
   path: string
   nodes: Array<{ id?: string }>
-  resolvedSamples: Array<Array<{ segment: string; keyField: string; keyValue: unknown; index?: number }>>
+  resolvedSamples: Array<Array<{ segment: string, keyField: string, keyValue: unknown, index?: number }>>
 }
 
 const activeTab = useSafeLocalStorage('endge-raph-widget-tab', 'phases')
@@ -41,7 +41,8 @@ const MAX_SAMPLES_PER_GROUP = 3
 function refreshPhases(): void {
   try {
     phases.value = (Raph.app as any).phases ?? []
-  } catch {
+  }
+  catch {
     phases.value = []
   }
   triggerRef(phases)
@@ -50,22 +51,27 @@ function refreshPhases(): void {
 function refreshNodes(): void {
   try {
     tree.value = Raph.debug.getTree() as NodeTree[]
-  } catch {
+  }
+  catch {
     tree.value = []
   }
 }
 
 function toggleRecording(): void {
   recordingEnabled.value = !recordingEnabled.value
-  if (recordingEnabled.value) events.value = []
+  if (recordingEnabled.value) {
+    events.value = []
+  }
 }
 
 onMounted(() => {
   unsubscribe.push(Raph.events.on('phases:reinit', refreshPhases))
   unsubscribe.push(Raph.events.on('debug:nodes', refreshNodes))
   unsubscribe.push(
-    Raph.events.on('nodes:notified', (p: { ctxs: Array<{ phase: string; node: any; events?: any[] }> }) => {
-      if (!recordingEnabled.value) return
+    Raph.events.on('nodes:notified', (p: { ctxs: Array<{ phase: string, node: any, events?: any[] }> }) => {
+      if (!recordingEnabled.value) {
+        return
+      }
       const group = new Map<string, EventGroup & { _dedup?: Set<string> }>()
       for (const ctx of p.ctxs) {
         const phase = ctx.phase
@@ -105,7 +111,7 @@ onMounted(() => {
     }),
   )
   unsubscribe.push(
-    Raph.events.on('debug:metrics', (m: { ups?: number; nps?: number; eps?: number }) => {
+    Raph.events.on('debug:metrics', (m: { ups?: number, nps?: number, eps?: number }) => {
       metrics.value = {
         ups: m?.ups ?? 0,
         nps: m?.nps ?? 0,
@@ -118,7 +124,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  unsubscribe.forEach((fn) => fn?.())
+  unsubscribe.forEach(fn => fn?.())
   unsubscribe.length = 0
 })
 </script>
@@ -161,9 +167,15 @@ onBeforeUnmount(() => {
 
     <Tabs v-model="activeTab" class="flex-1 flex flex-col min-h-0">
       <TabsList class="shrink-0 w-full grid grid-cols-3 rounded-none border-b">
-        <TabsTrigger value="phases" class="rounded-none">Фазы</TabsTrigger>
-        <TabsTrigger value="nodes" class="rounded-none">Узлы</TabsTrigger>
-        <TabsTrigger value="events" class="rounded-none">События</TabsTrigger>
+        <TabsTrigger value="phases" class="rounded-none">
+          Фазы
+        </TabsTrigger>
+        <TabsTrigger value="nodes" class="rounded-none">
+          Узлы
+        </TabsTrigger>
+        <TabsTrigger value="events" class="rounded-none">
+          События
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="phases" class="flex-1 mt-0 min-h-0 overflow-hidden">
@@ -188,7 +200,9 @@ onBeforeUnmount(() => {
                 </li>
               </ul>
             </details>
-            <p v-if="!phases.length" class="text-xs text-muted-foreground">Пусто</p>
+            <p v-if="!phases.length" class="text-xs text-muted-foreground">
+              Пусто
+            </p>
           </div>
         </ScrollArea>
       </TabsContent>
@@ -197,7 +211,9 @@ onBeforeUnmount(() => {
         <ScrollArea class="h-full">
           <div class="p-3 space-y-1">
             <RaphTreeItem v-for="root in tree" :key="root.id" :node="root" :depth="0" />
-            <p v-if="!tree.length" class="text-xs text-muted-foreground">Пусто</p>
+            <p v-if="!tree.length" class="text-xs text-muted-foreground">
+              Пусто
+            </p>
           </div>
         </ScrollArea>
       </TabsContent>
@@ -234,7 +250,9 @@ onBeforeUnmount(() => {
               </summary>
               <div class="px-3 py-2 text-xs space-y-3">
                 <div>
-                  <div class="text-muted mb-1">Сработавшие узлы (id):</div>
+                  <div class="text-muted mb-1">
+                    Сработавшие узлы (id):
+                  </div>
                   <div class="flex flex-wrap gap-1">
                     <span
                       v-for="n in g.nodes"
@@ -246,30 +264,48 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div v-if="g.resolvedSamples?.length">
-                  <div class="text-muted mb-1">Параметры (resolved)</div>
+                  <div class="text-muted mb-1">
+                    Параметры (resolved)
+                  </div>
                   <div
                     v-for="(sample, si) in g.resolvedSamples"
                     :key="si"
                     class="overflow-auto"
                   >
-                    <div v-if="g.resolvedSamples.length > 1" class="text-muted mb-1">вариант #{{ si + 1 }}</div>
+                    <div v-if="g.resolvedSamples.length > 1" class="text-muted mb-1">
+                      вариант #{{ si + 1 }}
+                    </div>
                     <table class="w-full text-left border-collapse min-w-[320px] text-xs">
                       <thead class="text-muted">
                         <tr>
-                          <th class="py-1 pr-2 border-b border-border">segment</th>
-                          <th class="py-1 px-2 border-b border-border">keyField</th>
-                          <th class="py-1 px-2 border-b border-border">keyValue</th>
-                          <th class="py-1 pl-2 border-b border-border">index</th>
+                          <th class="py-1 pr-2 border-b border-border">
+                            segment
+                          </th>
+                          <th class="py-1 px-2 border-b border-border">
+                            keyField
+                          </th>
+                          <th class="py-1 px-2 border-b border-border">
+                            keyValue
+                          </th>
+                          <th class="py-1 pl-2 border-b border-border">
+                            index
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="(r, ri) in sample" :key="ri" class="align-top">
-                          <td class="py-1 pr-2 border-b border-border font-mono">{{ r.segment }}</td>
-                          <td class="py-1 px-2 border-b border-border font-mono">{{ r.keyField }}</td>
+                          <td class="py-1 pr-2 border-b border-border font-mono">
+                            {{ r.segment }}
+                          </td>
+                          <td class="py-1 px-2 border-b border-border font-mono">
+                            {{ r.keyField }}
+                          </td>
                           <td class="py-1 px-2 border-b border-border">
                             <pre class="font-mono whitespace-pre-wrap break-all m-0">{{ r.keyValue }}</pre>
                           </td>
-                          <td class="py-1 pl-2 border-b border-border font-mono">{{ r.index ?? '-' }}</td>
+                          <td class="py-1 pl-2 border-b border-border font-mono">
+                            {{ r.index ?? '-' }}
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -277,7 +313,9 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </details>
-            <p v-if="!events.length" class="text-xs text-muted-foreground">Пусто</p>
+            <p v-if="!events.length" class="text-xs text-muted-foreground">
+              Пусто
+            </p>
           </div>
         </ScrollArea>
       </TabsContent>

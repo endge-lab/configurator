@@ -1,10 +1,8 @@
-import { RComponentTableColumnEditor } from '@/features/endge-ide/domain/entities/RComponentTableColumnEditor'
-import type { RComponentTable } from '@endge/core'
-import { ComponentType } from '@endge/core'
+import type { RComponentTable, RComponentTableColumn, TableBinding } from '@endge/core'
 
+import { ComponentType } from '@endge/core'
 import { RComponentBaseEditor } from '@/features/endge-ide/domain/entities/RComponentBaseEditor'
-import type { RComponentTableColumn } from '@endge/core'
-import type { TableBinding } from '@endge/core'
+import { RComponentTableColumnEditor } from '@/features/endge-ide/domain/entities/RComponentTableColumnEditor'
 
 //
 // Модель для редактирования RComponentTable компонента.
@@ -37,22 +35,32 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
 
   // Удаление элементов (по ссылке)
   deleteColumns(cols: RComponentTableColumnEditor[]): void {
-    if (!cols.length) return
-    this.columns = this.columns.filter((col) => !cols.includes(col))
-    if (this.selectedColumn && cols.includes(this.selectedColumn))
+    if (!cols.length) {
+      return
+    }
+    this.columns = this.columns.filter(col => !cols.includes(col))
+    if (this.selectedColumn && cols.includes(this.selectedColumn)) {
       this.selectedColumns = []
+    }
   }
 
   /** Перемещение колонки с fromIndex на toIndex */
   moveColumn(fromIndex: number, toIndex: number): void {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) {
+      return
+    }
     const len = this.columns.length
-    if (fromIndex >= len || toIndex >= len) return
+    if (fromIndex >= len || toIndex >= len) {
+      return
+    }
     const [removed] = this.columns.splice(fromIndex, 1)
-    if (!removed) return
+    if (!removed) {
+      return
+    }
     this.columns.splice(toIndex, 0, removed)
-    if (this.selectedColumns[0] === removed)
+    if (this.selectedColumns[0] === removed) {
       this.selectedColumns = [removed]
+    }
   }
 
   /** Выбрать колонку по индексу (для нижней панели) */
@@ -73,7 +81,7 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
     source.rowSize = this.rowSize
 
     source.columns = this.columns
-      .map((x) => x.toSource())
+      .map(x => x.toSource())
       .filter(Boolean) as RComponentTableColumn[]
   }
 

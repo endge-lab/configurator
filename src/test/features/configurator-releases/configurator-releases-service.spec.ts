@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ConfiguratorReleases_Service } from '@/features/configurator-releases/model/ConfiguratorReleases_Service'
+import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/model/adapters/ConfiguratorReleasesHttp_Adapter'
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -30,7 +30,7 @@ describe('configurator versions service', () => {
       ),
     )
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ConfiguratorReleases_Service(
+    const service = new ConfiguratorReleasesHttp_Adapter(
       'https://backend.test',
       () => 'workspace-a',
     )
@@ -66,7 +66,7 @@ describe('configurator versions service', () => {
       ),
     )
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ConfiguratorReleases_Service(
+    const service = new ConfiguratorReleasesHttp_Adapter(
       'https://backend.test',
       () => 'workspace-a',
     )
@@ -106,7 +106,7 @@ describe('configurator versions service', () => {
         ),
       )
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ConfiguratorReleases_Service(
+    const service = new ConfiguratorReleasesHttp_Adapter(
       'https://backend.test',
       () => 'workspace-a',
     )

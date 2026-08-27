@@ -10,7 +10,9 @@ const serialized = computed(() => JSON.stringify(helpData.value?.resultByKey ?? 
 <template>
   <div class="h-full w-full min-h-0 p-4 flex flex-col gap-3">
     <div>
-      <div class="font-semibold">Query result</div>
+      <div class="font-semibold">
+        Query result
+      </div>
       <div class="text-xs text-muted-foreground">
         Legacy table/DSL preview удалён. Здесь остаются только raw данные для inspection.
       </div>

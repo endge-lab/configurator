@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
+import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 
 defineProps<{
   node: UIEditorNode<'text'>

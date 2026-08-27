@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
   ComponentSFCEventAction,
   ComponentSFCEventInputValue,
@@ -8,6 +7,7 @@ import type {
   ComponentSFCPortRole,
   QueryProgramPayload,
 } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
 import {
   DomainSectionType,
@@ -223,7 +223,9 @@ function removeEvent(name: string): void {
 function addPort(): void {
   const name = portName.value.trim()
   const identity = portIdentity.value.trim()
-  if (!name) return
+  if (!name) {
+    return
+  }
   const role = portRole.value
   const kind = role === 'provides' ? 'action' : portKind.value
   const queryDeclaration = kind === 'query' ? createQueryPortDeclaration(identity) : null
@@ -237,9 +239,9 @@ function addPort(): void {
       ? `computation<unknown, unknown>({ default: ${JSON.stringify(identity)} })`
       : kind === 'query'
         ? queryDeclaration!
-      : role === 'require'
-        ? `action<unknown, unknown>({ default: ${JSON.stringify(identity)} })`
-        : `action<unknown, unknown>()`
+        : role === 'require'
+          ? `action<unknown, unknown>({ default: ${JSON.stringify(identity)} })`
+          : `action<unknown, unknown>()`
   const result = patchComponentSFCPortsSource(props.source, { type: 'upsert-port', role, name, declaration })
   if (commit(result)) {
     portName.value = ''
@@ -249,9 +251,13 @@ function addPort(): void {
 
 function createQueryPortDeclaration(identity: string): string | null {
   const query = Endge.domain.getQuery(identity)
-  if (!query) return null
+  if (!query) {
+    return null
+  }
   const payload = Endge.source.compile('query', query.source).artifact as QueryProgramPayload | undefined
-  if (!payload) return null
+  if (!payload) {
+    return null
+  }
   const fields = payload.props.map((field) => {
     const type = field.array ? `Array<${field.type}>` : field.type
     return `${field.key}${field.optional ? '?' : ''}: ${type}`
@@ -298,7 +304,9 @@ function onEntityDrop(payload: { id: string | number, sectionType: DomainSection
       : payload.sectionType === DomainSectionType.Query
         ? Endge.domain.getQueries().find(item => String(item.id) === String(payload.id))
         : Endge.domain.getComponentSFCs().find(item => String(item.id) === String(payload.id))
-  if (!entity) return
+  if (!entity) {
+    return
+  }
   portIdentity.value = entity.identity
   portName.value = toPortName(entity.identity)
   portRole.value = 'require'
@@ -352,7 +360,9 @@ function serializeEventInput(input: ComponentSFCEventInputValue): string {
 }
 
 function serializeForwardRules(rules: any[]): string {
-  if (!rules.length) return ''
+  if (!rules.length) {
+    return ''
+  }
   return rules.length === 1 ? serializeForwardRule(rules[0]) : `[${rules.map(serializeForwardRule).join(', ')}]`
 }
 
@@ -371,12 +381,16 @@ function serializeForwardSelector(selector: any): string {
   const simple = (selector.exclude?.length ?? 0) === 0
     && Object.keys(selector.rename ?? {}).length === 0
     && (!selector.namespace || selector.namespace === 'none')
-  if (simple) return selector.include === '*' ? `'*'` : JSON.stringify(selector.include)
+  if (simple) {
+    return selector.include === '*' ? `'*'` : JSON.stringify(selector.include)
+  }
   return `{ include: ${selector.include === '*' ? `'*'` : JSON.stringify(selector.include)}, exclude: ${JSON.stringify(selector.exclude ?? [])}, rename: ${JSON.stringify(selector.rename ?? {})}${selector.namespace && selector.namespace !== 'none' ? `, namespace: ${JSON.stringify(selector.namespace)}` : ''} }`
 }
 
 function commit(result: { ok: boolean, source: string, message?: string }): boolean {
-  if (!result.ok) return fail(result.message)
+  if (!result.ok) {
+    return fail(result.message)
+  }
   emit('update:source', result.source)
   return true
 }
@@ -388,7 +402,7 @@ function fail(message?: string): false {
 
 function toPortName(identity: string): string {
   const tail = identity.split(/[./:-]/).filter(Boolean).at(-1) ?? 'port'
-  return tail.replace(/[^A-Z_a-z0-9$]/g, '_').replace(/^\d/, '_$&')
+  return tail.replace(/[^\w$]/g, '_').replace(/^\d/, '_$&')
 }
 </script>
 
@@ -456,41 +470,81 @@ function toPortName(identity: string): string {
     <template v-else>
       <div class="grid gap-3 xl:grid-cols-2">
         <section class="rounded-lg border p-3">
-          <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Required</h4>
+          <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Required
+          </h4>
           <div v-for="port in requiredPorts" :key="`${port.kind}:${port.name}`" class="flex items-center gap-2 border-t py-2 first:border-0">
-            <Badge variant="outline">{{ port.kind }}</Badge><span class="font-mono text-xs">{{ port.name }}</span>
+            <Badge variant="outline">
+              {{ port.kind }}
+            </Badge><span class="font-mono text-xs">{{ port.name }}</span>
             <span class="truncate text-xs text-muted-foreground">{{ 'defaultIdentity' in port ? port.defaultIdentity : '' }}</span>
-            <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('require', port.name)"><Trash2 class="size-3.5" /></Button>
+            <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('require', port.name)">
+              <Trash2 class="size-3.5" />
+            </Button>
           </div>
         </section>
         <section class="rounded-lg border p-3">
-          <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Provided</h4>
+          <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Provided
+          </h4>
           <div v-for="port in providedPorts" :key="port.name" class="flex items-center gap-2 border-t py-2 first:border-0">
-            <Badge variant="outline">action</Badge><span class="font-mono text-xs">{{ port.name }}</span>
-            <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('provides', port.name)"><Trash2 class="size-3.5" /></Button>
+            <Badge variant="outline">
+              action
+            </Badge><span class="font-mono text-xs">{{ port.name }}</span>
+            <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('provides', port.name)">
+              <Trash2 class="size-3.5" />
+            </Button>
           </div>
         </section>
       </div>
 
       <DomainEntityDropTarget :accept-section-types="[DomainSectionType.Component, DomainSectionType.Action, DomainSectionType.Computation, DomainSectionType.Query]" hint-text="Перетащите Component, Action, Computation или Query из домена" @entity-drop="onEntityDrop">
         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm"><option value="require">Required</option><option value="provides">Provided</option></select>
-          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'"><option value="action">Action</option><option value="query">Query</option><option value="computation">Computation</option><option value="component">Component</option></select>
+          <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm">
+            <option value="require">
+              Required
+            </option><option value="provides">
+              Provided
+            </option>
+          </select>
+          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'">
+            <option value="action">
+              Action
+            </option><option value="query">
+              Query
+            </option><option value="computation">
+              Computation
+            </option><option value="component">
+              Component
+            </option>
+          </select>
           <Input v-model="portName" placeholder="portName" />
           <Input v-model="portIdentity" placeholder="domain.identity" :disabled="portRole === 'provides'" />
-          <Button :disabled="!projection.editable" @click="addPort"><Plus class="mr-1 size-4" />Добавить</Button>
+          <Button :disabled="!projection.editable" @click="addPort">
+            <Plus class="mr-1 size-4" />Добавить
+          </Button>
         </div>
       </DomainEntityDropTarget>
 
       <section class="rounded-lg border p-3">
-        <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Radio class="size-3.5" /> Events</h4>
-        <div class="mt-2 flex flex-wrap gap-2"><Badge v-for="event in eventPorts" :key="event.name" variant="secondary">{{ event.name }}: {{ event.payloadType }}</Badge></div>
+        <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Radio class="size-3.5" /> Events
+        </h4>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <Badge v-for="event in eventPorts" :key="event.name" variant="secondary">
+            {{ event.name }}: {{ event.payloadType }}
+          </Badge>
+        </div>
       </section>
 
       <section class="space-y-2 rounded-lg border p-3">
-        <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><Braces class="size-3.5" /> Forwarding</h4>
+        <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Braces class="size-3.5" /> Forwarding
+        </h4>
         <Textarea v-model="forwardDraft" class="min-h-28 font-mono text-xs" placeholder="{ from: 'table', ports: { emits: '*' } }" />
-        <Button size="sm" :disabled="!projection.editable" @click="saveForward"><Zap class="mr-1 size-4" />Сохранить forward</Button>
+        <Button size="sm" :disabled="!projection.editable" @click="saveForward">
+          <Zap class="mr-1 size-4" />Сохранить forward
+        </Button>
       </section>
     </template>
   </div>

@@ -18,10 +18,10 @@ export interface CollectionOptions<T extends IndexCollectionEntity<ID>, ID = str
 }
 
 export interface ReadonlyIndexCollection<T extends IndexCollectionEntity<ID>, ID = string> {
-  get(id: ID): T | undefined
-  all(): ReadonlyArray<T>
-  size(): number
-  unfiltered(): ReadonlyArray<T>
-  has(id: ID): boolean
-  forEach(callback: (item: T) => void): void
+  get: (id: ID) => T | undefined
+  all: () => ReadonlyArray<T>
+  size: () => number
+  unfiltered: () => ReadonlyArray<T>
+  has: (id: ID) => boolean
+  forEach: (callback: (item: T) => void) => void
 }

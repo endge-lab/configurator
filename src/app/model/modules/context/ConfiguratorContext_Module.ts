@@ -1,13 +1,13 @@
 import type {
-  ConfiguratorContextInitOptions,
-  ConfiguratorContextSurfaceLifecycle,
-} from '@/app/domain/types/configurator-context.type'
-import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
-import type {
   EndgeBootContext,
   EndgeDomainProvider,
   EndgeExecutionContext,
 } from '@endge/core'
+import type {
+  ConfiguratorContextInitOptions,
+  ConfiguratorContextSurfaceLifecycle,
+} from '@/app/domain/types/configurator-context.type'
+import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
 import {
   Endge,
@@ -76,7 +76,7 @@ export class ConfiguratorContext_Module {
     if (
       next.projectIdentity != null
       && next.projectIdentity !== this._requestedContext.projectIdentity
-      && !Object.prototype.hasOwnProperty.call(next, 'environmentIdentity')
+      && !Object.hasOwn(next, 'environmentIdentity')
     ) {
       requested.environmentIdentity = undefined
     }
@@ -323,12 +323,14 @@ export class ConfiguratorContext_Module {
 function readAuthVariableRecord(env: ImportMetaEnv): Readonly<Record<string, string>> {
   const variables: Record<string, string> = {}
   for (const [key, rawValue] of Object.entries(env as unknown as Record<string, unknown>)) {
-    if (!key.startsWith('VITE_ENDGE_AUTH_') || typeof rawValue !== 'string')
+    if (!key.startsWith('VITE_ENDGE_AUTH_') || typeof rawValue !== 'string') {
       continue
+    }
     const ref = key.slice('VITE_ENDGE_AUTH_'.length).trim()
     const value = rawValue.trim()
-    if (ref && value)
+    if (ref && value) {
       variables[ref] = value
+    }
   }
   return variables
 }

@@ -17,10 +17,29 @@ import { ENDGE_DOMAIN_BUNDLE_VERSION } from '@endge/core'
 type UnknownRecord = Record<string, unknown>
 
 const SNAPSHOT_DOCUMENT_KEYS = [
-  'projects', 'tenants', 'environments', 'folders', 'types', 'queries',
-  'data-views', 'compositions', 'stores', 'streams', 'updates', 'mocks',
-  'components', 'actions', 'filters', 'converters', 'computations', 'vocabs',
-  'i18n-bundles', 'auth-profiles', 'navigations', 'styles', 'configurations',
+  'projects',
+  'tenants',
+  'environments',
+  'folders',
+  'types',
+  'queries',
+  'data-views',
+  'compositions',
+  'stores',
+  'streams',
+  'updates',
+  'mocks',
+  'components',
+  'actions',
+  'filters',
+  'converters',
+  'computations',
+  'vocabs',
+  'i18n-bundles',
+  'auth-profiles',
+  'navigations',
+  'styles',
+  'configurations',
 ] as const
 
 export type ServiceBackendDomainErrorCode
@@ -45,7 +64,7 @@ export class ServiceBackendDomainError extends Error {
 }
 
 /** HTTP adapter полного live-domain API service-backend. */
-export class ServiceBackendDomain_Service implements EndgeDomainProvider {
+export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
   public readonly id = 'service-backend'
   public readonly capabilities
   public etag: string | null = null
@@ -73,8 +92,9 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
       workspaceIdentity: request.workspaceIdentity,
       signal: request.signal,
     })
-    if (!isLiveSnapshot(response.payload, request.workspaceIdentity))
+    if (!isLiveSnapshot(response.payload, request.workspaceIdentity)) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an incompatible workspace snapshot', response.status)
+    }
 
     this.etag = response.etag
     this._workspaceGeneration = response.payload.workspace.state.generation
@@ -119,15 +139,17 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
 
     const documents = payloadDocuments.map((value, index) => {
       const requested = request.documents[index]!
-      if (!isRecord(value) || value.collection !== requested.collection || !isRecord(value.document))
+      if (!isRecord(value) || value.collection !== requested.collection || !isRecord(value.document)) {
         return null
+      }
       const document = normalizeDocument(value.document)
       return document && document.identity === requested.identity
         ? { collection: requested.collection, document }
         : null
     })
-    if (documents.some(document => document == null))
+    if (documents.some(document => document == null)) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid bulk move document', response.status)
+    }
 
     return {
       documents: documents as EndgeDocumentsMoveResult['documents'],
@@ -144,8 +166,9 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
       signal: request.signal,
     })
     const workspace = normalizeWorkspace(response.payload, this._workspaceGeneration)
-    if (!workspace)
+    if (!workspace) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid workspace mutation response', response.status)
+    }
     return { workspace, etag: response.etag }
   }
 
@@ -166,8 +189,9 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
       signal: request.signal,
     })
     const document = normalizeDocument(response.payload)
-    if (!document)
+    if (!document) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid document mutation response', response.status)
+    }
     return { document, etag: response.etag }
   }
 
@@ -182,7 +206,7 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
     },
   ): Promise<{ payload: UnknownRecord, status: number, etag: string | null }> {
     const headers: Record<string, string> = {
-      Accept: 'application/json',
+      'Accept': 'application/json',
       'X-Endge-Workspace': options.workspaceIdentity,
     }
     if (options.body) {
@@ -203,8 +227,9 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
       })
     }
     catch (error) {
-      if (options.signal?.aborted)
+      if (options.signal?.aborted) {
         throw error
+      }
       throw new ServiceBackendDomainError(
         'service_backend_unavailable',
         error instanceof Error ? error.message : 'Service backend is unavailable',
@@ -214,28 +239,35 @@ export class ServiceBackendDomain_Service implements EndgeDomainProvider {
     const payload = await readJSON(response)
     if (response.status === 401) {
       const loginUrl = stringValue(payload?.loginUrl)
-      if (loginUrl)
+      if (loginUrl) {
         this._onUnauthorized(loginUrl)
+      }
       throw new ServiceBackendDomainError('service_backend_unauthorized', 'Configurator session is no longer valid', 401, loginUrl || undefined)
     }
-    if (response.status === 403)
+    if (response.status === 403) {
       throw new ServiceBackendDomainError('workspace_forbidden', errorMessage(payload, 'Workspace access denied'), 403)
-    if (response.status === 409)
+    }
+    if (response.status === 409) {
       throw new ServiceBackendDomainError('revision_conflict', errorMessage(payload, 'Document was changed by another user. Reload the context.'), 409)
-    if (response.status === 400 || response.status === 404 || response.status === 422 || response.status === 428)
+    }
+    if (response.status === 400 || response.status === 404 || response.status === 422 || response.status === 428) {
       throw new ServiceBackendDomainError('service_backend_request_invalid', errorMessage(payload, `Service backend rejected the request (${response.status})`), response.status)
-    if (!response.ok)
+    }
+    if (!response.ok) {
       throw new ServiceBackendDomainError('service_backend_unavailable', errorMessage(payload, `Service backend request failed (${response.status})`), response.status)
-    if (!payload)
+    }
+    if (!payload) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an empty JSON response', response.status)
+    }
 
     return { payload, status: response.status, etag: response.headers.get('ETag') }
   }
 }
 
 function normalizeDocument(value: UnknownRecord): EndgeLiveDomainDocument | null {
-  if (!stringValue(value.identity) || !stringValue(value.id) || !isPositiveInteger(value.revision))
+  if (!stringValue(value.identity) || !stringValue(value.id) || !isPositiveInteger(value.revision)) {
     return null
+  }
   const { id, revision, deletedAt, createdBy, updatedBy, createdAt, updatedAt, ...document } = value
   return {
     ...document,
@@ -252,11 +284,15 @@ function normalizeDocument(value: UnknownRecord): EndgeLiveDomainDocument | null
 }
 
 function normalizeWorkspace(value: UnknownRecord, generation: string): EndgeWorkspaceMutationResult['workspace'] | null {
-  if (!stringValue(value.identity) || !stringValue(value.id) || !isPositiveInteger(value.revision) || !isNonNegativeInteger(value.headSequence))
+  if (!stringValue(value.identity) || !stringValue(value.id) || !isPositiveInteger(value.revision) || !isNonNegativeInteger(value.headSequence)) {
     return null
+  }
   const { id, revision, headSequence, createdBy, updatedBy, createdAt, updatedAt, ...workspace } = value
   const state: EndgeWorkspaceServerState = {
-    id: String(id), revision: Number(revision), headSequence: Number(headSequence), generation,
+    id: String(id),
+    revision: Number(revision),
+    headSequence: Number(headSequence),
+    generation,
     ...(isRecord(createdBy) ? { createdBy: createdBy as any } : {}),
     ...(isRecord(updatedBy) ? { updatedBy: updatedBy as any } : {}),
     ...(typeof createdAt === 'string' ? { createdAt } : {}),
@@ -282,8 +318,9 @@ function isLiveSnapshot(value: UnknownRecord, workspaceIdentity: string): value 
     || !isNonNegativeInteger(workspace.state.headSequence)
     || !isRecord(documents)
     || !Array.isArray(value.installedIntegrations)
-    || !value.installedIntegrations.every(isInstalledIntegration))
+    || !value.installedIntegrations.every(isInstalledIntegration)) {
     return false
+  }
 
   return SNAPSHOT_DOCUMENT_KEYS.every(key => Array.isArray(documents[key]) && documents[key].every(isLiveDocument))
 }

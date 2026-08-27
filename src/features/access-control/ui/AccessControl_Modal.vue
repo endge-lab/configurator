@@ -6,7 +6,7 @@ import { Endge } from '@endge/core'
 import { KeyRound, Loader2, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AccessControl_Module, AccessControl_Service } from '@/features/access-control'
 
 const openState = ref(false)
 const activeTab = ref('workspace')
@@ -43,7 +42,7 @@ const selectedUserCursor = ref('')
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let searchController: AbortController | null = null
 
-const access = new AccessControl_Module(new AccessControl_Service(Configurator.connections.activeBackendURL))
+const access = Configurator.accessControl
 const session = computed(() => Configurator.session.state.status === 'authenticated' ? Configurator.session.state.session : null)
 const platformAdmin = computed(() => session.value?.platformAdmin === true)
 const currentUserID = computed(() => session.value?.developer.id ?? '')

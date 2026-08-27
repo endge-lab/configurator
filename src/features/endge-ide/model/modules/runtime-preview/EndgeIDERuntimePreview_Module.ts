@@ -1,28 +1,28 @@
 /* eslint-disable style/max-statements-per-line */
+import type { AuthProfileSchema, OidcBrowserSession_Adapter } from '@endge/core'
 import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
-  RuntimePreviewLaunchRequest,
   RuntimePreviewAuthPrompt,
+  RuntimePreviewLaunchRequest,
   RuntimePreviewLifecycleState,
   RuntimePreviewOccurrencePrompt,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 
+import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 import { AuthInteractionRequiredError, Endge } from '@endge/core'
-import type { AuthProfileSchema, OidcBrowserSession_Service } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
+import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/model/runtime-preview/runtime-preview-auth'
 import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard'
 import { readRuntimePreviewHistory, writeRuntimePreviewHistory } from '@/features/endge-ide/model/runtime-preview/runtime-preview-history'
 import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
 import { findRuntimePreviewOccurrences } from '@/features/endge-ide/model/runtime-preview/runtime-preview-occurrence'
-import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/model/runtime-preview/runtime-preview-auth'
-import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 
 /** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
 export class EndgeIDERuntimePreview_Module {
@@ -46,7 +46,7 @@ export class EndgeIDERuntimePreview_Module {
   private _treeExpansionRequestId = 0
   private _resolveOccurrencePrompt: ((choice: string | 'standalone' | null) => void) | null = null
   private _resolveAuthPrompt: ((authorized: boolean) => void) | null = null
-  private readonly _oidcSources = new Map<string, OidcBrowserSession_Service>()
+  private readonly _oidcSources = new Map<string, OidcBrowserSession_Adapter>()
 
   public constructor(private readonly _context: EndgeIDEContextPort) {}
 
@@ -220,19 +220,16 @@ export class EndgeIDERuntimePreview_Module {
   /** Выполняет следующий OIDC popup исключительно из пользовательского клика. */
   public async authorizeNextProfile(): Promise<void> {
     const prompt = this.authPrompt.value
-    if (!prompt || prompt.pending)
-      return
+    if (!prompt || prompt.pending) { return }
     const profile = prompt.profiles[prompt.currentIndex]
     const source = profile ? this._oidcSources.get(profile.identity) : null
-    if (!profile || !source)
-      return
+    if (!profile || !source) { return }
     this.authPrompt.value = { ...prompt, pending: true, error: null }
     try {
       await source.loginPopup()
       Endge.auth.session.connect(profile.identity, source)
       const token = await Endge.auth.session.ensureProfile(profile)
-      if (!token)
-        throw new Error(`OIDC session не создана: ${profile.identity}`)
+      if (!token) { throw new Error(`OIDC session не создана: ${profile.identity}`) }
       const nextIndex = prompt.currentIndex + 1
       if (nextIndex >= prompt.profiles.length) {
         const resolve = this._resolveAuthPrompt
@@ -454,16 +451,13 @@ export class EndgeIDERuntimePreview_Module {
       const source = this._oidcSource(profile)
       this._oidcSources.set(profile.identity, source)
       Endge.auth.session.connect(profile.identity, source)
-      if (await source.hasSession())
-        await Endge.auth.session.ensureProfile(profile)
-      else
-        missing.push(profile)
+      if (await source.hasSession()) { await Endge.auth.session.ensureProfile(profile) }
+      else { missing.push(profile) }
     }
-    if (missing.length === 0)
-      return true
+    if (missing.length === 0) { return true }
     this.cancelAuthorization()
     this.authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
-    return new Promise(resolve => { this._resolveAuthPrompt = resolve })
+    return new Promise((resolve) => { this._resolveAuthPrompt = resolve })
   }
 
   /** Проверяет только наличие browser session, не блокируя запуск mock preview. */
@@ -504,7 +498,7 @@ export class EndgeIDERuntimePreview_Module {
     this.authPrompt.value = { profiles, currentIndex: 0, pending: false, error: null }
   }
 
-  private _oidcSource(profile: AuthProfileSchema): OidcBrowserSession_Service {
+  private _oidcSource(profile: AuthProfileSchema): OidcBrowserSession_Adapter {
     const callback = getConfiguratorOidcPopupCallbackURL()
     return Endge.auth.createOidcSessionSource(profile, {
       redirectUri: callback,
@@ -529,16 +523,14 @@ export class EndgeIDERuntimePreview_Module {
     Endge.auth.session.connect(profile.identity, source)
     await source.loginPopup()
     const token = await Endge.auth.session.ensureProfile(profile)
-    if (!token)
-      throw new Error(`OIDC session не создана: ${profile.identity}`)
+    if (!token) { throw new Error(`OIDC session не создана: ${profile.identity}`) }
     await instance.restart()
   }
 
   /** Handles auth requested by a Query that appeared after Preview startup. */
   private _handleInteractionRequired(error: AuthInteractionRequiredError): void {
     const instance = this.selectedEntry.value
-    if (!instance)
-      return
+    if (!instance) { return }
     toast.error('Для запроса требуется авторизация', {
       description: error.message,
       action: {

@@ -2,7 +2,7 @@ import { RComposition, RConverter, RQuery, RStore } from '@endge/core'
 import { Serialize } from '@endge/utils'
 import { describe, expect, it } from 'vitest'
 
-describe('Endge runtime singleton resolution', () => {
+describe('endge runtime singleton resolution', () => {
   it.each([
     ['query', RQuery],
     ['store', RStore],

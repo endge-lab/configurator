@@ -1,5 +1,3 @@
-import type { ShallowRef } from 'vue'
-
 export interface ConfiguratorRenderFailure {
   err: unknown
   errorInfo?: string
@@ -24,5 +22,5 @@ export interface ConfiguratorDiagnosticsConfig {
 }
 
 export interface ConfiguratorDiagnosticsState {
-  readonly renderGuard: ShallowRef<ConfiguratorRenderGuardState | null>
+  readonly renderGuard: Readonly<{ value: ConfiguratorRenderGuardState | null }>
 }

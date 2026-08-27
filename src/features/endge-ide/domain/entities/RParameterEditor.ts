@@ -31,8 +31,9 @@ export class RParameterEditor {
     this.displayName = String(source.displayName ?? '').trim()
     this.description = source.description
     this.fields = new Map()
-    for (const [k, v] of source.fields)
+    for (const [k, v] of source.fields) {
       this.fields.set(k, { ...v })
+    }
     this.runtimeFilters = (source.runtimeFilters ?? []).map(x => ({ ...x }))
   }
 
@@ -43,8 +44,9 @@ export class RParameterEditor {
     source.name = this.displayName
     source.description = this.description
     source.fields = new Map()
-    for (const [k, v] of this.fields)
+    for (const [k, v] of this.fields) {
       source.fields.set(k, { ...v })
+    }
     source.runtimeFilters = this.runtimeFilters.map(x => ({ ...x }))
   }
 }

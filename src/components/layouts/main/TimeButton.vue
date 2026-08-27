@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
+import { useUI } from '@endge/ui-vue'
 // utils
 import { extractTime, formatDatetimeTZ } from '@endge/utils'
-import { useUI } from '@endge/ui-vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'

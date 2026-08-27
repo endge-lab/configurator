@@ -42,12 +42,14 @@ export class RI18nBundleEditor {
 
   applySourceText(value = this.sourceText): void {
     const parsed = JSON.parse(value || '{}')
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error('JSON словаря должен быть объектом локалей')
+    }
 
     for (const [locale, messages] of Object.entries(parsed)) {
-      if (!messages || typeof messages !== 'object' || Array.isArray(messages))
+      if (!messages || typeof messages !== 'object' || Array.isArray(messages)) {
         throw new Error(`Локаль "${locale}" должна быть объектом сообщений`)
+      }
     }
 
     this.locales = { ...parsed } as Record<string, Record<string, unknown>>

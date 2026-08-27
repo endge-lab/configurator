@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text -- compact technical status labels */
-import type { DomainVersionTargetState } from '@/features/domain-version/domain/types/domain-version.type'
 import type { CSSProperties } from 'vue'
+import type { DomainVersionTargetState } from '@/features/domain-version/domain/types/domain-version.type'
 
 import { AlertTriangle, LoaderCircle, LockKeyhole, WifiOff } from 'lucide-vue-next'
 import { computed } from 'vue'

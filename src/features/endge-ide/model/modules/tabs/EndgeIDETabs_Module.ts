@@ -1,75 +1,75 @@
-import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/components/ui/smart-tabs/types.ts'
 import type {
   DiagnosticsEntityRef,
   DomainDocumentType,
   RAction,
   RComponentDSL,
   RComponentTable,
-  RDataView,
   RComposition,
+  RComputation,
   RConfiguration,
+  RDataView,
+  RMock,
+  RQuery,
   RStore,
   RStream,
-  RUpdate,
-  RMock,
-  RComputation,
-  RQuery,
   RTenant,
   RType,
+  RUpdate,
   SourceDocumentReference,
 } from '@endge/core'
 import type { Component } from 'vue'
+import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/components/ui/smart-tabs/types.ts'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/busy/EndgeIDEBusy_Module'
 
-import { ComponentType, Endge, FilterType, ParameterType, QueryType, isExternallyManaged, isSystemManaged } from '@endge/core'
+import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
 
 import { useSmartTabs } from '@/components/ui/smart-tabs'
-import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
+import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
+import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
+import { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor.ts'
+import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
+import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor.ts'
+import { RComponentTableEditor } from '@/features/endge-ide/domain/entities/RComponentTableEditor.ts'
+import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
+import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor.ts'
+import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor.ts'
+import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
+import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
+import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
+import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
+import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
+import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
+import { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor.ts'
+import { RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor.ts'
+import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
+import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
+import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
+import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
+import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
+import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
+import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
+import { RStreamEditor } from '@/features/endge-ide/domain/entities/RStreamEditor.ts'
+import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
+import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
+import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
+import { RUpdateEditor } from '@/features/endge-ide/domain/entities/RUpdateEditor.ts'
+import { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor.ts'
+import { isIDETabStorageDisabled } from '@/features/endge-ide/model/config/endge-ide-debug-flags.ts'
+import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
 import { getDomainDocumentProjectPath } from '@/features/endge-ide/model/domain/domain-document-project-path'
-import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
-import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model/source-reference/source-reference-document-target'
+import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
 import { createDocumentEditorSnapshot } from '@/features/endge-ide/model/modules/tabs/document-editor-snapshot'
-import { isIDETabStorageDisabled } from '@/features/endge-ide/model/config/endge-ide-debug-flags.ts'
 import {
   ENDGE_IDE_DOCUMENT_VIEW_ID,
   getMissingDocumentTabIds,
   resolveEndgeIDEDocumentIdentity,
 } from '@/features/endge-ide/model/modules/tabs/endge-ide-restored-document-tabs'
+import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/model/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
-import { RComponentDSLEditor } from '@/features/endge-ide/domain/entities/RComponentDSLEditor.ts'
-import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor.ts'
-import { RComponentTableEditor } from '@/features/endge-ide/domain/entities/RComponentTableEditor.ts'
-import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
-import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
-import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
-import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor.ts'
-import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
-import { RStreamEditor } from '@/features/endge-ide/domain/entities/RStreamEditor.ts'
-import { RUpdateEditor } from '@/features/endge-ide/domain/entities/RUpdateEditor.ts'
-import { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor.ts'
-import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor.ts'
-import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
-import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
-import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
-import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
-import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
-import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor.ts'
-import { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor.ts'
-import { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor.ts'
-import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
-import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
-import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
-import { RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor.ts'
-import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
-import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
-import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
-import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
-import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
-import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
 const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))
@@ -212,8 +212,9 @@ export class EndgeIDETabs_Module {
 
   /** LIFECYCLE */
   public init(): void {
-    if (this._isRegistryBootstrapped)
+    if (this._isRegistryBootstrapped) {
       return
+    }
     this._tabsApi.closeTab('docs')
     this._tabsApi.closeTab('ui-editor-demo-singleton')
     this._tabsApi.closeTab('pulse')
@@ -240,7 +241,7 @@ export class EndgeIDETabs_Module {
     this.documentModel.value = null
   }
 
-  public openTab(tab: SmartTabRef, opts?: { activate?: boolean; replace?: boolean }): void {
+  public openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
     this._tabsApi.openTab(tab, opts)
   }
 
@@ -290,8 +291,9 @@ export class EndgeIDETabs_Module {
   public getCurrentContext(): { document: Record<string, unknown> } | null {
     const editor = this.documentEditorModel.value
     const model = this.documentModel.value
-    if (editor == null && model == null)
+    if (editor == null && model == null) {
       return null
+    }
     return {
       document: {
         editor: editor ?? undefined,
@@ -304,15 +306,17 @@ export class EndgeIDETabs_Module {
   public getViewForTab(tab: SmartTabRef): SmartTabViewResolved | null {
     this._syncContextForTab(tab)
     const viewId = tab.viewId as SupportedViewId
-    if (viewId === VIEW_ID_DOCUMENT)
+    if (viewId === VIEW_ID_DOCUMENT) {
       return this._resolveDocumentTab(tab)
+    }
     return null
   }
 
   public async save(): Promise<void> {
     const activeTab = this.activeTab.value
-    if (!activeTab)
+    if (!activeTab) {
       return
+    }
     await this._busy.run(this._doSave(activeTab))
   }
 
@@ -335,13 +339,15 @@ export class EndgeIDETabs_Module {
   private async _doSave(activeTab: SmartTabRef): Promise<void> {
     const viewId = activeTab.viewId as SupportedViewId
     try {
-      if (viewId !== VIEW_ID_DOCUMENT)
+      if (viewId !== VIEW_ID_DOCUMENT) {
         return
+      }
       const payload = this._getPayload<DocumentTabPayload>(activeTab.payload)
       const documentId = payload?.documentId
       const documentType = payload?.documentType
-      if (!documentId || !documentType)
+      if (!documentId || !documentType) {
         return
+      }
       const session = this._sessionByTabId.get(activeTab.id)
       const model = session?.model as { managedBy?: 'system' | 'integration' | 'user', managedById?: string | null } | null | undefined
       if (isExternallyManaged(model)) {
@@ -373,8 +379,9 @@ export class EndgeIDETabs_Module {
           effectiveDocumentId = identity
           session.persistedIdentity = identity
           const tabPayload = this._getPayload<DocumentTabPayload>(activeTab.payload)
-          if (tabPayload)
+          if (tabPayload) {
             tabPayload.documentId = identity
+          }
           activeTab.label = this.getDocumentLabel(identity, documentType)
         }
       }
@@ -523,7 +530,7 @@ export class EndgeIDETabs_Module {
   }
 
   /** Открыть вкладку анализа Runtime Debug для конкретной браузерной вкладки. */
-  public openRuntimeDebugTab(tab: { id: string; url?: string; title?: string }): void {
+  public openRuntimeDebugTab(tab: { id: string, url?: string, title?: string }): void {
     const label = tab.title || tab.url || tab.id
     const tabRef: SmartTabRef = {
       id: `runtime-debug-${tab.id}`,
@@ -547,64 +554,91 @@ export class EndgeIDETabs_Module {
 
   public getDocumentIcon(docType: DomainDocumentType, presentationKind?: string): string {
     const key = String(docType)
-    if (key === String(ComponentType.Table))
+    if (key === String(ComponentType.Table)) {
       return 'ti ti-table text-blue-500 text-xl'
-    if (key === String(ComponentType.DSL))
+    }
+    if (key === String(ComponentType.DSL)) {
       return 'ti ti-file-type-jsx text-blue-500 text-xl'
-    if (key === String(COMPONENT_SFC_TYPE))
+    }
+    if (key === String(COMPONENT_SFC_TYPE)) {
       return 'ti ti-file-type-tsx text-blue-500 text-xl'
-    if (isQueryDocumentType(key))
+    }
+    if (isQueryDocumentType(key)) {
       return 'ti ti-send text-orange-500 text-xl'
-    if (key === 'data-view')
+    }
+    if (key === 'data-view') {
       return 'ti ti-git-branch text-cyan-500 text-xl'
+    }
     if (key === 'composition') {
       const colorClass = getDomainDocumentPresentation(docType, presentationKind).colorClass
       return `ti ti-topology-star-3 ${colorClass} text-xl`
     }
-    if (key === 'store')
+    if (key === 'store') {
       return 'ti ti-database text-emerald-500 text-xl'
-    if (key === 'mock')
+    }
+    if (key === 'mock') {
       return 'ti ti-braces text-[#8B5A2B] dark:text-[#C08A52] text-xl'
-    if (key === String(ParameterType.DefaultParameter))
+    }
+    if (key === String(ParameterType.DefaultParameter)) {
       return 'ti ti-form-input text-slate-500 text-xl'
-    if (key === String(FilterType.DefaultFilter))
+    }
+    if (key === String(FilterType.DefaultFilter)) {
       return 'ti ti-filter text-rose-500 text-xl'
-    if (key === 'primitive')
+    }
+    if (key === 'primitive') {
       return 'ti ti-box-padding text-blue-500 text-xl'
-    if (key === 'type')
+    }
+    if (key === 'type') {
       return 'ti ti-box-multiple text-blue-500 text-xl'
-    if (key === 'action')
+    }
+    if (key === 'action') {
       return 'ti ti-bolt text-amber-500 text-2xl'
-    if (key === 'converter')
+    }
+    if (key === 'converter') {
       return 'ti ti-exchange text-cyan-500 text-2xl'
-    if (key === 'computation')
+    }
+    if (key === 'computation') {
       return 'ti ti-calculator text-orange-500 text-2xl'
-    if (key === 'integration')
+    }
+    if (key === 'integration') {
       return 'ti ti-plug text-teal-500 text-2xl'
-    if (key === 'environment')
+    }
+    if (key === 'environment') {
       return 'ti ti-server-cog text-lime-500 text-2xl'
-    if (key === 'tenant')
+    }
+    if (key === 'tenant') {
       return 'ti ti-building-community text-emerald-500 text-2xl'
-    if (key === 'policy')
+    }
+    if (key === 'policy') {
       return 'ti ti-shield text-sky-500 text-2xl'
-    if (key === 'style')
+    }
+    if (key === 'style') {
       return 'ti ti-palette text-fuchsia-500 text-2xl'
-    if (key === 'configuration')
+    }
+    if (key === 'configuration') {
       return 'ti ti-adjustments-horizontal text-slate-500 text-2xl'
-    if (key === 'vocabs')
+    }
+    if (key === 'vocabs') {
       return 'ti ti-book text-teal-500 text-2xl'
-    if (key === 'auth-profile')
+    }
+    if (key === 'auth-profile') {
       return 'ti ti-key text-sky-500 text-2xl'
-    if (key === 'i18n-bundles')
+    }
+    if (key === 'i18n-bundles') {
       return 'ti ti-language text-amber-500 text-2xl'
-    if (key === 'page-template')
+    }
+    if (key === 'page-template') {
       return 'ti ti-layout-navbar text-indigo-400 text-2xl'
-    if (key === 'page')
+    }
+    if (key === 'page') {
       return 'ti ti-layout-board text-indigo-400 text-2xl'
-    if (key === 'navigation')
+    }
+    if (key === 'navigation') {
       return 'ti ti-route text-cyan-400 text-2xl'
-    if (key === 'project')
+    }
+    if (key === 'project') {
       return 'ti ti-briefcase text-sky-500 text-2xl'
+    }
     return 'ti ti-file-alert text-xl text-red-500'
   }
 
@@ -729,8 +763,9 @@ export class EndgeIDETabs_Module {
     const payload = this._getPayload<DocumentTabPayload>(tab.payload)
     const documentId = payload?.documentId
     const documentType = payload?.documentType
-    if (!documentId || !documentType)
+    if (!documentId || !documentType) {
       return null
+    }
     const cached = this._sessionByTabId.get(tab.id)
     if (cached) {
       this._setCurrentFromSession(cached)
@@ -738,8 +773,9 @@ export class EndgeIDETabs_Module {
     }
     const resolver = this._getDocResolver(documentType)
     const session = resolver?.(documentId) ?? null
-    if (!session)
+    if (!session) {
       return null
+    }
     if (session.model && typeof session.model === 'object') {
       const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
       session.persistedIdentity = identity || documentId
@@ -757,43 +793,44 @@ export class EndgeIDETabs_Module {
   }
 
   private readonly _docResolvers: Map<string, DocResolver> = new Map([
-    [String(ComponentType.Table), (documentId) => this._resolveComponentTable(documentId)],
-    [String(ComponentType.DSL), (documentId) => this._resolveComponentDSL(documentId)],
-    [String(COMPONENT_SFC_TYPE), (documentId) => this._resolveComponentSFC(documentId)],
-    [String(QueryType.REST), (documentId) => this._resolveQuery(documentId)],
-    [String(QueryType.GraphQL), (documentId) => this._resolveQuery(documentId)],
-    [String(QueryType.Custom), (documentId) => this._resolveQuery(documentId)],
-    ['data-view', (documentId) => this._resolveDataView(documentId)],
-    ['composition', (documentId) => this._resolveComposition(documentId)],
-    ['store', (documentId) => this._resolveStore(documentId)],
-    ['stream', (documentId) => this._resolveStream(documentId)],
-    ['update', (documentId) => this._resolveUpdate(documentId)],
-    ['mock', (documentId) => this._resolveMock(documentId)],
-    ['action', (documentId) => this._resolveAction(documentId)],
-    [String(ParameterType.DefaultParameter), (documentId) => this._resolveParameter(documentId)],
-    [String(FilterType.DefaultFilter), (documentId) => this._resolveFilter(documentId)],
-    ['converter', (documentId) => this._resolveConverter(documentId)],
-    ['computation', (documentId) => this._resolveComputation(documentId)],
-    ['integration', (documentId) => this._resolveIntegration(documentId)],
-    ['environment', (documentId) => this._resolveEnvironment(documentId)],
-    ['tenant', (documentId) => this._resolveTenant(documentId)],
-    ['policy', (documentId) => this._resolvePolicy(documentId)],
-    ['style', (documentId) => this._resolveStyle(documentId)],
-    ['configuration', (documentId) => this._resolveConfiguration(documentId)],
-    ['vocabs', (documentId) => this._resolveVocabs(documentId)],
-    ['auth-profile', (documentId) => this._resolveAuthProfile(documentId)],
-    ['i18n-bundles', (documentId) => this._resolveI18nBundle(documentId)],
-    ['page-template', (documentId) => this._resolvePageTemplate(documentId)],
-    ['page', (documentId) => this._resolvePage(documentId)],
-    ['navigation', (documentId) => this._resolveNavigation(documentId)],
-    ['project', (documentId) => this._resolveProject(documentId)],
-    ['type', (documentId) => this._resolveType(documentId)],
+    [String(ComponentType.Table), documentId => this._resolveComponentTable(documentId)],
+    [String(ComponentType.DSL), documentId => this._resolveComponentDSL(documentId)],
+    [String(COMPONENT_SFC_TYPE), documentId => this._resolveComponentSFC(documentId)],
+    [String(QueryType.REST), documentId => this._resolveQuery(documentId)],
+    [String(QueryType.GraphQL), documentId => this._resolveQuery(documentId)],
+    [String(QueryType.Custom), documentId => this._resolveQuery(documentId)],
+    ['data-view', documentId => this._resolveDataView(documentId)],
+    ['composition', documentId => this._resolveComposition(documentId)],
+    ['store', documentId => this._resolveStore(documentId)],
+    ['stream', documentId => this._resolveStream(documentId)],
+    ['update', documentId => this._resolveUpdate(documentId)],
+    ['mock', documentId => this._resolveMock(documentId)],
+    ['action', documentId => this._resolveAction(documentId)],
+    [String(ParameterType.DefaultParameter), documentId => this._resolveParameter(documentId)],
+    [String(FilterType.DefaultFilter), documentId => this._resolveFilter(documentId)],
+    ['converter', documentId => this._resolveConverter(documentId)],
+    ['computation', documentId => this._resolveComputation(documentId)],
+    ['integration', documentId => this._resolveIntegration(documentId)],
+    ['environment', documentId => this._resolveEnvironment(documentId)],
+    ['tenant', documentId => this._resolveTenant(documentId)],
+    ['policy', documentId => this._resolvePolicy(documentId)],
+    ['style', documentId => this._resolveStyle(documentId)],
+    ['configuration', documentId => this._resolveConfiguration(documentId)],
+    ['vocabs', documentId => this._resolveVocabs(documentId)],
+    ['auth-profile', documentId => this._resolveAuthProfile(documentId)],
+    ['i18n-bundles', documentId => this._resolveI18nBundle(documentId)],
+    ['page-template', documentId => this._resolvePageTemplate(documentId)],
+    ['page', documentId => this._resolvePage(documentId)],
+    ['navigation', documentId => this._resolveNavigation(documentId)],
+    ['project', documentId => this._resolveProject(documentId)],
+    ['type', documentId => this._resolveType(documentId)],
   ])
 
   private _resolveComponentTable(documentId: string): EditorSession | null {
     const component = Endge.domain.getComponent(documentId) as RComponentTable | null
-    if (!component)
+    if (!component) {
       return null
+    }
     const editor = new RComponentTableEditor()
     editor.fillFromSource(component)
     return {
@@ -804,16 +841,18 @@ export class EndgeIDETabs_Module {
       editor,
       model: component,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
+        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
           (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(component)
+        }
       },
     }
   }
 
   private _resolveComponentDSL(documentId: string): EditorSession | null {
     const component = Endge.domain.getComponent(documentId) as RComponentDSL | null
-    if (!component)
+    if (!component) {
       return null
+    }
     const editor = new RComponentDSLEditor()
     editor.fillFromSource(component)
     return {
@@ -824,16 +863,18 @@ export class EndgeIDETabs_Module {
       editor,
       model: component,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
+        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
           (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(component)
+        }
       },
     }
   }
 
   private _resolveComponentSFC(documentId: string): EditorSession | null {
     const component = (Endge.domain as any).getComponentSFC?.(documentId) ?? null
-    if (!component)
+    if (!component) {
       return null
+    }
     const editor = new RComponentSFCEditor()
     editor.fillFromSource(component)
     return {
@@ -849,8 +890,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveType(documentId: string): EditorSession | null {
     const rType = Endge.domain.getType(documentId) as RType | null
-    if (!rType || rType.isPrimitive)
+    if (!rType || rType.isPrimitive) {
       return null
+    }
     const editor = new RTypeEditor()
     editor.fillFromSource(rType)
     return {
@@ -859,16 +901,18 @@ export class EndgeIDETabs_Module {
       model: rType,
       persistedIdentity: rType.identity,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function')
+        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
           (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(rType)
+        }
       },
     }
   }
 
   private _resolveAction(documentId: string): EditorSession | null {
     const action = Endge.domain.getAction(documentId) as RAction | null
-    if (!action)
+    if (!action) {
       return null
+    }
     const rawEditor = new RActionEditor()
     rawEditor.fillFromSource(action)
     const editor = reactive(rawEditor as object) as RActionEditor
@@ -885,8 +929,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveQuery(documentId: string): EditorSession | null {
     const query = Endge.domain.getQuery(documentId) as RQuery | null
-    if (!query)
+    if (!query) {
       return null
+    }
     const editor = new RQueryEditor()
     editor.fillFromSource(query)
     return {
@@ -899,8 +944,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveDataView(documentId: string): EditorSession | null {
     const dataView = Endge.domain.getDataView(documentId) as RDataView | null
-    if (!dataView)
+    if (!dataView) {
       return null
+    }
     const editor = new RDataViewEditor()
     editor.fillFromSource(dataView)
     return {
@@ -913,8 +959,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveComposition(documentId: string): EditorSession | null {
     const composition = Endge.domain.getComposition(documentId) as RComposition | null
-    if (!composition)
+    if (!composition) {
       return null
+    }
     const rawEditor = new RCompositionEditor()
     rawEditor.fillFromSource(composition)
     const editor = reactive(rawEditor as object) as RCompositionEditor
@@ -928,8 +975,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveStore(documentId: string): EditorSession | null {
     const store = Endge.domain.getStore(documentId) as RStore | null
-    if (!store)
+    if (!store) {
       return null
+    }
     const rawEditor = new RStoreEditor()
     rawEditor.fillFromSource(store)
     const editor = reactive(rawEditor as object) as RStoreEditor
@@ -943,8 +991,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveStream(documentId: string): EditorSession | null {
     const stream = Endge.domain.getStream(documentId) as RStream | null
-    if (!stream)
+    if (!stream) {
       return null
+    }
     const rawEditor = new RStreamEditor()
     rawEditor.fillFromSource(stream)
     const editor = reactive(rawEditor as object) as RStreamEditor
@@ -958,8 +1007,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveUpdate(documentId: string): EditorSession | null {
     const update = Endge.domain.getUpdate(documentId) as RUpdate | null
-    if (!update)
+    if (!update) {
       return null
+    }
     const rawEditor = new RUpdateEditor()
     rawEditor.fillFromSource(update)
     const editor = reactive(rawEditor as object) as RUpdateEditor
@@ -973,8 +1023,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveMock(documentId: string): EditorSession | null {
     const mock = Endge.domain.getMock(documentId) as RMock | null
-    if (!mock)
+    if (!mock) {
       return null
+    }
     const rawEditor = new RMockEditor()
     rawEditor.fillFromSource(mock)
     const editor = reactive(rawEditor as object) as RMockEditor
@@ -988,8 +1039,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveParameter(documentId: string): EditorSession | null {
     const parameter = Endge.domain.getParameter(documentId)
-    if (!parameter)
+    if (!parameter) {
       return null
+    }
     const editor = new RParameterEditor()
     editor.fillFromSource(parameter)
     return {
@@ -1005,8 +1057,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveFilter(documentId: string): EditorSession | null {
     const filter = Endge.domain.getFilter(documentId)
-    if (!filter)
+    if (!filter) {
       return null
+    }
     const rawEditor = new RFilterEditor()
     rawEditor.fillFromSource(filter)
     const editor = reactive(rawEditor as object) as RFilterEditor
@@ -1023,8 +1076,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveConverter(documentId: string): EditorSession | null {
     const converter = Endge.domain.getConverter(documentId)
-    if (!converter)
+    if (!converter) {
       return null
+    }
     const editor = new RConverterEditor()
     editor.fillFromSource(converter)
     return {
@@ -1040,8 +1094,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveComputation(documentId: string): EditorSession | null {
     const computation = Endge.domain.getComputation(documentId) as RComputation | null
-    if (!computation)
+    if (!computation) {
       return null
+    }
     const rawEditor = new RComputationEditor()
     rawEditor.fillFromSource(computation)
     const editor = reactive(rawEditor as object) as RComputationEditor
@@ -1058,8 +1113,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveIntegration(documentId: string): EditorSession | null {
     const integration = Endge.domain.getIntegration(documentId)
-    if (!integration)
+    if (!integration) {
       return null
+    }
     const editor = new RIntegrationEditor()
     editor.fillFromSource(integration)
     return {
@@ -1075,8 +1131,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveEnvironment(documentId: string): EditorSession | null {
     const environment = Endge.domain.getEnvironment(documentId)
-    if (!environment)
+    if (!environment) {
       return null
+    }
     const editor = new REnvironmentEditor()
     editor.fillFromSource(environment)
     return {
@@ -1093,8 +1150,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveTenant(documentId: string): EditorSession | null {
     const tenant = Endge.domain.getTenant(documentId) as RTenant | null
-    if (!tenant)
+    if (!tenant) {
       return null
+    }
     const editor = new RTenantEditor()
     editor.fillFromSource(tenant)
     return {
@@ -1111,8 +1169,9 @@ export class EndgeIDETabs_Module {
 
   private _resolvePolicy(documentId: string): EditorSession | null {
     const policy = Endge.domain.getPolicy(documentId)
-    if (!policy)
+    if (!policy) {
       return null
+    }
     const editor = new RPolicyEditor()
     editor.fillFromSource(policy)
     return {
@@ -1128,8 +1187,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveStyle(documentId: string): EditorSession | null {
     const style = Endge.domain.getStyle(documentId)
-    if (!style)
+    if (!style) {
       return null
+    }
     const rawEditor = new RStyleEditor()
     rawEditor.fillFromSource(style)
     const editor = reactive(rawEditor as object) as RStyleEditor
@@ -1146,7 +1206,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveConfiguration(documentId: string): EditorSession | null {
     const configuration = Endge.domain.getConfiguration(documentId) as RConfiguration | null
-    if (!configuration) return null
+    if (!configuration) {
+      return null
+    }
     const rawEditor = new RConfigurationEditor()
     rawEditor.fillFromSource(configuration)
     const editor = reactive(rawEditor as object) as RConfigurationEditor
@@ -1163,8 +1225,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveVocabs(documentId: string): EditorSession | null {
     const vocab = Endge.domain.getVocab(documentId)
-    if (!vocab)
+    if (!vocab) {
       return null
+    }
     const rawEditor = new RVocabsEditor()
     rawEditor.fillFromSource(vocab)
     const editor = reactive(rawEditor as object) as RVocabsEditor
@@ -1181,8 +1244,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveAuthProfile(documentId: string): EditorSession | null {
     const profile = Endge.domain.getAuthProfile(documentId)
-    if (!profile)
+    if (!profile) {
       return null
+    }
     const rawEditor = new RAuthProfileEditor()
     rawEditor.fillFromSource(profile)
     const editor = reactive(rawEditor as object) as RAuthProfileEditor
@@ -1199,8 +1263,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveI18nBundle(documentId: string): EditorSession | null {
     const bundle = Endge.domain.getI18nBundle(documentId)
-    if (!bundle)
+    if (!bundle) {
       return null
+    }
     const rawEditor = new RI18nBundleEditor()
     rawEditor.fillFromSource(bundle)
     const editor = reactive(rawEditor as object) as RI18nBundleEditor
@@ -1217,8 +1282,9 @@ export class EndgeIDETabs_Module {
 
   private _resolvePageTemplate(documentId: string): EditorSession | null {
     const tpl = Endge.domain.getPageTemplate(documentId)
-    if (!tpl)
+    if (!tpl) {
       return null
+    }
     const rawEditor = new RPageTemplateEditor()
     rawEditor.fillFromSource(tpl)
     const editor = reactive(rawEditor as object) as RPageTemplateEditor
@@ -1235,8 +1301,9 @@ export class EndgeIDETabs_Module {
 
   private _resolvePage(documentId: string): EditorSession | null {
     const page = Endge.domain.getPage(documentId)
-    if (!page)
+    if (!page) {
       return null
+    }
     const rawEditor = new RPageEditor()
     rawEditor.fillFromSource(page)
     const editor = reactive(rawEditor as object) as RPageEditor
@@ -1253,8 +1320,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveNavigation(documentId: string): EditorSession | null {
     const nav = Endge.domain.getNavigation(documentId)
-    if (!nav)
+    if (!nav) {
       return null
+    }
     const rawEditor = new RNavigationEditor()
     rawEditor.fillFromSource(nav)
     const editor = reactive(rawEditor as object) as RNavigationEditor
@@ -1271,8 +1339,9 @@ export class EndgeIDETabs_Module {
 
   private _resolveProject(documentId: string): EditorSession | null {
     const project = Endge.domain.getProject(documentId)
-    if (!project)
+    if (!project) {
       return null
+    }
     const rawEditor = new RProjectEditor()
     rawEditor.fillFromSource(project)
     const editor = reactive(rawEditor as object) as RProjectEditor
@@ -1294,10 +1363,13 @@ export class EndgeIDETabs_Module {
 
   /** Синхронизирует контекст инспектора с сессией вкладки (чтобы инспектор отображал данные активной вкладки). */
   public syncContextForTab(tab: SmartTabRef | null): void {
-    if (!tab) return
+    if (!tab) {
+      return
+    }
     const session = this._sessionByTabId.get(tab.id)
-    if (session)
+    if (session) {
       this._setCurrentFromSession(session)
+    }
   }
 
   private _syncContextForTab(tab: SmartTabRef): void {
@@ -1305,8 +1377,9 @@ export class EndgeIDETabs_Module {
   }
 
   private _getPayload<T>(payload: unknown): T | null {
-    if (!payload || typeof payload !== 'object')
+    if (!payload || typeof payload !== 'object') {
       return null
+    }
     return payload as T
   }
 
@@ -1315,17 +1388,20 @@ export class EndgeIDETabs_Module {
     fallbackId: string,
     model: unknown,
   ): string {
-    if (documentType !== 'page')
+    if (documentType !== 'page') {
       return fallbackId
-    if (Endge.domain.getPage(fallbackId))
+    }
+    if (Endge.domain.getPage(fallbackId)) {
       return fallbackId
-    if (!model || typeof model !== 'object')
+    }
+    if (!model || typeof model !== 'object') {
       return fallbackId
+    }
     const identity = (model as { identity?: unknown }).identity
-    if (typeof identity !== 'string')
+    if (typeof identity !== 'string') {
       return fallbackId
+    }
     const normalized = identity.trim()
     return normalized || fallbackId
   }
-
 }

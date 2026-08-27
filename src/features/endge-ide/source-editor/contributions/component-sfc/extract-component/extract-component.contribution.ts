@@ -1,14 +1,14 @@
+import type { RComponentSFC } from '@endge/core'
+import type * as Monaco from 'monaco-editor'
 import type {
   ExtractableSFCColumn,
   ExtractColumnCommandTarget,
   ExtractComponentDialogInput,
   ExtractComponentDialogResult,
 } from './extract-component.types'
+/* eslint-disable style/max-statements-per-line */
 import type { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
-/* eslint-disable style/max-statements-per-line */
-import type { RComponentSFC } from '@endge/core'
-import type * as Monaco from 'monaco-editor'
 
 import {
   ComponentType,

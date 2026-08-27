@@ -50,3 +50,10 @@ export interface ServiceBackendDomainImportRequest {
   targetETag: string
   signal?: AbortSignal
 }
+
+/** Контракт внешнего backend transport для export/import домена. */
+export interface ServiceBackendDomainTransferAdapter {
+  downloadExport: (workspaceIdentity: string) => Promise<void>
+  planImport: (request: ServiceBackendDomainImportPlanRequest) => Promise<ServiceBackendDomainImportPlan>
+  import: (request: ServiceBackendDomainImportRequest) => Promise<ServiceBackendDomainImportResult>
+}

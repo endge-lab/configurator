@@ -25,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useSmartTabSelection } from '@/components/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -534,7 +534,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   <Input
                     :model-value="String(outputOption(output, 'dsn') ?? '')"
                     class="mt-2 font-mono text-xs"
-                    :placeholder="'{{ SENTRY_DSN }}'"
+                    placeholder="{{ SENTRY_DSN }}"
                     :disabled="disabled || !output.enabled"
                     @update:model-value="setOutputOption(output, 'dsn', String($event))"
                   />
@@ -544,7 +544,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   <Input
                     :model-value="String(outputOption(output, 'environment') ?? '')"
                     class="mt-2 font-mono text-xs"
-                    :placeholder="'{{ SENTRY_ENVIRONMENT }}'"
+                    placeholder="{{ SENTRY_ENVIRONMENT }}"
                     :disabled="disabled || !output.enabled"
                     @update:model-value="setOutputOption(output, 'environment', String($event))"
                   />
@@ -554,7 +554,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   <Input
                     :model-value="String(outputOption(output, 'release') ?? '')"
                     class="mt-2 font-mono text-xs"
-                    :placeholder="'{{ SENTRY_RELEASE }}'"
+                    placeholder="{{ SENTRY_RELEASE }}"
                     :disabled="disabled || !output.enabled"
                     @update:model-value="setOutputOption(output, 'release', String($event))"
                   />

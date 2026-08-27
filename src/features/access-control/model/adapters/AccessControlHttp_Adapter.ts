@@ -8,7 +8,7 @@ import type {
   PutAccessGrantInput,
 } from '@/features/access-control/domain/types/access-control.type'
 
-export class AccessControl_Service {
+export class AccessControlHttp_Adapter {
   public constructor(private readonly _baseURL: string) {}
 
   public searchUsers(query: string, workspaceIdentity: string | undefined, cursor = '', signal?: AbortSignal): Promise<CursorPage<AccessControlUser>> {

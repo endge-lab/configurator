@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { NavigationTreeNodeEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor'
 
+import { computed, ref, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import NavigationEditorPreviewNode from '@/features/endge-ide/ui/components/NavigationEditorPreviewNode.vue'
-import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
   tree?: NavigationTreeNodeEditor[]
@@ -48,14 +48,14 @@ watch(
 
 function toggle(nodeId: string): void {
   const next = new Set(openedIds.value)
-  if (next.has(nodeId))
+  if (next.has(nodeId)) {
     next.delete(nodeId)
-  else
-    next.add(nodeId)
+  }
+  else { next.add(nodeId) }
   openedIds.value = next
 }
 
-function stats(nodes: NavigationTreeNodeEditor[]): { sections: number; groups: number; links: number } {
+function stats(nodes: NavigationTreeNodeEditor[]): { sections: number, groups: number, links: number } {
   let sections = 0
   let groups = 0
   let links = 0
@@ -86,7 +86,9 @@ const previewStats = computed(() => stats(visibleTree.value))
 <template>
   <div class="flex h-full min-h-0 flex-col rounded-2xl border bg-gradient-to-b from-background to-muted/30 p-4">
     <div class="mb-4 flex flex-wrap items-center gap-2">
-      <Badge variant="outline">Превью результата</Badge>
+      <Badge variant="outline">
+        Превью результата
+      </Badge>
       <span class="ml-auto text-xs text-muted-foreground">
         {{ previewStats.sections }} секции · {{ previewStats.groups }} группы · {{ previewStats.links }} ссылки
       </span>

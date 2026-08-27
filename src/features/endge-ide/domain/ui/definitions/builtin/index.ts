@@ -1,6 +1,6 @@
-export { UI_COMPONENT_HOST_DEFINITION_ID, uiComponentHostDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/component-host.definition'
 export { uiBoxDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/box.definition'
 export { uiButtonDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/button.definition'
+export { UI_COMPONENT_HOST_DEFINITION_ID, uiComponentHostDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/component-host.definition'
 export { uiFieldDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/field.definition'
 export { uiFormDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/form.definition'
 export { uiGridDefinition } from '@/features/endge-ide/domain/ui/definitions/builtin/grid.definition'

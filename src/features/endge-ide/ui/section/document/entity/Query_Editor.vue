@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, no-console */
+/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { QuerySourceDocument } from '@endge/core'
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 
@@ -27,8 +27,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'

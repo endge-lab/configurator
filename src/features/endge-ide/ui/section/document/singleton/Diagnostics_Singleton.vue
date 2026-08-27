@@ -1,19 +1,19 @@
 <script setup lang="ts">
+import { Endge } from '@endge/core'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
 /**
  * Вкладка «Диагностика» показывает bounded session, которую хранит EndgeDiagnostics.
  * Компонент не меняет core records и отвечает только за presentation layer.
  */
 import { Activity, Eraser } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { Endge } from '@endge/core'
-import { useSubscribableRefAuto } from '@endge/ui-vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
 import { buildDiagnosticsTree } from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
+import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
 
 const telemetryRef = useSubscribableRefAuto(Endge.diagnostics.telemetry)
 const problemsRef = useSubscribableRefAuto(Endge.diagnostics.problems)
@@ -32,10 +32,10 @@ const signalCounters = computed(() => {
   let logs = 0
   let spans = 0
   for (const record of records.value) {
-    if (record.signal === 'log')
+    if (record.signal === 'log') {
       logs += 1
-    else
-      spans += 1
+    }
+    else { spans += 1 }
   }
   return { logs, spans }
 })
@@ -79,7 +79,9 @@ function clearDiagnostics(): void {
 
     <Card class="min-h-0 flex-1 overflow-hidden p-0">
       <div class="border-b px-3 py-2">
-        <div class="text-sm font-medium">Логи и завершённые spans</div>
+        <div class="text-sm font-medium">
+          Логи и завершённые spans
+        </div>
         <div class="text-xs text-muted-foreground">
           Дерево строится в configurator-е из независимых core records.
         </div>

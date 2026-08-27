@@ -24,27 +24,31 @@ function resolveLucideIcon(name: string): Component {
   return defineAsyncComponent(() =>
     import('lucide-vue-next').then((mod) => {
       const icon = (mod as unknown as Record<string, Component>)[name]
-      if (!icon)
+      if (!icon) {
         throw new Error(`[AppSwitcher] Lucide icon "${name}" not found`)
+      }
       return icon
     }),
   )
 }
 
 function resolveStaticIcon(icon: string): ResolvedIcon {
-  if (!icon)
+  if (!icon) {
     return null
+  }
 
-  if (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:'))
+  if (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://') || icon.startsWith('data:')) {
     return { type: 'url', src: icon }
+  }
 
   return { type: 'component', component: resolveLucideIcon(icon) }
 }
 
 export function useAppSwitcherIcon() {
   function resolveIcon(icon: string | undefined): ResolvedIcon {
-    if (!icon)
+    if (!icon) {
       return null
+    }
 
     return resolveStaticIcon(icon)
   }
@@ -60,12 +64,14 @@ const DEFAULT_APP_GROUP: AppSwitcherGroup = {
 }
 
 function parseAppSwitcher(raw: string | undefined): AppSwitcherGroup[] {
-  if (!raw)
+  if (!raw) {
     return [DEFAULT_APP_GROUP]
+  }
   try {
     const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0)
+    if (!Array.isArray(parsed) || parsed.length === 0) {
       return [DEFAULT_APP_GROUP]
+    }
     return parsed
   }
   catch {

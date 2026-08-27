@@ -1,8 +1,15 @@
-import type { AICapabilities, AIConversation, AIMessage } from '@/features/ai-assistant/domain/types'
+import type {
+  AIAdapter,
+  AICapabilities,
+  AIConversation,
+  AIMessage,
+  AIModelProfile,
+  AIProviderConnection,
+} from '@/features/ai-assistant/domain/types'
 
 import { computed, reactive, readonly } from 'vue'
 
-import { createWidgetInstance, getWidget, registerWidget, unregisterWidget } from '@/components/layouts/grid'
+import { createWidgetInstance, getWidget, hideWidget, registerWidget, unregisterWidget } from '@/components/layouts/grid'
 import { AIWorkbench_HTTP_Adapter } from '@/features/ai-assistant/adapters/AIWorkbench_HTTP_Adapter'
 import { AI_AGENT_WIDGET_DEFINITION, AI_AGENT_WIDGET_ID } from '@/features/ai-assistant/model/widget'
 
@@ -19,6 +26,7 @@ interface State {
 }
 
 class AIWorkbench_Module {
+  /** Transport, resources и mutable state принадлежат модулю. */
   private _service: AIWorkbench_HTTP_Adapter | null = null
   private _timer: ReturnType<typeof setInterval> | null = null
   private _stream: AbortController | null = null
@@ -35,15 +43,15 @@ class AIWorkbench_Module {
     selectedModelId: '',
   })
 
+  /** Readonly reactive views для UI. */
   public readonly state = readonly(this._state)
   public readonly enabledModels = computed(() => this._state.capabilities?.models.filter(model => model.enabled) ?? [])
 
-  public get service(): AIWorkbench_HTTP_Adapter {
-    if (!this._service) {
-      throw new Error('AI Workbench is not initialized')
-    }
-    return this._service
-  }
+  /**
+   * ----------------------------------------
+   * PUBLIC
+   * ----------------------------------------
+   */
 
   public async init(baseURL: string, workspaceIdentity: string): Promise<void> {
     if (this._initialized) {
@@ -62,7 +70,7 @@ class AIWorkbench_Module {
     this._timer = null
     this._stream?.abort()
     this._stream = null
-    unregisterWidget(AI_AGENT_WIDGET_ID)
+    this._unregisterWidget()
     this._initialized = false
     this._service = null
     Object.assign(this._state, { capabilities: null, conversation: null, messages: [], previousCursor: '', streamingText: '', loading: false, running: false, error: '', selectedModelId: '' })
@@ -88,13 +96,13 @@ class AIWorkbench_Module {
       }
       else {
         this._stream?.abort()
-        unregisterWidget(AI_AGENT_WIDGET_ID)
+        this._unregisterWidget()
       }
     }
     catch {
       this._state.capabilities = null
       this._stream?.abort()
-      unregisterWidget(AI_AGENT_WIDGET_ID)
+      this._unregisterWidget()
     }
   }
 
@@ -102,7 +110,7 @@ class AIWorkbench_Module {
     this._state.loading = true
     this._state.error = ''
     try {
-      this._state.conversation = await this.service.activeConversation()
+      this._state.conversation = await this._transport.activeConversation()
       const fallback = this.enabledModels.value.find(model => model.isDefault) ?? this.enabledModels.value[0]
       this._state.selectedModelId = this._state.conversation?.model.profileId ?? fallback?.id ?? ''
       await this._loadLatestMessages()
@@ -121,7 +129,7 @@ class AIWorkbench_Module {
     }
     this._state.loading = true
     try {
-      const page = await this.service.messages(this._state.conversation.id, this._state.previousCursor)
+      const page = await this._transport.messages(this._state.conversation.id, this._state.previousCursor)
       this._state.messages = [...page.items, ...this._state.messages]
       this._state.previousCursor = page.nextCursor ?? ''
     }
@@ -133,7 +141,7 @@ class AIWorkbench_Module {
   public async setModel(modelProfileId: string): Promise<void> {
     this._state.selectedModelId = modelProfileId
     if (this._state.conversation && this._state.conversation.messageCount === 0) {
-      this._state.conversation = await this.service.updateConversationModel(this._state.conversation.id, modelProfileId)
+      this._state.conversation = await this._transport.updateConversationModel(this._state.conversation.id, modelProfileId)
     }
   }
 
@@ -141,7 +149,7 @@ class AIWorkbench_Module {
     if (!this._state.selectedModelId) {
       return
     }
-    this._state.conversation = await this.service.resetConversation(this._state.conversation?.id ?? null, this._state.selectedModelId)
+    this._state.conversation = await this._transport.resetConversation(this._state.conversation?.id ?? null, this._state.selectedModelId)
     this._state.messages = []
     this._state.previousCursor = ''
     this._state.streamingText = ''
@@ -155,7 +163,7 @@ class AIWorkbench_Module {
     this._state.error = ''
     try {
       if (!this._state.conversation) {
-        this._state.conversation = await this.service.createConversation(this._state.selectedModelId)
+        this._state.conversation = await this._transport.createConversation(this._state.selectedModelId)
       }
       this._state.messages.push({
         id: crypto.randomUUID(),
@@ -168,7 +176,7 @@ class AIWorkbench_Module {
       this._state.running = true
       this._state.streamingText = ''
       this._stream = new AbortController()
-      await this.service.run(this._state.conversation.id, {
+      await this._transport.run(this._state.conversation.id, {
         requestId: crypto.randomUUID(),
         modelProfileId: this._state.selectedModelId,
         prompt: text,
@@ -187,13 +195,69 @@ class AIWorkbench_Module {
     }
   }
 
+  /** Загружает доступные provider adapters для management UI. */
+  public listProviderAdapters(): Promise<{ items: AIAdapter[] }> {
+    return this._transport.adapters()
+  }
+
+  /** Загружает provider connections для management UI. */
+  public listProviderConnections(): Promise<{ items: AIProviderConnection[], total: number }> {
+    return this._transport.connections()
+  }
+
+  /** Загружает model profiles для management UI. */
+  public listModelProfiles(): Promise<{ items: AIModelProfile[], total: number }> {
+    return this._transport.models()
+  }
+
+  /** Создаёт provider connection через transport adapter. */
+  public createProviderConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, enabled: boolean }): Promise<AIProviderConnection> {
+    return this._transport.createConnection(value)
+  }
+
+  /** Изменяет provider connection через transport adapter. */
+  public updateProviderConnection(id: string, value: { name?: string, baseUrl?: string, enabled?: boolean }): Promise<AIProviderConnection> {
+    return this._transport.patchConnection(id, value)
+  }
+
+  /** Заменяет credential provider connection. */
+  public replaceProviderCredential(id: string, credential: string): Promise<AIProviderConnection> {
+    return this._transport.replaceCredential(id, credential)
+  }
+
+  /** Удаляет provider connection. */
+  public deleteProviderConnection(id: string): Promise<void> {
+    return this._transport.deleteConnection(id)
+  }
+
+  /** Создаёт model profile через transport adapter. */
+  public createModelProfile(value: { connectionId: string, providerModelId: string, displayName: string, enabled: boolean, isDefault: boolean }): Promise<AIModelProfile> {
+    return this._transport.createModel(value)
+  }
+
+  /** Изменяет model profile через transport adapter. */
+  public updateModelProfile(id: string, value: { providerModelId?: string, displayName?: string, enabled?: boolean, isDefault?: boolean }): Promise<AIModelProfile> {
+    return this._transport.patchModel(id, value)
+  }
+
+  /** Удаляет model profile. */
+  public deleteModelProfile(id: string): Promise<void> {
+    return this._transport.deleteModel(id)
+  }
+
+  /**
+   * ----------------------------------------
+   * PRIVATE
+   * ----------------------------------------
+   */
+
   private async _loadLatestMessages(): Promise<void> {
     if (!this._state.conversation) {
       this._state.messages = []
       this._state.previousCursor = ''
       return
     }
-    const page = await this.service.messages(this._state.conversation.id)
+    const page = await this._transport.messages(this._state.conversation.id)
     this._state.messages = page.items
     this._state.previousCursor = page.nextCursor ?? ''
   }
@@ -216,6 +280,26 @@ class AIWorkbench_Module {
       registerWidget(AI_AGENT_WIDGET_DEFINITION)
     }
     createWidgetInstance(AI_AGENT_WIDGET_ID, {}, { activate: false })
+  }
+
+  /** Сворачивает dock-area перед удалением недоступного AI-виджета. */
+  private _unregisterWidget(): void {
+    hideWidget(AI_AGENT_WIDGET_ID)
+    unregisterWidget(AI_AGENT_WIDGET_ID)
+  }
+
+  /**
+   * ----------------------------------------
+   * ACCESS
+   * ----------------------------------------
+   */
+
+  /** Возвращает transport adapter только внутренним operations модуля. */
+  private get _transport(): AIWorkbench_HTTP_Adapter {
+    if (!this._service) {
+      throw new Error('AI Workbench is not initialized')
+    }
+    return this._service
   }
 }
 

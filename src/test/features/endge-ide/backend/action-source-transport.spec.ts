@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServiceBackendDomain_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomain_Service'
+import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
 
-describe('Action Source backend transport', () => {
+describe('action Source backend transport', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
@@ -25,10 +25,10 @@ describe('Action Source backend transport', () => {
       deletedAt: null,
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', ETag: '"8"' },
+      headers: { 'Content-Type': 'application/json', 'ETag': '"8"' },
     }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn(), true)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn(), true)
 
     const result = await service.updateDocument({
       workspaceIdentity: 'workspace-a',

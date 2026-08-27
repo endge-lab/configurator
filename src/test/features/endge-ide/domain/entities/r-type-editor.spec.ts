@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor'
 
-describe('RTypeEditor source editing', () => {
+describe('rTypeEditor source editing', () => {
   it('persists Type Source as the only structural type definition', () => {
     const model = new RType('PassengerProfile')
     model.identity = 'PassengerProfile'

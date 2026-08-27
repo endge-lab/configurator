@@ -1,7 +1,7 @@
 import type { ComponentSFCPortManifest, DomainDocumentType } from '@endge/core'
-import { DomainSectionType } from '@endge/core'
-
 import type { FsFileNode, FsFolderNode } from './domain-tree'
+
+import { DomainSectionType } from '@endge/core'
 
 export interface LocalEventCatalogSource {
   identity: string

@@ -6,11 +6,11 @@ import type { DomainDocumentType, EndgeDomain } from '@endge/core'
 
 import {
   ComponentType,
+  duplicateComponent,
   Endge,
   FilterType,
   ParameterType,
   QueryType,
-  duplicateComponent,
 } from '@endge/core'
 
 import { getQueryRootFolderId } from './query-composition-presentation'
@@ -98,8 +98,8 @@ export async function duplicateEntity(
   }
 
   const options = { identity: newIdentity, name: newName }
-  const draft =
-    docType === ComponentType.DSL || docType === ComponentType.Table
+  const draft
+    = docType === ComponentType.DSL || docType === ComponentType.Table
       ? duplicateComponent(source as any, options)
       : (source as any).duplicate(options)
 

@@ -1,6 +1,7 @@
+import type { RComponentSFCSource_Parts } from '@endge/core'
 import {
   parseSFCSourceParts,
-  type RComponentSFCSource_Parts,
+
 } from '@endge/core'
 
 /**
@@ -74,14 +75,17 @@ export class RComponentSFCEditor {
 
 /** Нормализует пустой editor input в отсутствие пользовательского tag. */
 function normalizeTag(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null
+  if (typeof raw !== 'string') {
+    return null
+  }
   return raw.trim() || null
 }
 
 /** Оставляет только targets, которые поддерживает SFC v1. */
 function normalizeTargets(raw: unknown): Array<'dom' | 'canvas'> {
-  if (!Array.isArray(raw))
+  if (!Array.isArray(raw)) {
     return ['dom', 'canvas']
+  }
 
   const targets = raw.filter((target): target is 'dom' | 'canvas' => target === 'dom' || target === 'canvas')
   return targets.length ? Array.from(new Set(targets)) : ['dom', 'canvas']

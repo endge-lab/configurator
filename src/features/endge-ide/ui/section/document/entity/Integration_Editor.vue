@@ -6,13 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
 const tabs = EndgeIDE.tabs
-const editor = computed(() => tabs.documentEditorModel.value as { id: number | string; identity: string; displayName: string; description: string } | null ?? null)
+const editor = computed(() => tabs.documentEditorModel.value as { id: number | string, identity: string, displayName: string, description: string } | null ?? null)
 const documentModel = computed(() => tabs.documentModel.value as { managedBy?: 'system' | 'integration' | 'user' } | null ?? null)
 const systemManaged = computed(() => documentModel.value?.managedBy === 'system')
 const integrationManaged = computed(() => documentModel.value?.managedBy === 'integration')
@@ -58,7 +58,9 @@ async function save(): Promise<void> {
 
     <ScrollArea class="flex-1">
       <div class="p-4 space-y-4">
-        <div class="text-sm font-semibold">Основное</div>
+        <div class="text-sm font-semibold">
+          Основное
+        </div>
         <div class="space-y-2">
           <Label>Идентификатор</Label>
           <DocumentIdentityInput v-model="editor!.identity" :disabled="externallyManaged" />

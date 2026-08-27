@@ -1,6 +1,6 @@
-import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type { RuntimeInspectionLease } from '@endge/core'
 import type { RaphDebugLease } from '@endge/raph'
+import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 
 import { Endge } from '@endge/core'
 import { Raph } from '@endge/raph'
@@ -29,6 +29,10 @@ export class EndgeIDE {
 
   public static get domainDrag() {
     return this._requireModules().domainDrag
+  }
+
+  public static get domainTransfer() {
+    return this._requireModules().domainTransfer
   }
 
   public static get modals() {

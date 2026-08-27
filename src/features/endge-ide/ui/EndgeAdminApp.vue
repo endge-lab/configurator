@@ -6,7 +6,7 @@ import { Endge } from '@endge/core'
 import { Bot, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
 import {
   DropdownMenu,
@@ -24,7 +24,6 @@ import { AIWorkbench } from '@/features/ai-assistant'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
-import { ServiceBackendDomainTransfer_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
 import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/model/config/documentation.config'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -54,7 +53,6 @@ const canManageAccess = computed(() => {
     Configurator.context.workspaceRole ?? '',
   )
 })
-const transferService = new ServiceBackendDomainTransfer_Service(Configurator.context.backendConfig!.serviceBackendURL)
 const launchProjectRuntimeTitle = computed(() =>
   currentProjectIdentity.value
     ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
@@ -62,7 +60,7 @@ const launchProjectRuntimeTitle = computed(() =>
 )
 
 async function exportCurrentDomain(): Promise<void> {
-  await transferService.downloadExport(Endge.workspace.current.identity)
+  await EndgeIDE.domainTransfer.downloadExport(Endge.workspace.current.identity)
 }
 
 function openDomainImport(): void {
@@ -170,6 +168,10 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             <ShieldCheck class="size-3.5" />
             Управление доступом
           </DropdownMenuItem>
+          <DropdownMenuItem v-if="isPlatformAdmin" @click="openAIManagement">
+            <Bot class="size-3.5 text-fuchsia-500" />
+            Настройки AI
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -266,16 +268,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
     <div class="flex items-center gap-2">
-      <button
-        v-if="isPlatformAdmin"
-        type="button"
-        class="inline-flex h-8 items-center gap-2 rounded-md border bg-background px-2.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Управление AI connections и model profiles"
-        @click="openAIManagement"
-      >
-        <Bot class="size-4 text-fuchsia-500" />
-        Управление AI
-      </button>
       <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"

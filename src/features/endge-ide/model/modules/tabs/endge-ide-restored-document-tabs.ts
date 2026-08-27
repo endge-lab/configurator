@@ -1,5 +1,5 @@
-import type { SmartTabRef } from '@/components/ui/smart-tabs/types'
 import type { DomainDocumentType } from '@endge/core'
+import type { SmartTabRef } from '@/components/ui/smart-tabs/types'
 
 // Restored document resolution is private to the tabs module.
 

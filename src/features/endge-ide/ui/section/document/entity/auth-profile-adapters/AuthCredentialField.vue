@@ -14,7 +14,7 @@ const emit = defineEmits<{ 'update:modelValue': [string] }>()
 const revealed = ref(false)
 const literal = computed(() => {
   const value = props.modelValue.trim()
-  return Boolean(value) && !/^\{[A-Za-z_][A-Za-z0-9_.-]*\}$/.test(value)
+  return Boolean(value) && !/^\{[A-Z_][\w.-]*\}$/i.test(value)
 })
 </script>
 
@@ -27,6 +27,8 @@ const literal = computed(() => {
         <EyeOff v-if="revealed" class="size-4" /><Eye v-else class="size-4" />
       </Button>
     </div>
-    <p v-if="literal" class="text-xs text-destructive">Литеральное значение будет открыто храниться в workspace, API, истории и экспортах и останется доступно через DevTools.</p>
+    <p v-if="literal" class="text-xs text-destructive">
+      Литеральное значение будет открыто храниться в workspace, API, истории и экспортах и останется доступно через DevTools.
+    </p>
   </div>
 </template>

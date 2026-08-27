@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { RComponentTableColumnEditor } from "@/features/endge-ide/domain/entities/RComponentTableColumnEditor";
-import { DomainSectionType, Endge } from "@endge/core";
+import type { RComponentTableColumnEditor } from '@/features/endge-ide/domain/entities/RComponentTableColumnEditor'
+import { DomainSectionType, Endge } from '@endge/core'
 import {
   Eraser,
   GripVertical,
@@ -9,7 +9,7 @@ import {
   Save,
   Table2,
   Trash2,
-} from "lucide-vue-next";
+} from 'lucide-vue-next'
 import {
   computed,
   nextTick,
@@ -17,394 +17,446 @@ import {
   onMounted,
   ref,
   watch,
-} from "vue";
+} from 'vue'
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSmartTabSelection } from "@/components/ui/smart-tabs";
+} from '@/components/ui/select'
+import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { RFieldEditor } from "@/features/endge-ide/domain/entities/RFieldEditor";
-import { EndgeIDE } from "@/features/endge-ide";
-import ScriptEditor from "@/features/endge-ide/ui/components/ScriptEditor.vue";
-import DomainEntityDropTarget from "@/features/endge-ide/ui/components/DomainEntityDropTarget.vue";
-import OpenEntityButton from "@/features/endge-ide/ui/components/OpenEntityButton.vue";
-import DocumentIdentityInput from "@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue";
-import TypeRegistrySelect from "@/features/endge-ide/ui/components/TypeRegistrySelect.vue";
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide'
+import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
 
-const tabs = EndgeIDE.tabs;
-const editor = computed<any>(() => tabs.documentEditorModel.value ?? null);
-const previewModel = computed<any>(() => tabs.documentModel.value);
+const tabs = EndgeIDE.tabs
+const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
+const previewModel = computed<any>(() => tabs.documentModel.value)
 function normalizeRelationId(value: unknown): number | null {
-  if (value == null) return null;
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  const text = String(value).trim();
-  if (!text) return null;
-  const id = Number(text);
-  return Number.isFinite(id) ? id : null;
+  if (value == null) {
+    return null
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+  const text = String(value).trim()
+  if (!text) {
+    return null
+  }
+  const id = Number(text)
+  return Number.isFinite(id) ? id : null
 }
 async function save(): Promise<void> {
-  await EndgeIDE.tabs.save();
+  await EndgeIDE.tabs.save()
 }
 
 const componentsOptions = computed(() => {
-  const list = Endge.domain.getComponents();
-  return list.map((c) => ({
+  const list = Endge.domain.getComponents()
+  return list.map(c => ({
     value: String(c.id),
     label: c.name ?? String(c.id),
-  }));
-});
+  }))
+})
 
-const selectedColumnIndex = ref<number | null>(null);
+const selectedColumnIndex = ref<number | null>(null)
 watch(
   editor,
   (e) => {
     if (!e?.columns?.length) {
-      selectedColumnIndex.value = null;
-      return;
+      selectedColumnIndex.value = null
+      return
     }
-    const sel = e.selectedColumn;
+    const sel = e.selectedColumn
     if (sel) {
-      const idx = (e.columns as RComponentTableColumnEditor[]).indexOf(sel);
-      if (idx >= 0) selectedColumnIndex.value = idx;
+      const idx = (e.columns as RComponentTableColumnEditor[]).indexOf(sel)
+      if (idx >= 0) {
+        selectedColumnIndex.value = idx
+      }
     }
   },
   { immediate: true },
-);
+)
 
 const selectedColumn = computed(() => {
-  const idx = selectedColumnIndex.value;
-  const cols = editor.value?.columns ?? [];
-  if (idx == null || idx < 0 || idx >= cols.length) return null;
-  return cols[idx] as RComponentTableColumnEditor;
-});
+  const idx = selectedColumnIndex.value
+  const cols = editor.value?.columns ?? []
+  if (idx == null || idx < 0 || idx >= cols.length) {
+    return null
+  }
+  return cols[idx] as RComponentTableColumnEditor
+})
 
 watch(
   selectedColumnIndex,
   (idx) => {
-    const ed = editor.value;
+    const ed = editor.value
     if (
-      ed &&
-      typeof idx === "number" &&
-      idx >= 0 &&
-      idx < (ed.columns?.length ?? 0)
-    )
-      ed.selectColumnByIndex(idx);
-    else if (ed) ed.selectColumnByIndex(null);
+      ed
+      && typeof idx === 'number'
+      && idx >= 0
+      && idx < (ed.columns?.length ?? 0)
+    ) {
+      ed.selectColumnByIndex(idx)
+    }
+    else if (ed) {
+      ed.selectColumnByIndex(null)
+    }
   },
-  { flush: "sync" },
-);
+  { flush: 'sync' },
+)
 
 const columns = computed(
   () => (editor.value?.columns ?? []) as RComponentTableColumnEditor[],
-);
+)
 
-const dragColumnIndex = ref<number | null>(null);
-const dragOverColumnIndex = ref<number | null>(null);
+const dragColumnIndex = ref<number | null>(null)
+const dragOverColumnIndex = ref<number | null>(null)
 
-function addColumn(title = ""): void {
-  editor.value?.addColumn(title);
-  const len = editor.value?.columns?.length ?? 0;
-  if (len) selectedColumnIndex.value = len - 1;
+function addColumn(title = ''): void {
+  editor.value?.addColumn(title)
+  const len = editor.value?.columns?.length ?? 0
+  if (len) {
+    selectedColumnIndex.value = len - 1
+  }
 }
 
 /** Очистить во всех колонках все привязки данных (dataPaths и конвертеры). */
 function clearAllDataPathBindings(): void {
-  const ed = editor.value;
-  if (!ed?.columns?.length) return;
+  const ed = editor.value
+  if (!ed?.columns?.length) {
+    return
+  }
   for (const col of ed.columns as RComponentTableColumnEditor[]) {
-    const accessors = col.accessors ?? [];
+    const accessors = col.accessors ?? []
     for (const acc of accessors) {
-      acc.accessor = "";
-      acc.converter = "";
+      acc.accessor = ''
+      acc.converter = ''
     }
   }
 }
 
 function removeColumn(index: number): void {
-  const ed = editor.value;
-  if (!ed || index < 0 || index >= ed.columns.length) return;
-  const col = ed.columns[index] as RComponentTableColumnEditor;
-  ed.deleteColumns([col]);
-  if (selectedColumnIndex.value === index) selectedColumnIndex.value = null;
+  const ed = editor.value
+  if (!ed || index < 0 || index >= ed.columns.length) {
+    return
+  }
+  const col = ed.columns[index] as RComponentTableColumnEditor
+  ed.deleteColumns([col])
+  if (selectedColumnIndex.value === index) {
+    selectedColumnIndex.value = null
+  }
   else if (
-    selectedColumnIndex.value != null &&
-    selectedColumnIndex.value > index
-  )
-    selectedColumnIndex.value -= 1;
+    selectedColumnIndex.value != null
+    && selectedColumnIndex.value > index
+  ) {
+    selectedColumnIndex.value -= 1
+  }
 }
 
 /** Удалить колонку по индексу. Возвращает false, если индекс некорректен. */
 function removeColumnByIndex(index: number): boolean {
-  if (!Number.isInteger(index) || index < 0) return false;
-  const ed = editor.value;
-  const len = ed?.columns?.length ?? 0;
-  if (!len || index >= len) return false;
-  removeColumn(index);
-  return true;
+  if (!Number.isInteger(index) || index < 0) {
+    return false
+  }
+  const ed = editor.value
+  const len = ed?.columns?.length ?? 0
+  if (!len || index >= len) {
+    return false
+  }
+  removeColumn(index)
+  return true
 }
 
-const _unregAgentTable: (() => void)[] = [];
+const _unregAgentTable: (() => void)[] = []
 onMounted(() => {
   _unregAgentTable.push(
-    EndgeIDE.agentTableActions.register("clear_all_datapaths", () => {
-      clearAllDataPathBindings();
+    EndgeIDE.agentTableActions.register('clear_all_datapaths', () => {
+      clearAllDataPathBindings()
     }),
-    EndgeIDE.agentTableActions.register("add_column", (p?: unknown) => {
-      addColumn((p as { title?: string })?.title ?? "");
+    EndgeIDE.agentTableActions.register('add_column', (p?: unknown) => {
+      addColumn((p as { title?: string })?.title ?? '')
     }),
-    EndgeIDE.agentTableActions.register("remove_column", (p?: unknown) => {
-      return removeColumnByIndex((p as { index?: number })?.index ?? -1);
+    EndgeIDE.agentTableActions.register('remove_column', (p?: unknown) => {
+      return removeColumnByIndex((p as { index?: number })?.index ?? -1)
     }),
-  );
-});
+  )
+})
 onBeforeUnmount(() => {
-  _unregAgentTable.forEach((u) => u());
-});
+  _unregAgentTable.forEach(u => u())
+})
 
 function onColumnDragStart(e: DragEvent, index: number): void {
-  dragColumnIndex.value = index;
-  dragOverColumnIndex.value = index;
+  dragColumnIndex.value = index
+  dragOverColumnIndex.value = index
   if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(index));
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
   }
 }
 
 function onColumnDragOver(e: DragEvent, index: number): void {
-  e.preventDefault();
-  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-  dragOverColumnIndex.value = index;
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+  dragOverColumnIndex.value = index
 }
 
 function onColumnDragLeave(): void {
-  dragOverColumnIndex.value = null;
+  dragOverColumnIndex.value = null
 }
 
 function onColumnDrop(e: DragEvent, dropIndex: number): void {
-  e.preventDefault();
-  const from = dragColumnIndex.value;
+  e.preventDefault()
+  const from = dragColumnIndex.value
   if (from == null) {
-    dragColumnIndex.value = null;
-    dragOverColumnIndex.value = null;
-    return;
+    dragColumnIndex.value = null
+    dragOverColumnIndex.value = null
+    return
   }
-  if (from !== dropIndex) editor.value?.moveColumn(from, dropIndex);
-  if (selectedColumnIndex.value === from) selectedColumnIndex.value = dropIndex;
+  if (from !== dropIndex) {
+    editor.value?.moveColumn(from, dropIndex)
+  }
+  if (selectedColumnIndex.value === from) {
+    selectedColumnIndex.value = dropIndex
+  }
   else if (
-    selectedColumnIndex.value != null &&
-    selectedColumnIndex.value > from &&
-    selectedColumnIndex.value <= dropIndex
-  )
-    selectedColumnIndex.value -= 1;
+    selectedColumnIndex.value != null
+    && selectedColumnIndex.value > from
+    && selectedColumnIndex.value <= dropIndex
+  ) {
+    selectedColumnIndex.value -= 1
+  }
   else if (
-    selectedColumnIndex.value != null &&
-    selectedColumnIndex.value >= dropIndex &&
-    selectedColumnIndex.value < from
-  )
-    selectedColumnIndex.value += 1;
-  dragColumnIndex.value = null;
-  dragOverColumnIndex.value = null;
+    selectedColumnIndex.value != null
+    && selectedColumnIndex.value >= dropIndex
+    && selectedColumnIndex.value < from
+  ) {
+    selectedColumnIndex.value += 1
+  }
+  dragColumnIndex.value = null
+  dragOverColumnIndex.value = null
 }
 
 function onColumnDragEnd(): void {
-  dragColumnIndex.value = null;
-  dragOverColumnIndex.value = null;
+  dragColumnIndex.value = null
+  dragOverColumnIndex.value = null
 }
 
 function addInputField(): void {
-  editor.value?.inputFields.push(RFieldEditor.createDefault());
+  editor.value?.inputFields.push(RFieldEditor.createDefault())
 }
 
 function removeInputField(idx: number): void {
-  editor.value?.inputFields.splice(idx, 1);
+  editor.value?.inputFields.splice(idx, 1)
 }
 
-function ensureKeys(): Record<string, { pk?: string; fk?: string }> {
-  const e = editor.value as any;
-  if (!e?.bindings) e.bindings = { keys: {} };
-  else if (!e.bindings.keys) e.bindings.keys = {};
-  return e.bindings.keys;
+function ensureKeys(): Record<string, { pk?: string, fk?: string }> {
+  const e = editor.value as any
+  if (!e?.bindings) {
+    e.bindings = { keys: {} }
+  }
+  else if (!e.bindings.keys) {
+    e.bindings.keys = {}
+  }
+  return e.bindings.keys
 }
 
 function getPk(name: string): string {
-  return (editor.value as any)?.bindings?.keys?.[name]?.pk ?? "";
+  return (editor.value as any)?.bindings?.keys?.[name]?.pk ?? ''
 }
 
 function setPk(name: string, val: string): void {
-  if (!name) return;
-  const keys = ensureKeys();
-  keys[name] = { ...(keys[name] ?? {}), pk: val };
+  if (!name) {
+    return
+  }
+  const keys = ensureKeys()
+  keys[name] = { ...(keys[name] ?? {}), pk: val }
 }
 
 function getFk(name: string): string {
-  return (editor.value as any)?.bindings?.keys?.[name]?.fk ?? "";
+  return (editor.value as any)?.bindings?.keys?.[name]?.fk ?? ''
 }
 
 function setFk(name: string, val: string): void {
-  if (!name) return;
-  const keys = ensureKeys();
-  keys[name] = { ...(keys[name] ?? {}), fk: val };
+  if (!name) {
+    return
+  }
+  const keys = ensureKeys()
+  keys[name] = { ...(keys[name] ?? {}), fk: val }
 }
 
 function addAccessor(col: RComponentTableColumnEditor): void {
-  col.accessors = col.accessors ?? [];
-  col.accessors.push({ name: "", accessor: "", converter: "" });
+  col.accessors = col.accessors ?? []
+  col.accessors.push({ name: '', accessor: '', converter: '' })
 }
 
 function removeAccessor(col: RComponentTableColumnEditor, idx: number): void {
-  const acc = col.accessors[idx];
-  const removedKey = (acc?.name ?? "").trim();
-  if (removedKey && col.sort?.by === removedKey) col.sort = null;
-  col.accessors.splice(idx, 1);
+  const acc = col.accessors[idx]
+  const removedKey = (acc?.name ?? '').trim()
+  if (removedKey && col.sort?.by === removedKey) {
+    col.sort = null
+  }
+  col.accessors.splice(idx, 1)
 }
 
 /** Список конвертеров домена для выбора в цепочке */
 const converterOptions = computed(() => {
-  const list = Endge.domain.getConverters();
-  return list.map((c) => ({
+  const list = Endge.domain.getConverters()
+  return list.map(c => ({
     value: String(c.identity ?? c.id),
     label: c.name ?? String(c.identity ?? c.id),
-  }));
-});
+  }))
+})
 
 /** Значение «Выключено» для сортировки (Select не допускает пустую строку в SelectItem) */
-const SORT_BY_OFF = "__sort_off__";
+const SORT_BY_OFF = '__sort_off__'
 
 /** Опции полей для сортировки: ключи dataPaths текущей колонки + «Выключено» */
 const sortByFieldOptions = computed(() => {
-  const col = selectedColumn.value;
+  const col = selectedColumn.value
   const keys = (col?.accessors ?? [])
-    .map((a) => (a.name || "").trim())
-    .filter(Boolean);
+    .map(a => (a.name || '').trim())
+    .filter(Boolean)
   return [
-    { value: SORT_BY_OFF, label: "Выключено" },
-    ...keys.map((k) => ({ value: k, label: k })),
-  ];
-});
+    { value: SORT_BY_OFF, label: 'Выключено' },
+    ...keys.map(k => ({ value: k, label: k })),
+  ]
+})
 
 /** Типы для сортировки (только примитивы) */
 const SORT_TYPE_OPTIONS = [
-  { value: "String", label: "String" },
-  { value: "Number", label: "Number" },
-  { value: "Boolean", label: "Boolean" },
-  { value: "Date", label: "Date" },
-  { value: "DateTime", label: "DateTime" },
-];
+  { value: 'String', label: 'String' },
+  { value: 'Number', label: 'Number' },
+  { value: 'Boolean', label: 'Boolean' },
+  { value: 'Date', label: 'Date' },
+  { value: 'DateTime', label: 'DateTime' },
+]
 
 function setSortBy(col: RComponentTableColumnEditor, value: string): void {
   if (value === SORT_BY_OFF || !value) {
-    col.sort = null;
-    return;
+    col.sort = null
+    return
   }
   col.sort = col.sort
     ? { ...col.sort, by: value }
-    : { by: value, type: "String" };
+    : { by: value, type: 'String' }
 }
 
 function setSortType(col: RComponentTableColumnEditor, value: string): void {
-  if (!col.sort) return;
-  col.sort = { ...col.sort, type: value };
+  if (!col.sort) {
+    return
+  }
+  col.sort = { ...col.sort, type: value }
 }
 
 function getAccessorConverterIds(acc: { converter?: string }): string[] {
-  const raw = acc.converter ?? "";
+  const raw = acc.converter ?? ''
   return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
 }
 
 function addConverterToAccessor(
   acc: { converter?: string },
   converterId: string,
 ): void {
-  const ids = getAccessorConverterIds(acc);
-  if (ids.includes(converterId)) return;
-  acc.converter = [...ids, converterId].join(", ");
+  const ids = getAccessorConverterIds(acc)
+  if (ids.includes(converterId)) {
+    return
+  }
+  acc.converter = [...ids, converterId].join(', ')
 }
 
 function removeConverterFromAccessor(
   acc: { converter?: string },
   at: number,
 ): void {
-  const ids = getAccessorConverterIds(acc);
-  ids.splice(at, 1);
-  acc.converter = ids.join(", ");
+  const ids = getAccessorConverterIds(acc)
+  ids.splice(at, 1)
+  acc.converter = ids.join(', ')
 }
 
 function addEventHandler(col: RComponentTableColumnEditor): void {
-  col.eventBindings = col.eventBindings ?? [];
-  col.eventBindings.push({ event: "", actionId: null });
+  col.eventBindings = col.eventBindings ?? []
+  col.eventBindings.push({ event: '', actionId: null })
 }
 
 function removeEventHandler(
   col: RComponentTableColumnEditor,
   idx: number,
 ): void {
-  col.eventBindings.splice(idx, 1);
+  col.eventBindings.splice(idx, 1)
 }
 
 const columnDetailTab = useSmartTabSelection(
-  "component-table.column-detail-tab",
-  "interface",
-  ["interface", "data", "events"] as const,
-);
+  'component-table.column-detail-tab',
+  'interface',
+  ['interface', 'data', 'events'] as const,
+)
 const mainTab = useSmartTabSelection(
-  "editor.active-tab",
-  "columns",
-  ["general", "columns", "data", "settings"] as const,
-);
+  'editor.active-tab',
+  'columns',
+  ['general', 'columns', 'data', 'settings'] as const,
+)
 
 /** Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора */
-const accessorInputRefs = ref<Record<number, HTMLInputElement | null>>({});
+const accessorInputRefs = ref<Record<number, HTMLInputElement | null>>({})
 
 function setAccessorInputRef(idx: number, el: unknown): void {
   if (el == null) {
-    delete accessorInputRefs.value[idx];
-    return;
+    delete accessorInputRefs.value[idx]
+    return
   }
-  const input =
-    (el as HTMLInputElement)?.focus !== undefined
+  const input
+    = (el as HTMLInputElement)?.focus !== undefined
       ? (el as HTMLInputElement)
-      : (el as { $el?: HTMLInputElement })?.$el;
-  accessorInputRefs.value[idx] = input ?? null;
+      : (el as { $el?: HTMLInputElement })?.$el
+  accessorInputRefs.value[idx] = input ?? null
 }
 
 /** При смене выбранной строки accessor (в т.ч. из инспектора) - переносим фокус на неё */
 watch(
   () => selectedColumn.value?.selectedAccessorIndex ?? -1,
   (idx) => {
-    if (idx < 0) return;
+    if (idx < 0) {
+      return
+    }
     nextTick(() => {
-      const el = accessorInputRefs.value[idx];
-      if (el?.focus) el.focus();
-    });
+      const el = accessorInputRefs.value[idx]
+      if (el?.focus) {
+        el.focus()
+      }
+    })
   },
-);
+)
 </script>
 
 <template>
@@ -453,10 +505,18 @@ watch(
       <div class="flex-1 min-h-0 flex flex-col gap-3 p-3 overflow-hidden">
         <Tabs v-model="mainTab" class="flex-1 min-h-0 flex flex-col">
           <TabsList class="grid grid-cols-5 w-full max-w-[560px] shrink-0">
-            <TabsTrigger value="general"> Основное </TabsTrigger>
-            <TabsTrigger value="columns"> Колонки </TabsTrigger>
-            <TabsTrigger value="data"> Данные </TabsTrigger>
-            <TabsTrigger value="settings"> Таблица </TabsTrigger>
+            <TabsTrigger value="general">
+              Основное
+            </TabsTrigger>
+            <TabsTrigger value="columns">
+              Колонки
+            </TabsTrigger>
+            <TabsTrigger value="data">
+              Данные
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              Таблица
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent
@@ -518,10 +578,10 @@ watch(
                           <Eraser class="size-3.5" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent
-                        >Очистить все привязки данных (dataPaths) во всех
-                        колонках</TooltipContent
-                      >
+                      <TooltipContent>
+                        Очистить все привязки данных (dataPaths) во всех
+                        колонках
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
@@ -573,9 +633,15 @@ watch(
                 <div v-else class="p-4">
                   <Tabs v-model="columnDetailTab" class="w-full">
                     <TabsList class="grid grid-cols-3 w-full">
-                      <TabsTrigger value="interface"> Интерфейс </TabsTrigger>
-                      <TabsTrigger value="data"> Данные </TabsTrigger>
-                      <TabsTrigger value="events"> События </TabsTrigger>
+                      <TabsTrigger value="interface">
+                        Интерфейс
+                      </TabsTrigger>
+                      <TabsTrigger value="data">
+                        Данные
+                      </TabsTrigger>
+                      <TabsTrigger value="events">
+                        События
+                      </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="interface" class="space-y-4 mt-4">
@@ -589,8 +655,8 @@ watch(
                           :accept-section-types="[DomainSectionType.Component]"
                           @update:model-value="
                             (v) =>
-                              (selectedColumn!.componentId =
-                                normalizeRelationId(v))
+                              (selectedColumn!.componentId
+                                = normalizeRelationId(v))
                           "
                         >
                           <div class="flex items-center gap-1">
@@ -606,8 +672,8 @@ watch(
                                 placeholder="Выберите компонент"
                                 @update:model-value="
                                   (v) =>
-                                    (selectedColumn!.componentId =
-                                      normalizeRelationId(v))
+                                    (selectedColumn!.componentId
+                                      = normalizeRelationId(v))
                                 "
                               />
                             </div>
@@ -631,9 +697,15 @@ watch(
                           <Select v-model="selectedColumn!.pin">
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="none"> Нет </SelectItem>
-                              <SelectItem value="left"> Слева </SelectItem>
-                              <SelectItem value="right"> Справа </SelectItem>
+                              <SelectItem value="none">
+                                Нет
+                              </SelectItem>
+                              <SelectItem value="left">
+                                Слева
+                              </SelectItem>
+                              <SelectItem value="right">
+                                Справа
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -649,10 +721,10 @@ watch(
                               const idx = selectedColumnIndex;
                               const cols = editor?.columns;
                               if (
-                                cols &&
-                                idx != null &&
-                                idx >= 0 &&
-                                idx < cols.length
+                                cols
+                                && idx != null
+                                && idx >= 0
+                                && idx < cols.length
                               )
                                 (
                                   cols[idx] as RComponentTableColumnEditor
@@ -679,14 +751,20 @@ watch(
                         <div
                           class="bg-muted/40 border-b grid grid-cols-[1fr_1.5fr_2fr_40px] text-xs font-medium text-muted-foreground"
                         >
-                          <div class="px-3 py-2">Имя поля</div>
-                          <div class="px-3 py-2">Путь (accessor)</div>
-                          <div class="px-3 py-2">Конвертеры (цепочка)</div>
+                          <div class="px-3 py-2">
+                            Имя поля
+                          </div>
+                          <div class="px-3 py-2">
+                            Путь (accessor)
+                          </div>
+                          <div class="px-3 py-2">
+                            Конвертеры (цепочка)
+                          </div>
                           <div class="px-3 py-2" />
                         </div>
                         <div
-                          v-for="(acc, accIdx) in selectedColumn!.accessors ??
-                          []"
+                          v-for="(acc, accIdx) in selectedColumn!.accessors
+                            ?? []"
                           :key="accIdx"
                           class="grid grid-cols-[1fr_1.5fr_2fr_40px] items-center divide-y gap-2"
                         >
@@ -695,10 +773,10 @@ watch(
                           </div>
                           <div class="px-3 py-2">
                             <Input
-                              v-model="acc.accessor"
                               :ref="
                                 (el: unknown) => setAccessorInputRef(accIdx, el)
                               "
+                              v-model="acc.accessor"
                               placeholder="$store.xxx"
                               @focus="
                                 selectedColumn!.selectedAccessorIndex = accIdx
@@ -778,9 +856,7 @@ watch(
                       <div
                         class="flex flex-wrap items-center gap-3 pt-3 border-t"
                       >
-                        <Label class="shrink-0 text-muted-foreground"
-                          >Сортировка</Label
-                        >
+                        <Label class="shrink-0 text-muted-foreground">Сортировка</Label>
                         <Select
                           :model-value="
                             selectedColumn!.sort?.by
@@ -842,13 +918,17 @@ watch(
                         <div
                           class="bg-muted/40 border-b grid grid-cols-[1fr_1fr_40px] text-xs font-medium text-muted-foreground"
                         >
-                          <div class="px-3 py-2">Событие</div>
-                          <div class="px-3 py-2">ID действия</div>
+                          <div class="px-3 py-2">
+                            Событие
+                          </div>
+                          <div class="px-3 py-2">
+                            ID действия
+                          </div>
                           <div class="px-3 py-2" />
                         </div>
                         <div
-                          v-for="(ev, evIdx) in selectedColumn!.eventBindings ??
-                          []"
+                          v-for="(ev, evIdx) in selectedColumn!.eventBindings
+                            ?? []"
                           :key="evIdx"
                           class="grid grid-cols-[1fr_1fr_40px] items-center divide-y"
                         >
@@ -926,11 +1006,21 @@ watch(
                       <div
                         class="bg-muted/40 border-b grid grid-cols-[1.2fr_1fr_120px_1fr_1fr_56px] text-xs font-medium text-muted-foreground"
                       >
-                        <div class="px-3 py-2">Имя</div>
-                        <div class="px-3 py-2">Тип</div>
-                        <div class="px-3 py-2">Массив?</div>
-                        <div class="px-3 py-2">PK</div>
-                        <div class="px-3 py-2">FK</div>
+                        <div class="px-3 py-2">
+                          Имя
+                        </div>
+                        <div class="px-3 py-2">
+                          Тип
+                        </div>
+                        <div class="px-3 py-2">
+                          Массив?
+                        </div>
+                        <div class="px-3 py-2">
+                          PK
+                        </div>
+                        <div class="px-3 py-2">
+                          FK
+                        </div>
                         <div class="px-3 py-2" />
                       </div>
                       <div
@@ -1041,7 +1131,6 @@ watch(
               </ScrollArea>
             </Card>
           </TabsContent>
-
         </Tabs>
       </div>
     </template>

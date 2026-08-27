@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { canManageAccess } from '@/features/access-control/model/access-control.policy'
-import { AccessControl_Service } from '@/features/access-control/model/AccessControl_Service'
+import { AccessControlHttp_Adapter } from '@/features/access-control/model/adapters/AccessControlHttp_Adapter'
 
 describe('access control service', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -19,7 +19,7 @@ describe('access control service', () => {
       nextCursor: 'next',
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new AccessControl_Service('https://remote.test')
+    const service = new AccessControlHttp_Adapter('https://remote.test')
     const controller = new AbortController()
 
     const page = await service.searchUsers('iv', 'production', 'cursor', controller.signal)
@@ -36,7 +36,7 @@ describe('access control service', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'grant-1' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ affected: 3, created: 2, updated: 1 }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new AccessControl_Service('https://backend.test')
+    const service = new AccessControlHttp_Adapter('https://backend.test')
 
     await service.putGrant({ userId: 'user-1', scopeType: 'workspace', workspaceIdentity: 'dev', role: 'editor' })
     const bulk = await service.bulkWorkspaceGrants({ userId: 'user-1', role: 'viewer', selection: { type: 'all-active' } })
@@ -61,7 +61,7 @@ describe('access control service', () => {
       headers: { 'Content-Type': 'application/json' },
     }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new AccessControl_Service('https://backend.test')
+    const service = new AccessControlHttp_Adapter('https://backend.test')
 
     await service.listGrants('workspace', undefined, '', '', '00000000-0000-0000-0000-000000000042')
 
@@ -75,7 +75,7 @@ describe('access control service', () => {
       code: 'last_platform_admin_required',
       message: 'The last Platform Admin cannot be removed',
     }), { status: 409, headers: { 'Content-Type': 'application/json' } })))
-    const service = new AccessControl_Service('https://backend.test')
+    const service = new AccessControlHttp_Adapter('https://backend.test')
 
     await expect(service.deleteGrant('grant-1')).rejects.toMatchObject({
       code: 'last_platform_admin_required',

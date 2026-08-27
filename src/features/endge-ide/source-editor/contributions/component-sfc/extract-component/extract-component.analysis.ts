@@ -1,13 +1,13 @@
 /* eslint-disable style/max-statements-per-line */
 import type {
-  ExtractableSFCColumn,
-  ExtractComponentDependency,
-} from './extract-component.types'
-import type {
   RComponentSFC_AST,
   RComponentSFC_AST_ElementNode,
   RComponentSFC_AST_TemplateNode,
 } from '@endge/core'
+import type {
+  ExtractableSFCColumn,
+  ExtractComponentDependency,
+} from './extract-component.types'
 
 import { analyzeComponentSFCScript, parseComponentSFC } from '@endge/core'
 import ts from 'typescript'

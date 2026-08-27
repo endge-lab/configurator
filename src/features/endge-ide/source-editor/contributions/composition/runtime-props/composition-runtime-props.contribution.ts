@@ -1,8 +1,8 @@
 /* eslint-disable style/max-statements-per-line */
-import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
-import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { CompositionPreviewLiteral, CompositionPreviewPropValue, CompositionProgramPayload } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
+import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
+import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
 import { Endge } from '@endge/core'
 import { toast } from 'vue-sonner'

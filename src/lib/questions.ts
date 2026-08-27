@@ -1,4 +1,4 @@
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 export type { QuestionAnswer as Answer, Question } from '@/app/domain/types/question.type'
 

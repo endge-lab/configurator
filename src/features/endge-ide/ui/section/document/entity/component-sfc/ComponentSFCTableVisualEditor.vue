@@ -1,13 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
-import type {
-  TableCellBindingValueKind,
-  TableCellComponentOption,
-} from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
-import type { TableVisualColumnPinSide } from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
-import type { TableVisualColumnSortDirection } from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
-import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 import type {
   ComponentSFCInteractionTriggerProjection,
   ComponentSFCTableCellBindingProjection,
@@ -22,6 +14,14 @@ import type {
   ProgramMetadataMap,
   RComponentContractInput,
 } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type {
+  TableCellBindingValueKind,
+  TableCellComponentOption,
+} from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
+import type { TableVisualColumnPinSide } from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
+import type { TableVisualColumnSortDirection } from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 
 import {
   compileComponentSFCExpression,
@@ -2540,10 +2540,16 @@ onBeforeUnmount(() => {
                       <div class="rounded-md border p-4">
                         <div class="mb-3 flex items-start justify-between gap-3">
                           <div>
-                            <h3 class="text-sm font-medium">Выделение строк</h3>
-                            <p class="mt-0.5 text-[11px] text-muted-foreground">Одна или несколько целых строк.</p>
+                            <h3 class="text-sm font-medium">
+                              Выделение строк
+                            </h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">
+                              Одна или несколько целых строк.
+                            </p>
                           </div>
-                          <Badge variant="secondary">row</Badge>
+                          <Badge variant="secondary">
+                            row
+                          </Badge>
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
@@ -2558,7 +2564,9 @@ onBeforeUnmount(() => {
                                 <SelectValue placeholder="Выберите режим" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem :value="SELECTION_NOT_SET_VALUE">Не задано</SelectItem>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                  Не задано
+                                </SelectItem>
                                 <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
                                   {{ option.label }}
                                 </SelectItem>
@@ -2583,7 +2591,9 @@ onBeforeUnmount(() => {
                                 <SelectValue placeholder="Выберите способ" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem :value="SELECTION_NOT_SET_VALUE">По умолчанию адаптера</SelectItem>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                  По умолчанию адаптера
+                                </SelectItem>
                                 <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
                                   {{ option.label }}
                                 </SelectItem>
@@ -2605,10 +2615,16 @@ onBeforeUnmount(() => {
                       <div class="rounded-md border p-4">
                         <div class="mb-3 flex items-start justify-between gap-3">
                           <div>
-                            <h3 class="text-sm font-medium">Выделение ячеек</h3>
-                            <p class="mt-0.5 text-[11px] text-muted-foreground">Одна конкретная ячейка по строке и ключу колонки.</p>
+                            <h3 class="text-sm font-medium">
+                              Выделение ячеек
+                            </h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">
+                              Одна конкретная ячейка по строке и ключу колонки.
+                            </p>
                           </div>
-                          <Badge variant="secondary">cell</Badge>
+                          <Badge variant="secondary">
+                            cell
+                          </Badge>
                         </div>
 
                         <div class="max-w-sm space-y-1.5">
@@ -2622,7 +2638,9 @@ onBeforeUnmount(() => {
                               <SelectValue placeholder="Выберите режим" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem :value="SELECTION_NOT_SET_VALUE">Не задано</SelectItem>
+                              <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                Не задано
+                              </SelectItem>
                               <SelectItem v-for="option in CELL_SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
                                 {{ option.label }}
                               </SelectItem>
@@ -3027,935 +3045,935 @@ onBeforeUnmount(() => {
       <TabsContent value="columns" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
         <div class="flex h-full min-h-0 flex-col gap-3 pr-2">
           <Card class="editor-panel shrink-0 gap-0 overflow-hidden py-0">
-              <div class="flex min-h-16 items-start gap-2 p-3">
-                <div class="flex flex-1 flex-wrap items-center gap-2">
-                  <template
-                    v-for="column in orderedColumns"
-                    :key="column.id"
+            <div class="flex min-h-16 items-start gap-2 p-3">
+              <div class="flex flex-1 flex-wrap items-center gap-2">
+                <template
+                  v-for="column in orderedColumns"
+                  :key="column.id"
+                >
+                  <div
+                    v-if="showDividerBeforeColumn(column)"
+                    aria-hidden="true"
+                    class="h-7 w-px shrink-0 rounded-full bg-border/80"
+                  />
+                  <div
+                    role="button"
+                    tabindex="0"
+                    :draggable="isColumnDraggable(column)"
+                    class="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-[border-color,background-color,box-shadow,opacity]"
+                    :class="[
+                      selectedColumnIndex === column.index
+                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        : columnPinSide(column) === 'none'
+                          ? 'editor-control border-border/70 hover:border-border hover:brightness-110'
+                          : 'editor-control border-primary/40 bg-primary/5 hover:border-primary/60 hover:brightness-110',
+                      isColumnDraggable(column) ? 'cursor-move' : 'cursor-default',
+                      isColumnHiddenByDefault(column) ? 'opacity-60' : '',
+                      dragColumnIndex === column.index ? 'opacity-40' : '',
+                      dragOverColumnIndex === column.index && dragColumnIndex !== column.index
+                        ? 'ring-1 ring-primary'
+                        : '',
+                    ]"
+                    :title="columnTitle(column)"
+                    @click="selectedColumnIndex = column.index"
+                    @keydown.enter.prevent="selectedColumnIndex = column.index"
+                    @keydown.space.prevent="selectedColumnIndex = column.index"
+                    @contextmenu="(event: MouseEvent) => openColumnContextMenu(event, column.index)"
+                    @keydown="(event: KeyboardEvent) => openColumnContextMenuFromKeyboard(event, column.index)"
+                    @dragstart="(event: DragEvent) => onColumnDragStart(event, column.index)"
+                    @dragover="(event: DragEvent) => onColumnDragOver(event, column.index)"
+                    @dragleave="dragOverColumnIndex = null"
+                    @drop="(event: DragEvent) => onColumnDrop(event, column.index)"
+                    @dragend="resetDragState"
                   >
-                    <div
-                      v-if="showDividerBeforeColumn(column)"
-                      aria-hidden="true"
-                      class="h-7 w-px shrink-0 rounded-full bg-border/80"
-                    />
-                    <div
-                      role="button"
-                      tabindex="0"
-                      :draggable="isColumnDraggable(column)"
-                      class="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-[border-color,background-color,box-shadow,opacity]"
-                      :class="[
-                        selectedColumnIndex === column.index
-                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                          : columnPinSide(column) === 'none'
-                            ? 'editor-control border-border/70 hover:border-border hover:brightness-110'
-                            : 'editor-control border-primary/40 bg-primary/5 hover:border-primary/60 hover:brightness-110',
-                        isColumnDraggable(column) ? 'cursor-move' : 'cursor-default',
-                        isColumnHiddenByDefault(column) ? 'opacity-60' : '',
-                        dragColumnIndex === column.index ? 'opacity-40' : '',
-                        dragOverColumnIndex === column.index && dragColumnIndex !== column.index
-                          ? 'ring-1 ring-primary'
-                          : '',
-                      ]"
-                      :title="columnTitle(column)"
-                      @click="selectedColumnIndex = column.index"
-                      @keydown.enter.prevent="selectedColumnIndex = column.index"
-                      @keydown.space.prevent="selectedColumnIndex = column.index"
-                      @contextmenu="(event: MouseEvent) => openColumnContextMenu(event, column.index)"
-                      @keydown="(event: KeyboardEvent) => openColumnContextMenuFromKeyboard(event, column.index)"
-                      @dragstart="(event: DragEvent) => onColumnDragStart(event, column.index)"
-                      @dragover="(event: DragEvent) => onColumnDragOver(event, column.index)"
-                      @dragleave="dragOverColumnIndex = null"
-                      @drop="(event: DragEvent) => onColumnDrop(event, column.index)"
-                      @dragend="resetDragState"
+                    <GripVertical class="size-3.5 shrink-0 opacity-60" />
+                    <span class="max-w-52 truncate">{{ columnTitle(column) }}</span>
+                    <FileCode2 v-if="isSourceOwnedCell(column)" class="size-3.5 shrink-0 opacity-75" />
+                    <span
+                      v-if="isColumnHiddenByDefault(column)"
+                      class="inline-flex size-5 shrink-0 items-center justify-center"
+                      title="Скрыта по умолчанию"
                     >
-                      <GripVertical class="size-3.5 shrink-0 opacity-60" />
-                      <span class="max-w-52 truncate">{{ columnTitle(column) }}</span>
-                      <FileCode2 v-if="isSourceOwnedCell(column)" class="size-3.5 shrink-0 opacity-75" />
-                      <span
-                        v-if="isColumnHiddenByDefault(column)"
-                        class="inline-flex size-5 shrink-0 items-center justify-center"
-                        title="Скрыта по умолчанию"
-                      >
-                        <EyeOff class="size-3.5" />
-                      </span>
-                      <span
-                        v-if="columnPinSide(column) !== 'none'"
-                        class="inline-flex shrink-0 items-center"
-                        :title="columnPinLabel(column)"
-                      >
-                        <Pin class="size-3.5" />
-                      </span>
-                    </div>
-                  </template>
-
-                  <div v-if="!columns.length" class="px-2 py-2 text-xs text-muted-foreground">
-                    Нет колонок. Нажмите «+», чтобы создать первую.
+                      <EyeOff class="size-3.5" />
+                    </span>
+                    <span
+                      v-if="columnPinSide(column) !== 'none'"
+                      class="inline-flex shrink-0 items-center"
+                      :title="columnPinLabel(column)"
+                    >
+                      <Pin class="size-3.5" />
+                    </span>
                   </div>
-                </div>
+                </template>
 
-                <div class="flex shrink-0 items-center gap-1.5">
-                  <TooltipProvider :delay-duration="120">
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          class="size-8 shrink-0"
-                          aria-label="Добавить колонку"
-                          @click="addColumn"
-                        >
-                          <Plus class="size-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Добавить колонку</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          class="size-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Удалить все колонки"
-                          :disabled="!columns.length"
-                          @click="removeAllColumnsDialogOpen = true"
-                        >
-                          <Trash2 class="size-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Удалить все колонки</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div v-if="!columns.length" class="px-2 py-2 text-xs text-muted-foreground">
+                  Нет колонок. Нажмите «+», чтобы создать первую.
                 </div>
               </div>
+
+              <div class="flex shrink-0 items-center gap-1.5">
+                <TooltipProvider :delay-duration="120">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        class="size-8 shrink-0"
+                        aria-label="Добавить колонку"
+                        @click="addColumn"
+                      >
+                        <Plus class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Добавить колонку</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        class="size-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        aria-label="Удалить все колонки"
+                        :disabled="!columns.length"
+                        @click="removeAllColumnsDialogOpen = true"
+                      >
+                        <Trash2 class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Удалить все колонки</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </Card>
 
-            <Teleport to="body">
-              <template v-if="columnContextMenu && contextMenuColumn">
-                <div
-                  class="fixed inset-0 z-[199]"
-                  aria-hidden="true"
-                  @pointerdown="closeColumnContextMenu"
-                  @contextmenu.prevent="closeColumnContextMenu"
-                />
-                <div
-                  role="menu"
-                  class="fixed z-[200] min-w-60 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-                  :style="{ left: `${columnContextMenu.x}px`, top: `${columnContextMenu.y}px` }"
-                  @click.stop
+          <Teleport to="body">
+            <template v-if="columnContextMenu && contextMenuColumn">
+              <div
+                class="fixed inset-0 z-[199]"
+                aria-hidden="true"
+                @pointerdown="closeColumnContextMenu"
+                @contextmenu.prevent="closeColumnContextMenu"
+              />
+              <div
+                role="menu"
+                class="fixed z-[200] min-w-60 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                :style="{ left: `${columnContextMenu.x}px`, top: `${columnContextMenu.y}px` }"
+                @click.stop
+              >
+                <div class="truncate px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  {{ columnTitle(contextMenuColumn) }}
+                </div>
+                <div class="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'left'"
+                  @click="setContextMenuColumnPin('left')"
                 >
-                  <div class="truncate px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                    {{ columnTitle(contextMenuColumn) }}
-                  </div>
-                  <div class="my-1 h-px bg-border" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
-                    :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'left'"
-                    @click="setContextMenuColumnPin('left')"
-                  >
-                    <PanelLeft class="size-4 shrink-0" />
-                    Закрепить слева
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
-                    :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'right'"
-                    @click="setContextMenuColumnPin('right')"
-                  >
-                    <PanelRight class="size-4 shrink-0" />
-                    Закрепить справа
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
-                    :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'none'"
-                    @click="setContextMenuColumnPin(null)"
-                  >
-                    <PinOff class="size-4 shrink-0" />
-                    Убрать закрепление
-                  </button>
-                  <div
-                    v-if="columnPinEditingHint(contextMenuColumn)"
-                    class="mt-1 border-t px-2 pt-2 pb-1 text-[11px] leading-4 text-muted-foreground"
-                  >
-                    {{ columnPinEditingHint(contextMenuColumn) }}
-                  </div>
-                  <div class="my-1 h-px bg-border" />
-                  <button
-                    type="button"
-                    role="menuitemcheckbox"
-                    :aria-checked="!isColumnHiddenByDefault(contextMenuColumn)"
-                    class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
-                    :disabled="!canEditColumnVisibility(contextMenuColumn)"
-                    @click="toggleContextMenuColumnVisibility"
-                  >
-                    <Eye v-if="isColumnHiddenByDefault(contextMenuColumn)" class="size-4 shrink-0" />
-                    <EyeOff v-else class="size-4 shrink-0" />
-                    {{ isColumnHiddenByDefault(contextMenuColumn) ? 'Показывать по умолчанию' : 'Скрыть по умолчанию' }}
-                  </button>
-                  <div
-                    v-if="columnVisibilityEditingHint(contextMenuColumn)"
-                    class="px-2 py-1 text-[11px] leading-4 text-muted-foreground"
-                  >
-                    {{ columnVisibilityEditingHint(contextMenuColumn) }}
-                  </div>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive outline-none hover:bg-destructive/10 focus-visible:bg-destructive/10"
-                    @click="removeColumnFromContextMenu"
-                  >
-                    <Trash2 class="size-4 shrink-0" />
-                    Удалить
-                  </button>
-                </div>
-              </template>
-            </Teleport>
-
-            <AlertDialog v-model:open="removeAllColumnsDialogOpen">
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Удалить все колонки?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Из Table будут удалены все колонки. Количество: {{ columns.length }}. Source изменится сразу, а изменение станет постоянным после сохранения компонента.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Отмена</AlertDialogCancel>
-                  <AlertDialogAction
-                    class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    @click="removeAllColumns"
-                  >
-                    Удалить все
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <SettingsNavigationPanel
-              v-model="columnSection"
-              v-model:sidebar-width="columnNavigationWidth"
-              :default-sidebar-width="232"
-              class="editor-panel min-h-0 flex-1"
-              navigation-class="bg-muted/20"
-              separator-label="Изменить ширину меню настроек колонки"
-            >
-              <template #navigation>
-                <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
-                  <template v-for="section in columnSections" :key="section.id">
-                    <TabsTrigger
-                      :value="section.id"
-                      class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-                    >
-                      <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
-                      <span class="truncate">{{ section.label }}</span>
-                    </TabsTrigger>
-
-                    <div
-                      v-if="section.id === 'editing' && columnSection === 'editing'"
-                      class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
-                    >
-                      <button
-                        v-for="editingItem in editingSections"
-                        :key="editingItem.id"
-                        type="button"
-                        class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-                        :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
-                        :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
-                        @click="updateEditingSection(editingItem.id)"
-                      >
-                        {{ editingItem.label }}
-                      </button>
-                    </div>
-                  </template>
-                </TabsList>
-              </template>
-
-              <div class="contents">
-                <div class="grid gap-2 border-b border-border/70 p-3 lg:hidden">
-                  <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
-                    <SelectTrigger class="editor-control w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="section in columnSections" :key="section.id" :value="section.id">
-                        {{ section.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    v-if="columnSection === 'editing'"
-                    :model-value="editingSection"
-                    @update:model-value="value => updateEditingSection(value == null ? null : String(value))"
-                  >
-                    <SelectTrigger class="editor-control w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="editingItem in editingSections"
-                        :key="editingItem.id"
-                        :value="editingItem.id"
-                        :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
-                      >
-                        {{ editingItem.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <ComponentSFCSettingsSectionHeader
-                  :label="columnSection === 'editing' ? activeEditingSection.label : activeColumnSection.label"
-                  :description="columnSection === 'editing' ? activeEditingSection.description : activeColumnSection.description"
+                  <PanelLeft class="size-4 shrink-0" />
+                  Закрепить слева
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'right'"
+                  @click="setContextMenuColumnPin('right')"
                 >
-                  <template v-if="columnSection === 'data' && selectedColumn" #actions>
-                    <TooltipProvider :delay-duration="120">
-                      <div
-                        class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
-                        role="group"
-                        aria-label="Способ отображения данных"
-                      >
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              class="size-7"
-                              :class="cellEditorMode === 'component' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                              :disabled="isSourceOwnedCell(selectedColumn)"
-                              aria-label="Компонент"
-                              @click="selectCellEditorMode('component')"
-                            >
-                              <Blocks class="size-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Существующий компонент</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              class="size-7"
-                              :class="cellEditorMode === 'tag' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                              :disabled="isSourceOwnedCell(selectedColumn)"
-                              aria-label="Tag"
-                              @click="selectCellEditorMode('tag')"
-                            >
-                              <Tags class="size-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Встроенный SFC tag</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              class="size-7"
-                              :class="cellEditorMode === 'source' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                              aria-label="Source"
-                              @click="selectCellEditorMode('source')"
-                            >
-                              <FileCode2 class="size-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Произвольная Source-разметка</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TooltipProvider>
-                  </template>
-                </ComponentSFCSettingsSectionHeader>
+                  <PanelRight class="size-4 shrink-0" />
+                  Закрепить справа
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'none'"
+                  @click="setContextMenuColumnPin(null)"
+                >
+                  <PinOff class="size-4 shrink-0" />
+                  Убрать закрепление
+                </button>
+                <div
+                  v-if="columnPinEditingHint(contextMenuColumn)"
+                  class="mt-1 border-t px-2 pt-2 pb-1 text-[11px] leading-4 text-muted-foreground"
+                >
+                  {{ columnPinEditingHint(contextMenuColumn) }}
+                </div>
+                <div class="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  :aria-checked="!isColumnHiddenByDefault(contextMenuColumn)"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnVisibility(contextMenuColumn)"
+                  @click="toggleContextMenuColumnVisibility"
+                >
+                  <Eye v-if="isColumnHiddenByDefault(contextMenuColumn)" class="size-4 shrink-0" />
+                  <EyeOff v-else class="size-4 shrink-0" />
+                  {{ isColumnHiddenByDefault(contextMenuColumn) ? 'Показывать по умолчанию' : 'Скрыть по умолчанию' }}
+                </button>
+                <div
+                  v-if="columnVisibilityEditingHint(contextMenuColumn)"
+                  class="px-2 py-1 text-[11px] leading-4 text-muted-foreground"
+                >
+                  {{ columnVisibilityEditingHint(contextMenuColumn) }}
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive outline-none hover:bg-destructive/10 focus-visible:bg-destructive/10"
+                  @click="removeColumnFromContextMenu"
+                >
+                  <Trash2 class="size-4 shrink-0" />
+                  Удалить
+                </button>
+              </div>
+            </template>
+          </Teleport>
 
-                <ScrollArea class="min-h-0 flex-1">
-                  <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
-                    Выберите колонку выше для настройки.
-                  </div>
+          <AlertDialog v-model:open="removeAllColumnsDialogOpen">
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Удалить все колонки?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Из Table будут удалены все колонки. Количество: {{ columns.length }}. Source изменится сразу, а изменение станет постоянным после сохранения компонента.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  @click="removeAllColumns"
+                >
+                  Удалить все
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-                  <template v-else>
-                <section v-show="columnSection === 'general'" class="px-5 py-5">
-                  <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-key">Key</Label>
-                      <Input
-                        id="sfc-table-column-key"
-                        v-model="keyDraft"
-                        class="editor-control font-mono"
-                        spellcheck="false"
-                        :disabled="!canEdit(selectedColumn.key)"
-                        @blur="commitAttribute('key', keyDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-title">Отображаемое имя</Label>
-                      <Input
-                        id="sfc-table-column-title"
-                        v-model="titleDraft"
-                        class="editor-control"
-                        :disabled="!canEdit(selectedColumn.title)"
-                        @blur="commitAttribute('title', titleDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                    <div class="space-y-1.5">
-                      <Label for="sfc-table-column-width">Ширина</Label>
-                      <Input
-                        id="sfc-table-column-width"
-                        v-model="widthDraft"
-                        class="editor-control"
-                        placeholder="auto"
-                        :disabled="!canEdit(selectedColumn.width)"
-                        @blur="commitAttribute('width', widthDraft)"
-                        @keydown.enter="blurInput"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section v-show="columnSection === 'data'" class="px-5 py-4">
-                  <div
-                    v-if="cellEditorMode === 'component' || cellEditorMode === 'tag'"
-                    ref="dataSplitContainer"
-                    class="table-data-split flex overflow-hidden rounded-lg border border-border/70"
+          <SettingsNavigationPanel
+            v-model="columnSection"
+            v-model:sidebar-width="columnNavigationWidth"
+            :default-sidebar-width="232"
+            class="editor-panel min-h-0 flex-1"
+            navigation-class="bg-muted/20"
+            separator-label="Изменить ширину меню настроек колонки"
+          >
+            <template #navigation>
+              <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+                <template v-for="section in columnSections" :key="section.id">
+                  <TabsTrigger
+                    :value="section.id"
+                    class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
                   >
-                    <div
-                      class="editor-control min-w-0 flex-none p-4"
-                      :style="{ flexBasis: `calc((100% - 7px) * ${dataSplitRatioDraft / 100})` }"
-                    >
-                      <div v-if="cellEditorMode === 'component'" class="space-y-2">
-                        <Label>Компонент</Label>
-                        <SearchableSelect
-                          :options="componentSelectOptions"
-                          :model-value="selectedComponentValue"
-                          placeholder="Найти компонент..."
-                          trigger-class="editor-control w-full"
-                          @update:model-value="updateComponent"
-                        />
-                        <p class="text-xs text-muted-foreground">
-                          {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : 'Выберите компонент' }}
-                        </p>
-                      </div>
-
-                      <div v-else class="space-y-2">
-                        <Label>Tag</Label>
-                        <SearchableSelect
-                          :options="tagSelectOptions"
-                          :model-value="selectedTagValue"
-                          placeholder="Найти SFC tag..."
-                          trigger-class="editor-control w-full font-mono"
-                          @update:model-value="updateTag"
-                        />
-                        <p class="text-xs text-muted-foreground">
-                          Встроенный renderer-neutral элемент.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div
-                      class="table-data-split__separator"
-                      :data-resizing="isDataSplitResizing"
-                      role="separator"
-                      aria-label="Изменить ширину панелей выбора элемента и входных параметров"
-                      aria-orientation="vertical"
-                      :aria-valuenow="Math.round(dataSplitRatioDraft)"
-                      :aria-valuemin="DATA_SPLIT_MIN_RATIO"
-                      :aria-valuemax="DATA_SPLIT_MAX_RATIO"
-                      tabindex="0"
-                      @dblclick="resetDataSplitRatio"
-                      @pointerdown="beginDataSplitResize"
-                      @keydown.stop="resizeDataSplitByKeyboard"
-                    >
-                      <span />
-                    </div>
-
-                    <div class="min-w-0 flex-1 bg-editor-panel">
-                      <div class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] border-b bg-muted/25 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                        <div>Входной параметр</div>
-                        <div>Значение</div>
-                      </div>
-
-                      <div v-if="cellBindingFields.length" class="divide-y divide-border/60">
-                        <div
-                          v-for="field in cellBindingFields"
-                          :key="field.name"
-                          class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] items-start gap-3 px-3 py-2.5"
-                          :class="!field.optional && !cellBindingDrafts[field.name]?.trim() ? 'bg-amber-500/5' : ''"
-                        >
-                          <div class="min-w-0 pt-1">
-                            <div class="flex min-w-0 items-center gap-1.5">
-                              <code class="truncate text-xs font-medium text-foreground">{{ field.name }}</code>
-                              <span v-if="!field.optional" class="text-xs text-amber-500">*</span>
-                              <Badge v-if="field.sourceOnly" variant="outline" class="h-4 px-1 text-[9px] font-normal">
-                                Source
-                              </Badge>
-                            </div>
-                            <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground" :title="field.type">
-                              {{ field.type }}
-                            </div>
-                          </div>
-
-                          <div class="min-w-0">
-                            <div
-                              class="editor-control flex min-w-0 items-center rounded-md border border-border/70 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/30"
-                              :class="cellBindingErrors[field.name] ? 'border-destructive/70' : ''"
-                              @focusout="handleCellBindingFocusOut($event, field.name)"
-                            >
-                              <TooltipProvider :delay-duration="120">
-                                <Tooltip>
-                                  <TooltipTrigger as-child>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      class="h-7 min-w-7 rounded-r-none border-r px-1.5 font-mono text-[10px]"
-                                      :class="cellBindingKind(field.name) === 'expression' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
-                                      aria-label="Динамическое выражение"
-                                      @click="setCellBindingKind(field.name, 'expression')"
-                                    >
-                                      fx
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Dynamic expression: :{{ field.name }}=&quot;row...&quot;</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger as-child>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      class="h-7 min-w-7 rounded-none border-r px-1.5 font-mono text-[10px]"
-                                      :class="cellBindingKind(field.name) === 'literal' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
-                                      aria-label="Статическое значение"
-                                      @click="setCellBindingKind(field.name, 'literal')"
-                                    >
-                                      Aa
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Static literal: {{ field.name }}=&quot;value&quot;</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              <Input
-                                v-model="cellBindingDrafts[field.name]"
-                                class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0"
-                                :placeholder="cellBindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'"
-                                spellcheck="false"
-                                @keydown.enter.prevent="commitCellBinding(field.name)"
-                                @keydown.esc.prevent="resetCellBinding(field.name)"
-                              />
-                            </div>
-                            <p v-if="cellBindingErrors[field.name]" class="mt-1 text-[10px] leading-tight text-destructive">
-                              {{ cellBindingErrors[field.name] }}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div v-else class="flex min-h-24 items-center justify-center px-4 text-center text-xs text-muted-foreground">
-                        {{ selectedComponentValue || selectedTagValue ? 'У выбранного элемента нет параметров данных.' : 'Выберите элемент слева.' }}
-                      </div>
-                    </div>
-                  </div>
+                    <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                    <span class="truncate">{{ section.label }}</span>
+                  </TabsTrigger>
 
                   <div
-                    v-else
-                    class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                    v-if="section.id === 'editing' && columnSection === 'editing'"
+                    class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
                   >
-                    <div class="min-w-0">
-                      <div class="text-sm font-medium">
-                        Source
-                      </div>
-                      <div class="mt-0.5 text-xs text-muted-foreground">
-                        Содержимое колонки можно изменить вручную без преобразования Visual editor.
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      class="shrink-0 gap-1.5"
-                      @click="openSelectedColumnSource"
+                    <button
+                      v-for="editingItem in editingSections"
+                      :key="editingItem.id"
+                      type="button"
+                      class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                      :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                      :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                      @click="updateEditingSection(editingItem.id)"
                     >
-                      Редактировать в Source
-                      <ExternalLink class="size-3.5" />
-                    </Button>
+                      {{ editingItem.label }}
+                    </button>
                   </div>
-                </section>
+                </template>
+              </TabsList>
+            </template>
 
-                <section v-show="columnSection === 'editing'" class="bg-background/15 px-5 py-4">
-                  <div
-                    v-if="!selectedColumn.editing.editable"
-                    class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
-                  >
-                    <div class="min-w-0">
-                      <div class="text-sm font-medium">
-                        {{ selectedColumn.editing.enabled ? 'Редактирование включено · Source' : 'Редактирование управляется Source' }}
-                      </div>
-                      <div class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                        {{ selectedColumn.editing.message }}
-                      </div>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
-                      <FileCode2 class="size-3.5" />
-                      Открыть
-                    </Button>
-                  </div>
+            <div class="contents">
+              <div class="grid gap-2 border-b border-border/70 p-3 lg:hidden">
+                <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
+                  <SelectTrigger class="editor-control w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="section in columnSections" :key="section.id" :value="section.id">
+                      {{ section.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  v-if="columnSection === 'editing'"
+                  :model-value="editingSection"
+                  @update:model-value="value => updateEditingSection(value == null ? null : String(value))"
+                >
+                  <SelectTrigger class="editor-control w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="editingItem in editingSections"
+                      :key="editingItem.id"
+                      :value="editingItem.id"
+                      :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                    >
+                      {{ editingItem.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div v-else>
-                    <div v-if="editingSection === 'editor'" class="space-y-4">
-                      <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
-                        <span class="text-sm font-medium">Сделать редактируемым</span>
-                        <Switch
-                          :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
-                          aria-label="Сделать содержимое ячейки редактируемым"
-                          @update:checked="setSelectedCellEditingEnabled"
-                        />
-                      </div>
-
-                      <ComponentSFCEditableVariantEditor
-                        v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
-                        ref="editableVariantEditorRef"
-                        :editor="selectedColumn.editing.editor"
-                        :implicit="selectedColumn.editing.editorImplicit"
-                        :selecting="selectedCellEditingPending"
-                        :component-options="componentOptions"
-                        @set-component="setSelectedCellEditorComponent"
-                        @set-tag="setSelectedCellEditorTag"
-                        @set-binding="setSelectedCellEditorBinding"
-                        @separate="separateSelectedCellEditor"
-                        @open-source="openSelectedCellEditingSource"
-                      />
-                    </div>
-
+              <ComponentSFCSettingsSectionHeader
+                :label="columnSection === 'editing' ? activeEditingSection.label : activeColumnSection.label"
+                :description="columnSection === 'editing' ? activeEditingSection.description : activeColumnSection.description"
+              >
+                <template v-if="columnSection === 'data' && selectedColumn" #actions>
+                  <TooltipProvider :delay-duration="120">
                     <div
-                      v-else-if="!selectedColumn.editing.enabled"
-                      class="editor-control rounded-lg border border-border/70 px-4 py-3 text-sm text-muted-foreground"
+                      class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
+                      role="group"
+                      aria-label="Способ отображения данных"
                     >
-                      Сначала включите редактирование в разделе «Редактор».
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'component' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            :disabled="isSourceOwnedCell(selectedColumn)"
+                            aria-label="Компонент"
+                            @click="selectCellEditorMode('component')"
+                          >
+                            <Blocks class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Существующий компонент</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'tag' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            :disabled="isSourceOwnedCell(selectedColumn)"
+                            aria-label="Tag"
+                            @click="selectCellEditorMode('tag')"
+                          >
+                            <Tags class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Встроенный SFC tag</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'source' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            aria-label="Source"
+                            @click="selectCellEditorMode('source')"
+                          >
+                            <FileCode2 class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Произвольная Source-разметка</TooltipContent>
+                      </Tooltip>
                     </div>
+                  </TooltipProvider>
+                </template>
+              </ComponentSFCSettingsSectionHeader>
 
-                    <div v-else-if="editingSection === 'triggers'" class="space-y-4">
-                      <div class="flex justify-end">
-                        <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
-                          <Plus class="size-3.5" />
-                          Альтернативный trigger
-                        </Button>
-                      </div>
-
-                      <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                        Используется <code>click</code> по умолчанию; атрибут <code>edit-on</code> в Source не требуется.
-                      </div>
-
-                      <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                        <span>Для всех trigger:</span>
-                        <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
-                      </div>
-
-                      <div class="space-y-3">
-                        <ComponentSFCInteractionBindingEditor
-                          v-for="(trigger, index) in selectedColumn.editing.triggers"
-                          :key="`${index}:${trigger.event}`"
-                          :trigger="trigger"
-                          :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
-                          @update:trigger="updateSelectedCellEditTrigger(index, $event)"
-                        >
-                          <template #actions>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              class="size-7 text-muted-foreground hover:text-destructive"
-                              :aria-label="selectedColumn.editing.triggers.length === 1 ? 'Вернуть click по умолчанию' : 'Удалить альтернативный trigger'"
-                              @click="removeSelectedCellEditTrigger(index)"
-                            >
-                              <Trash2 class="size-3.5" />
-                            </Button>
-                          </template>
-                        </ComponentSFCInteractionBindingEditor>
-                      </div>
-
-                      <ComponentSFCEditOutcomeEditor
-                        :cancel="selectedColumn.editing.cancel"
-                        :commit="selectedColumn.editing.commit"
-                        @update-cancel="setSelectedCellCancelTriggers"
-                        @update-commit="setSelectedCellCommitTriggers"
-                      />
-                    </div>
-
-                    <div v-else class="space-y-2">
-                      <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
-                        <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                          <span>Для edited:</span>
-                          <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
-                        </div>
-                        <ComponentSFCReactionEditor
-                          ref="editedReactionEditorRef"
-                          :model-value="selectedColumn.editing.reaction.source"
-                          event-name="edited"
-                          variant="section"
-                          @save="setSelectedCellEditedReaction"
-                        />
-                      </div>
-
-                      <div
-                        v-else
-                        class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
-                      >
-                        <div class="min-w-0">
-                          <div class="text-sm font-medium">
-                            Reaction управляется Source
-                          </div>
-                          <div class="mt-0.5 text-xs text-muted-foreground">
-                            {{ selectedColumn.editing.reaction.message }}
-                          </div>
-                        </div>
-                        <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
-                          <FileCode2 class="size-3.5" />
-                          Открыть
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <div v-show="columnSection === 'events'">
-                  <ComponentSFCCellInteractionsEditor
-                    ref="cellInteractionsEditorRef"
-                    :model-value="selectedColumn.interactions"
-                    @update="updateSelectedCellInteractions"
-                    @open-source="openSelectedColumnSource"
-                  />
+              <ScrollArea class="min-h-0 flex-1">
+                <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
+                  Выберите колонку выше для настройки.
                 </div>
 
-                <section v-show="columnSection === 'sorting'" class="bg-background/15 px-5 py-4">
-                  <div class="grid max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
-                    <div class="overflow-hidden rounded-lg border border-border/70">
-                      <div
-                        v-if="selectedColumn.sortBy?.kind === 'expression'"
-                        class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
-                      >
-                        <FileCode2 class="size-3.5 shrink-0" />
-                        Dynamic sort-by настраивается в Source.
+                <template v-else>
+                  <section v-show="columnSection === 'general'" class="px-5 py-5">
+                    <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-key">Key</Label>
+                        <Input
+                          id="sfc-table-column-key"
+                          v-model="keyDraft"
+                          class="editor-control font-mono"
+                          spellcheck="false"
+                          :disabled="!canEdit(selectedColumn.key)"
+                          @blur="commitAttribute('key', keyDraft)"
+                          @keydown.enter="blurInput"
+                        />
                       </div>
-                      <table v-else class="w-full table-fixed text-xs">
-                        <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
-                          <tr>
-                            <th scope="col" class="w-9 px-1 py-1 text-center font-medium">
-                              #
-                            </th>
-                            <th scope="col" class="px-2 py-1 text-left font-medium">
-                              Цепочка поля
-                            </th>
-                            <th scope="col" class="w-[76px] px-1 py-1 text-center font-medium">
-                              Порядок
-                            </th>
-                            <th scope="col" class="w-8" />
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/60">
-                          <tr v-for="(path, index) in sortPathDrafts" :key="`sort-path-${index}`" class="bg-background/15">
-                            <td class="px-1 text-center font-mono text-[10px] text-muted-foreground">
-                              {{ index + 1 }}
-                            </td>
-                            <td class="p-1">
-                              <Input
-                                v-model="sortPathDrafts[index]"
-                                class="editor-control h-7 border-0 px-2 font-mono text-xs shadow-none focus-visible:ring-1"
-                                placeholder="departureLeg.aircraft.tail"
-                                spellcheck="false"
-                                :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                                @blur="commitColumnSortPath(index)"
-                                @keydown.enter.prevent="commitColumnSortPath(index)"
-                                @keydown.esc.prevent="resetColumnSortPaths"
-                              />
-                            </td>
-                            <td class="p-1">
-                              <div class="flex items-center justify-center gap-0.5">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  class="size-6 text-muted-foreground"
-                                  :disabled="index === 0 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                                  aria-label="Переместить поле выше"
-                                  @click="moveColumnSortPath(index, -1)"
-                                >
-                                  <ArrowUp class="size-3" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  class="size-6 text-muted-foreground"
-                                  :disabled="index === sortPathDrafts.length - 1 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                                  aria-label="Переместить поле ниже"
-                                  @click="moveColumnSortPath(index, 1)"
-                                >
-                                  <ArrowDown class="size-3" />
-                                </Button>
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-title">Отображаемое имя</Label>
+                        <Input
+                          id="sfc-table-column-title"
+                          v-model="titleDraft"
+                          class="editor-control"
+                          :disabled="!canEdit(selectedColumn.title)"
+                          @blur="commitAttribute('title', titleDraft)"
+                          @keydown.enter="blurInput"
+                        />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-width">Ширина</Label>
+                        <Input
+                          id="sfc-table-column-width"
+                          v-model="widthDraft"
+                          class="editor-control"
+                          placeholder="auto"
+                          :disabled="!canEdit(selectedColumn.width)"
+                          @blur="commitAttribute('width', widthDraft)"
+                          @keydown.enter="blurInput"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-show="columnSection === 'data'" class="px-5 py-4">
+                    <div
+                      v-if="cellEditorMode === 'component' || cellEditorMode === 'tag'"
+                      ref="dataSplitContainer"
+                      class="table-data-split flex overflow-hidden rounded-lg border border-border/70"
+                    >
+                      <div
+                        class="editor-control min-w-0 flex-none p-4"
+                        :style="{ flexBasis: `calc((100% - 7px) * ${dataSplitRatioDraft / 100})` }"
+                      >
+                        <div v-if="cellEditorMode === 'component'" class="space-y-2">
+                          <Label>Компонент</Label>
+                          <SearchableSelect
+                            :options="componentSelectOptions"
+                            :model-value="selectedComponentValue"
+                            placeholder="Найти компонент..."
+                            trigger-class="editor-control w-full"
+                            @update:model-value="updateComponent"
+                          />
+                          <p class="text-xs text-muted-foreground">
+                            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : 'Выберите компонент' }}
+                          </p>
+                        </div>
+
+                        <div v-else class="space-y-2">
+                          <Label>Tag</Label>
+                          <SearchableSelect
+                            :options="tagSelectOptions"
+                            :model-value="selectedTagValue"
+                            placeholder="Найти SFC tag..."
+                            trigger-class="editor-control w-full font-mono"
+                            @update:model-value="updateTag"
+                          />
+                          <p class="text-xs text-muted-foreground">
+                            Встроенный renderer-neutral элемент.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        class="table-data-split__separator"
+                        :data-resizing="isDataSplitResizing"
+                        role="separator"
+                        aria-label="Изменить ширину панелей выбора элемента и входных параметров"
+                        aria-orientation="vertical"
+                        :aria-valuenow="Math.round(dataSplitRatioDraft)"
+                        :aria-valuemin="DATA_SPLIT_MIN_RATIO"
+                        :aria-valuemax="DATA_SPLIT_MAX_RATIO"
+                        tabindex="0"
+                        @dblclick="resetDataSplitRatio"
+                        @pointerdown="beginDataSplitResize"
+                        @keydown.stop="resizeDataSplitByKeyboard"
+                      >
+                        <span />
+                      </div>
+
+                      <div class="min-w-0 flex-1 bg-editor-panel">
+                        <div class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] border-b bg-muted/25 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <div>Входной параметр</div>
+                          <div>Значение</div>
+                        </div>
+
+                        <div v-if="cellBindingFields.length" class="divide-y divide-border/60">
+                          <div
+                            v-for="field in cellBindingFields"
+                            :key="field.name"
+                            class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] items-start gap-3 px-3 py-2.5"
+                            :class="!field.optional && !cellBindingDrafts[field.name]?.trim() ? 'bg-amber-500/5' : ''"
+                          >
+                            <div class="min-w-0 pt-1">
+                              <div class="flex min-w-0 items-center gap-1.5">
+                                <code class="truncate text-xs font-medium text-foreground">{{ field.name }}</code>
+                                <span v-if="!field.optional" class="text-xs text-amber-500">*</span>
+                                <Badge v-if="field.sourceOnly" variant="outline" class="h-4 px-1 text-[9px] font-normal">
+                                  Source
+                                </Badge>
                               </div>
-                            </td>
-                            <td class="p-1 text-center">
+                              <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground" :title="field.type">
+                                {{ field.type }}
+                              </div>
+                            </div>
+
+                            <div class="min-w-0">
+                              <div
+                                class="editor-control flex min-w-0 items-center rounded-md border border-border/70 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/30"
+                                :class="cellBindingErrors[field.name] ? 'border-destructive/70' : ''"
+                                @focusout="handleCellBindingFocusOut($event, field.name)"
+                              >
+                                <TooltipProvider :delay-duration="120">
+                                  <Tooltip>
+                                    <TooltipTrigger as-child>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 min-w-7 rounded-r-none border-r px-1.5 font-mono text-[10px]"
+                                        :class="cellBindingKind(field.name) === 'expression' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+                                        aria-label="Динамическое выражение"
+                                        @click="setCellBindingKind(field.name, 'expression')"
+                                      >
+                                        fx
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Dynamic expression: :{{ field.name }}=&quot;row...&quot;</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger as-child>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 min-w-7 rounded-none border-r px-1.5 font-mono text-[10px]"
+                                        :class="cellBindingKind(field.name) === 'literal' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+                                        aria-label="Статическое значение"
+                                        @click="setCellBindingKind(field.name, 'literal')"
+                                      >
+                                        Aa
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Static literal: {{ field.name }}=&quot;value&quot;</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <Input
+                                  v-model="cellBindingDrafts[field.name]"
+                                  class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0"
+                                  :placeholder="cellBindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'"
+                                  spellcheck="false"
+                                  @keydown.enter.prevent="commitCellBinding(field.name)"
+                                  @keydown.esc.prevent="resetCellBinding(field.name)"
+                                />
+                              </div>
+                              <p v-if="cellBindingErrors[field.name]" class="mt-1 text-[10px] leading-tight text-destructive">
+                                {{ cellBindingErrors[field.name] }}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div v-else class="flex min-h-24 items-center justify-center px-4 text-center text-xs text-muted-foreground">
+                          {{ selectedComponentValue || selectedTagValue ? 'У выбранного элемента нет параметров данных.' : 'Выберите элемент слева.' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else
+                      class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-sm font-medium">
+                          Source
+                        </div>
+                        <div class="mt-0.5 text-xs text-muted-foreground">
+                          Содержимое колонки можно изменить вручную без преобразования Visual editor.
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0 gap-1.5"
+                        @click="openSelectedColumnSource"
+                      >
+                        Редактировать в Source
+                        <ExternalLink class="size-3.5" />
+                      </Button>
+                    </div>
+                  </section>
+
+                  <section v-show="columnSection === 'editing'" class="bg-background/15 px-5 py-4">
+                    <div
+                      v-if="!selectedColumn.editing.editable"
+                      class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-sm font-medium">
+                          {{ selectedColumn.editing.enabled ? 'Редактирование включено · Source' : 'Редактирование управляется Source' }}
+                        </div>
+                        <div class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          {{ selectedColumn.editing.message }}
+                        </div>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                        <FileCode2 class="size-3.5" />
+                        Открыть
+                      </Button>
+                    </div>
+
+                    <div v-else>
+                      <div v-if="editingSection === 'editor'" class="space-y-4">
+                        <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
+                          <span class="text-sm font-medium">Сделать редактируемым</span>
+                          <Switch
+                            :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
+                            aria-label="Сделать содержимое ячейки редактируемым"
+                            @update:checked="setSelectedCellEditingEnabled"
+                          />
+                        </div>
+
+                        <ComponentSFCEditableVariantEditor
+                          v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
+                          ref="editableVariantEditorRef"
+                          :editor="selectedColumn.editing.editor"
+                          :implicit="selectedColumn.editing.editorImplicit"
+                          :selecting="selectedCellEditingPending"
+                          :component-options="componentOptions"
+                          @set-component="setSelectedCellEditorComponent"
+                          @set-tag="setSelectedCellEditorTag"
+                          @set-binding="setSelectedCellEditorBinding"
+                          @separate="separateSelectedCellEditor"
+                          @open-source="openSelectedCellEditingSource"
+                        />
+                      </div>
+
+                      <div
+                        v-else-if="!selectedColumn.editing.enabled"
+                        class="editor-control rounded-lg border border-border/70 px-4 py-3 text-sm text-muted-foreground"
+                      >
+                        Сначала включите редактирование в разделе «Редактор».
+                      </div>
+
+                      <div v-else-if="editingSection === 'triggers'" class="space-y-4">
+                        <div class="flex justify-end">
+                          <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
+                            <Plus class="size-3.5" />
+                            Альтернативный trigger
+                          </Button>
+                        </div>
+
+                        <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                          Используется <code>click</code> по умолчанию; атрибут <code>edit-on</code> в Source не требуется.
+                        </div>
+
+                        <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                          <span>Для всех trigger:</span>
+                          <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                        </div>
+
+                        <div class="space-y-3">
+                          <ComponentSFCInteractionBindingEditor
+                            v-for="(trigger, index) in selectedColumn.editing.triggers"
+                            :key="`${index}:${trigger.event}`"
+                            :trigger="trigger"
+                            :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+                            @update:trigger="updateSelectedCellEditTrigger(index, $event)"
+                          >
+                            <template #actions>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
                                 class="size-7 text-muted-foreground hover:text-destructive"
-                                :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                                aria-label="Удалить цепочку"
-                                @click="removeColumnSortPath(index)"
+                                :aria-label="selectedColumn.editing.triggers.length === 1 ? 'Вернуть click по умолчанию' : 'Удалить альтернативный trigger'"
+                                @click="removeSelectedCellEditTrigger(index)"
                               >
                                 <Trash2 class="size-3.5" />
                               </Button>
-                            </td>
-                          </tr>
-                          <tr v-if="!sortPathDrafts.length">
-                            <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
-                              Используется key колонки: <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <div v-if="selectedColumn.sortBy?.kind !== 'expression'" class="border-t border-border/60 p-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          class="h-7 w-full justify-start gap-1.5 text-xs text-muted-foreground"
-                          :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                          @click="addColumnSortPath"
-                        >
-                          <Plus class="size-3.5" />
-                          Добавить цепочку
-                        </Button>
+                            </template>
+                          </ComponentSFCInteractionBindingEditor>
+                        </div>
+
+                        <ComponentSFCEditOutcomeEditor
+                          :cancel="selectedColumn.editing.cancel"
+                          :commit="selectedColumn.editing.commit"
+                          @update-cancel="setSelectedCellCancelTriggers"
+                          @update-commit="setSelectedCellCommitTriggers"
+                        />
                       </div>
-                    </div>
 
-                    <aside class="overflow-hidden rounded-lg border border-border/70 bg-muted/10">
-                      <div class="p-3">
-                        <Label class="text-xs">Направление</Label>
-                        <TooltipProvider :delay-duration="120">
-                          <div class="mt-2 space-y-2">
-                            <div
-                              class="editor-control inline-flex h-8 items-center rounded-md border border-border/70 p-0.5"
-                              role="group"
-                              aria-label="Сортировка колонки по умолчанию"
-                            >
-                              <Tooltip>
-                                <TooltipTrigger as-child>
-                                  <span>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      class="h-7 min-w-9 px-2"
-                                      :class="columnSortDirection(selectedColumn) == null ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                      :disabled="Boolean(columnSortEditingHint(selectedColumn))"
-                                      aria-label="Без сортировки по умолчанию"
-                                      @click="setColumnDefaultSort(selectedColumn.index, null)"
-                                    >
-                                      —
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>{{ columnSortEditingHint(selectedColumn) ?? 'Без сортировки по умолчанию' }}</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger as-child>
-                                  <span>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      class="h-7 min-w-11 px-2 text-[10px] font-semibold"
-                                      :class="columnSortDirection(selectedColumn) === 'asc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                      :disabled="!canSetColumnSortDirection(selectedColumn)"
-                                      @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
-                                    >
-                                      ASC
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По возрастанию' }}</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger as-child>
-                                  <span>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      class="h-7 min-w-11 px-2 text-[10px] font-semibold"
-                                      :class="columnSortDirection(selectedColumn) === 'desc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
-                                      :disabled="!canSetColumnSortDirection(selectedColumn)"
-                                      @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
-                                    >
-                                      DESC
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По убыванию' }}</TooltipContent>
-                              </Tooltip>
+                      <div v-else class="space-y-2">
+                        <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
+                          <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                            <span>Для edited:</span>
+                            <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                          </div>
+                          <ComponentSFCReactionEditor
+                            ref="editedReactionEditorRef"
+                            :model-value="selectedColumn.editing.reaction.source"
+                            event-name="edited"
+                            variant="section"
+                            @save="setSelectedCellEditedReaction"
+                          />
+                        </div>
+
+                        <div
+                          v-else
+                          class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                        >
+                          <div class="min-w-0">
+                            <div class="text-sm font-medium">
+                              Reaction управляется Source
                             </div>
-
-                            <div v-if="columnSortPriority(selectedColumn) != null" class="flex items-center gap-1">
-                              <span class="mr-auto text-[10px] text-muted-foreground">Приоритет</span>
-                              <Badge variant="outline" class="h-7 min-w-7 justify-center px-1 font-mono text-[10px]">
-                                #{{ columnSortPriority(selectedColumn) }}
-                              </Badge>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                class="size-7 text-muted-foreground"
-                                :disabled="columnSortPriority(selectedColumn) === 1"
-                                aria-label="Повысить приоритет сортировки"
-                                @click="moveColumnSortPriority(selectedColumn.index, -1)"
-                              >
-                                <ChevronLeft class="size-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                class="size-7 text-muted-foreground"
-                                :disabled="columnSortPriority(selectedColumn) === defaultSortItems.length"
-                                aria-label="Понизить приоритет сортировки"
-                                @click="moveColumnSortPriority(selectedColumn.index, 1)"
-                              >
-                                <ChevronRight class="size-3.5" />
-                              </Button>
+                            <div class="mt-0.5 text-xs text-muted-foreground">
+                              {{ selectedColumn.editing.reaction.message }}
                             </div>
                           </div>
-                        </TooltipProvider>
+                          <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                            <FileCode2 class="size-3.5" />
+                            Открыть
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div v-show="columnSection === 'events'">
+                    <ComponentSFCCellInteractionsEditor
+                      ref="cellInteractionsEditorRef"
+                      :model-value="selectedColumn.interactions"
+                      @update="updateSelectedCellInteractions"
+                      @open-source="openSelectedColumnSource"
+                    />
+                  </div>
+
+                  <section v-show="columnSection === 'sorting'" class="bg-background/15 px-5 py-4">
+                    <div class="grid max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
+                      <div class="overflow-hidden rounded-lg border border-border/70">
+                        <div
+                          v-if="selectedColumn.sortBy?.kind === 'expression'"
+                          class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
+                        >
+                          <FileCode2 class="size-3.5 shrink-0" />
+                          Dynamic sort-by настраивается в Source.
+                        </div>
+                        <table v-else class="w-full table-fixed text-xs">
+                          <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <tr>
+                              <th scope="col" class="w-9 px-1 py-1 text-center font-medium">
+                                #
+                              </th>
+                              <th scope="col" class="px-2 py-1 text-left font-medium">
+                                Цепочка поля
+                              </th>
+                              <th scope="col" class="w-[76px] px-1 py-1 text-center font-medium">
+                                Порядок
+                              </th>
+                              <th scope="col" class="w-8" />
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-border/60">
+                            <tr v-for="(path, index) in sortPathDrafts" :key="`sort-path-${index}`" class="bg-background/15">
+                              <td class="px-1 text-center font-mono text-[10px] text-muted-foreground">
+                                {{ index + 1 }}
+                              </td>
+                              <td class="p-1">
+                                <Input
+                                  v-model="sortPathDrafts[index]"
+                                  class="editor-control h-7 border-0 px-2 font-mono text-xs shadow-none focus-visible:ring-1"
+                                  placeholder="departureLeg.aircraft.tail"
+                                  spellcheck="false"
+                                  :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  @blur="commitColumnSortPath(index)"
+                                  @keydown.enter.prevent="commitColumnSortPath(index)"
+                                  @keydown.esc.prevent="resetColumnSortPaths"
+                                />
+                              </td>
+                              <td class="p-1">
+                                <div class="flex items-center justify-center gap-0.5">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-6 text-muted-foreground"
+                                    :disabled="index === 0 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                    aria-label="Переместить поле выше"
+                                    @click="moveColumnSortPath(index, -1)"
+                                  >
+                                    <ArrowUp class="size-3" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-6 text-muted-foreground"
+                                    :disabled="index === sortPathDrafts.length - 1 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                    aria-label="Переместить поле ниже"
+                                    @click="moveColumnSortPath(index, 1)"
+                                  >
+                                    <ArrowDown class="size-3" />
+                                  </Button>
+                                </div>
+                              </td>
+                              <td class="p-1 text-center">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-7 text-muted-foreground hover:text-destructive"
+                                  :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  aria-label="Удалить цепочку"
+                                  @click="removeColumnSortPath(index)"
+                                >
+                                  <Trash2 class="size-3.5" />
+                                </Button>
+                              </td>
+                            </tr>
+                            <tr v-if="!sortPathDrafts.length">
+                              <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
+                                Используется key колонки: <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div v-if="selectedColumn.sortBy?.kind !== 'expression'" class="border-t border-border/60 p-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            class="h-7 w-full justify-start gap-1.5 text-xs text-muted-foreground"
+                            :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                            @click="addColumnSortPath"
+                          >
+                            <Plus class="size-3.5" />
+                            Добавить цепочку
+                          </Button>
+                        </div>
                       </div>
 
-                      <div class="border-t border-border/70 p-3">
-                        <Label for="sfc-table-column-sort-comparator" class="text-xs">Сравнение</Label>
-                        <Select
-                          :model-value="selectedColumnSortComparator"
-                          :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
-                          @update:model-value="value => updateColumnSortComparator(value == null ? null : String(value))"
-                        >
-                          <SelectTrigger id="sfc-table-column-sort-comparator" class="editor-control mt-2 h-8 w-full text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem v-for="option in SORT_COMPARATOR_OPTIONS" :key="option.value" :value="option.value">
-                              {{ option.label }}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </aside>
-                  </div>
-                </section>
+                      <aside class="overflow-hidden rounded-lg border border-border/70 bg-muted/10">
+                        <div class="p-3">
+                          <Label class="text-xs">Направление</Label>
+                          <TooltipProvider :delay-duration="120">
+                            <div class="mt-2 space-y-2">
+                              <div
+                                class="editor-control inline-flex h-8 items-center rounded-md border border-border/70 p-0.5"
+                                role="group"
+                                aria-label="Сортировка колонки по умолчанию"
+                              >
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-9 px-2"
+                                        :class="columnSortDirection(selectedColumn) == null ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="Boolean(columnSortEditingHint(selectedColumn))"
+                                        aria-label="Без сортировки по умолчанию"
+                                        @click="setColumnDefaultSort(selectedColumn.index, null)"
+                                      >
+                                        —
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortEditingHint(selectedColumn) ?? 'Без сортировки по умолчанию' }}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                        :class="columnSortDirection(selectedColumn) === 'asc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                        @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
+                                      >
+                                        ASC
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По возрастанию' }}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                        :class="columnSortDirection(selectedColumn) === 'desc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                        @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
+                                      >
+                                        DESC
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По убыванию' }}</TooltipContent>
+                                </Tooltip>
+                              </div>
+
+                              <div v-if="columnSortPriority(selectedColumn) != null" class="flex items-center gap-1">
+                                <span class="mr-auto text-[10px] text-muted-foreground">Приоритет</span>
+                                <Badge variant="outline" class="h-7 min-w-7 justify-center px-1 font-mono text-[10px]">
+                                  #{{ columnSortPriority(selectedColumn) }}
+                                </Badge>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  class="size-7 text-muted-foreground"
+                                  :disabled="columnSortPriority(selectedColumn) === 1"
+                                  aria-label="Повысить приоритет сортировки"
+                                  @click="moveColumnSortPriority(selectedColumn.index, -1)"
+                                >
+                                  <ChevronLeft class="size-3.5" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  class="size-7 text-muted-foreground"
+                                  :disabled="columnSortPriority(selectedColumn) === defaultSortItems.length"
+                                  aria-label="Понизить приоритет сортировки"
+                                  @click="moveColumnSortPriority(selectedColumn.index, 1)"
+                                >
+                                  <ChevronRight class="size-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </TooltipProvider>
+                        </div>
+
+                        <div class="border-t border-border/70 p-3">
+                          <Label for="sfc-table-column-sort-comparator" class="text-xs">Сравнение</Label>
+                          <Select
+                            :model-value="selectedColumnSortComparator"
+                            :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                            @update:model-value="value => updateColumnSortComparator(value == null ? null : String(value))"
+                          >
+                            <SelectTrigger id="sfc-table-column-sort-comparator" class="editor-control mt-2 h-8 w-full text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem v-for="option in SORT_COMPARATOR_OPTIONS" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </aside>
+                    </div>
+                  </section>
 
                   <section v-show="columnSection === 'cell-menu'" class="px-5 py-4">
                     <ComponentSFCTableMenuPreviewEditor
@@ -3975,10 +3993,10 @@ onBeforeUnmount(() => {
                       @open-source="item => openMenuSource('row', item, selectedColumnMenuIndex)"
                     />
                   </section>
-                  </template>
-                </ScrollArea>
-              </div>
-            </SettingsNavigationPanel>
+                </template>
+              </ScrollArea>
+            </div>
+          </SettingsNavigationPanel>
         </div>
       </TabsContent>
     </Tabs>

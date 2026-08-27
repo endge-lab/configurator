@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { duplicateEntity } from '@/features/endge-ide/model/domain/domain-duplicate'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 export interface DuplicateSourcePayload {
   id: string
@@ -51,7 +51,9 @@ async function onSubmit(): Promise<void> {
     toast.error('Введите идентификатор (identity)')
     return
   }
-  if (!props.source) return
+  if (!props.source) {
+    return
+  }
   loading.value = true
   try {
     await duplicateEntity(

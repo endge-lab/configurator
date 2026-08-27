@@ -1,10 +1,4 @@
 import type {
-  DocumentDependencyDiagnostic,
-  DocumentDependencyNode,
-  DocumentDependencyTreeInput,
-  DocumentDependencyTreeResult,
-} from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
-import type {
   ComponentSFCCompileResult,
   DataViewProgramPayload,
   DataViewRef,
@@ -16,6 +10,12 @@ import type {
   StoreSourceArtifact,
   TypeSourceDefinition,
 } from '@endge/core'
+import type {
+  DocumentDependencyDiagnostic,
+  DocumentDependencyNode,
+  DocumentDependencyTreeInput,
+  DocumentDependencyTreeResult,
+} from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 
 import {
   compileComponentSFC,
@@ -454,16 +454,20 @@ function extractArtifactDependencies(
     const profile = payload.provider?.auth?.mode === 'profile'
       ? String(payload.provider.auth.profile ?? '').trim()
       : ''
-    if (profile)
+    if (profile) {
       dependencies.push(makeDependency('auth-profile', profile, 'vocab-provider-auth'))
-    if (payload.mock?.identity)
+    }
+    if (payload.mock?.identity) {
       dependencies.push(makeDependency('mock', payload.mock.identity, 'vocab-mock'))
+    }
     for (const output of payload.outputs ?? []) {
       for (const transform of output.transforms ?? []) {
-        if (transform.kind === 'converter')
+        if (transform.kind === 'converter') {
           dependencies.push(makeDependency('converter', transform.identity, 'output-converter'))
-        else if (transform.ref?.kind === 'external')
+        }
+        else if (transform.ref?.kind === 'external') {
           dependencies.push(makeDependency('data-view', transform.ref.identity, 'output-data-view'))
+        }
       }
     }
   }

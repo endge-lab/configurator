@@ -2,8 +2,8 @@ import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 
-import { resolveEndgeIDEDocument } from '@/features/endge-ide/model/modules/tabs/endge-ide-restored-document-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/model/domain/domain-entity-presentation'
+import { resolveEndgeIDEDocument } from '@/features/endge-ide/model/modules/tabs/endge-ide-restored-document-tabs'
 
 interface DomainDocumentLocation {
   identity?: unknown

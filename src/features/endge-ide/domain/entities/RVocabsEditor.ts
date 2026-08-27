@@ -67,7 +67,8 @@ export class RVocabsEditor {
 }
 
 function normalizeAuthMode(value: unknown): 'inherit' | 'profile' | 'none' {
-  if (value === 'profile' || value === 'none')
+  if (value === 'profile' || value === 'none') {
     return value
+  }
   return 'inherit'
 }

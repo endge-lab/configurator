@@ -5,7 +5,7 @@ import {
   SFCPreviewSession,
 } from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
 
-describe('ComponentSFC port preview', () => {
+describe('componentSFC port preview', () => {
   let preview: SFCPreviewSession
 
   beforeEach(() => prepareCompilerContext())

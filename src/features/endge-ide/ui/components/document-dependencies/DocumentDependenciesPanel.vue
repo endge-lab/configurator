@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { DomainDocumentType } from '@endge/core'
 import type {
   DocumentDependencyNode,
   DocumentDependencyTreeResult,
 } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
-import type { DomainDocumentType } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import { GitFork, Network, TriangleAlert } from 'lucide-vue-next'
@@ -23,12 +23,12 @@ import {
   buildCompositionDependencyHierarchy,
   buildCompositionDependencyTree,
 } from '@/features/endge-ide/model/composition-dependencies/composition-dependency-tree'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import {
   buildDocumentDependencyHierarchy,
   buildDocumentDependencyTree,
 } from '@/features/endge-ide/model/document-dependencies/document-dependency-graph'
 import { countDocumentDependencies } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
 
 const props = defineProps<{

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { buildDocumentDependencyTree } from '@/features/endge-ide/model/document-dependencies/document-dependency-graph'
 
-describe('Action dependency graph', () => {
+describe('action dependency graph', () => {
   afterEach(() => {
     Endge.program.clear()
     Endge.domain.reset()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import { Endge } from '@endge/core'
+import { ref, watch } from 'vue'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{ modelValue: string, readOnly?: boolean }>()
@@ -12,7 +12,9 @@ const monaco = useEndgeSourceMonaco({
   sourceKind: 'action',
   value: () => source.value,
   onChange: (value) => {
-    if (props.readOnly) return
+    if (props.readOnly) {
+      return
+    }
     source.value = value
     emit('update:modelValue', value)
   },

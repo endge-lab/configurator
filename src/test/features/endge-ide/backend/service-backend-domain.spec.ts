@@ -1,13 +1,13 @@
 import type {
   ServiceBackendDomainError,
-} from '@/features/endge-ide/model/backend/ServiceBackendDomain_Service'
+} from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
 
 import { ENDGE_DOMAIN_BUNDLE_VERSION } from '@endge/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  ServiceBackendDomain_Service,
-} from '@/features/endge-ide/model/backend/ServiceBackendDomain_Service'
+  ServiceBackendDomainHttp_Adapter,
+} from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
 
 const DOCUMENT_KEYS = [
   'projects',
@@ -70,7 +70,7 @@ describe('serviceBackendDomain_Service', () => {
     }))
     vi.stubGlobal('fetch', fetchMock)
     const unauthorized = vi.fn()
-    const service = new ServiceBackendDomain_Service('https://backend.test/', unauthorized)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test/', unauthorized)
 
     await expect(service.loadWorkspace({
       workspaceIdentity: 'workspace-a',
@@ -94,19 +94,28 @@ describe('serviceBackendDomain_Service', () => {
 
   it('updates a document with cookie, workspace and optimistic revision', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      identity: 'query-a', displayName: 'Query A', source: 'query {}', sourceVersion: 2,
-      id: 'document-id', revision: 4, deletedAt: null,
-    }), { status: 200, headers: { 'Content-Type': 'application/json', ETag: '"4"' } }))
+      identity: 'query-a',
+      displayName: 'Query A',
+      source: 'query {}',
+      sourceVersion: 2,
+      id: 'document-id',
+      revision: 4,
+      deletedAt: null,
+    }), { status: 200, headers: { 'Content-Type': 'application/json', 'ETag': '"4"' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn(), true)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn(), true)
 
     const result = await service.updateDocument({
-      workspaceIdentity: 'workspace-a', collection: 'queries', identity: 'query-a',
-      expectedRevision: 3, document: { identity: 'query-a', displayName: 'Query A', source: 'query {}', sourceVersion: 2 },
+      workspaceIdentity: 'workspace-a',
+      collection: 'queries',
+      identity: 'query-a',
+      expectedRevision: 3,
+      document: { identity: 'query-a', displayName: 'Query A', source: 'query {}', sourceVersion: 2 },
     })
 
     expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/queries/query-a', expect.objectContaining({
-      method: 'PATCH', credentials: 'include',
+      method: 'PATCH',
+      credentials: 'include',
       headers: expect.objectContaining({ 'X-Endge-Workspace': 'workspace-a', 'If-Match': '"3"' }),
     }))
     expect(result.document.state).toMatchObject({ id: 'document-id', revision: 4 })
@@ -128,7 +137,7 @@ describe('serviceBackendDomain_Service', () => {
       moved: 2,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn(), true)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn(), true)
 
     const result = await service.moveDocuments({
       workspaceIdentity: 'workspace-a',
@@ -162,7 +171,7 @@ describe('serviceBackendDomain_Service', () => {
     }), { status: 403, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
     const unauthorized = vi.fn()
-    const service = new ServiceBackendDomain_Service('https://backend.test', unauthorized)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', unauthorized)
 
     await expect(service.loadWorkspace({ workspaceIdentity: 'workspace-a' })).rejects.toMatchObject({
       code: 'workspace_forbidden',
@@ -178,7 +187,7 @@ describe('serviceBackendDomain_Service', () => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })))
-    const service = new ServiceBackendDomain_Service('https://backend.test', vi.fn())
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn())
 
     await expect(service.loadWorkspace({ workspaceIdentity: 'workspace-a' })).rejects.toMatchObject({
       code: 'snapshot_invalid',

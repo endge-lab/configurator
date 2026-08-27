@@ -5,11 +5,11 @@ import type {
   EndgeConfiguration,
   EndgeConfigurationContribution,
   EndgeConfigurationPatch,
+  EndgeConfigurationSchemaEntry,
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsConfigurationPatch,
-  EndgeTooltipConfiguration,
   EndgeJSONValue,
-  EndgeConfigurationSchemaEntry,
+  EndgeTooltipConfiguration,
 } from '@endge/core'
 
 import { applyEndgeConfigurationContribution, Endge, validateConfigurationValue } from '@endge/core'
@@ -33,9 +33,9 @@ import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
 import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
 
-import ConfigValueEditor from './ConfigValueEditor.vue'
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
+import ConfigValueEditor from './ConfigValueEditor.vue'
 import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
 
@@ -47,7 +47,7 @@ type ConfigurationSection = SystemConfigurationSection | `configuration:${string
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
 type TooltipField = keyof EndgeTooltipConfiguration
-type ConfigurationValueIssue = {
+interface ConfigurationValueIssue {
   identity: string
   key: string
   kind: 'stale' | 'invalid'
@@ -71,7 +71,16 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
   [
-    'general', 'environment', 'ui', 'editing', 'tooltips', 'auth', 'locales', 'themes', 'timezones', 'diagnostics',
+    'general',
+    'environment',
+    'ui',
+    'editing',
+    'tooltips',
+    'auth',
+    'locales',
+    'themes',
+    'timezones',
+    'diagnostics',
     ...Endge.configurationSchema.list().map(item => `configuration:${item.identity}` as const),
   ],
 )
@@ -167,7 +176,9 @@ const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
         .map(([key, operation]) => [key, operation.op === 'set' ? operation.value : null]))
     }
   }
-  else Object.assign(authored, editableConfiguration.value.values ?? {})
+  else {
+    Object.assign(authored, editableConfiguration.value.values ?? {})
+  }
 
   const issues: ConfigurationValueIssue[] = []
   for (const [identity, fields] of Object.entries(authored)) {
@@ -187,7 +198,9 @@ const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
 })
 
 function openConfigurationDocument(identity: string): void {
-  if (Endge.domain.getConfiguration(identity)) EndgeIDE.tabs.openDocument(identity, 'configuration')
+  if (Endge.domain.getConfiguration(identity)) {
+    EndgeIDE.tabs.openDocument(identity, 'configuration')
+  }
 }
 const editingSections = [
   {
@@ -222,8 +235,9 @@ const editableConfiguration = computed(() => props.variant === 'root'
     ? contribution.value.value
     : props.upstream!)
 const effective = computed(() => {
-  if (props.variant === 'root')
+  if (props.variant === 'root') {
     return props.modelValue as EndgeConfiguration
+  }
   return applyEndgeConfigurationContribution(props.upstream!, props.modelValue as EndgeConfigurationContribution)
 })
 
@@ -290,10 +304,16 @@ function enableConfigurationValueOverride(identity: string, key: string, fallbac
 
 function resetConfigurationValueOverride(identity: string, key: string): void {
   const values = patch.value?.values
-  if (!values?.[identity]) return
+  if (!values?.[identity]) {
+    return
+  }
   delete values[identity][key]
-  if (!Object.keys(values[identity]).length) delete values[identity]
-  if (!Object.keys(values).length) delete patch.value!.values
+  if (!Object.keys(values[identity]).length) {
+    delete values[identity]
+  }
+  if (!Object.keys(values).length) {
+    delete patch.value!.values
+  }
   notifyRootMutation()
 }
 
@@ -324,8 +344,9 @@ function enableScalar(name: ScalarName): void {
 }
 
 function resetScalar(name: ScalarName): void {
-  if (patch.value)
+  if (patch.value) {
     delete (patch.value as Record<string, unknown>)[name]
+  }
   notifyRootMutation()
 }
 
@@ -410,9 +431,13 @@ function enableTooltipOverride(name: TooltipField): void {
 }
 
 function resetTooltipOverride(name: TooltipField): void {
-  if (!patch.value?.tooltips) return
+  if (!patch.value?.tooltips) {
+    return
+  }
   delete patch.value.tooltips[name]
-  if (!Object.keys(patch.value.tooltips).length) delete patch.value.tooltips
+  if (!Object.keys(patch.value.tooltips).length) {
+    delete patch.value.tooltips
+  }
   notifyRootMutation()
 }
 
@@ -421,8 +446,9 @@ function setTooltipValue(name: TooltipField, value: string | number): void {
     ? Math.max(0, Math.min(60_000, Number(value) || 0))
     : value
   if (isInherit.value) {
-    if (!hasTooltipOverride(name)) return
-    ;(patch.value!.tooltips as any)[name] = { op: 'set', value: normalized }
+    if (!hasTooltipOverride(name)) {
+      return
+    }(patch.value!.tooltips as any)[name] = { op: 'set', value: normalized }
   }
   else {
     ;(editableConfiguration.value.tooltips as any)[name] = normalized
@@ -453,23 +479,38 @@ function setTooltipKeyboard(value: ComponentSFCInteractionKeyboardCondition | nu
 }
 
 function collectionRows(name: CollectionName): any[] {
-  if (!isInherit.value)
+  if (!isInherit.value) {
     return editableConfiguration.value[name] as any[]
+  }
   return (patch.value?.[name]?.entries ?? []) as any[]
 }
 
 function createCollectionValue(name: CollectionName, index: number): unknown {
-  if (name === 'vars') return { name: `ENV_VAR_${index + 1}`, defaultValue: '' }
-  if (name === 'locales') return { code: `locale-${index + 1}`, displayName: '', shortLabel: '', direction: 'ltr' }
-  if (name === 'themes') return { identity: `theme-${index + 1}`, displayName: '' }
-  if (name === 'timezones') return { identity: index === 0 ? 'UTC' : `Etc/GMT${index}`, displayName: '' }
+  if (name === 'vars') {
+    return { name: `ENV_VAR_${index + 1}`, defaultValue: '' }
+  }
+  if (name === 'locales') {
+    return { code: `locale-${index + 1}`, displayName: '', shortLabel: '', direction: 'ltr' }
+  }
+  if (name === 'themes') {
+    return { identity: `theme-${index + 1}`, displayName: '' }
+  }
+  if (name === 'timezones') {
+    return { identity: index === 0 ? 'UTC' : `Etc/GMT${index}`, displayName: '' }
+  }
   return `adapter-${index + 1}`
 }
 
 function collectionKey(name: CollectionName, value: any): string {
-  if (name === 'vars') return String(value?.name ?? '')
-  if (name === 'locales') return String(value?.code ?? '')
-  if (name === 'themes' || name === 'timezones') return String(value?.identity ?? '')
+  if (name === 'vars') {
+    return String(value?.name ?? '')
+  }
+  if (name === 'locales') {
+    return String(value?.code ?? '')
+  }
+  if (name === 'themes' || name === 'timezones') {
+    return String(value?.identity ?? '')
+  }
   return String(value ?? '')
 }
 
@@ -509,10 +550,12 @@ function addCollectionValue(name: CollectionName): void {
 }
 
 function removeCollectionRow(name: CollectionName, index: number): void {
-  if (isInherit.value)
+  if (isInherit.value) {
     ensureCollectionPatch(name).entries.splice(index, 1)
-  else
-    ;(editableConfiguration.value[name] as any[]).splice(index, 1)
+  }
+  else {
+    ;
+  }(editableConfiguration.value[name] as any[]).splice(index, 1)
   notifyRootMutation()
 }
 
@@ -540,12 +583,19 @@ function toggleCollectionRowExclusion(name: CollectionName, row: any): void {
 
 function updateEntryKey(name: CollectionName, entry: any, value: string): void {
   entry.key = value
-  if (entry.op !== 'upsert')
+  if (entry.op !== 'upsert') {
     return
-  if (name === 'vars') entry.value.name = value
-  else if (name === 'locales') entry.value.code = value
-  else if (name === 'themes' || name === 'timezones') entry.value.identity = value
-  else entry.value = value
+  }
+  if (name === 'vars') {
+    entry.value.name = value
+  }
+  else if (name === 'locales') {
+    entry.value.code = value
+  }
+  else if (name === 'themes' || name === 'timezones') {
+    entry.value.identity = value
+  }
+  else { entry.value = value }
   notifyRootMutation()
 }
 
@@ -661,19 +711,31 @@ function isEqual(left: unknown, right: unknown): boolean {
         </p>
       </div>
       <Select :model-value="contribution?.mode" :disabled="disabled" @update:model-value="setContributionMode(String($event))">
-        <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
+        <SelectTrigger class="w-full bg-background">
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
-          <SelectItem value="inherit">Наследовать и уточнить</SelectItem>
-          <SelectItem value="replace">Полностью заменить</SelectItem>
+          <SelectItem value="inherit">
+            Наследовать и уточнить
+          </SelectItem>
+          <SelectItem value="replace">
+            Полностью заменить
+          </SelectItem>
         </SelectContent>
       </Select>
     </section>
 
     <section v-if="configurationValueIssues.length" class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3">
-      <p class="text-sm font-semibold">Проблемы пользовательской конфигурации</p>
+      <p class="text-sm font-semibold">
+        Проблемы пользовательской конфигурации
+      </p>
       <div v-for="issue in configurationValueIssues" :key="`${issue.identity}.${issue.key}`" class="mt-2 flex items-start justify-between gap-3 text-xs">
-        <div data-copyable><code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span></div>
-        <Button v-if="Endge.domain.getConfiguration(issue.identity)" type="button" size="sm" variant="ghost" class="h-6 px-2" @click="openConfigurationDocument(issue.identity)">Открыть</Button>
+        <div data-copyable>
+          <code>{{ issue.identity }}.{{ issue.key }}</code><span class="ml-2" :class="issue.kind === 'invalid' ? 'text-destructive' : 'text-muted-foreground'">{{ issue.message }}</span>
+        </div>
+        <Button v-if="Endge.domain.getConfiguration(issue.identity)" type="button" size="sm" variant="ghost" class="h-6 px-2" @click="openConfigurationDocument(issue.identity)">
+          Открыть
+        </Button>
       </div>
     </section>
 
@@ -738,7 +800,9 @@ function isEqual(left: unknown, right: unknown): boolean {
       <div class="contents">
         <div class="border-b border-border/70 px-4 py-3 lg:hidden">
           <Select :model-value="activeSection" @update:model-value="setActiveSection">
-            <SelectTrigger class="w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectTrigger class="w-full bg-background">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <template v-for="(section, index) in sections" :key="section.id">
                 <SelectSeparator v-if="index === systemSections.length" />
@@ -749,7 +813,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             </SelectContent>
           </Select>
           <Select v-if="activeSection === 'editing'" :model-value="editingSection" @update:model-value="setEditingSection">
-            <SelectTrigger class="mt-2 w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectTrigger class="mt-2 w-full bg-background">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="editingItem in editingSections" :key="editingItem.id" :value="editingItem.id">
                 {{ editingItem.label }}
@@ -757,7 +823,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             </SelectContent>
           </Select>
           <Select v-if="activeSection === 'tooltips'" :model-value="tooltipSection" @update:model-value="setTooltipSection">
-            <SelectTrigger class="mt-2 w-full bg-background"><SelectValue /></SelectTrigger>
+            <SelectTrigger class="mt-2 w-full bg-background">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="tooltipItem in tooltipSections" :key="tooltipItem.id" :value="tooltipItem.id">
                 {{ tooltipItem.label }}
@@ -778,8 +846,12 @@ function isEqual(left: unknown, right: unknown): boolean {
             class="m-0 space-y-5 p-5 outline-none"
           >
             <div>
-              <h3 class="text-base font-semibold tracking-tight text-foreground">{{ category.displayName }}</h3>
-              <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">{{ category.description }}</p>
+              <h3 class="text-base font-semibold tracking-tight text-foreground">
+                {{ category.displayName }}
+              </h3>
+              <p v-if="category.description" class="mt-1 text-xs leading-5 text-muted-foreground">
+                {{ category.description }}
+              </p>
               <code data-copyable class="mt-1 block text-[10px] text-muted-foreground">$context.config.{{ category.identity }}</code>
             </div>
             <div class="divide-y divide-border/60 border-t border-border/60">
@@ -796,7 +868,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                   @reset="resetConfigurationValueOverride(category.identity, field.key)"
                 >
                   <template #default="{ disabled: fieldDisabled }">
-                    <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">{{ field.description }}</p>
+                    <p v-if="field.description" class="mb-2 text-xs text-muted-foreground">
+                      {{ field.description }}
+                    </p>
                     <ConfigValueEditor
                       :model-value="configurationValue(category.identity, field.key, field.defaultValue)"
                       :type="field.type"
@@ -877,7 +951,9 @@ function isEqual(left: unknown, right: unknown): boolean {
 
           <TabsContent value="editing" class="m-0 space-y-5 p-5 outline-none">
             <div>
-              <h3 class="text-sm font-semibold text-foreground">{{ activeEditingSection.label }}</h3>
+              <h3 class="text-sm font-semibold text-foreground">
+                {{ activeEditingSection.label }}
+              </h3>
               <p class="mt-1 text-xs leading-5 text-muted-foreground">
                 {{ activeEditingSection.description }}
               </p>
@@ -905,8 +981,12 @@ function isEqual(left: unknown, right: unknown): boolean {
           <TabsContent value="tooltips" class="m-0 p-5 outline-none">
             <div v-if="tooltipSection === 'ui'" class="space-y-5">
               <div>
-                <h3 class="text-sm font-semibold text-foreground">Настройки UI</h3>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">Положение и задержки единого tooltip overlay.</p>
+                <h3 class="text-sm font-semibold text-foreground">
+                  Настройки UI
+                </h3>
+                <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                  Положение и задержки единого tooltip overlay.
+                </p>
               </div>
 
               <div class="grid gap-4 md:grid-cols-2">
@@ -915,10 +995,18 @@ function isEqual(left: unknown, right: unknown): boolean {
                     <Select :model-value="String(tooltipValue('side'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('side', String($event))">
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="top">Сверху</SelectItem>
-                        <SelectItem value="right">Справа</SelectItem>
-                        <SelectItem value="bottom">Снизу</SelectItem>
-                        <SelectItem value="left">Слева</SelectItem>
+                        <SelectItem value="top">
+                          Сверху
+                        </SelectItem>
+                        <SelectItem value="right">
+                          Справа
+                        </SelectItem>
+                        <SelectItem value="bottom">
+                          Снизу
+                        </SelectItem>
+                        <SelectItem value="left">
+                          Слева
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </template>
@@ -929,9 +1017,15 @@ function isEqual(left: unknown, right: unknown): boolean {
                     <Select :model-value="String(tooltipValue('align'))" :disabled="disabled || fieldDisabled" @update:model-value="setTooltipValue('align', String($event))">
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="start">По началу</SelectItem>
-                        <SelectItem value="center">По центру</SelectItem>
-                        <SelectItem value="end">По концу</SelectItem>
+                        <SelectItem value="start">
+                          По началу
+                        </SelectItem>
+                        <SelectItem value="center">
+                          По центру
+                        </SelectItem>
+                        <SelectItem value="end">
+                          По концу
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </template>
@@ -953,8 +1047,12 @@ function isEqual(left: unknown, right: unknown): boolean {
 
             <div v-else class="space-y-5">
               <div>
-                <h3 class="text-sm font-semibold text-foreground">Триггер</h3>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">Условие на состояние клавиатуры при наведении или фокусе.</p>
+                <h3 class="text-sm font-semibold text-foreground">
+                  Триггер
+                </h3>
+                <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                  Условие на состояние клавиатуры при наведении или фокусе.
+                </p>
               </div>
 
               <ConfigurationOverrideField label="Клавиатурное условие появления" :uses-parent-value="isInherit" :overridden="hasTooltipOverride('keyboard')" @enable="enableTooltipOverride('keyboard')" @reset="resetTooltipOverride('keyboard')">
@@ -966,7 +1064,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                       :disabled="disabled || fieldDisabled"
                       @update:condition="setTooltipKeyboard"
                     />
-                    <p class="text-xs text-muted-foreground">Если условие не задано, тултип появляется при обычном наведении или фокусе. Можно записать физическую комбинацию либо настроить её вручную.</p>
+                    <p class="text-xs text-muted-foreground">
+                      Если условие не задано, тултип появляется при обычном наведении или фокусе. Можно записать физическую комбинацию либо настроить её вручную.
+                    </p>
                   </div>
                 </template>
               </ConfigurationOverrideField>
@@ -975,66 +1075,90 @@ function isEqual(left: unknown, right: unknown): boolean {
 
           <TabsContent value="auth" class="m-0 p-5 outline-none">
             <ConfigurationOverrideField label="Профиль авторизации по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultAuthProfileIdentity')" @enable="enableScalar('defaultAuthProfileIdentity')" @reset="resetScalar('defaultAuthProfileIdentity')">
-              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" /></template>
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                <Input :model-value="scalarValue('defaultAuthProfileIdentity')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : 'Не задан'" @update:model-value="setScalar('defaultAuthProfileIdentity', String($event ?? ''))" />
+              </template>
             </ConfigurationOverrideField>
           </TabsContent>
 
           <TabsContent value="locales" class="m-0 space-y-5 p-5 outline-none">
-          <div class="grid gap-4 md:grid-cols-2">
-            <ConfigurationOverrideField label="Локаль по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
-            <ConfigurationOverrideField label="Резервная локаль" :uses-parent-value="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" /></template></ConfigurationOverrideField>
-          </div>
-          <div class="flex items-center justify-between">
-            <Label>Доступные локали</Label>
-            <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('locales')">
-              <Plus class="mr-2 size-4" />Добавить
-            </Button>
-          </div>
-          <div class="rounded-md border">
-            <div v-for="(row, index) in collectionRows('locales')" :key="index" class="grid grid-cols-[0.7fr_1.4fr_0.7fr_0.8fr_auto] gap-2 border-b p-2 last:border-0">
-              <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Код" @update:model-value="updateEntryKey('locales', row, String($event ?? ''))" />
-              <Input v-else v-model="row.code" :disabled="disabled" placeholder="Код" />
-              <template v-if="!isCollectionRowExcluded(row)">
-                <Input :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
-                <Input :model-value="rowValue(row, 'shortLabel')" :disabled="disabled" placeholder="Кратко" @update:model-value="setRowValue(row, 'shortLabel', String($event ?? ''))" />
-                <Select :model-value="rowValue(row, 'direction') || 'ltr'" :disabled="disabled" @update:model-value="setRowValue(row, 'direction', String($event ?? 'ltr'))"><SelectTrigger><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent><SelectItem value="ltr">LTR</SelectItem><SelectItem value="rtl">RTL</SelectItem></SelectContent></Select>
-              </template>
-              <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="col-span-3 text-destructive" />
-              <ConfigurationCollectionRowActions
-                :excluded="isCollectionRowExcluded(row)"
-                :excludable="isInherit"
-                :disabled="disabled"
-                @toggle-excluded="toggleCollectionRowExclusion('locales', row)"
-                @remove="removeCollectionRow('locales', index)"
-              />
+            <div class="grid gap-4 md:grid-cols-2">
+              <ConfigurationOverrideField label="Локаль по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultLocale')" @enable="enableScalar('defaultLocale')" @reset="resetScalar('defaultLocale')">
+                <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                  <Input :model-value="scalarValue('defaultLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultLocale', String($event ?? ''))" />
+                </template>
+              </ConfigurationOverrideField>
+              <ConfigurationOverrideField label="Резервная локаль" :uses-parent-value="isInherit" :overridden="hasScalarOverride('fallbackLocale')" @enable="enableScalar('fallbackLocale')" @reset="resetScalar('fallbackLocale')">
+                <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                  <Input :model-value="scalarValue('fallbackLocale')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('fallbackLocale', String($event ?? ''))" />
+                </template>
+              </ConfigurationOverrideField>
             </div>
-          </div>
+            <div class="flex items-center justify-between">
+              <Label>Доступные локали</Label>
+              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('locales')">
+                <Plus class="mr-2 size-4" />Добавить
+              </Button>
+            </div>
+            <div class="rounded-md border">
+              <div v-for="(row, index) in collectionRows('locales')" :key="index" class="grid grid-cols-[0.7fr_1.4fr_0.7fr_0.8fr_auto] gap-2 border-b p-2 last:border-0">
+                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Код" @update:model-value="updateEntryKey('locales', row, String($event ?? ''))" />
+                <Input v-else v-model="row.code" :disabled="disabled" placeholder="Код" />
+                <template v-if="!isCollectionRowExcluded(row)">
+                  <Input :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
+                  <Input :model-value="rowValue(row, 'shortLabel')" :disabled="disabled" placeholder="Кратко" @update:model-value="setRowValue(row, 'shortLabel', String($event ?? ''))" />
+                  <Select :model-value="rowValue(row, 'direction') || 'ltr'" :disabled="disabled" @update:model-value="setRowValue(row, 'direction', String($event ?? 'ltr'))">
+                    <SelectTrigger><SelectValue placeholder="Direction" /></SelectTrigger><SelectContent>
+                      <SelectItem value="ltr">
+                        LTR
+                      </SelectItem><SelectItem value="rtl">
+                        RTL
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </template>
+                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="col-span-3 text-destructive" />
+                <ConfigurationCollectionRowActions
+                  :excluded="isCollectionRowExcluded(row)"
+                  :excludable="isInherit"
+                  :disabled="disabled"
+                  @toggle-excluded="toggleCollectionRowExclusion('locales', row)"
+                  @remove="removeCollectionRow('locales', index)"
+                />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="themes" class="m-0 space-y-5 p-5 outline-none">
-          <ConfigurationOverrideField label="Тема по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')"><template #default="{ disabled: fieldDisabled, parentValuePlaceholder }"><Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" /></template></ConfigurationOverrideField>
-          <div class="flex items-center justify-between">
-            <Label>Доступные темы</Label>
-            <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('themes')">
-              <Plus class="mr-2 size-4" />Добавить
-            </Button>
-          </div>
-          <div class="rounded-md border">
-            <div v-for="(row, index) in collectionRows('themes')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
-              <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Identity" @update:model-value="updateEntryKey('themes', row, String($event ?? ''))" />
-              <Input v-else v-model="row.identity" :disabled="disabled" placeholder="Identity" />
-              <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
-              <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
-              <ConfigurationCollectionRowActions
-                :excluded="isCollectionRowExcluded(row)"
-                :excludable="isInherit"
-                :disabled="disabled"
-                @toggle-excluded="toggleCollectionRowExclusion('themes', row)"
-                @remove="removeCollectionRow('themes', index)"
-              />
+            <ConfigurationOverrideField label="Тема по умолчанию" :uses-parent-value="isInherit" :overridden="hasScalarOverride('defaultTheme')" @enable="enableScalar('defaultTheme')" @reset="resetScalar('defaultTheme')">
+              <template #default="{ disabled: fieldDisabled, parentValuePlaceholder }">
+                <Input :model-value="scalarValue('defaultTheme')" :disabled="disabled || fieldDisabled" :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" @update:model-value="setScalar('defaultTheme', String($event ?? ''))" />
+              </template>
+            </ConfigurationOverrideField>
+            <div class="flex items-center justify-between">
+              <Label>Доступные темы</Label>
+              <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('themes')">
+                <Plus class="mr-2 size-4" />Добавить
+              </Button>
             </div>
-          </div>
-          <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.</div>
+            <div class="rounded-md border">
+              <div v-for="(row, index) in collectionRows('themes')" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0">
+                <Input v-if="isInherit" :model-value="row.key" :disabled="disabled" placeholder="Identity" @update:model-value="updateEntryKey('themes', row, String($event ?? ''))" />
+                <Input v-else v-model="row.identity" :disabled="disabled" placeholder="Identity" />
+                <Input v-if="!isCollectionRowExcluded(row)" :model-value="rowValue(row, 'displayName')" :disabled="disabled" placeholder="Отображение" @update:model-value="setRowValue(row, 'displayName', String($event ?? ''))" />
+                <Input v-else :model-value="EXCLUDED_VALUE_LABEL" disabled class="text-destructive" />
+                <ConfigurationCollectionRowActions
+                  :excluded="isCollectionRowExcluded(row)"
+                  :excludable="isInherit"
+                  :disabled="disabled"
+                  @toggle-excluded="toggleCollectionRowExclusion('themes', row)"
+                  @remove="removeCollectionRow('themes', index)"
+                />
+              </div>
+            </div>
+            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+              Effective: {{ effective.locales.length }} locales, {{ effective.themes.length }} themes, default theme — {{ effective.defaultTheme }}.
+            </div>
           </TabsContent>
 
           <TabsContent value="timezones" class="m-0 space-y-5 p-5 outline-none">
@@ -1053,7 +1177,9 @@ function isEqual(left: unknown, right: unknown): boolean {
             <div class="flex items-center justify-between">
               <div>
                 <Label>Доступные временные зоны</Label>
-                <p class="mt-1 text-xs text-muted-foreground">Используйте IANA identity или системное значение local.</p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  Используйте IANA identity или системное значение local.
+                </p>
               </div>
               <Button size="sm" variant="outline" :disabled="disabled" @click="addCollectionValue('timezones')">
                 <Plus class="mr-2 size-4" />Добавить
@@ -1074,7 +1200,9 @@ function isEqual(left: unknown, right: unknown): boolean {
                 />
               </div>
             </div>
-            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">Effective: {{ effective.timezones.length }} zones, default — {{ effective.defaultTimezone }}.</div>
+            <div class="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+              Effective: {{ effective.timezones.length }} zones, default — {{ effective.defaultTimezone }}.
+            </div>
           </TabsContent>
 
           <TabsContent value="diagnostics" class="m-0 min-h-full p-0 outline-none">

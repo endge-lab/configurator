@@ -1,15 +1,15 @@
 import type {
-  DocumentDependencyDiagnostic,
-  DocumentDependencyNode,
-  DocumentDependencyTreeResult,
-} from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
-import type {
   CompositionProgramPayload,
   CompositionRuntimeDescriptor,
   CompositionSourceDocument,
   DomainDocumentType,
   RComposition,
 } from '@endge/core'
+import type {
+  DocumentDependencyDiagnostic,
+  DocumentDependencyNode,
+  DocumentDependencyTreeResult,
+} from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 

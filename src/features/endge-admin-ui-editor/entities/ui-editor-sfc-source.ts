@@ -1,4 +1,11 @@
 import type {
+  ComponentSFCPreviewProps,
+  RComponentSFC_AST_Attribute,
+  RComponentSFC_AST_ElementNode,
+  RComponentSFC_AST_TemplateNode,
+} from '@endge/core'
+import type { SFCVueRenderContext } from '@endge/ui-vue'
+import type {
   UIEditorDocument,
   UIEditorNode,
   UIEditorNodeLayout,
@@ -9,13 +16,6 @@ import type {
   UIEditorSourceNodeLocation,
   UIEditorSourceNodeLocations,
 } from '@/features/endge-admin-ui-editor/types'
-import type {
-  ComponentSFCPreviewProps,
-  RComponentSFC_AST_Attribute,
-  RComponentSFC_AST_ElementNode,
-  RComponentSFC_AST_TemplateNode,
-} from '@endge/core'
-import type { SFCVueRenderContext } from '@endge/ui-vue'
 
 import { compileComponentSFC, Endge, parseComponentSFC } from '@endge/core'
 import { evaluateSFCExpression } from '@endge/ui-vue'

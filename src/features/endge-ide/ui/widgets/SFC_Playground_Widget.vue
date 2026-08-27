@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
 
@@ -40,7 +40,7 @@ const TAB_LABELS = {
   contract: 'Contract',
 }
 
-type SFCDemoOption = { id: string, label: string, source: string, context: string }
+interface SFCDemoOption { id: string, label: string, source: string, context: string }
 
 const DEFAULT_SOURCE = createDemoSource(
   `defineProps<{
@@ -304,17 +304,20 @@ function insertDemo(): void {
 
 function migrateLegacyDemoStorage(): void {
   const legacyDemo = LEGACY_DEMO_OPTIONS.find(item => normalizeStoredText(item.source) === normalizeStoredText(source.value))
-  if (!legacyDemo)
+  if (!legacyDemo) {
     return
+  }
 
   const currentDemo = DEMO_OPTIONS.find(item => item.id === legacyDemo.id)
-  if (!currentDemo)
+  if (!currentDemo) {
     return
+  }
 
   source.value = currentDemo.source
 
-  if (normalizeStoredText(contextJson.value) === normalizeStoredText(legacyDemo.context))
+  if (normalizeStoredText(contextJson.value) === normalizeStoredText(legacyDemo.context)) {
     contextJson.value = currentDemo.context
+  }
 }
 
 function normalizeStoredText(value: string): string {

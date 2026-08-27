@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, ref } from 'vue'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 export function useBackendConnections() {
   const revision = ref(0)

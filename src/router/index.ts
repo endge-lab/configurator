@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { getCanonicalLocalhostURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
 import { routes } from '@/router/routes.ts'
 
@@ -17,8 +17,9 @@ router.beforeEach(async (to) => {
     window.location.replace(canonicalURL)
     return false
   }
-  if (to.name === 'oidc-popup-callback')
+  if (to.name === 'oidc-popup-callback') {
     return true
+  }
   const status = await Configurator.init()
   return status === 'ready'
     || status === 'authentication-required'

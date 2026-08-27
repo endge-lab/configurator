@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { ArrowLeft, LogIn, ShieldAlert } from 'lucide-vue-next'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 const requirement = Configurator.authenticationRequirement
 const canSwitchToPrimary = !Configurator.connections.isPrimaryActive

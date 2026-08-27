@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { DocumentDependencyNode } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 import type { Component } from 'vue'
+import type { DocumentDependencyNode } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 
 import { AlertTriangle, ChevronRight, RotateCcw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'

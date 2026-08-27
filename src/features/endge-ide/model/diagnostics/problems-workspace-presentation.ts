@@ -1,12 +1,12 @@
 import type {
-  ProblemsEntityEntry,
-  ProblemsSeverityGroup,
-} from '@/features/endge-ide/domain/types/problems-workspace.types'
-import type {
   DiagnosticsProblem,
   DiagnosticsProblemPhase,
   DiagnosticsProblemSeverity,
 } from '@endge/core'
+import type {
+  ProblemsEntityEntry,
+  ProblemsSeverityGroup,
+} from '@/features/endge-ide/domain/types/problems-workspace.types'
 
 const SEVERITY_ORDER: readonly DiagnosticsProblemSeverity[] = ['fatal', 'error', 'warning', 'info']
 const PHASE_ORDER: readonly DiagnosticsProblemPhase[] = ['authoring', 'build', 'runtime']

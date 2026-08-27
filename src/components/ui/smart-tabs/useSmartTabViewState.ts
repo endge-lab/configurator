@@ -1,5 +1,5 @@
-import type { SmartTabViewStateSlice } from '@/components/ui/smart-tabs/types'
 import type { InjectionKey, Ref } from 'vue'
+import type { SmartTabViewStateSlice } from '@/components/ui/smart-tabs/types'
 
 import { inject, ref, watch } from 'vue'
 

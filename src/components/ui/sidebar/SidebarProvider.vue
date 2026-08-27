@@ -5,9 +5,9 @@ import { defaultDocument, useEventListener, useMediaQuery, useVModel } from '@vu
 import { TooltipProvider } from 'reka-ui'
 import { computed, ref } from 'vue'
 
-import { cn } from '@/lib/utils.ts'
-
 import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from '@/components/ui/sidebar/utils.ts'
+
+import { cn } from '@/lib/utils.ts'
 
 const props = withDefaults(defineProps<{
   defaultOpen?: boolean

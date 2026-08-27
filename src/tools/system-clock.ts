@@ -34,11 +34,11 @@ export const SystemClock = {
 // window.DataModel = window.DataModel || {};
 // window.DataModel.SystemClock = SystemClock;
 
-export const dt = (date: Date) => {
+export function dt(date: Date) {
   return SystemClock.toDateTime(date)
 }
 
-export const switchTimeZone = (datetime: DateTime) => {
+export function switchTimeZone(datetime: DateTime) {
   if (!DateTime.isDateTime(datetime)) {
     throw new TypeError(`${datetime} is not DateTime instance.`)
   }
@@ -51,7 +51,7 @@ export const switchTimeZone = (datetime: DateTime) => {
   return datetime
 }
 
-export const toFormat = (datetime: DateTime, fmt: string, opts: any = {}) => {
+export function toFormat(datetime: DateTime, fmt: string, opts: any = {}) {
   if (!DateTime.isDateTime(datetime)) {
     throw new TypeError(`${datetime} is not DateTime instance.`)
   }

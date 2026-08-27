@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import 'vue-sonner/style.css'
-
 import { computed, onErrorCaptured, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 
-import { Configurator } from '@/app'
+import { useRoute } from 'vue-router'
+import { Configurator } from '@/app/model/kernel/configurator'
+
 import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
 import layouts from '@/components/layouts'
 import { Empty } from '@/components/layouts/empty'
@@ -16,6 +15,7 @@ import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceS
 import { isIDEPlainMode } from '@/features/endge-ide/model/config/endge-ide-debug-flags'
 import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
+import 'vue-sonner/style.css'
 
 const workspaceSelectionRequired = Configurator.status === 'workspace-selection-required'
 const backendConnectionFailed = Configurator.status === 'backend-connection-failed'

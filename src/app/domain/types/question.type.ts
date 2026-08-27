@@ -1,5 +1,3 @@
-import type { Component } from 'vue'
-
 export interface QuestionAnswer<T = unknown> {
   value: T
   text: string
@@ -13,7 +11,7 @@ export interface Question<T extends AnyQuestionAnswer = AnyQuestionAnswer> {
   title?: string
   text?: string
   description?: string
-  icon?: Component
+  icon?: unknown
   closable?: boolean
   zIndex?: number
   answers: T[]

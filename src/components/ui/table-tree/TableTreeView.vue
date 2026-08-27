@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 
-import { computed, ref } from 'vue'
 import { ChevronDown, ChevronRight, Plus, PlusSquare, Trash2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 import { cn } from '@/lib/utils'
 
@@ -45,8 +45,9 @@ function ensureInitialExpanded(rows: TableTreeRow[]): void {
   const next = new Set(expandedIds.value)
   const walk = (rs: TableTreeRow[]): void => {
     for (const r of rs) {
-      if (r.children && r.children.length)
+      if (r.children && r.children.length) {
         next.add(r.id)
+      }
       walk(r.children ?? [])
     }
   }
@@ -58,10 +59,10 @@ ensureInitialExpanded(props.rows)
 
 function toggleRow(id: string): void {
   const next = new Set(expandedIds.value)
-  if (next.has(id))
+  if (next.has(id)) {
     next.delete(id)
-  else
-    next.add(id)
+  }
+  else { next.add(id) }
   expandedIds.value = next
 }
 
@@ -77,8 +78,9 @@ const flatRows = computed<FlatRow[]>(() => {
     for (const r of rows) {
       const hasChildren = !!(r.children && r.children.length)
       out.push({ row: r, depth, hasChildren })
-      if (hasChildren && expandedIds.value.has(r.id))
+      if (hasChildren && expandedIds.value.has(r.id)) {
         walk(r.children!, depth + 1)
+      }
     }
   }
   walk(props.rows, 0)
@@ -86,18 +88,25 @@ const flatRows = computed<FlatRow[]>(() => {
 })
 
 function iconClass(kind: TableTreeRow['icon']): string {
-  if (kind === 'table')
+  if (kind === 'table') {
     return 'i-tabler-table text-sky-600'
-  if (kind === 'column')
+  }
+  if (kind === 'column') {
     return 'i-tabler-columns-3 text-emerald-600'
-  if (kind === 'tag')
+  }
+  if (kind === 'tag') {
     return 'i-tabler-tag text-amber-600'
+  }
   return 'i-tabler-box text-muted-foreground'
 }
 
 function selectorTypeLabel(t?: TableTreeRow['selectorType']): string {
-  if (t === 'component') return 'Компонент'
-  if (t === 'column') return 'Колонка таблицы'
+  if (t === 'component') {
+    return 'Компонент'
+  }
+  if (t === 'column') {
+    return 'Колонка таблицы'
+  }
   return ''
 }
 </script>
@@ -222,4 +231,3 @@ function selectorTypeLabel(t?: TableTreeRow['selectorType']): string {
     </div>
   </div>
 </template>
-

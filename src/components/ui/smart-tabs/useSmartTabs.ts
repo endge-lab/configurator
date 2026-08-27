@@ -24,7 +24,7 @@ function sanitizeViewState(raw: unknown): SmartTabViewState {
       continue
     }
     const slice = rawSlice as Partial<SmartTabViewStateSlice>
-    if (!Number.isInteger(slice.version) || (slice.version ?? 0) < 1 || !Object.prototype.hasOwnProperty.call(slice, 'value')) {
+    if (!Number.isInteger(slice.version) || (slice.version ?? 0) < 1 || !Object.hasOwn(slice, 'value')) {
       continue
     }
     state[key] = { version: slice.version!, value: slice.value }
@@ -93,8 +93,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const volatileViewStateByTabId: Record<SmartTabId, SmartTabViewState> = {}
 
   function persistNow(): void {
-    if (!persist)
+    if (!persist) {
       return
+    }
     const stateToSave = {
       openTabs: state.openTabs,
       activeTabId: state.activeTabId,
@@ -115,16 +116,18 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const openTabs = computed(() => state.openTabs)
 
   const activeTab = computed(() => {
-    if (!state.activeTabId)
+    if (!state.activeTabId) {
       return null
+    }
     return state.openTabs.find(t => t.id === state.activeTabId) ?? null
   })
 
   const activeTabId = computed(() => state.activeTabId)
 
   function enforceMax(): void {
-    if (state.openTabs.length <= maxTabs)
+    if (state.openTabs.length <= maxTabs) {
       return
+    }
 
     const overflow = state.openTabs.length - maxTabs
     const removed = state.openTabs.splice(0, overflow)
@@ -148,7 +151,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       if (existingIndex !== -1) {
         const existing = state.openTabs[existingIndex]!
         state.openTabs.splice(existingIndex, 1, { ...existing, ...tab })
-        if (activate) state.activeTabId = existing.id
+        if (activate) {
+          state.activeTabId = existing.id
+        }
         return
       }
     }
@@ -157,8 +162,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
     if (existingIndex !== -1) {
       state.openTabs.splice(existingIndex, 1, { ...state.openTabs[existingIndex], ...tab })
-      if (activate)
+      if (activate) {
         state.activeTabId = tab.id
+      }
       return
     }
 
@@ -179,8 +185,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     }
 
     state.openTabs.push(tab)
-    if (activate)
+    if (activate) {
       state.activeTabId = tab.id
+    }
 
     enforceMax()
   }
@@ -195,11 +202,13 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
   function closeTab(id: SmartTabId): void {
     const idx = state.openTabs.findIndex(t => t.id === id)
-    if (idx === -1)
+    if (idx === -1) {
       return
+    }
 
-    if (state.openTabs[idx]?.closable === false)
+    if (state.openTabs[idx]?.closable === false) {
       return
+    }
 
     const wasActive = state.activeTabId === id
     const closedTab = state.openTabs[idx]!
@@ -243,7 +252,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
   function closeAllToLeft(id: SmartTabId): void {
     const idx = state.openTabs.findIndex(t => t.id === id)
-    if (idx <= 0) return
+    if (idx <= 0) {
+      return
+    }
     const closedTabs = state.openTabs.filter((t, i) => i < idx && t.closable !== false)
     state.openTabs = state.openTabs.filter((t, i) => i >= idx || t.closable === false)
     pruneViewState()
@@ -253,7 +264,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
   function closeAllToRight(id: SmartTabId): void {
     const idx = state.openTabs.findIndex(t => t.id === id)
-    if (idx === -1 || idx >= state.openTabs.length - 1) return
+    if (idx === -1 || idx >= state.openTabs.length - 1) {
+      return
+    }
     const closedTabs = state.openTabs.filter((t, i) => i > idx && t.closable !== false)
     state.openTabs = state.openTabs.filter((t, i) => i <= idx || t.closable === false)
     pruneViewState()
@@ -269,7 +282,6 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     const tab = state.openTabs[fromIndex]!
     state.openTabs.splice(fromIndex, 1)
     state.openTabs.splice(toIndex, 0, tab)
-
   }
 
   function pruneViewState(): void {

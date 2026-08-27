@@ -2,7 +2,7 @@
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { ArrowLeft, ServerOff } from 'lucide-vue-next'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 const failure = Configurator.backendConnectionFailure
 

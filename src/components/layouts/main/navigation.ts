@@ -7,15 +7,19 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 function normalizePath(value: unknown): string | null {
-  if (typeof value !== 'string') { return null }
+  if (typeof value !== 'string') {
+    return null
+  }
   const trimmed = value.trim()
   return trimmed.length ? trimmed : null
 }
 
 function resolveNavigationPath(value: unknown): string | null {
-  if (typeof value !== 'string') { return null }
+  if (typeof value !== 'string') {
+    return null
+  }
   const resolved = Endge.workspace.variables.resolve<string>(value, {
-    coerce: (next) => next == null ? '' : String(next),
+    coerce: next => next == null ? '' : String(next),
     onInvalid: 'as-is',
     fallback: value,
   })
@@ -23,9 +27,15 @@ function resolveNavigationPath(value: unknown): string | null {
 }
 
 function toLink(path?: string | null, routeName?: string | null, external?: boolean): string | RouteLocationRaw {
-  if (external && path) { return path }
-  if (path) { return routeName ? { path, name: routeName } as RouteLocationRaw : path }
-  if (routeName) { return { name: routeName } as RouteLocationRaw }
+  if (external && path) {
+    return path
+  }
+  if (path) {
+    return routeName ? { path, name: routeName } as RouteLocationRaw : path
+  }
+  if (routeName) {
+    return { name: routeName } as RouteLocationRaw
+  }
   return '/'
 }
 
@@ -34,7 +44,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function mapTreeLink(node: Record<string, unknown>): Omit<NavItemLink, 'icon'> | null {
-  if (node.type !== 'link') { return null }
+  if (node.type !== 'link') {
+    return null
+  }
 
   const path = resolveNavigationPath(node.path)
   const routeName = normalizePath(node.routeName)
@@ -59,26 +71,36 @@ function collectTreeLinks(nodes: unknown[]): Omit<NavItemLink, 'icon'>[] {
   const links: Omit<NavItemLink, 'icon'>[] = []
 
   for (const rawNode of nodes) {
-    if (!isRecord(rawNode)) { continue }
-
-    if (rawNode.type === 'link') {
-      const link = mapTreeLink(rawNode)
-      if (link) { links.push(link) }
+    if (!isRecord(rawNode)) {
       continue
     }
 
-    if (rawNode.type === 'group' && Array.isArray(rawNode.children)) { links.push(...collectTreeLinks(rawNode.children)) }
+    if (rawNode.type === 'link') {
+      const link = mapTreeLink(rawNode)
+      if (link) {
+        links.push(link)
+      }
+      continue
+    }
+
+    if (rawNode.type === 'group' && Array.isArray(rawNode.children)) {
+      links.push(...collectTreeLinks(rawNode.children))
+    }
   }
 
   return links
 }
 
 function mapTreeItem(rawNode: unknown): NavItem | null {
-  if (!isRecord(rawNode)) { return null }
+  if (!isRecord(rawNode)) {
+    return null
+  }
 
   if (rawNode.type === 'link') {
     const link = mapTreeLink(rawNode)
-    if (!link) { return null }
+    if (!link) {
+      return null
+    }
 
     return {
       ...link,
@@ -86,7 +108,9 @@ function mapTreeItem(rawNode: unknown): NavItem | null {
     }
   }
 
-  if (rawNode.type !== 'group') { return null }
+  if (rawNode.type !== 'group') {
+    return null
+  }
 
   return {
     type: 'group',
@@ -100,7 +124,9 @@ function mapTreeItem(rawNode: unknown): NavItem | null {
 }
 
 function buildNavItems(nodes: unknown): NavItem[] {
-  if (!Array.isArray(nodes)) { return [] }
+  if (!Array.isArray(nodes)) {
+    return []
+  }
 
   return nodes
     .map(mapTreeItem)
@@ -152,14 +178,20 @@ export function isLinkActive(
   item: Pick<NavItemLink, 'external' | 'disabled' | 'matchPath' | 'matchRouteName'>,
   route: { path?: string, name?: unknown },
 ): boolean {
-  if (item.external || item.disabled) { return false }
+  if (item.external || item.disabled) {
+    return false
+  }
 
   const currentPath = String(route.path ?? '')
   const currentRouteName = typeof route.name === 'string' ? route.name : ''
 
-  if (item.matchPath) { return currentPath === item.matchPath || currentPath.startsWith(`${item.matchPath}/`) }
+  if (item.matchPath) {
+    return currentPath === item.matchPath || currentPath.startsWith(`${item.matchPath}/`)
+  }
 
-  if (item.matchRouteName) { return currentRouteName === item.matchRouteName }
+  if (item.matchRouteName) {
+    return currentRouteName === item.matchRouteName
+  }
 
   return false
 }
@@ -168,12 +200,18 @@ export function isGroupActiveByRoute(
   item: Pick<NavItemGroup, 'disabled' | 'path' | 'matchRouteName' | 'links'>,
   route: { path?: string, name?: unknown },
 ): boolean {
-  if (item.disabled) { return false }
+  if (item.disabled) {
+    return false
+  }
 
   const currentPath = String(route.path ?? '')
   const currentRouteName = typeof route.name === 'string' ? route.name : ''
-  if (item.path) { return currentPath === item.path || currentPath.startsWith(`${item.path}/`) }
-  if (item.matchRouteName) { return currentRouteName === item.matchRouteName }
+  if (item.path) {
+    return currentPath === item.path || currentPath.startsWith(`${item.path}/`)
+  }
+  if (item.matchRouteName) {
+    return currentRouteName === item.matchRouteName
+  }
 
   return item.links.some(link => isLinkActive(link, route))
 }
@@ -182,7 +220,9 @@ const DEFAULT_NAVIGATION_ID = 'main'
 
 function mapSection(rawNode: Record<string, unknown>): NavGroup | null {
   const items = buildNavItems(rawNode.children)
-  if (!items.length) { return null }
+  if (!items.length) {
+    return null
+  }
 
   return {
     title: String(rawNode.title ?? ''),
@@ -196,19 +236,25 @@ function resolveNavigationGroups(identity = DEFAULT_NAVIGATION_ID): NavGroup[] {
   try {
     const doc = Endge.domain.getNavigationByIdentity(identity) as { tree?: unknown[] } | null
     const rawTree = doc?.tree
-    if (!Array.isArray(rawTree)) { return [] }
+    if (!Array.isArray(rawTree)) {
+      return []
+    }
 
     const groups: NavGroup[] = []
     let looseItems: NavItem[] = []
 
     function flushLooseItems(): void {
-      if (!looseItems.length) { return }
+      if (!looseItems.length) {
+        return
+      }
       groups.push({ items: looseItems })
       looseItems = []
     }
 
     for (const rawNode of rawTree) {
-      if (!isRecord(rawNode)) { continue }
+      if (!isRecord(rawNode)) {
+        continue
+      }
 
       if (rawNode.type === 'section') {
         const section = mapSection(rawNode)
@@ -265,12 +311,16 @@ function getActivePageTitle(
     return routePath ? isRoutePathMatch(currentPath, routePath) : false
   })
 
-  if (!activePage) { return null }
+  if (!activePage) {
+    return null
+  }
 
   const identity = activePage.identity?.trim()
   const localizedName = russianTitle?.trim() || activePage.name?.trim()
 
-  if (identity && localizedName && identity !== localizedName) { return `${identity} / ${localizedName}` }
+  if (identity && localizedName && identity !== localizedName) {
+    return `${identity} / ${localizedName}`
+  }
   return localizedName || identity || null
 }
 
@@ -300,12 +350,18 @@ export function useCurrentSectionTitle() {
     }
 
     const pageTitle = getActivePageTitle(route.path)
-    if (pageTitle) { return pageTitle }
+    if (pageTitle) {
+      return pageTitle
+    }
 
     const metaTitle = typeof route.meta?.title === 'string' ? route.meta.title.trim() : ''
-    if (metaTitle) { return metaTitle }
+    if (metaTitle) {
+      return metaTitle
+    }
 
-    if (typeof route.name === 'string' && route.name.trim().length) { return route.name }
+    if (typeof route.name === 'string' && route.name.trim().length) {
+      return route.name
+    }
 
     return DEFAULT_SECTION_TITLE
   })

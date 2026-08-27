@@ -9,9 +9,9 @@ import { computed } from 'vue'
 import { showWidget } from '@/components/layouts/grid'
 import { getIconComponent } from '@/components/layouts/grid/icons'
 import { Button } from '@/components/ui/button'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 
 const problems = EndgeIDE.problems

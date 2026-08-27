@@ -1,22 +1,22 @@
-import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 import type {
   ComponentSFCProgramPayload,
-  ComputationProgramPayload,
   ComponentSFCRuntimeHost,
+  ComputationProgramPayload,
   EndgeStyleSheetArtifact,
   ProgramArtifact,
   QueryProgramPayload,
   RuntimeHostInputSource,
 } from '@endge/core'
+import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
 
 import {
   analyzeComponentSFCScript,
   compileComponentSFC,
   Endge,
   parseComponentSFC,
+  RAction,
   RComponentSFC,
   RComputation,
-  RAction,
   RQuery,
 } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
@@ -264,7 +264,9 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
 }
 
 function previewFieldContract(field: { type: string, isArray?: boolean, optional?: boolean } | null | undefined) {
-  if (!field) return null
+  if (!field) {
+    return null
+  }
   return {
     type: field.type,
     isArray: field.isArray === true,

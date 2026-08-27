@@ -1,8 +1,8 @@
+import type { ProgramEntityType } from '@endge/core'
 import type {
   DomainWorkingSetGraph,
   DomainWorkingSetRef,
 } from '@/features/endge-ide/domain/types/domain-working-set.type'
-import type { ProgramEntityType } from '@endge/core'
 
 import { Endge } from '@endge/core'
 

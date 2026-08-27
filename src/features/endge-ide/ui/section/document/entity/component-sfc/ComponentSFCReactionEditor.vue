@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type { RComponentDiagnostic } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
 import {
   compileComponentSFCLocalEventAction,

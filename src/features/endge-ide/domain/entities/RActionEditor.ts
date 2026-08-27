@@ -39,7 +39,9 @@ export class RActionEditor {
   }
 
   updateSource(source: RAction): void {
-    if (this.readOnly) return
+    if (this.readOnly) {
+      return
+    }
     source.id = this.id as any
     source.identity = this.identity.trim()
     source.name = this.displayName.trim() || source.identity
@@ -52,7 +54,9 @@ export class RActionEditor {
   }
 
   applySourceText(value: string): void {
-    if (this.readOnly) return
+    if (this.readOnly) {
+      return
+    }
     this.source = value
     this.refreshDiagnostics()
   }

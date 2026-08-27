@@ -4,7 +4,7 @@ import {
   clearConfiguratorBrowserState,
   clearConfiguratorLoginRedirectGuard,
   ConfiguratorSession_Module,
-  ConfiguratorSession_Service,
+  ConfiguratorSessionHttp_Adapter,
   startConfiguratorLogin,
 } from '@/features/configurator-session'
 import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX } from '@/features/configurator-session/model/config/configurator-session'
@@ -65,7 +65,7 @@ describe('configurator developer session', () => {
     const fetchMock = vi.fn().mockResolvedValue(sessionResponse())
     vi.stubGlobal('fetch', fetchMock)
     const module = new ConfiguratorSession_Module(
-      new ConfiguratorSession_Service('https://backend.test/'),
+      new ConfiguratorSessionHttp_Adapter('https://backend.test/'),
     )
 
     const [left, right] = await Promise.all([module.check(), module.check()])
@@ -129,7 +129,7 @@ describe('configurator developer session', () => {
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
     const module = new ConfiguratorSession_Module(
-      new ConfiguratorSession_Service('https://backend.test'),
+      new ConfiguratorSessionHttp_Adapter('https://backend.test'),
     )
     await module.check()
 

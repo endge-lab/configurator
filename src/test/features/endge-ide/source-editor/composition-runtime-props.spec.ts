@@ -1,5 +1,5 @@
-import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
 import type { CompositionProgramPayload } from '@endge/core'
+import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
 
 import { Endge } from '@endge/core'
 import { describe, expect, it } from 'vitest'

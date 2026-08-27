@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
-import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
 import type { DomainDocumentType, RComponentSFC, RComposition, RDocument, RUpdate } from '@endge/core'
+import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
 
 import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
@@ -20,7 +20,6 @@ import {
   COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
   DOCUMENT_CREATE_DESCRIPTORS,
 } from '@/features/endge-ide/model/config/document-create'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/model/domain/composition-create'
 import {
   getQueryRootFolderId,
@@ -28,6 +27,7 @@ import {
   QUERY_COMPOSITION_PRESENTATION_KIND,
   setQueryCompositionRole,
 } from '@/features/endge-ide/model/domain/query-composition-presentation'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { suggestDocumentIdentity } from '@/features/endge-ide/tools/document-create'
 
 const props = defineProps<{
@@ -575,8 +575,7 @@ async function onSubmit(): Promise<void> {
         const owner = updateOwnerStoreIdentity.value
           ? Endge.domain.getStore(updateOwnerStoreIdentity.value)
           : null
-        if (!owner)
-          throw new Error('Update можно создать только из контекстного меню существующего Store.')
+        if (!owner) { throw new Error('Update можно создать только из контекстного меню существующего Store.') }
         parsed.storeIdentity = owner.identity
       }
 
@@ -629,9 +628,9 @@ async function onSubmit(): Promise<void> {
       compositionDraft.kindIdentity = placement.kindIdentity
     }
     if (targetDocumentType === 'update') {
-      if (!updateOwnerStoreIdentity.value)
+      if (!updateOwnerStoreIdentity.value) {
         throw new Error('Update можно создать только из контекстного меню Store.')
-      ;(draft as RUpdate).storeIdentity = updateOwnerStoreIdentity.value
+      }(draft as RUpdate).storeIdentity = updateOwnerStoreIdentity.value
     }
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)

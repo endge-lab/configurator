@@ -3,8 +3,8 @@
  * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
  */
 
-import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
 import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor, TypeProgramCatalogEntry } from '@endge/core'
+import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
 
 import {
   ComponentType,
@@ -144,8 +144,9 @@ function isTemporaryEntity(entity: unknown): boolean {
 
 /** Исключаем удалённые из списков. */
 export function withoutDeleted<T>(list: T[] | undefined): T[] {
-  if (!Array.isArray(list))
+  if (!Array.isArray(list)) {
     return []
+  }
   return list.filter(e => !isDeleted(e as { deletedAt?: string | null }) && !isTemporaryEntity(e))
 }
 
@@ -258,11 +259,13 @@ export function getDomainTreeRootBlocks(keys: string[]): DomainTreeRootBlock[] {
 /** Порядок корневых папок. */
 export function getRootFolderOrder(keys: string[]): string[] {
   const ordered: string[] = []
-  for (const block of getDomainTreeRootBlocks(keys))
+  for (const block of getDomainTreeRootBlocks(keys)) {
     ordered.push(...block.rootIds)
+  }
   for (const k of keys) {
-    if (!ordered.includes(k))
+    if (!ordered.includes(k)) {
       ordered.push(k)
+    }
   }
   return ordered
 }
@@ -271,62 +274,87 @@ export function normalizeDocType(
   sectionType: DomainSectionType,
   raw?: DomainDocumentType,
 ): DomainDocumentType | undefined {
-  if (raw === 'stream' || raw === 'update')
+  if (raw === 'stream' || raw === 'update') {
     return raw
-  if (sectionType === DomainSectionType.Primitive || sectionType === DomainSectionType.Type)
+  }
+  if (sectionType === DomainSectionType.Primitive || sectionType === DomainSectionType.Type) {
     return 'type'
-  if (sectionType === DomainSectionType.Parameters)
+  }
+  if (sectionType === DomainSectionType.Parameters) {
     return ParameterType.DefaultParameter
-  if (sectionType === DomainSectionType.Filters)
+  }
+  if (sectionType === DomainSectionType.Filters) {
     return FilterType.DefaultFilter
-  if (sectionType === DomainSectionType.DataView)
+  }
+  if (sectionType === DomainSectionType.DataView) {
     return 'data-view' as DomainDocumentType
-  if (sectionType === DomainSectionType.Composition)
+  }
+  if (sectionType === DomainSectionType.Composition) {
     return 'composition' as DomainDocumentType
-  if (sectionType === DomainSectionType.Store)
+  }
+  if (sectionType === DomainSectionType.Store) {
     return 'store' as DomainDocumentType
-  if (sectionType === DomainSectionType.Mock)
+  }
+  if (sectionType === DomainSectionType.Mock) {
     return 'mock' as DomainDocumentType
-  if (sectionType === DomainSectionType.Action)
+  }
+  if (sectionType === DomainSectionType.Action) {
     return 'action'
-  if (sectionType === DomainSectionType.Converter)
+  }
+  if (sectionType === DomainSectionType.Converter) {
     return 'converter'
-  if (sectionType === DomainSectionType.Computation)
+  }
+  if (sectionType === DomainSectionType.Computation) {
     return 'computation'
-  if (sectionType === DomainSectionType.Integration)
+  }
+  if (sectionType === DomainSectionType.Integration) {
     return 'integration'
-  if (sectionType === DomainSectionType.Environment)
+  }
+  if (sectionType === DomainSectionType.Environment) {
     return 'environment'
-  if (sectionType === DomainSectionType.Tenant)
+  }
+  if (sectionType === DomainSectionType.Tenant) {
     return 'tenant'
-  if (sectionType === DomainSectionType.Policy)
+  }
+  if (sectionType === DomainSectionType.Policy) {
     return 'policy'
-  if (sectionType === DomainSectionType.Style)
+  }
+  if (sectionType === DomainSectionType.Style) {
     return 'style'
-  if (sectionType === DomainSectionType.Configuration)
+  }
+  if (sectionType === DomainSectionType.Configuration) {
     return 'configuration'
-  if (sectionType === DomainSectionType.PageTemplate)
+  }
+  if (sectionType === DomainSectionType.PageTemplate) {
     return 'page-template' as DomainDocumentType
-  if (sectionType === DomainSectionType.Page)
+  }
+  if (sectionType === DomainSectionType.Page) {
     return 'page' as DomainDocumentType
-  if (sectionType === DomainSectionType.Navigation)
+  }
+  if (sectionType === DomainSectionType.Navigation) {
     return 'navigation' as DomainDocumentType
-  if (sectionType === DomainSectionType.Vocabs)
+  }
+  if (sectionType === DomainSectionType.Vocabs) {
     return 'vocabs' as DomainDocumentType
-  if (sectionType === DomainSectionType.I18nBundles)
+  }
+  if (sectionType === DomainSectionType.I18nBundles) {
     return 'i18n-bundles' as DomainDocumentType
-  if (sectionType === DomainSectionType.AuthProfile)
+  }
+  if (sectionType === DomainSectionType.AuthProfile) {
     return 'auth-profile' as DomainDocumentType
-  if (sectionType === DomainSectionType.Project)
+  }
+  if (sectionType === DomainSectionType.Project) {
     return 'project' as DomainDocumentType
+  }
   return raw
 }
 
 /** Дочерние узлы компонента-таблицы: активные колонки. */
 export function buildTableColumnRefs(componentId: string): FsFileNode[] {
   const component = Endge.domain.getComponent(componentId) as RComponentTable | null
-  if (!component || component.type !== ComponentType.Table)
+  if (!component || component.type !== ComponentType.Table) {
     return []
+  }
 
   const cols = Array.isArray(component.columns) ? component.columns : []
   return cols
@@ -373,10 +401,12 @@ export interface BuildDomainTreeParams {
 }
 
 function getFolderTraversalKey(folder: { id?: string | number, identity?: string | number, name?: string }): string {
-  if (folder.id != null && folder.id !== '')
+  if (folder.id != null && folder.id !== '') {
     return String(folder.id)
-  if (folder.identity != null && folder.identity !== '')
+  }
+  if (folder.identity != null && folder.identity !== '') {
     return String(folder.identity)
+  }
   return String(folder.name ?? '')
 }
 
@@ -504,8 +534,9 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   const orderedRoots = rootOrder
     .map((sectionKey) => {
       const folder = rootFolders.find((f: any) => (f.identity ?? f.id) === sectionKey)
-      if (folder)
+      if (folder) {
         return { root: { ...folder, name: rootLabels[sectionKey] ?? sectionKey }, sectionKey }
+      }
       if (sectionMapRecord[sectionKey]) {
         return { root: { id: sectionKey, identity: sectionKey, name: rootLabels[sectionKey] ?? sectionKey }, sectionKey }
       }
@@ -539,22 +570,26 @@ function attachStoreUpdates(
   updates: NonNullable<BuildDomainTreeParams['storeUpdates']>,
 ): void {
   const root = tree.find(node => node.type === 'folder' && node.id === 'root-stores')
-  if (!root)
+  if (!root) {
     return
+  }
   const findStore = (nodes: FsNode[], identity: string): FsFileNode | null => {
     for (const node of nodes) {
-      if (node.type === 'file' && node.docType === 'store' && node.identity === identity)
+      if (node.type === 'file' && node.docType === 'store' && node.identity === identity) {
         return node
+      }
       const nested = findStore(node.children ?? [], identity)
-      if (nested)
+      if (nested) {
         return nested
+      }
     }
     return null
   }
   for (const update of updates) {
     const owner = findStore(root.children ?? [], String(update.storeIdentity ?? ''))
-    if (!owner)
+    if (!owner) {
       continue
+    }
     const id = String(update.id ?? update.identity ?? '')
     const identity = String(update.identity ?? '')
     ;(owner.children ??= []).push({
@@ -772,8 +807,9 @@ export function attachResolvedTypeTree(
   types: readonly TypeProgramCatalogEntry[],
 ): void {
   const root = tree.find(node => node.type === 'folder' && node.id === 'root-types') as FsFolderNode | undefined
-  if (!root)
+  if (!root) {
     return
+  }
 
   root.children = (root.children ?? []).filter(node =>
     node.identity !== 'types-primitives'
@@ -781,8 +817,9 @@ export function attachResolvedTypeTree(
   )
 
   const builtinTypes = types.filter(type => type.category === 'primitive' || type.category === 'reference')
-  if (!builtinTypes.length)
+  if (!builtinTypes.length) {
     return
+  }
 
   const createCategory = (
     category: 'primitive' | 'reference',
@@ -849,11 +886,13 @@ function findOwnedNode(
       node.type === 'file'
       && (sectionType == null || node.sectionType === sectionType)
       && (node.identity === identity || node.id === identity)
-    )
+    ) {
       return node
+    }
     const match = findOwnedNode(node.children ?? [], identity, sectionType)
-    if (match)
+    if (match) {
       return match
+    }
   }
   return null
 }
@@ -872,12 +911,14 @@ function findFolderNode(
         || String(node.id ?? '') === expected
         || String(node.id ?? '') === `folder:${expected}`
       )
-    )
+    ) {
       return node
+    }
 
     const match = findFolderNode(node.children ?? [], folderId)
-    if (match)
+    if (match) {
       return match
+    }
   }
   return null
 }
@@ -888,13 +929,15 @@ function attachContextualCompositions(
 ): void {
   for (const composition of compositions) {
     const kind = composition.kind ?? 'library'
-    if (kind === 'library')
+    if (kind === 'library') {
       continue
+    }
 
     const rootId = COMPOSITION_KIND_ROOT[kind] ?? 'root-compositions'
     const root = tree.find(node => node.type === 'folder' && node.id === rootId) as FsFolderNode | undefined
-    if (!root)
+    if (!root) {
       continue
+    }
 
     const kindIdentity = String(composition.kindIdentity ?? '').trim()
     const owner = kindIdentity

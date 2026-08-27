@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-type Option = {
+interface Option {
   value: string
   label?: string
   disabled?: boolean
@@ -33,7 +33,9 @@ const q = ref<string>('')
 
 const optionsByValue = computed(() => {
   const m = new Map<string, Option>()
-  for (const o of props.options) m.set(String(o.value), o)
+  for (const o of props.options) {
+    m.set(String(o.value), o)
+  }
   return m
 })
 
@@ -48,7 +50,9 @@ const filteredOptions = computed(() => {
   const list = Array.isArray(props.options) ? props.options : []
   const query = q.value.trim().toLowerCase()
 
-  if (!props.searchable || !query) return list
+  if (!props.searchable || !query) {
+    return list
+  }
 
   return list.filter((o) => {
     const v = String(o.value ?? '').toLowerCase()
@@ -58,24 +62,32 @@ const filteredOptions = computed(() => {
 })
 
 function toggleValue(v: string) {
-  if (props.disabled) return
+  if (props.disabled) {
+    return
+  }
 
   const value = String(v)
   const set = new Set(selected.value.map(String))
 
-  if (set.has(value)) set.delete(value)
-  else set.add(value)
+  if (set.has(value)) {
+    set.delete(value)
+  }
+  else { set.add(value) }
 
   selected.value = Array.from(set)
 }
 
 function clearAll() {
-  if (props.disabled) return
+  if (props.disabled) {
+    return
+  }
   selected.value = []
 }
 
 function removeOne(v: string) {
-  if (props.disabled) return
+  if (props.disabled) {
+    return
+  }
   selected.value = selected.value.filter(x => String(x) !== String(v))
 }
 
@@ -100,7 +112,9 @@ watch(
     // нормализуем: если options поменялись и выбранное больше не существует - вычищаем
     const allowed = new Set((props.options ?? []).map(o => String(o.value)))
     const next = selected.value.filter(v => allowed.has(String(v)))
-    if (next.length !== selected.value.length) selected.value = next
+    if (next.length !== selected.value.length) {
+      selected.value = next
+    }
   },
   { deep: true },
 )

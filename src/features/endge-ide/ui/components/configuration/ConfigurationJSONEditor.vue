@@ -11,7 +11,9 @@ const text = ref(JSON.stringify(props.modelValue, null, 2))
 const error = ref('')
 watch(() => props.modelValue, (value) => {
   const next = JSON.stringify(value, null, 2)
-  if (!error.value && text.value !== next) text.value = next
+  if (!error.value && text.value !== next) {
+    text.value = next
+  }
 }, { deep: true })
 
 function update(value: string): void {
@@ -30,6 +32,8 @@ function update(value: string): void {
 <template>
   <div class="space-y-1.5">
     <ScriptEditor :model-value="text" language="json" format-language="json" :min-height="180" :show-toolbar="true" :read-only="disabled" @update:model-value="update" />
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <p v-if="error" class="text-xs text-destructive">
+      {{ error }}
+    </p>
   </div>
 </template>

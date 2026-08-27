@@ -1,16 +1,16 @@
 /* eslint-disable style/max-statements-per-line */
 import type {
-  RuntimePreviewCompositionAddress,
-  RuntimePreviewOccurrence,
-  RuntimePreviewTarget,
-} from '@/features/endge-ide/domain/types/runtime-preview.types'
-import type {
   ComponentSFCProgramPayload,
   CompositionProgramPayload,
   CompositionRuntimeDescriptor,
   ProgramArtifact,
   RuntimeArtifactReader,
 } from '@endge/core'
+import type {
+  RuntimePreviewCompositionAddress,
+  RuntimePreviewOccurrence,
+  RuntimePreviewTarget,
+} from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Endge } from '@endge/core'
 

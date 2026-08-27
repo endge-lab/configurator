@@ -1,4 +1,5 @@
-import { HotkeyManager } from '@endge/utils'
+import type { HotkeyManager } from '@endge/utils'
+import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/model/adapters/EndgeIDEHotkeysBrowser_Adapter'
 
 /** Один пункт горячих клавиш: описание и комбинации для UI и регистрации */
 export interface EndgeIDEHotkeyItem {
@@ -35,6 +36,8 @@ export function isCloseTabShortcut(event: Pick<KeyboardEvent, 'altKey' | 'code' 
  * Все комбинации задаются в REGISTERED_HOTKEYS; подписка в init(), отписка в reset().
  */
 export class EndgeIDEHotkeys_Module {
+  /** Hotkey manager, browser adapter и lifecycle callbacks. */
+  private readonly _browser: EndgeIDEHotkeysBrowser_Adapter
   private _manager: HotkeyManager | null = null
   private _onSave: (() => void | Promise<void>) | null = null
   private _onCloseTab: (() => void) | null = null
@@ -45,6 +48,17 @@ export class EndgeIDEHotkeys_Module {
   private _createDocumentCaptureBound: ((e: KeyboardEvent) => void) | null = null
   private _runRuntimeCaptureBound: ((e: KeyboardEvent) => void) | null = null
   private _returnToProjectBound: ((e: KeyboardEvent) => void) | null = null
+
+  /**
+   * ----------------------------------------
+   * PUBLIC
+   * ----------------------------------------
+   */
+
+  /** Создаёт hotkeys-модуль с явным browser adapter. */
+  public constructor(browser: EndgeIDEHotkeysBrowser_Adapter = new EndgeIDEHotkeysBrowser_Adapter()) {
+    this._browser = browser
+  }
 
   /** Колбэк сохранения документа. Задаётся из EndgeIDE.init(). */
   public setSaveHandler(handler: () => void | Promise<void>): void {
@@ -61,10 +75,12 @@ export class EndgeIDEHotkeys_Module {
     this._onCreateDocument = handler
   }
 
+  /** Задаёт handler запуска Runtime Preview. */
   public setRunRuntimeHandler(handler: () => boolean): void {
     this._onRunRuntime = handler
   }
 
+  /** Задаёт handler возврата к текущему Project. */
   public setReturnToProjectHandler(handler: () => boolean): void {
     this._onReturnToProject = handler
   }
@@ -74,11 +90,12 @@ export class EndgeIDEHotkeys_Module {
     return REGISTERED_HOTKEYS
   }
 
+  /** Регистрирует hotkeys и browser listeners на lifecycle IDE. */
   public init(): void {
     if (this._manager) {
       return
     }
-    this._manager = new HotkeyManager({ target: window, ignoreInput: true })
+    this._manager = this._browser.createManager()
 
     for (const item of REGISTERED_HOTKEYS) {
       const keys = Array.isArray(item.keys) ? item.keys : [item.keys]
@@ -116,7 +133,7 @@ export class EndgeIDEHotkeys_Module {
       e.stopImmediatePropagation()
       this._onCloseTab?.()
     }
-    window.addEventListener('keydown', this._closeTabCaptureBound, { capture: true })
+    this._browser.addKeydown(this._closeTabCaptureBound, true)
 
     // Capture-фаза: перехватываем Cmd+N/Ctrl+N до браузера (новое окно)
     this._createDocumentCaptureBound = (e: KeyboardEvent) => {
@@ -126,7 +143,7 @@ export class EndgeIDEHotkeys_Module {
       if (!e.ctrlKey && !e.metaKey) {
         return
       }
-      if (document.querySelector('[data-editor-shortcut-scope][data-shortcuts-active="true"]')) {
+      if (this._browser.hasActiveEditorScope()) {
         return
       }
       const target = e.target as HTMLElement | null
@@ -137,7 +154,7 @@ export class EndgeIDEHotkeys_Module {
       e.stopPropagation()
       this._onCreateDocument?.()
     }
-    window.addEventListener('keydown', this._createDocumentCaptureBound, { capture: true })
+    this._browser.addKeydown(this._createDocumentCaptureBound, true)
 
     // Monaco and other source editors may consume Enter, so runtime launch uses capture phase.
     this._runRuntimeCaptureBound = (e: KeyboardEvent) => {
@@ -150,7 +167,7 @@ export class EndgeIDEHotkeys_Module {
       e.preventDefault()
       e.stopPropagation()
     }
-    window.addEventListener('keydown', this._runRuntimeCaptureBound, { capture: true })
+    this._browser.addKeydown(this._runRuntimeCaptureBound, true)
 
     // Bubble phase lets dialogs and context menus consume Escape before workspace navigation.
     this._returnToProjectBound = (e: KeyboardEvent) => {
@@ -161,24 +178,25 @@ export class EndgeIDEHotkeys_Module {
         e.preventDefault()
       }
     }
-    window.addEventListener('keydown', this._returnToProjectBound)
+    this._browser.addKeydown(this._returnToProjectBound)
   }
 
+  /** Освобождает hotkeys и browser listeners. */
   public reset(): void {
     if (this._closeTabCaptureBound) {
-      window.removeEventListener('keydown', this._closeTabCaptureBound, { capture: true })
+      this._browser.removeKeydown(this._closeTabCaptureBound, true)
       this._closeTabCaptureBound = null
     }
     if (this._createDocumentCaptureBound) {
-      window.removeEventListener('keydown', this._createDocumentCaptureBound, { capture: true })
+      this._browser.removeKeydown(this._createDocumentCaptureBound, true)
       this._createDocumentCaptureBound = null
     }
     if (this._runRuntimeCaptureBound) {
-      window.removeEventListener('keydown', this._runRuntimeCaptureBound, { capture: true })
+      this._browser.removeKeydown(this._runRuntimeCaptureBound, true)
       this._runRuntimeCaptureBound = null
     }
     if (this._returnToProjectBound) {
-      window.removeEventListener('keydown', this._returnToProjectBound)
+      this._browser.removeKeydown(this._returnToProjectBound)
       this._returnToProjectBound = null
     }
     this._onSave = null

@@ -1,21 +1,23 @@
 <script setup lang="ts">
+import { useCurrentProjectFilter, useDomainStore } from '@endge/ui-vue'
 import { ChevronsUpDown } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useCurrentProjectFilter, useDomainStore } from '@endge/ui-vue'
-import { computed } from 'vue'
 
 const domainStore = useDomainStore()
 const { current: currentProject, setCurrent: setCurrentProject } = useCurrentProjectFilter()
 
 const projectLabel = computed(() => {
-  if (!currentProject.value) return 'Все'
+  if (!currentProject.value) {
+    return 'Все'
+  }
   const p = domainStore.projects.find((x: { identity: string }) => x.identity === currentProject.value)
   return p?.displayName ?? p?.name ?? currentProject.value ?? 'Все'
 })

@@ -1,5 +1,5 @@
-import type { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
 import type { Component, ComputedRef } from 'vue'
+import type { SmartTabViewRegistry } from '@/components/ui/smart-tabs/SmartTabViewRegistry'
 
 export type SmartTabId = string
 

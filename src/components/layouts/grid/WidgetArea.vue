@@ -14,14 +14,16 @@ const areaState = computed(() => widgets.value.areas[props.position])
 
 const activeDefinition = computed(() => {
   const activeId = areaState.value.activeWidget
-  if (!activeId)
+  if (!activeId) {
     return null
+  }
   return widgets.value.definitions[activeId] ?? null
 })
 
 const activeInstances = computed(() => {
-  if (!activeDefinition.value)
+  if (!activeDefinition.value) {
     return []
+  }
   return getWidgetInstances(activeDefinition.value.id)
 })
 

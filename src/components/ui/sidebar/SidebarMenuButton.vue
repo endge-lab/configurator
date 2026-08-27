@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { SidebarMenuButtonProps } from '@/components/ui/sidebar/SidebarMenuButtonChild.vue'
 import type { Component } from 'vue'
+import type { SidebarMenuButtonProps } from '@/components/ui/sidebar/SidebarMenuButtonChild.vue'
 
 import { reactiveOmit } from '@vueuse/core'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-
 import SidebarMenuButtonChild from '@/components/ui/sidebar/SidebarMenuButtonChild.vue'
+
 import { useSidebar } from '@/components/ui/sidebar/utils.ts'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 defineOptions({
   inheritAttrs: false,

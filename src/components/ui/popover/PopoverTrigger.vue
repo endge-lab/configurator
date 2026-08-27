@@ -6,8 +6,9 @@ interface PopoverCtx {
 }
 
 const popover = inject<PopoverCtx>('popover')
-if (!popover)
+if (!popover) {
   throw new Error('PopoverTrigger must be used inside Popover')
+}
 
 const el = ref<HTMLElement | null>(null)
 

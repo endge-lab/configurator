@@ -2,13 +2,13 @@
 import type { DropdownMenuContentEmits, DropdownMenuContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
-import { computed } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
   useForwardPropsEmits,
 } from 'reka-ui'
+import { computed } from 'vue'
 
 import { cn } from '@/lib/utils.ts'
 
@@ -18,7 +18,7 @@ const props = withDefaults(
     sideOffset: 4,
   },
 )
-const emits = defineEmits<DropdownMenuContentEmits & { mouseenter: [e: MouseEvent]; mouseleave: [e: MouseEvent] }>()
+const emits = defineEmits<DropdownMenuContentEmits & { mouseenter: [e: MouseEvent], mouseleave: [e: MouseEvent] }>()
 
 const delegatedProps = reactiveOmit(props, 'class')
 

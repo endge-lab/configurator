@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
-import type {
-  TableCellBindingValueKind,
-  TableCellComponentOption,
-} from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type {
   ComponentSFCTableEditableElementProjection,
   ComponentSFCTableVisualCellTag,
   RComponentContractInput,
 } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type {
+  TableCellBindingValueKind,
+  TableCellComponentOption,
+} from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 
 import {
   compileComponentSFCExpression,

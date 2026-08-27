@@ -9,7 +9,7 @@ import type {
 type UnknownRecord = Record<string, unknown>
 
 /** HTTP service developer session нового backend. */
-export class ConfiguratorSession_Service implements ConfiguratorSessionService {
+export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionService {
   private readonly _baseURL: string
 
   public constructor(baseURL: string) {

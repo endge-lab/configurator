@@ -10,10 +10,12 @@ import type {
 } from '@/app/domain/types/configurator.type'
 import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
 import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
+import type { AccessControlModule } from '@/features/access-control'
 import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
-import { ConfiguratorSession_Service } from '@/features/configurator-session/model/ConfiguratorSession_Service'
+import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session/model/adapters/ConfiguratorSessionHttp_Adapter'
+import { createAccessControlModule } from '@/features/access-control'
 import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
 import {
   clearConfiguratorLoginRedirectGuard,
@@ -23,7 +25,7 @@ import { resolveConfiguratorWorkspace } from '@/features/backend-connections/mod
 
 import { createConfiguratorModules } from '@/app/model/config/modules.config'
 import { VueErrorBoundary_Adapter } from '@/app/model/adapters/VueErrorBoundary_Adapter'
-import { ServiceBackendDomain_Service } from '@/features/endge-ide/model/backend/ServiceBackendDomain_Service'
+import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 /* eslint-enable perfectionist/sort-imports */
@@ -43,6 +45,7 @@ export class Configurator {
   private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
   private static _backendConnectionFailure: ConfiguratorBackendConnectionFailure | null = null
   private static _errorBoundary: VueErrorBoundary_Adapter | null = null
+  private static _accessControl: AccessControlModule | null = null
 
   private constructor() {}
 
@@ -103,6 +106,16 @@ export class Configurator {
 
   public static get layout() {
     return this._modules.layout
+  }
+
+  public static get oidcDiscovery() {
+    return this._modules.oidcDiscovery
+  }
+
+  /** Возвращает application-scoped access-control module для активного backend. */
+  public static get accessControl(): AccessControlModule {
+    this._accessControl ??= createAccessControlModule(this._modules.connections.activeBackendURL)
+    return this._accessControl
   }
 
   public static setup(app: App, router: Router): void {
@@ -178,6 +191,7 @@ export class Configurator {
     this._modules.diagnostics.reset()
     this._modules.questions.reset()
     this._modules.layout.reset()
+    this._accessControl = null
     this._authenticationRequirement = null
     this._backendConnectionFailure = null
     this._status = 'idle'
@@ -195,7 +209,7 @@ export class Configurator {
     this._backendConnectionFailure = null
     const backendConfig = getEndgeBackendConfig()
     if (!this._modules.connections.isPrimaryActive) {
-      const primarySession = await new ConfiguratorSession_Service(backendConfig.primaryBackendURL).check()
+      const primarySession = await new ConfiguratorSessionHttp_Adapter(backendConfig.primaryBackendURL).check()
       if (primarySession.status === 'unauthenticated') {
         return this._startLoginOrRequire(primarySession.loginUrl, backendConfig.primaryBackendURL)
       }
@@ -277,7 +291,7 @@ export class Configurator {
       throw new ConfiguratorBootstrapError('workspace_forbidden', `Workspace access denied: ${workspaceIdentity}`)
     }
 
-    const domainProvider = new ServiceBackendDomain_Service(
+    const domainProvider = new ServiceBackendDomainHttp_Adapter(
       backendConfig.serviceBackendURL,
       loginUrl => this._startLoginOrThrow(loginUrl),
       role !== 'viewer',

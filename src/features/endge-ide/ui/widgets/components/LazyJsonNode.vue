@@ -45,7 +45,9 @@ function showMoreKeys(): void {
 
 /** Видимый срез массива. */
 const arraySlice = computed(() => {
-  if (!Array.isArray(props.data)) return []
+  if (!Array.isArray(props.data)) {
+    return []
+  }
   return props.data.slice(0, shownCount.value)
 })
 
@@ -55,14 +57,22 @@ const moreCount = computed(() =>
 )
 
 function showMore(): void {
-  if (!Array.isArray(props.data)) return
+  if (!Array.isArray(props.data)) {
+    return
+  }
   shownCount.value = Math.min(shownCount.value + props.chunkSize, props.data.length)
 }
 
 function primitivePreview(val: unknown): string {
-  if (val === null) return 'null'
-  if (val === undefined) return 'undefined'
-  if (typeof val === 'string') return JSON.stringify(val)
+  if (val === null) {
+    return 'null'
+  }
+  if (val === undefined) {
+    return 'undefined'
+  }
+  if (typeof val === 'string') {
+    return JSON.stringify(val)
+  }
   return String(val)
 }
 </script>

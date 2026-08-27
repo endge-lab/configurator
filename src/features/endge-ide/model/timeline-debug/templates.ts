@@ -1,11 +1,11 @@
 import type {
-  GroupColumnHeader,
   GroupColumn,
-  TimelineTask,
-  Tooltip,
+  GroupColumnHeader,
   TimelineCluster,
   TimelineGroupInput,
+  TimelineTask,
   TimelineTaskInput,
+  Tooltip,
 } from '@endge/timeline-chart'
 
 function task<G extends TimelineGroupInput, T extends TimelineTaskInput>(
@@ -77,71 +77,69 @@ function task<G extends TimelineGroupInput, T extends TimelineTaskInput>(
   }
 }
 
-const groupColumnHeader = <
+function groupColumnHeader<
   G extends TimelineGroupInput,
   T extends TimelineTaskInput,
->(
-  ctx: GroupColumnHeader<G, T>,
-): NovaSchema => [
-  {
-    type: 'text',
-    text: ctx.column.title,
-    x: ctx.x,
-    y: ctx.y,
-    width: ctx.width,
-    height: ctx.height,
-    styles: {
-      color: 'white',
-      ellipsis: true,
+>(ctx: GroupColumnHeader<G, T>): NovaSchema {
+  return [
+    {
+      type: 'text',
+      text: ctx.column.title,
+      x: ctx.x,
+      y: ctx.y,
+      width: ctx.width,
+      height: ctx.height,
+      styles: {
+        color: 'white',
+        ellipsis: true,
+      },
     },
-  },
-]
+  ]
+}
 
-const groupColumn = <G extends TimelineGroupInput, T extends TimelineTaskInput>(
-  ctx: GroupColumn<G, T>,
-): NovaSchema => [
-  {
-    type: 'rect',
-    x: ctx.x,
-    y: ctx.y,
-    width: ctx.width,
-    height: ctx.height,
-    styles: {
-      background: 'lightblue',
+function groupColumn<G extends TimelineGroupInput, T extends TimelineTaskInput>(ctx: GroupColumn<G, T>): NovaSchema {
+  return [
+    {
+      type: 'rect',
+      x: ctx.x,
+      y: ctx.y,
+      width: ctx.width,
+      height: ctx.height,
+      styles: {
+        background: 'lightblue',
+      },
+      active: ctx.group.isSelected,
     },
-    active: ctx.group.isSelected,
-  },
-  {
-    type: 'text',
-    x: ctx.x,
-    y: ctx.y,
-    width: ctx.width,
-    height: ctx.height,
-    text: ctx.data,
-    styles: {
-      color: '#ABB2C0',
-      ellipsis: true,
+    {
+      type: 'text',
+      x: ctx.x,
+      y: ctx.y,
+      width: ctx.width,
+      height: ctx.height,
+      text: ctx.data,
+      styles: {
+        color: '#ABB2C0',
+        ellipsis: true,
+      },
     },
-  },
-]
+  ]
+}
 
-const tooltip = <G extends TimelineGroupInput, T extends TimelineTaskInput>(
-  ctx: Tooltip<G, T>,
-): NovaSchema => [
-  {
-    type: 'text-markdown',
-    x: ctx.x,
-    y: ctx.y,
-    text: `${ctx.task.item.displayName}`,
-    styles: {
-      color: 'white',
+function tooltip<G extends TimelineGroupInput, T extends TimelineTaskInput>(ctx: Tooltip<G, T>): NovaSchema {
+  return [
+    {
+      type: 'text-markdown',
+      x: ctx.x,
+      y: ctx.y,
+      text: `${ctx.task.item.displayName}`,
+      styles: {
+        color: 'white',
+      },
     },
-  },
-]
+  ]
+}
 
-const cluster = <G extends TimelineGroupInput, T extends TimelineTaskInput>(
-  ctx: TimelineCluster<G, T>,
-): NovaSchema => {
+function cluster<G extends TimelineGroupInput, T extends TimelineTaskInput>(ctx: TimelineCluster<G, T>): NovaSchema {
   return [
     {
       type: 'rect',

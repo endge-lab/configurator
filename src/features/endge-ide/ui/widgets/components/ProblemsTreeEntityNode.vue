@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { ProblemsEntityEntry } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import type { DomainDocumentType } from '@endge/core'
 import type { Component } from 'vue'
+import type { ProblemsEntityEntry } from '@/features/endge-ide/domain/types/problems-workspace.types'
 
 import { Box, CircleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
 import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 const props = defineProps<{
   entry: ProblemsEntityEntry

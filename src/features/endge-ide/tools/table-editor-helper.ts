@@ -5,15 +5,19 @@
 
 /** Собирает пути до примитивов в объекте в формате "a.b.c" */
 export function collectPathStrings(obj: unknown, prefix = ''): string[] {
-  if (obj === null || obj === undefined) return []
+  if (obj === null || obj === undefined) {
+    return []
+  }
   const out: string[] = []
   if (typeof obj === 'object' && !Array.isArray(obj)) {
     for (const key of Object.keys(obj as Record<string, unknown>)) {
       const full = prefix ? `${prefix}.${key}` : key
       const val = (obj as Record<string, unknown>)[key]
       const isLeaf = val === null || typeof val !== 'object' || Array.isArray(val)
-      if (isLeaf && full) out.push(full)
-      else out.push(...collectPathStrings(val, full))
+      if (isLeaf && full) {
+        out.push(full)
+      }
+      else { out.push(...collectPathStrings(val, full)) }
     }
   }
   return out
@@ -25,7 +29,9 @@ export function collectPathStrings(obj: unknown, prefix = ''): string[] {
  */
 export function splitToWords(str: string): string[] {
   const s = String(str).trim()
-  if (!s) return []
+  if (!s) {
+    return []
+  }
   // Сначала по подчёркиваниям, потом по границам camelCase
   return s
     .replace(/_/g, ' ')
@@ -40,8 +46,12 @@ export function splitToWords(str: string): string[] {
 function wordScore(a: string, b: string): number {
   const x = a.toLowerCase()
   const y = b.toLowerCase()
-  if (x === y) return 100
-  if (x.includes(y) || y.includes(x)) return 50
+  if (x === y) {
+    return 100
+  }
+  if (x.includes(y) || y.includes(x)) {
+    return 50
+  }
   return 0
 }
 
@@ -50,13 +60,17 @@ function wordScore(a: string, b: string): number {
  * максимальное совпадение с любым словом поля данных; суммируем.
  */
 function scoreByWords(tableWords: string[], dataWords: string[]): number {
-  if (!tableWords.length) return 0
+  if (!tableWords.length) {
+    return 0
+  }
   let sum = 0
   for (const tw of tableWords) {
     let best = 0
     for (const dw of dataWords) {
       const s = wordScore(tw, dw)
-      if (s > best) best = s
+      if (s > best) {
+        best = s
+      }
     }
     sum += best
   }
@@ -74,14 +88,22 @@ export function fuzzyMatchPath(
   _sample?: Record<string, unknown> | null,
   _targetType?: string,
 ): string | null {
-  if (!paths.length) return null
+  if (!paths.length) {
+    return null
+  }
   const first = paths[0]
-  if (first === undefined) return null
+  if (first === undefined) {
+    return null
+  }
   const name = targetName?.trim()
-  if (!name) return first
+  if (!name) {
+    return first
+  }
 
   const tableWords = splitToWords(name)
-  if (!tableWords.length) return first
+  if (!tableWords.length) {
+    return first
+  }
 
   let bestPath: string = first
   const pathPart0 = first.split('.').pop() ?? first
@@ -89,7 +111,9 @@ export function fuzzyMatchPath(
 
   for (let i = 1; i < paths.length; i++) {
     const path = paths[i]
-    if (path === undefined) continue
+    if (path === undefined) {
+      continue
+    }
     const pathPart = path.split('.').pop() ?? path
     const dataWords = splitToWords(pathPart)
     const score = scoreByWords(tableWords, dataWords)
@@ -142,9 +166,13 @@ export type PrimitiveKind = 'string' | 'number' | 'boolean' | 'date' | 'datetime
 
 /** Значение по точечному пути a.b.c из объекта (sample) */
 export function getValueByPath(obj: any, path: string): unknown {
-  if (!obj || !path) return undefined
+  if (!obj || !path) {
+    return undefined
+  }
   return String(path).split('.').reduce<any>((acc, key) => {
-    if (acc == null) return undefined
+    if (acc == null) {
+      return undefined
+    }
     return acc[key]
   }, obj)
 }
@@ -155,7 +183,9 @@ export const TABLE_PREVIEW_STORE_PREFIX = 'endge:admin:table-preview:'
 /** Путь в строке после [$i]. из accessor (например $store.legs[$i].id - "id") */
 export function pathFromAccessor(accessor: string): string | null {
   const s = String(accessor ?? '').trim()
-  if (!s) return null
+  if (!s) {
+    return null
+  }
   const match = s.match(/\[\$i\]\.?(.*)$/s)
   const path = match ? (match[1] ?? '').trim() : ''
   return path || null
@@ -166,13 +196,14 @@ export function pathFromAccessor(accessor: string): string | null {
  * Используется в превью таблицы (инспектор и виджет Демонстрация).
  */
 export function extractColumnDataForPreview(
-  col: { accessors?: Array<{ name?: string; accessor?: string; converter?: string }> },
+  col: { accessors?: Array<{ name?: string, accessor?: string, converter?: string }> },
   sample: Record<string, unknown> | null,
   getConverter: (id: string) => { convert: (v: unknown) => unknown } | null,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {}
-  if (!sample || typeof sample !== 'object' || !Array.isArray(col?.accessors))
+  if (!sample || typeof sample !== 'object' || !Array.isArray(col?.accessors)) {
     return out
+  }
   for (const acc of col.accessors) {
     const name = (acc.name ?? '').trim() || 'value'
     const path = pathFromAccessor(acc.accessor ?? '')
@@ -185,8 +216,9 @@ export function extractColumnDataForPreview(
       if (ids.length) {
         for (const id of ids) {
           const converter = getConverter(id)
-          if (!converter)
+          if (!converter) {
             continue
+          }
           value = converter.convert(value)
         }
       }
@@ -200,7 +232,7 @@ export function extractColumnDataForPreview(
 const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/i
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const TIME_ONLY = /^\d{1,2}:\d{2}(:\d{2})?$/
-const NUMERIC_STRING = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/
+const NUMERIC_STRING = /^-?\d+(\.\d+)?(e[+-]?\d+)?$/i
 const TIMESTAMP_MS_MIN = 1e10
 const TIMESTAMP_MS_MAX = 2e12
 const JSON_OBJECT_START = /^\s*\{/
@@ -210,45 +242,82 @@ const JSON_ARRAY_START = /^\s*\[/
  * Определяет тип примитива значения из запроса по runtime-значению и формату строки.
  */
 export function detectSamplePrimitiveKind(value: unknown): PrimitiveKind {
-  if (value == null) return 'unknown'
-  if (typeof value === 'boolean') return 'boolean'
+  if (value == null) {
+    return 'unknown'
+  }
+  if (typeof value === 'boolean') {
+    return 'boolean'
+  }
   if (value instanceof Date) {
     return isNaN(value.getTime()) ? 'unknown' : 'datetime'
   }
   if (typeof value === 'number') {
-    if (Number.isInteger(value) && value >= TIMESTAMP_MS_MIN && value <= TIMESTAMP_MS_MAX)
+    if (Number.isInteger(value) && value >= TIMESTAMP_MS_MIN && value <= TIMESTAMP_MS_MAX) {
       return 'datetime'
+    }
     return 'number'
   }
   if (typeof value === 'string') {
     const v = value.trim()
-    if (!v) return 'string'
-    if (ISO_DATETIME.test(v)) return 'datetime'
-    if (DATE_ONLY.test(v)) return 'date'
-    if (TIME_ONLY.test(v)) return 'time'
-    if (NUMERIC_STRING.test(v)) return 'number'
-    if (JSON_OBJECT_START.test(v) || JSON_ARRAY_START.test(v)) return 'object'
+    if (!v) {
+      return 'string'
+    }
+    if (ISO_DATETIME.test(v)) {
+      return 'datetime'
+    }
+    if (DATE_ONLY.test(v)) {
+      return 'date'
+    }
+    if (TIME_ONLY.test(v)) {
+      return 'time'
+    }
+    if (NUMERIC_STRING.test(v)) {
+      return 'number'
+    }
+    if (JSON_OBJECT_START.test(v) || JSON_ARRAY_START.test(v)) {
+      return 'object'
+    }
     return 'string'
   }
-  if (Array.isArray(value)) return 'unknown'
-  if (typeof value === 'object') return 'object'
+  if (Array.isArray(value)) {
+    return 'unknown'
+  }
+  if (typeof value === 'object') {
+    return 'object'
+  }
   return 'unknown'
 }
 
 /** Нормализует имя типа домена к примитивному виду или any. */
 export function normalizeFieldType(typeName: string | undefined | null): PrimitiveKind | 'any' {
-  if (!typeName) return 'unknown'
+  if (!typeName) {
+    return 'unknown'
+  }
   const t = String(typeName).trim().toLowerCase()
-  if (t === 'any') return 'any'
-  if (t.includes('bool')) return 'boolean'
-  if (t.includes('int') || t.includes('float') || t.includes('number') || t.includes('decimal') || t.includes('double'))
+  if (t === 'any') {
+    return 'any'
+  }
+  if (t.includes('bool')) {
+    return 'boolean'
+  }
+  if (t.includes('int') || t.includes('float') || t.includes('number') || t.includes('decimal') || t.includes('double')) {
     return 'number'
-  if (t.includes('datetime') || (t.includes('date') && t.includes('time')))
+  }
+  if (t.includes('datetime') || (t.includes('date') && t.includes('time'))) {
     return 'datetime'
-  if (t.includes('date')) return 'date'
-  if (t.includes('time')) return 'time'
-  if (t.includes('string') || t.includes('text')) return 'string'
-  if (t.includes('object') || t.includes('json') || t.includes('record') || t.includes('map')) return 'object'
+  }
+  if (t.includes('date')) {
+    return 'date'
+  }
+  if (t.includes('time')) {
+    return 'time'
+  }
+  if (t.includes('string') || t.includes('text')) {
+    return 'string'
+  }
+  if (t.includes('object') || t.includes('json') || t.includes('record') || t.includes('map')) {
+    return 'object'
+  }
   return 'unknown'
 }
 
@@ -259,7 +328,7 @@ export function normalizeFieldType(typeName: string | undefined | null): Primiti
  * iso-string-to-time-string, weekdays-range, string-trim, default-if-empty, string-to-boolean,
  * to-array, split, string-to-number, number-to-string, json-parse, json-stringify.
  */
-const CONVERTER_MATRIX: Array<{ from: PrimitiveKind; to: PrimitiveKind; converterId: string }> = [
+const CONVERTER_MATRIX: Array<{ from: PrimitiveKind, to: PrimitiveKind, converterId: string }> = [
   // Строка - число / булево
   { from: 'string', to: 'number', converterId: 'string-to-number' },
   { from: 'string', to: 'boolean', converterId: 'string-to-boolean' },
@@ -285,7 +354,9 @@ const CONVERTER_MATRIX: Array<{ from: PrimitiveKind; to: PrimitiveKind; converte
 
 /** Подобрать подходящий конвертер по типу до/после. */
 export function pickConverterId(from: PrimitiveKind, to: PrimitiveKind): string | null {
-  if (from === 'unknown' || to === 'unknown') return null
+  if (from === 'unknown' || to === 'unknown') {
+    return null
+  }
   const found = CONVERTER_MATRIX.find(r => r.from === from && r.to === to)
   return found?.converterId ?? null
 }
@@ -296,9 +367,13 @@ export function pickConverterId(from: PrimitiveKind, to: PrimitiveKind): string 
  */
 export function autoFillColumn(column: ColumnForFill, opts: AutoFillOpts): number {
   const { sample, ...buildOpts } = opts
-  if (!sample || typeof sample !== 'object') return 0
+  if (!sample || typeof sample !== 'object') {
+    return 0
+  }
   const paths = collectPathStrings(sample)
-  if (!paths.length) return 0
+  if (!paths.length) {
+    return 0
+  }
   let filled = 0
   const accessors = column.accessors ?? []
   for (const row of accessors) {
@@ -315,8 +390,9 @@ export function autoFillColumn(column: ColumnForFill, opts: AutoFillOpts): numbe
         const toKind = normalizeFieldType(targetTypeName)
         if (toKind !== 'any') {
           const convId = pickConverterId(fromKind, toKind)
-          if (convId)
+          if (convId) {
             row.converter = convId
+          }
         }
       }
       filled++

@@ -8,6 +8,7 @@ import {
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
+import { Configurator } from '@/app/model/kernel/configurator'
 import ZoomButton from '@/components/layouts/main/ZoomButton.vue'
 import {
   DropdownMenu,
@@ -28,7 +29,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Configurator } from '@/app'
 
 defineProps<{
   user?: {

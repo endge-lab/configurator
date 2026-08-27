@@ -16,10 +16,10 @@ export function deepMerge<T extends Record<string, any>>(base: T, override: Part
   for (const key of Object.keys(override || {})) {
     const b = (base as any)[key]
     const o = (override as any)[key]
-    if (o && typeof o === 'object' && !Array.isArray(o) && b && typeof b === 'object' && !Array.isArray(b))
+    if (o && typeof o === 'object' && !Array.isArray(o) && b && typeof b === 'object' && !Array.isArray(b)) {
       out[key] = deepMerge(b, o)
-    else
-      out[key] = o
+    }
+    else { out[key] = o }
   }
   return out as T
 }

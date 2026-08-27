@@ -1,3 +1,5 @@
+import type { EndgeDomainPlain } from '@endge/core'
+
 export type ConfiguratorChromeBridgeRequestType = 'ENDGE_BRIDGE_PING' | 'ENDGE_BRIDGE_EXPORT_DOMAIN'
 
 export interface ConfiguratorChromeBridgeRequest {
@@ -20,7 +22,7 @@ export interface EndgeAdminBridgeBundle {
   sourceUrl: string
   projectId: string | null
   environment: string | null
-  domain: Record<string, unknown>
+  domain: EndgeDomainPlain
 }
 
 export interface EndgeAdminBridgeApi {

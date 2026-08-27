@@ -64,7 +64,8 @@ function parseObject(value: string): Record<string, unknown> {
 function parseStringObject(value: string): Record<string, string> {
   const raw = parseObject(value)
   const out: Record<string, string> = {}
-  for (const [key, v] of Object.entries(raw))
+  for (const [key, v] of Object.entries(raw)) {
     out[key] = v == null ? '' : String(v)
+  }
   return out
 }

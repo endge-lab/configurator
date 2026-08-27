@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
+import type { EndgeDomainBundle } from '@endge/core'
 import type {
   ServiceBackendDomainImportPlan,
   ServiceBackendDomainImportResult,
 } from '@/features/endge-ide/domain/types/domain-transfer.type'
-import type { EndgeDomainBundle } from '@endge/core'
 
 import { Endge } from '@endge/core'
 import {
@@ -16,7 +16,7 @@ import {
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -30,9 +30,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { startConfiguratorLogin } from '@/features/configurator-session'
 import {
-  ServiceBackendDomainTransfer_Service,
   ServiceBackendDomainTransferError,
-} from '@/features/endge-ide/model/backend/ServiceBackendDomainTransfer_Service'
+} from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
 
 type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
 
@@ -46,10 +45,6 @@ const errorMessage = ref('')
 const isDragOver = ref(false)
 let planController: AbortController | null = null
 
-const backendConfig = Configurator.context.backendConfig
-const transferService = backendConfig
-  ? new ServiceBackendDomainTransfer_Service(backendConfig.serviceBackendURL)
-  : null
 const workspaceIdentity = computed(() => String(Endge.workspace.current.identity ?? '').trim())
 const isBusy = computed(() => importState.value === 'checking'
   || importState.value === 'importing'
@@ -145,11 +140,8 @@ async function selectFile(file: File): Promise<void> {
   importState.value = 'checking'
 
   try {
-    if (!transferService) {
-      throw new Error('Полный импорт доступен только в режиме service-backend')
-    }
     const snapshot = parseSnapshot(await file.text())
-    const nextPlan = await transferService.planImport({
+    const nextPlan = await EndgeIDE.domainTransfer.planImport({
       workspaceIdentity: workspaceIdentity.value,
       snapshot,
       signal: controller.signal,
@@ -179,7 +171,7 @@ async function selectFile(file: File): Promise<void> {
 
 async function applyImport(): Promise<void> {
   const currentPlan = plan.value
-  if (!transferService || !canImport.value || !currentPlan?.planId) {
+  if (!canImport.value || !currentPlan?.planId) {
     return
   }
 
@@ -187,7 +179,7 @@ async function applyImport(): Promise<void> {
   importState.value = 'importing'
   let result: ServiceBackendDomainImportResult
   try {
-    result = await transferService.import({
+    result = await EndgeIDE.domainTransfer.import({
       workspaceIdentity: workspaceIdentity.value,
       planId: currentPlan.planId,
       confirmation: confirmation.value.trim(),

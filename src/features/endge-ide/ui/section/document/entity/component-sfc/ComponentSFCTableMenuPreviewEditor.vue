@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
   ComponentSFCExpressionCompletionScope,
   ComponentSFCTableMenuActionOption,
@@ -9,6 +8,7 @@ import type {
   ComponentSFCTableVisualMenuKind,
   ComponentSFCVisualSourceValue,
 } from '@endge/core'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
 import { readComponentSFCTranslationFallback } from '@endge/core'
 import {

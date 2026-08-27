@@ -7,8 +7,8 @@
  * - перенос папок и сущностей внутри доменного дерева (drag-and-drop).
  */
 
-import type { FsFileNode, FsFolderNode } from './domain-tree'
 import type { DomainDocumentType } from '@endge/core'
+import type { FsFileNode, FsFolderNode } from './domain-tree'
 
 import {
   ComponentType,
@@ -137,8 +137,9 @@ const DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
  * Проверяет, можно ли удалить сущность через backend API.
  */
 export function canDelete(_sectionType: DomainSectionType, docType?: DomainDocumentType): boolean {
-  if (docType)
+  if (docType) {
     return DELETABLE_DOCUMENT_TYPES.has(docType)
+  }
   return true
 }
 
@@ -158,20 +159,24 @@ function isManagedFolderNode(node: FsFolderNode): boolean {
  * В корневой (в т.ч. системной) папке создание дочерней разрешено — мы только задаём parent.
  */
 export async function createSubfolder(targetFolder: FsFolderNode, name: string): Promise<RFolder> {
-  if (targetFolder.sectionType === DomainSectionType.Integration)
+  if (targetFolder.sectionType === DomainSectionType.Integration) {
     throw new Error('Глобальный реестр интеграций не поддерживает папки')
-  if (isManagedFolderNode(targetFolder) && !targetFolder.isRoot)
+  }
+  if (isManagedFolderNode(targetFolder) && !targetFolder.isRoot) {
     throw new Error('Управляемая извне папка недоступна для редактирования')
+  }
 
   const folderName = name.trim()
-  if (!folderName)
+  if (!folderName) {
     throw new Error('Введите название папки')
+  }
 
   const parentId = resolveParentIdForNewFolder(targetFolder)
   const parentFolder = parentId == null ? null : Endge.domain.getFolder(parentId)
   const entityType = String(parentFolder?.entityType ?? '').trim()
-  if (!entityType)
+  if (!entityType) {
     throw new Error('Не удалось определить тип сущностей для новой папки')
+  }
 
   let newId = `folder-${randomString(5)}`
   while (Endge.domain.hasFolderById(newId) || Endge.domain.hasFolderByIdentity(newId)) {
@@ -204,12 +209,14 @@ export function createFolderDeletionPlan(root: FsFolderNode): FolderDeletionPlan
   const visitedEntities = new Set<string>()
 
   const visit = (folder: FsFolderNode): void => {
-    if (folder.virtual)
+    if (folder.virtual) {
       return
+    }
 
     const folderKey = String(folder.folderId ?? folder.id)
-    if (visitedFolders.has(folderKey))
+    if (visitedFolders.has(folderKey)) {
       return
+    }
     visitedFolders.add(folderKey)
     folders.push(folder)
 
@@ -220,12 +227,14 @@ export function createFolderDeletionPlan(root: FsFolderNode): FolderDeletionPlan
       }
 
       const entity = child as FsFileNode
-      if (entity.virtual || entity.isTableColumn)
+      if (entity.virtual || entity.isTableColumn) {
         continue
+      }
 
       const entityKey = `${entity.sectionType}:${entity.docType}:${entity.id}`
-      if (visitedEntities.has(entityKey))
+      if (visitedEntities.has(entityKey)) {
         continue
+      }
       visitedEntities.add(entityKey)
       entities.push(entity)
     }
@@ -237,12 +246,14 @@ export function createFolderDeletionPlan(root: FsFolderNode): FolderDeletionPlan
 
 function validateFolderDeletionPlan(plan: FolderDeletionPlan): void {
   const managedFolder = plan.folders.find(isManagedFolderNode)
-  if (managedFolder)
+  if (managedFolder) {
     throw new Error(`Управляемую извне папку «${managedFolder.name}» нельзя удалить`)
+  }
 
   const managedEntity = plan.entities.find(isExternallyManaged)
-  if (managedEntity)
+  if (managedEntity) {
     throw new Error(`Управляемый извне документ «${managedEntity.name}» нельзя удалить`)
+  }
 
   const unsupportedEntity = plan.entities.find(entity => !canDelete(entity.sectionType, entity.docType))
   if (unsupportedEntity) {
@@ -312,10 +323,12 @@ export async function deleteFolderRecursively(
  */
 export async function deleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
   const entity = getEntityBySection(node.id, node.sectionType, node.docType)
-  if (isExternallyManaged(node) || isExternallyManaged(entity))
+  if (isExternallyManaged(node) || isExternallyManaged(entity)) {
     throw new Error('Управляемый извне документ нельзя удалить')
-  if (!DELETABLE_DOCUMENT_TYPES.has(node.docType))
+  }
+  if (!DELETABLE_DOCUMENT_TYPES.has(node.docType)) {
     throw new Error(`Удаление не поддерживается для типа: ${node.docType}`)
+  }
   await Endge.domainRepository.deleteDocument(node.id, node.docType)
   Endge.domain.notify()
   return { mode: 'soft', deletedDocs: [] }
@@ -331,13 +344,15 @@ export function setEntityFolderInDomain(
   docType?: DomainDocumentType,
 ): boolean {
   const entity = getEntityBySection(id, sectionType, docType)
-  if (!entity)
+  if (!entity) {
     return false
+  }
 
   const mutable = entity as any
   mutable.folderId = folderId
-  if (sectionType === DomainSectionType.Component)
+  if (sectionType === DomainSectionType.Component) {
     mutable.group = folderId
+  }
   return true
 }
 
@@ -442,30 +457,38 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
  * сохраняет всю вложенную структуру без каскада document PATCH-запросов.
  */
 async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): Promise<boolean> {
-  if (item.rootId !== dropTarget.targetRootId)
+  if (item.rootId !== dropTarget.targetRootId) {
     throw new Error('перетаскивание между разными секциями запрещено')
+  }
 
   const folder = Endge.domain.getFolder(item.id)
-  if (!folder)
+  if (!folder) {
     throw new Error('папка не найдена')
-  if (String(folder.identity) === item.rootId)
+  }
+  if (String(folder.identity) === item.rootId) {
     throw new Error('корневую папку секции нельзя перемещать')
-  if (isExternallyManaged(folder))
+  }
+  if (isExternallyManaged(folder)) {
     throw new Error('управляемую извне папку нельзя перемещать')
+  }
 
   const targetFolder = dropTarget.dropFolderId != null
     ? Endge.domain.getFolder(dropTarget.dropFolderId)
     : Endge.domain.getFolderByIdentity(dropTarget.targetRootId)
-  if (dropTarget.dropFolderId != null && !targetFolder)
+  if (dropTarget.dropFolderId != null && !targetFolder) {
     throw new Error('папка назначения не найдена')
-  if (targetFolder && isExternallyManaged(targetFolder) && String(targetFolder.identity) !== dropTarget.targetRootId)
+  }
+  if (targetFolder && isExternallyManaged(targetFolder) && String(targetFolder.identity) !== dropTarget.targetRootId) {
     throw new Error('управляемая извне папка недоступна для перетаскивания')
-  if (targetFolder && isFolderInsideBranch(targetFolder, folder))
+  }
+  if (targetFolder && isFolderInsideBranch(targetFolder, folder)) {
     throw new Error('нельзя переместить папку в саму себя или в её подпапку')
+  }
 
   const targetParent = targetFolder?.id ?? targetFolder?.identity ?? dropTarget.targetRootId
-  if (String(folder.parent ?? '') === String(targetParent ?? ''))
+  if (String(folder.parent ?? '') === String(targetParent ?? '')) {
     return false
+  }
 
   const previousParent = folder.parent ?? null
   folder.parent = targetParent
@@ -489,12 +512,14 @@ function isFolderInsideBranch(target: RFolder, branchRoot: RFolder): boolean {
   let current: RFolder | null = target
 
   while (current) {
-    if (branchIds.has(String(current.id)) || branchIds.has(String(current.identity)))
+    if (branchIds.has(String(current.id)) || branchIds.has(String(current.identity))) {
       return true
+    }
 
     const key = `${String(current.id)}:${String(current.identity)}`
-    if (visited.has(key))
+    if (visited.has(key)) {
       return true
+    }
     visited.add(key)
 
     current = current.parent == null
@@ -555,8 +580,9 @@ async function changeEntityFolder(
   const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
   const entity = getEntityBySection(id, sectionType, docType) as any
   const prevFolderId = entity?.folderId ?? entity?.folder ?? entity?.group ?? null
-  if (!setEntityFolderInDomain(id, sectionType, dropFolderId, docType))
+  if (!setEntityFolderInDomain(id, sectionType, dropFolderId, docType)) {
     throw new Error('не удалось обновить папку в домене')
+  }
   try {
     await Endge.domainRepository.changeDocumentFolder(id, docType, folderIdentity)
   }
@@ -573,8 +599,9 @@ async function changeEntitiesFolder(
   dropFolderId: string | number | null,
 ): Promise<number> {
   const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
-  if (!folderIdentity)
+  if (!folderIdentity) {
     throw new Error('не удалось определить папку назначения')
+  }
   return Endge.domainRepository.changeDocumentsFolder(items.map(item => ({
     documentId: item.id,
     documentType: item.docType,
@@ -586,8 +613,9 @@ async function changeEntitiesFolder(
  * getFolder ищет по id и по identity — подходит для узлов из дерева (id/identity могут быть string или number).
  */
 function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | number | null): string | null {
-  if (dropFolderId == null || dropFolderId === '')
+  if (dropFolderId == null || dropFolderId === '') {
     return targetRootId
+  }
   const folder = Endge.domain.getFolder(dropFolderId)
   return folder ? ((folder as any).identity ?? folder.id) : null
 }
@@ -596,8 +624,9 @@ function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | nu
  * Вычисляет parent для новой подпапки.
  */
 function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | number | null {
-  if (!targetFolder.isRoot)
+  if (!targetFolder.isRoot) {
     return targetFolder.folderId ?? null
+  }
 
   const rootIdentity = String(targetFolder.id)
   const rootFolder = Endge.domain.getFolderByIdentity(rootIdentity)
@@ -608,10 +637,12 @@ function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | numbe
  * Конвертирует string-id в number для вызовов `get*ById`.
  */
 function toNumericId(id: string | number): number | null {
-  if (typeof id === 'number' && Number.isFinite(id))
+  if (typeof id === 'number' && Number.isFinite(id)) {
     return id
-  if (typeof id === 'string' && /^\d+$/.test(id))
+  }
+  if (typeof id === 'string' && /^\d+$/.test(id)) {
     return Number(id)
+  }
   return null
 }
 
@@ -621,60 +652,87 @@ function toNumericId(id: string | number): number | null {
 function getEntityBySection(id: string, sectionType: DomainSectionType, docType?: DomainDocumentType): any | null {
   const numId = toNumericId(id)
 
-  if (docType === 'stream')
+  if (docType === 'stream') {
     return (numId != null ? Endge.domain.getStreamById(numId) : null) ?? Endge.domain.getStream(id)
-  if (docType === 'update')
+  }
+  if (docType === 'update') {
     return (numId != null ? Endge.domain.getUpdateById(numId) : null) ?? Endge.domain.getUpdate(id)
+  }
 
-  if (sectionType === DomainSectionType.Component)
+  if (sectionType === DomainSectionType.Component) {
     return Endge.domain.getComponent(id) ?? (Endge.domain as any).getComponentSFC?.(id)
-  if (sectionType === DomainSectionType.Query)
+  }
+  if (sectionType === DomainSectionType.Query) {
     return (numId != null ? Endge.domain.getQueryById(numId) : null) ?? Endge.domain.getQuery(id)
-  if (sectionType === DomainSectionType.DataView)
+  }
+  if (sectionType === DomainSectionType.DataView) {
     return (numId != null ? (Endge.domain as any).getDataViewById?.(numId) : null) ?? (Endge.domain as any).getDataView?.(id)
-  if (sectionType === DomainSectionType.Composition)
+  }
+  if (sectionType === DomainSectionType.Composition) {
     return (numId != null ? Endge.domain.getCompositionById(numId) : null) ?? Endge.domain.getComposition(id)
-  if (sectionType === DomainSectionType.Store)
+  }
+  if (sectionType === DomainSectionType.Store) {
     return (numId != null ? Endge.domain.getStoreById(numId) : null) ?? Endge.domain.getStore(id)
-  if (sectionType === DomainSectionType.Mock)
+  }
+  if (sectionType === DomainSectionType.Mock) {
     return (numId != null ? Endge.domain.getMockById(numId) : null) ?? Endge.domain.getMock(id)
-  if (sectionType === DomainSectionType.Parameters)
+  }
+  if (sectionType === DomainSectionType.Parameters) {
     return (numId != null ? Endge.domain.getParameterById(numId) : null) ?? Endge.domain.getParameterIdentity(id)
-  if (sectionType === DomainSectionType.Filters)
+  }
+  if (sectionType === DomainSectionType.Filters) {
     return (numId != null ? Endge.domain.getFilterById(numId) : null) ?? Endge.domain.getFilter(id)
-  if (sectionType === DomainSectionType.Type || sectionType === DomainSectionType.Primitive)
+  }
+  if (sectionType === DomainSectionType.Type || sectionType === DomainSectionType.Primitive) {
     return (numId != null ? Endge.domain.getTypeById(numId) : null) ?? Endge.domain.getType(id)
-  if (sectionType === DomainSectionType.Action)
+  }
+  if (sectionType === DomainSectionType.Action) {
     return (numId != null ? Endge.domain.getActionById(numId) : null) ?? Endge.domain.getAction(id)
-  if (sectionType === DomainSectionType.Converter)
+  }
+  if (sectionType === DomainSectionType.Converter) {
     return (numId != null ? Endge.domain.getConverterById(numId) : null) ?? Endge.domain.getConverter(id)
-  if (sectionType === DomainSectionType.Computation)
+  }
+  if (sectionType === DomainSectionType.Computation) {
     return (numId != null ? Endge.domain.getComputationById(numId) : null) ?? Endge.domain.getComputation(id)
-  if (sectionType === DomainSectionType.Integration)
+  }
+  if (sectionType === DomainSectionType.Integration) {
     return (numId != null ? Endge.domain.getIntegrationById(numId) : null) ?? Endge.domain.getIntegration(id)
-  if (sectionType === DomainSectionType.Environment)
+  }
+  if (sectionType === DomainSectionType.Environment) {
     return (numId != null ? Endge.domain.getEnvironmentById(numId) : null) ?? Endge.domain.getEnvironment(id)
-  if (sectionType === DomainSectionType.Tenant)
+  }
+  if (sectionType === DomainSectionType.Tenant) {
     return (numId != null ? Endge.domain.getTenantById(numId) : null) ?? Endge.domain.getTenant(id)
-  if (sectionType === DomainSectionType.Policy)
+  }
+  if (sectionType === DomainSectionType.Policy) {
     return (numId != null ? Endge.domain.getPolicyById(numId) : null) ?? Endge.domain.getPolicy(id)
-  if (sectionType === DomainSectionType.Style)
+  }
+  if (sectionType === DomainSectionType.Style) {
     return (numId != null ? Endge.domain.getStyleById(numId) : null) ?? Endge.domain.getStyle(id)
-  if (sectionType === DomainSectionType.Configuration)
+  }
+  if (sectionType === DomainSectionType.Configuration) {
     return (numId != null ? Endge.domain.getConfigurationById(numId) : null) ?? Endge.domain.getConfiguration(id)
-  if (sectionType === DomainSectionType.PageTemplate)
+  }
+  if (sectionType === DomainSectionType.PageTemplate) {
     return (numId != null ? Endge.domain.getPageTemplateById(numId) : null) ?? Endge.domain.getPageTemplate(id)
-  if (sectionType === DomainSectionType.Page)
+  }
+  if (sectionType === DomainSectionType.Page) {
     return (numId != null ? Endge.domain.getPageById(numId) : null) ?? Endge.domain.getPage(id)
-  if (sectionType === DomainSectionType.Navigation)
+  }
+  if (sectionType === DomainSectionType.Navigation) {
     return (numId != null ? Endge.domain.getNavigationById(numId) : null) ?? Endge.domain.getNavigation(id)
-  if (sectionType === DomainSectionType.Vocabs)
+  }
+  if (sectionType === DomainSectionType.Vocabs) {
     return (numId != null ? Endge.domain.getVocabById(numId) : null) ?? Endge.domain.getVocab(id)
-  if (sectionType === DomainSectionType.I18nBundles)
+  }
+  if (sectionType === DomainSectionType.I18nBundles) {
     return (numId != null ? Endge.domain.getI18nBundleById(numId) : null) ?? Endge.domain.getI18nBundle(id)
-  if (sectionType === DomainSectionType.AuthProfile)
+  }
+  if (sectionType === DomainSectionType.AuthProfile) {
     return (numId != null ? Endge.domain.getAuthProfileById(numId) : null) ?? Endge.domain.getAuthProfile(id)
-  if (sectionType === DomainSectionType.Project)
+  }
+  if (sectionType === DomainSectionType.Project) {
     return (numId != null ? Endge.domain.getProjectById(numId) : null) ?? Endge.domain.getProject(id)
+  }
   return null
 }

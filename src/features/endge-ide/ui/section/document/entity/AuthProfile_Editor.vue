@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor'
 import type {
   AuthProfileAdapterId,
   AuthProfileSchema,
   AuthProfileTestResult,
   AuthSessionStorage,
 } from '@endge/core'
+import type { RAuthProfileEditor } from '@/features/endge-ide/domain/entities/RAuthProfileEditor'
 
 import { Endge } from '@endge/core'
 import { Loader2, Play, Save } from 'lucide-vue-next'
@@ -23,8 +23,8 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -40,16 +40,18 @@ const testLoading = ref(false)
 const adapterModel = computed<AuthProfileAdapterId>({
   get: () => editor.value?.adapterId ?? 'bearer',
   set: (value) => {
-    if (editor.value)
+    if (editor.value) {
       editor.value.adapterId = value
+    }
   },
 })
 
 const storageModel = computed<AuthSessionStorage>({
   get: () => editor.value?.sessionStorage ?? 'memory',
   set: (value) => {
-    if (editor.value)
+    if (editor.value) {
       editor.value.sessionStorage = value
+    }
   },
 })
 
@@ -62,27 +64,31 @@ const selectedAdapterEditor = computed(() => EndgeIDE.authProfileEditors.get(ada
 const configModel = computed<Record<string, unknown>>({
   get: () => parseObject(editor.value?.configText ?? '{}'),
   set: (value) => {
-    if (editor.value)
+    if (editor.value) {
       editor.value.configText = stringify(value)
+    }
   },
 })
 
 const credentialsModel = computed<Record<string, unknown>>({
   get: () => parseObject(editor.value?.credentialsText ?? '{}'),
   set: (value) => {
-    if (editor.value)
+    if (editor.value) {
       editor.value.credentialsText = stringify(value)
+    }
   },
 })
 
 watch(
   () => editor.value?.adapterId,
   (adapterId, previousAdapterId) => {
-    if (!adapterId || !editor.value)
+    if (!adapterId || !editor.value) {
       return
+    }
     const registration = EndgeIDE.authProfileEditors.get(adapterId)
-    if (!registration?.defaults)
+    if (!registration?.defaults) {
       return
+    }
 
     const configDefaults = structuredClone(registration.defaults.config ?? {})
     const credentialDefaults = structuredClone(registration.defaults.credentials ?? {})
@@ -144,8 +150,9 @@ async function testAuthProfile(): Promise<void> {
 }
 
 async function testOidcProfile(profile: AuthProfileSchema): Promise<AuthProfileTestResult> {
-  if (!profile.session)
+  if (!profile.session) {
     throw new Error('OIDC session policy is required')
+  }
   const callback = getConfiguratorOidcPopupCallbackURL()
   const source = Endge.auth.createOidcSessionSource(profile, {
     redirectUri: callback,
@@ -166,8 +173,9 @@ async function testOidcProfile(profile: AuthProfileSchema): Promise<AuthProfileT
 }
 
 function setActive(value: unknown): void {
-  if (editor.value)
+  if (editor.value) {
     editor.value.active = value === true
+  }
 }
 
 function parseObject(value: string): Record<string, unknown> {
@@ -192,8 +200,9 @@ function mergeMissing(
 ): Record<string, unknown> {
   const next = { ...current }
   for (const [key, value] of Object.entries(defaults)) {
-    if (next[key] == null || next[key] === '')
+    if (next[key] == null || next[key] === '') {
       next[key] = value
+    }
   }
   return next
 }
@@ -217,16 +226,19 @@ function buildProfileSchema(source: RAuthProfileEditor): AuthProfileSchema {
 function parseStringObject(value: string): Record<string, string> {
   const raw = parseObject(value)
   const out: Record<string, string> = {}
-  for (const [key, v] of Object.entries(raw))
+  for (const [key, v] of Object.entries(raw)) {
     out[key] = v == null ? '' : String(v)
+  }
   return out
 }
 
 function normalizeErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message)
+  if (error instanceof Error && error.message) {
     return error.message
-  if (error && typeof error === 'object' && 'message' in error)
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
     return String((error as { message?: unknown }).message)
+  }
   return String(error)
 }
 </script>
@@ -323,18 +335,30 @@ function normalizeErrorMessage(error: unknown): string {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="localStorage">localStorage</SelectItem>
-                  <SelectItem value="sessionStorage">sessionStorage</SelectItem>
-                  <SelectItem value="memory">memory</SelectItem>
+                  <SelectItem value="localStorage">
+                    localStorage
+                  </SelectItem>
+                  <SelectItem value="sessionStorage">
+                    sessionStorage
+                  </SelectItem>
+                  <SelectItem value="memory">
+                    memory
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <p class="text-xs text-muted-foreground">memory — до перезагрузки, sessionStorage — до закрытия вкладки, localStorage — между запусками.</p>
+              <p class="text-xs text-muted-foreground">
+                memory — до перезагрузки, sessionStorage — до закрытия вкладки, localStorage — между запусками.
+              </p>
             </div>
           </div>
 
           <div v-if="supportsSession" class="space-y-2 rounded-md border bg-muted/30 p-3">
-            <div class="flex items-center justify-between gap-4"><Label class="text-sm">Сохранять refresh token</Label><Switch v-model:checked="editor.persistRefreshToken" /></div>
-            <p class="text-xs text-destructive">Включайте только осознанно: refresh token будет доступен JavaScript-коду и browser storage.</p>
+            <div class="flex items-center justify-between gap-4">
+              <Label class="text-sm">Сохранять refresh token</Label><Switch v-model:checked="editor.persistRefreshToken" />
+            </div>
+            <p class="text-xs text-destructive">
+              Включайте только осознанно: refresh token будет доступен JavaScript-коду и browser storage.
+            </p>
           </div>
 
           <component

@@ -14,8 +14,9 @@ interface PopoverCtx {
 
 const attrs = useAttrs()
 const popover = inject<PopoverCtx>('popover')
-if (!popover)
+if (!popover) {
   throw new Error('PopoverContent must be used inside Popover')
+}
 
 const contentEl = ref<HTMLElement | null>(null)
 const style = ref<Record<string, string>>({})
@@ -28,8 +29,9 @@ const mergedClass = computed<string>(() => {
 
 function updatePosition(): void {
   const t = popover.triggerEl.value
-  if (!t)
+  if (!t) {
     return
+  }
 
   const rect = t.getBoundingClientRect()
 
@@ -46,14 +48,18 @@ function updatePosition(): void {
 
   let actualSide = side
   if (avoidCollisions) {
-    if (side === 'bottom' && rect.bottom + gap + ch > vh && rect.top - gap - ch >= 0)
+    if (side === 'bottom' && rect.bottom + gap + ch > vh && rect.top - gap - ch >= 0) {
       actualSide = 'top'
-    else if (side === 'top' && rect.top - gap - ch < 0 && rect.bottom + gap + ch <= vh)
+    }
+    else if (side === 'top' && rect.top - gap - ch < 0 && rect.bottom + gap + ch <= vh) {
       actualSide = 'bottom'
-    else if (side === 'right' && rect.right + gap + cw > vw && rect.left - gap - cw >= 0)
+    }
+    else if (side === 'right' && rect.right + gap + cw > vw && rect.left - gap - cw >= 0) {
       actualSide = 'left'
-    else if (side === 'left' && rect.left - gap - cw < 0 && rect.right + gap + cw <= vw)
+    }
+    else if (side === 'left' && rect.left - gap - cw < 0 && rect.right + gap + cw <= vw) {
       actualSide = 'right'
+    }
   }
 
   let top = 0
@@ -61,39 +67,43 @@ function updatePosition(): void {
 
   if (actualSide === 'right') {
     left = rect.right + gap
-    if (align === 'start')
+    if (align === 'start') {
       top = rect.top
-    else if (align === 'center')
+    }
+    else if (align === 'center') {
       top = rect.top + rect.height / 2 - ch / 2
-    else
-      top = rect.bottom - ch
+    }
+    else { top = rect.bottom - ch }
   }
   else if (actualSide === 'left') {
     left = rect.left - gap - cw
-    if (align === 'start')
+    if (align === 'start') {
       top = rect.top
-    else if (align === 'center')
+    }
+    else if (align === 'center') {
       top = rect.top + rect.height / 2 - ch / 2
-    else
-      top = rect.bottom - ch
+    }
+    else { top = rect.bottom - ch }
   }
   else if (actualSide === 'top') {
     top = rect.top - gap - ch
-    if (align === 'start')
+    if (align === 'start') {
       left = rect.left
-    else if (align === 'center')
+    }
+    else if (align === 'center') {
       left = rect.left + rect.width / 2 - cw / 2
-    else
-      left = rect.right - cw
+    }
+    else { left = rect.right - cw }
   }
   else {
     top = rect.bottom + gap
-    if (align === 'start')
+    if (align === 'start') {
       left = rect.left
-    else if (align === 'center')
+    }
+    else if (align === 'center') {
       left = rect.left + rect.width / 2 - cw / 2
-    else
-      left = rect.right - cw
+    }
+    else { left = rect.right - cw }
   }
 
   if (avoidCollisions) {
@@ -124,8 +134,9 @@ async function onOpen(): Promise<void> {
  * и popover не исчезнет на mousedown.
  */
 function onPointerDownOutside(e: PointerEvent): void {
-  if (!popover.open.value)
+  if (!popover.open.value) {
     return
+  }
 
   const path = (e.composedPath?.() ?? []) as EventTarget[]
 
@@ -134,31 +145,36 @@ function onPointerDownOutside(e: PointerEvent): void {
     return el?.getAttribute?.('data-popover-content') != null
   })
 
-  if (isInsideContent)
+  if (isInsideContent) {
     return
+  }
 
   // Не закрывать только если клик по триггеру именно этого поповера (иначе один открытый select не даст закрыть другие)
   const isOnThisTrigger = popover.triggerEl.value && path.some(
-    (n) => n === popover.triggerEl.value || (n instanceof Node && popover.triggerEl.value!.contains(n as Node)),
+    n => n === popover.triggerEl.value || (n instanceof Node && popover.triggerEl.value!.contains(n as Node)),
   )
-  if (isOnThisTrigger)
+  if (isOnThisTrigger) {
     return
+  }
 
   popover.close()
 }
 
 function onKeyDown(e: KeyboardEvent): void {
-  if (!popover.open.value)
+  if (!popover.open.value) {
     return
-  if (e.key === 'Escape')
+  }
+  if (e.key === 'Escape') {
     popover.close()
+  }
 }
 
 watch(
   () => popover.open.value,
   (v) => {
-    if (v)
+    if (v) {
       void onOpen()
+    }
   },
 )
 

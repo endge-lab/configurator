@@ -40,8 +40,9 @@ export function getRelativeTime(
   let timeMs: number
   if (typeof date === 'string') {
     const parsed = new Date(date)
-    if (Number.isNaN(parsed.getTime()))
-      throw new Error('Invalid date string')
+    if (Number.isNaN(parsed.getTime())) {
+      throw new TypeError('Invalid date string')
+    }
     timeMs = parsed.getTime()
   }
   else if (typeof date === 'number') {
@@ -105,8 +106,9 @@ export function useRelativeTime(
     const d = unref(date)
     if (typeof d === 'string') {
       const parsed = new Date(d)
-      if (Number.isNaN(parsed.getTime()))
+      if (Number.isNaN(parsed.getTime())) {
         return
+      }
       timeMs = parsed.getTime()
     }
     else if (typeof d === 'number') {
@@ -118,13 +120,16 @@ export function useRelativeTime(
     const now = Date.now()
     const delta = Math.abs(timeMs - now)
     let interval = 60000
-    if (delta < 60000)
+    if (delta < 60000) {
       interval = 1000
-    else if (delta < 3600000)
+    }
+    else if (delta < 3600000) {
       interval = 60000
-    else if (delta < 86400000)
+    }
+    else if (delta < 86400000) {
       interval = 3600000
-    else interval = 86400000
+    }
+    else { interval = 86400000 }
     timer = setTimeout(update, interval)
   }
 
@@ -137,13 +142,15 @@ export function useRelativeTime(
     scheduleUpdate()
   })
   onUnmounted(() => {
-    if (timer)
+    if (timer) {
       clearTimeout(timer)
+    }
   })
   watch(() => [unref(date), options.lang, options.switchToAbsolute], () => {
     value.value = getRelativeTime(unref(date), options)
-    if (timer)
+    if (timer) {
       clearTimeout(timer)
+    }
     scheduleUpdate()
   })
 

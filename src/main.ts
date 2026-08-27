@@ -1,8 +1,7 @@
 /* eslint-disable perfectionist/sort-imports -- Configurator registers Endge plugins before UI modules are evaluated */
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 import { installEndgeVueWarnHandler } from '@endge/ui-vue'
-import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
 import { configuratorSessionBindingKey } from '@/features/configurator-session'
@@ -28,7 +27,6 @@ installEndgeVueWarnHandler(app)
 // setup должен завершиться до app.use(router), который запускает initial navigation.
 Configurator.setup(app, router)
 
-app.use(createPinia())
 app.use(router)
 app.use(i18n)
 
@@ -49,8 +47,9 @@ async function mountApplication(): Promise<void> {
     app.mount('#app')
   }
   catch (error: unknown) {
-    if (getCanonicalLocalhostURL())
+    if (getCanonicalLocalhostURL()) {
       return
+    }
     console.error(`[App] Application bootstrap failed: ${error instanceof Error ? error.message : String(error)}`)
     const root = document.getElementById('app')
     if (root) {

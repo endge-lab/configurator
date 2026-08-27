@@ -1,13 +1,16 @@
 import type { EndgeConfigurationContribution, RProject } from '@endge/core'
 
 function normalizeRelationId(value: unknown): number | null {
-  if (value == null)
+  if (value == null) {
     return null
-  if (typeof value === 'number')
+  }
+  if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null
+  }
   const text = String(value).trim()
-  if (!text)
+  if (!text) {
     return null
+  }
   const id = Number(text)
   return Number.isFinite(id) ? id : null
 }

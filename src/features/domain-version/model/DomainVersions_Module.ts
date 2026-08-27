@@ -1,8 +1,8 @@
 import type { DomainVersionTarget, DomainVersionTargetState } from '@/features/domain-version/domain/types/domain-version.type'
-import type { DomainVersion_Service } from '@/features/domain-version/model/DomainVersion_Service'
+import type { DomainVersionHttp_Adapter } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
 
 import { normalizeBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
-import { DomainVersionServiceError } from '@/features/domain-version/model/DomainVersion_Service'
+import { DomainVersionServiceError } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
 
 const cacheLifetimeMs = 20_000
 
@@ -11,7 +11,7 @@ export class DomainVersions_Module {
   private readonly _requests = new Map<string, Promise<void>>()
   private readonly _listeners = new Set<() => void>()
 
-  public constructor(private readonly _service: DomainVersion_Service) {}
+  public constructor(private readonly _service: DomainVersionHttp_Adapter) {}
 
   public subscribe(listener: () => void): () => void {
     this._listeners.add(listener)

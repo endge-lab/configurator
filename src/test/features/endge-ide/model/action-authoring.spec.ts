@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
 import { Endge, RAction } from '@endge/core'
+import { describe, expect, it } from 'vitest'
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 
-describe('Action authoring', () => {
+describe('action authoring', () => {
   it('creates and round-trips canonical Action Source without normalization', () => {
     const source = Endge.source.createDefault('action')
     const action = RAction.fromPlain({ id: 1, identity: 'orders.save', displayName: 'Save', source, sourceVersion: 1 })

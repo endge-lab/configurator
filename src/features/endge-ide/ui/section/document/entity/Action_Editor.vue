@@ -10,11 +10,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import ActionSourceEditor from '@/features/endge-ide/ui/components/ActionSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
@@ -40,18 +40,24 @@ const tabGroups = [
 ] as const
 
 function addTarget(): void {
-  if (!editor.value || editor.value.readOnly) return
+  if (!editor.value || editor.value.readOnly) {
+    return
+  }
   editor.value.target = [...(editor.value.target ?? []), { type: '' }]
 }
 function removeTarget(index: number): void {
-  if (!editor.value || editor.value.readOnly) return
+  if (!editor.value || editor.value.readOnly) {
+    return
+  }
   const next = [...(editor.value.target ?? [])]
   next.splice(index, 1)
   editor.value.target = next.length ? next : null
 }
 async function save(): Promise<void> {
   const current = editor.value
-  if (!current || current.readOnly) return
+  if (!current || current.readOnly) {
+    return
+  }
   current.refreshDiagnostics()
   const error = current.diagnostics.find(item => item.severity === 'error')
   if (error) {
@@ -113,20 +119,36 @@ async function save(): Promise<void> {
           Code-owned Action · {{ editor.origin.kind }} · owner: {{ JSON.stringify(editor.owner) }} · provider: {{ editor.effectiveProviderKey ?? 'не установлен' }}
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2"><Label>Название</Label><Input v-model="editor.displayName" :disabled="editor.readOnly" /></div>
-          <div class="space-y-2"><Label>Identity</Label><DocumentIdentityInput v-model="editor.identity" :disabled="editor.readOnly" /></div>
+          <div class="space-y-2">
+            <Label>Название</Label><Input v-model="editor.displayName" :disabled="editor.readOnly" />
+          </div>
+          <div class="space-y-2">
+            <Label>Identity</Label><DocumentIdentityInput v-model="editor.identity" :disabled="editor.readOnly" />
+          </div>
         </div>
-        <div class="space-y-2"><Label>Описание</Label><Textarea v-model="editor.description" :disabled="editor.readOnly" /></div>
-        <div class="space-y-2"><Label>Source version</Label><Input v-model.number="editor.sourceVersion" type="number" min="1" :disabled="editor.readOnly" /></div>
+        <div class="space-y-2">
+          <Label>Описание</Label><Textarea v-model="editor.description" :disabled="editor.readOnly" />
+        </div>
+        <div class="space-y-2">
+          <Label>Source version</Label><Input v-model.number="editor.sourceVersion" type="number" min="1" :disabled="editor.readOnly" />
+        </div>
         <div class="space-y-3 rounded-lg border p-3">
-          <div class="flex items-center justify-between"><Label>Runtime targets</Label><Button v-if="!editor.readOnly" size="sm" variant="outline" @click="addTarget"><Plus class="mr-1 size-3.5" />Добавить</Button></div>
+          <div class="flex items-center justify-between">
+            <Label>Runtime targets</Label><Button v-if="!editor.readOnly" size="sm" variant="outline" @click="addTarget">
+              <Plus class="mr-1 size-3.5" />Добавить
+            </Button>
+          </div>
           <div v-for="(target, index) in editor.target ?? []" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input v-model="target.type" :disabled="editor.readOnly" placeholder="component.table" />
             <Input v-model="target.identity" :disabled="editor.readOnly" placeholder="optional identity" />
-            <Button v-if="!editor.readOnly" size="icon" variant="ghost" @click="removeTarget(index)"><Trash2 class="size-4" /></Button>
+            <Button v-if="!editor.readOnly" size="icon" variant="ghost" @click="removeTarget(index)">
+              <Trash2 class="size-4" />
+            </Button>
           </div>
         </div>
-        <div class="flex items-center gap-2"><Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>Активно</Label></div>
+        <div class="flex items-center gap-2">
+          <Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>Активно</Label>
+        </div>
       </div>
     </div>
 

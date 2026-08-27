@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
 import { Endge } from '@endge/core'
+import { describe, expect, it } from 'vitest'
 
-describe('Action diagnostics', () => {
+describe('action diagnostics', () => {
   it('retains source ranges from the shared compiler', () => {
     const result = Endge.source.validate('action', `defineAction({ steps: { first: output('missing') } })`)
     expect(result.diagnostics).toContainEqual(expect.objectContaining({

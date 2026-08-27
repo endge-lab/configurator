@@ -1,3 +1,4 @@
+import type { UIPrimitiveKind } from '@endge/core'
 import type {
   UIEditorBreakpoint,
   UIEditorBreakpointConfig,
@@ -16,7 +17,6 @@ import type {
   UIEditorSourceNodeLocations,
   UIEditorTreeNode,
 } from '@/features/endge-admin-ui-editor/types'
-import type { UIPrimitiveKind } from '@endge/core'
 
 import {
   Endge,

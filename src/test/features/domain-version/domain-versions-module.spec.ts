@@ -1,9 +1,9 @@
 import type { DomainStatus } from '@/features/domain-version/domain/types/domain-version.type'
-import type { DomainVersion_Service } from '@/features/domain-version/model/DomainVersion_Service'
+import type { DomainVersionHttp_Adapter } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { DomainVersionServiceError } from '@/features/domain-version/model/DomainVersion_Service'
+import { DomainVersionServiceError } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
 import { DomainVersions_Module } from '@/features/domain-version/model/DomainVersions_Module'
 
 const target = { backendURL: 'https://test.example.com', workspace: 'default' }
@@ -21,7 +21,7 @@ describe('domain versions module', () => {
       pendingRevisionCount: 0,
     }
     const get = vi.fn().mockResolvedValue(value)
-    const module = new DomainVersions_Module({ get } as unknown as DomainVersion_Service)
+    const module = new DomainVersions_Module({ get } as unknown as DomainVersionHttp_Adapter)
 
     await module.refresh(target)
 
@@ -39,7 +39,7 @@ describe('domain versions module', () => {
       committedAt: '2026-08-18T00:00:00Z',
       pendingRevisionCount: 3,
     } satisfies DomainStatus)
-    const module = new DomainVersions_Module({ get } as unknown as DomainVersion_Service)
+    const module = new DomainVersions_Module({ get } as unknown as DomainVersionHttp_Adapter)
 
     await module.refresh(target)
 
@@ -52,7 +52,7 @@ describe('domain versions module', () => {
 
   it('keeps authentication failures local to the unavailable target', async () => {
     const get = vi.fn().mockRejectedValue(new DomainVersionServiceError('unauthorized', 'Login required', 401))
-    const module = new DomainVersions_Module({ get } as unknown as DomainVersion_Service)
+    const module = new DomainVersions_Module({ get } as unknown as DomainVersionHttp_Adapter)
 
     await module.refresh(target)
 

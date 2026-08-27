@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable @intlify/vue-i18n/no-raw-text */
-import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { Component } from 'vue'
+import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'

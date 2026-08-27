@@ -1,26 +1,38 @@
 import type { AccessScopeType, BulkAccessGrantInput, PutAccessGrantInput } from '@/features/access-control/domain/types/access-control.type'
-import type { AccessControl_Service } from '@/features/access-control/model/AccessControl_Service'
+import type { AccessControlHttp_Adapter } from '@/features/access-control/model/adapters/AccessControlHttp_Adapter'
 
 export class AccessControl_Module {
-  public constructor(private readonly _service: AccessControl_Service) {}
+  /** HTTP adapter для access-control operations. */
+  private readonly _adapter: AccessControlHttp_Adapter
+
+  /**
+   * ----------------------------------------
+   * PUBLIC
+   * ----------------------------------------
+   */
+
+  /** Создаёт модуль с явным access-control adapter. */
+  public constructor(adapter: AccessControlHttp_Adapter) {
+    this._adapter = adapter
+  }
 
   public searchUsers(query: string, workspaceIdentity?: string, cursor = '', signal?: AbortSignal) {
-    return this._service.searchUsers(query, workspaceIdentity, cursor, signal)
+    return this._adapter.searchUsers(query, workspaceIdentity, cursor, signal)
   }
 
   public listGrants(scope: AccessScopeType, workspaceIdentity?: string, query = '', cursor = '', userId = '') {
-    return this._service.listGrants(scope, workspaceIdentity, query, cursor, userId)
+    return this._adapter.listGrants(scope, workspaceIdentity, query, cursor, userId)
   }
 
   public putGrant(input: PutAccessGrantInput) {
-    return this._service.putGrant(input)
+    return this._adapter.putGrant(input)
   }
 
   public deleteGrant(id: string) {
-    return this._service.deleteGrant(id)
+    return this._adapter.deleteGrant(id)
   }
 
   public bulkWorkspaceGrants(input: BulkAccessGrantInput) {
-    return this._service.bulkWorkspaceGrants(input)
+    return this._adapter.bulkWorkspaceGrants(input)
   }
 }

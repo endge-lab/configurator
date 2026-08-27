@@ -18,8 +18,9 @@ export function resolveCompositionCreatePlacement(options: {
 } = {}): CompositionCreatePlacement {
   if (options.owner) {
     const identity = options.owner.identity.trim()
-    if (!identity)
+    if (!identity) {
       throw new Error('Composition owner identity is required.')
+    }
     return {
       kind: options.owner.kind,
       kindIdentity: identity,

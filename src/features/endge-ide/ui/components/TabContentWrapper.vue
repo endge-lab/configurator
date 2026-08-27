@@ -10,8 +10,9 @@ const props = defineProps<{
 }>()
 
 const view = computed(() => {
-  if (!props.tab)
+  if (!props.tab) {
     return null
+  }
   return EndgeIDE.tabs.getViewForTab(props.tab)
 })
 </script>

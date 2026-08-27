@@ -74,15 +74,23 @@ function walkNodes(
 ): boolean {
   for (let index = 0; index < nodes.length; index += 1) {
     const node = nodes[index]
-    if (!node) { continue }
-    if (visit(node, index, nodes)) { return true }
-    if (node.type !== 'link' && node.children?.length && walkNodes(node.children, visit)) { return true }
+    if (!node) {
+      continue
+    }
+    if (visit(node, index, nodes)) {
+      return true
+    }
+    if (node.type !== 'link' && node.children?.length && walkNodes(node.children, visit)) {
+      return true
+    }
   }
   return false
 }
 
 function findNode(nodeId: string | null): NavigationTreeNodeEditor | null {
-  if (!nodeId || !editor.value) { return null }
+  if (!nodeId || !editor.value) {
+    return null
+  }
 
   let result: NavigationTreeNodeEditor | null = null
   walkNodes(editor.value.tree, (node) => {
@@ -95,7 +103,9 @@ function findNode(nodeId: string | null): NavigationTreeNodeEditor | null {
 }
 
 function findLocatedNode(nodeId: string | null): LocatedNode | null {
-  if (!nodeId || !editor.value) { return null }
+  if (!nodeId || !editor.value) {
+    return null
+  }
 
   const walk = (
     nodes: NavigationTreeNodeEditor[],
@@ -103,7 +113,9 @@ function findLocatedNode(nodeId: string | null): LocatedNode | null {
   ): LocatedNode | null => {
     for (let index = 0; index < nodes.length; index += 1) {
       const node = nodes[index]
-      if (!node) { continue }
+      if (!node) {
+        continue
+      }
 
       if (node.id === nodeId) {
         return { node, parent, siblings: nodes, index }
@@ -111,7 +123,9 @@ function findLocatedNode(nodeId: string | null): LocatedNode | null {
 
       if (node.type !== 'link') {
         const result = walk(node.children ?? [], node)
-        if (result) { return result }
+        if (result) {
+          return result
+        }
       }
     }
 
@@ -122,7 +136,9 @@ function findLocatedNode(nodeId: string | null): LocatedNode | null {
 }
 
 function nodeContainsNode(parentNode: NavigationTreeNodeEditor, targetId: string | null): boolean {
-  if (parentNode.type === 'link' || !targetId) { return false }
+  if (parentNode.type === 'link' || !targetId) {
+    return false
+  }
 
   let found = false
   walkNodes(parentNode.children ?? [], (node) => {
@@ -139,7 +155,9 @@ function syncCollapsedGroups(): void {
   const validContainerIds = new Set<string>()
   const walk = (nodes: NavigationTreeNodeEditor[]): void => {
     for (const node of nodes) {
-      if (node.type === 'link') { continue }
+      if (node.type === 'link') {
+        continue
+      }
       validContainerIds.add(node.id)
       walk(node.children ?? [])
     }
@@ -153,7 +171,9 @@ function syncCollapsedGroups(): void {
 }
 
 function ensureSelection(): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
 
   if (!editor.value.tree.length) {
     selectedNodeId.value = null
@@ -161,7 +181,9 @@ function ensureSelection(): void {
   }
 
   const selected = findNode(selectedNodeId.value)
-  if (!selected) { selectedNodeId.value = editor.value.tree[0]?.id ?? null }
+  if (!selected) {
+    selectedNodeId.value = editor.value.tree[0]?.id ?? null
+  }
 }
 
 watch(
@@ -207,8 +229,12 @@ const treeStats = computed(() => {
 })
 
 function nodeTypeLabel(type: NavigationTreeNodeType): string {
-  if (type === 'section') { return 'секция' }
-  if (type === 'group') { return 'группа' }
+  if (type === 'section') {
+    return 'секция'
+  }
+  if (type === 'group') {
+    return 'группа'
+  }
   return 'ссылка'
 }
 
@@ -223,7 +249,9 @@ function updateSelectedFlag(
   value: unknown,
 ): void {
   const node = selectedNode.value
-  if (!node) { return }
+  if (!node) {
+    return
+  }
   node[key] = !!value
 }
 
@@ -233,7 +261,9 @@ function selectNode(nodeId: string): void {
 
 function toggleGroup(nodeId: string): void {
   const node = findNode(nodeId)
-  if (!node || node.type === 'link') { return }
+  if (!node || node.type === 'link') {
+    return
+  }
 
   const next = new Set(collapsedGroupIds.value)
   if (next.has(nodeId)) {
@@ -250,15 +280,21 @@ function toggleGroup(nodeId: string): void {
 }
 
 function addRoot(type: NavigationTreeNodeType): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
   const node = createNode(type)
   editor.value.tree.push(node)
   selectedNodeId.value = node.id
 }
 
 function canHaveChild(node: NavigationTreeNodeEditor, childType: NavigationTreeNodeType): boolean {
-  if (node.type === 'section') { return childType === 'group' || childType === 'link' }
-  if (node.type === 'group') { return childType === 'link' }
+  if (node.type === 'section') {
+    return childType === 'group' || childType === 'link'
+  }
+  if (node.type === 'group') {
+    return childType === 'link'
+  }
   return false
 }
 
@@ -266,7 +302,9 @@ function canContainNode(
   parent: NavigationTreeNodeEditor | null,
   childType: NavigationTreeNodeType,
 ): boolean {
-  if (!parent) { return true }
+  if (!parent) {
+    return true
+  }
   return canHaveChild(parent, childType)
 }
 
@@ -280,27 +318,39 @@ function endDrag(): void {
 
 function moveNode(targetId: string, position: DropPosition): void {
   const sourceId = draggedNodeId.value
-  if (!editor.value || !sourceId || sourceId === targetId) { return }
+  if (!editor.value || !sourceId || sourceId === targetId) {
+    return
+  }
 
   const source = findLocatedNode(sourceId)
   const target = findLocatedNode(targetId)
-  if (!source || !target) { return }
+  if (!source || !target) {
+    return
+  }
 
-  if (nodeContainsNode(source.node, targetId)) { return }
+  if (nodeContainsNode(source.node, targetId)) {
+    return
+  }
 
   const destinationParent = position === 'inside' ? target.node : target.parent
-  if (!canContainNode(destinationParent, source.node.type)) { return }
+  if (!canContainNode(destinationParent, source.node.type)) {
+    return
+  }
 
   source.siblings.splice(source.index, 1)
 
   if (position === 'inside') {
-    if (!target.node.children) { target.node.children = [] }
+    if (!target.node.children) {
+      target.node.children = []
+    }
     target.node.children.push(source.node)
     collapsedGroupIds.value = new Set([...collapsedGroupIds.value].filter(id => id !== target.node.id))
   }
   else {
     const nextTarget = findLocatedNode(targetId)
-    if (!nextTarget) { return }
+    if (!nextTarget) {
+      return
+    }
     const nextIndex = position === 'before' ? nextTarget.index : nextTarget.index + 1
     nextTarget.siblings.splice(nextIndex, 0, source.node)
   }
@@ -311,10 +361,14 @@ function moveNode(targetId: string, position: DropPosition): void {
 
 function moveNodeToRootEnd(): void {
   const sourceId = draggedNodeId.value
-  if (!editor.value || !sourceId) { return }
+  if (!editor.value || !sourceId) {
+    return
+  }
 
   const source = findLocatedNode(sourceId)
-  if (!source) { return }
+  if (!source) {
+    return
+  }
 
   source.siblings.splice(source.index, 1)
   editor.value.tree.push(source.node)
@@ -323,11 +377,15 @@ function moveNodeToRootEnd(): void {
 }
 
 function addAfter(targetId: string, type: NavigationTreeNodeType): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
 
   const node = createNode(type)
   walkNodes(editor.value.tree, (current, index, siblings) => {
-    if (current.id !== targetId) { return false }
+    if (current.id !== targetId) {
+      return false
+    }
     siblings.splice(index + 1, 0, node)
     selectedNodeId.value = node.id
     return true
@@ -336,10 +394,14 @@ function addAfter(targetId: string, type: NavigationTreeNodeType): void {
 
 function addChild(targetId: string, type: NavigationTreeNodeType): void {
   const target = findNode(targetId)
-  if (!target || !canHaveChild(target, type)) { return }
+  if (!target || !canHaveChild(target, type)) {
+    return
+  }
 
   const node = createNode(type)
-  if (!target.children) { target.children = [] }
+  if (!target.children) {
+    target.children = []
+  }
   target.children.push(node)
   const next = new Set(collapsedGroupIds.value)
   next.delete(targetId)
@@ -348,10 +410,14 @@ function addChild(targetId: string, type: NavigationTreeNodeType): void {
 }
 
 function removeNode(targetId: string): void {
-  if (!editor.value) { return }
+  if (!editor.value) {
+    return
+  }
 
   walkNodes(editor.value.tree, (current, index, siblings) => {
-    if (current.id !== targetId) { return false }
+    if (current.id !== targetId) {
+      return false
+    }
     siblings.splice(index, 1)
     return true
   })
@@ -360,7 +426,9 @@ function removeNode(targetId: string): void {
 
 function changeSelectedNodeType(nextType: NavigationTreeNodeType): void {
   const current = selectedNode.value
-  if (!current || current.type === nextType || !editor.value) { return }
+  if (!current || current.type === nextType || !editor.value) {
+    return
+  }
 
   const replacement: NavigationTreeNodeEditor = {
     id: current.id,
@@ -377,7 +445,9 @@ function changeSelectedNodeType(nextType: NavigationTreeNodeType): void {
   }
 
   walkNodes(editor.value.tree, (node, index, siblings) => {
-    if (node.id !== current.id) { return false }
+    if (node.id !== current.id) {
+      return false
+    }
     siblings.splice(index, 1, replacement)
     return true
   })

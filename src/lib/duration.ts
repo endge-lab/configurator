@@ -78,18 +78,24 @@ function formatDuration(durationMs: number, lang: string): string {
   // Build duration object for DurationFormat
   const duration: Record<string, number> = {}
 
-  if (years > 0)
+  if (years > 0) {
     duration.years = years
-  if (months > 0)
+  }
+  if (months > 0) {
     duration.months = months
-  if (days > 0 && years === 0)
+  }
+  if (days > 0 && years === 0) {
     duration.days = days
-  if (hours > 0 && totalMonths === 0)
+  }
+  if (hours > 0 && totalMonths === 0) {
     duration.hours = hours
-  if (minutes > 0 && totalDays === 0)
+  }
+  if (minutes > 0 && totalDays === 0) {
     duration.minutes = minutes
-  if (seconds > 0 && totalHours === 0)
+  }
+  if (seconds > 0 && totalHours === 0) {
     duration.seconds = seconds
+  }
 
   // If no duration components, show 0 seconds
   if (Object.keys(duration).length === 0) {

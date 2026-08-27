@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import { Endge } from '@endge/core'
 import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { computed, ref, watch } from 'vue'
-import { toast } from 'vue-sonner'
 
+import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,7 +12,6 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
@@ -36,8 +36,9 @@ const lastRequestedRuntimeTabId = ref<string | null>(null)
 function requestTemplateAnalysis(): void {
   const tab = firstRuntimeTab.value
   const tabId = String(tab?.id ?? '').trim()
-  if (!tab || !tabId)
+  if (!tab || !tabId) {
     return
+  }
   lastRequestedRuntimeTabId.value = tabId
   Endge.runtimeDebugger.sendCommand('template-analysis', {
     tabId,
@@ -48,12 +49,14 @@ function requestTemplateAnalysis(): void {
 
 function applyRuntimeTargets(): void {
   const current = editor.value
-  if (!current || !runtimeTargets.value.length)
+  if (!current || !runtimeTargets.value.length) {
     return
+  }
   for (const target of runtimeTargets.value) {
     const identity = String(target ?? '').trim()
-    if (!identity || current.areas.some(area => area.identity === identity))
+    if (!identity || current.areas.some(area => area.identity === identity)) {
       continue
+    }
     current.areas.push({ identity, title: identity, description: '' })
   }
   toast.success('Области обновлены', {
@@ -64,18 +67,21 @@ function applyRuntimeTargets(): void {
 watch(
   () => firstRuntimeTab.value?.id,
   (id) => {
-    if (!id)
+    if (!id) {
       return
-    if (lastRequestedRuntimeTabId.value === id && runtimeTargets.value.length > 0)
+    }
+    if (lastRequestedRuntimeTabId.value === id && runtimeTargets.value.length > 0) {
       return
+    }
     requestTemplateAnalysis()
   },
   { immediate: true },
 )
 
 function addArea(): void {
-  if (!editor.value)
+  if (!editor.value) {
     return
+  }
   editor.value.areas.push({
     identity: '',
     title: '',
@@ -84,15 +90,17 @@ function addArea(): void {
 }
 
 function removeArea(index: number): void {
-  if (!editor.value)
+  if (!editor.value) {
     return
+  }
   editor.value.areas.splice(index, 1)
 }
 
 /** Заполняет превью по умолчанию: одна колонка - одна область. */
 function fillDefaultPreview(): void {
-  if (!editor.value?.areas?.length)
+  if (!editor.value?.areas?.length) {
     return
+  }
   const rows = editor.value.areas.map(a => [a.identity])
   const rowHeights = editor.value.areas.map(() => 'normal' as const)
   editor.value.preview = { rows, rowHeights }
@@ -102,16 +110,18 @@ const showPreviewJson = ref(false)
 const previewJsonText = computed({
   get: () => (editor.value?.preview ? JSON.stringify(editor.value.preview, null, 2) : ''),
   set: (v: string) => {
-    if (!editor.value)
+    if (!editor.value) {
       return
+    }
     if (!v?.trim()) {
       editor.value.preview = null
       return
     }
     try {
       const parsed = JSON.parse(v)
-      if (Array.isArray(parsed?.rows))
+      if (Array.isArray(parsed?.rows)) {
         editor.value.preview = { rows: parsed.rows, rowHeights: parsed.rowHeights ?? undefined }
+      }
     }
     catch {
       /* ignore */
@@ -209,7 +219,7 @@ async function save(): Promise<void> {
             v-if="showPreviewJson"
             v-model="previewJsonText"
             class="font-mono text-xs min-h-[120px]"
-            placeholder='{"rows":[["slot1"],["slot2","slot3"]],"rowHeights":["short","tall"]}'
+            placeholder="{&quot;rows&quot;:[[&quot;slot1&quot;],[&quot;slot2&quot;,&quot;slot3&quot;]],&quot;rowHeights&quot;:[&quot;short&quot;,&quot;tall&quot;]}"
           />
         </Card>
 
@@ -224,7 +234,9 @@ async function save(): Promise<void> {
           </div>
 
           <div class="rounded-md border bg-muted/20 p-3 space-y-2">
-            <div class="text-sm font-medium">Области из Runtime Debug</div>
+            <div class="text-sm font-medium">
+              Области из Runtime Debug
+            </div>
             <p class="text-xs text-muted-foreground">
               Анализ выполняется по первой зарегистрированной runtime-вкладке.
             </p>
@@ -233,7 +245,9 @@ async function save(): Promise<void> {
             </div>
             <template v-if="runtimeTargets.length">
               <ul class="list-disc list-inside text-xs text-muted-foreground">
-                <li v-for="target in runtimeTargets" :key="target">{{ target }}</li>
+                <li v-for="target in runtimeTargets" :key="target">
+                  {{ target }}
+                </li>
               </ul>
               <Button size="sm" variant="outline" @click="applyRuntimeTargets">
                 Вставить области в шаблон
@@ -275,7 +289,6 @@ async function save(): Promise<void> {
             Областей пока нет. Добавьте хотя бы одну область, чтобы связать layout с зонами.
           </p>
         </Card>
-
       </div>
     </ScrollArea>
   </div>

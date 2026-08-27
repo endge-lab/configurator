@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /* eslint-disable style/max-statements-per-line */
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type { TypeProgramCatalogEntry } from '@endge/core'
 import type { HTMLAttributes } from 'vue'
+import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
 import { useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'

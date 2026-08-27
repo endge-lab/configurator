@@ -8,8 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor.ts'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -28,7 +28,6 @@ async function save(): Promise<void> {
 function addInputField(): void {
   editor.value?.inputFields?.push(RFieldEditor.createDefault())
 }
-
 </script>
 
 <template>
@@ -145,9 +144,15 @@ function addInputField(): void {
                 <div class="rounded-lg border overflow-hidden">
                   <div class="bg-muted/40 border-b">
                     <div class="grid grid-cols-[1.2fr_1fr_80px_56px] gap-0 text-xs font-medium text-muted-foreground">
-                      <div class="px-3 py-2">Имя переменной</div>
-                      <div class="px-3 py-2">Тип данных</div>
-                      <div class="px-3 py-2">Массив?</div>
+                      <div class="px-3 py-2">
+                        Имя переменной
+                      </div>
+                      <div class="px-3 py-2">
+                        Тип данных
+                      </div>
+                      <div class="px-3 py-2">
+                        Массив?
+                      </div>
                       <div class="px-3 py-2" />
                     </div>
                   </div>
@@ -194,7 +199,6 @@ function addInputField(): void {
               </div>
             </ScrollArea>
           </TabsContent>
-
         </Tabs>
       </Card>
     </div>

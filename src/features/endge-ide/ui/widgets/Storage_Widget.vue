@@ -13,7 +13,8 @@ const storageSnapshot = ref<Record<string, unknown>>({})
 function refresh(): void {
   try {
     storageSnapshot.value = { ...(Raph.data as Record<string, unknown>) }
-  } catch {
+  }
+  catch {
     storageSnapshot.value = {}
   }
 }
@@ -49,7 +50,9 @@ refresh()
             </div>
           </CollapsibleContent>
         </Collapsible>
-        <p v-if="!entries.length" class="text-sm text-muted-foreground p-4">Пусто</p>
+        <p v-if="!entries.length" class="text-sm text-muted-foreground p-4">
+          Пусто
+        </p>
       </div>
     </ScrollArea>
   </div>

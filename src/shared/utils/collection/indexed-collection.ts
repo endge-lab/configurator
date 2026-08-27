@@ -1,5 +1,5 @@
-import type { OneOrMany } from '@/shared/utils/tools/types'
 import type { CollectionOptions, IndexCollectionEntity } from '@/shared/utils/collection/types'
+import type { OneOrMany } from '@/shared/utils/tools/types'
 
 export class IndexedCollection<
   T extends Record<K, ID> & IndexCollectionEntity<ID>,
@@ -48,7 +48,7 @@ export class IndexedCollection<
     return this
   }
 
-  markDirty(opts: { filter?: boolean; sort?: boolean }): void {
+  markDirty(opts: { filter?: boolean, sort?: boolean }): void {
     if (opts.filter) {
       this.dirtyFilter = true
     }
@@ -188,7 +188,7 @@ export class IndexedCollection<
     this.filteredList = this.list.filter(this.filterFn)
 
     if (this.filterIndexEnabled) {
-      this.list.forEach(item => {
+      this.list.forEach((item) => {
         item.filteredIndex = -1
       })
       this.filteredList.forEach((item, i) => {

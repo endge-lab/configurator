@@ -1,10 +1,10 @@
-import type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 import type { MaybeRefOrGetter } from 'vue'
+import type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 
 import { onBeforeUnmount, toValue, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { Configurator } from '@/app'
+import { Configurator } from '@/app/model/kernel/configurator'
 
 export type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 

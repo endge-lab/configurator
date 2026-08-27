@@ -10,7 +10,7 @@ interface NodeTree {
 }
 
 const props = withDefaults(
-  defineProps<{ node: NodeTree; depth?: number }>(),
+  defineProps<{ node: NodeTree, depth?: number }>(),
   { depth: 0 },
 )
 
@@ -30,7 +30,7 @@ const hasRoutes = computed(() => (props.node?.routes?.length ?? 0) > 0)
         <span v-if="hasRoutes" class="text-muted"> ({{ node.routes.length }} routes)</span>
       </span>
       <span class="text-xs text-muted-foreground">
-        {{ hasChildren ? node.children.length + ' children' : 'leaf' }}
+        {{ hasChildren ? `${node.children.length} children` : 'leaf' }}
       </span>
     </summary>
     <div v-if="hasChildren" class="pl-3 pb-1">
@@ -43,9 +43,13 @@ const hasRoutes = computed(() => (props.node?.routes?.length ?? 0) > 0)
     </div>
     <div class="py-1 pt-2">
       <ul v-if="hasRoutes" class="pl-6 py-1 text-xs text-destructive list-disc">
-        <li v-for="(r, idx) in node.routes" :key="idx" class="break-all">{{ r }}</li>
+        <li v-for="(r, idx) in node.routes" :key="idx" class="break-all">
+          {{ r }}
+        </li>
       </ul>
-      <div v-else class="pl-6 text-xs text-muted-foreground">Нет подписок</div>
+      <div v-else class="pl-6 text-xs text-muted-foreground">
+        Нет подписок
+      </div>
     </div>
   </details>
 </template>

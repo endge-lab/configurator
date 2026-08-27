@@ -17,22 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/components/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
-
-type FilterValueType =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'date'
-  | 'datetime'
-  | 'array'
-  | 'json'
+type FilterValueType
+  = | 'string'
+    | 'number'
+    | 'boolean'
+    | 'date'
+    | 'datetime'
+    | 'array'
+    | 'json'
 
 type FilterMode = 'manual' | 'static' | 'dynamic' | 'expression'
 
@@ -71,10 +70,13 @@ const LS_KEY = 'endge:parameters'
 type FiltersStore = Record<string, any> // identity -> payload
 
 function safeParseJSON<T>(raw: string | null, fallback: T): T {
-  if (!raw) return fallback
+  if (!raw) {
+    return fallback
+  }
   try {
     return JSON.parse(raw) as T
-  } catch {
+  }
+  catch {
     return fallback
   }
 }
@@ -110,16 +112,22 @@ const editor = computed<any | null>(() => tabs.documentEditorModel.value ?? null
 const identity = computed(() => String(editor.value?.identity ?? '').trim())
 const raphKey = computed(() => {
   const id = identity.value
-  if (!id) return ''
+  if (!id) {
+    return ''
+  }
   return id.startsWith('parameters.') ? id : `parameters.${id}`
 })
 
 // -------------------- utils --------------------
 
 function getByPath(obj: any, path: string | null | undefined): any {
-  if (!path) return obj
+  if (!path) {
+    return obj
+  }
   const p = String(path).trim()
-  if (!p) return obj
+  if (!p) {
+    return obj
+  }
   return p.split('.').reduce((acc, k) => (acc ? acc[k] : undefined), obj)
 }
 
@@ -127,8 +135,10 @@ function toOptionLabelValue(
   item: any,
   valueField?: string | null,
   labelField?: string | null,
-): { label: string; value: any } | null {
-  if (item == null) return null
+): { label: string, value: any } | null {
+  if (item == null) {
+    return null
+  }
 
   if (typeof item !== 'object') {
     const v = item
@@ -145,7 +155,9 @@ function toOptionLabelValue(
     ? item?.[lf]
     : (item?.label ?? item?.name ?? item?.title ?? item?.code ?? value)
 
-  if (value == null) return null
+  if (value == null) {
+    return null
+  }
   return { value, label: String(label ?? value) }
 }
 
@@ -158,54 +170,80 @@ function toOptionLabelValue(
  */
 function resolveDynamicOptions(
   field: RuntimeFilterField,
-): { label: string; value: any }[] {
+): { label: string, value: any }[] {
   const ds = field.dynamicSource
-  if (!ds || !ds.sourceType) return []
+  if (!ds || !ds.sourceType) {
+    return []
+  }
 
   let raw: any = null
 
   if (ds.sourceType === 'vocab') {
     const vid = String(ds.vocabIdentity ?? '').trim()
     const col = String(ds.vocabCollection ?? '').trim()
-    if (!vid || !col) return []
+    if (!vid || !col) {
+      return []
+    }
 
     //  ВОТ ТУТ ПОДПРАВЛЕНО: новый ключ vocabs:<base>/<словарь>
     const key = `vocabs:${vid}/${col}` // например "vocabs:base/airlines"
     raw = Raph.get(key)
     raw = getByPath(raw, ds.path)
-  } else if (ds.sourceType === 'payloadCollection') {
+  }
+  else if (ds.sourceType === 'payloadCollection') {
     const slug = String(ds.collectionSlug ?? '').trim()
-    if (!slug) return []
+    if (!slug) {
+      return []
+    }
     raw = Raph.get(`payload-${slug}`)
     raw = getByPath(raw, ds.path)
-  } else if (ds.sourceType === 'query') {
+  }
+  else if (ds.sourceType === 'query') {
     const qid = String(ds.queryIdentity ?? '').trim()
-    if (!qid) return []
+    if (!qid) {
+      return []
+    }
     raw = Raph.get(`query-${qid}`)
     raw = getByPath(raw, ds.path)
   }
 
   let arr: any[] | null = null
-  if (Array.isArray(raw)) arr = raw
-  else if (raw?.docs && Array.isArray(raw.docs)) arr = raw.docs
-  else if (raw?.items && Array.isArray(raw.items)) arr = raw.items
-  else if (raw?.data && Array.isArray(raw.data)) arr = raw.data
-  else if (raw && typeof raw === 'object') {
-    const maybe = Object.values(raw).find((v) => Array.isArray(v))
-    if (Array.isArray(maybe)) arr = maybe as any[]
+  if (Array.isArray(raw)) {
+    arr = raw
   }
-  if (!arr) return []
+  else if (raw?.docs && Array.isArray(raw.docs)) {
+    arr = raw.docs
+  }
+  else if (raw?.items && Array.isArray(raw.items)) {
+    arr = raw.items
+  }
+  else if (raw?.data && Array.isArray(raw.data)) {
+    arr = raw.data
+  }
+  else if (raw && typeof raw === 'object') {
+    const maybe = Object.values(raw).find(v => Array.isArray(v))
+    if (Array.isArray(maybe)) {
+      arr = maybe as any[]
+    }
+  }
+  if (!arr) {
+    return []
+  }
 
-  const opts: { label: string; value: any }[] = []
+  const opts: { label: string, value: any }[] = []
   for (const it of arr) {
     const o = toOptionLabelValue(it, ds.valueField, ds.labelField)
-    if (o) opts.push(o)
+    if (o) {
+      opts.push(o)
+    }
   }
 
   const seen = new Set<string>()
   return opts.filter((o) => {
     const k = String(o.value)
-    if (seen.has(k)) return false
+    if (seen.has(k)) {
+      return false
+    }
     seen.add(k)
     return true
   })
@@ -215,22 +253,28 @@ function resolveDynamicOptions(
 
 const fields = computed<RuntimeFilterField[]>(() => {
   const e = editor.value
-  if (!e) return []
+  if (!e) {
+    return []
+  }
 
   const rawFields: any = e.fields
-  if (!rawFields) return []
+  if (!rawFields) {
+    return []
+  }
 
   let list: any[] = []
   if (rawFields instanceof Map || rawFields?.constructor?.name === 'Map') {
     list = Array.from(rawFields.values())
-  } else if (Array.isArray(rawFields)) {
+  }
+  else if (Array.isArray(rawFields)) {
     list = rawFields
-  } else if (typeof rawFields === 'object') {
+  }
+  else if (typeof rawFields === 'object') {
     list = Object.values(rawFields)
   }
 
   return list
-    .filter((fld) => fld && fld.key)
+    .filter(fld => fld && fld.key)
     .map(
       (fld: any): RuntimeFilterField => ({
         id: fld.id,
@@ -293,28 +337,35 @@ function applySavedToForm(
   fs: RuntimeFilterField[],
   base: Record<string, any>,
 ): Record<string, any> {
-  if (!saved || typeof saved !== 'object') return base
+  if (!saved || typeof saved !== 'object') {
+    return base
+  }
 
   const out = { ...base }
   for (const field of fs) {
     const key = field.key
-    if (!(key in saved)) continue
+    if (!(key in saved)) {
+      continue
+    }
 
     let val = saved[key]
 
     if (
-      (field.valueType === 'date' || field.valueType === 'datetime') &&
-      typeof val === 'string'
+      (field.valueType === 'date' || field.valueType === 'datetime')
+      && typeof val === 'string'
     ) {
       const d = new Date(val)
-      if (!Number.isNaN(d.getTime())) val = d
+      if (!Number.isNaN(d.getTime())) {
+        val = d
+      }
     }
 
     if (field.valueType === 'json') {
       if (typeof val === 'object' && val !== null) {
         try {
           val = JSON.stringify(val, null, 2)
-        } catch {}
+        }
+        catch {}
       }
     }
 
@@ -343,24 +394,30 @@ const resultJson = computed<Record<string, any>>(() => {
     const key = field.key
 
     if (field.mode === 'expression') {
-      if (field.expression) out[key] = field.expression
+      if (field.expression) {
+        out[key] = field.expression
+      }
       continue
     }
 
     let val = form.value[key]
-    if (val == null) continue
-
-    if (field.valueType === 'array' && Array.isArray(val) && val.length === 0)
+    if (val == null) {
       continue
-    if (
-      (field.valueType === 'string' || field.valueType === 'json') &&
-      val === ''
-    )
+    }
+
+    if (field.valueType === 'array' && Array.isArray(val) && val.length === 0) {
       continue
+    }
+    if (
+      (field.valueType === 'string' || field.valueType === 'json')
+      && val === ''
+    ) {
+      continue
+    }
 
     if (
-      (field.valueType === 'date' || field.valueType === 'datetime') &&
-      val instanceof Date
+      (field.valueType === 'date' || field.valueType === 'datetime')
+      && val instanceof Date
     ) {
       val = val.toISOString()
     }
@@ -368,7 +425,8 @@ const resultJson = computed<Record<string, any>>(() => {
     if (field.valueType === 'json' && typeof val === 'string') {
       try {
         val = JSON.parse(val)
-      } catch {
+      }
+      catch {
         // оставляем строкой
       }
     }
@@ -383,42 +441,54 @@ const resultJson = computed<Record<string, any>>(() => {
 
 const fieldLabel = (f: RuntimeFilterField) => f.label || f.key
 
-const isStaticArray = (f: RuntimeFilterField) =>
-  f.valueType === 'array' && f.mode === 'static'
+function isStaticArray(f: RuntimeFilterField) {
+  return f.valueType === 'array' && f.mode === 'static'
+}
 
-const isStaticSingle = (f: RuntimeFilterField) =>
-  f.valueType !== 'array' && f.mode === 'static'
+function isStaticSingle(f: RuntimeFilterField) {
+  return f.valueType !== 'array' && f.mode === 'static'
+}
 
-const isManualDate = (f: RuntimeFilterField) =>
-  f.valueType === 'date' && f.mode === 'manual'
+function isManualDate(f: RuntimeFilterField) {
+  return f.valueType === 'date' && f.mode === 'manual'
+}
 
-const isManualDateTime = (f: RuntimeFilterField) =>
-  f.valueType === 'datetime' && f.mode === 'manual'
+function isManualDateTime(f: RuntimeFilterField) {
+  return f.valueType === 'datetime' && f.mode === 'manual'
+}
 
-const isManualNumber = (f: RuntimeFilterField) =>
-  f.valueType === 'number' && f.mode === 'manual'
+function isManualNumber(f: RuntimeFilterField) {
+  return f.valueType === 'number' && f.mode === 'manual'
+}
 
-const isManualBoolean = (f: RuntimeFilterField) =>
-  f.valueType === 'boolean' && f.mode === 'manual'
+function isManualBoolean(f: RuntimeFilterField) {
+  return f.valueType === 'boolean' && f.mode === 'manual'
+}
 
-const isManualString = (f: RuntimeFilterField) =>
-  f.valueType === 'string' && f.mode === 'manual'
+function isManualString(f: RuntimeFilterField) {
+  return f.valueType === 'string' && f.mode === 'manual'
+}
 
-const isManualJson = (f: RuntimeFilterField) =>
-  f.valueType === 'json' && f.mode === 'manual'
+function isManualJson(f: RuntimeFilterField) {
+  return f.valueType === 'json' && f.mode === 'manual'
+}
 
 const isDynamic = (f: RuntimeFilterField) => f.mode === 'dynamic'
 const isExpression = (f: RuntimeFilterField) => f.mode === 'expression'
 
-const isDynamicArray = (f: RuntimeFilterField) =>
-  isDynamic(f) && f.valueType === 'array'
+function isDynamicArray(f: RuntimeFilterField) {
+  return isDynamic(f) && f.valueType === 'array'
+}
 
-const isDynamicSingle = (f: RuntimeFilterField) =>
-  isDynamic(f) && f.valueType !== 'array'
+function isDynamicSingle(f: RuntimeFilterField) {
+  return isDynamic(f) && f.valueType !== 'array'
+}
 
 function dynamicSourceLabel(field: RuntimeFilterField): string {
   const ds = field.dynamicSource
-  if (!ds || !ds.sourceType) return 'Динамический источник'
+  if (!ds || !ds.sourceType) {
+    return 'Динамический источник'
+  }
 
   if (ds.sourceType === 'vocab') {
     const vid = ds.vocabIdentity ?? ''
@@ -441,14 +511,17 @@ function dynamicSourceLabel(field: RuntimeFilterField): string {
  */
 function applyFilter(): void {
   const id = identity.value
-  if (!id) return
+  if (!id) {
+    return
+  }
 
   const key = raphKey.value
   const payload = resultJson.value
 
   saveByIdentity(id, payload)
-  if (key) Raph.set(key, payload)
-
+  if (key) {
+    Raph.set(key, payload)
+  }
 }
 </script>
 
@@ -483,9 +556,15 @@ function applyFilter(): void {
       <Tabs v-model="activeTab" class="flex-1 flex flex-col min-h-0">
         <div class="border-b px-3 py-2">
           <TabsList class="grid w-full grid-cols-3">
-            <TabsTrigger value="general">Основное</TabsTrigger>
-            <TabsTrigger value="form">Форма</TabsTrigger>
-            <TabsTrigger value="json">JSON</TabsTrigger>
+            <TabsTrigger value="general">
+              Основное
+            </TabsTrigger>
+            <TabsTrigger value="form">
+              Форма
+            </TabsTrigger>
+            <TabsTrigger value="json">
+              JSON
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -622,7 +701,7 @@ function applyFilter(): void {
                         v-model="form[field.key]"
                         class="w-full"
                         :rows="4"
-                        placeholder='Введите JSON (например: ["SU","S7"])'
+                        placeholder="Введите JSON (например: [&quot;SU&quot;,&quot;S7&quot;])"
                       />
                     </div>
 
@@ -661,7 +740,9 @@ function applyFilter(): void {
 
                     <!-- EXPRESSION -->
                     <div v-else-if="isExpression(field)" class="mt-1">
-                      <div class="text-xs text-muted-foreground mb-1">Выражение (readonly)</div>
+                      <div class="text-xs text-muted-foreground mb-1">
+                        Выражение (readonly)
+                      </div>
                       <Input
                         :model-value="field.expression"
                         disabled

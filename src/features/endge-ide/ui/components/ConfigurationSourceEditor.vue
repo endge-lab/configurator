@@ -11,7 +11,7 @@ const monaco = useEndgeSourceMonaco({
   container,
   sourceKind: 'configuration',
   value: () => source.value,
-  onChange: value => { source.value = value },
+  onChange: (value) => { source.value = value },
   owner: 'endge-configuration-source',
   ownerIdentity: () => props.identity,
 })
@@ -19,4 +19,6 @@ watch(() => props.modelValue, value => monaco.setValue(value))
 defineExpose({ formatDocument: monaco.formatDocument })
 </script>
 
-<template><div ref="container" class="h-full min-h-[280px] w-full bg-editor-surface" /></template>
+<template>
+  <div ref="container" class="h-full min-h-[280px] w-full bg-editor-surface" />
+</template>

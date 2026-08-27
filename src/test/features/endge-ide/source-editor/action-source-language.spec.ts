@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
 import { Endge } from '@endge/core'
+import { describe, expect, it } from 'vitest'
 
-describe('Action Source language', () => {
+describe('action Source language', () => {
   it('provides Action DSL completions and source diagnostics', () => {
     const completions = Endge.source.completions('action', {
       source: '',

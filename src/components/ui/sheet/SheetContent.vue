@@ -13,9 +13,9 @@ import {
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/lib/utils.ts'
-
 import SheetOverlay from '@/components/ui/sheet/SheetOverlay.vue'
+
+import { cn } from '@/lib/utils.ts'
 
 interface SheetContentProps extends DialogContentProps {
   class?: HTMLAttributes['class']

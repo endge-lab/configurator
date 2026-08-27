@@ -1,7 +1,6 @@
-import { Expose, Type } from 'class-transformer'
+import { RField, RuntimeFilterLinkEntity } from '@endge/core'
 import { TypeMap } from '@endge/utils'
-import { RField } from '@endge/core'
-import { RuntimeFilterLinkEntity } from '@endge/core'
+import { Expose, Type } from 'class-transformer'
 
 //
 // Модель для редактирования RField компонента.
@@ -53,7 +52,8 @@ export class RFieldEditor {
         paramEditor.updateSource(param)
         source.params.set(key, param)
       }
-    } else {
+    }
+    else {
       source.params = undefined
     }
   }
