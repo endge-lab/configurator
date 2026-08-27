@@ -13,7 +13,7 @@ export interface DomainOpDelete { op: 'delete', type: string, identity: string }
 
 export type DomainOp = DomainOpCreate | DomainOpUpdateFull | DomainOpUpdatePatch | DomainOpDelete
 
-const DOMAIN_OPS_BLOCK_REG = /```(?:domain-ops|json)\s*([\s\S]*?)```/g
+const DOMAIN_OPS_BLOCK_REG = /```(?:domain-ops|json)([\s\S]*?)```/g
 const DOMAIN_OPS_KEY = 'domainOps'
 
 function parseDomainOpsFromBlock(raw: string): DomainOp[] | null {

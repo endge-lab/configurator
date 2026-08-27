@@ -16,6 +16,25 @@
       "popup": "Browser window"
     }
   },
+  "help": {
+    "documentation": "Documentation",
+    "serviceVersions": {
+      "aiWorkbench": "AI Workbench",
+      "available": "Available",
+      "backend": "Backend",
+      "backendUnavailable": "Backend is unavailable",
+      "configurator": "Configurator",
+      "description": "Runtime versions reported by the active Endge ecosystem.",
+      "loading": "Loading…",
+      "localApplication": "Current frontend application",
+      "menu": "Service versions",
+      "title": "Service versions",
+      "unavailable": "Unavailable",
+      "unsupported": "The backend does not support the /version endpoint",
+      "versionUnknown": "Version not reported"
+    },
+    "title": "Help"
+  },
   "nav": {
     "apps": {
       "title": "Apps"

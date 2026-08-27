@@ -229,10 +229,10 @@ export function extractColumnDataForPreview(
 }
 
 /** Регулярки и проверки для определения типа значения из запроса. */
-const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/i
+const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/i
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
-const TIME_ONLY = /^\d{1,2}:\d{2}(:\d{2})?$/
-const NUMERIC_STRING = /^-?\d+(\.\d+)?(e[+-]?\d+)?$/i
+const TIME_ONLY = /^\d{1,2}:\d{2}(?::\d{2})?$/
+const NUMERIC_STRING = /^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i
 const TIMESTAMP_MS_MIN = 1e10
 const TIMESTAMP_MS_MAX = 2e12
 const JSON_OBJECT_START = /^\s*\{/

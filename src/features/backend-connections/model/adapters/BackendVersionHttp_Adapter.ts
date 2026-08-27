@@ -1,4 +1,7 @@
-import type { BackendVersion } from '@/features/backend-connections/domain/types/backend-version.type'
+import type {
+  BackendVersion,
+  ConnectedServiceVersion,
+} from '@/features/backend-connections/domain/types/backend-version.type'
 
 import { normalizeBackendURL } from '@/features/backend-connections/model/backend-connection-storage'
 
@@ -48,6 +51,33 @@ export class BackendVersionHttp_Adapter {
       service: typeof payload.service === 'string' ? payload.service : '',
       version,
       env: typeof payload.env === 'string' ? payload.env : '',
+      services: Array.isArray(payload.services)
+        ? payload.services.flatMap(parseConnectedServiceVersion)
+        : [],
     }
   }
+}
+
+function parseConnectedServiceVersion(value: unknown): ConnectedServiceVersion[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return []
+  }
+
+  const payload = value as Record<string, unknown>
+  const service = typeof payload.service === 'string' ? payload.service.trim() : ''
+  const status = payload.status === 'available' || payload.status === 'unavailable'
+    ? payload.status
+    : null
+  if (!service || !status) {
+    return []
+  }
+
+  const version = typeof payload.version === 'string' ? payload.version.trim() : ''
+  const env = typeof payload.env === 'string' ? payload.env.trim() : ''
+  return [{
+    service,
+    status,
+    ...(version ? { version } : {}),
+    ...(env ? { env } : {}),
+  }]
 }

@@ -3,8 +3,9 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { Bot, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Configurator } from '@/app/model/kernel/configurator'
 import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
@@ -22,6 +23,7 @@ import { canManageAccess as canManageAccessPolicy } from '@/features/access-cont
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
 import { AIWorkbench } from '@/features/ai-assistant'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
+import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/model/config/documentation.config'
@@ -34,6 +36,7 @@ import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
+const { t } = useI18n()
 const configuratorMenuItems = EndgeIDE.integrations.menuItems
 const isBusy = computed(() => EndgeIDE.busy.value)
 const canImportDomain = computed(() => Configurator.context.workspaceRole === 'admin')
@@ -45,6 +48,7 @@ const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(nu
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
 const aiManagementModal = ref<InstanceType<typeof AIManagement_Modal> | null>(null)
+const serviceVersionsDialog = ref<InstanceType<typeof ServiceVersionsDialog> | null>(null)
 const canConfigureAI = computed(() => {
   if (Configurator.session.state.status !== 'authenticated') {
     return false
@@ -83,6 +87,10 @@ function openAccessControl(): void {
 
 function openAIManagement(): void {
   void aiManagementModal.value?.open()
+}
+
+function openServiceVersions(): void {
+  serviceVersionsDialog.value?.open()
 }
 
 onMounted(() => {
@@ -238,15 +246,40 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <a
-        v-if="ENDGE_IDE_DOCUMENTATION_URL"
-        :href="ENDGE_IDE_DOCUMENTATION_URL"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="rounded-md px-2 py-1 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        Документация
-      </a>
+      <!-- Помощь -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('help.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem
+            v-if="ENDGE_IDE_DOCUMENTATION_URL"
+            as="a"
+            :href="ENDGE_IDE_DOCUMENTATION_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BookOpen class="size-3.5" />
+            {{ t('help.documentation') }}
+            <ArrowUpRight class="ml-auto size-3.5 opacity-50" />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="ENDGE_IDE_DOCUMENTATION_URL" />
+          <DropdownMenuItem @click="openServiceVersions">
+            <Boxes class="size-3.5" />
+            {{ t('help.serviceVersions.menu') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <span
         v-if="configuratorMenuItems.length"
@@ -293,5 +326,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <BackendConnections_Modal ref="backendConnectionsModal" />
   <AccessControl_Modal ref="accessControlModal" />
   <AIManagement_Modal ref="aiManagementModal" />
+  <ServiceVersionsDialog ref="serviceVersionsDialog" />
   <RuntimePreviewAuthDialog />
 </template>

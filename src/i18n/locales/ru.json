@@ -16,6 +16,25 @@
       "popup": "Браузерное окно"
     }
   },
+  "help": {
+    "documentation": "Документация",
+    "serviceVersions": {
+      "aiWorkbench": "AI Workbench",
+      "available": "Доступен",
+      "backend": "Backend",
+      "backendUnavailable": "Backend недоступен",
+      "configurator": "Configurator",
+      "description": "Runtime-версии, которые сообщает активная экосистема Endge.",
+      "loading": "Загрузка…",
+      "localApplication": "Текущее frontend-приложение",
+      "menu": "Версии сервисов",
+      "title": "Версии сервисов",
+      "unavailable": "Недоступен",
+      "unsupported": "Backend не поддерживает endpoint /version",
+      "versionUnknown": "Версия не указана"
+    },
+    "title": "Помощь"
+  },
   "nav": {
     "apps": {
       "title": "Приложения"

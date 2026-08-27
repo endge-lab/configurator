@@ -21,12 +21,12 @@ export function serializeTableColumnSortPaths(paths: readonly string[]): string 
 /** Проверяет row-relative DataPath, поддерживаемый Table renderer. */
 export function isTableColumnSortPath(value: string): boolean {
   const path = value.trim()
-  const identifier = String.raw`[A-Za-z_$][\w$]*`
-  const selectorKey = String.raw`[A-Za-z_$][\w$-]*`
+  const identifier = String.raw`[A-Z_$][\w$]*`
+  const selectorKey = String.raw`[A-Z_$][\w$-]*`
   const selectorValue = String.raw`(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\d+)`
   const segment = String.raw`${identifier}(?:\[\s*${selectorKey}\s*=\s*${selectorValue}\s*\]|\[\s*\d+\s*\])*`
 
-  return new RegExp(String.raw`^${segment}(?:\.${segment})*$`).test(path)
+  return new RegExp(String.raw`^${segment}(?:\.${segment})*$`, 'i').test(path)
 }
 
 /** Читает default-sort в compiler order; позиция элемента является его sort priority. */
