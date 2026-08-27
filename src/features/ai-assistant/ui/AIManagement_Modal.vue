@@ -4,6 +4,7 @@ import type { AIAdapter, AIModelProfile, AIProviderConnection, AIVisibility } fr
 
 import {
   Bot,
+  Check,
   ChevronDown,
   ChevronRight,
   Globe2,
@@ -17,6 +18,7 @@ import {
   Trash2,
   TriangleAlert,
   UserRound,
+  X,
 } from 'lucide-vue-next'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -40,7 +42,6 @@ interface AdapterPresentation {
   label: string
   endpointLabel: string
   endpointPlaceholder: string
-  description: string
 }
 
 type VisibilityFilter = 'all' | 'public' | 'mine'
@@ -56,13 +57,11 @@ const adapterPresentation: Record<AIAdapter, AdapterPresentation> = {
     label: 'Anthropic',
     endpointLabel: 'API endpoint',
     endpointPlaceholder: 'https://api.anthropic.com (необязательно)',
-    description: 'Облачные модели Claude по API key',
   },
   ollama: {
     label: 'Ollama',
     endpointLabel: 'Адрес Ollama',
     endpointPlaceholder: 'http://host.docker.internal:11434',
-    description: 'Локальные модели через Ollama endpoint',
   },
 }
 
@@ -80,7 +79,7 @@ const isPlatformAdmin = computed(() => Configurator.session.state.status === 'au
 
 const connectionSheetOpen = ref(false)
 const activeConnectionId = ref('')
-const isCreatingConnection = ref(false)
+const showConnectionForm = ref(false)
 const advancedOpen = ref(false)
 const connectionForm = reactive({ name: '', adapter: '' as AIAdapter | '', baseUrl: '', credential: '', visibility: 'private' as AIVisibility, enabled: true })
 const connectionEditForm = reactive({ name: '', baseUrl: '' })
@@ -130,6 +129,7 @@ watch(() => AIWorkbench.state.managementOpen, (visible) => {
   }
   else {
     connectionSheetOpen.value = false
+    cancelConnectionCreate()
   }
 })
 
@@ -164,19 +164,25 @@ async function reload(): Promise<void> {
   }
 }
 
-function beginConnectionCreate(adapter: AIAdapter): void {
-  resetDrawerState()
+function beginConnectionCreate(): void {
   Object.assign(connectionForm, {
     name: '',
-    adapter,
+    adapter: '',
     baseUrl: '',
     credential: '',
     visibility: isPlatformAdmin.value ? 'public' : 'private',
     enabled: true,
   })
-  isCreatingConnection.value = true
-  advancedOpen.value = adapter === 'anthropic'
-  connectionSheetOpen.value = true
+  showConnectionForm.value = true
+}
+
+function selectConnectionAdapter(adapter: AIAdapter): void {
+  Object.assign(connectionForm, { adapter, baseUrl: '', credential: '' })
+}
+
+function cancelConnectionCreate(): void {
+  showConnectionForm.value = false
+  Object.assign(connectionForm, { name: '', adapter: '', baseUrl: '', credential: '', visibility: 'private', enabled: true })
 }
 
 function openConnection(connection: AIProviderConnection): void {
@@ -189,12 +195,10 @@ function openConnection(connection: AIProviderConnection): void {
 
 function resetDrawerState(): void {
   activeConnectionId.value = ''
-  isCreatingConnection.value = false
   advancedOpen.value = false
   credentialValue.value = ''
   showModelForm.value = false
   editingModelId.value = ''
-  Object.assign(connectionForm, { name: '', adapter: '', baseUrl: '', credential: '', visibility: 'private', enabled: true })
   Object.assign(connectionEditForm, { name: '', baseUrl: '' })
   Object.assign(modelForm, { connectionId: '', providerModelId: '', displayName: '', enabled: true, isDefault: false })
   Object.assign(modelEditForm, { providerModelId: '', displayName: '' })
@@ -206,18 +210,17 @@ async function createConnection(): Promise<void> {
     return
   }
   const succeeded = await act(async () => {
-    const created = await AIWorkbench.createProviderConnection({
+    await AIWorkbench.createProviderConnection({
       name: connectionForm.name.trim(),
       adapter,
       baseUrl: connectionForm.baseUrl.trim(),
-      credential: adapter === 'anthropic' ? connectionForm.credential.trim() : '',
+      credential: connectionForm.credential.trim(),
       visibility: isPlatformAdmin.value ? connectionForm.visibility : 'private',
       enabled: connectionForm.enabled,
     })
-    activeConnectionId.value = created.id
   })
-  if (succeeded && activeConnection.value) {
-    openConnection(activeConnection.value)
+  if (succeeded) {
+    cancelConnectionCreate()
   }
 }
 
@@ -377,7 +380,7 @@ defineExpose({ open })
 
 <template>
   <Dialog v-model:open="openState">
-    <DialogContent class="flex max-h-[88vh] flex-col overflow-hidden p-0 sm:max-w-3xl">
+    <DialogContent class="flex max-h-[88vh] flex-col overflow-hidden p-0 sm:max-w-5xl">
       <DialogHeader class="border-b px-6 py-5">
         <DialogTitle class="flex items-center gap-3">
           <span class="flex size-9 items-center justify-center rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/10">
@@ -412,39 +415,76 @@ defineExpose({ open })
             {{ connections.length ? `${connections.length} подключений` : 'Подключений пока нет' }}
           </p>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button size="sm" :disabled="loading || !adapters.length">
-                <Plus class="size-4" /> Добавить
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-64">
-              <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">
-                Тип подключения
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                v-for="adapter in adapters"
-                :key="adapter"
-                class="gap-3 py-2.5"
-                @select="beginConnectionCreate(adapter)"
-              >
-                <span
-                  class="flex size-8 shrink-0 items-center justify-center rounded-md border"
-                  :class="adapter === 'anthropic' ? 'border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-500' : 'border-sky-500/20 bg-sky-500/10 text-sky-500'"
-                >
-                  <Sparkles v-if="adapter === 'anthropic'" class="size-4" />
-                  <Server v-else class="size-4" />
-                </span>
-                <span class="min-w-0">
-                  <span class="block font-medium">{{ adapterPresentation[adapter].label }}</span>
-                  <span class="block truncate text-xs text-muted-foreground">{{ adapterPresentation[adapter].description }}</span>
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button size="sm" :variant="showConnectionForm ? 'outline' : 'default'" :disabled="loading || !adapters.length" @click="showConnectionForm ? cancelConnectionCreate() : beginConnectionCreate()">
+            <X v-if="showConnectionForm" class="size-4" />
+            <Plus v-else class="size-4" />
+            {{ showConnectionForm ? 'Отмена' : 'Добавить' }}
+          </Button>
         </div>
 
         <div class="overflow-hidden rounded-xl border bg-card">
+          <form
+            v-if="showConnectionForm"
+            class="grid gap-2 border-b bg-muted/20 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(130px,0.7fr)_minmax(130px,0.85fr)_minmax(190px,1.25fr)_minmax(160px,1fr)_auto]"
+            @submit.prevent="createConnection"
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button type="button" variant="outline" class="min-w-0 justify-between px-3 font-normal">
+                  <span class="flex min-w-0 items-center gap-2">
+                    <Sparkles v-if="connectionForm.adapter === 'anthropic'" class="size-3.5 shrink-0 text-fuchsia-500" />
+                    <Server v-else-if="connectionForm.adapter === 'ollama'" class="size-3.5 shrink-0 text-sky-500" />
+                    <span class="truncate">{{ connectionForm.adapter ? adapterPresentation[connectionForm.adapter].label : 'Тип' }}</span>
+                  </span>
+                  <ChevronDown class="size-3.5 shrink-0 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" class="w-48">
+                <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">
+                  Тип подключения
+                </DropdownMenuLabel>
+                <DropdownMenuItem v-for="adapter in adapters" :key="adapter" class="gap-2" @select="selectConnectionAdapter(adapter)">
+                  <Sparkles v-if="adapter === 'anthropic'" class="size-3.5 text-fuchsia-500" />
+                  <Server v-else class="size-3.5 text-sky-500" />
+                  {{ adapterPresentation[adapter].label }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Input v-model="connectionForm.name" placeholder="Название" autocomplete="off" />
+            <Input
+              v-model="connectionForm.baseUrl"
+              :disabled="!connectionForm.adapter"
+              :placeholder="connectionForm.adapter ? adapterPresentation[connectionForm.adapter].endpointPlaceholder : 'Адрес сервера'"
+              inputmode="url"
+            />
+            <Input
+              v-model="connectionForm.credential"
+              type="password"
+              autocomplete="new-password"
+              :disabled="!connectionForm.adapter"
+              :placeholder="connectionForm.adapter === 'anthropic' ? 'API key' : 'API key (необязательно)'"
+            />
+
+            <div class="flex items-center justify-end gap-1 sm:col-span-2 lg:col-span-1">
+              <label v-if="isPlatformAdmin" class="mr-1 flex items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground" title="Сделать подключение доступным всем пользователям">
+                <Globe2 v-if="connectionForm.visibility === 'public'" class="size-3.5" />
+                <LockKeyhole v-else class="size-3.5" />
+                <Switch
+                  :model-value="connectionForm.visibility === 'public'"
+                  @update:model-value="connectionForm.visibility = $event ? 'public' : 'private'"
+                />
+              </label>
+              <Button type="button" size="icon" variant="ghost" class="size-9" title="Отменить" @click="cancelConnectionCreate">
+                <X class="size-4" />
+              </Button>
+              <Button type="submit" size="icon" class="size-9" title="Создать подключение" :disabled="loading || !canCreateConnection">
+                <Loader2 v-if="loading" class="size-4 animate-spin" />
+                <Check v-else class="size-4" />
+              </Button>
+            </div>
+          </form>
+
           <button
             v-for="connection in filteredConnections"
             :key="connection.id"
@@ -482,7 +522,7 @@ defineExpose({ open })
             <ChevronRight class="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </button>
 
-          <div v-if="!filteredConnections.length && !loading" class="px-6 py-12 text-center">
+          <div v-if="!filteredConnections.length && !showConnectionForm && !loading" class="px-6 py-12 text-center">
             <span class="mx-auto flex size-10 items-center justify-center rounded-xl border bg-muted/30">
               <Server class="size-4 text-muted-foreground" />
             </span>
@@ -490,7 +530,7 @@ defineExpose({ open })
               {{ connections.length ? 'Подключения не найдены' : 'Добавьте первое подключение' }}
             </p>
             <p class="mt-1 text-xs text-muted-foreground">
-              {{ connections.length ? 'Измените выбранный фильтр.' : 'Выберите Anthropic или Ollama в меню «Добавить».' }}
+              {{ connections.length ? 'Измените выбранный фильтр.' : 'Нажмите «Добавить», чтобы создать подключение.' }}
             </p>
           </div>
         </div>
@@ -506,15 +546,15 @@ defineExpose({ open })
         <SheetTitle class="flex items-center gap-3">
           <span
             class="flex size-9 items-center justify-center rounded-lg border"
-            :class="(connectionForm.adapter || activeConnection?.adapter) === 'anthropic' ? 'border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-500' : 'border-sky-500/20 bg-sky-500/10 text-sky-500'"
+            :class="activeConnection?.adapter === 'anthropic' ? 'border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-500' : 'border-sky-500/20 bg-sky-500/10 text-sky-500'"
           >
-            <Sparkles v-if="(connectionForm.adapter || activeConnection?.adapter) === 'anthropic'" class="size-4" />
+            <Sparkles v-if="activeConnection?.adapter === 'anthropic'" class="size-4" />
             <Server v-else class="size-4" />
           </span>
           <span>
-            <span class="block text-base">{{ isCreatingConnection ? `Новое подключение · ${connectionForm.adapter ? adapterPresentation[connectionForm.adapter].label : ''}` : activeConnection?.name }}</span>
+            <span class="block text-base">{{ activeConnection?.name }}</span>
             <span class="mt-0.5 block text-xs font-normal text-muted-foreground">
-              {{ isCreatingConnection ? 'Настройте доступ к провайдеру' : activeConnection ? adapterPresentation[activeConnection.adapter].label : '' }}
+              {{ activeConnection ? adapterPresentation[activeConnection.adapter].label : '' }}
             </span>
           </span>
         </SheetTitle>
@@ -526,30 +566,19 @@ defineExpose({ open })
           {{ error }}
         </div>
 
-        <section class="space-y-4 px-6 py-5">
+        <section v-if="activeConnection" class="space-y-4 px-6 py-5">
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="space-y-1.5 text-xs font-medium">
               Название
-              <Input
-                v-if="isCreatingConnection"
-                v-model="connectionForm.name"
-                placeholder="Например, Production"
-              />
-              <Input v-else v-model="connectionEditForm.name" :disabled="!activeConnection?.canManage" />
+              <Input v-model="connectionEditForm.name" :disabled="!activeConnection.canManage" />
             </label>
 
             <label class="space-y-1.5 text-xs font-medium">
-              {{ adapterPresentation[(connectionForm.adapter || activeConnection?.adapter || 'anthropic')].endpointLabel }}
+              {{ adapterPresentation[activeConnection.adapter].endpointLabel }}
               <Input
-                v-if="isCreatingConnection"
-                v-model="connectionForm.baseUrl"
-                :placeholder="adapterPresentation[connectionForm.adapter || 'anthropic'].endpointPlaceholder"
-              />
-              <Input
-                v-else
                 v-model="connectionEditForm.baseUrl"
-                :disabled="!activeConnection?.canManage"
-                :placeholder="adapterPresentation[activeConnection?.adapter || 'anthropic'].endpointPlaceholder"
+                :disabled="!activeConnection.canManage"
+                :placeholder="adapterPresentation[activeConnection.adapter].endpointPlaceholder"
               />
             </label>
           </div>
@@ -559,15 +588,10 @@ defineExpose({ open })
               <span>
                 <span class="block text-xs font-medium">Доступ</span>
                 <span class="mt-0.5 block text-xs text-muted-foreground">
-                  {{ (isCreatingConnection ? connectionForm.visibility : activeConnection?.visibility) === 'public' ? 'Доступно всем пользователям' : 'Доступно только владельцу' }}
+                  {{ activeConnection.visibility === 'public' ? 'Доступно всем пользователям' : 'Доступно только владельцу' }}
                 </span>
               </span>
-              <Switch
-                v-if="isCreatingConnection && isPlatformAdmin"
-                :model-value="connectionForm.visibility === 'public'"
-                @update:model-value="connectionForm.visibility = $event ? 'public' : 'private'"
-              />
-              <Globe2 v-else-if="activeConnection?.visibility === 'public'" class="size-4 text-muted-foreground" />
+              <Globe2 v-if="activeConnection.visibility === 'public'" class="size-4 text-muted-foreground" />
               <LockKeyhole v-else class="size-4 text-muted-foreground" />
             </div>
 
@@ -575,15 +599,10 @@ defineExpose({ open })
               <span>
                 <span class="block text-xs font-medium">Состояние</span>
                 <span class="mt-0.5 block text-xs text-muted-foreground">
-                  {{ (isCreatingConnection ? connectionForm.enabled : activeConnection?.enabled) ? 'Подключение включено' : 'Подключение отключено' }}
+                  {{ activeConnection.enabled ? 'Подключение включено' : 'Подключение отключено' }}
                 </span>
               </span>
               <Switch
-                v-if="isCreatingConnection"
-                v-model="connectionForm.enabled"
-              />
-              <Switch
-                v-else-if="activeConnection"
                 :model-value="activeConnection.enabled"
                 :disabled="loading || !activeConnection.canManage"
                 @update:model-value="toggleConnection(activeConnection)"
@@ -592,7 +611,7 @@ defineExpose({ open })
           </div>
 
           <Button
-            v-if="!isCreatingConnection && activeConnection?.canManage"
+            v-if="activeConnection.canManage"
             size="sm"
             :disabled="loading || !canSaveConnection"
             @click="saveConnection(activeConnection)"
@@ -601,7 +620,7 @@ defineExpose({ open })
           </Button>
 
           <Collapsible
-            v-if="(isCreatingConnection && connectionForm.adapter === 'anthropic') || (!isCreatingConnection && activeConnection?.canManage)"
+            v-if="activeConnection.canManage"
             v-model:open="advancedOpen"
             class="rounded-lg border"
           >
@@ -610,15 +629,7 @@ defineExpose({ open })
               <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="advancedOpen && 'rotate-180'" />
             </CollapsibleTrigger>
             <CollapsibleContent class="space-y-4 border-t px-3 py-4">
-              <div v-if="isCreatingConnection && connectionForm.adapter === 'anthropic'" class="space-y-1.5">
-                <label class="text-xs font-medium" for="new-anthropic-credential">API key</label>
-                <Input id="new-anthropic-credential" v-model="connectionForm.credential" type="password" autocomplete="new-password" placeholder="sk-ant-…" />
-                <p class="text-xs text-muted-foreground">
-                  Credential сохраняется на backend в зашифрованном виде.
-                </p>
-              </div>
-
-              <div v-else-if="activeConnection?.adapter === 'anthropic'" class="space-y-2">
+              <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
                   <span class="flex items-center gap-2 text-xs font-medium">
                     <KeyRound class="size-3.5 text-muted-foreground" /> Credential
@@ -628,14 +639,14 @@ defineExpose({ open })
                   </span>
                 </div>
                 <div class="flex gap-2">
-                  <Input v-model="credentialValue" type="password" autocomplete="new-password" placeholder="Новый API key" />
+                  <Input v-model="credentialValue" type="password" autocomplete="new-password" :placeholder="activeConnection.adapter === 'anthropic' ? 'Новый API key' : 'Новый API key (необязательно)'" />
                   <Button size="sm" variant="outline" :disabled="loading || !credentialValue.trim()" @click="saveCredential(activeConnection)">
                     Заменить
                   </Button>
                 </div>
               </div>
 
-              <div v-if="!isCreatingConnection && activeConnection" class="flex items-center justify-between gap-4 border-t pt-4">
+              <div class="flex items-center justify-between gap-4 border-t pt-4">
                 <div>
                   <p class="text-xs font-medium">
                     Удаление подключения
@@ -651,19 +662,9 @@ defineExpose({ open })
             </CollapsibleContent>
           </Collapsible>
 
-          <Button
-            v-if="isCreatingConnection"
-            class="w-full"
-            :disabled="loading || !canCreateConnection"
-            @click="createConnection"
-          >
-            <Loader2 v-if="loading" class="size-4 animate-spin" />
-            <Plus v-else class="size-4" />
-            Создать подключение
-          </Button>
         </section>
 
-        <section v-if="!isCreatingConnection && activeConnection" class="border-t px-6 py-5">
+        <section v-if="activeConnection" class="border-t px-6 py-5">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div>
               <h3 class="text-sm font-semibold">
