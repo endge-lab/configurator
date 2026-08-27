@@ -1329,6 +1329,7 @@ export class UIEditorDemoState {
   }
 
   public logTree(): void {
+    // eslint-disable-next-line no-console -- Developer-facing AST inspection command intentionally writes to console.
     console.log('[UIEditorDemo] AST tree inspection is available in the editor UI.')
   }
 

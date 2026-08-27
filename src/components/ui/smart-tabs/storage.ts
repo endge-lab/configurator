@@ -1,4 +1,4 @@
-import type { SmartTabsPersistedState } from './types'
+import type { SmartTabsPersistedState, SmartTabsPersistence } from './types'
 
 const VERSION = 2
 
@@ -7,26 +7,10 @@ interface StoredPayload {
   state: SmartTabsPersistedState
 }
 
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) {
-    return null
-  }
+export function loadSmartTabs(persistence: SmartTabsPersistence, key: string): SmartTabsPersistedState | null {
+  let parsed: StoredPayload | null = null
   try {
-    return JSON.parse(raw) as T
-  }
-  catch {
-    return null
-  }
-}
-
-export function loadSmartTabs(key: string): SmartTabsPersistedState | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  let parsed: StoredPayload | null
-  try {
-    parsed = safeParse<StoredPayload>(localStorage.getItem(key))
+    parsed = persistence.read<StoredPayload | null>(key, null)
   }
   catch (error) {
     console.warn(`[SmartTabs] Failed to restore tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)
@@ -47,26 +31,19 @@ export function loadSmartTabs(key: string): SmartTabsPersistedState | null {
   return parsed.state
 }
 
-export function saveSmartTabs(key: string, state: SmartTabsPersistedState): void {
-  if (typeof window === 'undefined') {
-    return
-  }
-
+export function saveSmartTabs(persistence: SmartTabsPersistence, key: string, state: SmartTabsPersistedState): void {
   try {
     const payload: StoredPayload = { v: VERSION, state }
-    localStorage.setItem(key, JSON.stringify(payload))
+    persistence.write(key, payload)
   }
   catch (error) {
     console.warn(`[SmartTabs] Failed to persist tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
-export function clearSmartTabs(key: string): void {
-  if (typeof window === 'undefined') {
-    return
-  }
+export function clearSmartTabs(persistence: SmartTabsPersistence, key: string): void {
   try {
-    localStorage.removeItem(key)
+    persistence.remove(key)
   }
   catch (error) {
     console.warn(`[SmartTabs] Failed to clear tab state "${key}": ${error instanceof Error ? error.message : String(error)}`)

@@ -77,11 +77,12 @@ function sanitizeInitial(raw: SmartTabsPersistedState | null | undefined): Smart
 
 export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const viewRegistry = new SmartTabViewRegistry()
-  const persist = options.persist !== false
+  const persistence = options.persistence
+  const persist = options.persist !== false && persistence != null
   const maxTabs = options.maxTabs ?? 40
 
-  const initial = persist
-    ? sanitizeInitial(loadSmartTabs(options.storageKey))
+  const initial = persist && persistence
+    ? sanitizeInitial(loadSmartTabs(persistence, options.storageKey))
     : { openTabs: [], activeTabId: null, viewStateByTabId: {}, sharedViewState: {} }
 
   const state = reactive<SmartTabsPersistedState>({
@@ -93,7 +94,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const volatileViewStateByTabId: Record<SmartTabId, SmartTabViewState> = {}
 
   function persistNow(): void {
-    if (!persist) {
+    if (!persist || !persistence) {
       return
     }
     const stateToSave = {
@@ -102,7 +103,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       viewStateByTabId: state.viewStateByTabId,
       sharedViewState: state.sharedViewState,
     }
-    saveSmartTabs(options.storageKey, stateToSave)
+    saveSmartTabs(persistence, options.storageKey, stateToSave)
   }
 
   watch(
@@ -403,7 +404,9 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   }
 
   function clearStorage(): void {
-    clearSmartTabs(options.storageKey)
+    if (persistence) {
+      clearSmartTabs(persistence, options.storageKey)
+    }
   }
 
   return {

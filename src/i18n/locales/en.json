@@ -16,80 +16,8 @@
       "popup": "Browser window"
     }
   },
-  "home": {
-    "deleteMe": {
-      "features": {
-        "appSwitcher": {
-          "description": "Configurable app switcher dropdown powered by environment variable with support for groups, icons, and external links.",
-          "title": "App Switcher"
-        },
-        "errors": {
-          "description": "Catch errors with a beautiful error page.",
-          "title": "Global Error Handling"
-        },
-        "eslint": {
-          "description": "Strict industry-standard ESLint configuration for maintaining code quality and style.",
-          "title": "ESLint (Antfu Config)"
-        },
-        "formatters": {
-          "description": "Built-in formatters for duration and relative time display.",
-          "title": "Time Formatters"
-        },
-        "grid": {
-          "description": "Draggable widget grid layout with resizable panels, floating windows, and browser popouts.",
-          "title": "Grid Layout"
-        },
-        "header": {
-          "description": "Slot header based on Teleport with breadcrumb navigation.",
-          "title": "Header & Breadcrumbs"
-        },
-        "i18n": {
-          "description": "Full i18n support with vue-i18n for building multilingual applications.",
-          "title": "I18n"
-        },
-        "icons": {
-          "description": "Icon library with thousands of customizable icons.",
-          "title": "Lucide"
-        },
-        "layouts": {
-          "description": "Flexible layout system with router integration for different page structures.",
-          "title": "Dynamic Layouts"
-        },
-        "questions": {
-          "description": "Promise-based dialog system for user confirmations and choices with AlertDialog.",
-          "title": "Promise confirmations"
-        },
-        "shadcn": {
-          "description": "Beautiful, accessible UI components built with Radix Vue and styled with Tailwind CSS.",
-          "title": "shadcn-vue Components"
-        },
-        "subtitle": "Built with modern tools and best practices for rapid development",
-        "tailwind": {
-          "description": "Latest version of Tailwind CSS with modern features and improved performance.",
-          "title": "Tailwind CSS v4"
-        },
-        "theme": {
-          "description": "Theme switching with system preference detection.",
-          "title": "Light/Dark Theme"
-        },
-        "title": "Everything You Need",
-        "toasts": {
-          "description": "Beautiful toast notifications powered by Sonner.",
-          "title": "Toasts"
-        },
-        "viewDemo": "View Demo"
-      },
-      "hero": {
-        "badge": "Endge",
-        "description": "Endge configuration environment with modern tooling and flexible UI components.",
-        "gitlab": "Go to repository",
-        "title": "Endge Configurator"
-      }
-    }
-  },
   "nav": {
     "apps": {
-      "empty": "No apps configured",
       "title": "Apps"
     },
     "breadcrumbs": {
@@ -152,9 +80,6 @@
       "logout": "Log out",
       "logoutFailed": "Could not end the session",
       "theme": {
-        "dark": "Dark",
-        "light": "Light",
-        "lightCalm": "Light calm",
         "title": "Theme"
       }
     }
@@ -173,8 +98,7 @@
       "sheet": {
         "srDescription": "Displays the mobile sidebar.",
         "srTitle": "Sidebar"
-      },
-      "srToggle": "Toggle sidebar"
+      }
     }
   }
 }

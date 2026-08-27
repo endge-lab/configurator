@@ -1,7 +1,9 @@
 import type {
   AIAdapter,
   AICapabilities,
+  AIConnectionWithModel,
   AIConversation,
+  AICreateConnectionWithModel,
   AIMessage,
   AIModelProfile,
   AIProviderConnection,
@@ -119,6 +121,10 @@ export class AIWorkbench_HTTP_Adapter {
 
   public createConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, visibility: AIVisibility, enabled: boolean }): Promise<AIProviderConnection> {
     return this._json('/api/v1/ai/provider-connections', { method: 'POST', body: value })
+  }
+
+  public createConnectionWithModel(value: AICreateConnectionWithModel): Promise<AIConnectionWithModel> {
+    return this._json('/api/v1/ai/provider-connections/with-model', { method: 'POST', body: value })
   }
 
   public patchConnection(id: string, value: { name?: string, baseUrl?: string, enabled?: boolean }): Promise<AIProviderConnection> {

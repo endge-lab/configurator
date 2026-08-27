@@ -20,6 +20,7 @@ import type {
 import type { Component } from 'vue'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/components/ui/smart-tabs/types.ts'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/busy/EndgeIDEBusy_Module'
+import type { EndgeIDEUIState_Module } from '@/features/endge-ide/model/modules/ui-state/EndgeIDEUIState_Module'
 
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
@@ -182,10 +183,14 @@ export class EndgeIDETabs_Module {
   /** One-shot Source navigation consumed by document editors after their tab becomes active. */
   public readonly sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
-  public constructor(private readonly _busy: EndgeIDEBusy_Module) {
+  public constructor(
+    private readonly _busy: EndgeIDEBusy_Module,
+    private readonly _uiState: EndgeIDEUIState_Module,
+  ) {
     this._tabsApi = useSmartTabs({
       ...createEndgeIDETabsConfig(),
       persist: !isIDETabStorageDisabled(),
+      persistence: this._uiState,
       onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })
   }
@@ -233,6 +238,7 @@ export class EndgeIDETabs_Module {
     this._tabsApi = useSmartTabs({
       ...createEndgeIDETabsConfig(),
       persist: !isIDETabStorageDisabled(),
+      persistence: this._uiState,
       onTabClosed: tab => this._sessionByTabId.delete(tab.id),
     })
     this._isRegistryBootstrapped = false

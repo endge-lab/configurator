@@ -11,6 +11,7 @@ import type { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/mode
 import type { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/modules/runtime-preview/EndgeIDERuntimePreview_Module'
 import type { SourceEditorDialogs_Module } from '@/features/endge-ide/model/modules/source-editor-dialogs/SourceEditorDialogs_Module'
 import type { EndgeIDETabs_Module } from '@/features/endge-ide/model/modules/tabs/EndgeIDETabs_Module'
+import type { EndgeIDEUIState_Module } from '@/features/endge-ide/model/modules/ui-state/EndgeIDEUIState_Module'
 import type { EndgeIDEWidgets_Module } from '@/features/endge-ide/model/modules/widgets/EndgeIDEWidgets_Module'
 
 export interface EndgeIDEContextPort {
@@ -29,6 +30,7 @@ export interface EndgeIDEModules {
   domainTransfer: EndgeIDEDomainTransfer_Module
   modals: EndgeIDEModals_Module
   tabs: EndgeIDETabs_Module
+  uiState: EndgeIDEUIState_Module
   widgets: EndgeIDEWidgets_Module
   hotkeys: EndgeIDEHotkeys_Module
   runtimePreview: EndgeIDERuntimePreview_Module

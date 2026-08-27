@@ -1,3 +1,5 @@
+import type { SmartTabsPersistence } from '@/components/ui/smart-tabs/types'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
@@ -11,15 +13,17 @@ function createTab(id: string) {
 
 describe('smart tabs persisted view state', () => {
   const values = new Map<string, string>()
+  const persistence: SmartTabsPersistence = {
+    read: <T>(key: string, fallback: T): T => {
+      const raw = values.get(key)
+      return raw == null ? fallback : JSON.parse(raw) as T
+    },
+    write: (key, value) => values.set(key, JSON.stringify(value)),
+    remove: key => values.delete(key),
+  }
 
   beforeEach(() => {
     values.clear()
-    vi.stubGlobal('window', {})
-    vi.stubGlobal('localStorage', {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-      removeItem: (key: string) => values.delete(key),
-    })
   })
 
   afterEach(() => {
@@ -36,7 +40,7 @@ describe('smart tabs persisted view state', () => {
       },
     }))
 
-    expect(loadSmartTabs('tabs')).toEqual({
+    expect(loadSmartTabs(persistence, 'tabs')).toEqual({
       openTabs: [createTab('query-orders')],
       activeTabId: 'query-orders',
       viewStateByTabId: {},
@@ -62,7 +66,7 @@ describe('smart tabs persisted view state', () => {
     }))
 
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
 
     expect(api.activeTabId.value).toBe('query-orders')
     expect(api.getTabViewState('query-orders', 'editor.active-tab')).toEqual({
@@ -76,7 +80,7 @@ describe('smart tabs persisted view state', () => {
 
   it('persists a slice and removes it with its owning tab', async () => {
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('query-orders'))
     api.setTabViewState('query-orders', 'editor.active-tab', {
       version: 1,
@@ -99,7 +103,7 @@ describe('smart tabs persisted view state', () => {
   it('notifies the owner when tabs are physically closed', () => {
     const onTabClosed = vi.fn()
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', onTabClosed }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence, onTabClosed }))!
     api.openTab(createTab('type-order'))
     api.openTab(createTab('query-orders'))
 
@@ -113,7 +117,7 @@ describe('smart tabs persisted view state', () => {
 
   it('isolates equal slice keys between outer tabs', () => {
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('query-orders'))
     api.openTab(createTab('query-airports'))
 
@@ -127,7 +131,7 @@ describe('smart tabs persisted view state', () => {
 
   it('persists dependency panel layout independently for every document tab', async () => {
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('store-arrival'))
     api.openTab(createTab('store-departure'))
 
@@ -149,7 +153,7 @@ describe('smart tabs persisted view state', () => {
 
   it('persists shared view state after its originating tab is closed', async () => {
     const scope = effectScope()
-    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs' }))!
+    const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('type-order'))
     api.setSharedViewState('type-editor.visual-workspace', {
       version: 1,
@@ -193,14 +197,14 @@ describe('smart tabs persisted view state', () => {
   })
 
   it('does not throw when storage rejects a write', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => null,
-      setItem: () => { throw new Error('quota exceeded') },
-      removeItem: () => undefined,
-    })
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const rejectedPersistence: SmartTabsPersistence = {
+      read: <T>(_key: string, fallback: T) => fallback,
+      write: () => { throw new Error('quota exceeded') },
+      remove: () => undefined,
+    }
 
-    expect(() => saveSmartTabs('tabs', {
+    expect(() => saveSmartTabs(rejectedPersistence, 'tabs', {
       openTabs: [],
       activeTabId: null,
       viewStateByTabId: {},
@@ -208,14 +212,14 @@ describe('smart tabs persisted view state', () => {
   })
 
   it('falls back without throwing when storage rejects a read', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => { throw new Error('storage disabled') },
-      setItem: () => undefined,
-      removeItem: () => undefined,
-    })
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const rejectedPersistence: SmartTabsPersistence = {
+      read: () => { throw new Error('storage disabled') },
+      write: () => undefined,
+      remove: () => undefined,
+    }
 
-    expect(() => loadSmartTabs('tabs')).not.toThrow()
-    expect(loadSmartTabs('tabs')).toBeNull()
+    expect(() => loadSmartTabs(rejectedPersistence, 'tabs')).not.toThrow()
+    expect(loadSmartTabs(rejectedPersistence, 'tabs')).toBeNull()
   })
 })

@@ -1,6 +1,7 @@
 import type {
   AIAdapter,
   AICapabilities,
+  AICreateConnectionWithModel,
   AIConversation,
   AIMessage,
   AIModelProfile,
@@ -226,6 +227,11 @@ class AIWorkbench_Module {
   /** Создаёт provider connection через transport adapter. */
   public createProviderConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, visibility: AIVisibility, enabled: boolean }): Promise<AIProviderConnection> {
     return this._transport.createConnection(value)
+  }
+
+  /** Атомарно создаёт provider connection и первый model profile. */
+  public createProviderConnectionWithModel(value: AICreateConnectionWithModel): Promise<{ connection: AIProviderConnection, model: AIModelProfile }> {
+    return this._transport.createConnectionWithModel(value)
   }
 
   /** Изменяет provider connection через transport adapter. */

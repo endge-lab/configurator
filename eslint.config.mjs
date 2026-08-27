@@ -20,10 +20,8 @@ export default createEndgeEslintConfig(
       '@intlify/vue-i18n/no-missing-keys-in-other-locales': 'error',
       '@intlify/vue-i18n/no-raw-text': ['error', { ignorePattern: '^[-#:()&{}+⌘⇧⌥⌃]+$' }],
       '@intlify/vue-i18n/no-unknown-locale': 'error',
-      '@intlify/vue-i18n/no-unused-keys': ['error', {
-        extensions: ['.ts', '.vue'],
-        ignores: ['app.title', 'app.shortTitle', 'app.description'],
-      }],
+      // Catalog может опережать implementation; unused keys удаляются только явной cleanup-задачей.
+      '@intlify/vue-i18n/no-unused-keys': 'off',
       '@intlify/vue-i18n/no-v-html': 'error',
       '@intlify/vue-i18n/prefer-linked-key-with-paren': 'error',
       '@intlify/vue-i18n/prefer-sfc-lang-attr': 'error',

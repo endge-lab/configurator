@@ -17,6 +17,7 @@ import { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/model/mod
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/modules/runtime-preview/EndgeIDERuntimePreview_Module'
 import { SourceEditorDialogs_Module } from '@/features/endge-ide/model/modules/source-editor-dialogs/SourceEditorDialogs_Module'
 import { EndgeIDETabs_Module } from '@/features/endge-ide/model/modules/tabs/EndgeIDETabs_Module'
+import { EndgeIDEUIState_Module } from '@/features/endge-ide/model/modules/ui-state/EndgeIDEUIState_Module'
 import { EndgeIDEWidgets_Module } from '@/features/endge-ide/model/modules/widgets/EndgeIDEWidgets_Module'
 
 async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
@@ -30,6 +31,7 @@ async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
 /** Creates the complete route-scoped IDE module graph. */
 export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEModules {
   const busy = new EndgeIDEBusy_Module()
+  const uiState = new EndgeIDEUIState_Module()
   return {
     busy,
     agentTableActions: new AgentTableActions_Module(),
@@ -39,7 +41,8 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
       new ServiceBackendDomainTransferHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
     ),
     modals: new EndgeIDEModals_Module(),
-    tabs: new EndgeIDETabs_Module(busy),
+    tabs: new EndgeIDETabs_Module(busy, uiState),
+    uiState,
     widgets: new EndgeIDEWidgets_Module(),
     hotkeys: new EndgeIDEHotkeys_Module(new EndgeIDEHotkeysBrowser_Adapter()),
     runtimePreview: new EndgeIDERuntimePreview_Module(context),

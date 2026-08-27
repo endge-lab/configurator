@@ -55,6 +55,12 @@ export interface SmartTabViewStateSlice {
 
 export type SmartTabViewState = Record<string, SmartTabViewStateSlice>
 
+export interface SmartTabsPersistence {
+  read: <T>(key: string, fallback: T) => T
+  write: (key: string, value: unknown) => void
+  remove: (key: string) => void
+}
+
 export interface SmartTabsOptions {
   storageKey: string
   /**
@@ -62,9 +68,11 @@ export interface SmartTabsOptions {
    */
   autoInit?: boolean
   /**
-   * Сохранять состояние в localStorage
+   * Сохранять состояние через persistence owner.
    */
   persist?: boolean
+  /** Владелец persistent storage, переданный runtime-модулем. */
+  persistence?: SmartTabsPersistence
   /**
    * Максимальное количество открытых вкладок
    */

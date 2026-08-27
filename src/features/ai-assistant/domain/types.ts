@@ -64,6 +64,26 @@ export interface AIProviderConnection {
   canManage: boolean
 }
 
+export interface AICreateConnectionWithModel {
+  name: string
+  adapter: AIAdapter
+  baseUrl: string
+  credential: string
+  visibility: AIVisibility
+  enabled: boolean
+  model: {
+    providerModelId: string
+    displayName: string
+    enabled: boolean
+    isDefault: boolean
+  }
+}
+
+export interface AIConnectionWithModel {
+  connection: AIProviderConnection
+  model: AIModelProfile
+}
+
 export interface AIRunEvent {
   type: 'started' | 'content_delta' | 'completed' | 'failed'
   runId?: string

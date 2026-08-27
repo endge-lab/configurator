@@ -43,6 +43,10 @@ export class EndgeIDE {
     return this._requireModules().tabs
   }
 
+  public static get uiState() {
+    return this._requireModules().uiState
+  }
+
   public static get widgets() {
     return this._requireModules().widgets
   }

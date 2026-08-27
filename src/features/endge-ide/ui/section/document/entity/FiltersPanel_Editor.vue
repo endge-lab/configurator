@@ -64,29 +64,17 @@ interface RuntimeFilterField {
   description?: string
 }
 
-// -------------------- localStorage helpers --------------------
+// -------------------- persistent UI state --------------------
 
 const LS_KEY = 'endge:parameters'
 type FiltersStore = Record<string, any> // identity -> payload
 
-function safeParseJSON<T>(raw: string | null, fallback: T): T {
-  if (!raw) {
-    return fallback
-  }
-  try {
-    return JSON.parse(raw) as T
-  }
-  catch {
-    return fallback
-  }
-}
-
 function loadAllSaved(): FiltersStore {
-  return safeParseJSON<FiltersStore>(localStorage.getItem(LS_KEY), {})
+  return EndgeIDE.uiState.read<FiltersStore>(LS_KEY, {})
 }
 
 function saveAllSaved(store: FiltersStore): void {
-  localStorage.setItem(LS_KEY, JSON.stringify(store))
+  EndgeIDE.uiState.write(LS_KEY, store)
 }
 
 function loadSavedByIdentity(identity: string): any | null {
@@ -506,7 +494,7 @@ function dynamicSourceLabel(field: RuntimeFilterField): string {
 
 /**
  * Применить фильтр:
- * 1) localStorage endge:parameters[identity]
+ * 1) persistent UI state endge:parameters[identity]
  * 2) Raph.set(parameters.<identity>, payload)
  */
 function applyFilter(): void {
