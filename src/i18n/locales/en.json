@@ -3,6 +3,30 @@
     "description": "Endge configuration environment",
     "title": "Configurator"
   },
+  "endgeIde": {
+    "headerMenu": {
+      "additional": {
+        "dsl": "DSL",
+        "sfc": "SFC",
+        "title": "More",
+        "uiPlayground": "UI Playground"
+      },
+      "debug": {
+        "problems": "Find problems",
+        "projectCompilation": "Project compilation",
+        "title": "Debug"
+      },
+      "file": {
+        "access": "Access management",
+        "aiSettings": "AI settings",
+        "connections": "Connection settings",
+        "export": "Export",
+        "import": "Import",
+        "importWorkspaceAdmin": "Import is available only to Workspace Admin",
+        "title": "File"
+      }
+    }
+  },
   "grid": {
     "widget": {
       "close": "Close",
@@ -21,17 +45,11 @@
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
       "available": "Available",
-      "backend": "Backend",
-      "backendUnavailable": "Backend is unavailable",
       "configurator": "Configurator",
-      "description": "Runtime versions reported by the active Endge ecosystem.",
       "loading": "Loading…",
-      "localApplication": "Current frontend application",
       "menu": "Service versions",
       "title": "Service versions",
-      "unavailable": "Unavailable",
-      "unsupported": "The backend does not support the /version endpoint",
-      "versionUnknown": "Version not reported"
+      "unavailable": "Unavailable"
     },
     "title": "Help"
   },

@@ -3,6 +3,30 @@
     "description": "Среда конфигурации Endge",
     "title": "Конфигуратор"
   },
+  "endgeIde": {
+    "headerMenu": {
+      "additional": {
+        "dsl": "DSL",
+        "sfc": "SFC",
+        "title": "Дополнительно",
+        "uiPlayground": "UI Playground"
+      },
+      "debug": {
+        "problems": "Поиск проблем",
+        "projectCompilation": "Компиляция проекта",
+        "title": "Отладка"
+      },
+      "file": {
+        "access": "Управление доступом",
+        "aiSettings": "Настройки AI",
+        "connections": "Настройка подключений",
+        "export": "Экспорт",
+        "import": "Импорт",
+        "importWorkspaceAdmin": "Импорт доступен только Workspace Admin",
+        "title": "Файл"
+      }
+    }
+  },
   "grid": {
     "widget": {
       "close": "Закрыть",
@@ -21,17 +45,11 @@
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
       "available": "Доступен",
-      "backend": "Backend",
-      "backendUnavailable": "Backend недоступен",
       "configurator": "Configurator",
-      "description": "Runtime-версии, которые сообщает активная экосистема Endge.",
       "loading": "Загрузка…",
-      "localApplication": "Текущее frontend-приложение",
       "menu": "Версии сервисов",
       "title": "Версии сервисов",
-      "unavailable": "Недоступен",
-      "unsupported": "Backend не поддерживает endpoint /version",
-      "versionUnknown": "Версия не указана"
+      "unavailable": "Недоступен"
     },
     "title": "Помощь"
   },

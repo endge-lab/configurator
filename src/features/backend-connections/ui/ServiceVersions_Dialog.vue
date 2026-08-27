@@ -1,96 +1,98 @@
 <script setup lang="ts">
 import type {
+  BackendConnection,
+} from '@/features/backend-connections/domain/types/backend-connection.type'
+import type {
   BackendVersionState,
   ConnectedServiceVersion,
 } from '@/features/backend-connections/domain/types/backend-version.type'
+import type {
+  DomainVersionTarget,
+  DomainVersionTargetState,
+} from '@/features/domain-version'
 
-import { Bot, Boxes, Loader2, MonitorCog, Server } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { Configurator } from '@/app/model/kernel/configurator'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
 import { useBackendVersions } from '@/features/backend-connections/ui/use-backend-versions'
+import { DomainVersionBadge, useDomainVersions } from '@/features/domain-version'
 
 type ServiceVersionRowStatus = 'available' | 'loading' | 'unavailable'
 
 interface ServiceVersionRow {
   key: string
-  kind: 'backend' | 'configurator' | 'service'
   label: string
-  service?: string
   version?: string
-  env?: string
-  details?: string
   status: ServiceVersionRowStatus
+  nested?: boolean
+  domainState?: DomainVersionTargetState
 }
 
 const { t } = useI18n()
-const { activeBackendURL } = useBackendConnections()
-const { state, refresh } = useBackendVersions()
+const { catalog } = useBackendConnections()
+const { state: backendVersionState, refreshMany: refreshBackendVersions } = useBackendVersions()
+const { state: domainVersionState, refreshMany: refreshDomainVersions } = useDomainVersions()
 const openState = ref(false)
 const isRefreshing = ref(false)
 const configuratorVersion = __APP_VERSION__
 
-const backendState = computed(() => state(activeBackendURL.value))
 const rows = computed<ServiceVersionRow[]>(() => [
   {
     key: 'configurator',
-    kind: 'configurator',
     label: t('help.serviceVersions.configurator'),
     version: configuratorVersion,
-    details: t('help.serviceVersions.localApplication'),
     status: 'available',
   },
-  backendRow(backendState.value),
-  ...connectedServiceRows(backendState.value),
+  ...(catalog.value?.items ?? []).flatMap(backendRows),
 ])
 
-function backendRow(currentState: BackendVersionState): ServiceVersionRow {
-  if (currentState.status === 'ready') {
-    return {
-      key: 'backend',
-      kind: 'backend',
-      label: t('help.serviceVersions.backend'),
-      service: currentState.value.service,
-      version: currentState.value.version,
-      env: currentState.value.env,
-      details: activeBackendURL.value,
-      status: 'available',
-    }
+function backendRows(connection: BackendConnection): ServiceVersionRow[] {
+  const currentState = backendVersionState(connection.baseUrl)
+  const backend: ServiceVersionRow = {
+    key: `backend:${connection.id}`,
+    label: connection.name,
+    version: currentState.status === 'ready' ? currentState.value.version : undefined,
+    status: currentState.status === 'error'
+      ? 'unavailable'
+      : currentState.status === 'ready' ? 'available' : 'loading',
+    domainState: domainVersionState(domainTargetFor(connection)),
   }
-
-  return {
-    key: 'backend',
-    kind: 'backend',
-    label: t('help.serviceVersions.backend'),
-    details: currentState.status === 'error'
-      ? backendErrorLabel(currentState.code)
-      : activeBackendURL.value,
-    status: currentState.status === 'error' ? 'unavailable' : 'loading',
-  }
+  return [backend, ...connectedServiceRows(connection, currentState)]
 }
 
-function connectedServiceRows(currentState: BackendVersionState): ServiceVersionRow[] {
+function domainTargetFor(connection: BackendConnection): DomainVersionTarget | null {
+  const workspace = Configurator.connections.readWorkspaceFor(connection.baseUrl)
+  return workspace ? { backendURL: connection.baseUrl, workspace } : null
+}
+
+function connectedServiceRows(
+  connection: BackendConnection,
+  currentState: BackendVersionState,
+): ServiceVersionRow[] {
   if (currentState.status !== 'ready') {
     return []
   }
 
   return currentState.value.services.map(service => ({
-    key: `service:${service.service}`,
-    kind: 'service',
+    key: `service:${connection.id}:${service.service}`,
     label: connectedServiceLabel(service),
-    service: service.service,
     version: service.version,
-    env: service.env,
-    details: service.service,
     status: service.status,
+    nested: true,
   }))
 }
 
@@ -100,14 +102,8 @@ function connectedServiceLabel(service: ConnectedServiceVersion): string {
     : service.service
 }
 
-function isAIWorkbench(service: string | undefined): boolean {
+function isAIWorkbench(service: string): boolean {
   return service === 'service_ai_workbench' || service === 'service-ai-workbench'
-}
-
-function backendErrorLabel(code: string): string {
-  return code === 'unsupported'
-    ? t('help.serviceVersions.unsupported')
-    : t('help.serviceVersions.backendUnavailable')
 }
 
 function statusLabel(status: ServiceVersionRowStatus): string {
@@ -119,12 +115,15 @@ function statusLabel(status: ServiceVersionRowStatus): string {
     : t('help.serviceVersions.unavailable')
 }
 
-function versionLabel(version: string): string {
-  return `v${version}`
+function statusDotClass(status: ServiceVersionRowStatus): string {
+  if (status === 'loading') {
+    return 'animate-pulse bg-muted-foreground/45'
+  }
+  return status === 'available' ? 'bg-emerald-500' : 'bg-destructive'
 }
 
-function environmentLabel(environment: string): string {
-  return `· ${environment}`
+function versionLabel(version: string | undefined): string {
+  return version ? `v${version}` : '—'
 }
 
 async function loadVersions(): Promise<void> {
@@ -133,7 +132,14 @@ async function loadVersions(): Promise<void> {
   }
   isRefreshing.value = true
   try {
-    await refresh(activeBackendURL.value, true)
+    const connections = catalog.value?.items ?? []
+    const domainTargets = connections
+      .map(domainTargetFor)
+      .filter(target => target != null)
+    await Promise.allSettled([
+      refreshBackendVersions(connections.map(connection => connection.baseUrl), true),
+      refreshDomainVersions(domainTargets, true),
+    ])
   }
   finally {
     isRefreshing.value = false
@@ -150,60 +156,54 @@ defineExpose({ open })
 
 <template>
   <Dialog v-model:open="openState">
-    <DialogContent class="overflow-hidden p-0 sm:max-w-2xl">
-      <DialogHeader class="border-b bg-muted/35 px-6 py-5 text-left">
-        <DialogTitle class="flex items-center gap-2">
-          <Boxes class="size-4 text-sky-500" />
+    <DialogContent class="overflow-hidden p-0 sm:max-w-lg">
+      <DialogHeader class="border-b bg-muted/35 px-5 py-4 text-left">
+        <DialogTitle>
           {{ t('help.serviceVersions.title') }}
-          <Loader2 v-if="isRefreshing" class="ml-auto size-4 animate-spin text-muted-foreground" />
         </DialogTitle>
-        <DialogDescription>
-          {{ t('help.serviceVersions.description') }}
-        </DialogDescription>
       </DialogHeader>
 
-      <div class="max-h-[55vh] space-y-2 overflow-y-auto px-6 py-5">
-        <div
-          v-for="row in rows"
-          :key="row.key"
-          class="flex items-center gap-3 rounded-lg border bg-card px-3.5 py-3"
-        >
-          <span class="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-            <MonitorCog v-if="row.kind === 'configurator'" class="size-4" />
-            <Server v-else-if="row.kind === 'backend'" class="size-4" />
-            <Bot v-else-if="isAIWorkbench(row.service)" class="size-4" />
-            <Boxes v-else class="size-4" />
-          </span>
+      <TooltipProvider>
+        <div class="max-h-[55vh] divide-y overflow-y-auto px-5 py-2">
+          <div
+            v-for="row in rows"
+            :key="row.key"
+            class="flex min-h-10 items-center gap-3 py-2.5"
+            :class="row.nested ? 'pl-7' : ''"
+          >
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <span
+                  role="status"
+                  tabindex="0"
+                  class="inline-flex size-4 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  :aria-label="statusLabel(row.status)"
+                >
+                  <span class="size-2 rounded-full" :class="statusDotClass(row.status)" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {{ statusLabel(row.status) }}
+              </TooltipContent>
+            </Tooltip>
 
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">
+            <span
+              class="min-w-0 flex-1 truncate text-sm"
+              :class="row.nested ? 'font-normal text-muted-foreground' : 'font-medium'"
+            >
               {{ row.label }}
-            </p>
-            <p v-if="row.details" class="mt-1 truncate font-mono text-[11px] text-muted-foreground" :title="row.details">
-              {{ row.details }}
-            </p>
-          </div>
-
-          <div class="shrink-0 text-right">
-            <p v-if="row.version" class="font-mono text-sm font-semibold tabular-nums">
+            </span>
+            <DomainVersionBadge
+              v-if="row.domainState"
+              class="shrink-0"
+              :state="row.domainState"
+            />
+            <span class="shrink-0 font-mono text-sm font-semibold tabular-nums">
               {{ versionLabel(row.version) }}
-            </p>
-            <p v-else-if="row.status === 'available'" class="text-xs text-muted-foreground">
-              {{ t('help.serviceVersions.versionUnknown') }}
-            </p>
-            <div class="mt-1 flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground">
-              <Loader2 v-if="row.status === 'loading'" class="size-3 animate-spin" />
-              <span
-                v-else
-                class="size-1.5 rounded-full"
-                :class="row.status === 'available' ? 'bg-emerald-500' : 'bg-destructive'"
-              />
-              <span>{{ statusLabel(row.status) }}</span>
-              <span v-if="row.env">{{ environmentLabel(row.env) }}</span>
-            </div>
+            </span>
           </div>
         </div>
-      </div>
+      </TooltipProvider>
     </DialogContent>
   </Dialog>
 </template>

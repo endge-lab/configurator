@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
@@ -156,7 +155,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             type="button"
             class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            Файл
+            {{ t('endgeIde.headerMenu.file.title') }}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -167,24 +166,24 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         >
           <DropdownMenuItem @click="exportCurrentDomain">
             <Download class="size-3.5" />
-            Экспорт
+            {{ t('endgeIde.headerMenu.file.export') }}
           </DropdownMenuItem>
           <DropdownMenuItem :disabled="isBusy || !canImportDomain" @click="openDomainImport">
             <Upload class="size-3.5" />
-            {{ canImportDomain ? 'Импорт' : 'Импорт доступен только Workspace Admin' }}
+            {{ canImportDomain ? t('endgeIde.headerMenu.file.import') : t('endgeIde.headerMenu.file.importWorkspaceAdmin') }}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem @click="openBackendConnections">
             <Settings2 class="size-3.5" />
-            Настройка подключений
+            {{ t('endgeIde.headerMenu.file.connections') }}
           </DropdownMenuItem>
           <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
             <ShieldCheck class="size-3.5" />
-            Управление доступом
+            {{ t('endgeIde.headerMenu.file.access') }}
           </DropdownMenuItem>
           <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
             <Bot class="size-3.5 text-fuchsia-500" />
-            Настройки AI
+            {{ t('endgeIde.headerMenu.file.aiSettings') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -196,7 +195,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             type="button"
             class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            Отладка
+            {{ t('endgeIde.headerMenu.debug.title') }}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -206,10 +205,10 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           :side-offset="4"
         >
           <DropdownMenuItem @click="toggleProblems">
-            Поиск проблем
+            {{ t('endgeIde.headerMenu.debug.problems') }}
           </DropdownMenuItem>
           <DropdownMenuItem disabled>
-            Компиляция проекта
+            {{ t('endgeIde.headerMenu.debug.projectCompilation') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -221,7 +220,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             type="button"
             class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            Дополнительно
+            {{ t('endgeIde.headerMenu.additional.title') }}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -232,14 +231,14 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         >
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              UI Playground
+              {{ t('endgeIde.headerMenu.additional.uiPlayground') }}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem @click="openDSLPlayground">
-                DSL
+                {{ t('endgeIde.headerMenu.additional.dsl') }}
               </DropdownMenuItem>
               <DropdownMenuItem @click="openSFCPlayground">
-                SFC
+                {{ t('endgeIde.headerMenu.additional.sfc') }}
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>

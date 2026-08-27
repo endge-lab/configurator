@@ -17,11 +17,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select', nodeId: string): void
   (e: 'toggleGroup', nodeId: string): void
-  (e: 'add-after', payload: { targetId: string, type: NavigationTreeNodeType }): void
-  (e: 'add-child', payload: { targetId: string, type: NavigationTreeNodeType }): void
-  (e: 'drag-start', nodeId: string): void
-  (e: 'drag-end'): void
-  (e: 'drop-node', payload: { targetId: string, position: DropPosition }): void
+  (e: 'addAfter', payload: { targetId: string, type: NavigationTreeNodeType }): void
+  (e: 'addChild', payload: { targetId: string, type: NavigationTreeNodeType }): void
+  (e: 'dragStart', nodeId: string): void
+  (e: 'dragEnd'): void
+  (e: 'dropNode', payload: { targetId: string, position: DropPosition }): void
   (e: 'remove', nodeId: string): void
 }>()
 
@@ -77,7 +77,7 @@ function onDragStart(event: DragEvent): void {
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
   }
-  emit('drag-start', props.node.id)
+  emit('dragStart', props.node.id)
 }
 
 function onDragOver(event: DragEvent): void {
@@ -90,12 +90,12 @@ function onDragOver(event: DragEvent): void {
 function onDrop(event: DragEvent): void {
   const position = dropPosition.value ?? resolveDropPosition(event)
   dropPosition.value = null
-  emit('drop-node', { targetId: props.node.id, position })
+  emit('dropNode', { targetId: props.node.id, position })
 }
 
 function onDragEnd(): void {
   dropPosition.value = null
-  emit('drag-end')
+  emit('dragEnd')
 }
 
 function clearDropPosition(): void {
@@ -159,7 +159,7 @@ function dropClass(): string {
           <div class="flex shrink-0 items-center justify-end gap-0.5 opacity-70 transition group-hover:opacity-100">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button draggable="false" size="icon-sm" variant="ghost" @click.stop="emit('add-after', { targetId: node.id, type: 'group' })">
+                <Button draggable="false" size="icon-sm" variant="ghost" @click.stop="emit('addAfter', { targetId: node.id, type: 'group' })">
                   <PlusSquare class="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -168,7 +168,7 @@ function dropClass(): string {
 
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button draggable="false" size="icon-sm" variant="ghost" @click.stop="emit('add-after', { targetId: node.id, type: 'link' })">
+                <Button draggable="false" size="icon-sm" variant="ghost" @click.stop="emit('addAfter', { targetId: node.id, type: 'link' })">
                   <Plus class="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -181,7 +181,7 @@ function dropClass(): string {
                   draggable="false"
                   size="icon-sm"
                   variant="ghost"
-                  @click.stop="emit('add-child', { targetId: node.id, type: 'group' })"
+                  @click.stop="emit('addChild', { targetId: node.id, type: 'group' })"
                 >
                   <FolderTree class="size-4" />
                 </Button>
@@ -195,7 +195,7 @@ function dropClass(): string {
                   draggable="false"
                   size="icon-sm"
                   variant="ghost"
-                  @click.stop="emit('add-child', { targetId: node.id, type: 'link' })"
+                  @click.stop="emit('addChild', { targetId: node.id, type: 'link' })"
                 >
                   <Link2 class="size-4" />
                 </Button>
@@ -226,11 +226,11 @@ function dropClass(): string {
         :selected-id="selectedId"
         @select="(nodeId) => emit('select', nodeId)"
         @toggle-group="(nodeId) => emit('toggleGroup', nodeId)"
-        @add-after="(payload) => emit('add-after', payload)"
-        @add-child="(payload) => emit('add-child', payload)"
-        @drag-start="(nodeId) => emit('drag-start', nodeId)"
-        @drag-end="emit('drag-end')"
-        @drop-node="(payload) => emit('drop-node', payload)"
+        @add-after="(payload) => emit('addAfter', payload)"
+        @add-child="(payload) => emit('addChild', payload)"
+        @drag-start="(nodeId) => emit('dragStart', nodeId)"
+        @drag-end="emit('dragEnd')"
+        @drop-node="(payload) => emit('dropNode', payload)"
         @remove="(nodeId) => emit('remove', nodeId)"
       />
     </template>
