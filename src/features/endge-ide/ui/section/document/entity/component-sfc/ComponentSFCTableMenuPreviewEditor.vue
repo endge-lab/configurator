@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCExpressionCompletionScope,
   ComponentSFCTableMenuActionOption,
@@ -403,37 +402,37 @@ function resetDrag(): void {
         <SelectContent>
           <template v-if="kind === 'column'">
             <SelectItem value="default">
-              Default
+              {{ $t('uiText.default808d7dca') }}
             </SelectItem>
             <SelectItem value="custom">
-              Custom
+              {{ $t('uiText.custom081ae3fd') }}
             </SelectItem>
             <SelectItem value="disabled">
-              Disabled
+              {{ $t('uiText.disabledf4f4473d') }}
             </SelectItem>
           </template>
           <template v-else>
             <SelectItem v-if="allowInherit" value="default">
-              Inherit
+              {{ $t('uiText.inherit18f99833') }}
             </SelectItem>
             <SelectItem value="none">
-              None
+              {{ $t('uiText.none6eef6648') }}
             </SelectItem>
             <SelectItem value="custom">
-              Custom
+              {{ $t('uiText.custom081ae3fd') }}
             </SelectItem>
           </template>
           <SelectItem v-if="menu.mode === 'source'" value="source">
-            Source
+            {{ $t('uiText.sourceda13add2') }}
           </SelectItem>
         </SelectContent>
       </Select>
     </div>
 
     <div v-if="menu.sourceOwned" class="flex items-center justify-between gap-3 border-b border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-      <span class="flex items-center gap-2"><Code2 class="size-3.5" /> Меню содержит Source-owned конструкции и доступно только для просмотра.</span>
+      <span class="flex items-center gap-2"><Code2 class="size-3.5" /> {{ $t('uiText.theMenuContainsSourceOwnedConstructsAndIsReadOnly5bc1d2c9') }}</span>
       <Button variant="outline" size="sm" class="h-7 shrink-0 gap-1" @click="emit('openSource')">
-        Source <ExternalLink class="size-3" />
+        {{ $t('uiText.sourceda13add2') }} <ExternalLink class="size-3" />
       </Button>
     </div>
 
@@ -447,10 +446,10 @@ function resetDrag(): void {
             <div v-if="!menu.items.length && !creatingItem" class="px-4 py-8 text-center">
               <SquareMenu class="mx-auto size-7 text-muted-foreground/60" />
               <p class="mt-2 text-xs font-medium">
-                Меню пока пустое
+                {{ $t('uiText.theMenuIsEmpty9a88ce21') }}
               </p>
               <p class="mt-1 text-[11px] text-muted-foreground">
-                Добавьте первый пункт или разделитель.
+                {{ $t('uiText.addTheFirstItemOrSeparator1bf8ec0c') }}
               </p>
             </div>
 
@@ -476,7 +475,7 @@ function resetDrag(): void {
                       <GripVertical class="size-3.5" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Перетащить</TooltipContent>
+                  <TooltipContent>{{ $t('uiText.drag710b4d61') }}</TooltipContent>
                 </Tooltip>
                 <Button
                   v-if="!menu.sourceOwned"
@@ -516,7 +515,7 @@ function resetDrag(): void {
                           <Languages class="size-3.5" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>{{ translationDraft ? 'Используется перевод' : 'Обычный текст' }}</TooltipContent>
+                      <TooltipContent>{{ translationDraft ? $t('uiText.translationUsed40a2be4b') : $t('uiText.plainTexta08705ee') }}</TooltipContent>
                     </Tooltip>
                     <Input
                       v-model="labelDraft"
@@ -573,7 +572,7 @@ function resetDrag(): void {
                       <GripVertical class="size-3.5" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Перетащить</TooltipContent>
+                  <TooltipContent>{{ $t('uiText.drag710b4d61') }}</TooltipContent>
                 </Tooltip>
 
                 <div class="absolute -right-[4.5rem] top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100" :class="selectedIndex === itemIndex ? 'opacity-100' : ''">
@@ -591,7 +590,7 @@ function resetDrag(): void {
                         <Zap v-else class="size-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{{ itemIsSourceOwned(item) ? 'Открыть Source' : (itemAction(item) || 'Action не назначен') }}</TooltipContent>
+                    <TooltipContent>{{ itemIsSourceOwned(item) ? $t('uiText.openSource4dda88e1') : (itemAction(item) || 'Action не назначен') }}</TooltipContent>
                   </Tooltip>
                   <Button
                     v-if="!itemIsSourceOwned(item) && !menu.sourceOwned"
@@ -660,17 +659,17 @@ function resetDrag(): void {
               </div>
               <div class="mt-3 flex justify-end gap-2">
                 <Button variant="ghost" size="sm" class="h-7" @click="creatingItem = false">
-                  Отмена
+                  {{ $t('uiText.cancel0ec753be') }}
                 </Button>
                 <Button size="sm" class="h-7 gap-1" :disabled="!canCreateItem" @click="createItem">
-                  <Check class="size-3" /> Добавить
+                  <Check class="size-3" /> {{ $t('uiText.add559a87f7') }}
                 </Button>
               </div>
             </div>
 
             <div v-else-if="!menu.sourceOwned" class="flex border-t border-border/70 p-1">
               <Button variant="ghost" size="sm" class="h-8 flex-1 justify-start gap-1.5 text-xs text-muted-foreground" @click="startCreateItem">
-                <Plus class="size-3.5" /> Добавить пункт
+                <Plus class="size-3.5" /> {{ $t('uiText.addItem6d8cf1ac') }}
               </Button>
               <Tooltip>
                 <TooltipTrigger as-child>
@@ -678,7 +677,7 @@ function resetDrag(): void {
                     <Minus class="size-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Добавить разделитель</TooltipContent>
+                <TooltipContent>{{ $t('uiText.addSeparatorfffa4fdb') }}</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -691,7 +690,7 @@ function resetDrag(): void {
             <div class="flex items-center gap-2">
               <Zap class="size-4 text-sky-600 dark:text-sky-300" />
               <h4 class="truncate text-sm font-semibold">
-                Action
+                {{ $t('uiText.action97c89a4d') }}
               </h4>
             </div>
             <p class="mt-1 truncate text-[11px] text-muted-foreground">
@@ -705,7 +704,7 @@ function resetDrag(): void {
 
         <div class="mt-4 space-y-4">
           <div class="space-y-1.5">
-            <Label class="text-[11px]">Показывать, когда</Label>
+            <Label class="text-[11px]">{{ $t('uiText.showWhen348f6be8') }}</Label>
             <ComponentSFCExpressionInput
               v-model="visibleDraft"
               :scope="expressionScope"
@@ -715,7 +714,7 @@ function resetDrag(): void {
           </div>
 
           <div class="space-y-1.5">
-            <Label class="text-[11px]">Отключать, когда</Label>
+            <Label class="text-[11px]">{{ $t('uiText.disableWhenbd90695b') }}</Label>
             <ComponentSFCExpressionInput
               v-model="disabledDraft"
               :scope="expressionScope"
@@ -725,7 +724,7 @@ function resetDrag(): void {
           </div>
 
           <div class="space-y-1.5">
-            <Label class="text-[11px]">Action identity</Label>
+            <Label class="text-[11px]">{{ $t('uiText.actionIdentitye3aba971') }}</Label>
             <SearchableSelect
               :model-value="itemAction(inspectedItem) || null"
               :options="actionOptions"
@@ -738,7 +737,7 @@ function resetDrag(): void {
 
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-2">
-              <Label class="text-[11px]">Input mapping</Label>
+              <Label class="text-[11px]">{{ $t('uiText.inputMappinge48882e5') }}</Label>
               <Braces class="size-3.5 text-muted-foreground" />
             </div>
             <Input v-model="inputDraft" class="editor-control h-8 font-mono text-xs" placeholder="{ id: $row.id, value: $cell.value }" />
@@ -750,16 +749,16 @@ function resetDrag(): void {
           </div>
 
           <div class="space-y-1.5">
-            <Label class="text-[11px]">Icon identity</Label>
+            <Label class="text-[11px]">{{ $t('uiText.iconIdentity2ac4b4f5') }}</Label>
             <Input v-model="iconDraft" class="editor-control h-8 font-mono text-xs" placeholder="icon identity" />
           </div>
 
           <div class="flex items-center justify-between gap-2 border-t pt-3">
             <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="emit('openSource', inspectedItem)">
-              Source <ExternalLink class="size-3" />
+              {{ $t('uiText.sourceda13add2') }} <ExternalLink class="size-3" />
             </Button>
             <Button size="sm" class="h-7 gap-1 text-xs" @click="saveActionDetails">
-              <Check class="size-3" /> Применить
+              <Check class="size-3" /> {{ $t('uiText.apply768af677') }}
             </Button>
           </div>
         </div>
@@ -769,13 +768,13 @@ function resetDrag(): void {
     <div v-else class="flex min-h-48 flex-col items-center justify-center p-8 text-center">
       <SquareMenu class="size-8 text-muted-foreground/60" />
       <p class="mt-3 text-sm font-medium">
-        {{ kind === 'column' && menu.mode === 'default' ? 'Используется стандартное меню адаптера' : 'Декларативное меню выключено' }}
+        {{ kind === 'column' && menu.mode === 'default' ? $t('uiText.standardAdapterMenuIsUsedb1ebcb28') : $t('uiText.declarativeMenuIsDisabled56eaf5d6') }}
       </p>
       <p class="mt-1 max-w-sm text-[11px] leading-relaxed text-muted-foreground">
-        Включите Custom, чтобы собрать меню непосредственно в preview.
+        {{ $t('uiText.enableCustomToBuildTheMenuDirectlyInPreview41222a9d') }}
       </p>
       <Button v-if="!menu.sourceOwned" variant="outline" size="sm" class="mt-4 h-8 gap-1.5" @click="emit('setMode', 'custom')">
-        <Plus class="size-3.5" /> Создать custom-меню
+        <Plus class="size-3.5" /> {{ $t('uiText.createCustomMenu5c6ed567') }}
       </Button>
     </div>
   </article>

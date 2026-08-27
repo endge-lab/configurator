@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { StoreRuntimeHost } from '@endge/core'
 
 import { Raph } from '@endge/raph'
@@ -45,8 +44,8 @@ function format(value: unknown): string {
 <template>
   <div class="overflow-hidden rounded-md border bg-muted/10">
     <div class="grid grid-cols-[minmax(10rem,0.35fr)_minmax(0,1fr)] border-b bg-muted/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-      <span>Store field</span>
-      <span>Live value</span>
+      <span>{{ $t('uiText.storeField751a557b') }}</span>
+      <span>{{ $t('uiText.liveValue04139a4e') }}</span>
     </div>
     <div v-if="fields.length" class="divide-y">
       <section
@@ -66,7 +65,7 @@ function format(value: unknown): string {
       </section>
     </div>
     <div v-else class="p-6 text-center text-xs text-muted-foreground">
-      Store runtime не содержит полей.
+      {{ $t('uiText.storeRuntimeContainsNoFieldsc65c05ef') }}
     </div>
   </div>
 </template>

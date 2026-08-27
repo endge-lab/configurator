@@ -6,7 +6,6 @@ import type {
   ExtractComponentDialogInput,
   ExtractComponentDialogResult,
 } from './extract-component.types'
-/* eslint-disable style/max-statements-per-line */
 import type { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
@@ -71,7 +70,9 @@ export function createExtractComponentContribution(
         id: commandId,
         label: 'Экспорт компонента',
         run: async (_editor, target?: ExtractColumnCommandTarget) => {
-          if (!target) { return }
+          if (!target) {
+            return
+          }
           await openExtractDialog(model, target, options)
         },
       })
@@ -81,7 +82,9 @@ export function createExtractComponentContribution(
         const sequence = ++refreshSequence
         const sourceVersion = model.getVersionId()
         const { analyzeExtractableSFCColumns } = await import('./extract-component.analysis')
-        if (disposed || sequence !== refreshSequence || sourceVersion !== model.getVersionId()) { return }
+        if (disposed || sequence !== refreshSequence || sourceVersion !== model.getVersionId()) {
+          return
+        }
 
         const columns: ExtractableSFCColumn[] = analyzeExtractableSFCColumns(model.getValue())
         decorations.set(columns.map((column) => {
@@ -111,7 +114,9 @@ export function createExtractComponentContribution(
       }
 
       const scheduleRefresh = (): void => {
-        if (refreshTimer) { clearTimeout(refreshTimer) }
+        if (refreshTimer) {
+          clearTimeout(refreshTimer)
+        }
         refreshTimer = setTimeout(() => {
           refreshTimer = null
           void refreshDecorations()
@@ -122,7 +127,9 @@ export function createExtractComponentContribution(
       const mouseListener = editor.onMouseDown((event) => {
         const injectedText = (event.target as unknown as MonacoInjectedTextMouseTarget).detail?.injectedText
         const actionData = injectedText?.options?.attachedData
-        if (!isExtractColumnActionData(actionData)) { return }
+        if (!isExtractColumnActionData(actionData)) {
+          return
+        }
 
         event.event.preventDefault()
         event.event.stopPropagation()
@@ -134,7 +141,9 @@ export function createExtractComponentContribution(
         dispose() {
           disposed = true
           refreshSequence += 1
-          if (refreshTimer) { clearTimeout(refreshTimer) }
+          if (refreshTimer) {
+            clearTimeout(refreshTimer)
+          }
           contentListener.dispose()
           mouseListener.dispose()
           decorations.clear()
@@ -176,7 +185,9 @@ async function openExtractDialog(
   }
 
   const result = await EndgeIDE.sourceEditorDialogs.open<ExtractComponentDialogInput, ExtractComponentDialogResult>(DIALOG_ID, input)
-  if (!result) { return }
+  if (!result) {
+    return
+  }
 
   try {
     await EndgeIDE.runBusy(executeExtraction(model, column.columnRange.start, result, options))
@@ -190,7 +201,9 @@ async function openExtractDialog(
 }
 
 function isExtractColumnActionData(value: unknown): value is ExtractColumnActionData {
-  if (!value || typeof value !== 'object') { return false }
+  if (!value || typeof value !== 'object') {
+    return false
+  }
 
   const candidate = value as Partial<ExtractColumnActionData>
   return candidate.kind === ACTION_DATA_KIND
@@ -206,14 +219,18 @@ async function executeExtraction(
 ): Promise<void> {
   const editorModel = options.getEditorModel()
   const persistedModel = options.getPersistedModel()
-  if (!editorModel || !persistedModel) { throw new Error('Активный SFC-документ больше недоступен.') }
+  if (!editorModel || !persistedModel) {
+    throw new Error('Активный SFC-документ больше недоступен.')
+  }
 
   validateComponentIdentityAndTag(result)
 
   const currentSource = model.getValue()
   const { resolveExtractableSFCColumn } = await import('./extract-component.analysis')
   const currentColumn = resolveExtractableSFCColumn(currentSource, columnStart)
-  if (!currentColumn) { throw new Error('Колонка изменилась. Повторите экспорт компонента.') }
+  if (!currentColumn) {
+    throw new Error('Колонка изменилась. Повторите экспорт компонента.')
+  }
 
   const childSource = buildExtractedComponentSource(currentColumn, result.dependencies)
   const parentSource = replaceExtractedColumnBody(currentSource, currentColumn, result)
@@ -260,19 +277,31 @@ async function executeExtraction(
 }
 
 function validateComponentIdentityAndTag(result: ExtractComponentDialogResult): void {
-  if (!result.identity.trim()) { throw new Error('Identity компонента не указан.') }
+  if (!result.identity.trim()) {
+    throw new Error('Identity компонента не указан.')
+  }
 
-  if (Endge.domain.hasComponentSFCByIdentity(result.identity)) { throw new Error(`SFC-компонент с identity "${result.identity}" уже существует.`) }
+  if (Endge.domain.hasComponentSFCByIdentity(result.identity)) {
+    throw new Error(`SFC-компонент с identity "${result.identity}" уже существует.`)
+  }
 
   const tag = result.tag?.trim() || null
-  if (!tag) { return }
+  if (!tag) {
+    return
+  }
 
-  if (!/^[A-Z_$][\w$-]*(?:\.[A-Z_$][\w$-]*)*$/i.test(tag)) { throw new Error(`Tag "${tag}" имеет недопустимый формат.`) }
+  if (!/^[A-Z_$][\w$-]*(?:\.[A-Z_$][\w$-]*)*$/i.test(tag)) {
+    throw new Error(`Tag "${tag}" имеет недопустимый формат.`)
+  }
 
-  if (isComponentSFCBuiltInTag(tag)) { throw new Error(`Tag "${tag}" занят встроенным SFC primitive.`) }
+  if (isComponentSFCBuiltInTag(tag)) {
+    throw new Error(`Tag "${tag}" занят встроенным SFC primitive.`)
+  }
 
   const owner = Endge.domain.getComponentSFCs().find(component => component.tag?.trim() === tag)
-  if (owner) { throw new Error(`Tag "${tag}" уже используется компонентом "${owner.identity}".`) }
+  if (owner) {
+    throw new Error(`Tag "${tag}" уже используется компонентом "${owner.identity}".`)
+  }
 }
 
 function toKebabCase(value: string): string {

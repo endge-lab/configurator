@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor'
 
 import { Endge } from '@endge/core'
@@ -153,7 +152,7 @@ async function save(): Promise<void> {
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -172,7 +171,7 @@ async function save(): Promise<void> {
                 <FileText class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Данные</TooltipContent>
+            <TooltipContent>{{ $t('uiText.dataD8e5fd81') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -195,7 +194,7 @@ async function save(): Promise<void> {
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -208,7 +207,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -227,10 +226,10 @@ async function save(): Promise<void> {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="application/json">
-                  JSON
+                  {{ $t('uiText.json031a4e76') }}
                 </SelectItem>
                 <SelectItem value="text/plain">
-                  Plain text
+                  {{ $t('uiText.plainText9580fcbc') }}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -249,7 +248,7 @@ async function save(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="mock-name">Название</Label>
+            <Label for="mock-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input
               id="mock-name"
               v-model="editor.name"
@@ -257,7 +256,7 @@ async function save(): Promise<void> {
             />
           </div>
           <div class="space-y-2">
-            <Label for="mock-identity">Identity</Label>
+            <Label for="mock-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput
               id="mock-identity"
               v-model="editor.identity"
@@ -267,7 +266,7 @@ async function save(): Promise<void> {
           </div>
         </div>
         <div class="space-y-2">
-          <Label for="mock-description">Описание</Label>
+          <Label for="mock-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <Textarea
             id="mock-description"
             v-model="editor.description"
@@ -276,7 +275,7 @@ async function save(): Promise<void> {
           />
         </div>
         <div class="space-y-2">
-          <Label>Источник данных</Label>
+          <Label>{{ $t('uiText.dataSource1a462271') }}</Label>
           <Select
             :model-value="editor.contentSource"
             @update:model-value="setContentSource"
@@ -286,16 +285,15 @@ async function save(): Promise<void> {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="document">
-                Документ Payload
+                {{ $t('uiText.payloadDocument1b5e2ee8') }}
               </SelectItem>
               <SelectItem value="code-provider">
-                Code provider
+                {{ $t('uiText.codeProvider2a8d35e5') }}
               </SelectItem>
             </SelectContent>
           </Select>
           <p class="text-xs text-muted-foreground">
-            Code provider supplies only content. Identity, folders and relations
-            still belong to this document.
+            {{ $t('uiText.codeProviderSuppliesOnlyContentIdentityFoldersAndRel9dd6e060') }}
           </p>
         </div>
       </div>
@@ -321,10 +319,10 @@ async function save(): Promise<void> {
         <div class="max-w-2xl space-y-5">
           <div class="rounded-lg border bg-muted/20 p-4">
             <div class="mb-3 flex items-center gap-2 text-sm font-medium">
-              <Cable class="size-4" />Code provider binding
+              <Cable class="size-4" />{{ $t('uiText.codeProviderBindingbc6133c6') }}
             </div>
             <div class="space-y-2">
-              <Label for="mock-code-ref">Provider ref</Label>
+              <Label for="mock-code-ref">{{ $t('uiText.providerRef4701b475') }}</Label>
               <Input
                 id="mock-code-ref"
                 v-model="editor.codeRef"
@@ -342,15 +340,14 @@ async function save(): Promise<void> {
               >
                 {{
                   bindingConnected
-                    ? "Provider connected in current runtime."
-                    : "Provider may be connected later by the application bundle."
+                    ? $t('uiText.providerConnectedInCurrentRuntime6ba51471')
+                    : $t('uiText.providerMayBeConnectedLaterByTheApplicationBundle7a695984')
                 }}
               </p>
             </div>
           </div>
           <p class="text-sm text-muted-foreground">
-            Provider availability is a runtime check and does not block saving
-            the persisted document.
+            {{ $t('uiText.providerAvailabilityIsARuntimeCheckAndDoesNotBlockSa6df37ecf') }}
           </p>
         </div>
       </div>

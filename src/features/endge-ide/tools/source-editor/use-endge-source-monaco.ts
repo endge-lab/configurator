@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   SourceKind,
   SourceLanguageContext,
@@ -63,7 +62,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const viewState = usePersistedMonacoViewState(`monaco.${options.viewStateKey ?? options.sourceKind}`)
   const markerOwner = options.owner ?? languageId
   const languageStrategy = Endge.source.resolveLanguageStrategy(options.sourceKind)
-  if (!languageStrategy) { throw new Error(`Source language strategy is not registered for "${options.sourceKind}".`) }
+  if (!languageStrategy) {
+    throw new Error(`Source language strategy is not registered for "${options.sourceKind}".`)
+  }
   const syntax = languageStrategy.syntax
   let completionDisposable: Monaco.IDisposable | null = null
   let contentDisposable: Monaco.IDisposable | null = null
@@ -131,7 +132,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
 
   function refreshInlineHints(): void {
     const model = editor.value?.getModel()
-    if (!model || !inlineHints) { return }
+    if (!model || !inlineHints) {
+      return
+    }
     try {
       inlineHints.set(
         Endge.source.inlineHints(options.sourceKind, languageContext(model.getValue(), undefined, true))
@@ -145,7 +148,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   }
 
   function scheduleInlineHints(): void {
-    if (inlineHintsTimer) { clearTimeout(inlineHintsTimer) }
+    if (inlineHintsTimer) {
+      clearTimeout(inlineHintsTimer)
+    }
     inlineHintsTimer = setTimeout(() => {
       inlineHintsTimer = null
       refreshInlineHints()
@@ -154,7 +159,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
 
   const validate = () => {
     const model = editor.value?.getModel()
-    if (!model) { return }
+    if (!model) {
+      return
+    }
     const context = languageContext(model.getValue())
     const diagnostics = (Endge.source.validate(options.sourceKind, model.getValue(), context).diagnostics ?? []) as EndgeSourceDiagnostic[]
     diagnosticsCount.value = diagnostics.length
@@ -176,14 +183,18 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const formatDocument = async (): Promise<void> => {
     const instance = editor.value
     const model = instance?.getModel()
-    if (!instance || !model) { return }
+    if (!instance || !model) {
+      return
+    }
 
     try {
       const formatted = await formatSource(
         Endge.source.normalize(options.sourceKind, model.getValue()),
         options.formatLanguage ?? 'typescript',
       )
-      if (formatted === model.getValue()) { return }
+      if (formatted === model.getValue()) {
+        return
+      }
 
       instance.pushUndoStop()
       instance.executeEdits('format-document', [{
@@ -201,7 +212,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   }
 
   onMounted(() => {
-    if (!options.container.value) { return }
+    if (!options.container.value) {
+      return
+    }
     registerLanguage(languageId, syntax)
     completionDisposable = monaco.languages.registerCompletionItemProvider(languageId, {
       triggerCharacters: syntax.triggerCharacters,
@@ -229,7 +242,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       signatureHelpTriggerCharacters: ['(', ','],
       provideSignatureHelp(model, position) {
         const help = Endge.source.signatureHelp(options.sourceKind, languageContext(model.getValue(), position))
-        if (!help) { return null }
+        if (!help) {
+          return null
+        }
         return {
           value: {
             activeSignature: help.activeSignature,
@@ -291,16 +306,22 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     })
     hoverDisposable = monaco.languages.registerHoverProvider(languageId, {
       provideHover(model, position) {
-        if (model !== editor.value?.getModel()) { return null }
+        if (model !== editor.value?.getModel()) {
+          return null
+        }
         const reference = Endge.source.referenceAt(
           options.sourceKind,
           languageContext(model.getValue(), position),
         )
-        if (!reference) { return null }
+        if (!reference) {
+          return null
+        }
         const type = reference.target === 'type'
           ? typeCatalog().find(item => item.identity === reference.identity)
           : null
-        if (reference.target === 'type' && !type) { return null }
+        if (reference.target === 'type' && !type) {
+          return null
+        }
         const isOpenableType = type?.category === 'user'
         return {
           range: monaco.Range.fromPositions(
@@ -337,8 +358,12 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   onBeforeUnmount(() => {
     const model = editor.value?.getModel()
     viewState.detach()
-    if (model) { monaco.editor.setModelMarkers(model, markerOwner, []) }
-    if (inlineHintsTimer) { clearTimeout(inlineHintsTimer) }
+    if (model) {
+      monaco.editor.setModelMarkers(model, markerOwner, [])
+    }
+    if (inlineHintsTimer) {
+      clearTimeout(inlineHintsTimer)
+    }
     contentDisposable?.dispose()
     completionDisposable?.dispose()
     referenceNavigationDisposable?.dispose()
@@ -360,15 +385,21 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   return { editor, diagnosticsCount, setValue, validate, formatDocument, languageId }
 
   function openReference(model: Monaco.editor.ITextModel | null, position: Monaco.Position): boolean {
-    if (!model) { return false }
+    if (!model) {
+      return false
+    }
     const reference = Endge.source.referenceAt(
       options.sourceKind,
       languageContext(model.getValue(), position, true),
     )
-    if (!reference) { return false }
+    if (!reference) {
+      return false
+    }
     if (reference.target === 'type') {
       const type = typeCatalog().find(item => item.identity === reference.identity)
-      if (!type || type.category !== 'user') { return false }
+      if (!type || type.category !== 'user') {
+        return false
+      }
     }
     EndgeIDE.tabs.openSourceReference(reference)
     return true
@@ -387,7 +418,9 @@ function registerLanguage(
     })
   }
   const configured = configuredLanguages.get(languageId)
-  if (configured?.syntax === syntax) { return }
+  if (configured?.syntax === syntax) {
+    return
+  }
   configured?.disposables.forEach(disposable => disposable.dispose())
 
   const languageConfiguration = monaco.languages.setLanguageConfiguration(languageId, {
@@ -412,10 +445,18 @@ function registerLanguage(
 }
 
 function completionKind(kind: string): Monaco.languages.CompletionItemKind {
-  if (kind === 'property') { return monaco.languages.CompletionItemKind.Property }
-  if (kind === 'value') { return monaco.languages.CompletionItemKind.Value }
-  if (kind === 'keyword') { return monaco.languages.CompletionItemKind.Keyword }
-  if (kind === 'snippet') { return monaco.languages.CompletionItemKind.Snippet }
+  if (kind === 'property') {
+    return monaco.languages.CompletionItemKind.Property
+  }
+  if (kind === 'value') {
+    return monaco.languages.CompletionItemKind.Value
+  }
+  if (kind === 'keyword') {
+    return monaco.languages.CompletionItemKind.Keyword
+  }
+  if (kind === 'snippet') {
+    return monaco.languages.CompletionItemKind.Snippet
+  }
   return monaco.languages.CompletionItemKind.Function
 }
 

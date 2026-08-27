@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { Component } from 'vue'
 import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
@@ -105,7 +104,7 @@ function openContextMenu(event: MouseEvent): void {
         v-if="node.activationMode === 'manual'"
         class="shrink-0 rounded border px-1 py-px text-[9px] leading-3 text-muted-foreground/80"
       >
-        manual
+        {{ $t('uiText.manualb363713a') }}
       </span>
       <RuntimeLifecycleStatusIcon :state="state" />
     </button>

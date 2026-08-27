@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup lang="ts">
 import { compileComponentSFC } from '@endge/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'

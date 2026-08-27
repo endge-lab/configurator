@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DomainDocumentType } from '@endge/core'
 import type {
   DocumentDependencyNode,
@@ -126,7 +125,7 @@ function openDocument(node: DocumentDependencyNode): void {
     <header class="flex h-10 shrink-0 items-center gap-2 border-b border-border/65 px-3">
       <GitFork class="size-3.5 text-sky-400" stroke-width="1.8" />
       <span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Зависимости
+        {{ $t('uiText.dependencies898afdf0') }}
       </span>
 
       <TooltipProvider>
@@ -155,8 +154,8 @@ function openDocument(node: DocumentDependencyNode): void {
           <TooltipContent side="bottom">
             {{
               fullHierarchyVisible
-                ? "Показать только зависимости"
-                : "Показать, где используется документ, и его зависимости"
+                ? $t('uiText.showOnlyDependencies65559b87')
+                : $t('uiText.showWhereTheDocumentIsUsedAndItsDependenciesa18791d9')
             }}
           </TooltipContent>
         </Tooltip>
@@ -177,9 +176,9 @@ function openDocument(node: DocumentDependencyNode): void {
       <span class="inline-flex size-9 items-center justify-center rounded-full border border-amber-400/25 bg-amber-400/5 text-amber-400">
         <TriangleAlert class="size-4" stroke-width="1.8" />
       </span>
-      <span class="text-xs font-medium text-foreground">Ошибки компиляции</span>
+      <span class="text-xs font-medium text-foreground">{{ $t('uiText.compilationErrors56931820') }}</span>
       <span class="text-[10px] text-muted-foreground">
-        {{ errorCount }} {{ errorCount === 1 ? "ошибка" : "ошибок" }} в текущем source
+        {{ errorCount }} {{ errorCount === 1 ? $t('uiText.errorc394f7f8') : $t('uiText.errors200f99bf') }} {{ $t('uiText.inCurrentSourceeb4219f0') }}
       </span>
     </div>
 
@@ -190,7 +189,7 @@ function openDocument(node: DocumentDependencyNode): void {
           class="mx-3 mb-1.5 flex items-center gap-2 border-l-2 border-amber-400/60 bg-amber-400/[0.04] px-2 py-1.5 text-[10px] text-amber-300"
         >
           <TriangleAlert class="size-3.5 shrink-0" />
-          Ошибки компиляции: {{ errorCount }}
+          {{ $t('uiText.compilationErrors5d2fb4df') }} {{ errorCount }}
         </div>
         <DocumentDependencyTreeNode
           v-if="result.root"
@@ -203,7 +202,7 @@ function openDocument(node: DocumentDependencyNode): void {
           v-if="result.root && !result.root.children.length"
           class="mx-3 my-3 border-l border-dashed border-border pl-3 text-[11px] text-muted-foreground"
         >
-          Внешних зависимостей нет
+          {{ $t('uiText.noExternalDependenciesd19b0e67') }}
         </div>
       </div>
     </ScrollArea>

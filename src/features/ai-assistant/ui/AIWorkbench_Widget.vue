@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { Bot, Loader2, Plus, Send } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -49,13 +48,13 @@ function onKeydown(event: KeyboardEvent): void {
         <Bot class="size-6 text-fuchsia-500" />
       </span>
       <p class="mt-4 text-sm font-semibold">
-        Модели не настроены
+        {{ $t('uiText.modelsNotConfigured0db91768') }}
       </p>
       <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-        Добавьте личное подключение или попросите Platform Admin настроить общее.
+        {{ $t('uiText.addAPersonalConnectionOrAskAPlatformAdminToSetUpASha7d1ccaac') }}
       </p>
       <Button class="mt-5 w-full" size="lg" @click="AIWorkbench.openManagement()">
-        Настроить подключение
+        {{ $t('uiText.configureConnection31457710') }}
       </Button>
     </div>
 
@@ -70,10 +69,10 @@ function onKeydown(event: KeyboardEvent): void {
           @change="AIWorkbench.setModel(($event.target as HTMLSelectElement).value)"
         >
           <option value="" disabled>
-            Выберите модель
+            {{ $t('uiText.selectModel78923c3f') }}
           </option>
           <option v-for="model in models" :key="model.id" :value="model.id">
-            {{ model.displayName }} · {{ model.adapter }}
+            {{ model.displayName }} {{ $t('uiText.symbol1fdf0d90') }} {{ model.adapter }}
           </option>
         </select>
         <Button size="icon" variant="ghost" :disabled="!state.selectedModelId || state.running" title="Создать новый диалог" @click="AIWorkbench.newConversation()">
@@ -84,13 +83,13 @@ function onKeydown(event: KeyboardEvent): void {
       <ScrollArea class="min-h-0 flex-1">
         <div ref="viewport" class="flex min-h-full flex-col gap-3 p-3">
           <Button v-if="state.previousCursor" size="sm" variant="ghost" :disabled="state.loading" class="self-center text-xs" @click="AIWorkbench.loadPrevious()">
-            Загрузить предыдущие сообщения
+            {{ $t('uiText.loadPreviousMessagesdc068b65') }}
           </Button>
 
           <div v-if="!state.loading && state.messages.length === 0 && !state.streamingText" class="m-auto max-w-xs text-center text-sm text-muted-foreground">
             <Bot class="mx-auto mb-3 size-8 opacity-50" />
             <p>
-              Задайте вопрос о текущем Workspace.
+              {{ $t('uiText.askAQuestionAboutTheCurrentWorkspacefda86fe9') }}
             </p>
           </div>
 
@@ -109,7 +108,7 @@ function onKeydown(event: KeyboardEvent): void {
       </ScrollArea>
 
       <div v-if="readOnly" class="border-t bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-        Модель этого диалога удалена или отключена. История доступна только для чтения — создайте новый диалог.
+        {{ $t('uiText.thisDialogModelHasBeenDeletedOrDisabledHistoryIsReadfef302d1') }}
       </div>
       <div v-if="state.error" class="border-t bg-destructive/5 px-3 py-2 text-xs text-destructive">
         {{ state.error }}

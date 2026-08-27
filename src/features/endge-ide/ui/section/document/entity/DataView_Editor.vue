@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor'
 
 import { Endge } from '@endge/core'
@@ -176,7 +175,7 @@ async function runPreview(): Promise<void> {
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет редактора
+    {{ $t('uiText.noEditorF03cf60f') }}
   </div>
   <SourceDocumentEditorShell
     v-else
@@ -231,7 +230,7 @@ async function runPreview(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -259,7 +258,7 @@ async function runPreview(): Promise<void> {
                   <RotateCcw class="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Сбросить source</TooltipContent>
+              <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
             </Tooltip>
           </div>
 
@@ -299,7 +298,7 @@ async function runPreview(): Promise<void> {
                 </TooltipTrigger>
                 <TooltipContent>
                   {{
-                    outputState.collapsed ? "Показать output" : "Скрыть output"
+                    outputState.collapsed ? $t('uiText.showOutputc073c478') : $t('uiText.hideOutput0439b8c3')
                   }}
                 </TooltipContent>
               </Tooltip>
@@ -316,7 +315,7 @@ async function runPreview(): Promise<void> {
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label for="data-view-name">Название</Label>
+              <Label for="data-view-name">{{ $t('uiText.name3de49828') }}</Label>
               <Input
                 id="data-view-name"
                 v-model="editor.name"
@@ -325,7 +324,7 @@ async function runPreview(): Promise<void> {
             </div>
 
             <div class="space-y-2">
-              <Label for="data-view-identity">Identity</Label>
+              <Label for="data-view-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput
                 id="data-view-identity"
                 v-model="editor.identity"
@@ -336,7 +335,7 @@ async function runPreview(): Promise<void> {
           </div>
 
           <div class="space-y-2">
-            <Label for="data-view-description">Описание</Label>
+            <Label for="data-view-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea
               id="data-view-description"
               v-model="editor.description"
@@ -369,7 +368,7 @@ async function runPreview(): Promise<void> {
           class="relative flex h-full min-h-0 flex-col overflow-hidden border-r"
         >
           <div class="shrink-0 border-b px-3 py-2 text-sm font-medium">
-            Input JSON
+            {{ $t('uiText.inputJSONcd877d83') }}
           </div>
           <Textarea
             v-model="previewInput"
@@ -380,11 +379,11 @@ async function runPreview(): Promise<void> {
           <div
             class="flex shrink-0 items-center justify-between border-b px-3 py-2"
           >
-            <span class="text-sm font-medium">Output JSON</span>
+            <span class="text-sm font-medium">{{ $t('uiText.outputJSON830d1200') }}</span>
             <Button size="sm" :disabled="runningPreview" @click="runPreview">
               <Loader2 v-if="runningPreview" class="mr-2 size-4 animate-spin" />
               <Play v-else class="mr-2 size-4" />
-              Run preview
+              {{ $t('uiText.runPreview1aa4c89a') }}
             </Button>
           </div>
           <pre class="min-h-0 flex-1 overflow-auto bg-muted/30 p-3 text-xs">{{

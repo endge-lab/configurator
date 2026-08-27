@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 
@@ -83,7 +82,7 @@ function logAst(): void {
               <Braces class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Вывести AST в консоль</TooltipContent>
+          <TooltipContent>{{ $t('uiText.printASTToConsolebbffe331') }}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -99,7 +98,7 @@ function logAst(): void {
               <LayoutGrid class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{{ isGridOverlayEnabled ? 'Скрыть постоянную сетку' : 'Всегда показывать сетку' }}</TooltipContent>
+          <TooltipContent>{{ isGridOverlayEnabled ? $t('uiText.hideGrida7bdb76b') : $t('uiText.alwaysShowGridb643ad7a') }}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

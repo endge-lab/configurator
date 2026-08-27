@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { BackendConnection } from '@/features/backend-connections'
 
 import { ChevronsUpDown, Server } from 'lucide-vue-next'
@@ -96,7 +95,7 @@ watch([open, catalog], ([isOpen, currentCatalog]) => {
       :side-offset="sideOffset ?? 4"
     >
       <DropdownMenuLabel class="text-xs text-muted-foreground">
-        Подключения
+        {{ $t('uiText.connectionsc188eb08') }}
       </DropdownMenuLabel>
       <DropdownMenuGroup>
         <DropdownMenuItem

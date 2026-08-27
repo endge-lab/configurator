@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DomainDocumentType } from '@endge/core'
 import type { Component } from 'vue'
 
@@ -53,7 +52,7 @@ function openSelectedEntity(): void {
             {{ selectedEntry.title }}
           </div>
           <div class="truncate text-[10px] text-muted-foreground">
-            {{ selectedEntry.subtitle }} · {{ selectedEntry.problems.length }} problems
+            {{ selectedEntry.subtitle }} {{ $t('uiText.symbol1fdf0d90') }} {{ selectedEntry.problems.length }} {{ $t('uiText.problemsd6d2076c') }}
           </div>
         </div>
         <Button
@@ -65,7 +64,7 @@ function openSelectedEntity(): void {
           @click="openSelectedEntity"
         >
           <ExternalLink class="size-3.5" />
-          Открыть сущность
+          {{ $t('uiText.openEntity2c241631') }}
         </Button>
       </header>
 
@@ -78,10 +77,10 @@ function openSelectedEntity(): void {
         <CircleCheck class="absolute -bottom-1 -right-1 size-5 text-emerald-500" />
       </span>
       <div class="text-sm font-medium text-foreground">
-        Актуальных problems нет
+        {{ $t('uiText.noCurrentProblemsedda5f65') }}
       </div>
       <div class="max-w-sm text-xs leading-5">
-        Выберите повторный анализ в левом дереве после изменения исходников.
+        {{ $t('uiText.selectReanalysisInTheLeftTreeAfterChangingSourcesda9f3329') }}
       </div>
     </div>
   </div>

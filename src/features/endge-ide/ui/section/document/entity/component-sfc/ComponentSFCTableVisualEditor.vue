@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCInteractionTriggerProjection,
   ComponentSFCTableCellBindingProjection,
@@ -2444,10 +2443,10 @@ onBeforeUnmount(() => {
                           @click="inputShowPreview = !inputShowPreview"
                         >
                           <Eye class="size-3.5" />
-                          Preview
+                          {{ $t('uiText.previewf1fbb2b4') }}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Показать документацию по входным полям</TooltipContent>
+                      <TooltipContent>{{ $t('uiText.showInputFieldsDocumentation831031d4') }}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger as-child>
@@ -2460,10 +2459,10 @@ onBeforeUnmount(() => {
                           @click="inputShowExample = !inputShowExample"
                         >
                           <FileJson2 class="size-3.5" />
-                          Example
+                          {{ $t('uiText.example0f01ed56') }}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>Показать автоматически сгенерированный JSON example</TooltipContent>
+                      <TooltipContent>{{ $t('uiText.showAutomaticallyGeneratedJSONExampleaac04605') }}</TooltipContent>
                     </Tooltip>
                   </div>
                 </TooltipProvider>
@@ -2541,20 +2540,20 @@ onBeforeUnmount(() => {
                         <div class="mb-3 flex items-start justify-between gap-3">
                           <div>
                             <h3 class="text-sm font-medium">
-                              Выделение строк
+                              {{ $t('uiText.rowSelection6f2a0d08') }}
                             </h3>
                             <p class="mt-0.5 text-[11px] text-muted-foreground">
-                              Одна или несколько целых строк.
+                              {{ $t('uiText.oneOrMoreCompleteRows6c1f3f62') }}
                             </p>
                           </div>
                           <Badge variant="secondary">
-                            row
+                            {{ $t('uiText.rowe8cdc05b') }}
                           </Badge>
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
                           <div class="space-y-1.5">
-                            <Label for="sfc-table-selection-mode">Количество</Label>
+                            <Label for="sfc-table-selection-mode">{{ $t('uiText.count576698c4') }}</Label>
                             <Select
                               :model-value="selectionModeValue"
                               :disabled="selectionModeIsSourceOwned"
@@ -2565,23 +2564,23 @@ onBeforeUnmount(() => {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem :value="SELECTION_NOT_SET_VALUE">
-                                  Не задано
+                                  {{ $t('uiText.notSet6ddd51c3') }}
                                 </SelectItem>
                                 <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
                                   {{ option.label }}
                                 </SelectItem>
                                 <SelectItem v-if="selectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
-                                  Настроено в Source
+                                  {{ $t('uiText.configuredInSourcef77e8980') }}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                             <p v-if="selectionModeIsSourceOwned" class="text-xs text-muted-foreground">
-                              Dynamic selection-mode expression можно изменить только в Source.
+                              {{ $t('uiText.dynamicSelectionModeExpressionCanBeChangedOnlyInSour2518fde8') }}
                             </p>
                           </div>
 
                           <div class="space-y-1.5">
-                            <Label for="sfc-table-selection-trigger">Способ выбора</Label>
+                            <Label for="sfc-table-selection-trigger">{{ $t('uiText.selectionMode0d86befa') }}</Label>
                             <Select
                               :model-value="selectionTriggerValue"
                               :disabled="selectionTriggerIsSourceOwned"
@@ -2592,21 +2591,21 @@ onBeforeUnmount(() => {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem :value="SELECTION_NOT_SET_VALUE">
-                                  По умолчанию адаптера
+                                  {{ $t('uiText.adapterDefaulte94960f4') }}
                                 </SelectItem>
                                 <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
                                   {{ option.label }}
                                 </SelectItem>
                                 <SelectItem v-if="selectionTriggerIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
-                                  Настроено в Source
+                                  {{ $t('uiText.configuredInSourcef77e8980') }}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                             <p v-if="selectionTriggerIsSourceOwned" class="text-xs text-muted-foreground">
-                              Dynamic selection-trigger expression можно изменить только в Source.
+                              {{ $t('uiText.dynamicSelectionTriggerExpressionCanBeChangedOnlyInS634b95fb') }}
                             </p>
                             <p v-else class="text-[11px] text-muted-foreground">
-                              <code>auto</code> оставляет выбор конкретного UX адаптеру отрисовки.
+                              <code>{{ $t('uiText.auto0d612c12') }}</code> {{ $t('uiText.leavesTheChoiceToTheSpecificUXAdapterForRenderingac5ee3b2') }}
                             </p>
                           </div>
                         </div>
@@ -2616,19 +2615,19 @@ onBeforeUnmount(() => {
                         <div class="mb-3 flex items-start justify-between gap-3">
                           <div>
                             <h3 class="text-sm font-medium">
-                              Выделение ячеек
+                              {{ $t('uiText.cellSelection27258257') }}
                             </h3>
                             <p class="mt-0.5 text-[11px] text-muted-foreground">
-                              Одна конкретная ячейка по строке и ключу колонки.
+                              {{ $t('uiText.oneSpecificCellByRowAndColumnKeyd12e3d8a') }}
                             </p>
                           </div>
                           <Badge variant="secondary">
-                            cell
+                            {{ $t('uiText.cell5f435eb3') }}
                           </Badge>
                         </div>
 
                         <div class="max-w-sm space-y-1.5">
-                          <Label for="sfc-table-cell-selection-mode">Количество</Label>
+                          <Label for="sfc-table-cell-selection-mode">{{ $t('uiText.count576698c4') }}</Label>
                           <Select
                             :model-value="cellSelectionModeValue"
                             :disabled="cellSelectionModeIsSourceOwned"
@@ -2639,21 +2638,21 @@ onBeforeUnmount(() => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem :value="SELECTION_NOT_SET_VALUE">
-                                Не задано
+                                {{ $t('uiText.notSet6ddd51c3') }}
                               </SelectItem>
                               <SelectItem v-for="option in CELL_SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
                                 {{ option.label }}
                               </SelectItem>
                               <SelectItem v-if="cellSelectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
-                                Настроено в Source
+                                {{ $t('uiText.configuredInSourcef77e8980') }}
                               </SelectItem>
                             </SelectContent>
                           </Select>
                           <p v-if="cellSelectionModeIsSourceOwned" class="text-xs text-muted-foreground">
-                            Dynamic cell-selection-mode expression можно изменить только в Source.
+                            {{ $t('uiText.dynamicCellSelectionModeExpressionCanBeChangedOnlyIn80145e32') }}
                           </p>
                           <p v-else class="text-[11px] text-muted-foreground">
-                            Работает независимо от выделения строк. При <code>selection-trigger="row"</code> или <code>both</code> клик по ячейке также меняет выбор её строки.
+                            {{ $t('uiText.worksIndependentlyOfRowSelectionWhen5a3ba996') }} <code>{{ $t('uiText.selectionTriggerRow38c3b843') }}</code> {{ $t('uiText.or30bb0333') }} <code>{{ $t('uiText.bothfc39b18f') }}</code> {{ $t('uiText.clickingACellAlsoChangesTheSelectionOfItsRow129d9892') }}
                           </p>
                         </div>
                       </div>
@@ -2663,7 +2662,7 @@ onBeforeUnmount(() => {
                   <section v-show="tableSection === 'paging'" class="space-y-3">
                     <div class="max-w-[720px] min-w-0 space-y-3">
                       <div class="max-w-sm space-y-1.5">
-                        <Label for="sfc-table-paging">Режим</Label>
+                        <Label for="sfc-table-paging">{{ $t('uiText.modeff0fbd56') }}</Label>
                         <Select
                           :model-value="pagingModeValue"
                           :disabled="pagingIsSourceOwned"
@@ -2674,25 +2673,25 @@ onBeforeUnmount(() => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem :value="PAGING_NOT_SET_VALUE">
-                              Не задано
+                              {{ $t('uiText.notSet6ddd51c3') }}
                             </SelectItem>
                             <SelectItem v-for="option in PAGING_OPTIONS" :key="option.value" :value="option.value">
                               {{ option.label }}
                             </SelectItem>
                             <SelectItem v-if="pagingIsSourceOwned" :value="PAGING_SOURCE_VALUE">
-                              Настроено в Source
+                              {{ $t('uiText.configuredInSourcef77e8980') }}
                             </SelectItem>
                           </SelectContent>
                         </Select>
                         <p v-if="pagingIsSourceOwned" class="text-xs text-muted-foreground">
-                          Dynamic paging expression можно изменить только в Source.
+                          {{ $t('uiText.dynamicPagingExpressionCanBeChangedOnlyInSourcee06eb20e') }}
                         </p>
                       </div>
 
                       <Transition name="table-settings-reveal">
                         <div v-if="usesPagePaging" class="grid gap-3 rounded-lg border border-border/70 bg-background/10 p-3 sm:grid-cols-2">
                           <div class="space-y-1.5">
-                            <Label for="sfc-table-page-size">Строк на странице</Label>
+                            <Label for="sfc-table-page-size">{{ $t('uiText.rowsPerPage80916119') }}</Label>
                             <Input
                               id="sfc-table-page-size"
                               :model-value="pageSizeDraft"
@@ -2707,12 +2706,12 @@ onBeforeUnmount(() => {
                               @keydown.enter="blurInput"
                             />
                             <p class="text-[11px] text-muted-foreground">
-                              Атрибут <code>page-size</code>
+                              {{ $t('uiText.attribute6eb04cd3') }} <code>{{ $t('uiText.pageSize4d3ae2d7') }}</code>
                             </p>
                           </div>
 
                           <div class="space-y-1.5">
-                            <Label for="sfc-table-page-sizes">Доступные размеры</Label>
+                            <Label for="sfc-table-page-sizes">{{ $t('uiText.availableSizesec37927e') }}</Label>
                             <Input
                               id="sfc-table-page-sizes"
                               v-model="pageSizesDraft"
@@ -2724,7 +2723,7 @@ onBeforeUnmount(() => {
                               @keydown.enter="blurInput"
                             />
                             <p class="text-[11px] text-muted-foreground">
-                              Положительные числа через запятую
+                              {{ $t('uiText.positiveNumbersSeparatedByCommas86f4f699') }}
                             </p>
                           </div>
                         </div>
@@ -2759,10 +2758,10 @@ onBeforeUnmount(() => {
                         </button>
                       </div>
                       <div v-else class="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                        Добавьте колонки, чтобы настроить их начальную видимость.
+                        {{ $t('uiText.addColumnsToConfigureTheirInitialVisibility589642e0') }}
                       </div>
                       <p v-if="projection.defaultHidden?.kind === 'expression'" class="mt-2 text-xs text-muted-foreground">
-                        Dynamic default-hidden expression можно изменить только в Source.
+                        {{ $t('uiText.dynamicDefaultHiddenExpressionCanBeChangedOnlyInSourbdb36390') }}
                       </p>
                     </div>
                   </section>
@@ -2774,16 +2773,16 @@ onBeforeUnmount(() => {
                         class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
                       >
                         <FileCode2 class="size-3.5 shrink-0" />
-                        Dynamic default-pin настраивается в Source.
+                        {{ $t('uiText.dynamicDefaultPinIsConfiguredInSource05b57d8a') }}
                       </div>
                       <table v-else class="w-full table-fixed text-xs">
                         <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th scope="col" class="px-2 py-1 text-left font-medium">
-                              Колонка
+                              {{ $t('uiText.column1c191bdd') }}
                             </th>
                             <th scope="col" class="w-24 px-1 py-1 text-left font-medium">
-                              Сторона
+                              {{ $t('uiText.side14dbfb1b') }}
                             </th>
                             <th scope="col" class="w-8" />
                           </tr>
@@ -2817,7 +2816,7 @@ onBeforeUnmount(() => {
                                       <PanelLeft class="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Слева</TooltipContent>
+                                  <TooltipContent>{{ $t('uiText.left4af2530f') }}</TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger as-child>
@@ -2834,7 +2833,7 @@ onBeforeUnmount(() => {
                                       <PanelRight class="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Справа</TooltipContent>
+                                  <TooltipContent>{{ $t('uiText.right600c48eb') }}</TooltipContent>
                                 </Tooltip>
                               </div>
                             </td>
@@ -2866,7 +2865,7 @@ onBeforeUnmount(() => {
                           </tr>
                           <tr v-else-if="!defaultPinItems.length">
                             <td colspan="3" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
-                              Нет доступных колонок.
+                              {{ $t('uiText.noAvailableColumns44adbd0a') }}
                             </td>
                           </tr>
                         </tbody>
@@ -2918,19 +2917,19 @@ onBeforeUnmount(() => {
                         class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
                       >
                         <FileCode2 class="size-3.5 shrink-0" />
-                        Dynamic default-sort настраивается в Source.
+                        {{ $t('uiText.dynamicDefaultSortIsConfiguredInSource90fb90c6') }}
                       </div>
                       <table v-else class="w-full table-fixed text-xs">
                         <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
                           <tr>
                             <th scope="col" class="px-2 py-1 text-left font-medium">
-                              Колонка
+                              {{ $t('uiText.column1c191bdd') }}
                             </th>
                             <th scope="col" class="w-28 px-1 py-1 text-left font-medium">
-                              Направление
+                              {{ $t('uiText.direction7af7cb1d') }}
                             </th>
                             <th scope="col" class="w-24 px-1 py-1 text-left font-medium">
-                              Приоритет
+                              {{ $t('uiText.priorityb5b6ddbf') }}
                             </th>
                             <th scope="col" class="w-8" />
                           </tr>
@@ -2958,7 +2957,7 @@ onBeforeUnmount(() => {
                                   :disabled="!canEditDefaultSortRule(item.key)"
                                   @click="setDefaultSortRuleDirection(item.key, 'asc')"
                                 >
-                                  ASC
+                                  {{ $t('uiText.asceaffec78') }}
                                 </Button>
                                 <Button
                                   type="button"
@@ -2969,7 +2968,7 @@ onBeforeUnmount(() => {
                                   :disabled="!canEditDefaultSortRule(item.key)"
                                   @click="setDefaultSortRuleDirection(item.key, 'desc')"
                                 >
-                                  DESC
+                                  {{ $t('uiText.descb5093023') }}
                                 </Button>
                               </div>
                             </td>
@@ -3028,7 +3027,7 @@ onBeforeUnmount(() => {
                           </tr>
                           <tr v-else-if="!defaultSortItems.length">
                             <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
-                              Нет доступных колонок.
+                              {{ $t('uiText.noAvailableColumns44adbd0a') }}
                             </td>
                           </tr>
                         </tbody>
@@ -3107,7 +3106,7 @@ onBeforeUnmount(() => {
                 </template>
 
                 <div v-if="!columns.length" class="px-2 py-2 text-xs text-muted-foreground">
-                  Нет колонок. Нажмите «+», чтобы создать первую.
+                  {{ $t('uiText.noColumnsClickToCreateTheFirstOneb9f3a328') }}
                 </div>
               </div>
 
@@ -3125,7 +3124,7 @@ onBeforeUnmount(() => {
                         <Plus class="size-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Добавить колонку</TooltipContent>
+                    <TooltipContent>{{ $t('uiText.addColumnAf4484cb') }}</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
@@ -3141,7 +3140,7 @@ onBeforeUnmount(() => {
                         <Trash2 class="size-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Удалить все колонки</TooltipContent>
+                    <TooltipContent>{{ $t('uiText.deleteAllColumns318d6951') }}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
@@ -3174,7 +3173,7 @@ onBeforeUnmount(() => {
                   @click="setContextMenuColumnPin('left')"
                 >
                   <PanelLeft class="size-4 shrink-0" />
-                  Закрепить слева
+                  {{ $t('grid.widget.pinLeft') }}
                 </button>
                 <button
                   type="button"
@@ -3184,7 +3183,7 @@ onBeforeUnmount(() => {
                   @click="setContextMenuColumnPin('right')"
                 >
                   <PanelRight class="size-4 shrink-0" />
-                  Закрепить справа
+                  {{ $t('grid.widget.pinRight') }}
                 </button>
                 <button
                   type="button"
@@ -3194,7 +3193,7 @@ onBeforeUnmount(() => {
                   @click="setContextMenuColumnPin(null)"
                 >
                   <PinOff class="size-4 shrink-0" />
-                  Убрать закрепление
+                  {{ $t('uiText.unpin09cd2ba7') }}
                 </button>
                 <div
                   v-if="columnPinEditingHint(contextMenuColumn)"
@@ -3213,7 +3212,7 @@ onBeforeUnmount(() => {
                 >
                   <Eye v-if="isColumnHiddenByDefault(contextMenuColumn)" class="size-4 shrink-0" />
                   <EyeOff v-else class="size-4 shrink-0" />
-                  {{ isColumnHiddenByDefault(contextMenuColumn) ? 'Показывать по умолчанию' : 'Скрыть по умолчанию' }}
+                  {{ isColumnHiddenByDefault(contextMenuColumn) ? $t('uiText.showByDefault28aff316') : $t('uiText.hideByDefaulte791e9cd') }}
                 </button>
                 <div
                   v-if="columnVisibilityEditingHint(contextMenuColumn)"
@@ -3228,7 +3227,7 @@ onBeforeUnmount(() => {
                   @click="removeColumnFromContextMenu"
                 >
                   <Trash2 class="size-4 shrink-0" />
-                  Удалить
+                  {{ $t('uiText.delete86ea33ae') }}
                 </button>
               </div>
             </template>
@@ -3237,18 +3236,18 @@ onBeforeUnmount(() => {
           <AlertDialog v-model:open="removeAllColumnsDialogOpen">
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Удалить все колонки?</AlertDialogTitle>
+                <AlertDialogTitle>{{ $t('uiText.deleteAllColumns98a171f8') }}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Из Table будут удалены все колонки. Количество: {{ columns.length }}. Source изменится сразу, а изменение станет постоянным после сохранения компонента.
+                  {{ $t('uiText.allColumnsFromTableWillBeDeletedCountfae1ad0f') }} {{ columns.length }}{{ $t('uiText.sourceWillChangeImmediatelyAndTheChangeWillBecomePercfb01934') }}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogCancel>{{ $t('uiText.cancel0ec753be') }}</AlertDialogCancel>
                 <AlertDialogAction
                   class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   @click="removeAllColumns"
                 >
-                  Удалить все
+                  {{ $t('uiText.deleteAllc3df07c7') }}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -3352,7 +3351,7 @@ onBeforeUnmount(() => {
                             <Blocks class="size-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Существующий компонент</TooltipContent>
+                        <TooltipContent>{{ $t('uiText.existingComponent00f3092d') }}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -3369,7 +3368,7 @@ onBeforeUnmount(() => {
                             <Tags class="size-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Встроенный SFC tag</TooltipContent>
+                        <TooltipContent>{{ $t('uiText.builtInSFCTaga7d43335') }}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger as-child>
@@ -3385,7 +3384,7 @@ onBeforeUnmount(() => {
                             <FileCode2 class="size-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Произвольная Source-разметка</TooltipContent>
+                        <TooltipContent>{{ $t('uiText.customSourceMarkup2872b476') }}</TooltipContent>
                       </Tooltip>
                     </div>
                   </TooltipProvider>
@@ -3394,14 +3393,14 @@ onBeforeUnmount(() => {
 
               <ScrollArea class="min-h-0 flex-1">
                 <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
-                  Выберите колонку выше для настройки.
+                  {{ $t('uiText.selectTheColumnAboveToConfigure017c6705') }}
                 </div>
 
                 <template v-else>
                   <section v-show="columnSection === 'general'" class="px-5 py-5">
                     <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
                       <div class="space-y-1.5">
-                        <Label for="sfc-table-column-key">Key</Label>
+                        <Label for="sfc-table-column-key">{{ $t('uiText.keyc67dd20e') }}</Label>
                         <Input
                           id="sfc-table-column-key"
                           v-model="keyDraft"
@@ -3413,7 +3412,7 @@ onBeforeUnmount(() => {
                         />
                       </div>
                       <div class="space-y-1.5">
-                        <Label for="sfc-table-column-title">Отображаемое имя</Label>
+                        <Label for="sfc-table-column-title">{{ $t('uiText.displayName403372fc') }}</Label>
                         <Input
                           id="sfc-table-column-title"
                           v-model="titleDraft"
@@ -3424,7 +3423,7 @@ onBeforeUnmount(() => {
                         />
                       </div>
                       <div class="space-y-1.5">
-                        <Label for="sfc-table-column-width">Ширина</Label>
+                        <Label for="sfc-table-column-width">{{ $t('uiText.widthD73c1c19') }}</Label>
                         <Input
                           id="sfc-table-column-width"
                           v-model="widthDraft"
@@ -3449,7 +3448,7 @@ onBeforeUnmount(() => {
                         :style="{ flexBasis: `calc((100% - 7px) * ${dataSplitRatioDraft / 100})` }"
                       >
                         <div v-if="cellEditorMode === 'component'" class="space-y-2">
-                          <Label>Компонент</Label>
+                          <Label>{{ $t('nav.error.component') }}</Label>
                           <SearchableSelect
                             :options="componentSelectOptions"
                             :model-value="selectedComponentValue"
@@ -3458,12 +3457,12 @@ onBeforeUnmount(() => {
                             @update:model-value="updateComponent"
                           />
                           <p class="text-xs text-muted-foreground">
-                            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : 'Выберите компонент' }}
+                            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : $t('uiText.selectComponentdfd14214') }}
                           </p>
                         </div>
 
                         <div v-else class="space-y-2">
-                          <Label>Tag</Label>
+                          <Label>{{ $t('uiText.tag982963c1') }}</Label>
                           <SearchableSelect
                             :options="tagSelectOptions"
                             :model-value="selectedTagValue"
@@ -3472,7 +3471,7 @@ onBeforeUnmount(() => {
                             @update:model-value="updateTag"
                           />
                           <p class="text-xs text-muted-foreground">
-                            Встроенный renderer-neutral элемент.
+                            {{ $t('uiText.builtInRendererNeutralElement6ca7692b') }}
                           </p>
                         </div>
                       </div>
@@ -3496,8 +3495,8 @@ onBeforeUnmount(() => {
 
                       <div class="min-w-0 flex-1 bg-editor-panel">
                         <div class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] border-b bg-muted/25 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                          <div>Входной параметр</div>
-                          <div>Значение</div>
+                          <div>{{ $t('uiText.inputParametera1b0115f') }}</div>
+                          <div>{{ $t('uiText.value9f0b9909') }}</div>
                         </div>
 
                         <div v-if="cellBindingFields.length" class="divide-y divide-border/60">
@@ -3510,9 +3509,9 @@ onBeforeUnmount(() => {
                             <div class="min-w-0 pt-1">
                               <div class="flex min-w-0 items-center gap-1.5">
                                 <code class="truncate text-xs font-medium text-foreground">{{ field.name }}</code>
-                                <span v-if="!field.optional" class="text-xs text-amber-500">*</span>
+                                <span v-if="!field.optional" class="text-xs text-amber-500">{{ $t('uiText.symboldf58248c') }}</span>
                                 <Badge v-if="field.sourceOnly" variant="outline" class="h-4 px-1 text-[9px] font-normal">
-                                  Source
+                                  {{ $t('uiText.sourceda13add2') }}
                                 </Badge>
                               </div>
                               <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground" :title="field.type">
@@ -3538,10 +3537,10 @@ onBeforeUnmount(() => {
                                         aria-label="Динамическое выражение"
                                         @click="setCellBindingKind(field.name, 'expression')"
                                       >
-                                        fx
+                                        {{ $t('uiText.fx06967d8e') }}
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Dynamic expression: :{{ field.name }}=&quot;row...&quot;</TooltipContent>
+                                    <TooltipContent>{{ $t('uiText.dynamicExpression1516a0ed') }}{{ field.name }}{{ $t('uiText.row2544f1c7') }}</TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger as-child>
@@ -3554,10 +3553,10 @@ onBeforeUnmount(() => {
                                         aria-label="Статическое значение"
                                         @click="setCellBindingKind(field.name, 'literal')"
                                       >
-                                        Aa
+                                        {{ $t('uiText.aa2c419ecc') }}
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Static literal: {{ field.name }}=&quot;value&quot;</TooltipContent>
+                                    <TooltipContent>{{ $t('uiText.staticLiteral6ba321c2') }} {{ field.name }}{{ $t('uiText.value85e1f3ce') }}</TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                                 <Input
@@ -3577,7 +3576,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div v-else class="flex min-h-24 items-center justify-center px-4 text-center text-xs text-muted-foreground">
-                          {{ selectedComponentValue || selectedTagValue ? 'У выбранного элемента нет параметров данных.' : 'Выберите элемент слева.' }}
+                          {{ selectedComponentValue || selectedTagValue ? $t('uiText.theSelectedElementHasNoDataParameters07be4c71') : $t('uiText.selectAnElementFromTheLeft6d31f071') }}
                         </div>
                       </div>
                     </div>
@@ -3588,10 +3587,10 @@ onBeforeUnmount(() => {
                     >
                       <div class="min-w-0">
                         <div class="text-sm font-medium">
-                          Source
+                          {{ $t('uiText.sourceda13add2') }}
                         </div>
                         <div class="mt-0.5 text-xs text-muted-foreground">
-                          Содержимое колонки можно изменить вручную без преобразования Visual editor.
+                          {{ $t('uiText.columnContentCanBeEditedManuallyWithoutUsingTheVisua4255ee64') }}
                         </div>
                       </div>
                       <Button
@@ -3600,7 +3599,7 @@ onBeforeUnmount(() => {
                         class="shrink-0 gap-1.5"
                         @click="openSelectedColumnSource"
                       >
-                        Редактировать в Source
+                        {{ $t('uiText.editInSource42ceebde') }}
                         <ExternalLink class="size-3.5" />
                       </Button>
                     </div>
@@ -3613,7 +3612,7 @@ onBeforeUnmount(() => {
                     >
                       <div class="min-w-0">
                         <div class="text-sm font-medium">
-                          {{ selectedColumn.editing.enabled ? 'Редактирование включено · Source' : 'Редактирование управляется Source' }}
+                          {{ selectedColumn.editing.enabled ? $t('uiText.editingEnabledSourcee2e4af0e') : $t('uiText.editingIsControlledBySource5d5d2460') }}
                         </div>
                         <div class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                           {{ selectedColumn.editing.message }}
@@ -3621,14 +3620,14 @@ onBeforeUnmount(() => {
                       </div>
                       <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
                         <FileCode2 class="size-3.5" />
-                        Открыть
+                        {{ $t('uiText.open1259571a') }}
                       </Button>
                     </div>
 
                     <div v-else>
                       <div v-if="editingSection === 'editor'" class="space-y-4">
                         <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
-                          <span class="text-sm font-medium">Сделать редактируемым</span>
+                          <span class="text-sm font-medium">{{ $t('uiText.makeEditablec02b8dda') }}</span>
                           <Switch
                             :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
                             aria-label="Сделать содержимое ячейки редактируемым"
@@ -3655,24 +3654,24 @@ onBeforeUnmount(() => {
                         v-else-if="!selectedColumn.editing.enabled"
                         class="editor-control rounded-lg border border-border/70 px-4 py-3 text-sm text-muted-foreground"
                       >
-                        Сначала включите редактирование в разделе «Редактор».
+                        {{ $t('uiText.firstEnableEditingInTheEditorSection5717b65c') }}
                       </div>
 
                       <div v-else-if="editingSection === 'triggers'" class="space-y-4">
                         <div class="flex justify-end">
                           <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
                             <Plus class="size-3.5" />
-                            Альтернативный trigger
+                            {{ $t('uiText.alternativeTriggerf046e22b') }}
                           </Button>
                         </div>
 
                         <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                          Используется <code>click</code> по умолчанию; атрибут <code>edit-on</code> в Source не требуется.
+                          {{ $t('uiText.used855c96b7') }} <code>{{ $t('uiText.clickb93ec566') }}</code> {{ $t('uiText.byDefaultAttribute3974e058') }} <code>{{ $t('uiText.editOn538ec565') }}</code> {{ $t('uiText.isNotRequiredInSourcea486e5aa') }}
                         </div>
 
                         <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                          <span>Для всех trigger:</span>
-                          <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                          <span>{{ $t('uiText.forAllTriggerf6184df1') }}</span>
+                          <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
                         </div>
 
                         <div class="space-y-3">
@@ -3709,8 +3708,8 @@ onBeforeUnmount(() => {
                       <div v-else class="space-y-2">
                         <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
                           <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                            <span>Для edited:</span>
-                            <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+                            <span>{{ $t('uiText.forEditedc382045e') }}</span>
+                            <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
                           </div>
                           <ComponentSFCReactionEditor
                             ref="editedReactionEditorRef"
@@ -3727,7 +3726,7 @@ onBeforeUnmount(() => {
                         >
                           <div class="min-w-0">
                             <div class="text-sm font-medium">
-                              Reaction управляется Source
+                              {{ $t('uiText.reactionIsControlledBySource7dc58447') }}
                             </div>
                             <div class="mt-0.5 text-xs text-muted-foreground">
                               {{ selectedColumn.editing.reaction.message }}
@@ -3735,7 +3734,7 @@ onBeforeUnmount(() => {
                           </div>
                           <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
                             <FileCode2 class="size-3.5" />
-                            Открыть
+                            {{ $t('uiText.open1259571a') }}
                           </Button>
                         </div>
                       </div>
@@ -3759,7 +3758,7 @@ onBeforeUnmount(() => {
                           class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
                         >
                           <FileCode2 class="size-3.5 shrink-0" />
-                          Dynamic sort-by настраивается в Source.
+                          {{ $t('uiText.dynamicSortByIsConfiguredInSource2aad5d7e') }}
                         </div>
                         <table v-else class="w-full table-fixed text-xs">
                           <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -3768,10 +3767,10 @@ onBeforeUnmount(() => {
                                 #
                               </th>
                               <th scope="col" class="px-2 py-1 text-left font-medium">
-                                Цепочка поля
+                                {{ $t('uiText.fieldChain35fa6224') }}
                               </th>
                               <th scope="col" class="w-[76px] px-1 py-1 text-center font-medium">
-                                Порядок
+                                {{ $t('uiText.orderf6f1e527') }}
                               </th>
                               <th scope="col" class="w-8" />
                             </tr>
@@ -3835,7 +3834,7 @@ onBeforeUnmount(() => {
                             </tr>
                             <tr v-if="!sortPathDrafts.length">
                               <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
-                                Используется key колонки: <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
+                                {{ $t('uiText.usedColumnKey1f2dda0a') }} <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
                               </td>
                             </tr>
                           </tbody>
@@ -3850,14 +3849,14 @@ onBeforeUnmount(() => {
                             @click="addColumnSortPath"
                           >
                             <Plus class="size-3.5" />
-                            Добавить цепочку
+                            {{ $t('uiText.addChaind1764c2d') }}
                           </Button>
                         </div>
                       </div>
 
                       <aside class="overflow-hidden rounded-lg border border-border/70 bg-muted/10">
                         <div class="p-3">
-                          <Label class="text-xs">Направление</Label>
+                          <Label class="text-xs">{{ $t('uiText.direction7af7cb1d') }}</Label>
                           <TooltipProvider :delay-duration="120">
                             <div class="mt-2 space-y-2">
                               <div
@@ -3878,7 +3877,7 @@ onBeforeUnmount(() => {
                                         aria-label="Без сортировки по умолчанию"
                                         @click="setColumnDefaultSort(selectedColumn.index, null)"
                                       >
-                                        —
+                                        {{ $t('uiText.symbol1b93795b') }}
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
@@ -3896,7 +3895,7 @@ onBeforeUnmount(() => {
                                         :disabled="!canSetColumnSortDirection(selectedColumn)"
                                         @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
                                       >
-                                        ASC
+                                        {{ $t('uiText.asceaffec78') }}
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
@@ -3914,7 +3913,7 @@ onBeforeUnmount(() => {
                                         :disabled="!canSetColumnSortDirection(selectedColumn)"
                                         @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
                                       >
-                                        DESC
+                                        {{ $t('uiText.descb5093023') }}
                                       </Button>
                                     </span>
                                   </TooltipTrigger>
@@ -3923,7 +3922,7 @@ onBeforeUnmount(() => {
                               </div>
 
                               <div v-if="columnSortPriority(selectedColumn) != null" class="flex items-center gap-1">
-                                <span class="mr-auto text-[10px] text-muted-foreground">Приоритет</span>
+                                <span class="mr-auto text-[10px] text-muted-foreground">{{ $t('uiText.priorityb5b6ddbf') }}</span>
                                 <Badge variant="outline" class="h-7 min-w-7 justify-center px-1 font-mono text-[10px]">
                                   #{{ columnSortPriority(selectedColumn) }}
                                 </Badge>
@@ -3955,7 +3954,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div class="border-t border-border/70 p-3">
-                          <Label for="sfc-table-column-sort-comparator" class="text-xs">Сравнение</Label>
+                          <Label for="sfc-table-column-sort-comparator" class="text-xs">{{ $t('uiText.comparison189d15bc') }}</Label>
                           <Select
                             :model-value="selectedColumnSortComparator"
                             :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"

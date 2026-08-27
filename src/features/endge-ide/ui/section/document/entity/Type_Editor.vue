@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DomainDocumentType } from '@endge/core'
 import type { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor'
 
@@ -167,7 +166,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -189,7 +188,7 @@ async function save(): Promise<void> {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Заменить source базовым примером</TooltipContent>
+            <TooltipContent>{{ $t('uiText.replaceSourceWithBaseExample759e21b4') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -206,7 +205,7 @@ async function save(): Promise<void> {
               @click="visualShowPreview = !visualShowPreview"
             >
               <Eye class="size-3.5" />
-              Preview
+              {{ $t('uiText.previewf1fbb2b4') }}
             </Button>
             <Button
               variant="ghost"
@@ -217,7 +216,7 @@ async function save(): Promise<void> {
               @click="visualShowExample = !visualShowExample"
             >
               <FileJson2 class="size-3.5" />
-              Example
+              {{ $t('uiText.example0f01ed56') }}
             </Button>
           </div>
         </div>
@@ -229,19 +228,19 @@ async function save(): Promise<void> {
         <div class="max-w-xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
-            <Label for="type-identity">Identity</Label>
+            <Label for="type-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput id="type-identity" v-model="editor.identity" class="font-mono" spellcheck="false" />
           </div>
           <div class="space-y-2">
-            <Label for="type-name">Название типа</Label>
+            <Label for="type-name">{{ $t('uiText.typeNamebebb44b3') }}</Label>
             <Input id="type-name" v-model="editor.name" />
           </div>
           <div class="space-y-2">
-            <Label for="type-source-version">Версия Type Source</Label>
+            <Label for="type-source-version">{{ $t('uiText.typeSourceVersion4b28fe73') }}</Label>
             <Input id="type-source-version" :model-value="String(editor.sourceVersion)" disabled />
           </div>
           <div class="space-y-2">
-            <Label for="type-description">Описание</Label>
+            <Label for="type-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea
               id="type-description"
               v-model="editor.description"

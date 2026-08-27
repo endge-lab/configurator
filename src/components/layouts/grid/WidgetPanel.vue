@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable curly */
 import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
 
 import { computed } from 'vue'
@@ -29,8 +28,9 @@ interface PopupWidgetGroup {
 }
 
 const popupWidgetGroups = computed(() => {
-  if (props.position !== 'right')
+  if (props.position !== 'right') {
     return []
+  }
 
   const popupInstances = getPopupInstances()
   const groups = new Map<string, PopupWidgetGroup>()
@@ -46,17 +46,20 @@ const popupWidgetGroups = computed(() => {
 })
 
 const draggingWidgetDefinition = computed(() => {
-  if (!draggingWidgetId.value)
+  if (!draggingWidgetId.value) {
     return null
+  }
   return widgetsState.value.definitions[draggingWidgetId.value] ?? null
 })
 
 function canDropToPosition(targetPosition: WidgetPosition): boolean {
-  if (!isDraggingWidget.value || !draggingWidgetDefinition.value)
+  if (!isDraggingWidget.value || !draggingWidgetDefinition.value) {
     return false
+  }
   const allowed = draggingWidgetDefinition.value.allowedPositions
-  if (!allowed)
+  if (!allowed) {
     return true
+  }
   return allowed.includes(targetPosition)
 }
 
@@ -65,12 +68,15 @@ function sortByOrder(widgets: (WidgetDefinition & WidgetDefinitionState)[], posi
   return [...widgets].sort((a, b) => {
     const aIndex = order.indexOf(a.id)
     const bIndex = order.indexOf(b.id)
-    if (aIndex === -1 && bIndex === -1)
+    if (aIndex === -1 && bIndex === -1) {
       return 0
-    if (aIndex === -1)
+    }
+    if (aIndex === -1) {
       return 1
-    if (bIndex === -1)
+    }
+    if (bIndex === -1) {
       return -1
+    }
     return aIndex - bIndex
   })
 }
@@ -95,8 +101,9 @@ function isActive(widget: WidgetDefinition & WidgetDefinitionState): boolean {
     return floatingState ? !floatingState.minimized : false
   }
   const area = widgetsState.value.areas[widget.position as 'left' | 'right' | 'bottom']
-  if (!area)
+  if (!area) {
     return false
+  }
   return area.activeWidget === widget.id && area.expanded
 }
 

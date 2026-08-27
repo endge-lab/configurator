@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -35,7 +34,9 @@ describe('type visual editor model', () => {
     const parsed = parseTypeVisualSource('defineType({ value: field(\'String\') })')
     const copy = cloneTypeSourceDocument(parsed.document!)
 
-    if (copy.definition.kind === 'object') { copy.definition.fields.push(createDefaultTypeSourceField('next')) }
+    if (copy.definition.kind === 'object') {
+      copy.definition.fields.push(createDefaultTypeSourceField('next'))
+    }
 
     expect(parsed.document?.definition.kind === 'object' && parsed.document.definition.fields).toHaveLength(1)
     expect(copy.definition.kind === 'object' && copy.definition.fields).toHaveLength(2)

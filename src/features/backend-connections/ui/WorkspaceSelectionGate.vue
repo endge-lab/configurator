@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { Building2, ChevronRight, LogOut, ServerOff } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -34,7 +33,7 @@ async function logout(): Promise<void> {
     <section class="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl shadow-black/50 backdrop-blur">
       <header class="flex items-center justify-between gap-4 border-b border-white/10 px-7 py-6">
         <h1 class="text-2xl font-semibold tracking-tight">
-          Выберите пространство
+          {{ $t('uiText.selectASpacec54b96b5') }}
         </h1>
         <button
           type="button"
@@ -43,7 +42,7 @@ async function logout(): Promise<void> {
           @click="logout"
         >
           <LogOut class="size-4" />
-          {{ logoutPending ? 'Выход...' : 'Выйти' }}
+          {{ logoutPending ? $t('nav.user.loggingOut') : $t('nav.user.logout') }}
         </button>
       </header>
 
@@ -70,7 +69,7 @@ async function logout(): Promise<void> {
           <ServerOff class="size-6" />
         </span>
         <h2 class="font-medium">
-          Нет доступных пространств
+          {{ $t('uiText.noAvailableSpacesb308ae40') }}
         </h2>
       </div>
     </section>

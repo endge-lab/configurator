@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
 import {
@@ -102,11 +101,15 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
             const identity = match[0]
             if (identity === 'Any' || identity === 'any') {
               const marker = markerForIdentity(source, identity, 'Any disables strict type checking.', false)
-              if (marker) { markers.push(marker) }
+              if (marker) {
+                markers.push(marker)
+              }
             }
             else if (/^[A-Z]/.test(identity) && !BUILTINS.has(identity) && !known.has(identity)) {
               const marker = markerForIdentity(source, identity, `Type "${identity}" is missing from Type Registry.`, true)
-              if (marker) { markers.push(marker) }
+              if (marker) {
+                markers.push(marker)
+              }
             }
           }
         }
@@ -116,7 +119,9 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       const completion = monaco.languages.registerCompletionItemProvider('html', {
         triggerCharacters: [':', '<', '|'],
         provideCompletionItems(currentModel, position) {
-          if (currentModel !== model || !isInsideScript(model.getValue(), model.getOffsetAt(position))) { return { suggestions: [] } }
+          if (currentModel !== model || !isInsideScript(model.getValue(), model.getOffsetAt(position))) {
+            return { suggestions: [] }
+          }
           const word = model.getWordUntilPosition(position)
           const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
           return {
@@ -132,7 +137,9 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       })
       const hover = monaco.languages.registerHoverProvider('html', {
         provideHover(currentModel, position) {
-          if (currentModel !== model) { return null }
+          if (currentModel !== model) {
+            return null
+          }
           const componentReference = resolveComponentSFCTagReference(
             model.getValue(),
             model.getOffsetAt(position),
@@ -152,9 +159,13 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
             }
           }
           const word = model.getWordAtPosition(position)?.word
-          if (word && localTypeDeclarations(model.getValue()).has(word)) { return null }
+          if (word && localTypeDeclarations(model.getValue()).has(word)) {
+            return null
+          }
           const type = word ? catalog().find(item => item.identity === word) : null
-          if (!type) { return null }
+          if (!type) {
+            return null
+          }
           return {
             contents: [
               { value: `**${type.identity}**` },
@@ -177,16 +188,22 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
             return EndgeIDE.tabs.openSourceReference(componentReference)
           }
           const identity = model.getWordAtPosition(position)?.word
-          if (identity && localTypeDeclarations(model.getValue()).has(identity)) { return false }
+          if (identity && localTypeDeclarations(model.getValue()).has(identity)) {
+            return false
+          }
           const type = identity ? catalog().find(item => item.identity === identity) : null
-          if (!type || type.category !== 'user') { return false }
+          if (!type || type.category !== 'user') {
+            return false
+          }
           return EndgeIDE.tabs.openSourceReference({ target: 'type', identity: type.identity, range: { start: 0, end: 0 } })
         },
         onMissing: () => toast.info('Под курсором нет ссылки на документ'),
       })
       let validateTimer: ReturnType<typeof setTimeout> | null = null
       const content = model.onDidChangeContent(() => {
-        if (validateTimer) { clearTimeout(validateTimer) }
+        if (validateTimer) {
+          clearTimeout(validateTimer)
+        }
         validateTimer = setTimeout(() => {
           validateTimer = null
           validate()
@@ -195,7 +212,9 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
       validate()
       return {
         dispose() {
-          if (validateTimer) { clearTimeout(validateTimer) }
+          if (validateTimer) {
+            clearTimeout(validateTimer)
+          }
           monaco.editor.setModelMarkers(model, 'endge-type-registry', [])
           completion.dispose()
           hover.dispose()
@@ -206,7 +225,9 @@ export function createTypeRegistryContribution(): ScriptEditorExtension {
 
       function markerForIdentity(source: string, identity: string, message: string, error: boolean) {
         const start = source.indexOf(identity)
-        if (start < 0) { return null }
+        if (start < 0) {
+          return null
+        }
         const startPosition = model.getPositionAt(start)
         const endPosition = model.getPositionAt(start + identity.length)
         return {
@@ -231,7 +252,9 @@ function isInsideScript(source: string, offset: number): boolean {
 function localTypeDeclarations(source: string): Set<string> {
   const identities = new Set<string>()
   for (const match of source.matchAll(/\b(?:interface|type|class|enum)\s+([A-Za-z_$][\w$]*)/g)) {
-    if (match[1]) { identities.add(match[1]) }
+    if (match[1]) {
+      identities.add(match[1])
+    }
   }
   return identities
 }

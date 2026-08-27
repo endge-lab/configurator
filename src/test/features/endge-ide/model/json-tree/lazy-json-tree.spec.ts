@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { LazyJsonValueNode } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
 
 import { describe, expect, it } from 'vitest'
@@ -33,7 +32,9 @@ describe('lazy JSON tree planning', () => {
       Array.from({ length: 10_000 }, (_, index) => ({ id: index, flight: `GH${index}` })),
       {
         get(target, property, receiver) {
-          if (typeof property === 'string' && /^\d+$/.test(property)) { itemReads += 1 }
+          if (typeof property === 'string' && /^\d+$/.test(property)) {
+            itemReads += 1
+          }
           return Reflect.get(target, property, receiver)
         },
       },

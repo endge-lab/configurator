@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line, ts/naming-convention */
 import type {
   ComponentSFCProgramPayload,
   ComponentSFCRuntimeHost,
@@ -65,7 +64,7 @@ export class RuntimePreviewInstance {
   public readonly inactiveRenderableChildren = computed(() => {
     void this.revision.value
     const selected = this.selectedNode.value
-    return selected ? this.collectInactiveRenderableChildren(selected) : []
+    return selected ? this._collectInactiveRenderableChildren(selected) : []
   })
 
   private _project: ProjectRuntimeSession | null = null
@@ -94,26 +93,34 @@ export class RuntimePreviewInstance {
     contextual?: RuntimePreviewContextualLaunch,
     forceMock = Endge.context.isMockEnabled,
   ): Promise<void> {
-    if (arguments.length > 0) { this._draft = draft ?? null }
-    if (arguments.length > 1) { this._contextual = contextual ?? null }
+    if (arguments.length > 0) {
+      this._draft = draft ?? null
+    }
+    if (arguments.length > 1) {
+      this._contextual = contextual ?? null
+    }
     const generation = ++this._generation
     const pending = this._queue
       .catch(() => undefined)
-      .then(() => this.performLaunch(generation, forceMock))
+      .then(() => this._performLaunch(generation, forceMock))
     this._queue = pending.catch(() => undefined)
     return pending
   }
 
-  private async performLaunch(generation: number, forceMock: boolean): Promise<void> {
-    if (generation !== this._generation) { return }
+  private async _performLaunch(generation: number, forceMock: boolean): Promise<void> {
+    if (generation !== this._generation) {
+      return
+    }
     this.status.value = 'preparing'
     this.error.value = null
-    await this.disposeRuntime()
-    if (generation !== this._generation) { return }
+    await this._disposeRuntime()
+    if (generation !== this._generation) {
+      return
+    }
     try {
       this._previewForcesMock = forceMock
       this._artifactReader = createRuntimePreviewArtifactReader(
-        this.prepareArtifactReader(),
+        this._prepareArtifactReader(),
         this._previewForcesMock,
       )
       this.tree.value = buildRuntimePreviewTree(this.target, this._artifactReader)
@@ -126,7 +133,7 @@ export class RuntimePreviewInstance {
         })
         if (this._contextual) {
           const occurrence = this._contextual.occurrence
-          const composition = await this.resolveCompositionAsync(occurrence.composition)
+          const composition = await this._resolveCompositionAsync(occurrence.composition)
           if (occurrence.runtimePath) {
             const handle = composition.getRuntimeHandle(occurrence.runtimePath)
             if (!handle) {
@@ -138,15 +145,17 @@ export class RuntimePreviewInstance {
           this.contextualFocusComponentIdentity.value = occurrence.renderComponentIdentity
         }
         else {
-          for (const handle of this._project.compositions.getAll()) { await handle.activate() }
+          for (const handle of this._project.compositions.getAll()) {
+            await handle.activate()
+          }
         }
       }
       else if (this.target.entityType === 'composition') {
         if (this._draft) {
-          this._composition = await this.mountDraftComposition(this._draft)
+          this._composition = await this._mountDraftComposition(this._draft)
         }
         else if (this._previewForcesMock) {
-          this._composition = await this.mountComposition(this.target.identity)
+          this._composition = await this._mountComposition(this.target.identity)
         }
         else {
           const artifact = Endge.program.getCompositionArtifact(this.target.identity)
@@ -158,21 +167,23 @@ export class RuntimePreviewInstance {
         }
       }
       else if (this.target.entityType === 'component-sfc') {
-        this._component = await this.mountComponent(this.target.identity, this._draft)
+        this._component = await this._mountComponent(this.target.identity, this._draft)
       }
       else {
-        this._store = await this.mountStore(this.target.identity, this._draft)
+        this._store = await this._mountStore(this.target.identity, this._draft)
       }
       if (generation !== this._generation) {
-        await this.disposeRuntime()
+        await this._disposeRuntime()
         return
       }
       this.status.value = 'active'
       this.refresh()
     }
     catch (error) {
-      await this.disposeRuntime()
-      if (generation !== this._generation) { return }
+      await this._disposeRuntime()
+      if (generation !== this._generation) {
+        return
+      }
       this.status.value = 'error'
       this.error.value = error instanceof Error ? error.message : String(error)
       this.refresh()
@@ -182,7 +193,9 @@ export class RuntimePreviewInstance {
 
   public async select(nodeId: string): Promise<void> {
     const node = this.findNode(nodeId)
-    if (!node) { return }
+    if (!node) {
+      return
+    }
     this.selectedNodeId.value = node.id
     this.error.value = null
     if (this.status.value === 'inactive' || this.status.value === 'stopped' || this.status.value === 'error' || this.status.value === 'preparing') {
@@ -190,7 +203,7 @@ export class RuntimePreviewInstance {
       return
     }
     try {
-      await this.activateNode(node)
+      await this._activateNode(node)
       this.refresh()
     }
     catch (error) {
@@ -201,13 +214,23 @@ export class RuntimePreviewInstance {
 
   public lifecycleState(node: RuntimePreviewTreeNode): RuntimePreviewLifecycleState {
     void this.revision.value
-    if (node.parentId == null) { return this.status.value }
+    if (node.parentId == null) {
+      return this.status.value
+    }
     try {
-      if (!node.composition) { return 'inactive' }
-      if (node.kind === 'composition') { return this.compositionState(node.composition) }
-      const composition = this.resolveComposition(node.composition)
-      if (!composition) { return 'inactive' }
-      if (node.kind === 'scope' || node.kind === 'resource') { return scopeState(composition.getScope(node.scopePath ?? '')) }
+      if (!node.composition) {
+        return 'inactive'
+      }
+      if (node.kind === 'composition') {
+        return this._compositionState(node.composition)
+      }
+      const composition = this._resolveComposition(node.composition)
+      if (!composition) {
+        return 'inactive'
+      }
+      if (node.kind === 'scope' || node.kind === 'resource') {
+        return scopeState(composition.getScope(node.scopePath ?? ''))
+      }
       return handleState(composition.getRuntimeHandle(node.runtimePath ?? '')?.state)
     }
     catch {
@@ -216,11 +239,15 @@ export class RuntimePreviewInstance {
   }
 
   public async pause(): Promise<void> {
-    await this.waitForCurrentOperation()
-    if (this.status.value !== 'active') { return }
+    await this._waitForCurrentOperation()
+    if (this.status.value !== 'active') {
+      return
+    }
     if (this._project) {
       for (const handle of this._project.compositions.getAll()) {
-        if (handle.state === 'active') { await handle.pause() }
+        if (handle.state === 'active') {
+          await handle.pause()
+        }
       }
     }
     else if (this._composition) {
@@ -237,11 +264,15 @@ export class RuntimePreviewInstance {
   }
 
   public async resume(): Promise<void> {
-    await this.waitForCurrentOperation()
-    if (this.status.value !== 'paused') { return }
+    await this._waitForCurrentOperation()
+    if (this.status.value !== 'paused') {
+      return
+    }
     if (this._project) {
       for (const handle of this._project.compositions.getAll()) {
-        if (handle.state === 'paused') { await handle.resume() }
+        if (handle.state === 'paused') {
+          await handle.resume()
+        }
       }
     }
     else if (this._composition) {
@@ -262,9 +293,13 @@ export class RuntimePreviewInstance {
     const pending = this._queue
       .catch(() => undefined)
       .then(async () => {
-        if (generation !== this._generation) { return }
-        await this.disposeRuntime()
-        if (generation !== this._generation) { return }
+        if (generation !== this._generation) {
+          return
+        }
+        await this._disposeRuntime()
+        if (generation !== this._generation) {
+          return
+        }
         this.status.value = 'stopped'
         this.error.value = null
         this.refresh()
@@ -286,8 +321,10 @@ export class RuntimePreviewInstance {
     const pending = this._queue
       .catch(() => undefined)
       .then(async () => {
-        if (generation !== this._generation) { return }
-        await this.disposeRuntime()
+        if (generation !== this._generation) {
+          return
+        }
+        await this._disposeRuntime()
         this.status.value = 'disposed'
         this.refresh()
       })
@@ -297,45 +334,61 @@ export class RuntimePreviewInstance {
 
   public async pauseNode(nodeId: string): Promise<void> {
     const node = this.findNode(nodeId)
-    if (!node) { return }
-    if (node.parentId == null) { return this.pause() }
-    await this.controlNode(node, 'pause')
+    if (!node) {
+      return
+    }
+    if (node.parentId == null) {
+      return this.pause()
+    }
+    await this._controlNode(node, 'pause')
   }
 
   public async resumeNode(nodeId: string): Promise<void> {
     const node = this.findNode(nodeId)
-    if (!node) { return }
-    if (node.parentId == null) { return this.resume() }
-    await this.activateNode(node)
+    if (!node) {
+      return
+    }
+    if (node.parentId == null) {
+      return this.resume()
+    }
+    await this._activateNode(node)
     this.refresh()
   }
 
   public async stopNode(nodeId: string): Promise<void> {
     const node = this.findNode(nodeId)
-    if (!node) { return }
-    if (node.parentId == null) { return this.stop() }
-    await this.controlNode(node, 'deactivate')
+    if (!node) {
+      return
+    }
+    if (node.parentId == null) {
+      return this.stop()
+    }
+    await this._controlNode(node, 'deactivate')
   }
 
   public async restartNode(nodeId: string): Promise<void> {
     const node = this.findNode(nodeId)
-    if (!node) { return }
-    if (node.parentId == null) { return this.restart() }
-    await this.controlNode(node, 'deactivate')
-    await this.activateNode(node)
+    if (!node) {
+      return
+    }
+    if (node.parentId == null) {
+      return this.restart()
+    }
+    await this._controlNode(node, 'deactivate')
+    await this._activateNode(node)
     this.refresh()
   }
 
   public refresh(): void {
     this.revision.value += 1
-    this.refreshRenderables()
+    this._refreshRenderables()
   }
 
-  private async waitForCurrentOperation(): Promise<void> {
+  private async _waitForCurrentOperation(): Promise<void> {
     await this._queue.catch(() => undefined)
   }
 
-  private async mountComponent(identity: string, draft: RuntimePreviewDraft | null): Promise<ComponentSFCRuntimeHost> {
+  private async _mountComponent(identity: string, draft: RuntimePreviewDraft | null): Promise<ComponentSFCRuntimeHost> {
     const model = draft
       ? RComponentSFC.fromPlain({
           id: draft.id ?? identity,
@@ -349,10 +402,12 @@ export class RuntimePreviewInstance {
     const artifact = draft && model
       ? createPreviewArtifact(model)
       : Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', identity)
-    if (!model || !artifact || artifact.status === 'error') { throw new Error(`[RuntimePreview] Component SFC "${identity}" is unavailable.`) }
+    if (!model || !artifact || artifact.status === 'error') {
+      throw new Error(`[RuntimePreview] Component SFC "${identity}" is unavailable.`)
+    }
     const previewProps = artifact.payload.previewProps ?? {}
     ensurePreviewPortArtifacts(artifact.payload)
-    this.applyDraftStyle(draft ? artifact.payload.ir?.style ?? null : null)
+    this._applyDraftStyle(draft ? artifact.payload.ir?.style ?? null : null)
     const context = await prepareComponentPreviewContext(
       artifact.payload.previewOptions,
       previewProps,
@@ -381,7 +436,9 @@ export class RuntimePreviewInstance {
           vocabCatalog: context?.host.getVocabCatalog() ?? {},
         },
       }) as ComponentSFCRuntimeHost | null
-      if (!runtime) { throw new Error(`[RuntimePreview] Component SFC "${identity}" cannot be mounted.`) }
+      if (!runtime) {
+        throw new Error(`[RuntimePreview] Component SFC "${identity}" cannot be mounted.`)
+      }
       this._componentContext = context
       return runtime
     }
@@ -391,8 +448,10 @@ export class RuntimePreviewInstance {
     }
   }
 
-  private prepareArtifactReader(): RuntimeArtifactReader {
-    if (!this._contextual || !this._draft) { return Endge.program }
+  private _prepareArtifactReader(): RuntimeArtifactReader {
+    if (!this._contextual || !this._draft) {
+      return Endge.program
+    }
     const target = this._contextual.target
     if (target.entityType === 'component-sfc') {
       const model = RComponentSFC.fromPlain({
@@ -425,20 +484,24 @@ export class RuntimePreviewInstance {
     return Endge.program
   }
 
-  private async mountStore(identity: string, draft: RuntimePreviewDraft | null): Promise<StoreRuntimeHost> {
+  private async _mountStore(identity: string, draft: RuntimePreviewDraft | null): Promise<StoreRuntimeHost> {
     const model = draft ? createPreviewStore(draft, identity) : Endge.domain.getStore(identity)
     const artifact = draft && model ? createPreviewStoreArtifact(model) : Endge.program.getStoreArtifact(identity)
-    if (!model || !artifact || artifact.status === 'error') { throw new Error(`[RuntimePreview] Store "${identity}" is unavailable.`) }
+    if (!model || !artifact || artifact.status === 'error') {
+      throw new Error(`[RuntimePreview] Store "${identity}" is unavailable.`)
+    }
     const runtime = Endge.runtime.execute(model, {
       ...(draft ? { artifactReader: createOverlayArtifactReader(artifact) } : {}),
       persistence: 'disabled',
       meta: { mode: 'debug-preview' },
     }) as StoreRuntimeHost | null
-    if (!runtime) { throw new Error(`[RuntimePreview] Store "${identity}" cannot be mounted.`) }
+    if (!runtime) {
+      throw new Error(`[RuntimePreview] Store "${identity}" cannot be mounted.`)
+    }
     return runtime
   }
 
-  private async mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession> {
+  private async _mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession> {
     await Endge.build()
     ensureCompositionRuntimeArtifacts(draft.source, new Set([this.target.identity]))
     const model = createPreviewComposition({
@@ -459,7 +522,7 @@ export class RuntimePreviewInstance {
     if (!effectiveArtifact || effectiveArtifact.status === 'error') {
       throw new Error(`[RuntimePreview] Composition "${this.target.identity}" is unavailable.`)
     }
-    return this.mountCompositionRuntime(
+    return this._mountCompositionRuntime(
       model,
       effectiveArtifact,
       artifactReader,
@@ -467,16 +530,16 @@ export class RuntimePreviewInstance {
     )
   }
 
-  private async mountComposition(identity: string): Promise<CompositionSession> {
+  private async _mountComposition(identity: string): Promise<CompositionSession> {
     const model = Endge.domain.getComposition(identity)
     const artifact = this._artifactReader.getArtifact<CompositionProgramPayload>('composition', identity)
     if (!model || !artifact || artifact.status === 'error') {
       throw new Error(`[RuntimePreview] Composition "${identity}" is unavailable.`)
     }
-    return this.mountCompositionRuntime(model, artifact, this._artifactReader)
+    return this._mountCompositionRuntime(model, artifact, this._artifactReader)
   }
 
-  private async mountCompositionRuntime(
+  private async _mountCompositionRuntime(
     model: ReturnType<typeof createPreviewComposition>,
     artifact: ProgramArtifact<CompositionProgramPayload>,
     artifactReader: RuntimeArtifactReader,
@@ -497,7 +560,9 @@ export class RuntimePreviewInstance {
         },
       },
     }) as CompositionRuntimeHost | null
-    if (!host) { throw new Error(`[RuntimePreview] Composition "${this.target.identity}" cannot be mounted.`) }
+    if (!host) {
+      throw new Error(`[RuntimePreview] Composition "${this.target.identity}" cannot be mounted.`)
+    }
     try {
       await host.mountGraph()
     }
@@ -512,7 +577,9 @@ export class RuntimePreviewInstance {
       outputs: host.getOutputs(),
       output: <T = unknown>(name: string) => host.getOutput(name) as T | undefined,
       unmount: async () => {
-        if (!mounted) { return }
+        if (!mounted) {
+          return
+        }
         mounted = false
         await host.getScope('scope_default')?.dispose()
         await Endge.runtime.destroyRuntimeTreeAsync(host.id)
@@ -520,10 +587,12 @@ export class RuntimePreviewInstance {
     }
   }
 
-  private applyDraftStyle(style: EndgeStyleSheetArtifact | null): void {
+  private _applyDraftStyle(style: EndgeStyleSheetArtifact | null): void {
     this._draftStyleElement?.remove()
     this._draftStyleElement = null
-    if (!style || typeof document === 'undefined') { return }
+    if (!style || typeof document === 'undefined') {
+      return
+    }
     const element = document.createElement('style')
     element.dataset.endgeRuntimePreviewStyles = this.key
     element.textContent = materializeEndgeCSSForDOM([style]).css
@@ -531,17 +600,29 @@ export class RuntimePreviewInstance {
     this._draftStyleElement = element
   }
 
-  private async activateNode(node: RuntimePreviewTreeNode): Promise<void> {
-    if (node.parentId == null) { return }
-    if (!node.composition) { return }
-    const composition = await this.resolveCompositionAsync(node.composition)
-    if (node.kind === 'composition') { await composition.getScope('scope_default')?.activate() }
-    else if (node.kind === 'scope' || node.kind === 'resource') { await composition.getScope(node.scopePath ?? '')?.activate() }
-    else if (node.kind === 'runtime') { await composition.getRuntimeHandle(node.runtimePath ?? '')?.activate() }
+  private async _activateNode(node: RuntimePreviewTreeNode): Promise<void> {
+    if (node.parentId == null) {
+      return
+    }
+    if (!node.composition) {
+      return
+    }
+    const composition = await this._resolveCompositionAsync(node.composition)
+    if (node.kind === 'composition') {
+      await composition.getScope('scope_default')?.activate()
+    }
+    else if (node.kind === 'scope' || node.kind === 'resource') {
+      await composition.getScope(node.scopePath ?? '')?.activate()
+    }
+    else if (node.kind === 'runtime') {
+      await composition.getRuntimeHandle(node.runtimePath ?? '')?.activate()
+    }
   }
 
-  private async controlNode(node: RuntimePreviewTreeNode, operation: 'pause' | 'deactivate'): Promise<void> {
-    if (!node.composition || node.kind === 'resource') { return }
+  private async _controlNode(node: RuntimePreviewTreeNode, operation: 'pause' | 'deactivate'): Promise<void> {
+    if (!node.composition || node.kind === 'resource') {
+      return
+    }
     if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._project) {
       const handle = this._project.compositions.require(node.composition.rootIdentity)
       if (operation === 'pause') {
@@ -560,8 +641,10 @@ export class RuntimePreviewInstance {
       this.refresh()
       return
     }
-    const composition = this.resolveComposition(node.composition)
-    if (!composition) { return }
+    const composition = this._resolveComposition(node.composition)
+    if (!composition) {
+      return
+    }
     if (node.kind === 'scope') {
       const scope = composition.getScope(node.scopePath ?? '')
       if (operation === 'pause') {
@@ -578,7 +661,7 @@ export class RuntimePreviewInstance {
     }
     else if (node.kind === 'composition' && node.composition.invocationPath.length) {
       const parentAddress = { ...node.composition, invocationPath: node.composition.invocationPath.slice(0, -1) }
-      const parent = this.resolveComposition(parentAddress)
+      const parent = this._resolveComposition(parentAddress)
       const runtimePath = node.composition.invocationPath.at(-1) ?? ''
       const handle = parent?.getRuntimeHandle(runtimePath)
       if (operation === 'pause') {
@@ -589,7 +672,7 @@ export class RuntimePreviewInstance {
     this.refresh()
   }
 
-  private async resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost> {
+  private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost> {
     let host: CompositionRuntimeHost
     if (this._project) {
       host = (await this._project.compositions.require(address.rootIdentity).activate()).host
@@ -600,34 +683,42 @@ export class RuntimePreviewInstance {
     else { throw new Error(`[RuntimePreview] Root Composition "${address.rootIdentity}" is inactive.`) }
     for (const path of address.invocationPath) {
       const nested = await host.getRuntimeHandle(path)?.activate()
-      if (!nested || nested.entityType !== 'composition') { throw new Error(`[RuntimePreview] Nested Composition runtime "${path}" is unavailable.`) }
+      if (!nested || nested.entityType !== 'composition') {
+        throw new Error(`[RuntimePreview] Nested Composition runtime "${path}" is unavailable.`)
+      }
       host = nested as CompositionRuntimeHost
     }
     return host
   }
 
-  private resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost | null {
+  private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost | null {
     let host = this._project?.compositions.get(address.rootIdentity)?.host
       ?? (this._composition?.host.entityIdentity === address.rootIdentity ? this._composition.host : null)
-    if (!host) { return null }
+    if (!host) {
+      return null
+    }
     for (const path of address.invocationPath) {
       const nested = host.getRuntimeHandle(path)?.runtime
-      if (!nested || nested.entityType !== 'composition') { return null }
+      if (!nested || nested.entityType !== 'composition') {
+        return null
+      }
       host = nested as CompositionRuntimeHost
     }
     return host
   }
 
-  private compositionState(address: RuntimePreviewCompositionAddress): RuntimePreviewLifecycleState {
+  private _compositionState(address: RuntimePreviewCompositionAddress): RuntimePreviewLifecycleState {
     if (!address.invocationPath.length) {
-      if (this._project) { return handleState(this._project.compositions.get(address.rootIdentity)?.state) }
+      if (this._project) {
+        return handleState(this._project.compositions.get(address.rootIdentity)?.state)
+      }
       return scopeState(this._composition?.host.getScope('scope_default') ?? null)
     }
-    const parent = this.resolveComposition({ ...address, invocationPath: address.invocationPath.slice(0, -1) })
+    const parent = this._resolveComposition({ ...address, invocationPath: address.invocationPath.slice(0, -1) })
     return handleState(parent?.getRuntimeHandle(address.invocationPath.at(-1) ?? '')?.state)
   }
 
-  private refreshRenderables(): void {
+  private _refreshRenderables(): void {
     const selected = this.selectedNode.value
     if (!selected || this.status.value === 'stopped' || this.status.value === 'error' || this.status.value === 'preparing') {
       this.renderables.value = []
@@ -636,7 +727,9 @@ export class RuntimePreviewInstance {
     const runtimes: RuntimeHost<any, any>[] = []
     if (selected.kind === 'project') {
       for (const handle of this._project?.compositions.getAll() ?? []) {
-        if (handle.state === 'active' && handle.host) { runtimes.push(...this.renderableChildren(handle.host)) }
+        if (handle.state === 'active' && handle.host) {
+          runtimes.push(...this._renderableChildren(handle.host))
+        }
       }
     }
     else if (selected.kind === 'component-sfc' && this._component && isPreviewRenderableActive(this._component)) {
@@ -646,24 +739,26 @@ export class RuntimePreviewInstance {
       runtimes.push(this._store)
     }
     else if (selected.composition) {
-      const composition = this.resolveComposition(selected.composition)
+      const composition = this._resolveComposition(selected.composition)
       if (composition) {
         if (selected.kind === 'runtime') {
           const runtime = composition.getRuntimeHandle(selected.runtimePath ?? '')?.runtime
-          if (runtime?.hasCapability('renderable') && isPreviewRenderableActive(runtime)) { runtimes.push(runtime) }
+          if (runtime?.hasCapability('renderable') && isPreviewRenderableActive(runtime)) {
+            runtimes.push(runtime)
+          }
         }
         else if (selected.kind === 'composition') {
-          runtimes.push(...this.renderableChildren(composition))
+          runtimes.push(...this._renderableChildren(composition))
         }
         else if (selected.kind === 'scope') {
-          runtimes.push(...this.renderableChildren(composition, selected.scopePath))
+          runtimes.push(...this._renderableChildren(composition, selected.scopePath))
         }
       }
     }
     this.renderables.value = runtimes.map((runtime, index) => toRenderable(runtime, index))
   }
 
-  private renderableChildren(host: CompositionRuntimeHost, scopePath?: string | null): RuntimeHost<any, any>[] {
+  private _renderableChildren(host: CompositionRuntimeHost, scopePath?: string | null): RuntimeHost<any, any>[] {
     return host.getChildren()
       .filter(child => child.descriptor.kind !== 'composition')
       .filter(child => !scopePath || child.descriptor.scopePath === scopePath || child.descriptor.scopePath.startsWith(`${scopePath}.`))
@@ -671,14 +766,22 @@ export class RuntimePreviewInstance {
       .filter(runtime => runtime.hasCapability('renderable') && isPreviewRenderableActive(runtime))
   }
 
-  private collectInactiveRenderableChildren(node: RuntimePreviewTreeNode): RuntimePreviewTreeNode[] {
-    if (node.kind !== 'composition' && node.kind !== 'scope' && node.kind !== 'project') { return [] }
+  private _collectInactiveRenderableChildren(node: RuntimePreviewTreeNode): RuntimePreviewTreeNode[] {
+    if (node.kind !== 'composition' && node.kind !== 'scope' && node.kind !== 'project') {
+      return []
+    }
     const result: RuntimePreviewTreeNode[] = []
     const visit = (current: RuntimePreviewTreeNode) => {
       for (const child of current.children) {
-        if (child.kind === 'composition') { continue }
-        if (child.renderable && this.lifecycleState(child) === 'inactive') { result.push(child) }
-        if (child.kind === 'scope') { visit(child) }
+        if (child.kind === 'composition') {
+          continue
+        }
+        if (child.renderable && this.lifecycleState(child) === 'inactive') {
+          result.push(child)
+        }
+        if (child.kind === 'scope') {
+          visit(child)
+        }
       }
     }
     visit(node)
@@ -686,19 +789,25 @@ export class RuntimePreviewInstance {
   }
 
   public findNode(id: string | null): RuntimePreviewTreeNode | null {
-    if (!id) { return null }
+    if (!id) {
+      return null
+    }
     const visit = (nodes: RuntimePreviewTreeNode[]): RuntimePreviewTreeNode | null => {
       for (const node of nodes) {
-        if (node.id === id) { return node }
+        if (node.id === id) {
+          return node
+        }
         const found = visit(node.children)
-        if (found) { return found }
+        if (found) {
+          return found
+        }
       }
       return null
     }
     return visit(this.tree.value)
   }
 
-  private async disposeRuntime(): Promise<void> {
+  private async _disposeRuntime(): Promise<void> {
     const project = this._project
     const composition = this._composition
     const component = this._component
@@ -714,11 +823,21 @@ export class RuntimePreviewInstance {
     this._artifactReader = Endge.program
     this.contextualFocusComponentIdentity.value = null
     this.renderables.value = []
-    if (project) { await project.unmount().catch(() => {}) }
-    if (composition) { await composition.unmount().catch(() => {}) }
-    if (componentContext) { await destroyComponentPreviewContext(componentContext).catch(() => {}) }
-    if (component && Endge.runtime.getRuntimeById(component.id)) { await Endge.runtime.destroyRuntimeTreeAsync(component.id).catch(() => {}) }
-    if (store && Endge.runtime.getRuntimeById(store.id)) { await Endge.runtime.destroyRuntimeTreeAsync(store.id).catch(() => {}) }
+    if (project) {
+      await project.unmount().catch(() => {})
+    }
+    if (composition) {
+      await composition.unmount().catch(() => {})
+    }
+    if (componentContext) {
+      await destroyComponentPreviewContext(componentContext).catch(() => {})
+    }
+    if (component && Endge.runtime.getRuntimeById(component.id)) {
+      await Endge.runtime.destroyRuntimeTreeAsync(component.id).catch(() => {})
+    }
+    if (store && Endge.runtime.getRuntimeById(store.id)) {
+      await Endge.runtime.destroyRuntimeTreeAsync(store.id).catch(() => {})
+    }
   }
 }
 
@@ -733,20 +852,40 @@ function createOverlayArtifactReader(root: ProgramArtifact<unknown>): RuntimeArt
 }
 
 function handleState(state: string | undefined): RuntimePreviewLifecycleState {
-  if (state === 'active') { return 'active' }
-  if (state === 'paused') { return 'paused' }
-  if (state === 'disposed') { return 'disposed' }
+  if (state === 'active') {
+    return 'active'
+  }
+  if (state === 'paused') {
+    return 'paused'
+  }
+  if (state === 'disposed') {
+    return 'disposed'
+  }
   return 'inactive'
 }
 
 function scopeState(scope: { state: string } | null): RuntimePreviewLifecycleState {
-  if (!scope) { return 'inactive' }
-  if (scope.state === 'active') { return 'active' }
-  if (scope.state === 'paused') { return 'paused' }
-  if (scope.state === 'activating' || scope.state === 'resuming') { return 'activating' }
-  if (scope.state === 'pausing' || scope.state === 'deactivating') { return 'pausing' }
-  if (scope.state === 'error') { return 'error' }
-  if (scope.state === 'disposed') { return 'disposed' }
+  if (!scope) {
+    return 'inactive'
+  }
+  if (scope.state === 'active') {
+    return 'active'
+  }
+  if (scope.state === 'paused') {
+    return 'paused'
+  }
+  if (scope.state === 'activating' || scope.state === 'resuming') {
+    return 'activating'
+  }
+  if (scope.state === 'pausing' || scope.state === 'deactivating') {
+    return 'pausing'
+  }
+  if (scope.state === 'error') {
+    return 'error'
+  }
+  if (scope.state === 'disposed') {
+    return 'disposed'
+  }
   return 'inactive'
 }
 
@@ -755,7 +894,9 @@ function isPreviewRenderableActive(host: RuntimeHost<any, any>): boolean {
 }
 
 function toRenderable(runtime: RuntimeHost<any, any>, index: number): RuntimePreviewRenderable {
-  if (runtime.runtimeType === 'filter-view-runtime-host') { return { kind: 'filter-view', key: runtime.id, title: runtime.title, runtime: runtime as any } }
+  if (runtime.runtimeType === 'filter-view-runtime-host') {
+    return { kind: 'filter-view', key: runtime.id, title: runtime.title, runtime: runtime as any }
+  }
   if (runtime.entityType === 'component-sfc') {
     const component = runtime as ComponentSFCRuntimeHost
     return {
@@ -766,6 +907,8 @@ function toRenderable(runtime: RuntimeHost<any, any>, index: number): RuntimePre
       input: component.getInputSource() ?? { kind: 'local', props: {} },
     }
   }
-  if (runtime.entityType === 'store') { return { kind: 'store', key: runtime.id, title: runtime.title, runtime: runtime as StoreRuntimeHost } }
+  if (runtime.entityType === 'store') {
+    return { kind: 'store', key: runtime.id, title: runtime.title, runtime: runtime as StoreRuntimeHost }
+  }
   return { kind: 'runtime', key: `${runtime.id}:${index}`, title: runtime.title, runtime }
 }

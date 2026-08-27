@@ -98,7 +98,6 @@ function label(slotId: string): string {
 </script>
 
 <template>
-  <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div
     v-if="rows.length"
     class="template-preview-grid border rounded-lg overflow-hidden bg-muted/30"

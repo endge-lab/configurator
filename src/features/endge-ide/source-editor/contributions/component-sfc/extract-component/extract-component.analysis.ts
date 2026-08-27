@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   RComponentSFC_AST,
   RComponentSFC_AST_ElementNode,
@@ -83,12 +82,16 @@ interface DependencyAccumulator {
 
 export function analyzeExtractableSFCColumns(source: string): ExtractableSFCColumn[] {
   const parsed = parseComponentSFC(source)
-  if (!parsed.ast?.template) { return [] }
+  if (!parsed.ast?.template) {
+    return []
+  }
 
   const propTypes = readParentPropTypes(parsed.ast)
   const result: ExtractableSFCColumn[] = []
 
-  for (const root of parsed.ast.template.roots) { collectTableColumns(root, source, propTypes, result) }
+  for (const root of parsed.ast.template.roots) {
+    collectTableColumns(root, source, propTypes, result)
+  }
 
   return result
 }
@@ -104,18 +107,26 @@ function collectTableColumns(
   propTypes: Map<string, string>,
   result: ExtractableSFCColumn[],
 ): void {
-  if (node.kind !== 'element') { return }
+  if (node.kind !== 'element') {
+    return
+  }
 
   if (node.tag === 'Table') {
     for (const child of node.children) {
-      if (child.kind !== 'element' || child.tag !== 'Column') { continue }
+      if (child.kind !== 'element' || child.tag !== 'Column') {
+        continue
+      }
 
       const column = analyzeColumn(child, source, propTypes)
-      if (column) { result.push(column) }
+      if (column) {
+        result.push(column)
+      }
     }
   }
 
-  for (const child of node.children) { collectTableColumns(child, source, propTypes, result) }
+  for (const child of node.children) {
+    collectTableColumns(child, source, propTypes, result)
+  }
 }
 
 function analyzeColumn(
@@ -129,7 +140,9 @@ function analyzeColumn(
   const renderNodes = cell?.children ?? column.children
   const significantNodes = renderNodes.filter(isRenderableNode)
 
-  if (!significantNodes.length || isSoleComponentReference(significantNodes)) { return null }
+  if (!significantNodes.length || isSoleComponentReference(significantNodes)) {
+    return null
+  }
 
   const bodyRange = {
     start: significantNodes[0]!.range.start,
@@ -159,7 +172,9 @@ function findColumnActionAnchor(source: string, columnStart: number): number {
 
 function findLineEnd(source: string, start: number): number {
   const lineFeed = source.indexOf('\n', start)
-  if (lineFeed === -1) { return source.length }
+  if (lineFeed === -1) {
+    return source.length
+  }
 
   return lineFeed > start && source[lineFeed - 1] === '\r' ? lineFeed - 1 : lineFeed
 }
@@ -200,14 +215,18 @@ function isRenderableNode(node: RComponentSFC_AST_TemplateNode): boolean {
 }
 
 function isSoleComponentReference(nodes: RComponentSFC_AST_TemplateNode[]): boolean {
-  if (nodes.length !== 1 || nodes[0]?.kind !== 'element') { return false }
+  if (nodes.length !== 1 || nodes[0]?.kind !== 'element') {
+    return false
+  }
 
   return nodes[0].tag === 'Component' || !BUILT_IN_TAGS.has(nodes[0].tag)
 }
 
 function readStaticAttribute(node: RComponentSFC_AST_ElementNode, name: string): string | null {
   const attribute = node.attributes.find(item => item.name === name && !item.dynamic)
-  if (attribute?.value?.trim()) { return attribute.value.trim() }
+  if (attribute?.value?.trim()) {
+    return attribute.value.trim()
+  }
 
   if (name === 'key') {
     const directive = node.directives.find(item => item.name === 'key')
@@ -220,7 +239,9 @@ function readStaticAttribute(node: RComponentSFC_AST_ElementNode, name: string):
 function readParentPropTypes(ast: RComponentSFC_AST): Map<string, string> {
   const result = new Map<string, string>()
   const script = analyzeComponentSFCScript(ast.script)
-  for (const prop of script.props) { result.set(prop.name, prop.type || 'unknown') }
+  for (const prop of script.props) {
+    result.set(prop.name, prop.type || 'unknown')
+  }
   return result
 }
 
@@ -230,7 +251,9 @@ function collectDependencies(
 ): ExtractComponentDependency[] {
   const dependencies = new Map<string, DependencyAccumulator>()
 
-  for (const root of roots) { collectNodeDependencies(root, new Set(), dependencies, propTypes) }
+  for (const root of roots) {
+    collectNodeDependencies(root, new Set(), dependencies, propTypes)
+  }
 
   return [...dependencies.values()]
     .map(item => ({
@@ -254,22 +277,30 @@ function collectNodeDependencies(
     return
   }
 
-  if (node.kind !== 'element') { return }
+  if (node.kind !== 'element') {
+    return
+  }
 
   const childLocals = new Set(inheritedLocals)
 
   for (const attribute of node.attributes) {
-    if (attribute.dynamic && attribute.value) { addExpressionDependencies(attribute.value, inheritedLocals, dependencies, propTypes) }
+    if (attribute.dynamic && attribute.value) {
+      addExpressionDependencies(attribute.value, inheritedLocals, dependencies, propTypes)
+    }
   }
 
   for (const directive of node.directives) {
     const expression = directive.expression?.trim()
-    if (!expression) { continue }
+    if (!expression) {
+      continue
+    }
 
     if (directive.name === 'for') {
       const parsed = parseForExpression(expression)
       addExpressionDependencies(parsed.source, inheritedLocals, dependencies, propTypes)
-      for (const alias of parsed.aliases) { childLocals.add(alias) }
+      for (const alias of parsed.aliases) {
+        childLocals.add(alias)
+      }
       continue
     }
 
@@ -282,20 +313,26 @@ function collectNodeDependencies(
     )
   }
 
-  for (const child of node.children) { collectNodeDependencies(child, childLocals, dependencies, propTypes) }
+  for (const child of node.children) {
+    collectNodeDependencies(child, childLocals, dependencies, propTypes)
+  }
 }
 
 function parseForExpression(expression: string): { aliases: string[], source: string } {
   const normalized = expression.trim()
   const separator = /\s(?:in|of)\s/.exec(normalized)
-  if (!separator || separator.index <= 0) { return { aliases: [], source: expression } }
+  if (!separator || separator.index <= 0) {
+    return { aliases: [], source: expression }
+  }
 
   const aliasSource = normalized
     .slice(0, separator.index)
     .trim()
     .replace(/^\(|\)$/g, '')
   const source = normalized.slice(separator.index + separator[0].length).trim()
-  if (!source) { return { aliases: [], source: expression } }
+  if (!source) {
+    return { aliases: [], source: expression }
+  }
 
   const aliases = aliasSource
     .split(',')
@@ -314,7 +351,9 @@ function addExpressionDependencies(
 ): void {
   for (const read of collectExpressionReads(expression, inheritedLocals)) {
     const root = read.path[0]
-    if (!root || inheritedLocals.has(root) || GLOBAL_BINDINGS.has(root)) { continue }
+    if (!root || inheritedLocals.has(root) || GLOBAL_BINDINGS.has(root)) {
+      continue
+    }
 
     const isPropsObject = root === 'props' && Boolean(read.path[1])
     const propName = isPropsObject ? read.path[1]! : root
@@ -387,13 +426,17 @@ function collectExpressionReads(expression: string, inheritedLocals: Set<string>
 }
 
 function collectBindingNames(name: ts.BindingName | undefined, target: Set<string>): void {
-  if (!name) { return }
+  if (!name) {
+    return
+  }
   if (ts.isIdentifier(name)) {
     target.add(name.text)
     return
   }
   for (const element of name.elements) {
-    if (!ts.isOmittedExpression(element)) { collectBindingNames(element.name, target) }
+    if (!ts.isOmittedExpression(element)) {
+      collectBindingNames(element.name, target)
+    }
   }
 }
 
@@ -407,7 +450,9 @@ function isNestedAccessObject(node: ts.PropertyAccessExpression | ts.ElementAcce
 }
 
 function readAccessPath(node: ts.Expression): string[] {
-  if (ts.isIdentifier(node)) { return [node.text] }
+  if (ts.isIdentifier(node)) {
+    return [node.text]
+  }
 
   if (ts.isPropertyAccessExpression(node)) {
     const objectPath = readAccessPath(node.expression)
@@ -416,9 +461,13 @@ function readAccessPath(node: ts.Expression): string[] {
 
   if (ts.isElementAccessExpression(node)) {
     const objectPath = readAccessPath(node.expression)
-    if (!objectPath.length) { return [] }
+    if (!objectPath.length) {
+      return []
+    }
     const argument = node.argumentExpression
-    if (argument && (ts.isStringLiteral(argument) || ts.isNumericLiteral(argument))) { return [...objectPath, argument.text] }
+    if (argument && (ts.isStringLiteral(argument) || ts.isNumericLiteral(argument))) {
+      return [...objectPath, argument.text]
+    }
     return objectPath
   }
 
@@ -427,7 +476,9 @@ function readAccessPath(node: ts.Expression): string[] {
 
 function isIdentifierReference(node: ts.Identifier): boolean {
   const parent = node.parent
-  if (!parent) { return false }
+  if (!parent) {
+    return false
+  }
 
   if (
     ts.isBinaryExpression(parent)
@@ -440,8 +491,12 @@ function isIdentifierReference(node: ts.Identifier): boolean {
     return false
   }
 
-  if (isAccessExpression(parent) && parent.expression === node) { return false }
-  if (ts.isPropertyAccessExpression(parent) && parent.name === node) { return false }
+  if (isAccessExpression(parent) && parent.expression === node) {
+    return false
+  }
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) {
+    return false
+  }
   if (
     (ts.isPropertyAssignment(parent) || ts.isMethodDeclaration(parent) || ts.isPropertyDeclaration(parent))
     && parent.name === node
@@ -455,14 +510,18 @@ function isIdentifierReference(node: ts.Identifier): boolean {
   ) {
     return false
   }
-  if (ts.isTypeNode(parent) || ts.isImportSpecifier(parent) || ts.isImportClause(parent)) { return false }
+  if (ts.isTypeNode(parent) || ts.isImportSpecifier(parent) || ts.isImportClause(parent)) {
+    return false
+  }
 
   return true
 }
 
 function isWriteTarget(node: ts.Node): boolean {
   const parent = node.parent
-  if (!parent) { return false }
+  if (!parent) {
+    return false
+  }
 
   if (ts.isBinaryExpression(parent) && parent.left === node) {
     return parent.operatorToken.kind >= ts.SyntaxKind.FirstAssignment

@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   ProgramDiagnostic,
   TypeSourceDefinition,
@@ -38,8 +37,12 @@ export function serializeTypeSourceDocument(document: TypeSourceDocument): strin
 }
 
 export function createDefaultTypeSourceDocument(kind: TypeVisualRootKind): TypeSourceDocument {
-  if (kind === 'object') { return { definition: { kind: 'object', fields: [createDefaultTypeSourceField('field')] } } }
-  if (kind === 'enum') { return { definition: { kind: 'enum', values: ['value'] } } }
+  if (kind === 'object') {
+    return { definition: { kind: 'object', fields: [createDefaultTypeSourceField('field')] } }
+  }
+  if (kind === 'enum') {
+    return { definition: { kind: 'enum', values: ['value'] } }
+  }
   if (kind === 'union') {
     return {
       definition: {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text -- compact technical status labels */
 import type { CSSProperties } from 'vue'
 import type { DomainVersionTargetState } from '@/features/domain-version/domain/types/domain-version.type'
 
@@ -92,7 +91,7 @@ function shortVersion(value: string): string {
     <AlertTriangle v-else-if="stateKind === 'dirty'" class="size-3" />
     <LockKeyhole v-else-if="stateKind === 'locked'" class="size-3" />
     <WifiOff v-else-if="stateKind === 'error'" class="size-3" />
-    <span v-if="prefix" class="font-sans font-medium">Домен</span>
+    <span v-if="prefix" class="font-sans font-medium">{{ $t('uiText.domain98bda38e') }}</span>
     <span class="truncate">{{ label }}</span>
   </span>
 </template>

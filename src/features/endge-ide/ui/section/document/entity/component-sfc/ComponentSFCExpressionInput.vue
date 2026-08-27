@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCExpressionCompletion,
   ComponentSFCExpressionCompletionScope,
@@ -164,7 +163,7 @@ function onKeydown(event: KeyboardEvent): void {
         </button>
       </div>
       <div class="border-t px-2 pt-1.5 text-[9px] text-muted-foreground">
-        ↑↓ выбрать · Enter или Tab вставить · Esc закрыть
+        {{ $t('uiText.selectEnterOrTabInsertEscCloseacf2123e') }}
       </div>
     </PopoverContent>
   </Popover>

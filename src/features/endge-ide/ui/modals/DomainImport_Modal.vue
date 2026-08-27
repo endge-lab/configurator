@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { EndgeDomainBundle } from '@endge/core'
 import type {
   ServiceBackendDomainImportPlan,
@@ -269,11 +268,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           </div>
           <div class="space-y-1.5">
             <DialogTitle class="text-left text-lg">
-              Импорт домена
+              {{ $t('uiText.importDomain8d48204e') }}
             </DialogTitle>
             <DialogDescription class="text-left leading-5">
-              Workspace <span class="font-mono font-semibold text-foreground">{{ workspaceIdentity }}</span>
-              будет приведён к выбранному snapshot через новые ревизии. Предыдущее состояние останется доступно для отката.
+              {{ $t('uiText.workspace4ca0a75c') }} <span class="font-mono font-semibold text-foreground">{{ workspaceIdentity }}</span>
+              {{ $t('uiText.willBeAlignedWithTheSelectedSnapshotThroughNewRevisi69b88d19') }}
             </DialogDescription>
           </div>
         </div>
@@ -281,7 +280,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
       <div class="min-h-0 space-y-4 overflow-y-auto px-6 py-5">
         <section class="space-y-2">
-          <Label>Snapshot для импорта</Label>
+          <Label>{{ $t('uiText.snapshotForImportd8fe1820') }}</Label>
           <input
             ref="fileInput"
             type="file"
@@ -305,10 +304,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
             <UploadCloud v-else class="size-7 text-muted-foreground transition-colors group-hover:text-foreground" />
             <div class="space-y-1">
               <div class="text-sm font-medium">
-                {{ selectedFile ? selectedFile.name : 'Перетащите JSON сюда или выберите файл' }}
+                {{ selectedFile ? selectedFile.name : $t('uiText.dragAndDropJSONHereOrSelectAFileaf449c9f') }}
               </div>
               <div class="text-xs text-muted-foreground">
-                {{ importState === 'checking' ? 'Backend проверяет snapshot и строит план…' : selectedFile ? `${Math.max(1, Math.ceil(selectedFile.size / 1024))} КБ` : 'Принимается полный workspace-snapshot' }}
+                {{ importState === 'checking' ? $t('uiText.backendIsCheckingTheSnapshotAndBuildingThePlan3d5a4c8d') : selectedFile ? `${Math.max(1, Math.ceil(selectedFile.size / 1024))} КБ` : 'Принимается полный workspace-snapshot' }}
               </div>
             </div>
           </button>
@@ -318,56 +317,56 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           <div class="grid grid-cols-2 divide-x border-b bg-muted/25 sm:grid-cols-4">
             <div class="px-3 py-2.5">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Будет создано
+                {{ $t('uiText.willBeCreated70f66afa') }}
               </div>
               <div class="mt-1 text-sm font-semibold">
-                {{ plan.creates }} документов
+                {{ plan.creates }} {{ $t('uiText.documents61c54621') }}
               </div>
             </div>
             <div class="px-3 py-2.5">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Будет обновлено
+                {{ $t('uiText.willBeUpdated49b628a4') }}
               </div>
               <div class="mt-1 text-sm font-semibold">
-                {{ plan.updates }} документов
+                {{ plan.updates }} {{ $t('uiText.documents61c54621') }}
               </div>
             </div>
             <div class="border-t px-3 py-2.5 sm:border-t-0">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Восстановится
+                {{ $t('uiText.willBeRestored5e8fee98') }}
               </div>
               <div class="mt-1 text-sm font-semibold">
-                {{ plan.restores }} документов
+                {{ plan.restores }} {{ $t('uiText.documents61c54621') }}
               </div>
             </div>
             <div class="border-t px-3 py-2.5 sm:border-t-0">
               <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Будет скрыто
+                {{ $t('uiText.willBeHidden453e86b8') }}
               </div>
               <div class="mt-1 text-sm font-semibold" :class="plan.deletes > 0 ? 'text-amber-700 dark:text-amber-300' : ''">
-                {{ plan.deletes }} документов
+                {{ plan.deletes }} {{ $t('uiText.documents61c54621') }}
               </div>
             </div>
           </div>
 
           <div v-if="plan.validationErrors.length" class="space-y-1.5 bg-destructive/[0.04] px-4 py-3 text-xs text-destructive">
             <div class="font-semibold">
-              Файл не прошёл проверку:
+              {{ $t('uiText.fileFailedValidation45e6f4e1') }}
             </div>
             <div v-for="item in plan.validationErrors" :key="item">
-              • {{ item }}
+              {{ $t('uiText.symbolEcf727ea') }} {{ item }}
             </div>
           </div>
           <div v-else-if="plan.warnings.length" class="space-y-1.5 bg-amber-500/[0.07] px-4 py-3 text-xs text-amber-800 dark:text-amber-300">
             <div v-for="item in plan.warnings" :key="item">
-              • {{ item }}
+              {{ $t('uiText.symbolEcf727ea') }} {{ item }}
             </div>
           </div>
         </section>
 
         <section v-if="plan?.valid" class="space-y-2 rounded-md border bg-muted/20 p-4">
           <Label for="domain-import-confirmation" class="text-sm">
-            Для подтверждения введите identity workspace:
+            {{ $t('uiText.toConfirmEnterIdentityWorkspace0ddea61e') }}
             <span class="font-mono font-semibold">{{ workspaceIdentity }}</span>
           </Label>
           <Input
@@ -387,17 +386,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
       <DialogFooter class="border-t bg-muted/15 px-6 py-4 sm:justify-between">
         <div class="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
           <ArchiveRestore class="size-3.5" />
-          Импорт создаст новый commit; предыдущую версию можно восстановить
+          {{ $t('uiText.importWillCreateANewCommitThePreviousVersionCanBeRes06b44da2') }}
         </div>
         <div class="flex justify-end gap-2">
           <Button variant="outline" :disabled="importState === 'importing' || importState === 'reloading'" @click="setOpen(false)">
-            Отмена
+            {{ $t('uiText.cancel0ec753be') }}
           </Button>
           <Button :disabled="!canImport" @click="applyImport">
             <Loader2 v-if="importState === 'importing' || importState === 'reloading'" class="size-4 animate-spin" />
-            <span v-if="importState === 'importing'">Импортируем…</span>
-            <span v-else-if="importState === 'reloading'">Обновляем домен…</span>
-            <span v-else>Импортировать домен</span>
+            <span v-if="importState === 'importing'">{{ $t('uiText.importing8a9a40b9') }}</span>
+            <span v-else-if="importState === 'reloading'">{{ $t('uiText.updatingDomainff13b477') }}</span>
+            <span v-else>{{ $t('uiText.importDomain450d1ae3') }}</span>
           </Button>
         </div>
       </DialogFooter>

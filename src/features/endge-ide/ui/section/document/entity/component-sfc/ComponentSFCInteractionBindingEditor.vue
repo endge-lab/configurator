@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCInteractionKeyboardCondition,
   ComponentSFCInteractionTriggerHeldKeys,
@@ -643,7 +642,7 @@ function splitList(value: string): string[] {
         />
       </div>
       <div v-else class="px-1 text-xs font-medium text-muted-foreground">
-        Клавиатурное условие
+        {{ $t('uiText.keyboardConditionc45b562c') }}
       </div>
 
       <button
@@ -654,17 +653,17 @@ function splitList(value: string): string[] {
         @click="startRecording"
       >
         <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-          <span v-if="!summaryTokens.length" class="text-xs text-muted-foreground">Без условий</span>
+          <span v-if="!summaryTokens.length" class="text-xs text-muted-foreground">{{ $t('uiText.noConditionse0bc717e') }}</span>
           <code v-for="token in summaryTokens" :key="token" class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground">
             {{ token }}
           </code>
         </span>
-        <span class="shrink-0 text-[10px] text-muted-foreground">{{ summaryTokens.length ? 'Перезаписать' : 'Записать' }}</span>
+        <span class="shrink-0 text-[10px] text-muted-foreground">{{ summaryTokens.length ? $t('uiText.rewrite621ab9c3') : $t('uiText.record4be73032') }}</span>
       </button>
 
       <div class="flex items-center justify-end gap-1">
         <Button v-if="hasReaction" type="button" variant="ghost" size="sm" class="h-8 px-2 text-[11px]" @click="expanded = true">
-          Reaction
+          {{ $t('uiText.reactionf996ddc3') }}
         </Button>
         <slot name="actions" />
         <Button type="button" variant="ghost" size="icon" class="size-8 text-muted-foreground" :aria-label="expanded ? 'Свернуть условия' : 'Раскрыть условия'" @click="expanded = !expanded">
@@ -694,12 +693,12 @@ function splitList(value: string): string[] {
                   <span class="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-60" />
                   <span class="relative inline-flex size-2 rounded-full bg-destructive" />
                 </span>
-                Идёт запись
+                {{ $t('uiText.recordingInProgress69087bd9') }}
               </div>
               <p class="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                 {{ isTriggerMode
                   ? `Удерживайте нужные клавиши и выполните ${triggerDraft.event} в этой области. Комбинация применится сразу.`
-                  : 'Зажмите нужные клавиши и отпустите любую из них. Условие применится сразу.' }}
+                  : $t('uiText.pressTheRequiredKeysAndReleaseAnyOfThemTheConditionWb5424b87') }}
               </p>
             </div>
             <Button type="button" variant="ghost" size="icon" class="size-7 text-muted-foreground" aria-label="Отменить запись" @click.stop="cancelRecording">
@@ -707,7 +706,7 @@ function splitList(value: string): string[] {
             </Button>
           </div>
           <div class="mt-3 flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-border/60 bg-background/45 px-3 py-2">
-            <span v-if="!recordingTokens().length" class="text-xs text-muted-foreground">Ожидаю комбинацию…</span>
+            <span v-if="!recordingTokens().length" class="text-xs text-muted-foreground">{{ $t('uiText.waitingForCombinationcb074be3') }}</span>
             <code v-for="token in recordingTokens()" :key="token" class="rounded-md border border-border/60 bg-background px-2 py-1 text-xs font-semibold shadow-xs">
               {{ token }}
             </code>
@@ -716,27 +715,27 @@ function splitList(value: string): string[] {
 
         <div v-else class="flex flex-wrap items-center justify-between gap-2">
           <div class="text-xs text-muted-foreground">
-            {{ summaryTokens.length ? `Настроено: ${summaryTokens.join(' + ')}` : 'Ограничивающая комбинация не задана.' }}
+            {{ summaryTokens.length ? `Настроено: ${summaryTokens.join(' + ')}` : $t('uiText.limitingCombinationNotSet178555a6') }}
           </div>
           <Button type="button" variant="outline" size="sm" class="h-8 gap-1.5" :disabled="!canRecord" @click="startRecording">
             <CircleDot class="size-3.5" />
-            {{ summaryTokens.length ? 'Перезаписать' : 'Записать комбинацию' }}
+            {{ summaryTokens.length ? $t('uiText.rewrite621ab9c3') : $t('uiText.recordCombinationa6cc1078') }}
           </Button>
         </div>
 
         <TooltipProvider :delay-duration="160">
           <details class="rounded-md border border-border/60 px-3 py-2">
             <summary class="cursor-pointer text-xs font-medium text-muted-foreground" title="Ручная настройка точных условий события">
-              Advanced conditions{{ advancedCount ? ` · ${advancedCount}` : '' }}
+              {{ $t('uiText.advancedConditionsc53a2d87') }}{{ advancedCount ? ` · ${advancedCount}` : undefined }}
             </summary>
             <div class="mt-3 space-y-3">
               <div class="space-y-1.5">
                 <Tooltip>
                   <TooltipTrigger as-child>
-                    <Label class="w-fit cursor-help font-mono text-xs">modifiers</Label>
+                    <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.modifiers3dcdbf0f') }}</Label>
                   </TooltipTrigger>
                   <TooltipContent class="max-w-80 leading-relaxed">
-                    Условия на клавиши-модификаторы. Повторный клик переключает значение true → false → не задано.
+                    {{ $t('uiText.modifierKeyConditionsEachClickCyclesTheValueTrueFals4a352964') }}
                   </TooltipContent>
                 </Tooltip>
                 <div class="flex min-h-9 flex-wrap items-center gap-1 rounded-md border border-border/70 p-1">
@@ -766,10 +765,10 @@ function splitList(value: string): string[] {
                 <div class="space-y-1.5">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Label class="w-fit cursor-help font-mono text-xs">held.code</Label>
+                      <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.heldCodeaa0d8751') }}</Label>
                     </TooltipTrigger>
                     <TooltipContent class="max-w-80 leading-relaxed">
-                      Физические коды клавиш, которые должны быть удержаны, например KeyW или Enter.
+                      {{ $t('uiText.physicalKeyCodesThatShouldBeHeldEGKeyWOrEnter7b5b14e5') }}
                     </TooltipContent>
                   </Tooltip>
                   <Input class="editor-control font-mono text-xs" :disabled="disabled" :model-value="currentHeld()?.code?.join(', ') ?? ''" placeholder="KeyW, KeyE" @change="updateHeldList('code', ($event.target as HTMLInputElement).value)" />
@@ -777,10 +776,10 @@ function splitList(value: string): string[] {
                 <div class="space-y-1.5">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Label class="w-fit cursor-help font-mono text-xs">held.key</Label>
+                      <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.heldKey80969168') }}</Label>
                     </TooltipTrigger>
                     <TooltipContent class="max-w-80 leading-relaxed">
-                      Значения KeyboardEvent.key, которые должны быть удержаны; зависят от раскладки клавиатуры.
+                      {{ $t('uiText.valuesOfKeyboardEventKeyThatShouldBeHeldDependOnKeyb0e93eb74') }}
                     </TooltipContent>
                   </Tooltip>
                   <Input class="editor-control font-mono text-xs" :disabled="disabled" :model-value="currentHeld()?.key?.join(', ') ?? ''" placeholder="w, e" @change="updateHeldList('key', ($event.target as HTMLInputElement).value)" />
@@ -788,10 +787,10 @@ function splitList(value: string): string[] {
                 <div v-if="currentHeld()" class="space-y-1.5">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Label class="w-fit cursor-help font-mono text-xs">held.match</Label>
+                      <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.heldMatch670d7083') }}</Label>
                     </TooltipTrigger>
                     <TooltipContent class="max-w-80 leading-relaxed">
-                      all требует удержания всех перечисленных клавиш; any — хотя бы одной.
+                      {{ $t('uiText.allRequiresHoldingAllListedKeysAnyAtLeastOne088f0231') }}
                     </TooltipContent>
                   </Tooltip>
                   <div class="flex gap-1">
@@ -801,20 +800,20 @@ function splitList(value: string): string[] {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">
-                          all
+                          {{ $t('uiText.alld87c4480') }}
                         </SelectItem><SelectItem value="any">
-                          any
+                          {{ $t('uiText.anyc5fe0200') }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
                     <Tooltip>
                       <TooltipTrigger as-child>
                         <Button type="button" variant="outline" size="sm" class="h-9 px-2 font-mono text-[11px]" :class="currentHeld()?.exact ? 'border-primary/50 bg-primary/8 text-primary' : 'text-muted-foreground'" :disabled="disabled" @click="toggleHeldExact">
-                          exact
+                          {{ $t('uiText.exactb55e22fe') }}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Запрещает дополнительные удерживаемые клавиши, которых нет в held.key или held.code.
+                        {{ $t('uiText.preventsAdditionalHeldKeysNotPresentInHeldKeyOrHeldC7bae02e9') }}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -826,10 +825,10 @@ function splitList(value: string): string[] {
                   <div class="space-y-1.5">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Label class="w-fit cursor-help font-mono text-xs">key</Label>
+                        <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.keya62f2225') }}</Label>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Допустимые значения KeyboardEvent.key для самого события; зависят от раскладки.
+                        {{ $t('uiText.allowedValuesOfKeyboardEventKeyForTheEventDependOnKe3602550f') }}
                       </TooltipContent>
                     </Tooltip>
                     <Input class="editor-control font-mono text-xs" :disabled="disabled" :model-value="triggerDraft.key.join(', ')" placeholder="Enter, Escape" @change="updateTriggerList('key', ($event.target as HTMLInputElement).value)" />
@@ -837,10 +836,10 @@ function splitList(value: string): string[] {
                   <div class="space-y-1.5">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Label class="w-fit cursor-help font-mono text-xs">code</Label>
+                        <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.codee6fb0621') }}</Label>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Допустимые физические KeyboardEvent.code для самого события; не зависят от раскладки.
+                        {{ $t('uiText.allowedPhysicalKeyboardEventCodeForTheEventDoNotDepeae985b58') }}
                       </TooltipContent>
                     </Tooltip>
                     <Input class="editor-control font-mono text-xs" :disabled="disabled" :model-value="triggerDraft.code.join(', ')" placeholder="Enter, Space" @change="updateTriggerList('code', ($event.target as HTMLInputElement).value)" />
@@ -851,10 +850,10 @@ function splitList(value: string): string[] {
                   <div v-if="isPointerTrigger || triggerDraft.button != null" class="space-y-1.5">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Label class="w-fit cursor-help font-mono text-xs">button</Label>
+                        <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.button7b7fcc78') }}</Label>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Значение MouseEvent.button: 0 — основная, 1 — средняя, 2 — вторичная кнопка.
+                        {{ $t('uiText.valueOfMouseEventButton0Primary1Middle2SecondaryButtd0f7e855') }}
                       </TooltipContent>
                     </Tooltip>
                     <Input class="editor-control font-mono text-xs" type="number" min="0" max="4" :disabled="disabled" :model-value="triggerDraft.button ?? ''" placeholder="any" @change="updateButton(($event.target as HTMLInputElement).value)" />
@@ -862,10 +861,10 @@ function splitList(value: string): string[] {
                   <div v-if="isKeyboardTrigger || triggerDraft.repeat != null" class="space-y-1.5">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Label class="w-fit cursor-help font-mono text-xs">repeat</Label>
+                        <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.repeatc0ac4842') }}</Label>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Фильтр по KeyboardEvent.repeat: true — автоповтор, false — первое нажатие, any — без фильтра.
+                        {{ $t('uiText.filterByKeyboardEventRepeatTrueRepeatFalseFirstPressc988f5a0') }}
                       </TooltipContent>
                     </Tooltip>
                     <Select :model-value="triggerDraft.repeat == null ? 'any' : String(triggerDraft.repeat)" :disabled="disabled" @update:model-value="updateNullableBoolean('repeat', $event)">
@@ -874,11 +873,11 @@ function splitList(value: string): string[] {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">
-                          any
+                          {{ $t('uiText.anyc5fe0200') }}
                         </SelectItem><SelectItem value="true">
-                          true
+                          {{ $t('uiText.true5ffe533b') }}
                         </SelectItem><SelectItem value="false">
-                          false
+                          {{ $t('uiText.false7cb6efb9') }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -886,10 +885,10 @@ function splitList(value: string): string[] {
                   <div v-if="isKeyboardTrigger || triggerDraft.composing != null" class="space-y-1.5">
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Label class="w-fit cursor-help font-mono text-xs">composing</Label>
+                        <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.composingb8ac4598') }}</Label>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 leading-relaxed">
-                        Фильтр по состоянию IME composition: true — во время составного ввода, false — вне него, any — без фильтра.
+                        {{ $t('uiText.filterByIMECompositionStateTrueDuringCompositionFals60e962a6') }}
                       </TooltipContent>
                     </Tooltip>
                     <Select :model-value="triggerDraft.composing == null ? 'any' : String(triggerDraft.composing)" :disabled="disabled" @update:model-value="updateNullableBoolean('composing', $event)">
@@ -898,11 +897,11 @@ function splitList(value: string): string[] {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">
-                          any
+                          {{ $t('uiText.anyc5fe0200') }}
                         </SelectItem><SelectItem value="true">
-                          true
+                          {{ $t('uiText.true5ffe533b') }}
                         </SelectItem><SelectItem value="false">
-                          false
+                          {{ $t('uiText.false7cb6efb9') }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -912,10 +911,10 @@ function splitList(value: string): string[] {
                 <div class="space-y-1.5">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Label class="w-fit cursor-help font-mono text-xs">flags</Label>
+                      <Label class="w-fit cursor-help font-mono text-xs">{{ $t('uiText.flagsc16186ba') }}</Label>
                     </TooltipTrigger>
                     <TooltipContent class="max-w-80 leading-relaxed">
-                      Модификаторы поведения DOM-события. Их имена совпадают с Source-контрактом.
+                      {{ $t('uiText.modifiersOfDOMEventBehaviorTheirNamesMatchTheSourceC3e0b4f28') }}
                     </TooltipContent>
                   </Tooltip>
                   <div class="flex flex-wrap gap-1">

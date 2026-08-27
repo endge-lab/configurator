@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { EndgeConfiguration, EndgeDataMode } from '@endge/core'
 
 import { Endge } from '@endge/core'
@@ -91,7 +90,7 @@ function resolveWorkspaceDocumentId(): string | null {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -104,18 +103,18 @@ function resolveWorkspaceDocumentId(): string | null {
             <DocumentIdField :document-id="workspaceDocumentId" />
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <Label for="workspace-identity">Identity</Label>
+                <Label for="workspace-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
                 <DocumentIdentityInput id="workspace-identity" :model-value="workspaceIdentity" disabled />
               </div>
               <div class="space-y-2">
-                <Label for="workspace-display-name">Название</Label>
+                <Label for="workspace-display-name">{{ $t('uiText.name3de49828') }}</Label>
                 <Input id="workspace-display-name" :model-value="workspaceDisplayName" disabled />
               </div>
             </div>
             <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">
               <div class="flex min-w-0 items-center gap-1.5">
                 <p class="text-sm font-medium text-foreground">
-                  Mock-данные по умолчанию
+                  {{ $t('uiText.defaultMockDataca5eb787') }}
                 </p>
                 <TooltipProvider :delay-duration="200">
                   <Tooltip>
@@ -131,7 +130,7 @@ function resolveWorkspaceDocumentId(): string | null {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top" class="max-w-80 text-xs leading-5">
-                      Режим по умолчанию для runtime-приложений. При включении внешние Query не выполняются, а Store использует RMock. Локальное переопределение конфигуратора имеет приоритет.
+                      {{ $t('uiText.defaultModeForRuntimeApplicationsWhenEnabledExternal0cadcba0') }}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

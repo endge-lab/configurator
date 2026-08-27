@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { ArrowLeft, LogIn, ShieldAlert } from 'lucide-vue-next'
 
 import { Configurator } from '@/app/model/kernel/configurator'
@@ -29,7 +28,7 @@ function switchToPrimary(): void {
           <ShieldAlert class="size-5" />
         </span>
         <h1 id="authentication-required-title" class="text-2xl font-semibold tracking-tight">
-          Требуется авторизация
+          {{ $t('uiText.authorizationRequireda58edbd2') }}
         </h1>
       </header>
 
@@ -47,7 +46,7 @@ function switchToPrimary(): void {
           @click="switchToPrimary"
         >
           <ArrowLeft class="size-4" />
-          Перейти на основной
+          {{ $t('uiText.goToMain24ba8bde') }}
         </button>
         <button
           type="button"
@@ -55,7 +54,7 @@ function switchToPrimary(): void {
           @click="retryAuthentication"
         >
           <LogIn class="size-4" />
-          Войти снова
+          {{ $t('uiText.signInAgain38da8ba3') }}
         </button>
       </footer>
     </section>

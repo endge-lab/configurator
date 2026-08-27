@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { ExtractTypeDialogInput, ExtractTypeDialogResult } from './extract-type.types'
 
 import { Braces, FolderTree } from 'lucide-vue-next'
@@ -69,9 +68,9 @@ function submit(): void {
             <Braces class="size-4 text-blue-500" />
           </div>
           <div class="min-w-0 space-y-1">
-            <DialogTitle>Выделить в RType</DialogTitle>
+            <DialogTitle>{{ $t('uiText.highlightInRType1adcfe28') }}</DialogTitle>
             <p class="text-sm text-muted-foreground">
-              Будет создано RType-документов: {{ input.items.length }}. Локальные объявления будут удалены из компонента.
+              {{ $t('uiText.numberOfRTypeDocumentsToBeCreatede530f8d0') }} {{ input.items.length }}{{ $t('uiText.localDeclarationsWillBeRemovedFromTheComponent7ca88079') }}
             </p>
           </div>
         </div>
@@ -81,13 +80,13 @@ function submit(): void {
         <div class="space-y-2">
           <Label class="flex items-center gap-2">
             <FolderTree class="size-4 text-amber-500" />
-            Папка типов
+            {{ $t('uiText.typeFolder269aee5e') }}
           </Label>
           <Select v-model="folder">
             <SelectTrigger><SelectValue placeholder="Корень типов" /></SelectTrigger>
             <SelectContent>
               <SelectItem :value="ROOT_FOLDER_VALUE">
-                Корень типов
+                {{ $t('uiText.typeRooteed2da74') }}
               </SelectItem>
               <SelectItem v-for="option in input.folderOptions" :key="option.id" :value="option.id">
                 {{ option.path }}
@@ -107,7 +106,7 @@ function submit(): void {
               >
                 {{ item.declaration.identity }}
                 <span v-if="item.declaration.identity === input.rootIdentity" class="ml-1 font-sans text-xs text-muted-foreground">
-                  root
+                  {{ $t('uiText.rootdc76e9f0') }}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -121,7 +120,7 @@ function submit(): void {
           >
             <div class="space-y-4">
               <div class="space-y-2">
-                <Label :for="`extract-type-identity-${item.declaration.identity}`">Identity</Label>
+                <Label :for="`extract-type-identity-${item.declaration.identity}`">{{ $t('uiText.identity7e5a975b') }}</Label>
                 <Input
                   :id="`extract-type-identity-${item.declaration.identity}`"
                   :model-value="item.declaration.identity"
@@ -130,7 +129,7 @@ function submit(): void {
                 />
               </div>
               <div class="space-y-2">
-                <Label :for="`extract-type-name-${item.declaration.identity}`">Название</Label>
+                <Label :for="`extract-type-name-${item.declaration.identity}`">{{ $t('uiText.name3de49828') }}</Label>
                 <Input
                   :id="`extract-type-name-${item.declaration.identity}`"
                   v-model="names[item.declaration.identity]"
@@ -138,7 +137,7 @@ function submit(): void {
               </div>
               <div class="min-w-0 overflow-hidden rounded-lg border bg-muted/20">
                 <div class="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-                  Original TypeScript
+                  {{ $t('uiText.originalTypeScriptf5cc2fee') }}
                 </div>
                 <pre class="max-h-[190px] overflow-auto whitespace-pre-wrap p-3 font-mono text-xs leading-5">{{ item.declaration.source }}</pre>
               </div>
@@ -146,7 +145,7 @@ function submit(): void {
 
             <div class="min-w-0 overflow-hidden rounded-lg border bg-muted/20">
               <div class="border-b px-3 py-2.5 text-sm font-medium">
-                Generated Type Source
+                {{ $t('uiText.generatedTypeSource447f171e') }}
               </div>
               <pre class="max-h-[330px] overflow-auto whitespace-pre-wrap p-3 font-mono text-xs leading-5">{{ item.sourcePreview }}</pre>
             </div>
@@ -156,10 +155,10 @@ function submit(): void {
 
       <DialogFooter class="border-t bg-muted/20 px-6 py-4">
         <Button type="button" variant="ghost" @click="emit('cancel')">
-          Отмена
+          {{ $t('uiText.cancel0ec753be') }}
         </Button>
         <Button type="button" :disabled="!valid" @click="submit">
-          Создать {{ input.items.length }} RType
+          {{ $t('uiText.create84370a20') }} {{ input.items.length }} {{ $t('uiText.rtype12d6baba') }}
         </Button>
       </DialogFooter>
     </DialogContent>

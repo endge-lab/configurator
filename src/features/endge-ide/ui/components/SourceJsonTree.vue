@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import type { LazyJsonNodeDescriptor, LazyJsonValueNode } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
 
 import { Braces, Copy, KeyRound } from 'lucide-vue-next'
@@ -92,12 +91,16 @@ function collapseAll(): void {
 }
 
 function closeContextMenu(open: boolean): void {
-  if (!open) { contextNode.value = null }
+  if (!open) {
+    contextNode.value = null
+  }
 }
 
 async function copyContextNode(mode: 'key' | 'value' | 'entry'): Promise<void> {
   const node = contextNode.value
-  if (!node) { return }
+  if (!node) {
+    return
+  }
 
   try {
     const value = copyableNodeValue(node)
@@ -115,27 +118,43 @@ async function copyContextNode(mode: 'key' | 'value' | 'entry'): Promise<void> {
 }
 
 function copyableNodeValue(node: LazyJsonNodeDescriptor): unknown {
-  if (node.kind === 'value') { return node.value }
+  if (node.kind === 'value') {
+    return node.value
+  }
   const source = node.source
-  if (Array.isArray(source)) { return source.slice(node.start, node.end) }
+  if (Array.isArray(source)) {
+    return source.slice(node.start, node.end)
+  }
 
   const keys = (node.keys ?? Object.keys(source)).slice(node.start, node.end)
   return Object.fromEntries(keys.map(key => [key, source[key]]))
 }
 
 function serializeClipboardValue(value: unknown, quoteStrings: boolean): string {
-  if (typeof value === 'string') { return quoteStrings ? JSON.stringify(value) : value }
-  if (value instanceof Date) { return quoteStrings ? JSON.stringify(value.toISOString()) : value.toISOString() }
-  if (value === undefined) { return 'undefined' }
-  if (typeof value === 'bigint') { return `${value}n` }
-  if (typeof value === 'function' || typeof value === 'symbol') { return String(value) }
+  if (typeof value === 'string') {
+    return quoteStrings ? JSON.stringify(value) : value
+  }
+  if (value instanceof Date) {
+    return quoteStrings ? JSON.stringify(value.toISOString()) : value.toISOString()
+  }
+  if (value === undefined) {
+    return 'undefined'
+  }
+  if (typeof value === 'bigint') {
+    return `${value}n`
+  }
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    return String(value)
+  }
 
   const serialized = JSON.stringify(value, null, 2)
   return serialized ?? String(value)
 }
 
 function normalizeRootValue(value: unknown): unknown {
-  if (typeof value === 'symbol' || typeof value === 'function') { return String(value) }
+  if (typeof value === 'symbol' || typeof value === 'function') {
+    return String(value)
+  }
   return value
 }
 

@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { CompositionPreviewLiteral, CompositionPreviewPropValue, CompositionProgramPayload } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
@@ -81,7 +80,9 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
       }
 
       const scheduleRefresh = (): void => {
-        if (refreshTimer) { clearTimeout(refreshTimer) }
+        if (refreshTimer) {
+          clearTimeout(refreshTimer)
+        }
         refreshTimer = setTimeout(() => {
           refreshTimer = null
           refresh()
@@ -91,7 +92,9 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
       const mouseListener = editor.onMouseDown((event) => {
         const injectedText = (event.target as unknown as MonacoInjectedTextMouseTarget).detail?.injectedText
         const actionData = injectedText?.options?.attachedData
-        if (!isGenerateRuntimePropsActionData(actionData)) { return }
+        if (!isGenerateRuntimePropsActionData(actionData)) {
+          return
+        }
 
         event.event.preventDefault()
         event.event.stopPropagation()
@@ -101,7 +104,9 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
 
       return {
         dispose() {
-          if (refreshTimer) { clearTimeout(refreshTimer) }
+          if (refreshTimer) {
+            clearTimeout(refreshTimer)
+          }
           contentListener.dispose()
           mouseListener.dispose()
           decorations.clear()
@@ -161,17 +166,25 @@ function compileOwner(source: string): CompositionProgramPayload | null {
 
 function resolveCompositionContract(identity: string): CompositionRuntimePropsContract | null {
   const compiled = Endge.program.getCompositionArtifact(identity)?.payload
-  if (compiled) { return compiled }
+  if (compiled) {
+    return compiled
+  }
 
   const model = Endge.domain.getComposition(identity)
-  if (!model) { return null }
+  if (!model) {
+    return null
+  }
 
   return compileOwner(String(model.source ?? ''))
 }
 
 function materializePreviewValue(value: CompositionPreviewPropValue): CompositionPreviewLiteral | undefined {
-  if (value.kind === 'literal') { return value.value }
-  if (!Endge.mock.has(value.identity)) { return undefined }
+  if (value.kind === 'literal') {
+    return value.value
+  }
+  if (!Endge.mock.has(value.identity)) {
+    return undefined
+  }
 
   try {
     return Endge.mock.get<CompositionPreviewLiteral>(value.identity)
@@ -196,7 +209,9 @@ function markerRange(
 }
 
 function isGenerateRuntimePropsActionData(value: unknown): value is GenerateRuntimePropsActionData {
-  if (!value || typeof value !== 'object') { return false }
+  if (!value || typeof value !== 'object') {
+    return false
+  }
   const candidate = value as Partial<GenerateRuntimePropsActionData>
   return candidate.kind === ACTION_DATA_KIND
     && typeof candidate.runtimePath === 'string'

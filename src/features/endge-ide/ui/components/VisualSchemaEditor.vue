@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type {
   TypeSourceDefinition,
   TypeSourceDocument,
@@ -85,10 +84,18 @@ const SPLIT_KEYBOARD_STEP = 0.02
 const definition = computed(() => props.document?.definition ?? null)
 const definitionItemCount = computed(() => {
   const current = definition.value
-  if (!current) { return 0 }
-  if (current.kind === 'object') { return current.fields.length }
-  if (current.kind === 'enum') { return current.values.length }
-  if (current.kind === 'union') { return current.variants.length }
+  if (!current) {
+    return 0
+  }
+  if (current.kind === 'object') {
+    return current.fields.length
+  }
+  if (current.kind === 'enum') {
+    return current.values.length
+  }
+  if (current.kind === 'union') {
+    return current.variants.length
+  }
   return 1
 })
 const typeMap = computed(() => new Map(props.types.map(type => [type.identity, type])))
@@ -141,13 +148,17 @@ watch(
 )
 
 const objectRows = computed<TypeVisualRow[]>(() => {
-  if (definition.value?.kind !== 'object') { return [] }
+  if (definition.value?.kind !== 'object') {
+    return []
+  }
 
   const rows: TypeVisualRow[] = []
   const cache = new Map<string, TypeSourceDefinition | null>()
 
   const resolveDefinition = (identity: string): TypeSourceDefinition | null => {
-    if (cache.has(identity)) { return cache.get(identity) ?? null }
+    if (cache.has(identity)) {
+      return cache.get(identity) ?? null
+    }
     const option = typeMap.value.get(identity)
     if (!option?.source?.trim()) {
       cache.set(identity, null)
@@ -182,7 +193,9 @@ const objectRows = computed<TypeVisualRow[]>(() => {
       rows.push({ id, depth, field, fieldPath, local, ownerIdentity, hasChildren, cycle })
 
       const expanded = hasChildren && !cycle && !collapsedIds.value.has(id)
-      if (!expanded || targetDefinition?.kind !== 'object') { return }
+      if (!expanded || targetDefinition?.kind !== 'object') {
+        return
+      }
 
       const nestedLocal = local && field.type.kind === 'object'
       const nestedOwnerIdentity = referenceIdentity ?? ownerIdentity
@@ -216,7 +229,9 @@ const warningDiagnostics = computed(() => (props.diagnostics ?? []).filter(item 
 const exampleJson = computed(() => JSON.stringify(buildRootExample(definition.value, new Set([props.identity])), null, 2))
 
 watch(objectRows, (rows) => {
-  if (selectedRowId.value && rows.some(row => row.id === selectedRowId.value)) { return }
+  if (selectedRowId.value && rows.some(row => row.id === selectedRowId.value)) {
+    return
+  }
   selectedRowId.value = rows.find(row => row.local)?.id ?? rows[0]?.id ?? null
 }, { immediate: true })
 
@@ -225,7 +240,9 @@ function emitDocument(document: TypeSourceDocument): void {
 }
 
 function mutateDocument(mutate: (document: TypeSourceDocument) => void): void {
-  if (!props.document || props.readonly) { return }
+  if (!props.document || props.readonly) {
+    return
+  }
   const next = cloneTypeSourceDocument(props.document)
   mutate(next)
   emitDocument(next)
@@ -243,23 +260,31 @@ function getUniqueFieldName(fields: TypeSourceField[], base = 'field'): string {
 
 function createDefaultField(key: string): TypeSourceField {
   const field = createDefaultTypeSourceField(key)
-  if (props.defaultTypeIdentity) { field.type = { kind: 'reference', identity: props.defaultTypeIdentity } }
+  if (props.defaultTypeIdentity) {
+    field.type = { kind: 'reference', identity: props.defaultTypeIdentity }
+  }
   return field
 }
 
 function getObjectFields(document: TypeSourceDocument, parentPath: number[]): TypeSourceField[] | null {
-  if (document.definition.kind !== 'object') { return null }
+  if (document.definition.kind !== 'object') {
+    return null
+  }
   let fields = document.definition.fields
   for (const index of parentPath) {
     const field = fields[index]
-    if (field?.type.kind !== 'object') { return null }
+    if (field?.type.kind !== 'object') {
+      return null
+    }
     fields = field.type.fields
   }
   return fields
 }
 
 function getObjectField(document: TypeSourceDocument, fieldPath: number[]): TypeSourceField | null {
-  if (fieldPath.length === 0) { return null }
+  if (fieldPath.length === 0) {
+    return null
+  }
   const fields = getObjectFields(document, fieldPath.slice(0, -1))
   return fields?.[fieldPath.at(-1)!] ?? null
 }
@@ -267,7 +292,9 @@ function getObjectField(document: TypeSourceDocument, fieldPath: number[]): Type
 function addObjectField(parentPath: number[] = [], afterIndex?: number): void {
   mutateDocument((document) => {
     const fields = getObjectFields(document, parentPath)
-    if (!fields) { return }
+    if (!fields) {
+      return
+    }
     const key = getUniqueFieldName(fields)
     const index = afterIndex == null ? fields.length : afterIndex + 1
     fields.splice(index, 0, createDefaultField(key))
@@ -275,27 +302,41 @@ function addObjectField(parentPath: number[] = [], afterIndex?: number): void {
 }
 
 function addDefinitionItem(): void {
-  if (definition.value?.kind === 'object') { addObjectField() }
-  else if (definition.value?.kind === 'enum') { addEnumValue() }
-  else if (definition.value?.kind === 'union') { addUnionVariant() }
+  if (definition.value?.kind === 'object') {
+    addObjectField()
+  }
+  else if (definition.value?.kind === 'enum') {
+    addEnumValue()
+  }
+  else if (definition.value?.kind === 'union') {
+    addUnionVariant()
+  }
 }
 
 function updateObjectField(fieldPath: number[], patch: Partial<TypeSourceField>): void {
   mutateDocument((document) => {
     const field = getObjectField(document, fieldPath)
-    if (!field) { return }
+    if (!field) {
+      return
+    }
     Object.assign(field, patch)
   })
 }
 
 function updateObjectFieldName(row: TypeVisualRow, rawName: string): void {
   const name = rawName.trim()
-  if (!name || !row.fieldPath) { return }
+  if (!name || !row.fieldPath) {
+    return
+  }
   mutateDocument((document) => {
     const siblings = getObjectFields(document, row.fieldPath!.slice(0, -1))
     const index = row.fieldPath!.at(-1)!
-    if (!siblings || siblings.some((field, siblingIndex) => siblingIndex !== index && field.key === name)) { return }
-    if (siblings[index]) { siblings[index]!.key = name }
+    if (!siblings || siblings.some((field, siblingIndex) => siblingIndex !== index && field.key === name)) {
+      return
+    }
+    if (siblings[index]) {
+      siblings[index]!.key = name
+    }
   })
 }
 
@@ -305,7 +346,9 @@ function duplicateObjectField(fieldPath: number[]): void {
     const index = fieldPath.at(-1)!
     const fields = getObjectFields(document, parentPath)
     const field = fields?.[index]
-    if (!field) { return }
+    if (!field) {
+      return
+    }
     const clone = JSON.parse(JSON.stringify(field)) as TypeSourceField
     clone.key = getUniqueFieldName(fields!, `${field.key}Copy`)
     fields!.splice(index + 1, 0, clone)
@@ -313,7 +356,9 @@ function duplicateObjectField(fieldPath: number[]): void {
 }
 
 function openDescriptionDialog(row: TypeVisualRow): void {
-  if (!row.fieldPath) { return }
+  if (!row.fieldPath) {
+    return
+  }
   descriptionDialogFieldPath.value = [...row.fieldPath]
   descriptionDialogFieldName.value = row.field.key
   descriptionDraft.value = row.field.description ?? ''
@@ -322,7 +367,9 @@ function openDescriptionDialog(row: TypeVisualRow): void {
 
 function saveDescription(): void {
   const fieldPath = descriptionDialogFieldPath.value
-  if (!fieldPath) { return }
+  if (!fieldPath) {
+    return
+  }
   const description = descriptionDraft.value.trim()
   updateObjectField(fieldPath, { description: description || undefined })
   descriptionDialogOpen.value = false
@@ -331,7 +378,9 @@ function saveDescription(): void {
 function removeObjectField(fieldPath: number[]): void {
   mutateDocument((document) => {
     const fields = getObjectFields(document, fieldPath.slice(0, -1))
-    if (fields) { fields.splice(fieldPath.at(-1)!, 1) }
+    if (fields) {
+      fields.splice(fieldPath.at(-1)!, 1)
+    }
   })
 }
 
@@ -348,12 +397,18 @@ function dropObjectField(targetPath: number[]): void {
   draggedObjectField.value = null
   const targetParentPath = targetPath.slice(0, -1)
   const targetIndex = targetPath.at(-1)!
-  if (!source || source.index === targetIndex || source.parentPath.join('.') !== targetParentPath.join('.')) { return }
+  if (!source || source.index === targetIndex || source.parentPath.join('.') !== targetParentPath.join('.')) {
+    return
+  }
   mutateDocument((document) => {
     const fields = getObjectFields(document, source.parentPath)
-    if (!fields) { return }
+    if (!fields) {
+      return
+    }
     const [field] = fields.splice(source.index, 1)
-    if (!field) { return }
+    if (!field) {
+      return
+    }
     fields.splice(targetIndex, 0, field)
   })
 }
@@ -361,7 +416,9 @@ function dropObjectField(targetPath: number[]): void {
 function updateObjectFieldType(fieldPath: number[], value: string): void {
   mutateDocument((document) => {
     const field = getObjectField(document, fieldPath)
-    if (!field) { return }
+    if (!field) {
+      return
+    }
     field.type = value === INLINE_OBJECT_VALUE
       ? { kind: 'object', fields: [createDefaultField('field')] }
       : { kind: 'reference', identity: value }
@@ -373,7 +430,9 @@ function updateObjectFieldType(fieldPath: number[], value: string): void {
 }
 
 function toggleExpanded(row: TypeVisualRow): void {
-  if (!row.hasChildren || row.cycle) { return }
+  if (!row.hasChildren || row.cycle) {
+    return
+  }
   const next = new Set(collapsedIds.value)
   if (next.has(row.id)) {
     next.delete(row.id)
@@ -425,9 +484,13 @@ function dividerBoundary(dividerIndex: number): number {
 function updatePanelBoundary(clientX: number): void {
   const container = workspaceRef.value
   const dividerIndex = activeDividerIndex.value
-  if (!container || dividerIndex == null) { return }
+  if (!container || dividerIndex == null) {
+    return
+  }
   const rect = container.getBoundingClientRect()
-  if (rect.width <= 0) { return }
+  if (rect.width <= 0) {
+    return
+  }
 
   const sizes = [...panelSizesDraft.value]
   const before = sizes.slice(0, dividerIndex).reduce((sum, size) => sum + size, 0)
@@ -449,7 +512,9 @@ function onSplitPointerMove(event: PointerEvent): void {
 }
 
 function endSplitResize(): void {
-  if (!isSplitResizing.value) { return }
+  if (!isSplitResizing.value) {
+    return
+  }
   isSplitResizing.value = false
   activeDividerIndex.value = null
   document.body.style.cursor = ''
@@ -461,7 +526,9 @@ function endSplitResize(): void {
 }
 
 function beginSplitResize(dividerIndex: number, event: PointerEvent): void {
-  if (event.button !== 0) { return }
+  if (event.button !== 0) {
+    return
+  }
   event.preventDefault()
   isSplitResizing.value = true
   activeDividerIndex.value = dividerIndex
@@ -475,7 +542,9 @@ function beginSplitResize(dividerIndex: number, event: PointerEvent): void {
 
 function resizeSplitByKeyboard(dividerIndex: number, event: KeyboardEvent): void {
   const direction = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
-  if (direction === 0) { return }
+  if (direction === 0) {
+    return
+  }
   event.preventDefault()
   const sizes = [...panelSizesDraft.value]
   const adjacentTotal = (sizes[dividerIndex] ?? 0) + (sizes[dividerIndex + 1] ?? 0)
@@ -492,11 +561,15 @@ onBeforeUnmount(endSplitResize)
 
 function updateEnumValue(index: number, rawValue: string): void {
   mutateDocument((document) => {
-    if (document.definition.kind !== 'enum') { return }
+    if (document.definition.kind !== 'enum') {
+      return
+    }
     const current = document.definition.values[index]
     if (typeof current === 'number') {
       const value = Number(rawValue)
-      if (Number.isFinite(value)) { document.definition.values[index] = value }
+      if (Number.isFinite(value)) {
+        document.definition.values[index] = value
+      }
       return
     }
     if (typeof current === 'boolean') {
@@ -509,20 +582,28 @@ function updateEnumValue(index: number, rawValue: string): void {
 
 function addEnumValue(): void {
   mutateDocument((document) => {
-    if (document.definition.kind !== 'enum') { return }
+    if (document.definition.kind !== 'enum') {
+      return
+    }
     const currentKind = typeof document.definition.values[0]
     if (currentKind === 'number') {
       const numbers = document.definition.values.filter((value): value is number => typeof value === 'number')
       document.definition.values.push((Math.max(-1, ...numbers) + 1))
     }
     else if (currentKind === 'boolean') {
-      if (!document.definition.values.includes(true)) { document.definition.values.push(true) }
-      else if (!document.definition.values.includes(false)) { document.definition.values.push(false) }
+      if (!document.definition.values.includes(true)) {
+        document.definition.values.push(true)
+      }
+      else if (!document.definition.values.includes(false)) {
+        document.definition.values.push(false)
+      }
     }
     else {
       let value = 'value'
       let suffix = 0
-      while (document.definition.values.includes(value)) { value = `value${++suffix}` }
+      while (document.definition.values.includes(value)) {
+        value = `value${++suffix}`
+      }
       document.definition.values.push(value)
     }
   })
@@ -530,17 +611,25 @@ function addEnumValue(): void {
 
 function removeListItem(index: number): void {
   mutateDocument((document) => {
-    if (document.definition.kind === 'enum' && document.definition.values.length > 1) { document.definition.values.splice(index, 1) }
-    if (document.definition.kind === 'union' && document.definition.variants.length > 2) { document.definition.variants.splice(index, 1) }
+    if (document.definition.kind === 'enum' && document.definition.values.length > 1) {
+      document.definition.values.splice(index, 1)
+    }
+    if (document.definition.kind === 'union' && document.definition.variants.length > 2) {
+      document.definition.variants.splice(index, 1)
+    }
   })
 }
 
 function addUnionVariant(): void {
   mutateDocument((document) => {
-    if (document.definition.kind !== 'union') { return }
+    if (document.definition.kind !== 'union') {
+      return
+    }
     const used = new Set(document.definition.variants.flatMap(variant => variant.kind === 'reference' ? [variant.identity] : []))
     const identity = props.types.find(type => !used.has(type.identity))?.identity
-    if (identity) { document.definition.variants.push({ kind: 'reference', identity }) }
+    if (identity) {
+      document.definition.variants.push({ kind: 'reference', identity })
+    }
   })
 }
 
@@ -555,33 +644,55 @@ function updateUnionVariant(index: number, identity: string): void {
 function moveListItem(targetIndex: number): void {
   const sourceIndex = draggedListIndex.value
   draggedListIndex.value = null
-  if (sourceIndex == null || sourceIndex === targetIndex) { return }
+  if (sourceIndex == null || sourceIndex === targetIndex) {
+    return
+  }
   mutateDocument((document) => {
     const list = document.definition.kind === 'enum'
       ? document.definition.values
       : document.definition.kind === 'union'
         ? document.definition.variants
         : null
-    if (!list) { return }
+    if (!list) {
+      return
+    }
     const [item] = list.splice(sourceIndex, 1) as [any]
     list.splice(targetIndex, 0, item)
   })
 }
 
 function typeTone(identity: string): string {
-  if (identity === 'String' || identity === 'string' || identity === 'ID' || identity === 'DateTime' || identity === 'Time') { return 'type-visual-editor__type--string' }
-  if (identity === 'Number' || identity === 'number') { return 'type-visual-editor__type--number' }
-  if (identity === 'Boolean' || identity === 'boolean') { return 'type-visual-editor__type--boolean' }
-  if (identity === 'Null' || identity === 'null' || identity === 'Any' || identity === 'any' || identity === 'unknown') { return 'type-visual-editor__type--neutral' }
+  if (identity === 'String' || identity === 'string' || identity === 'ID' || identity === 'DateTime' || identity === 'Time') {
+    return 'type-visual-editor__type--string'
+  }
+  if (identity === 'Number' || identity === 'number') {
+    return 'type-visual-editor__type--number'
+  }
+  if (identity === 'Boolean' || identity === 'boolean') {
+    return 'type-visual-editor__type--boolean'
+  }
+  if (identity === 'Null' || identity === 'null' || identity === 'Any' || identity === 'any' || identity === 'unknown') {
+    return 'type-visual-editor__type--neutral'
+  }
   return 'type-visual-editor__type--reference'
 }
 
 function expressionLabel(expression: TypeSourceExpression): string {
-  if (expression.kind === 'reference') { return expression.identity }
-  if (expression.kind === 'object') { return 'object' }
-  if (expression.kind === 'enum') { return 'enum' }
-  if (expression.kind === 'union') { return 'union' }
-  if (expression.kind === 'record') { return `record[${expressionLabel(expression.values)}]` }
+  if (expression.kind === 'reference') {
+    return expression.identity
+  }
+  if (expression.kind === 'object') {
+    return 'object'
+  }
+  if (expression.kind === 'enum') {
+    return 'enum'
+  }
+  if (expression.kind === 'union') {
+    return 'union'
+  }
+  if (expression.kind === 'record') {
+    return `record[${expressionLabel(expression.values)}]`
+  }
   return `array[${expressionLabel(expression.items)}]`
 }
 
@@ -590,7 +701,9 @@ function expressionTone(expression: TypeSourceExpression): string {
 }
 
 function canOpenReferencedType(expression: TypeSourceExpression): boolean {
-  if (expression.kind !== 'reference') { return false }
+  if (expression.kind !== 'reference') {
+    return false
+  }
   const option = typeMap.value.get(expression.identity)
   return option != null && option.category !== 'primitive'
 }
@@ -622,21 +735,45 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
       ? [sampleForExpression(field.type, visited)]
       : sampleForExpression(field.type, visited))]))
   }
-  if (expression.kind === 'enum') { return expression.values[0] ?? null }
-  if (expression.kind === 'union') { return expression.variants[0] ? sampleForExpression(expression.variants[0], visited) : null }
-  if (expression.kind === 'array') { return [sampleForExpression(expression.items, visited)] }
-  if (expression.kind === 'record') { return { key: sampleForExpression(expression.values, visited) } }
+  if (expression.kind === 'enum') {
+    return expression.values[0] ?? null
+  }
+  if (expression.kind === 'union') {
+    return expression.variants[0] ? sampleForExpression(expression.variants[0], visited) : null
+  }
+  if (expression.kind === 'array') {
+    return [sampleForExpression(expression.items, visited)]
+  }
+  if (expression.kind === 'record') {
+    return { key: sampleForExpression(expression.values, visited) }
+  }
 
   const identity = expression.identity
-  if (identity === 'String' || identity === 'string' || identity === 'ID') { return 'string' }
-  if (identity === 'Number' || identity === 'number') { return 0 }
-  if (identity === 'Boolean' || identity === 'boolean') { return false }
-  if (identity === 'Null' || identity === 'null' || identity === 'Any' || identity === 'any' || identity === 'unknown') { return null }
-  if (identity === 'DateTime') { return '2026-01-01T00:00:00Z' }
-  if (identity === 'Time') { return '00:00:00' }
-  if (visited.has(identity)) { return null }
+  if (identity === 'String' || identity === 'string' || identity === 'ID') {
+    return 'string'
+  }
+  if (identity === 'Number' || identity === 'number') {
+    return 0
+  }
+  if (identity === 'Boolean' || identity === 'boolean') {
+    return false
+  }
+  if (identity === 'Null' || identity === 'null' || identity === 'Any' || identity === 'any' || identity === 'unknown') {
+    return null
+  }
+  if (identity === 'DateTime') {
+    return '2026-01-01T00:00:00Z'
+  }
+  if (identity === 'Time') {
+    return '00:00:00'
+  }
+  if (visited.has(identity)) {
+    return null
+  }
   const option = typeMap.value.get(identity)
-  if (!option?.source) { return null }
+  if (!option?.source) {
+    return null
+  }
   const target = parseTypeVisualSource(option.source)
   return buildRootExample(target.document?.definition ?? null, new Set([...visited, identity]))
 }
@@ -650,10 +787,10 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
       </div>
       <div>
         <div class="text-sm font-semibold">
-          Visual schema is unavailable
+          {{ $t('uiText.visualSchemaIsUnavailable0d550445') }}
         </div>
         <p class="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
-          Исправьте Source, чтобы visual editor снова мог построить semantic document.
+          {{ $t('uiText.fixTheSourceSoTheVisualEditorCanAgainBuildASemanticDb282e338') }}
         </p>
         <div class="mt-4 space-y-2">
           <div
@@ -682,7 +819,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
           <div class="type-visual-editor__schema-scroll">
             <div class="type-visual-editor__schema-card">
               <div class="type-visual-editor__root-row">
-                <span class="type-visual-editor__root-kind">Тип</span>
+                <span class="type-visual-editor__root-kind">{{ $t('uiText.typeD25691ca') }}</span>
                 <span class="type-visual-editor__root-count">({{ definitionItemCount }})</span>
                 <div class="flex-1" />
                 <button
@@ -797,9 +934,9 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                       </span>
                     </div>
                     <div class="type-visual-editor__modifiers">
-                      <span v-if="row.field.array" class="type-visual-editor__modifier">[]</span>
-                      <span v-if="row.field.optional" class="type-visual-editor__modifier">optional</span>
-                      <span v-if="row.cycle" class="type-visual-editor__modifier">recursive</span>
+                      <span v-if="row.field.array" class="type-visual-editor__modifier">{{ $t('uiText.symbol97d170e1') }}</span>
+                      <span v-if="row.field.optional" class="type-visual-editor__modifier">{{ $t('uiText.optional48a7b888') }}</span>
+                      <span v-if="row.cycle" class="type-visual-editor__modifier">{{ $t('uiText.recursive594a4346') }}</span>
                     </div>
                     <div class="type-visual-editor__row-actions">
                       <template v-if="row.local && !props.readonly">
@@ -819,17 +956,17 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                               :model-value="row.field.array"
                               @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { array: value === true })"
                             >
-                              Массив
+                              {{ $t('uiText.arraye1bef103') }}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                               :model-value="row.field.optional"
                               @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { optional: value === true })"
                             >
-                              Опциональное
+                              {{ $t('uiText.optional43fc627d') }}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuSeparator v-if="props.allowFieldDescriptions" />
                             <DropdownMenuItem v-if="props.allowFieldDescriptions" @select="openDescriptionDialog(row)">
-                              Добавить описание
+                              {{ $t('uiText.addDescriptionb9dd3d5b') }}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -858,7 +995,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 
                 <button v-if="!objectRows.length && !props.readonly" type="button" class="type-visual-editor__empty-row" @click="addObjectField()">
                   <Plus class="size-4" />
-                  Create the first property
+                  {{ $t('uiText.createTheFirstPropertyf2be0478') }}
                 </button>
               </div>
 
@@ -886,10 +1023,10 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">
-                        true
+                        {{ $t('uiText.true5ffe533b') }}
                       </SelectItem>
                       <SelectItem value="false">
-                        false
+                        {{ $t('uiText.false7cb6efb9') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -934,8 +1071,8 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
               </div>
 
               <div v-else class="type-visual-editor__array-row">
-                <span class="type-visual-editor__array-bracket">[ ]</span>
-                <span>items:</span>
+                <span class="type-visual-editor__array-bracket">{{ $t('uiText.symbolcdcd5c9a') }}</span>
+                <span>{{ $t('uiText.itemsb202dc0b') }}</span>
                 <SearchableSelect
                   v-if="definition.items.kind === 'reference'"
                   :model-value="definition.items.identity"
@@ -996,33 +1133,33 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                       >
                         {{ row.field.array ? `array[${expressionLabel(row.field.type)}]` : expressionLabel(row.field.type) }}
                       </button>
-                      <em v-if="!row.field.optional">required</em>
+                      <em v-if="!row.field.optional">{{ $t('uiText.required1a77d416') }}</em>
                     </div>
                     <p v-if="row.field.description">
                       {{ row.field.description }}
                     </p>
                     <p v-else class="is-placeholder">
-                      No description
+                      {{ $t('uiText.noDescriptionf354c94f') }}
                     </p>
                     <div v-if="row.field.min != null || row.field.max != null || row.field.examples.length" class="type-visual-editor__doc-meta">
-                      <span v-if="row.field.min != null">≥ {{ row.field.min }}</span>
-                      <span v-if="row.field.max != null">≤ {{ row.field.max }}</span>
+                      <span v-if="row.field.min != null">{{ $t('uiText.symboldcec4f1d') }} {{ row.field.min }}</span>
+                      <span v-if="row.field.max != null">{{ $t('uiText.symbolc8426723') }} {{ row.field.max }}</span>
                       <template v-for="(example, index) in row.field.examples" :key="index">
-                        <span>Example: {{ JSON.stringify(example) }}</span>
+                        <span>{{ $t('uiText.examplec63737ab') }} {{ JSON.stringify(example) }}</span>
                       </template>
                     </div>
                   </article>
                 </template>
 
                 <article v-else-if="definition.kind === 'enum'" class="type-visual-editor__definition-doc">
-                  <strong>Allowed values</strong>
+                  <strong>{{ $t('uiText.allowedValues495fcf3a') }}</strong>
                   <div class="type-visual-editor__doc-values">
                     <code v-for="(value, index) in definition.values" :key="index">{{ JSON.stringify(value) }}</code>
                   </div>
                 </article>
 
                 <article v-else-if="definition.kind === 'union'" class="type-visual-editor__definition-doc">
-                  <strong>Union variants</strong>
+                  <strong>{{ $t('uiText.unionVariantsd862de0c') }}</strong>
                   <div class="type-visual-editor__doc-values">
                     <button
                       v-for="(variant, index) in definition.variants"
@@ -1038,7 +1175,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                 </article>
 
                 <article v-else class="type-visual-editor__definition-doc">
-                  <strong>Array item type</strong>
+                  <strong>{{ $t('uiText.arrayItemType44f5896f') }}</strong>
                   <div class="type-visual-editor__doc-values">
                     <button
                       type="button"
@@ -1084,8 +1221,8 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
         <section v-if="showExample" class="type-visual-editor__example-pane" :style="panelStyle(showPreview ? 2 : 1)">
           <div class="type-visual-editor__example-card">
             <div class="type-visual-editor__example-head">
-              <span>Example</span>
-              <span>JSON</span>
+              <span>{{ $t('uiText.example0f01ed56') }}</span>
+              <span>{{ $t('uiText.json031a4e76') }}</span>
             </div>
             <pre>{{ exampleJson }}</pre>
           </div>
@@ -1096,9 +1233,9 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
     <Dialog v-model:open="descriptionDialogOpen">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Описание поля {{ descriptionDialogFieldName }}</DialogTitle>
+          <DialogTitle>{{ $t('uiText.fieldDescription5e85224a') }} {{ descriptionDialogFieldName }}</DialogTitle>
           <DialogDescription>
-            Текст будет отображаться под полем в Preview и сохранится в Type Source.
+            {{ $t('uiText.theTextWillBeDisplayedBelowTheFieldInPreviewAndSaved35c456dc') }}
           </DialogDescription>
         </DialogHeader>
         <Textarea
@@ -1108,10 +1245,10 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
         />
         <DialogFooter class="gap-2">
           <Button variant="outline" @click="descriptionDialogOpen = false">
-            Отмена
+            {{ $t('uiText.cancel0ec753be') }}
           </Button>
           <Button @click="saveDescription">
-            Сохранить
+            {{ $t('uiText.save4864057d') }}
           </Button>
         </DialogFooter>
       </DialogContent>

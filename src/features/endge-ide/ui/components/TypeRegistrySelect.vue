@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import type { TypeProgramCatalogEntry } from '@endge/core'
 import type { HTMLAttributes } from 'vue'
 import type { SearchableSelectOption } from '@/components/ui/searchable-select'
@@ -48,9 +47,13 @@ function update(value: string | string[] | null): void {
 }
 
 function openType(event: MouseEvent): void {
-  if (!event.ctrlKey && !event.metaKey) { return }
+  if (!event.ctrlKey && !event.metaKey) {
+    return
+  }
   const type = domainStore.typeCatalog.find((item: TypeProgramCatalogEntry) => item.identity === props.modelValue)
-  if (!type || type.category !== 'user') { return }
+  if (!type || type.category !== 'user') {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   EndgeIDE.tabs.openSourceReference({

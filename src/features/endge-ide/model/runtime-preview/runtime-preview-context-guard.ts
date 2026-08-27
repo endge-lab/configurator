@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { RuntimePreviewTarget } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Endge } from '@endge/core'
@@ -21,9 +20,13 @@ export function validateRuntimePreviewContext(
     }
   }
 
-  if (target.entityType === 'project') { return validateCoordinate('проект', target.identity, Endge.context.getCurrentProject()) }
+  if (target.entityType === 'project') {
+    return validateCoordinate('проект', target.identity, Endge.context.getCurrentProject())
+  }
 
-  if (target.entityType !== 'composition') { return { valid: true } }
+  if (target.entityType !== 'composition') {
+    return { valid: true }
+  }
 
   const composition = Endge.domain.getComposition(target.identity)
   if (!composition) {
@@ -34,7 +37,9 @@ export function validateRuntimePreviewContext(
     }
   }
 
-  if (!composition.kindIdentity) { return { valid: true } }
+  if (!composition.kindIdentity) {
+    return { valid: true }
+  }
 
   switch (composition.kind) {
     case 'project':
@@ -49,7 +54,9 @@ export function validateRuntimePreviewContext(
 }
 
 function validateCoordinate(label: string, requested: string, current: string): RuntimePreviewContextValidation {
-  if (requested === current) { return { valid: true } }
+  if (requested === current) {
+    return { valid: true }
+  }
   return {
     valid: false,
     message: `Невозможно запустить ${label}`,

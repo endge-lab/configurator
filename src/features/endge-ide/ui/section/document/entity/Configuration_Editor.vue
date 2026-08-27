@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { ConfigurationSourceValueDefinition, EndgeJSONValue } from '@endge/core'
 import type { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor'
 
@@ -249,21 +248,21 @@ async function save(): Promise<void> {
               <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="activeTab = 'general'">
                 <Settings2 class="size-4" />
               </Button>
-            </TooltipTrigger><TooltipContent>Основное</TooltipContent>
+            </TooltipTrigger><TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'visual' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="activeTab = 'visual'">
                 <Eye class="size-4" />
               </Button>
-            </TooltipTrigger><TooltipContent>Visual</TooltipContent>
+            </TooltipTrigger><TooltipContent>{{ $t('uiText.visual770d690e') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'source' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="activeTab = 'source'">
                 <Code2 class="size-4" />
               </Button>
-            </TooltipTrigger><TooltipContent>Source</TooltipContent>
+            </TooltipTrigger><TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
           </Tooltip>
         </div>
         <Separator orientation="vertical" class="mx-0.5 h-5" />
@@ -273,14 +272,14 @@ async function save(): Promise<void> {
               <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
                 <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" /><Save v-else class="size-4" />
               </Button>
-            </TooltipTrigger><TooltipContent>Сохранить</TooltipContent>
+            </TooltipTrigger><TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'diagnostics' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Диагностика" @click="openDiagnostics">
                 <TriangleAlert class="size-4" />
               </Button>
-            </TooltipTrigger><TooltipContent>Диагностика</TooltipContent>
+            </TooltipTrigger><TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -291,16 +290,16 @@ async function save(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label>Название категории</Label><Input v-model="editor.name" />
+            <Label>{{ $t('uiText.categoryNameca2014a9') }}</Label><Input v-model="editor.name" />
           </div><div class="space-y-2">
-            <Label>Identity</Label><DocumentIdentityInput v-model="editor.identity" spellcheck="false" />
+            <Label>{{ $t('uiText.identity7e5a975b') }}</Label><DocumentIdentityInput v-model="editor.identity" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">
-          <Label>Описание</Label><Textarea v-model="editor.description" :rows="4" />
+          <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label><Textarea v-model="editor.description" :rows="4" />
         </div>
         <div class="space-y-2">
-          <Label>Source version</Label><Input :model-value="1" disabled />
+          <Label>{{ $t('uiText.sourceVersionb94adbb6') }}</Label><Input :model-value="1" disabled />
         </div>
       </div>
     </div>
@@ -310,24 +309,24 @@ async function save(): Promise<void> {
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-sm font-semibold">
-              Значения категории
+              {{ $t('uiText.categoryValues41961e86') }}
             </h3><p class="text-xs text-muted-foreground">
-              Порядок соответствует Source.
+              {{ $t('uiText.orderMatchesSourcea911e685') }}
             </p>
           </div><Button size="sm" variant="outline" @click="addValue">
-            <Plus class="mr-1.5 size-4" />Добавить
+            <Plus class="mr-1.5 size-4" />{{ $t('uiText.add559a87f7') }}
           </Button>
         </div>
         <div v-if="!editor.values.length" class="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
-          Значения не объявлены.
+          {{ $t('uiText.valuesNotDeclaredbcad8c5b') }}
         </div>
         <section v-for="value in editor.values" :key="value.key" class="space-y-4 rounded-lg border p-4">
           <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_auto]">
             <div class="space-y-1.5">
-              <Label>Key</Label><Input :model-value="value.key" spellcheck="false" @change="renameValueFromEvent(value, $event)" />
+              <Label>{{ $t('uiText.keyc67dd20e') }}</Label><Input :model-value="value.key" spellcheck="false" @change="renameValueFromEvent(value, $event)" />
             </div>
             <div class="space-y-1.5">
-              <Label>Тип</Label><TypeRegistrySelect :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind" :additional-options="configurationInlineTypeOptions" @update:model-value="updateType(value, $event)" />
+              <Label>{{ $t('uiText.typeD25691ca') }}</Label><TypeRegistrySelect :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind" :additional-options="configurationInlineTypeOptions" @update:model-value="updateType(value, $event)" />
             </div>
             <Button size="icon" variant="ghost" class="mt-6 text-muted-foreground hover:text-destructive" @click="editor.removeValue(value.key)">
               <Trash2 class="size-4" />
@@ -335,15 +334,15 @@ async function save(): Promise<void> {
           </div>
           <div class="grid gap-3 md:grid-cols-2">
             <div class="space-y-1.5">
-              <Label>Label</Label><Input :model-value="value.label" @update:model-value="updateValue(value, { label: String($event ?? '') })" />
+              <Label>{{ $t('uiText.label4341e3c2') }}</Label><Input :model-value="value.label" @update:model-value="updateValue(value, { label: String($event ?? '') })" />
             </div><div class="space-y-1.5">
-              <Label>Description</Label><Input :model-value="value.description ?? ''" @update:model-value="updateValue(value, { description: String($event ?? '') || undefined })" />
+              <Label>{{ $t('uiText.description55f8ebc8') }}</Label><Input :model-value="value.description ?? ''" @update:model-value="updateValue(value, { description: String($event ?? '') || undefined })" />
             </div>
           </div>
           <div v-if="value.type.kind === 'enum'" class="space-y-3 rounded-md border p-3">
             <div class="flex items-end justify-between gap-3">
               <div class="w-48 space-y-1.5">
-                <Label>Тип значений Enum</Label>
+                <Label>{{ $t('uiText.valueTypeEnum40e5a11b') }}</Label>
                 <Select :model-value="enumValueKind(value)" @update:model-value="updateEnumValueKind(value, String($event) as EnumValueKind)">
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -354,7 +353,7 @@ async function save(): Promise<void> {
                 </Select>
               </div>
               <Button size="sm" variant="outline" :disabled="!canAddEnumValue(value)" @click="addEnumValue(value)">
-                <Plus class="mr-1.5 size-4" />Добавить вариант
+                <Plus class="mr-1.5 size-4" />{{ $t('uiText.addOptionEba2247e') }}
               </Button>
             </div>
             <div class="space-y-2">
@@ -363,9 +362,9 @@ async function save(): Promise<void> {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="true">
-                      true
+                      {{ $t('uiText.true5ffe533b') }}
                     </SelectItem><SelectItem value="false">
-                      false
+                      {{ $t('uiText.false7cb6efb9') }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -377,10 +376,10 @@ async function save(): Promise<void> {
             </div>
           </div>
           <div class="space-y-1.5">
-            <Label>Default</Label><ConfigValueEditor :model-value="value.defaultValue" :type="value.type" :min="value.min" :max="value.max" :step="value.step" @update:model-value="updateDefault(value, $event)" />
+            <Label>{{ $t('uiText.default808d7dca') }}</Label><ConfigValueEditor :model-value="value.defaultValue" :type="value.type" :min="value.min" :max="value.max" :step="value.step" @update:model-value="updateDefault(value, $event)" />
           </div>
           <div v-if="value.type.kind === 'reference' && value.type.identity === 'Number'" class="grid grid-cols-3 gap-3">
-            <div><Label>Min</Label><Input :model-value="value.min" type="number" @update:model-value="updateValue(value, { min: $event === '' ? undefined : Number($event) })" /></div><div><Label>Max</Label><Input :model-value="value.max" type="number" @update:model-value="updateValue(value, { max: $event === '' ? undefined : Number($event) })" /></div><div><Label>Step</Label><Input :model-value="value.step" type="number" @update:model-value="updateValue(value, { step: $event === '' ? undefined : Number($event) })" /></div>
+            <div><Label>{{ $t('uiText.min7eb0cee8') }}</Label><Input :model-value="value.min" type="number" @update:model-value="updateValue(value, { min: $event === '' ? undefined : Number($event) })" /></div><div><Label>{{ $t('uiText.maxa95e85ae') }}</Label><Input :model-value="value.max" type="number" @update:model-value="updateValue(value, { max: $event === '' ? undefined : Number($event) })" /></div><div><Label>{{ $t('uiText.stepdc416e10') }}</Label><Input :model-value="value.step" type="number" @update:model-value="updateValue(value, { step: $event === '' ? undefined : Number($event) })" /></div>
           </div>
         </section>
       </div>

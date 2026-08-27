@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   ComponentSFCProgramPayload,
   CompositionProgramPayload,
@@ -27,9 +26,13 @@ export function findRuntimePreviewOccurrences(
   projectIdentity: string,
   artifacts: RuntimeArtifactReader = Endge.program,
 ): RuntimePreviewOccurrence[] {
-  if (target.entityType !== 'composition' && target.entityType !== 'component-sfc') { return [] }
+  if (target.entityType !== 'composition' && target.entityType !== 'component-sfc') {
+    return []
+  }
   const normalizedProject = String(projectIdentity ?? '').trim()
-  if (!normalizedProject || !Endge.domain.getProject(normalizedProject)) { return [] }
+  if (!normalizedProject || !Endge.domain.getProject(normalizedProject)) {
+    return []
+  }
 
   const context: TraversalContext = {
     projectIdentity: normalizedProject,
@@ -62,9 +65,13 @@ function visitComposition(
   path: string[],
   ancestors: Set<string>,
 ): void {
-  if (ancestors.has(identity)) { return }
+  if (ancestors.has(identity)) {
+    return
+  }
   const artifact = context.artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
-  if (!artifact || artifact.status === 'error') { return }
+  if (!artifact || artifact.status === 'error') {
+    return
+  }
 
   const branchMayExecuteQueries = compositionMayExecuteQueries(
     identity,
@@ -98,9 +105,13 @@ function visitComposition(
       )
       continue
     }
-    if (context.target.entityType !== 'component-sfc') { continue }
+    if (context.target.entityType !== 'component-sfc') {
+      continue
+    }
     const hostComponentIdentity = runtimeComponentIdentity(runtime)
-    if (!hostComponentIdentity) { continue }
+    if (!hostComponentIdentity) {
+      continue
+    }
 
     const componentPath = findComponentPath(
       hostComponentIdentity,
@@ -108,7 +119,9 @@ function visitComposition(
       context.artifacts,
       new Set(),
     )
-    if (!componentPath) { continue }
+    if (!componentPath) {
+      continue
+    }
     context.occurrences.push(makeOccurrence(context, {
       kind: 'component-runtime',
       address,
@@ -156,15 +169,23 @@ function findComponentPath(
   artifacts: RuntimeArtifactReader,
   ancestors: Set<string>,
 ): string[] | null {
-  if (currentIdentity === targetIdentity) { return [currentIdentity] }
-  if (ancestors.has(currentIdentity)) { return null }
+  if (currentIdentity === targetIdentity) {
+    return [currentIdentity]
+  }
+  if (ancestors.has(currentIdentity)) {
+    return null
+  }
   const artifact = artifacts.getArtifact<ComponentSFCProgramPayload>('component-sfc', currentIdentity)
-  if (!artifact || artifact.status === 'error') { return null }
+  if (!artifact || artifact.status === 'error') {
+    return null
+  }
 
   const nextAncestors = new Set(ancestors).add(currentIdentity)
   for (const childIdentity of componentDependencyIdentities(artifact)) {
     const nested = findComponentPath(childIdentity, targetIdentity, artifacts, nextAncestors)
-    if (nested) { return [currentIdentity, ...nested] }
+    if (nested) {
+      return [currentIdentity, ...nested]
+    }
   }
   return null
 }
@@ -176,7 +197,9 @@ function componentDependencyIdentities(
   for (const dependency of artifact.payload.dependencies.components) {
     const model = Endge.domain.getComponentSFC(dependency.id)
     const identity = model?.identity ?? String(dependency.id)
-    if (!result.includes(identity)) { result.push(identity) }
+    if (!result.includes(identity)) {
+      result.push(identity)
+    }
   }
   return result
 }
@@ -186,10 +209,16 @@ function compositionMayExecuteQueries(
   artifacts: RuntimeArtifactReader,
   ancestors: Set<string>,
 ): boolean {
-  if (ancestors.has(identity)) { return false }
+  if (ancestors.has(identity)) {
+    return false
+  }
   const artifact = artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
-  if (!artifact || artifact.status === 'error') { return false }
-  if (artifact.payload.graph.mounts.length > 0) { return true }
+  if (!artifact || artifact.status === 'error') {
+    return false
+  }
+  if (artifact.payload.graph.mounts.length > 0) {
+    return true
+  }
   const nextAncestors = new Set(ancestors).add(identity)
   return artifact.payload.runtimes
     .filter(runtime => runtime.kind === 'composition')
@@ -197,8 +226,12 @@ function compositionMayExecuteQueries(
 }
 
 function runtimeComponentIdentity(runtime: CompositionRuntimeDescriptor): string | null {
-  if (runtime.kind === 'component') { return runtime.componentIdentity ?? runtime.identity }
-  if (runtime.kind === 'filter-view') { return runtime.componentIdentity ?? null }
+  if (runtime.kind === 'component') {
+    return runtime.componentIdentity ?? runtime.identity
+  }
+  if (runtime.kind === 'filter-view') {
+    return runtime.componentIdentity ?? null
+  }
   return null
 }
 

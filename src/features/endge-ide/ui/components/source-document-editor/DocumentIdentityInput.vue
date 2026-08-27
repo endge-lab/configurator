@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { Copy } from 'lucide-vue-next'
 import { computed, useAttrs } from 'vue'
 import { toast } from 'vue-sonner'
@@ -63,7 +62,7 @@ async function copyIdentity(): Promise<void> {
             <Copy class="size-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Скопировать identity</TooltipContent>
+        <TooltipContent>{{ $t('uiText.copyIdentity59e71fc3') }}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   </div>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { SFCRenderInspectionNode, SFCRenderInspectionTreeNode } from '@endge/core'
 import type { CSSProperties } from 'vue'
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
@@ -65,13 +64,21 @@ const dropRect = ref<CanvasRect | null>(null)
 const selectedNode = computed<UIEditorNode | null>(() => props.state.getSelectedNode())
 const selectedLabel = computed(() => {
   const node = selectedNode.value
-  if (!node) { return 'Element' }
+  if (!node) {
+    return 'Element'
+  }
   return getUIEditorSFCSourceTag(node) ?? getUIEditorSFCDefinitionContract(node.definitionRef)?.tag ?? node.name
 })
 const statusLabel = computed(() => {
-  if (runtimeSession.status.value === 'preparing') { return 'Building editor runtime' }
-  if (runtimeSession.status.value === 'stale') { return 'Updating runtime' }
-  if (runtimeSession.status.value === 'error') { return 'Runtime unavailable' }
+  if (runtimeSession.status.value === 'preparing') {
+    return 'Building editor runtime'
+  }
+  if (runtimeSession.status.value === 'stale') {
+    return 'Updating runtime'
+  }
+  if (runtimeSession.status.value === 'error') {
+    return 'Runtime unavailable'
+  }
   return editorMode.value === 'edit' ? 'Runtime canvas · Edit' : 'Runtime canvas · Interact'
 })
 const selectionStyle = computed<CSSProperties>(() => rectStyle(selectionRect.value))
@@ -80,7 +87,9 @@ const dropStyle = computed<CSSProperties>(() => rectStyle(dropRect.value))
 const toolbarStyle = computed<CSSProperties>(() => {
   const rect = selectionRect.value
   const stage = stageRef.value
-  if (!rect || !stage) { return {} }
+  if (!rect || !stage) {
+    return {}
+  }
   return {
     left: `${Math.max(4, Math.min(rect.left, stage.clientWidth - 254))}px`,
     top: `${Math.max(4, rect.top - 38)}px`,
@@ -97,7 +106,9 @@ function rectStyle(rect: CanvasRect | null): CSSProperties {
 
 function scheduleRefresh(): void {
   runtimeSession.markStale()
-  if (refreshTimer.value) { clearTimeout(refreshTimer.value) }
+  if (refreshTimer.value) {
+    clearTimeout(refreshTimer.value)
+  }
   refreshTimer.value = setTimeout(() => {
     refreshTimer.value = null
     void restart()
@@ -144,13 +155,17 @@ function sourceNodeIdForInspection(inspectionId: string): string | null {
       const exact = Object.entries(props.state.sourceLocations).find(([, location]) =>
         location.range.start === range.start && location.range.end === range.end,
       )
-      if (exact) { return exact[0] }
+      if (exact) {
+        return exact[0]
+      }
       const containing = Object.entries(props.state.sourceLocations)
         .filter(([, location]) => location.range.start <= range.start && location.range.end >= range.end)
         .sort(([, left], [, right]) =>
           (left.range.end - left.range.start) - (right.range.end - right.range.start),
         )[0]
-      if (containing) { return containing[0] }
+      if (containing) {
+        return containing[0]
+      }
     }
     node = node.parentId ? inspection.getNode(node.parentId) : null
   }
@@ -159,7 +174,9 @@ function sourceNodeIdForInspection(inspectionId: string): string | null {
 
 function inspectionNodeForSourceNode(nodeId: string): SFCRenderInspectionNode | null {
   const location = props.state.getSourceLocation(nodeId)
-  if (!location) { return null }
+  if (!location) {
+    return null
+  }
   const candidates: SFCRenderInspectionNode[] = []
   visitInspectionNodes(inspection.getTree(), (node) => {
     if (node.sourceRange?.start === location.range.start && node.sourceRange.end === location.range.end) {
@@ -183,12 +200,16 @@ function findInspectionElement(id: string): HTMLElement | null {
 
 function findSelectableTarget(target: EventTarget | null): SelectableInspectionTarget | null {
   const stage = stageRef.value
-  if (!(target instanceof Element) || !stage) { return null }
+  if (!(target instanceof Element) || !stage) {
+    return null
+  }
   let element = target.closest<HTMLElement>('[data-endge-inspect-id]')
   while (element && stage.contains(element)) {
     const inspectionId = element.dataset.endgeInspectId
     const nodeId = inspectionId ? sourceNodeIdForInspection(inspectionId) : null
-    if (inspectionId && nodeId) { return { element, inspectionId, nodeId } }
+    if (inspectionId && nodeId) {
+      return { element, inspectionId, nodeId }
+    }
     element = element.parentElement?.closest<HTMLElement>('[data-endge-inspect-id]') ?? null
   }
   return null
@@ -197,13 +218,17 @@ function findSelectableTarget(target: EventTarget | null): SelectableInspectionT
 function selectTarget(target: SelectableInspectionTarget, openInspector = false): void {
   selectedElement.value = target.element
   props.state.selectNode(target.nodeId)
-  if (openInspector) { inspectorOpen.value = true }
+  if (openInspector) {
+    inspectorOpen.value = true
+  }
   updateOverlayRects()
   refreshObservedElements()
 }
 
 function syncSelectionFromState(): void {
-  if (editorMode.value !== 'edit') { return }
+  if (editorMode.value !== 'edit') {
+    return
+  }
   const nodeId = props.state.selectedNodeId
   if (!nodeId) {
     selectedElement.value = null
@@ -216,11 +241,15 @@ function syncSelectionFromState(): void {
   selectedElement.value = element
   updateOverlayRects()
   refreshObservedElements()
-  if (props.state.selectionOrigin === 'source') { element?.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }
+  if (props.state.selectionOrigin === 'source') {
+    element?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
 }
 
 function onPointerMove(event: PointerEvent): void {
-  if (editorMode.value !== 'edit' || props.state.isGridInteractionActive) { return }
+  if (editorMode.value !== 'edit' || props.state.isGridInteractionActive) {
+    return
+  }
   const target = findSelectableTarget(event.target)
   hoveredElement.value = target?.element ?? null
   updateOverlayRects()
@@ -236,7 +265,9 @@ function isEditorControl(target: EventTarget | null): boolean {
 }
 
 function onPointerDownCapture(event: PointerEvent): void {
-  if (editorMode.value !== 'edit' || isEditorControl(event.target)) { return }
+  if (editorMode.value !== 'edit' || isEditorControl(event.target)) {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   const target = findSelectableTarget(event.target)
@@ -249,21 +280,29 @@ function onPointerDownCapture(event: PointerEvent): void {
 }
 
 function suppressRuntimeClick(event: MouseEvent): void {
-  if (editorMode.value !== 'edit' || isEditorControl(event.target)) { return }
+  if (editorMode.value !== 'edit' || isEditorControl(event.target)) {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
 }
 
 function onDoubleClickCapture(event: MouseEvent): void {
-  if (editorMode.value !== 'edit' || isEditorControl(event.target)) { return }
+  if (editorMode.value !== 'edit' || isEditorControl(event.target)) {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   const target = findSelectableTarget(event.target)
-  if (target) { selectTarget(target, true) }
+  if (target) {
+    selectTarget(target, true)
+  }
 }
 
 function onContextMenu(event: MouseEvent): void {
-  if (editorMode.value !== 'edit' || isEditorControl(event.target)) { return }
+  if (editorMode.value !== 'edit' || isEditorControl(event.target)) {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   const target = findSelectableTarget(event.target)
@@ -274,12 +313,16 @@ function onContextMenu(event: MouseEvent): void {
 }
 
 function openSourcePanel(): void {
-  if (!props.state.isPanelVisible('source')) { props.state.togglePanel('source') }
+  if (!props.state.isPanelVisible('source')) {
+    props.state.togglePanel('source')
+  }
 }
 
 function removeSelected(): void {
   const nodeId = props.state.selectedNodeId
-  if (!nodeId || nodeId === props.state.document.rootId) { return }
+  if (!nodeId || nodeId === props.state.document.rootId) {
+    return
+  }
   props.state.removeNode(nodeId)
   inspectorOpen.value = false
 }
@@ -294,7 +337,9 @@ function beginSelectedDrag(event: DragEvent): void {
   props.state.beginGridDrag(payload, nodeId)
   event.dataTransfer?.setData(UI_EDITOR_DND_MIME, JSON.stringify(payload))
   event.dataTransfer?.setData('text/plain', selectedLabel.value)
-  if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move' }
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+  }
 }
 
 function endSelectedDrag(): void {
@@ -303,9 +348,13 @@ function endSelectedDrag(): void {
 }
 
 function readDragPayload(event: DragEvent): UIEditorDragPayload | null {
-  if (props.state.dragPayload) { return props.state.dragPayload }
+  if (props.state.dragPayload) {
+    return props.state.dragPayload
+  }
   const raw = event.dataTransfer?.getData(UI_EDITOR_DND_MIME)
-  if (!raw) { return null }
+  if (!raw) {
+    return null
+  }
   try {
     return JSON.parse(raw) as UIEditorDragPayload
   }
@@ -346,24 +395,34 @@ function resolveDropTarget(event: DragEvent): RuntimeDropTarget {
 }
 
 function onDragOver(event: DragEvent): void {
-  if (editorMode.value !== 'edit') { return }
+  if (editorMode.value !== 'edit') {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   const target = resolveDropTarget(event)
   dropTarget.value = target
   dropRect.value = elementRect(target.element)
-  if (event.dataTransfer) { event.dataTransfer.dropEffect = readDragPayload(event)?.source === 'palette' ? 'copy' : 'move' }
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = readDragPayload(event)?.source === 'palette' ? 'copy' : 'move'
+  }
 }
 
 function onDrop(event: DragEvent): void {
-  if (editorMode.value !== 'edit') { return }
+  if (editorMode.value !== 'edit') {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   const payload = readDragPayload(event)
   const target = dropTarget.value ?? resolveDropTarget(event)
   try {
-    if (payload?.source === 'palette') { props.state.addPaletteItem(payload, target.parentId, target.index) }
-    else if (payload?.source === 'node' && payload.nodeId) { props.state.moveNode(payload.nodeId, target.parentId, target.index) }
+    if (payload?.source === 'palette') {
+      props.state.addPaletteItem(payload, target.parentId, target.index)
+    }
+    else if (payload?.source === 'node' && payload.nodeId) {
+      props.state.moveNode(payload.nodeId, target.parentId, target.index)
+    }
   }
   finally {
     props.state.endGridInteraction()
@@ -378,7 +437,9 @@ function clearDropTarget(): void {
 
 function elementRect(element: HTMLElement | null): CanvasRect | null {
   const stage = stageRef.value
-  if (!stage || !element?.isConnected) { return null }
+  if (!stage || !element?.isConnected) {
+    return null
+  }
   const stageRect = stage.getBoundingClientRect()
   const targetRect = element.getBoundingClientRect()
   return {
@@ -397,9 +458,13 @@ function updateOverlayRects(): void {
 
 function refreshObservedElements(): void {
   resizeObserver?.disconnect()
-  if (!resizeObserver) { return }
+  if (!resizeObserver) {
+    return
+  }
   for (const element of [stageRef.value, hoveredElement.value, selectedElement.value, dropTarget.value?.element]) {
-    if (element) { resizeObserver.observe(element) }
+    if (element) {
+      resizeObserver.observe(element)
+    }
   }
 }
 
@@ -418,7 +483,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (refreshTimer.value) { clearTimeout(refreshTimer.value) }
+  if (refreshTimer.value) {
+    clearTimeout(refreshTimer.value)
+  }
   unsubscribeInspection()
   inspection.clear()
   resizeObserver?.disconnect()
@@ -445,10 +512,10 @@ onBeforeUnmount(() => {
 
       <div class="ml-auto inline-flex items-center rounded-md border border-border/70 bg-background/80 p-0.5" data-ui-editor-control>
         <Button variant="ghost" size="sm" class="h-7 gap-1.5 rounded px-2 text-[11px]" :class="editorMode === 'edit' ? 'bg-sky-500 text-white hover:bg-sky-500/90 hover:text-white' : 'text-muted-foreground'" @click="setEditorMode('edit')">
-          <MousePointer2 class="size-3" /> Edit
+          <MousePointer2 class="size-3" /> {{ $t('uiText.edit5301648d') }}
         </Button>
         <Button variant="ghost" size="sm" class="h-7 gap-1.5 rounded px-2 text-[11px]" :class="editorMode === 'interact' ? 'bg-foreground text-background hover:bg-foreground/90 hover:text-background' : 'text-muted-foreground'" @click="setEditorMode('interact')">
-          <Play class="size-3" /> Interact
+          <Play class="size-3" /> {{ $t('uiText.interact53deafc6') }}
         </Button>
       </div>
 
@@ -476,7 +543,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="runtimeSession.status.value === 'preparing' && !runtimeSession.runtime.value" class="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <LoaderCircle class="size-4 animate-spin" /> Building editor runtime…
+          <LoaderCircle class="size-4 animate-spin" /> {{ $t('uiText.buildingEditorRuntime94b5e0b5') }}
         </div>
 
         <div v-if="runtimeSession.runtime.value" ref="stageRef" class="relative mx-auto min-h-full w-full p-3">

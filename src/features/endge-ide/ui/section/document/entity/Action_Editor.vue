@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
 import { Endge } from '@endge/core'
 import { Code2, FileJson, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } from 'lucide-vue-next'
@@ -102,7 +101,7 @@ async function save(): Promise<void> {
                 <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" /><Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{{ editor.readOnly ? 'Code-owned Action доступен только для чтения' : 'Сохранить' }}</TooltipContent>
+            <TooltipContent>{{ editor.readOnly ? $t('uiText.codeOwnedActionIsReadOnlyb0efd855') : $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -116,26 +115,26 @@ async function save(): Promise<void> {
       <div class="max-w-3xl space-y-5">
         <DocumentIdField :document-id="editor.id" />
         <div v-if="editor.readOnly" class="rounded-md border bg-muted/40 p-3 text-sm">
-          Code-owned Action · {{ editor.origin.kind }} · owner: {{ JSON.stringify(editor.owner) }} · provider: {{ editor.effectiveProviderKey ?? 'не установлен' }}
+          {{ $t('uiText.codeOwnedAction3e21f15d') }} {{ editor.origin.kind }} {{ $t('uiText.owner2d6631a2') }} {{ JSON.stringify(editor.owner) }} {{ $t('uiText.provider5f3a1461') }} {{ editor.effectiveProviderKey ?? 'не установлен' }}
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label>Название</Label><Input v-model="editor.displayName" :disabled="editor.readOnly" />
+            <Label>{{ $t('uiText.name3de49828') }}</Label><Input v-model="editor.displayName" :disabled="editor.readOnly" />
           </div>
           <div class="space-y-2">
-            <Label>Identity</Label><DocumentIdentityInput v-model="editor.identity" :disabled="editor.readOnly" />
+            <Label>{{ $t('uiText.identity7e5a975b') }}</Label><DocumentIdentityInput v-model="editor.identity" :disabled="editor.readOnly" />
           </div>
         </div>
         <div class="space-y-2">
-          <Label>Описание</Label><Textarea v-model="editor.description" :disabled="editor.readOnly" />
+          <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label><Textarea v-model="editor.description" :disabled="editor.readOnly" />
         </div>
         <div class="space-y-2">
-          <Label>Source version</Label><Input v-model.number="editor.sourceVersion" type="number" min="1" :disabled="editor.readOnly" />
+          <Label>{{ $t('uiText.sourceVersionb94adbb6') }}</Label><Input v-model.number="editor.sourceVersion" type="number" min="1" :disabled="editor.readOnly" />
         </div>
         <div class="space-y-3 rounded-lg border p-3">
           <div class="flex items-center justify-between">
-            <Label>Runtime targets</Label><Button v-if="!editor.readOnly" size="sm" variant="outline" @click="addTarget">
-              <Plus class="mr-1 size-3.5" />Добавить
+            <Label>{{ $t('uiText.runtimeTargets69bfee86') }}</Label><Button v-if="!editor.readOnly" size="sm" variant="outline" @click="addTarget">
+              <Plus class="mr-1 size-3.5" />{{ $t('uiText.add559a87f7') }}
             </Button>
           </div>
           <div v-for="(target, index) in editor.target ?? []" :key="index" class="grid grid-cols-[1fr_1fr_auto] gap-2">
@@ -147,7 +146,7 @@ async function save(): Promise<void> {
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>Активно</Label>
+          <Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>{{ $t('uiText.activeNeuter76ddd792') }}</Label>
         </div>
       </div>
     </div>

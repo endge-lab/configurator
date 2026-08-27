@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   CompositionSourceDocument,
   CompositionSourcePatchOperation,
@@ -28,19 +27,37 @@ export interface CompositionDropPlan {
 export function resolveCompositionDropDescriptor(
   item: CompositionDropPayloadItem,
 ): CompositionDropDescriptor | null {
-  if (item.kind === 'folder') { return null }
+  if (item.kind === 'folder') {
+    return null
+  }
 
   const sectionType = String(item.sectionType ?? '')
   const docType = String(item.docType ?? '')
 
-  if (sectionType === DomainSectionType.Style) { return { target: 'resources', kind: 'style', fallbackName: 'style', skipDuplicate: true } }
-  if (sectionType === DomainSectionType.I18nBundles) { return { target: 'resources', kind: 'i18n', fallbackName: 'translations', skipDuplicate: true } }
-  if (sectionType === DomainSectionType.Store) { return { target: 'data', kind: 'store', fallbackName: 'store', skipDuplicate: true } }
-  if (sectionType === DomainSectionType.Vocabs) { return { target: 'data', kind: 'vocab', fallbackName: 'vocab', skipDuplicate: true } }
-  if (sectionType === DomainSectionType.Composition) { return { target: 'runtimes', kind: 'composition', fallbackName: 'composition', skipDuplicate: false } }
-  if (sectionType === DomainSectionType.Query) { return { target: 'runtimes', kind: 'query', fallbackName: 'query', skipDuplicate: false } }
-  if (sectionType === DomainSectionType.Filters) { return { target: 'runtimes', kind: 'filter', fallbackName: 'filter', skipDuplicate: false } }
-  if (sectionType === DomainSectionType.Component && docType === ComponentType.SFC) { return { target: 'runtimes', kind: 'component', fallbackName: 'component', skipDuplicate: false } }
+  if (sectionType === DomainSectionType.Style) {
+    return { target: 'resources', kind: 'style', fallbackName: 'style', skipDuplicate: true }
+  }
+  if (sectionType === DomainSectionType.I18nBundles) {
+    return { target: 'resources', kind: 'i18n', fallbackName: 'translations', skipDuplicate: true }
+  }
+  if (sectionType === DomainSectionType.Store) {
+    return { target: 'data', kind: 'store', fallbackName: 'store', skipDuplicate: true }
+  }
+  if (sectionType === DomainSectionType.Vocabs) {
+    return { target: 'data', kind: 'vocab', fallbackName: 'vocab', skipDuplicate: true }
+  }
+  if (sectionType === DomainSectionType.Composition) {
+    return { target: 'runtimes', kind: 'composition', fallbackName: 'composition', skipDuplicate: false }
+  }
+  if (sectionType === DomainSectionType.Query) {
+    return { target: 'runtimes', kind: 'query', fallbackName: 'query', skipDuplicate: false }
+  }
+  if (sectionType === DomainSectionType.Filters) {
+    return { target: 'runtimes', kind: 'filter', fallbackName: 'filter', skipDuplicate: false }
+  }
+  if (sectionType === DomainSectionType.Component && docType === ComponentType.SFC) {
+    return { target: 'runtimes', kind: 'component', fallbackName: 'component', skipDuplicate: false }
+  }
 
   return null
 }
@@ -115,7 +132,9 @@ export function buildCompositionDropPlan(
     }
 
     usedNames[descriptor.target].add(name)
-    if (descriptor.skipDuplicate) { existingDependencies.add(dependencyKey) }
+    if (descriptor.skipDuplicate) {
+      existingDependencies.add(dependencyKey)
+    }
   }
 
   return { operations, duplicateCount, unsupportedCount }
@@ -127,7 +146,9 @@ function toSourceIdentifier(identity: string, fallback: string): string {
     .split(/[^A-Z\d$]+/i)
     .filter(Boolean)
 
-  if (!words.length) { return fallback }
+  if (!words.length) {
+    return fallback
+  }
 
   const first = words[0]!
   const rest = words.slice(1)
@@ -142,10 +163,14 @@ function toSourceIdentifier(identity: string, fallback: string): string {
 }
 
 function createUniqueName(preferredName: string, usedNames: Set<string>): string {
-  if (!usedNames.has(preferredName)) { return preferredName }
+  if (!usedNames.has(preferredName)) {
+    return preferredName
+  }
 
   let suffix = 2
-  while (usedNames.has(`${preferredName}${suffix}`)) { suffix += 1 }
+  while (usedNames.has(`${preferredName}${suffix}`)) {
+    suffix += 1
+  }
 
   return `${preferredName}${suffix}`
 }

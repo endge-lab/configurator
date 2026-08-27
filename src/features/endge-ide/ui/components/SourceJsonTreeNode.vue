@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import type { LazyJsonNodeDescriptor } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
 
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
@@ -29,7 +28,9 @@ const emit = defineEmits<{
 }>()
 
 const injectedController = inject(LazyJsonTreeControllerKey)
-if (!injectedController) { throw new Error('[SourceJsonTreeNode] Lazy tree controller is missing.') }
+if (!injectedController) {
+  throw new Error('[SourceJsonTreeNode] Lazy tree controller is missing.')
+}
 const controller = injectedController
 
 const value = computed(() => lazyJsonNodeValue(props.node))
@@ -62,7 +63,9 @@ watch(
       expanded.value = false
       return
     }
-    if (controller.command.value === 'expand-visible' && container.value) { expandWithinBudget() }
+    if (controller.command.value === 'expand-visible' && container.value) {
+      expandWithinBudget()
+    }
   },
 )
 
@@ -89,9 +92,13 @@ onBeforeUnmount(() => {
 })
 
 function toggle(event?: MouseEvent): void {
-  if (!container.value) { return }
+  if (!container.value) {
+    return
+  }
   const selection = event ? window.getSelection() : null
-  if (selection && !selection.isCollapsed) { return }
+  if (selection && !selection.isCollapsed) {
+    return
+  }
   if (expanded.value) {
     releaseChildren()
     expanded.value = false
@@ -102,7 +109,9 @@ function toggle(event?: MouseEvent): void {
 }
 
 function expandWithinBudget(): void {
-  if (expanded.value) { return }
+  if (expanded.value) {
+    return
+  }
   const nextCount = plannedChildCount()
   if (controller.allocatedNodes.value + nextCount > controller.maxMountedNodes.value) {
     controller.notice.value = `Node budget ${controller.maxMountedNodes.value} reached. Collapse another branch before expanding this one.`
@@ -115,7 +124,9 @@ function expandWithinBudget(): void {
 }
 
 function reconcileReservation(): void {
-  if (!expanded.value) { return }
+  if (!expanded.value) {
+    return
+  }
   const nextCount = plannedChildCount()
   const delta = nextCount - reservedChildren.value
   if (delta > 0 && controller.allocatedNodes.value + delta > controller.maxMountedNodes.value) {
@@ -136,7 +147,9 @@ function plannedChildCount(): number {
 }
 
 function releaseChildren(): void {
-  if (reservedChildren.value === 0) { return }
+  if (reservedChildren.value === 0) {
+    return
+  }
   controller.allocatedNodes.value = Math.max(1, controller.allocatedNodes.value - reservedChildren.value)
   reservedChildren.value = 0
 }

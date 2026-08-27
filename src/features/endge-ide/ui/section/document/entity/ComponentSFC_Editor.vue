@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { ComponentSFCTagAttributeContract, EndgeSFCEditingConfiguration, RComponentSFC } from '@endge/core'
 import type { TableCellComponentOption } from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
 import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
@@ -277,7 +276,7 @@ async function launchPreview(): Promise<void> {
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет редактора
+    {{ $t('uiText.noEditorF03cf60f') }}
   </div>
   <SourceDocumentEditorShell
     v-else
@@ -308,7 +307,7 @@ async function launchPreview(): Promise<void> {
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip v-if="hasTableVisual">
             <TooltipTrigger as-child>
@@ -327,7 +326,7 @@ async function launchPreview(): Promise<void> {
                 <Table2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Таблица</TooltipContent>
+            <TooltipContent>{{ $t('uiText.tableF2729fd7') }}</TooltipContent>
           </Tooltip>
           <Tooltip v-if="hasTableVisual">
             <TooltipTrigger as-child>
@@ -346,7 +345,7 @@ async function launchPreview(): Promise<void> {
                 <Columns3 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Колонки</TooltipContent>
+            <TooltipContent>{{ $t('uiText.columnsE9516417') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -365,7 +364,7 @@ async function launchPreview(): Promise<void> {
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -385,7 +384,7 @@ async function launchPreview(): Promise<void> {
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Запустить Runtime Preview (⌘/Ctrl+Enter)</TooltipContent>
+            <TooltipContent>{{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -394,7 +393,7 @@ async function launchPreview(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -417,7 +416,7 @@ async function launchPreview(): Promise<void> {
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -450,14 +449,14 @@ async function launchPreview(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
-            <Label for="component-sfc-display-name">Название</Label>
+            <Label for="component-sfc-display-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input
               id="component-sfc-display-name"
               v-model="editor.displayName"
             />
           </div>
           <div class="space-y-2">
-            <Label for="component-sfc-identity">Identity</Label>
+            <Label for="component-sfc-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput
               id="component-sfc-identity"
               v-model="editor.identity"
@@ -466,7 +465,7 @@ async function launchPreview(): Promise<void> {
           </div>
         </div>
         <div class="space-y-2">
-          <Label for="component-sfc-tag">Tag</Label>
+          <Label for="component-sfc-tag">{{ $t('uiText.tag982963c1') }}</Label>
           <Input
             id="component-sfc-tag"
             v-model="editor.tag"
@@ -475,7 +474,7 @@ async function launchPreview(): Promise<void> {
           />
         </div>
         <div class="space-y-2">
-          <Label for="component-sfc-description">Описание</Label>
+          <Label for="component-sfc-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <Textarea
             id="component-sfc-description"
             v-model="editor.description"
@@ -483,9 +482,9 @@ async function launchPreview(): Promise<void> {
           />
         </div>
         <div class="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
-          <div>modelVersion: {{ documentModel?.modelVersion ?? 1 }}</div>
-          <div>targets: {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
-          <div>source: {{ String(editor.source ?? '').length }} chars</div>
+          <div>{{ $t('uiText.modelversionc0e8ccdd') }} {{ documentModel?.modelVersion ?? 1 }}</div>
+          <div>{{ $t('uiText.targetsff36e6e5') }} {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+          <div>{{ $t('uiText.sourced0192309') }} {{ String(editor.source ?? '').length }} {{ $t('uiText.chars76a91d6c') }}</div>
         </div>
       </div>
     </div>
@@ -510,14 +509,14 @@ async function launchPreview(): Promise<void> {
           <DocumentIdField :document-id="editor.id" />
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label for="component-sfc-display-name-visual">Название</Label>
+              <Label for="component-sfc-display-name-visual">{{ $t('uiText.name3de49828') }}</Label>
               <Input
                 id="component-sfc-display-name-visual"
                 v-model="editor.displayName"
               />
             </div>
             <div class="space-y-2">
-              <Label for="component-sfc-identity-visual">Identity</Label>
+              <Label for="component-sfc-identity-visual">{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput
                 id="component-sfc-identity-visual"
                 v-model="editor.identity"
@@ -526,7 +525,7 @@ async function launchPreview(): Promise<void> {
             </div>
           </div>
           <div class="space-y-2">
-            <Label for="component-sfc-tag-visual">Tag</Label>
+            <Label for="component-sfc-tag-visual">{{ $t('uiText.tag982963c1') }}</Label>
             <Input
               id="component-sfc-tag-visual"
               v-model="editor.tag"
@@ -535,7 +534,7 @@ async function launchPreview(): Promise<void> {
             />
           </div>
           <div class="space-y-2">
-            <Label for="component-sfc-description-visual">Описание</Label>
+            <Label for="component-sfc-description-visual">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea
               id="component-sfc-description-visual"
               v-model="editor.description"
@@ -543,9 +542,9 @@ async function launchPreview(): Promise<void> {
             />
           </div>
           <div class="space-y-1 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-            <div>modelVersion: {{ documentModel?.modelVersion ?? 1 }}</div>
-            <div>targets: {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
-            <div>source: {{ String(editor.source ?? '').length }} chars</div>
+            <div>{{ $t('uiText.modelversionc0e8ccdd') }} {{ documentModel?.modelVersion ?? 1 }}</div>
+            <div>{{ $t('uiText.targetsff36e6e5') }} {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+            <div>{{ $t('uiText.sourced0192309') }} {{ String(editor.source ?? '').length }} {{ $t('uiText.chars76a91d6c') }}</div>
           </div>
         </div>
       </template>

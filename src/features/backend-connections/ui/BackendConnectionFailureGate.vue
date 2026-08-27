@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { ArrowLeft, ServerOff } from 'lucide-vue-next'
 
 import { Configurator } from '@/app/model/kernel/configurator'
@@ -24,7 +23,7 @@ function switchToPrimary(): void {
           <ServerOff class="size-5" />
         </span>
         <h1 id="backend-connection-failure-title" class="text-2xl font-semibold tracking-tight">
-          Не удалось подключиться
+          {{ $t('uiText.failedToConnect6bd21210') }}
         </h1>
       </header>
 
@@ -44,7 +43,7 @@ function switchToPrimary(): void {
           @click="switchToPrimary"
         >
           <ArrowLeft class="size-4" />
-          Перейти на основной
+          {{ $t('uiText.goToMain24ba8bde') }}
         </button>
       </footer>
     </section>

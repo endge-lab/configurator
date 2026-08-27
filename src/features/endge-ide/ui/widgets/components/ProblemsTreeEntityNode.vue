@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DomainDocumentType } from '@endge/core'
 import type { Component } from 'vue'
 import type { ProblemsEntityEntry } from '@/features/endge-ide/domain/types/problems-workspace.types'
@@ -60,16 +59,16 @@ function selectEntity(): void {
     </span>
     <span class="flex shrink-0 items-center gap-1 text-[9px] tabular-nums">
       <span v-if="severityCount.fatal" class="rounded bg-rose-700/15 px-1 py-0.5 font-semibold text-rose-600 dark:text-rose-400">
-        {{ severityCount.fatal }}F
+        {{ severityCount.fatal }}{{ $t('uiText.fe69f20e9') }}
       </span>
       <span v-if="severityCount.error" class="rounded bg-red-500/10 px-1 py-0.5 font-semibold text-red-600 dark:text-red-400">
-        {{ severityCount.error }}E
+        {{ severityCount.error }}{{ $t('uiText.ee0184ade') }}
       </span>
       <span v-if="severityCount.warning" class="rounded bg-amber-500/10 px-1 py-0.5 font-semibold text-amber-600 dark:text-amber-400">
-        {{ severityCount.warning }}W
+        {{ severityCount.warning }}{{ $t('uiText.we2415cb7') }}
       </span>
       <span v-if="!severityCount.fatal && !severityCount.error && !severityCount.warning" class="rounded bg-sky-500/10 px-1 py-0.5 font-semibold text-sky-600 dark:text-sky-400">
-        {{ entry.problems.length }}I
+        {{ entry.problems.length }}{{ $t('uiText.ica73ab65') }}
       </span>
     </span>
   </button>

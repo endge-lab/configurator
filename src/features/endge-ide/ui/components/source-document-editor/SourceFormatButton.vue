@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { AlignLeft } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
@@ -30,7 +29,7 @@ const emit = defineEmits<{
           <AlignLeft class="size-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Форматировать</TooltipContent>
+      <TooltipContent>{{ $t('uiText.format64a03c67') }}</TooltipContent>
     </Tooltip>
   </TooltipProvider>
 </template>

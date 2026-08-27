@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import type {
   CompositionSourceDocument,
   CompositionSourcePatchOperation,
@@ -78,9 +77,15 @@ const dropTargetLabel = computed(() => {
 
 function parseDomainDragPayload(event: DragEvent): CompositionDropPayloadItem[] {
   let raw: string | null = null
-  if (event.dataTransfer?.types.includes(DOMAIN_ENTITY_MIME)) { raw = event.dataTransfer.getData(DOMAIN_ENTITY_MIME) }
-  if (!raw) { raw = event.dataTransfer?.getData('text/plain') ?? null }
-  if (!raw) { return [] }
+  if (event.dataTransfer?.types.includes(DOMAIN_ENTITY_MIME)) {
+    raw = event.dataTransfer.getData(DOMAIN_ENTITY_MIME)
+  }
+  if (!raw) {
+    raw = event.dataTransfer?.getData('text/plain') ?? null
+  }
+  if (!raw) {
+    return []
+  }
 
   try {
     const parsed = JSON.parse(raw)
@@ -96,23 +101,31 @@ function isDomainEntityDrag(event: DragEvent): boolean {
 }
 
 function onEditorDragOver(event: DragEvent): void {
-  if (!isDomainEntityDrag(event)) { return }
+  if (!isDomainEntityDrag(event)) {
+    return
+  }
 
   event.preventDefault()
   event.stopPropagation()
   dropOver.value = draggedDescriptors.value.length > 0
-  if (event.dataTransfer) { event.dataTransfer.dropEffect = dropOver.value ? 'copy' : 'none' }
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = dropOver.value ? 'copy' : 'none'
+  }
 }
 
 function onEditorDragLeave(event: DragEvent): void {
   const nextTarget = event.relatedTarget
-  if (nextTarget instanceof Node && container.value?.contains(nextTarget)) { return }
+  if (nextTarget instanceof Node && container.value?.contains(nextTarget)) {
+    return
+  }
 
   dropOver.value = false
 }
 
 function onEditorDrop(event: DragEvent): void {
-  if (!isDomainEntityDrag(event)) { return }
+  if (!isDomainEntityDrag(event)) {
+    return
+  }
 
   event.preventDefault()
   event.stopPropagation()
@@ -163,11 +176,15 @@ function onEditorDrop(event: DragEvent): void {
 
 function applySourceEdit(currentSource: string, nextSource: string): void {
   const model = editor?.getModel()
-  if (!editor || !model || currentSource === nextSource) { return }
+  if (!editor || !model || currentSource === nextSource) {
+    return
+  }
 
   let start = 0
   const maxPrefix = Math.min(currentSource.length, nextSource.length)
-  while (start < maxPrefix && currentSource[start] === nextSource[start]) { start += 1 }
+  while (start < maxPrefix && currentSource[start] === nextSource[start]) {
+    start += 1
+  }
 
   let currentEnd = currentSource.length
   let nextEnd = nextSource.length
@@ -220,8 +237,12 @@ function formatAddedTitle(count: number): string {
 
 function formatSkippedDescription(plan: Pick<CompositionDropPlan, 'duplicateCount' | 'unsupportedCount'>): string | undefined {
   const parts: string[] = []
-  if (plan.duplicateCount) { parts.push(`Уже добавлено: ${plan.duplicateCount}`) }
-  if (plan.unsupportedCount) { parts.push(`Не поддерживается: ${plan.unsupportedCount}`) }
+  if (plan.duplicateCount) {
+    parts.push(`Уже добавлено: ${plan.duplicateCount}`)
+  }
+  if (plan.unsupportedCount) {
+    parts.push(`Не поддерживается: ${plan.unsupportedCount}`)
+  }
   return parts.length ? parts.join(' · ') : undefined
 }
 
@@ -230,7 +251,9 @@ watch(() => props.modelValue, (value) => {
   monacoAdapter.setValue(source.value)
 })
 watch(() => EndgeIDE.domainDrag.state.value.active, (active) => {
-  if (!active) { dropOver.value = false }
+  if (!active) {
+    dropOver.value = false
+  }
 })
 
 defineExpose({ formatDocument: monacoAdapter.formatDocument })

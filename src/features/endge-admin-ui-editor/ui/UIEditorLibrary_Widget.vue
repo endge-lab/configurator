@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorSFCExample } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
 import type {
   UIEditorLibraryGroup,
@@ -257,7 +256,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
       <div class="p-2 text-[13px] leading-5">
         <div class="mb-3">
           <div class="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
-            SFC primitives
+            {{ $t('uiText.sfcPrimitives83a320d6') }}
           </div>
 
           <div
@@ -315,7 +314,7 @@ function getItemTitle(item: UIEditorLibraryItem): string {
               <ChevronRight v-else class="size-4 shrink-0" />
               <BookOpenText class="size-4 shrink-0 text-sky-500" />
               <span class="min-w-0 flex-1 truncate">
-                Примеры
+                {{ $t('uiText.examples59221eef') }}
               </span>
             </button>
 

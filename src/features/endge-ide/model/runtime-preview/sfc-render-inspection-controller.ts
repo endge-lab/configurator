@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { SFCRenderInspectionNode, SFCRenderInspectionTreeNode } from '@endge/core'
 
 import { SFCRenderInspectionSession } from '@endge/core'
@@ -26,7 +25,9 @@ export class SFCRenderInspectionController {
 
   public readonly activeData = computed<Record<string, unknown> | null>(() => {
     const node = this.activeNode.value
-    if (!node) { return null }
+    if (!node) {
+      return null
+    }
     return {
       component: node.calledComponentIdentity ?? node.componentIdentity,
       node: {
@@ -49,23 +50,33 @@ export class SFCRenderInspectionController {
   public constructor() {
     this._unsubscribe = this.session.subscribe(() => {
       this._revision.value += 1
-      if (this.pinnedId.value && !this.session.getNode(this.pinnedId.value)) { this.pinnedId.value = null }
-      if (this.hoveredId.value && !this.session.getNode(this.hoveredId.value)) { this.hoveredId.value = null }
+      if (this.pinnedId.value && !this.session.getNode(this.pinnedId.value)) {
+        this.pinnedId.value = null
+      }
+      if (this.hoveredId.value && !this.session.getNode(this.hoveredId.value)) {
+        this.hoveredId.value = null
+      }
     })
   }
 
   public hover(id: string | null): void {
-    if (this.pinnedId.value) { return }
+    if (this.pinnedId.value) {
+      return
+    }
     this.hoveredId.value = id && this.session.getNode(id) ? id : null
   }
 
   public clearHover(): void {
-    if (!this.pinnedId.value) { this.hoveredId.value = null }
+    if (!this.pinnedId.value) {
+      this.hoveredId.value = null
+    }
   }
 
   public pin(id: string | null): void {
     this.pinnedId.value = id && this.session.getNode(id) ? id : null
-    if (this.pinnedId.value) { this.hoveredId.value = null }
+    if (this.pinnedId.value) {
+      this.hoveredId.value = null
+    }
   }
 
   public unpin(): void {

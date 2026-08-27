@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { TypeSourceDocument } from '@endge/core'
 import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
 
@@ -76,11 +75,11 @@ function openSource(): void {
       class="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2"
     >
       <p class="text-xs text-muted-foreground">
-        {{ projection.message }} UI показывает контракт read-only и не создаёт параллельную модель.
+        {{ projection.message }} {{ $t('uiText.uiShowsReadOnlyContractAndDoesNotCreateAParallelModedec48770') }}
       </p>
       <Button size="sm" variant="outline" class="h-7 shrink-0 gap-1.5" @click="openSource">
         <Code2 class="size-3.5" />
-        Редактировать в Source
+        {{ $t('uiText.editInSource42ceebde') }}
       </Button>
     </div>
 

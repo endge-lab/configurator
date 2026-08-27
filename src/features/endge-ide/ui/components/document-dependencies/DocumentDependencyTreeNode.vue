@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { Component } from 'vue'
 import type { DocumentDependencyNode } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 
@@ -119,8 +118,8 @@ function activate(): void {
           class="truncate text-[10px] leading-3 text-muted-foreground/75"
           :title="node.identity"
         >
-          <template v-if="node.alias">{{ node.alias }} · </template>{{ node.identity }}
-          <template v-if="node.relationRole"> · {{ node.relationRole }}</template>
+          <template v-if="node.alias">{{ node.alias }} {{ $t('uiText.symbol1fdf0d90') }} </template>{{ node.identity }}
+          <template v-if="node.relationRole"> {{ $t('uiText.symbol1fdf0d90') }} {{ node.relationRole }}</template>
         </span>
       </span>
 
@@ -128,7 +127,7 @@ function activate(): void {
         v-if="node.activationMode === 'manual'"
         class="shrink-0 rounded border border-border/80 px-1 py-px text-[9px] leading-3 text-muted-foreground/80"
       >
-        manual
+        {{ $t('uiText.manualb363713a') }}
       </span>
       <span
         v-if="node.status === 'compile-error'"

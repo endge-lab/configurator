@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCTableEditableElementProjection,
   ComponentSFCTableVisualCellTag,
@@ -204,22 +203,22 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
     <div class="flex min-h-12 items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-3 py-2">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium">Редактор</span>
+          <span class="text-sm font-medium">{{ $t('uiText.editor65d42cf1') }}</span>
           <Badge v-if="implicit" variant="secondary" class="h-5 text-[10px]">
-            Встроенный
+            {{ $t('uiText.builtIneab04386') }}
           </Badge>
           <Badge v-else-if="editor" variant="outline" class="h-5 text-[10px]">
-            Variant edit
+            {{ $t('uiText.variantEditf91c442b') }}
           </Badge>
           <Badge v-else variant="secondary" class="h-5 text-[10px]">
-            Не выбран
+            {{ $t('uiText.notSelected92250813') }}
           </Badge>
         </div>
         <p v-if="implicit" class="mt-0.5 text-[10px] text-muted-foreground">
-          Сейчас отображение и editor используют один tag.
+          {{ $t('uiText.currentlyDisplayAndEditorUseTheSameTag3c2b1d7a') }}
         </p>
         <p v-else-if="selecting" class="mt-0.5 text-[10px] text-muted-foreground">
-          Выбор создаст подходящее представление в Source.
+          {{ $t('uiText.selectionWillCreateAnAppropriateRepresentationInSour18135af4') }}
         </p>
       </div>
 
@@ -231,7 +230,7 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
                 <Blocks class="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Существующий компонент</TooltipContent>
+            <TooltipContent>{{ $t('uiText.existingComponent00f3092d') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -239,7 +238,7 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
                 <Tags class="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Встроенный SFC tag</TooltipContent>
+            <TooltipContent>{{ $t('uiText.builtInSFCTaga7d43335') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -247,7 +246,7 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
                 <FileCode2 class="size-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Произвольная Source-разметка</TooltipContent>
+            <TooltipContent>{{ $t('uiText.customSourceMarkup2872b476') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -256,37 +255,37 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
     <div v-if="mode === 'component' || mode === 'tag'" class="grid min-h-40 md:grid-cols-[minmax(210px,0.38fr)_minmax(0,0.62fr)]">
       <div class="editor-control border-b border-border/60 p-3 md:border-b-0 md:border-r">
         <div v-if="mode === 'component'" class="space-y-2">
-          <Label>Компонент</Label>
+          <Label>{{ $t('nav.error.component') }}</Label>
           <SearchableSelect :options="componentSelectOptions" :model-value="selectedComponent" placeholder="Найти компонент..." trigger-class="editor-control w-full" @update:model-value="updateComponent" />
           <p class="text-xs text-muted-foreground">
-            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : 'Выберите компонент' }}
+            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : $t('uiText.selectComponentdfd14214') }}
           </p>
         </div>
         <div v-else class="space-y-2">
-          <Label>Tag</Label>
+          <Label>{{ $t('uiText.tag982963c1') }}</Label>
           <SearchableSelect :options="tagSelectOptions" :model-value="selectedTag" placeholder="Найти SFC tag..." trigger-class="editor-control w-full font-mono" @update:model-value="updateTag" />
           <p class="text-xs text-muted-foreground">
-            Встроенный renderer-neutral editor.
+            {{ $t('uiText.builtInRendererNeutralEditor2b35fd3e') }}
           </p>
         </div>
         <Button v-if="implicit" type="button" variant="outline" size="sm" class="mt-3 w-full" @click="emit('separate')">
-          Создать отдельный editor
+          {{ $t('uiText.createASeparateEditordbce7620') }}
         </Button>
       </div>
 
       <div class="min-w-0 bg-editor-panel">
         <div class="grid grid-cols-[minmax(110px,0.42fr)_minmax(0,0.58fr)] border-b bg-muted/25 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          <div>Входной параметр</div>
-          <div>Значение</div>
+          <div>{{ $t('uiText.inputParametera1b0115f') }}</div>
+          <div>{{ $t('uiText.value9f0b9909') }}</div>
         </div>
         <div v-if="fields.length" class="divide-y divide-border/60">
           <div v-for="field in fields" :key="field.name" class="grid grid-cols-[minmax(110px,0.42fr)_minmax(0,0.58fr)] items-start gap-3 px-3 py-2.5">
             <div class="min-w-0 pt-1">
               <div class="flex items-center gap-1.5">
                 <code class="truncate text-xs font-medium">{{ field.name }}</code>
-                <span v-if="!field.optional" class="text-xs text-amber-500">*</span>
+                <span v-if="!field.optional" class="text-xs text-amber-500">{{ $t('uiText.symboldf58248c') }}</span>
                 <Badge v-if="field.sourceOnly" variant="outline" class="h-4 px-1 text-[9px] font-normal">
-                  Source
+                  {{ $t('uiText.sourceda13add2') }}
                 </Badge>
               </div>
               <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground" :title="field.type">
@@ -296,10 +295,10 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
             <div class="min-w-0">
               <div class="editor-control flex min-w-0 items-center rounded-md border border-border/70" :class="errors[field.name] ? 'border-destructive/70' : ''" @focusout="handleFocusOut($event, field.name)">
                 <Button type="button" variant="ghost" size="sm" class="h-7 min-w-7 rounded-r-none border-r px-1.5 font-mono text-[10px]" :class="bindingKind(field.name) === 'expression' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'" :disabled="implicit" @click="setBindingKind(field.name, 'expression')">
-                  fx
+                  {{ $t('uiText.fx06967d8e') }}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" class="h-7 min-w-7 rounded-none border-r px-1.5 font-mono text-[10px]" :class="bindingKind(field.name) === 'literal' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'" :disabled="implicit" @click="setBindingKind(field.name, 'literal')">
-                  Aa
+                  {{ $t('uiText.aa2c419ecc') }}
                 </Button>
                 <Input v-model="drafts[field.name]" class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0" :disabled="implicit" :placeholder="bindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'" spellcheck="false" @keydown.enter.prevent="commitBinding(field.name)" @keydown.esc.prevent="resetBinding(field.name)" />
               </div>
@@ -310,7 +309,7 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
           </div>
         </div>
         <div v-else class="flex min-h-24 items-center justify-center px-4 text-center text-xs text-muted-foreground">
-          У выбранного editor нет входных параметров.
+          {{ $t('uiText.selectedEditorHasNoInputParameters8afec2f2') }}
         </div>
       </div>
     </div>
@@ -318,16 +317,16 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
     <div v-else class="flex min-h-28 items-center justify-between gap-4 px-4 py-3">
       <div>
         <div class="text-sm font-medium">
-          {{ selecting ? 'Создать editor вручную' : 'Произвольный editor' }}
+          {{ selecting ? $t('uiText.createEditorManuallyaed624eb') : $t('uiText.customEditorccd9fab3') }}
         </div>
         <div class="mt-0.5 text-xs text-muted-foreground">
           {{ selecting
-            ? 'Откройте Source и задайте Editable с вариантами default и edit.'
-            : 'Сложную разметку Variant edit можно изменить без преобразования в Source.' }}
+            ? $t('uiText.openSourceAndSetEditableWithOptionsDefaultAndEdit018dc896')
+            : $t('uiText.complexVariantEditMarkupCanBeModifiedWithoutConverti679d7a25') }}
         </div>
       </div>
       <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="emit('openSource')">
-        Открыть Source
+        {{ $t('uiText.openSource4dda88e1') }}
         <ExternalLink class="size-3.5" />
       </Button>
     </div>

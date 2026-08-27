@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
 
 import { Endge } from '@endge/core'
@@ -113,7 +112,7 @@ async function launchPreview(): Promise<void> {
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -132,7 +131,7 @@ async function launchPreview(): Promise<void> {
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -153,7 +152,7 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Запустить Runtime Preview (⌘/Ctrl+Enter)
+              {{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -173,7 +172,7 @@ async function launchPreview(): Promise<void> {
                 <FileJson class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Артифакт</TooltipContent>
+            <TooltipContent>{{ $t('uiText.artifactA171cb33') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -192,7 +191,7 @@ async function launchPreview(): Promise<void> {
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -215,7 +214,7 @@ async function launchPreview(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -240,7 +239,7 @@ async function launchPreview(): Promise<void> {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сбросить source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -252,11 +251,11 @@ async function launchPreview(): Promise<void> {
           <DocumentIdField :document-id="editor.id" />
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <Label for="composition-name">Display name</Label>
+              <Label for="composition-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
               <Input id="composition-name" v-model="editor.name" />
             </div>
             <div class="space-y-2">
-              <Label for="composition-identity">Identity</Label>
+              <Label for="composition-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput
                 id="composition-identity"
                 v-model="editor.identity"
@@ -265,7 +264,7 @@ async function launchPreview(): Promise<void> {
             </div>
           </div>
           <div class="space-y-2">
-            <Label for="composition-description">Описание</Label>
+            <Label for="composition-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea
               id="composition-description"
               v-model="editor.description"
@@ -273,7 +272,7 @@ async function launchPreview(): Promise<void> {
             />
           </div>
           <div class="max-w-xs space-y-2">
-            <Label for="composition-source-version">Source version</Label>
+            <Label for="composition-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label>
             <Input
               id="composition-source-version"
               v-model.number="editor.sourceVersion"

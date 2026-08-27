@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { EndgeConfigurationContribution } from '@endge/core'
 
 import { Endge } from '@endge/core'
@@ -74,8 +73,8 @@ async function save(): Promise<void> {
   >
     <template #metadata-after>
       <div v-if="externallyManaged" class="flex min-w-0 items-center gap-1.5">
-        <span class="shrink-0 text-muted-foreground">kind:</span>
-        <span class="min-w-0 truncate font-mono text-foreground/80">{{ systemManaged ? 'system' : 'integration' }}</span>
+        <span class="shrink-0 text-muted-foreground">{{ $t('uiText.kind2b617982') }}</span>
+        <span class="min-w-0 truncate font-mono text-foreground/80">{{ systemManaged ? $t('uiText.system317f1e76') : $t('uiText.integration06eff510') }}</span>
       </div>
     </template>
 
@@ -122,7 +121,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -135,7 +134,7 @@ async function save(): Promise<void> {
             <section class="max-w-2xl space-y-4">
               <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
-                <Label for="environment-identity">Identity</Label>
+                <Label for="environment-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
                 <DocumentIdentityInput
                   id="environment-identity"
                   v-model="editor.identity"
@@ -144,7 +143,7 @@ async function save(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label for="environment-display-name">Display name</Label>
+                <Label for="environment-display-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
                 <Input
                   id="environment-display-name"
                   v-model="editor.displayName"

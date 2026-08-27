@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCInteractionTriggerProjection,
   ComponentSFCTableCellInteractionRuleProjection,
@@ -189,14 +188,14 @@ function quote(value: string): string {
     <div class="mb-3 flex justify-end">
       <Button v-if="modelValue.editable" type="button" size="sm" class="gap-1.5" @click="addRule">
         <Plus class="size-3.5" />
-        Событие
+        {{ $t('uiText.eventBb92633b') }}
       </Button>
     </div>
 
     <div v-if="!modelValue.editable" class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
       <div class="min-w-0">
         <div class="text-sm font-medium">
-          Аннотация управляется Source
+          {{ $t('uiText.annotationControlledBySource8ef6ddf0') }}
         </div>
         <div class="mt-0.5 text-xs text-muted-foreground">
           {{ modelValue.message }}
@@ -204,18 +203,18 @@ function quote(value: string): string {
       </div>
       <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="$emit('openSource')">
         <FileCode2 class="size-3.5" />
-        Открыть
+        {{ $t('uiText.open1259571a') }}
       </Button>
     </div>
 
     <div v-else-if="!drafts.length" class="rounded-lg border border-dashed border-border/70 px-4 py-7 text-center text-xs text-muted-foreground">
-      Нет обработчиков. Добавьте только те события, на которые нужна реакция.
+      {{ $t('uiText.noHandlersAddOnlyEventsThatRequireAReactionaf3dff1c') }}
     </div>
 
     <div v-else class="space-y-2">
       <div v-if="modelValue.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-        <span>Для всех правил:</span>
-        <code v-for="suffix in modelValue.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">.{{ suffix }}</code>
+        <span>{{ $t('uiText.forAllRulesfea7ba6c') }}</span>
+        <code v-for="suffix in modelValue.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
       </div>
 
       <ComponentSFCInteractionBindingEditor

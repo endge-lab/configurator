@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { DomainDocumentType, RComponentSFC, RComposition, RDocument, RUpdate } from '@endge/core'
 import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
 
@@ -152,9 +151,15 @@ const filteredTypeGroups = computed(() => {
   const contextualSection = createContext.value?.sectionType ?? null
   const query = typeSearch.value.trim().toLowerCase()
   const descriptors = DOCUMENT_CREATE_DESCRIPTORS.filter((descriptor) => {
-    if (descriptor.type === 'update' && !createContext.value?.updateOwnerStoreIdentity) { return false }
-    if (contextualSection && !showAllTypes.value && descriptor.section !== contextualSection) { return false }
-    if (!query) { return true }
+    if (descriptor.type === 'update' && !createContext.value?.updateOwnerStoreIdentity) {
+      return false
+    }
+    if (contextualSection && !showAllTypes.value && descriptor.section !== contextualSection) {
+      return false
+    }
+    if (!query) {
+      return true
+    }
     return [descriptor.label, descriptor.description, descriptor.type, ...descriptor.keywords]
       .some(value => String(value).toLowerCase().includes(query))
   })
@@ -177,14 +182,22 @@ const pageTemplateOptions = computed(() =>
 )
 
 const identityError = computed(() => {
-  if (!identity.value.trim()) { return 'Identity обязателен' }
-  if (identityConflict.value) { return `Документ «${identity.value.trim()}» уже существует` }
+  if (!identity.value.trim()) {
+    return 'Identity обязателен'
+  }
+  if (identityConflict.value) {
+    return `Документ «${identity.value.trim()}» уже существует`
+  }
   return null
 })
 
 const formError = computed(() => {
-  if (identityError.value) { return identityError.value }
-  if (activeType.value === 'page' && !selectedPageTemplateId.value) { return 'Для страницы выберите шаблон' }
+  if (identityError.value) {
+    return identityError.value
+  }
+  if (activeType.value === 'page' && !selectedPageTemplateId.value) {
+    return 'Для страницы выберите шаблон'
+  }
   return null
 })
 
@@ -193,7 +206,9 @@ const showFolderSelect = computed(() => activeOption.value.supportsFolder && !co
 
 /** Папки только текущей секции (по entityType): корень + вложенные под этим root. */
 const folderOptions = computed(() => {
-  if (!showFolderSelect.value) { return [] }
+  if (!showFolderSelect.value) {
+    return []
+  }
   const section = activeOption.value.section
   const rootId = ROOT_IDS[section]
   const sectionEntityType = SECTION_FOLDER_ENTITY_TYPE[section]
@@ -209,8 +224,12 @@ const folderOptions = computed(() => {
     const out: { value: string, label: string }[] = []
     for (const f of folders) {
       const p = (f as any).parent ?? (f as any).parentId ?? null
-      if (p == null) { continue }
-      if (String(p) !== String(parentId)) { continue }
+      if (p == null) {
+        continue
+      }
+      if (String(p) !== String(parentId)) {
+        continue
+      }
       const id = String((f as any).id ?? (f as any).identity ?? '')
       const name = String((f as any).displayName ?? (f as any).name ?? (f as any).identity ?? id)
       out.push({ value: id, label: `${'— '.repeat(depth)}${name}` })
@@ -227,12 +246,16 @@ watch(() => props.open, (v) => {
     const ctx = EndgeIDE.modals.createDocumentContext?.value ?? null
     if (ctx?.documentType != null) {
       const requestedType = DOCUMENT_CREATE_DESCRIPTORS.find(d => d.type === ctx.documentType)
-      if (requestedType) { activeType.value = requestedType.type }
+      if (requestedType) {
+        activeType.value = requestedType.type
+      }
       selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ROOT_FOLDER_VALUE
     }
     else if (ctx?.sectionType != null) {
       const firstOfSection = DOCUMENT_CREATE_DESCRIPTORS.find(d => d.section === ctx.sectionType)
-      if (firstOfSection) { activeType.value = firstOfSection.type }
+      if (firstOfSection) {
+        activeType.value = firstOfSection.type
+      }
       selectedFolderId.value = ctx.folderId != null ? String(ctx.folderId) : ROOT_FOLDER_VALUE
     }
     else {
@@ -256,19 +279,25 @@ watch(() => props.open, (v) => {
 watch(activeType, () => {
   const opts = folderOptions.value
   const valid = opts.some((option: { value: string }) => option.value === selectedFolderId.value)
-  if (!valid) { selectedFolderId.value = ROOT_FOLDER_VALUE }
+  if (!valid) {
+    selectedFolderId.value = ROOT_FOLDER_VALUE
+  }
   identityConflict.value = false
   jsonTouched.value = false
   jsonPayload.value = JSON.stringify(buildPayloadTemplate(), null, 2)
 })
 
 watch(name, (value) => {
-  if (!identityTouched.value) { identity.value = suggestDocumentIdentity(value) }
+  if (!identityTouched.value) {
+    identity.value = suggestDocumentIdentity(value)
+  }
 })
 
 watch([identity, name, description, selectedFolderId, selectedPageTemplateId], () => {
   identityConflict.value = false
-  if (jsonTouched.value) { return }
+  if (jsonTouched.value) {
+    return
+  }
   jsonPayload.value = JSON.stringify(buildPayloadTemplate(), null, 2)
 })
 
@@ -514,22 +543,30 @@ function onIdentityInput(): void {
 
 async function validateIdentityAvailability(): Promise<boolean> {
   const normalizedIdentity = identity.value.trim()
-  if (!normalizedIdentity) { return false }
+  if (!normalizedIdentity) {
+    return false
+  }
 
   const requestId = ++identityValidationRequest
   identityChecking.value = true
   try {
     const available = await Endge.domainRepository.isDocumentIdentityAvailable(documentType.value, normalizedIdentity)
-    if (requestId === identityValidationRequest) { identityConflict.value = !available }
+    if (requestId === identityValidationRequest) {
+      identityConflict.value = !available
+    }
     return available
   }
   finally {
-    if (requestId === identityValidationRequest) { identityChecking.value = false }
+    if (requestId === identityValidationRequest) {
+      identityChecking.value = false
+    }
   }
 }
 
 function applyFormFields(draft: RDocument): void {
-  if (activeOption.value.supportsDescription) { draft.description = description.value.trim() || null }
+  if (activeOption.value.supportsDescription) {
+    draft.description = description.value.trim() || null
+  }
 
   if (activeType.value === 'page') {
     const templateId = selectedPageTemplateId.value
@@ -546,7 +583,9 @@ async function onSubmit(): Promise<void> {
       let parsed: Record<string, unknown>
       try {
         const raw = JSON.parse(jsonPayload.value)
-        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) { throw new Error('JSON должен быть объектом') }
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+          throw new Error('JSON должен быть объектом')
+        }
         parsed = raw as Record<string, unknown>
       }
       catch (e: any) {
@@ -575,12 +614,16 @@ async function onSubmit(): Promise<void> {
         const owner = updateOwnerStoreIdentity.value
           ? Endge.domain.getStore(updateOwnerStoreIdentity.value)
           : null
-        if (!owner) { throw new Error('Update можно создать только из контекстного меню существующего Store.') }
+        if (!owner) {
+          throw new Error('Update можно создать только из контекстного меню существующего Store.')
+        }
         parsed.storeIdentity = owner.identity
       }
 
       const createdIdentity = String(parsed.identity ?? '').trim()
-      if (!createdIdentity) { throw new Error('В JSON обязательно поле "identity"') }
+      if (!createdIdentity) {
+        throw new Error('В JSON обязательно поле "identity"')
+      }
 
       await Endge.domainRepository.createDocument({
         documentType: targetDocumentType,
@@ -599,7 +642,9 @@ async function onSubmit(): Promise<void> {
       toast.error(formError.value)
       return
     }
-    if (!(await validateIdentityAvailability())) { return }
+    if (!(await validateIdentityAvailability())) {
+      return
+    }
 
     const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
     const targetDocumentType = documentType.value
@@ -630,7 +675,8 @@ async function onSubmit(): Promise<void> {
     if (targetDocumentType === 'update') {
       if (!updateOwnerStoreIdentity.value) {
         throw new Error('Update можно создать только из контекстного меню Store.')
-      }(draft as RUpdate).storeIdentity = updateOwnerStoreIdentity.value
+      }
+      (draft as RUpdate).storeIdentity = updateOwnerStoreIdentity.value
     }
     if (isQueryComposition) {
       draft.meta = setQueryCompositionRole(draft.meta, true)
@@ -648,7 +694,9 @@ async function onSubmit(): Promise<void> {
     openModel.value = false
   }
   catch (e: any) {
-    if (String(e?.message ?? '').includes('уже существует')) { identityConflict.value = true }
+    if (String(e?.message ?? '').includes('уже существует')) {
+      identityConflict.value = true
+    }
     toast.error('Ошибка создания документа', { description: e?.message ?? String(e) })
   }
   finally {
@@ -675,7 +723,7 @@ function onCancel(): void {
         <!-- Слева: список типов сущностей -->
         <div v-if="!lockedDocumentType" class="flex min-h-0 flex-col gap-2">
           <div class="flex items-center justify-between gap-2">
-            <Label class="text-muted-foreground text-xs">Тип документа</Label>
+            <Label class="text-muted-foreground text-xs">{{ $t('uiText.documentTypefcf0e9cc') }}</Label>
             <Button
               v-if="createContext?.sectionType"
               type="button"
@@ -684,7 +732,7 @@ function onCancel(): void {
               class="h-6 px-2 text-xs"
               @click="showAllTypes = !showAllTypes"
             >
-              {{ showAllTypes ? 'Текущая секция' : 'Все типы' }}
+              {{ showAllTypes ? $t('uiText.currentSectioncaa26d5c') : $t('uiText.allTypesc21a23a5') }}
             </Button>
           </div>
           <Input
@@ -722,7 +770,7 @@ function onCancel(): void {
               </section>
             </div>
             <div v-else class="px-3 py-8 text-center text-sm text-muted-foreground">
-              Подходящие типы не найдены
+              {{ $t('uiText.noMatchingTypesFound8929cdab') }}
             </div>
           </ScrollArea>
         </div>
@@ -753,7 +801,7 @@ function onCancel(): void {
             v-if="compositionOwner"
             class="rounded-md border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
           >
-            Привязка к проекту:
+            {{ $t('uiText.projectBindingb8d0866f') }}
             <span class="font-medium text-foreground">{{ compositionOwner.displayName || compositionOwner.identity }}</span>
             <span class="ml-1 font-mono">({{ compositionOwner.identity }})</span>
           </div>
@@ -761,17 +809,17 @@ function onCancel(): void {
           <Tabs v-model="createMode" class="flex min-h-0 flex-1 flex-col">
             <TabsList class="grid w-full grid-cols-2">
               <TabsTrigger value="form">
-                Форма
+                {{ $t('uiText.form22af8f93') }}
               </TabsTrigger>
               <TabsTrigger value="json">
-                JSON
+                {{ $t('uiText.json031a4e76') }}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="form" class="m-0 mt-3">
               <div class="space-y-3 rounded-md border p-3">
                 <div class="grid gap-2">
-                  <Label for="create-doc-name">Название</Label>
+                  <Label for="create-doc-name">{{ $t('uiText.name3de49828') }}</Label>
                   <Input
                     id="create-doc-name"
                     v-model="name"
@@ -781,8 +829,8 @@ function onCancel(): void {
                 </div>
                 <div class="grid gap-2">
                   <div class="flex items-center justify-between gap-3">
-                    <Label for="create-doc-identity">Identity (id)</Label>
-                    <span class="text-xs text-muted-foreground">Уникален в соответствующей коллекции</span>
+                    <Label for="create-doc-identity">{{ $t('uiText.identityId58fa481e') }}</Label>
+                    <span class="text-xs text-muted-foreground">{{ $t('uiText.uniqueInTheCorrespondingCollection027f038c') }}</span>
                   </div>
                   <Input
                     id="create-doc-identity"
@@ -793,11 +841,11 @@ function onCancel(): void {
                     @blur="validateIdentityAvailability"
                     @keydown.enter.prevent="onSubmit"
                   />
-                  <span v-if="identityChecking" class="text-xs text-muted-foreground">Проверяем identity...</span>
+                  <span v-if="identityChecking" class="text-xs text-muted-foreground">{{ $t('uiText.checkingIdentitybccbcfd8') }}</span>
                   <span v-else-if="identityError" class="text-xs text-destructive">{{ identityError }}</span>
                 </div>
                 <div v-if="showFolderSelect" class="grid gap-2">
-                  <Label>Папка</Label>
+                  <Label>{{ $t('uiText.folderbc5431b5') }}</Label>
                   <SearchableSelect
                     v-model="selectedFolderId"
                     :options="folderOptions"
@@ -805,20 +853,20 @@ function onCancel(): void {
                   />
                 </div>
                 <div v-if="activeType === 'page'" class="grid gap-2">
-                  <Label>Шаблон страницы</Label>
+                  <Label>{{ $t('uiText.pageTemplatebb1e6489') }}</Label>
                   <SearchableSelect
                     v-model="selectedPageTemplateId"
                     :options="pageTemplateOptions"
                     placeholder="Выберите обязательный шаблон"
                   />
                   <span v-if="!pageTemplateOptions.length" class="text-xs text-destructive">
-                    Сначала создайте хотя бы один шаблон страницы
+                    {{ $t('uiText.createAtLeastOnePageTemplateFirstfda7f1e1') }}
                   </span>
                 </div>
                 <div v-if="activeOption.supportsDescription" class="grid gap-2">
                   <div class="flex items-center justify-between gap-3">
-                    <Label for="create-doc-description">Описание</Label>
-                    <span class="text-xs text-muted-foreground">Опционально</span>
+                    <Label for="create-doc-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+                    <span class="text-xs text-muted-foreground">{{ $t('uiText.optional0bdb6517') }}</span>
                   </div>
                   <Textarea
                     id="create-doc-description"
@@ -832,7 +880,7 @@ function onCancel(): void {
 
             <TabsContent value="json" class="m-0 mt-3 flex min-h-0 flex-1 flex-col">
               <div class="mb-2 text-xs text-muted-foreground">
-                Advanced mode: JSON проходит тот же create-only check. Существующий identity не будет перезаписан.
+                {{ $t('uiText.advancedModeJSONUndergoesTheSameCreateOnlyCheckExist79188b4c') }}
               </div>
               <Textarea
                 :model-value="jsonPayload"
@@ -848,13 +896,13 @@ function onCancel(): void {
 
       <DialogFooter class="gap-2">
         <Button variant="outline" :disabled="loading" @click="onCancel">
-          Отменить
+          {{ $t('uiText.cancel555ad1c0') }}
         </Button>
         <Button
           :disabled="loading || identityChecking || (createMode === 'form' && !!formError)"
           @click="onSubmit"
         >
-          {{ loading ? 'Создаём...' : 'Создать' }}
+          {{ loading ? $t('uiText.creating573e3eda') : $t('uiText.create84370a20') }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { DiagnosticsProblemSeverity } from '@endge/core'
 
 import { Endge } from '@endge/core'
@@ -68,12 +67,12 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
   <div class="flex h-full min-h-0 flex-col bg-background" data-endge-problems-tree>
     <div class="flex min-h-10 shrink-0 items-center gap-2 border-b px-2.5">
       <div class="flex min-w-0 flex-1 items-baseline gap-2">
-        <span class="text-xs font-semibold">Problems</span>
+        <span class="text-xs font-semibold">{{ $t('uiText.problems8e6b86dc') }}</span>
         <span class="text-[10px] tabular-nums text-muted-foreground">{{ problemCount }}</span>
       </div>
       <div v-if="problemCount" class="flex items-center gap-1 text-[9px] tabular-nums">
-        <span v-if="errorCount" class="text-red-500">{{ errorCount }} errors</span>
-        <span v-if="warningCount" class="text-amber-500">{{ warningCount }} warnings</span>
+        <span v-if="errorCount" class="text-red-500">{{ errorCount }} {{ $t('uiText.errors57004359') }}</span>
+        <span v-if="warningCount" class="text-amber-500">{{ warningCount }} {{ $t('uiText.warningsbd207fab') }}</span>
       </div>
       <TooltipProvider>
         <Tooltip>
@@ -89,7 +88,7 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
               <RefreshCw class="size-3.5" :class="isAnalyzing && 'animate-spin'" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Повторить анализ проекта</TooltipContent>
+          <TooltipContent>{{ $t('uiText.reanalyzeProject36a10b6c') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
@@ -108,7 +107,7 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
           />
           <span class="size-1.5 shrink-0 rounded-full" :class="severityMarkerClass(group.severity)" />
           <span class="min-w-0 flex-1 truncate">{{ group.title }}</span>
-          <span class="tabular-nums text-[10px] font-normal">{{ group.entries.length }} / {{ group.problemCount }}</span>
+          <span class="tabular-nums text-[10px] font-normal">{{ group.entries.length }} {{ $t('uiText.symbol42099b4a') }} {{ group.problemCount }}</span>
         </button>
         <div v-if="!collapsedGroups.has(group.severity)">
           <ProblemsTreeEntityNode
@@ -126,15 +125,15 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
         <CircleCheck class="absolute -bottom-1 -right-1 size-4 text-emerald-500" />
       </span>
       <div class="text-xs font-medium text-foreground">
-        Проблем не обнаружено
+        {{ $t('uiText.noIssuesDetectedae658e4c') }}
       </div>
       <div class="max-w-52 text-[10px] leading-4">
-        Registry актуален. Повторите анализ после изменения проекта.
+        {{ $t('uiText.registryIsUpToDateReanalyzeAfterProjectChangesfc0faf0e') }}
       </div>
     </div>
 
     <div class="shrink-0 border-t px-3 py-2 text-[10px] leading-4 text-muted-foreground">
-      Escape возвращает к Project. Выбор сущности открывает её problems справа.
+      {{ $t('uiText.escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78') }}
     </div>
   </div>
 </template>

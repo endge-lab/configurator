@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { AIAdapter, AIModelProfile, AIProviderConnection, AIVisibility } from '@/features/ai-assistant/domain/types'
 
 import { Bot, Check, ChevronDown, ChevronRight, Globe2, KeyRound, Loader2, LockKeyhole, Pencil, Plus, Server, Sparkles, Star, Trash2, TriangleAlert, UserRound, X } from 'lucide-vue-next'
@@ -448,7 +447,7 @@ defineExpose({ open })
           <span class="flex size-9 items-center justify-center rounded-lg border border-fuchsia-500/20 bg-fuchsia-500/10">
             <Bot class="size-4 text-fuchsia-500" />
           </span>
-          <span class="text-base">AI-подключения</span>
+          <span class="text-base">{{ $t('uiText.aiConnections096c1ab8') }}</span>
         </DialogTitle>
       </DialogHeader>
 
@@ -478,7 +477,7 @@ defineExpose({ open })
           >
             <X v-if="showConnectionForm" class="size-4" />
             <Plus v-else class="size-4" />
-            {{ showConnectionForm ? 'Отмена' : 'Добавить' }}
+            {{ showConnectionForm ? $t('uiText.cancel0ec753be') : $t('uiText.add559a87f7') }}
           </Button>
         </div>
 
@@ -491,14 +490,14 @@ defineExpose({ open })
                     <span class="flex min-w-0 items-center gap-2">
                       <Sparkles v-if="connectionForm.adapter === 'anthropic'" class="size-3.5 shrink-0 text-fuchsia-500" />
                       <Server v-else-if="connectionForm.adapter === 'ollama'" class="size-3.5 shrink-0 text-sky-500" />
-                      <span class="truncate">{{ connectionForm.adapter ? adapterPresentation[connectionForm.adapter].label : 'Тип' }}</span>
+                      <span class="truncate">{{ connectionForm.adapter ? adapterPresentation[connectionForm.adapter].label : $t('uiText.typeD25691ca') }}</span>
                     </span>
                     <ChevronDown class="size-3.5 shrink-0 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" class="w-48">
                   <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">
-                    Тип подключения
+                    {{ $t('uiText.connectionType4d717346') }}
                   </DropdownMenuLabel>
                   <DropdownMenuItem v-for="adapter in adapters" :key="adapter" class="gap-2" @select="selectConnectionAdapter(adapter)">
                     <Sparkles v-if="adapter === 'anthropic'" class="size-3.5 text-fuchsia-500" />
@@ -528,10 +527,10 @@ defineExpose({ open })
               >
                 <Globe2 v-if="connectionForm.visibility === 'public'" class="size-3.5" />
                 <LockKeyhole v-else class="size-3.5" />
-                {{ connectionForm.visibility === 'public' ? 'Для всех' : 'Только мне' }}
+                {{ connectionForm.visibility === 'public' ? $t('uiText.forAllbbaeed56') : $t('uiText.onlyMee9c5e628') }}
                 <Switch :checked="connectionForm.visibility === 'public'" @update:checked="connectionForm.visibility = $event ? 'public' : 'private'" />
               </label>
-              <span v-else class="flex items-center justify-end gap-1.5 px-1 text-[11px] text-muted-foreground"><LockKeyhole class="size-3.5" /> Только мне</span>
+              <span v-else class="flex items-center justify-end gap-1.5 px-1 text-[11px] text-muted-foreground"><LockKeyhole class="size-3.5" /> {{ $t('uiText.onlyMee9c5e628') }}</span>
             </div>
 
             <div class="mt-2 grid gap-2 border-l-2 border-muted-foreground/20 pl-4 sm:grid-cols-2 lg:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_auto_auto]">
@@ -557,7 +556,7 @@ defineExpose({ open })
                 </Button>
                 <Button type="submit" size="sm" class="h-9" :disabled="loading || !canCreateConnection">
                   <Loader2 v-if="loading" class="size-4 animate-spin" /><Check v-else class="size-4" />
-                  Создать
+                  {{ $t('uiText.create84370a20') }}
                 </Button>
               </div>
             </div>
@@ -582,7 +581,7 @@ defineExpose({ open })
                 <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] text-muted-foreground">
                   <Globe2 v-if="connection.visibility === 'public'" class="size-3" />
                   <UserRound v-else class="size-3" />
-                  {{ connection.visibility === 'public' ? 'Общее' : 'Моё' }}
+                  {{ connection.visibility === 'public' ? $t('uiText.shared4df903fa') : $t('uiText.mycd6a9f64') }}
                 </span>
               </div>
               <Switch
@@ -615,9 +614,9 @@ defineExpose({ open })
               <Input v-model="connectionEditForm.baseUrl" :placeholder="adapterPresentation[connection.adapter].endpointPlaceholder" />
               <div class="flex justify-end gap-1">
                 <Button size="sm" variant="ghost" @click="cancelConnectionEdit">
-                  Отмена
+                  {{ $t('uiText.cancel0ec753be') }}
                 </Button><Button size="sm" :disabled="loading || !canSaveConnection(connection)" @click="saveConnection(connection)">
-                  Сохранить
+                  {{ $t('uiText.save4864057d') }}
                 </Button>
               </div>
               <div class="flex items-center gap-2 sm:col-span-2 lg:col-span-3">
@@ -630,7 +629,7 @@ defineExpose({ open })
                   :placeholder="connection.adapter === 'anthropic' ? 'Новый API key' : 'Новый API key (необязательно)'"
                 />
                 <Button size="sm" variant="outline" :disabled="loading || !credentialValue.trim()" @click="saveCredential(connection)">
-                  Заменить ключ
+                  {{ $t('uiText.replaceKey7343ba0e') }}
                 </Button>
               </div>
             </div>
@@ -685,9 +684,9 @@ defineExpose({ open })
                   <Input v-model="modelEditForm.providerModelId" aria-label="ID модели у провайдера" /><Input v-model="modelEditForm.displayName" aria-label="Название модели" />
                   <div class="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" @click="editingModelId = ''">
-                      Отмена
+                      {{ $t('uiText.cancel0ec753be') }}
                     </Button><Button size="sm" :disabled="!modelEditForm.providerModelId.trim() || !modelEditForm.displayName.trim()" @click="saveModel(model)">
-                      Сохранить
+                      {{ $t('uiText.save4864057d') }}
                     </Button>
                   </div>
                 </div>
@@ -713,19 +712,19 @@ defineExpose({ open })
                 </div>
                 <div class="flex justify-end gap-1">
                   <Button size="sm" variant="ghost" @click="cancelModelCreate">
-                    Отмена
+                    {{ $t('uiText.cancel0ec753be') }}
                   </Button><Button size="sm" :disabled="loading || !modelForm.providerModelId.trim() || !modelForm.displayName.trim()" @click="createModel(connection)">
-                    Добавить
+                    {{ $t('uiText.add559a87f7') }}
                   </Button>
                 </div>
               </div>
               <div v-else-if="connection.canManage" class="border-t border-dashed px-4 py-2 pl-[4.75rem]">
                 <Button size="sm" variant="ghost" class="text-muted-foreground" @click="beginModelCreate(connection)">
-                  <Plus class="size-3.5" /> Добавить модель
+                  <Plus class="size-3.5" /> {{ $t('uiText.addModela4112350') }}
                 </Button>
               </div>
               <div v-if="!connection.canManage && !modelsForConnection(connection.id).length" class="px-4 py-3 pl-[4.75rem] text-xs text-muted-foreground">
-                Нет моделей
+                {{ $t('uiText.noModels4506f584') }}
               </div>
             </div>
           </div>
@@ -733,7 +732,7 @@ defineExpose({ open })
           <div v-if="!filteredConnections.length && !showConnectionForm && !loading" class="px-6 py-12 text-center">
             <span class="mx-auto flex size-10 items-center justify-center rounded-xl border bg-muted/30"><Server class="size-4 text-muted-foreground" /></span>
             <p class="mt-3 text-sm font-medium">
-              {{ connections.length ? 'Ничего не найдено' : 'Нет подключений' }}
+              {{ connections.length ? $t('uiText.nothingFound1e1b70b1') : $t('uiText.noConnections24ca75d7') }}
             </p>
           </div>
         </div>

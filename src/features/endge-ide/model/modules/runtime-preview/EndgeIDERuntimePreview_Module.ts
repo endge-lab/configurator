@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { AuthProfileSchema, OidcBrowserSession_Adapter } from '@endge/core'
 import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
@@ -51,7 +50,9 @@ export class EndgeIDERuntimePreview_Module {
   public constructor(private readonly _context: EndgeIDEContextPort) {}
 
   public init(): void {
-    if (this._initialized) { return }
+    if (this._initialized) {
+      return
+    }
     this._runtimeOff = Endge.runtime.subscribe(() => this._refresh())
     this._scopeOff = Endge.runtime.scopes.subscribe(() => this._refresh())
     this._surfaceOff = this._context.registerSurface('endge-ide-runtime-preview', {
@@ -85,7 +86,9 @@ export class EndgeIDERuntimePreview_Module {
     const targets = [...new Map(rawTargets.map(target => [runtimePreviewKey(target), target])).values()]
     let launched = 0
     for (const target of targets) {
-      if (await this._launch(target, false)) { launched += 1 }
+      if (await this._launch(target, false)) {
+        launched += 1
+      }
     }
     showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
     return launched
@@ -135,7 +138,9 @@ export class EndgeIDERuntimePreview_Module {
       this._persistEntries()
     }
     this.selectedEntryKey.value = key
-    if (revealTree) { showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) }
+    if (revealTree) {
+      showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+    }
     try {
       await instance.launch(rawTarget.draft, rawTarget.contextual, mockMode)
       if (mockMode && (missingMockProfiles.length > 0 || mockAuthWarning)) {
@@ -157,14 +162,18 @@ export class EndgeIDERuntimePreview_Module {
   /** Launches the active editor only when its document type has a runtime contract. */
   public async launchEditor(editor: unknown): Promise<boolean> {
     const request = createRuntimePreviewLaunchRequest(editor)
-    if (!request) { return false }
+    if (!request) {
+      return false
+    }
     if (request.entityType !== 'composition' && request.entityType !== 'component-sfc') {
       return this.launch(request)
     }
 
     const projectIdentity = Endge.context.getExecutionContext().projectIdentity
     const occurrences = findRuntimePreviewOccurrences(request, projectIdentity)
-    if (occurrences.length === 0) { return this.launch(request) }
+    if (occurrences.length === 0) {
+      return this.launch(request)
+    }
 
     let occurrence = occurrences.length === 1 && (!occurrences[0]!.mayExecuteQueries || Endge.context.isMockEnabled)
       ? occurrences[0]!
@@ -175,10 +184,16 @@ export class EndgeIDERuntimePreview_Module {
         occurrences,
         liveMode: !Endge.context.isMockEnabled,
       })
-      if (choice === 'standalone') { return this.launch(request) }
-      if (!choice) { return false }
+      if (choice === 'standalone') {
+        return this.launch(request)
+      }
+      if (!choice) {
+        return false
+      }
       occurrence = occurrences.find(item => item.id === choice) ?? null
-      if (!occurrence) { return false }
+      if (!occurrence) {
+        return false
+      }
     }
 
     return this.launch({
@@ -220,16 +235,22 @@ export class EndgeIDERuntimePreview_Module {
   /** Выполняет следующий OIDC popup исключительно из пользовательского клика. */
   public async authorizeNextProfile(): Promise<void> {
     const prompt = this.authPrompt.value
-    if (!prompt || prompt.pending) { return }
+    if (!prompt || prompt.pending) {
+      return
+    }
     const profile = prompt.profiles[prompt.currentIndex]
     const source = profile ? this._oidcSources.get(profile.identity) : null
-    if (!profile || !source) { return }
+    if (!profile || !source) {
+      return
+    }
     this.authPrompt.value = { ...prompt, pending: true, error: null }
     try {
       await source.loginPopup()
       Endge.auth.session.connect(profile.identity, source)
       const token = await Endge.auth.session.ensureProfile(profile)
-      if (!token) { throw new Error(`OIDC session не создана: ${profile.identity}`) }
+      if (!token) {
+        throw new Error(`OIDC session не создана: ${profile.identity}`)
+      }
       const nextIndex = prompt.currentIndex + 1
       if (nextIndex >= prompt.profiles.length) {
         const resolve = this._resolveAuthPrompt
@@ -261,7 +282,9 @@ export class EndgeIDERuntimePreview_Module {
   /** Escape navigation: leave Runtime Preview without stopping its runtimes. */
   public returnToProject(): boolean {
     const area = getLayoutState().widgets.value.areas.left
-    if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) { return false }
+    if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) {
+      return false
+    }
     showWidget('project')
     return true
   }
@@ -272,7 +295,9 @@ export class EndgeIDERuntimePreview_Module {
 
   public async select(entryKey: string, nodeId: string): Promise<void> {
     const instance = this.get(entryKey)
-    if (!instance) { return }
+    if (!instance) {
+      return
+    }
     this.selectedEntryKey.value = entryKey
     await instance.select(nodeId)
   }
@@ -299,10 +324,14 @@ export class EndgeIDERuntimePreview_Module {
 
   public async remove(instanceId: string): Promise<void> {
     const instance = this.get(instanceId)
-    if (!instance) { return }
+    if (!instance) {
+      return
+    }
     await instance.dispose()
     this._instances.delete(instanceId)
-    if (this.selectedEntryKey.value === instanceId) { this.selectedEntryKey.value = this.entries.value.find(item => item.key !== instanceId)?.key ?? null }
+    if (this.selectedEntryKey.value === instanceId) {
+      this.selectedEntryKey.value = this.entries.value.find(item => item.key !== instanceId)?.key ?? null
+    }
     this._syncEntries()
     this._persistEntries()
   }
@@ -314,7 +343,9 @@ export class EndgeIDERuntimePreview_Module {
   /** Starts every idle root and resumes roots paused by the user. */
   public async startAll(): Promise<void> {
     await Promise.all(this.entries.value.map((instance) => {
-      if (instance.status.value === 'paused') { return instance.resume() }
+      if (instance.status.value === 'paused') {
+        return instance.resume()
+      }
       if (instance.status.value === 'inactive' || instance.status.value === 'stopped' || instance.status.value === 'error') {
         return instance.restart()
       }
@@ -379,25 +410,33 @@ export class EndgeIDERuntimePreview_Module {
   public async pauseSelected(): Promise<void> {
     const instance = this.selectedEntry.value
     const node = this.selectedNode.value
-    if (instance && node) { await instance.pauseNode(node.id) }
+    if (instance && node) {
+      await instance.pauseNode(node.id)
+    }
   }
 
   public async resumeSelected(): Promise<void> {
     const instance = this.selectedEntry.value
     const node = this.selectedNode.value
-    if (instance && node) { await instance.resumeNode(node.id) }
+    if (instance && node) {
+      await instance.resumeNode(node.id)
+    }
   }
 
   public async stopSelected(): Promise<void> {
     const instance = this.selectedEntry.value
     const node = this.selectedNode.value
-    if (instance && node) { await instance.stopNode(node.id) }
+    if (instance && node) {
+      await instance.stopNode(node.id)
+    }
   }
 
   public async restartSelected(): Promise<void> {
     const instance = this.selectedEntry.value
     const node = this.selectedNode.value
-    if (instance && node) { await instance.restartNode(node.id) }
+    if (instance && node) {
+      await instance.restartNode(node.id)
+    }
   }
 
   public async disposeAll(): Promise<void> {
@@ -411,7 +450,9 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   private _refresh(): void {
-    for (const instance of this._instances.values()) { instance.refresh() }
+    for (const instance of this._instances.values()) {
+      instance.refresh()
+    }
   }
 
   private _syncEntries(): void {
@@ -419,7 +460,9 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   private _restoreRememberedEntries(): void {
-    if (this._instances.size > 0) { return }
+    if (this._instances.size > 0) {
+      return
+    }
     for (const target of readRuntimePreviewHistory()) {
       const instance = new RuntimePreviewInstance(target)
       this._instances.set(instance.key, instance)
@@ -451,13 +494,19 @@ export class EndgeIDERuntimePreview_Module {
       const source = this._oidcSource(profile)
       this._oidcSources.set(profile.identity, source)
       Endge.auth.session.connect(profile.identity, source)
-      if (await source.hasSession()) { await Endge.auth.session.ensureProfile(profile) }
+      if (await source.hasSession()) {
+        await Endge.auth.session.ensureProfile(profile)
+      }
       else { missing.push(profile) }
     }
-    if (missing.length === 0) { return true }
+    if (missing.length === 0) {
+      return true
+    }
     this.cancelAuthorization()
     this.authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
-    return new Promise((resolve) => { this._resolveAuthPrompt = resolve })
+    return new Promise((resolve) => {
+      this._resolveAuthPrompt = resolve
+    })
   }
 
   /** Проверяет только наличие browser session, не блокируя запуск mock preview. */
@@ -523,14 +572,18 @@ export class EndgeIDERuntimePreview_Module {
     Endge.auth.session.connect(profile.identity, source)
     await source.loginPopup()
     const token = await Endge.auth.session.ensureProfile(profile)
-    if (!token) { throw new Error(`OIDC session не создана: ${profile.identity}`) }
+    if (!token) {
+      throw new Error(`OIDC session не создана: ${profile.identity}`)
+    }
     await instance.restart()
   }
 
   /** Handles auth requested by a Query that appeared after Preview startup. */
   private _handleInteractionRequired(error: AuthInteractionRequiredError): void {
     const instance = this.selectedEntry.value
-    if (!instance) { return }
+    if (!instance) {
+      return
+    }
     toast.error('Для запроса требуется авторизация', {
       description: error.message,
       action: {

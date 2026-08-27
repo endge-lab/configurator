@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { Copy } from 'lucide-vue-next'
 import { computed, useId } from 'vue'
 import { toast } from 'vue-sonner'
@@ -38,7 +37,7 @@ async function copyDocumentId(): Promise<void> {
 
 <template>
   <div class="space-y-2">
-    <Label :for="inputId">ID</Label>
+    <Label :for="inputId">{{ $t('uiText.id89f89c02') }}</Label>
     <div class="flex items-center gap-2">
       <Input
         :id="inputId"
@@ -61,7 +60,7 @@ async function copyDocumentId(): Promise<void> {
               <Copy class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Скопировать ID</TooltipContent>
+          <TooltipContent>{{ $t('uiText.copyIDb4d7e208') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>

@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   ExtractableSFCColumn,
   ExtractComponentDialogDependency,
@@ -23,7 +22,9 @@ export function replaceExtractedColumnBody(
   result: ExtractComponentDialogResult,
 ): string {
   const currentBody = source.slice(column.bodyRange.start, column.bodyRange.end)
-  if (fingerprint(currentBody) !== column.bodyFingerprint) { throw new Error('Содержимое колонки изменилось. Повторите экспорт компонента.') }
+  if (fingerprint(currentBody) !== column.bodyFingerprint) {
+    throw new Error('Содержимое колонки изменилось. Повторите экспорт компонента.')
+  }
 
   const invocation = buildComponentInvocation(result)
   const leadingWhitespace = currentBody.match(/^\s*/)?.[0] ?? ''
@@ -54,7 +55,9 @@ function dedentSource(source: string): string {
 }
 
 function indentSource(source: string, indent: string): string {
-  if (!source) { return indent }
+  if (!source) {
+    return indent
+  }
   return source.split('\n').map(line => `${indent}${line}`).join('\n')
 }
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCInteractionTrigger,
   ComponentSFCInteractionTriggerProjection,
@@ -141,7 +140,7 @@ function cloneProjection(trigger: ComponentSFCInteractionTriggerProjection): Com
       v-if="!triggers.length"
       class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground"
     >
-      Trigger-ы не заданы. Режим можно будет завершить только semantic event-ом редактора.
+      {{ $t('uiText.triggersNotSetTheModeCanOnlyBeCompletedViaASemanticE8deef814') }}
     </div>
 
     <ComponentSFCInteractionBindingEditor
@@ -176,7 +175,7 @@ function cloneProjection(trigger: ComponentSFCInteractionTriggerProjection): Com
       @click="addTrigger"
     >
       <Plus class="size-3.5" />
-      Альтернативный trigger
+      {{ $t('uiText.alternativeTriggerf046e22b') }}
     </Button>
   </div>
 </template>

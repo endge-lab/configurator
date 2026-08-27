@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   DiagnosticsPhase,
   DiagnosticsSeverityNumber,
@@ -336,14 +335,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <div>
             <div class="flex items-center gap-2">
               <h2 class="text-base font-semibold">
-                Диагностика
+                {{ $t('uiText.diagnosis9ba1e22a') }}
               </h2>
               <span v-if="variant === 'contribution'" class="text-[10px] text-muted-foreground">
-                Настройки текущего слоя
+                {{ $t('uiText.currentLayerSettings30972ea5') }}
               </span>
             </div>
             <p class="mt-1 text-xs text-muted-foreground">
-              Настройка телеметрии, каналов вывода и диагностических снимков.
+              {{ $t('uiText.configureTelemetryOutputChannelsAndDiagnosticSnapsho7728c2bc') }}
             </p>
           </div>
           <span class="pt-1 text-[10px] text-muted-foreground">{{ feedback }}</span>
@@ -351,18 +350,18 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
         <TabsList class="mt-5 flex h-auto w-full justify-start gap-5 overflow-x-auto rounded-none bg-transparent p-0">
           <TabsTrigger value="collection" class="diagnostics-tab">
-            Сбор и история
+            {{ $t('uiText.collectionAndHistorycc391535') }}
           </TabsTrigger>
           <TabsTrigger value="outputs" class="diagnostics-tab">
-            Каналы вывода
+            {{ $t('uiText.outputChannels98fea6e3') }}
             <span class="ml-1 text-[10px] text-muted-foreground">{{ outputs.length }}</span>
           </TabsTrigger>
           <TabsTrigger value="routing" class="diagnostics-tab">
-            Маршрутизация
+            {{ $t('uiText.routingd84c192d') }}
             <span class="ml-1 text-[10px] text-muted-foreground">{{ routes.length }}</span>
           </TabsTrigger>
           <TabsTrigger value="snapshots" class="diagnostics-tab">
-            Снимки
+            {{ $t('uiText.snapshotsb0d827d3') }}
           </TabsTrigger>
         </TabsList>
       </header>
@@ -372,9 +371,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <section class="settings-section">
             <div class="settings-row items-center">
               <div>
-                <Label class="text-sm font-medium">Собирать телеметрию</Label>
+                <Label class="text-sm font-medium">{{ $t('uiText.collectTelemetry48f6524c') }}</Label>
                 <p class="settings-hint">
-                  Логи и операции будут сохраняться в локальной истории.
+                  {{ $t('uiText.logsAndOperationsWillBeSavedInLocalHistory401d8f4b') }}
                 </p>
               </div>
               <Switch v-model:checked="diagnosticsEnabled" :disabled="disabled" aria-label="Включить сбор телеметрии" />
@@ -382,13 +381,13 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
             <div class="settings-row">
               <div>
-                <Label class="text-sm font-medium">Собираемые сигналы</Label>
+                <Label class="text-sm font-medium">{{ $t('uiText.collectedSignals46995dbd') }}</Label>
               </div>
               <div class="space-y-3">
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
                     <Checkbox v-model:checked="collectLogs" :disabled="disabled || !diagnosticsEnabled" />
-                    Логи
+                    {{ $t('uiText.logs853d620e') }}
                   </label>
                   <Tooltip>
                     <TooltipTrigger as-child>
@@ -397,14 +396,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" class="max-w-72 text-xs leading-5">
-                      Отдельные события в конкретный момент: ошибки, предупреждения и сообщения runtime. Помогают понять, что произошло.
+                      {{ $t('uiText.individualEventsAtSpecificMomentsErrorsWarningsAndRu2801673a') }}
                     </TooltipContent>
                   </Tooltip>
                 </div>
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
                     <Checkbox v-model:checked="collectSpans" :disabled="disabled || !diagnosticsEnabled" />
-                    Операции
+                    {{ $t('uiText.operationsaa0afc4b') }}
                   </label>
                   <Tooltip>
                     <TooltipTrigger as-child>
@@ -413,7 +412,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" class="max-w-72 text-xs leading-5">
-                      Процессы с началом, завершением и длительностью: компиляция, запросы и runtime-выполнение. Помогают оценить время и результат операции.
+                      {{ $t('uiText.processesWithStartEndAndDurationCompilationQueriesAnc504b9e0') }}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -422,9 +421,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
             <div class="settings-row">
               <div>
-                <Label for="diagnostics-min-severity" class="text-sm font-medium">Минимальный уровень</Label>
+                <Label for="diagnostics-min-severity" class="text-sm font-medium">{{ $t('uiText.minimumLevel3e7a1ad6') }}</Label>
                 <p class="settings-hint">
-                  Записи ниже уровня не сохраняются.
+                  {{ $t('uiText.recordsBelowThisLevelAreNotSaved18ef956c') }}
                 </p>
               </div>
               <Select v-model="minSeverity" :disabled="disabled || !diagnosticsEnabled">
@@ -441,9 +440,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
             <div class="settings-row">
               <div>
-                <Label for="diagnostics-max-records" class="text-sm font-medium">История</Label>
+                <Label for="diagnostics-max-records" class="text-sm font-medium">{{ $t('uiText.historyd5fec747') }}</Label>
                 <p class="settings-hint">
-                  Старые записи удаляются при достижении лимита.
+                  {{ $t('uiText.oldRecordsAreDeletedWhenTheLimitIsReached7f977438') }}
                 </p>
               </div>
               <div class="w-64">
@@ -452,7 +451,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   <div class="h-1 flex-1 overflow-hidden rounded bg-muted">
                     <div class="h-full bg-foreground/40" :style="{ width: `${historyUsage}%` }" />
                   </div>
-                  <span class="text-[10px] tabular-nums text-muted-foreground">{{ storedRecords }} / {{ maxRecords }}</span>
+                  <span class="text-[10px] tabular-nums text-muted-foreground">{{ storedRecords }} {{ $t('uiText.symbol42099b4a') }} {{ maxRecords }}</span>
                 </div>
               </div>
             </div>
@@ -463,14 +462,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <div class="section-heading">
             <div>
               <h3 class="text-sm font-semibold">
-                Каналы вывода
+                {{ $t('uiText.outputChannels98fea6e3') }}
               </h3>
               <p class="settings-hint">
-                Куда отправлять выбранные записи.
+                {{ $t('uiText.whereToSendSelectedRecords93ca8cfd') }}
               </p>
             </div>
             <Button size="sm" variant="outline" :disabled="disabled" @click="addOutput">
-              <Plus class="mr-1.5 size-3.5" /> Добавить
+              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
             </Button>
           </div>
 
@@ -485,15 +484,15 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="console">
-                      Console
+                      {{ $t('uiText.console9f3341d3') }}
                     </SelectItem>
                     <SelectItem value="sentry">
-                      Sentry
+                      {{ $t('uiText.sentry17f228be') }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 <Button size="sm" variant="ghost" :disabled="disabled || !output.enabled" @click="testOutput(output)">
-                  Проверить
+                  {{ $t('uiText.check52dec92e') }}
                 </Button>
                 <Button size="icon" variant="ghost" class="size-8 text-muted-foreground" :disabled="disabled" :aria-label="`Удалить ${output.name}`" @click="removeOutput(output.id)">
                   <Trash2 class="size-3.5" />
@@ -502,35 +501,35 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
               <div v-if="output.adapterType === 'console'" class="grid gap-5 p-4 md:grid-cols-[12rem_1fr]">
                 <div>
-                  <Label class="text-xs">Формат</Label>
+                  <Label class="text-xs">{{ $t('uiText.formatb9563c38') }}</Label>
                   <Select :model-value="String(outputOption(output, 'format') ?? 'pretty')" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'format', String($event))">
                     <SelectTrigger class="mt-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pretty">
-                        Pretty console
+                        {{ $t('uiText.prettyConsole17264c83') }}
                       </SelectItem>
                       <SelectItem value="json">
-                        JSON
+                        {{ $t('uiText.json031a4e76') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label class="text-xs">Поля записи</Label>
+                  <Label class="text-xs">{{ $t('uiText.recordFields829af3a9') }}</Label>
                   <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeTimestamp') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeTimestamp', $event === true)" />Время</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeScope') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeScope', $event === true)" />Scope</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeAttributes') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeAttributes', $event === true)" />Attributes</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'groupByTrace') === true" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'groupByTrace', $event === true)" />Группировать по trace</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeTimestamp') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeTimestamp', $event === true)" />{{ $t('uiText.timeC80d7e81') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeScope') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeScope', $event === true)" />{{ $t('uiText.scope4651a34e') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeAttributes') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeAttributes', $event === true)" />{{ $t('uiText.attributesa6652617') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'groupByTrace') === true" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'groupByTrace', $event === true)" />{{ $t('uiText.groupByTrace5984f22b') }}</label>
                   </div>
                 </div>
               </div>
 
               <div v-else-if="output.adapterType === 'sentry'" class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
                 <div class="md:col-span-2 xl:col-span-2">
-                  <Label class="text-xs">DSN</Label>
+                  <Label class="text-xs">{{ $t('uiText.dsn3914c8b1') }}</Label>
                   <Input
                     :model-value="String(outputOption(output, 'dsn') ?? '')"
                     class="mt-2 font-mono text-xs"
@@ -540,7 +539,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   />
                 </div>
                 <div>
-                  <Label class="text-xs">Environment</Label>
+                  <Label class="text-xs">{{ $t('uiText.environmentd443a118') }}</Label>
                   <Input
                     :model-value="String(outputOption(output, 'environment') ?? '')"
                     class="mt-2 font-mono text-xs"
@@ -550,7 +549,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   />
                 </div>
                 <div>
-                  <Label class="text-xs">Release</Label>
+                  <Label class="text-xs">{{ $t('uiText.released41f56ce') }}</Label>
                   <Input
                     :model-value="String(outputOption(output, 'release') ?? '')"
                     class="mt-2 font-mono text-xs"
@@ -560,7 +559,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   />
                 </div>
                 <div>
-                  <Label class="text-xs">Timeout, мс</Label>
+                  <Label class="text-xs">{{ $t('uiText.timeoutMs71e4b8da') }}</Label>
                   <Input
                     :model-value="Number(outputOption(output, 'requestTimeoutMs') ?? 10000)"
                     type="number"
@@ -576,14 +575,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                     :disabled="disabled || !output.enabled"
                     @update:checked="setOutputOption(output, 'sendSnapshots', $event === true)"
                   />
-                  Отправлять снимки как JSON attachment
+                  {{ $t('uiText.sendSnapshotsAsJSONAttachment52a5ae5e') }}
                 </label>
               </div>
             </article>
           </div>
 
           <div v-else class="empty-state">
-            Каналы вывода не настроены.
+            {{ $t('uiText.outputChannelsAreNotConfigured0533a1d7') }}
           </div>
         </TabsContent>
 
@@ -591,14 +590,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <div class="section-heading">
             <div>
               <h3 class="text-sm font-semibold">
-                Правила маршрутизации
+                {{ $t('uiText.routingRules83ac19a7') }}
               </h3>
               <p class="settings-hint">
-                Какие записи отправлять в каждый канал.
+                {{ $t('uiText.whichRecordsToSendToEachChannel76c4b8d0') }}
               </p>
             </div>
             <Button size="sm" variant="outline" :disabled="disabled || !outputs.length" @click="addRoute">
-              <Plus class="mr-1.5 size-3.5" /> Добавить
+              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
             </Button>
           </div>
 
@@ -614,23 +613,23 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
               <div class="mt-4 grid gap-3 pl-11 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
-                  <Label class="field-label">Тип</Label>
+                  <Label class="field-label">{{ $t('uiText.typeD25691ca') }}</Label>
                   <Select :model-value="routeSignal(routeItem)" :disabled="disabled || !routeItem.enabled" @update:model-value="setRouteSignal(routeItem, $event)">
                     <SelectTrigger class="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="log">
-                        Log
+                        {{ $t('uiText.log8bf95ea3') }}
                       </SelectItem>
                       <SelectItem value="span">
-                        Span
+                        {{ $t('uiText.span080e88ef') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label class="field-label">Уровень</Label>
+                  <Label class="field-label">{{ $t('uiText.leveld9f964d7') }}</Label>
                   <Select :model-value="routeSeverity(routeItem)" :disabled="disabled || !routeItem.enabled || routeSignal(routeItem) === 'span'" @update:model-value="setRouteSeverity(routeItem, $event)">
                     <SelectTrigger class="mt-1.5">
                       <SelectValue />
@@ -643,29 +642,29 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   </Select>
                 </div>
                 <div>
-                  <Label class="field-label">Фаза</Label>
+                  <Label class="field-label">{{ $t('uiText.phaseac9b7388') }}</Label>
                   <Select :model-value="routePhase(routeItem)" :disabled="disabled || !routeItem.enabled" @update:model-value="setRoutePhase(routeItem, $event)">
                     <SelectTrigger class="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="any">
-                        Любая
+                        {{ $t('uiText.any2f5de61f') }}
                       </SelectItem>
                       <SelectItem value="authoring">
-                        Authoring
+                        {{ $t('uiText.authoringc76b8386') }}
                       </SelectItem>
                       <SelectItem value="build">
-                        Build
+                        {{ $t('uiText.buildbbd80cf7') }}
                       </SelectItem>
                       <SelectItem value="runtime">
-                        Runtime
+                        {{ $t('uiText.runtimec4740e4c') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label class="field-label">Канал</Label>
+                  <Label class="field-label">{{ $t('uiText.channeld01ba53d') }}</Label>
                   <Select v-model="routeItem.outputId" :disabled="disabled || !routeItem.enabled || !outputs.length">
                     <SelectTrigger class="mt-1.5">
                       <SelectValue placeholder="Канал" />
@@ -682,7 +681,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           </div>
 
           <div v-else class="empty-state">
-            Правила не настроены.
+            {{ $t('uiText.rulesNotConfigured0c795e3b') }}
           </div>
         </TabsContent>
 
@@ -690,26 +689,26 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <section class="settings-section">
             <div class="settings-row">
               <div>
-                <Label class="text-sm font-medium">Ручной снимок</Label>
+                <Label class="text-sm font-medium">{{ $t('uiText.manualSnapshot78b1ca3f') }}</Label>
                 <p class="settings-hint">
-                  JSON-файл для анализа и поддержки.
+                  {{ $t('uiText.jsonFileForAnalysisAndSupport3b241d20') }}
                 </p>
               </div>
               <div class="space-y-3">
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeTelemetry" :disabled="disabled" />Телеметрия</label>
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeProblems" :disabled="disabled" />Проблемы</label>
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeConfiguration" :disabled="disabled" />Effective configuration</label>
+                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeTelemetry" :disabled="disabled" />{{ $t('uiText.telemetryc2d0b0e9') }}</label>
+                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeProblems" :disabled="disabled" />{{ $t('uiText.issues7c80872c') }}</label>
+                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeConfiguration" :disabled="disabled" />{{ $t('uiText.effectiveConfiguration15051cb3') }}</label>
                 <Button size="sm" variant="outline" :disabled="disabled" @click="prepareSnapshot">
-                  <Download class="mr-1.5 size-3.5" /> Скачать JSON
+                  <Download class="mr-1.5 size-3.5" /> {{ $t('uiText.downloadJson2007ff2d') }}
                 </Button>
               </div>
             </div>
 
             <div class="settings-row items-center">
               <div>
-                <Label class="text-sm font-medium">Автоматические снимки</Label>
+                <Label class="text-sm font-medium">{{ $t('uiText.automaticSnapshots644d4fab') }}</Label>
                 <p class="settings-hint">
-                  Создавать снимок при серии runtime errors.
+                  {{ $t('uiText.createSnapshotOnASeriesOfRuntimeErrors272c42ac') }}
                 </p>
               </div>
               <Switch v-model:checked="automaticSnapshotEnabled" :disabled="disabled || !outputs.length" aria-label="Включить автоматические снимки" />
@@ -717,14 +716,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
             <div v-if="automaticSnapshotEnabled" class="settings-row">
               <div>
-                <Label class="text-sm font-medium">Условие</Label>
+                <Label class="text-sm font-medium">{{ $t('uiText.condition1d10d9c5') }}</Label>
               </div>
               <div class="grid max-w-xl gap-4 sm:grid-cols-2">
-                <div><Label class="field-label">Количество ошибок</Label><Input v-model.number="snapshotErrorCount" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
-                <div><Label class="field-label">За период, сек.</Label><Input v-model.number="snapshotWindowSeconds" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
-                <div><Label class="field-label">Пауза после снимка, мин.</Label><Input v-model.number="snapshotCooldownMinutes" type="number" min="0" class="mt-1.5" :disabled="disabled" /></div>
+                <div><Label class="field-label">{{ $t('uiText.numberOfErrors202f5f20') }}</Label><Input v-model.number="snapshotErrorCount" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
+                <div><Label class="field-label">{{ $t('uiText.withinSec871873f4') }}</Label><Input v-model.number="snapshotWindowSeconds" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
+                <div><Label class="field-label">{{ $t('uiText.pauseAfterSnapshotMin6f39325d') }}</Label><Input v-model.number="snapshotCooldownMinutes" type="number" min="0" class="mt-1.5" :disabled="disabled" /></div>
                 <div>
-                  <Label class="field-label">Канал</Label>
+                  <Label class="field-label">{{ $t('uiText.channeld01ba53d') }}</Label>
                   <Select v-model="snapshotOutputId" :disabled="disabled">
                     <SelectTrigger class="mt-1.5">
                       <SelectValue placeholder="Канал" />

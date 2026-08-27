@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor'
 
 import { compileEndgeCSS } from '@endge/core'
@@ -73,8 +72,8 @@ async function save(): Promise<void> {
   >
     <template #metadata-after>
       <div v-if="editor.systemManaged" class="flex min-w-0 items-center gap-1.5">
-        <span class="shrink-0 text-muted-foreground">kind:</span>
-        <span class="min-w-0 truncate font-mono text-foreground/80">system</span>
+        <span class="shrink-0 text-muted-foreground">{{ $t('uiText.kind2b617982') }}</span>
+        <span class="min-w-0 truncate font-mono text-foreground/80">{{ $t('uiText.system317f1e76') }}</span>
       </div>
     </template>
 
@@ -93,7 +92,7 @@ async function save(): Promise<void> {
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -101,7 +100,7 @@ async function save(): Promise<void> {
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
           </Tooltip>
         </div>
         <Separator orientation="vertical" class="mx-0.5 h-5" />
@@ -112,7 +111,7 @@ async function save(): Promise<void> {
               <Save v-else class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Сохранить</TooltipContent>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </template>
@@ -122,24 +121,24 @@ async function save(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="style-name">Название</Label>
+            <Label for="style-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input id="style-name" v-model="editor.name" :disabled="editor.systemManaged" />
           </div>
           <div class="space-y-2">
-            <Label for="style-identity">Identity</Label>
+            <Label for="style-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput id="style-identity" v-model="editor.identity" :disabled="editor.systemManaged" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">
-          <Label for="style-description">Описание</Label>
+          <Label for="style-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
           <Textarea id="style-description" v-model="editor.description" :rows="4" />
         </div>
         <div class="max-w-xs space-y-2">
-          <Label for="style-source-version">Source version</Label>
+          <Label for="style-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label>
           <Input id="style-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
         </div>
         <p class="text-xs text-muted-foreground">
-          Payload stores only source. AST, semantic artifact and DOM CSS are derived during compilation.
+          {{ $t('uiText.payloadStoresOnlySourceASTSemanticArtifactAndDOMCSSAef38cdad') }}
         </p>
       </div>
     </div>
@@ -152,7 +151,7 @@ async function save(): Promise<void> {
         <template #output>
           <div class="flex h-full min-h-0 flex-col bg-slate-950 text-slate-200">
             <div class="border-b border-slate-800 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Derived DOM CSS · {{ compilation.diagnostics.length }} diagnostics
+              {{ $t('uiText.derivedDOMCSSfb493ce7') }} {{ compilation.diagnostics.length }} {{ $t('uiText.diagnostics7d481ffd') }}
             </div>
             <div v-if="compilation.diagnostics.length" class="max-h-36 overflow-auto border-b border-slate-800 p-2">
               <div v-for="diagnostic in compilation.diagnostics" :key="`${diagnostic.code}:${diagnostic.range?.start}`" class="mb-1 rounded bg-slate-900 px-2 py-1 text-xs" :class="diagnostic.severity === 'error' ? 'text-red-300' : 'text-amber-300'">

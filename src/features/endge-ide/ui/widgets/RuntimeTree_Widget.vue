@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
 
@@ -46,7 +45,9 @@ const menuState = computed(() => {
 const isRootMenu = computed(() => contextMenu.value?.node.parentId == null)
 const canRunMenu = computed(() => {
   const menu = contextMenu.value
-  if (!menu || menu.node.parentId == null) { return true }
+  if (!menu || menu.node.parentId == null) {
+    return true
+  }
   const rootState = preview.get(menu.entryKey)?.status.value
   return rootState !== 'stopped'
     && rootState !== 'error'
@@ -62,7 +63,9 @@ let activeStructure = ''
 let knownExpandableNodeKeys = new Set<string>()
 
 function openContextMenu(payload: RuntimeContextMenu): void {
-  if (payload.node.kind === 'resource') { return }
+  if (payload.node.kind === 'resource') {
+    return
+  }
   contextMenu.value = payload
   document.addEventListener('mousedown', closeFromOutside, { once: true })
   document.addEventListener('keydown', closeFromEscape)
@@ -76,11 +79,15 @@ function closeContextMenu(): void {
 
 function closeFromOutside(event: MouseEvent): void {
   const element = event.target as HTMLElement | null
-  if (!element?.closest('[data-runtime-preview-context-menu]')) { closeContextMenu() }
+  if (!element?.closest('[data-runtime-preview-context-menu]')) {
+    closeContextMenu()
+  }
 }
 
 function closeFromEscape(event: KeyboardEvent): void {
-  if (event.key !== 'Escape' || !contextMenu.value) { return }
+  if (event.key !== 'Escape' || !contextMenu.value) {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
   closeContextMenu()
@@ -88,10 +95,14 @@ function closeFromEscape(event: KeyboardEvent): void {
 
 async function run(operation: (menu: RuntimeContextMenu) => Promise<void>): Promise<void> {
   const menu = contextMenu.value
-  if (!menu || busy.value) { return }
+  if (!menu || busy.value) {
+    return
+  }
   busy.value = true
   closeContextMenu()
-  try { await operation(menu) }
+  try {
+    await operation(menu)
+  }
   catch (error) {
     toast.error('Не удалось изменить состояние Runtime', {
       description: error instanceof Error ? error.message : String(error),
@@ -101,10 +112,14 @@ async function run(operation: (menu: RuntimeContextMenu) => Promise<void>): Prom
 }
 
 async function runAll(operation: () => Promise<void>): Promise<void> {
-  if (busy.value) { return }
+  if (busy.value) {
+    return
+  }
   busy.value = true
   closeContextMenu()
-  try { await operation() }
+  try {
+    await operation()
+  }
   catch (error) {
     toast.error('Не удалось изменить состояние Runtime', {
       description: error instanceof Error ? error.message : String(error),
@@ -208,7 +223,9 @@ watch(treeStructure, restoreOrReconcileExpansion, { immediate: true })
 watch(
   () => preview.treeExpansionRequest.value,
   (request) => {
-    if (!request) { return }
+    if (!request) {
+      return
+    }
     setExpansion(request.preset)
     preview.consumeTreeExpansionRequest(request.id)
   },
@@ -236,7 +253,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Свернуть всё
+              {{ $t('uiText.collapseAll7786c314') }}
             </TooltipContent>
           </Tooltip>
 
@@ -254,7 +271,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              До содержимого композиций
+              {{ $t('uiText.beforeCompositionContent955fe293') }}
             </TooltipContent>
           </Tooltip>
 
@@ -272,7 +289,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Развернуть всё
+              {{ $t('uiText.expandAll097a4f4c') }}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -292,7 +309,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Запустить все
+              {{ $t('uiText.startAll688d3c98') }}
             </TooltipContent>
           </Tooltip>
 
@@ -310,7 +327,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Пауза всех
+              {{ $t('uiText.pauseAll2bdcc8f6') }}
             </TooltipContent>
           </Tooltip>
 
@@ -328,7 +345,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Остановить все
+              {{ $t('uiText.stopAll08fea4b0') }}
             </TooltipContent>
           </Tooltip>
 
@@ -346,7 +363,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Обновить все
+              {{ $t('uiText.refreshAll29b7dd60') }}
             </TooltipContent>
           </Tooltip>
 
@@ -364,7 +381,7 @@ onBeforeUnmount(closeContextMenu)
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Удалить все
+              {{ $t('uiText.deleteAllc3df07c7') }}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -390,13 +407,13 @@ onBeforeUnmount(closeContextMenu)
         class="flex min-h-40 flex-col items-center justify-center gap-2 px-5 py-10 text-center text-xs text-muted-foreground"
       >
         <Square class="size-6 opacity-35" stroke-width="1.4" />
-        <span>Runtime Tree пуст.</span>
-        <span class="max-w-52 text-[10px] leading-4 opacity-75">Запустите документ кнопкой Debug Preview в его редакторе.</span>
+        <span>{{ $t('uiText.runtimeTreeIsEmptyc273285d') }}</span>
+        <span class="max-w-52 text-[10px] leading-4 opacity-75">{{ $t('uiText.startTheDocumentUsingTheDebugPreviewButtonInItsEdito3661a402') }}</span>
       </div>
     </div>
 
     <div class="shrink-0 border-t px-3 py-2 text-[10px] leading-4 text-muted-foreground">
-      Выбор manual-узла запускает его. Остальные runtime instances продолжают работать независимо.
+      {{ $t('uiText.selectingAManualNodeStartsItOtherRuntimeInstancesCond3e5a0e6') }}
     </div>
 
     <div
@@ -414,7 +431,7 @@ onBeforeUnmount(closeContextMenu)
         @click="run(pause)"
       >
         <Pause class="size-3.5" />
-        Поставить на паузу
+        {{ $t('uiText.pause57e32ddd') }}
       </button>
       <button
         v-else-if="menuState === 'paused'"
@@ -423,7 +440,7 @@ onBeforeUnmount(closeContextMenu)
         @click="run(resume)"
       >
         <Play class="size-3.5" />
-        Продолжить
+        {{ $t('uiText.resume3f75368a') }}
       </button>
       <button
         type="button"
@@ -432,7 +449,7 @@ onBeforeUnmount(closeContextMenu)
         @click="run(stop)"
       >
         <Square class="size-3.5" />
-        Остановить
+        {{ $t('uiText.stopd4f447c1') }}
       </button>
       <button
         type="button"
@@ -441,7 +458,7 @@ onBeforeUnmount(closeContextMenu)
         @click="run(restart)"
       >
         <RefreshCw class="size-3.5" />
-        Перезапустить
+        {{ $t('uiText.restart7ff2b51c') }}
       </button>
       <template v-if="isRootMenu">
         <div class="my-1 h-px bg-border" />
@@ -451,7 +468,7 @@ onBeforeUnmount(closeContextMenu)
           @click="run(menu => preview.remove(menu.entryKey))"
         >
           <Trash2 class="size-3.5" />
-          Удалить из Runtime Tree
+          {{ $t('uiText.removeFromRuntimeTree0241e1ca') }}
         </button>
       </template>
     </div>

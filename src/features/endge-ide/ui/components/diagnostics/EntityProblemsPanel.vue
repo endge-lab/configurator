@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   DiagnosticsAttributeValue,
   DiagnosticsEntityRef,
@@ -176,7 +175,7 @@ watch(activePhase, synchronizeProblemSelection)
         <div class="grid h-full min-h-0 grid-cols-[minmax(260px,0.72fr)_minmax(360px,1.28fr)]">
           <div class="min-h-0 overflow-auto border-r bg-muted/[0.12] p-3">
             <div class="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Problems in {{ phaseLabels[phase] }}
+              {{ $t('uiText.problemsIna958659f') }} {{ phaseLabels[phase] }}
             </div>
             <div class="space-y-1.5">
               <button
@@ -221,7 +220,7 @@ watch(activePhase, synchronizeProblemSelection)
               <section class="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
                 <div class="bg-background p-3">
                   <div class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <Clock3 class="size-3" /> Phase
+                    <Clock3 class="size-3" /> {{ $t('uiText.phasef6371a49') }}
                   </div>
                   <div class="text-xs font-medium">
                     {{ phaseLabels[selectedProblem.owner.phase] }}
@@ -229,7 +228,7 @@ watch(activePhase, synchronizeProblemSelection)
                 </div>
                 <div class="bg-background p-3">
                   <div class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <Clock3 class="size-3" /> Updated
+                    <Clock3 class="size-3" /> {{ $t('uiText.updatedf2f8570d') }}
                   </div>
                   <div class="text-xs font-medium">
                     {{ formatUpdatedAt(selectedProblem.updatedAt) }}
@@ -237,20 +236,20 @@ watch(activePhase, synchronizeProblemSelection)
                 </div>
                 <div v-if="selectedProblem.sourcePath" class="bg-background p-3 sm:col-span-2">
                   <div class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <FileCode2 class="size-3" /> Source
+                    <FileCode2 class="size-3" /> {{ $t('uiText.sourceda13add2') }}
                   </div>
                   <div class="break-all font-mono text-xs">
                     {{ selectedProblem.sourcePath }}
                   </div>
                   <div v-if="selectedProblem.start != null" class="mt-1 text-[10px] text-muted-foreground">
-                    Range: {{ selectedProblem.start }}<template v-if="selectedProblem.end != null">
-                      –{{ selectedProblem.end }}
+                    {{ $t('uiText.range92b69b2b') }} {{ selectedProblem.start }}<template v-if="selectedProblem.end != null">
+                      {{ $t('uiText.symbol0e467cbe') }}{{ selectedProblem.end }}
                     </template>
                   </div>
                 </div>
                 <div v-if="selectedProblem.traceId" class="bg-background p-3">
                   <div class="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Trace ID
+                    {{ $t('uiText.traceID976f74ba') }}
                   </div>
                   <div class="break-all font-mono text-[10px]">
                     {{ selectedProblem.traceId }}
@@ -258,7 +257,7 @@ watch(activePhase, synchronizeProblemSelection)
                 </div>
                 <div v-if="selectedProblem.recordId != null" class="bg-background p-3">
                   <div class="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Telemetry record
+                    {{ $t('uiText.telemetryRecord550db285') }}
                   </div>
                   <div class="font-mono text-xs">
                     #{{ selectedProblem.recordId }}
@@ -266,7 +265,7 @@ watch(activePhase, synchronizeProblemSelection)
                 </div>
                 <div v-if="selectedProblem.owner.runtimeId" class="bg-background p-3">
                   <div class="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Runtime instance
+                    {{ $t('uiText.runtimeInstance14ba32e9') }}
                   </div>
                   <div class="break-all font-mono text-[10px]">
                     {{ selectedProblem.owner.runtimeId }}
@@ -277,7 +276,7 @@ watch(activePhase, synchronizeProblemSelection)
               <details v-if="selectedProblem.attributes && Object.keys(selectedProblem.attributes).length" class="mt-4 overflow-hidden rounded-lg border">
                 <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-medium hover:bg-muted/40">
                   <Braces class="size-3.5 text-muted-foreground" />
-                  Technical attributes
+                  {{ $t('uiText.technicalAttributes929451b3') }}
                 </summary>
                 <dl class="grid grid-cols-[minmax(120px,0.45fr)_minmax(0,1fr)] border-t text-xs">
                   <template v-for="(value, key) in selectedProblem.attributes" :key="key">
@@ -302,10 +301,10 @@ watch(activePhase, synchronizeProblemSelection)
         <CircleCheck class="absolute -bottom-1 -right-1 size-5 text-emerald-500" />
       </span>
       <div class="text-sm font-medium text-foreground">
-        Проблем не обнаружено
+        {{ $t('uiText.noIssuesDetectedae658e4c') }}
       </div>
       <div class="max-w-sm text-xs leading-5">
-        Для этой сущности нет актуальных authoring, build или runtime problems.
+        {{ $t('uiText.noCurrentAuthoringBuildOrRuntimeIssuesForThisEntity9d35367d') }}
       </div>
     </div>
   </div>

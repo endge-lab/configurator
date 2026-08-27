@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { QuerySourceDocument } from '@endge/core'
 import type { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor'
 
@@ -135,7 +134,7 @@ async function buildQueryArtifact(
 
 <template>
   <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
-    Нет редактора
+    {{ $t('uiText.noEditorF03cf60f') }}
   </div>
   <SourceDocumentEditorShell
     v-else
@@ -167,7 +166,7 @@ async function buildQueryArtifact(
                 <Settings2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Основное</TooltipContent>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -187,7 +186,7 @@ async function buildQueryArtifact(
                 <Code2 class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -207,7 +206,7 @@ async function buildQueryArtifact(
                 <TriangleAlert class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Диагностика</TooltipContent>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -228,7 +227,7 @@ async function buildQueryArtifact(
                 <Play v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Выполнить запрос</TooltipContent>
+            <TooltipContent>{{ $t('uiText.executeQuery714cc835') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -251,7 +250,7 @@ async function buildQueryArtifact(
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -276,7 +275,7 @@ async function buildQueryArtifact(
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сбросить source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -288,11 +287,11 @@ async function buildQueryArtifact(
           <DocumentIdField :document-id="editor.id" />
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <Label for="query-name">Display name</Label>
+              <Label for="query-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
               <Input id="query-name" v-model="editor.name" />
             </div>
             <div class="space-y-2">
-              <Label for="query-identity">Identity</Label>
+              <Label for="query-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput
                 id="query-identity"
                 v-model="editor.identity"
@@ -301,7 +300,7 @@ async function buildQueryArtifact(
             </div>
           </div>
           <div class="max-w-xs space-y-2">
-            <Label for="query-source-version">Source version</Label>
+            <Label for="query-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label>
             <Input
               id="query-source-version"
               :model-value="editor.sourceVersion"

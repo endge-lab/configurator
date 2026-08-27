@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor'
 
 import { Endge } from '@endge/core'
@@ -399,7 +398,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -424,7 +423,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Восстановить системные переводы</TooltipContent>
+            <TooltipContent>{{ $t('uiText.restoreSystemTranslations73f96fde') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -449,20 +448,20 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
           <div class="font-semibold">
-            Основное
+            {{ $t('uiText.basic127492c2') }}
           </div>
           <DocumentIdField :document-id="editor!.id" />
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
-            Активен
+            {{ $t('uiText.active667904ef') }}
           </label>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">identity</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.identity1db089a9') }}</Label>
               <DocumentIdentityInput v-model="editor!.identity" placeholder="base" />
             </div>
             <div class="space-y-1">
-              <Label class="text-xs text-muted-foreground">Название</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.name3de49828') }}</Label>
               <Input
                 v-model="editor!.displayName"
                 placeholder="Базовый словарь"
@@ -470,7 +469,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
             </div>
           </div>
           <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">Описание</Label>
+            <Label class="text-xs text-muted-foreground">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Input
               v-model="editor!.description"
               placeholder="Краткое описание"
@@ -480,7 +479,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
         <Card class="p-4 space-y-4">
           <div class="flex items-center gap-2">
-            <Label class="text-xs text-muted-foreground shrink-0">Локаль</Label>
+            <Label class="text-xs text-muted-foreground shrink-0">{{ $t('uiText.locale29026252') }}</Label>
             <Select v-model="currentLocale">
               <SelectTrigger class="w-32">
                 <SelectValue />
@@ -500,15 +499,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
           <Tabs v-model="editMode" class="w-full">
             <TabsList class="grid w-full max-w-[320px] grid-cols-2">
               <TabsTrigger value="table">
-                По ключам
+                {{ $t('uiText.byKeysea58f69d') }}
               </TabsTrigger>
               <TabsTrigger value="json">
-                JSON
+                {{ $t('uiText.json031a4e76') }}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="table" class="mt-4 space-y-2">
               <div class="flex items-center justify-between">
-                <Label class="text-xs text-muted-foreground">Ключ (точечная нотация, например common.save)</Label>
+                <Label class="text-xs text-muted-foreground">{{ $t('uiText.keyDotNotationEGCommonSave1855c494') }}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -517,7 +516,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                   @click="addTableRow"
                 >
                   <Plus class="size-3.5" />
-                  Добавить
+                  {{ $t('uiText.add559a87f7') }}
                 </Button>
               </div>
               <div class="rounded-md border overflow-hidden">
@@ -526,10 +525,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                     <thead class="bg-muted/60 sticky top-0">
                       <tr>
                         <th class="text-left font-medium px-3 py-2 w-[40%]">
-                          Ключ
+                          {{ $t('uiText.keyCc6ec0f0') }}
                         </th>
                         <th class="text-left font-medium px-3 py-2">
-                          Значение
+                          {{ $t('uiText.value9f0b9909') }}
                         </th>
                         <th class="w-10" />
                       </tr>
@@ -574,8 +573,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
                           colspan="3"
                           class="px-3 py-6 text-center text-muted-foreground text-xs"
                         >
-                          Нет ключей. Нажмите «Добавить» или переключитесь на
-                          JSON.
+                          {{ $t('uiText.noKeysClickAddOrSwitchToJSONe39975d3') }}
                         </td>
                       </tr>
                     </tbody>
@@ -584,7 +582,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
               </div>
             </TabsContent>
             <TabsContent value="json" class="mt-4 space-y-1">
-              <Label class="text-xs text-muted-foreground">Сообщения (дерево в JSON)</Label>
+              <Label class="text-xs text-muted-foreground">{{ $t('uiText.messagesTreeInJSON72dd4429') }}</Label>
               <Textarea
                 v-model="currentLocaleJson"
                 class="font-mono text-xs min-h-[280px]"

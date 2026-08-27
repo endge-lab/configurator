@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { computed } from 'vue'
 
 import { Input } from '@/components/ui/input'
@@ -37,19 +36,19 @@ const password = credential('password')
 <template>
   <div class="grid gap-3">
     <div class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-muted-foreground">
-      Password Grant хранит пользовательские credentials и предназначен только для dev/test. Провайдер должен разрешать Direct Access Grants для указанного клиента.
+      {{ $t('uiText.passwordGrantStoresUserCredentialsAndIsIntendedOnlyF6210e1b5') }}
     </div>
     <div class="space-y-1.5">
-      <Label class="text-xs text-muted-foreground">Token endpoint</Label>
+      <Label class="text-xs text-muted-foreground">{{ $t('uiText.tokenEndpoint949fda72') }}</Label>
       <Input v-model="tokenEndpoint" placeholder="{KEYCLOAK_TOKEN_ENDPOINT}" autocomplete="off" />
     </div>
     <div class="grid gap-3 sm:grid-cols-2">
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Client ID</Label>
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.clientIDa766cd7f') }}</Label>
         <Input v-model="clientId" autocomplete="off" />
       </div>
       <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Scopes</Label>
+        <Label class="text-xs text-muted-foreground">{{ $t('uiText.scopesc23540e5') }}</Label>
         <Input v-model="scopes" placeholder="openid email" autocomplete="off" />
       </div>
     </div>

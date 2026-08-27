@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -66,7 +65,7 @@ onBeforeUnmount(() => {
       <span class="truncate normal-case tracking-normal">
         {{ props.state.sourceDiagnostics[0] ?? 'Visual synchronized' }}
       </span>
-      <span class="shrink-0">{{ sourceLinesCount }} lines</span>
+      <span class="shrink-0">{{ sourceLinesCount }} {{ $t('uiText.lines8525aaa8') }}</span>
     </div>
   </aside>
 </template>

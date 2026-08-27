@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RComponentDiagnostic } from '@endge/core'
 import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 
@@ -347,7 +346,7 @@ function quote(value: string): string {
           :class="{ '-rotate-90': !expanded }"
         />
         <span class="min-w-0 flex-1">
-          <span class="block text-sm font-medium">После редактирования</span>
+          <span class="block text-sm font-medium">{{ $t('uiText.afterEditingccdb7a1c') }}</span>
           <span v-if="hasReaction" class="mt-0.5 flex min-w-0 items-center gap-1.5">
             <Badge variant="secondary" class="h-4 px-1.5 text-[9px] uppercase">
               {{ reactionKindLabel(reactionSummary.kind) }}
@@ -366,7 +365,7 @@ function quote(value: string): string {
         @click="startEditing"
       >
         <Plus class="size-3.5" />
-        Добавить реакцию
+        {{ $t('uiText.addReactiond7261f38') }}
       </Button>
       <Button
         v-else-if="hasReaction"
@@ -391,7 +390,7 @@ function quote(value: string): string {
           >
             <div class="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <div class="space-y-1.5">
-                <Label class="text-xs">Шаблон</Label>
+                <Label class="text-xs">{{ $t('uiText.template7bd54e89') }}</Label>
                 <SearchableSelect
                   :options="templateOptions"
                   :model-value="null"
@@ -404,22 +403,22 @@ function quote(value: string): string {
               <div class="flex justify-end gap-1.5">
                 <Button v-if="allowRemove && hasReaction" type="button" variant="ghost" size="sm" class="h-8 gap-1.5 text-muted-foreground hover:text-destructive" @click="removeReaction">
                   <Trash2 class="size-3.5" />
-                  Удалить
+                  {{ $t('uiText.delete86ea33ae') }}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" class="h-8 gap-1.5" @click="cancelEditing">
                   <X class="size-3.5" />
-                  Отменить
+                  {{ $t('uiText.cancel555ad1c0') }}
                 </Button>
                 <Button type="button" size="sm" class="h-8 gap-1.5" @click="saveReaction">
                   <Save class="size-3.5" />
-                  Сохранить
+                  {{ $t('uiText.save4864057d') }}
                 </Button>
               </div>
             </div>
           </DomainEntityDropTarget>
 
           <div class="space-y-1.5">
-            <Label class="text-xs">Reaction</Label>
+            <Label class="text-xs">{{ $t('uiText.reactionf996ddc3') }}</Label>
             <Textarea
               v-model="draft"
               class="editor-control min-h-32 resize-y font-mono text-xs leading-relaxed"
@@ -431,7 +430,7 @@ function quote(value: string): string {
               <span :class="error ? 'text-destructive' : 'text-muted-foreground'">
                 {{ error || 'Сохранить: Ctrl/Cmd + Enter' }}
               </span>
-              <span class="shrink-0 text-muted-foreground">event('value') · event('previousValue')</span>
+              <span class="shrink-0 text-muted-foreground">{{ $t('uiText.eventValueEventPreviousValue7d58f120') }}</span>
             </div>
           </div>
         </div>

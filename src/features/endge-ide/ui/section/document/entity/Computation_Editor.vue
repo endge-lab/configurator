@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor'
 
 import { Endge } from '@endge/core'
@@ -198,7 +197,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -237,7 +236,7 @@ async function save(): Promise<void> {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {{ outputState.collapsed ? "Показать output" : "Скрыть output" }}
+                  {{ outputState.collapsed ? $t('uiText.showOutputc073c478') : $t('uiText.hideOutput0439b8c3') }}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -251,21 +250,21 @@ async function save(): Promise<void> {
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="computation-name">Название</Label><Input id="computation-name" v-model="editor.name" />
+            <Label for="computation-name">{{ $t('uiText.name3de49828') }}</Label><Input id="computation-name" v-model="editor.name" />
           </div>
           <div class="space-y-2">
-            <Label for="computation-identity">Identity</Label><DocumentIdentityInput id="computation-identity" v-model="editor.identity" spellcheck="false" />
+            <Label for="computation-identity">{{ $t('uiText.identity7e5a975b') }}</Label><DocumentIdentityInput id="computation-identity" v-model="editor.identity" spellcheck="false" />
           </div>
         </div>
         <div class="space-y-2">
-          <Label for="computation-description">Описание</Label><Textarea id="computation-description" v-model="editor.description" :rows="4" />
+          <Label for="computation-description">{{ $t('uiText.descriptionF5441f6a') }}</Label><Textarea id="computation-description" v-model="editor.description" :rows="4" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="computation-source-version">Source version</Label><Input id="computation-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
+            <Label for="computation-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label><Input id="computation-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
           </div>
           <div class="space-y-2">
-            <Label for="computation-contract-version">Contract version</Label><Input id="computation-contract-version" v-model.number="editor.contractVersion" type="number" min="1" />
+            <Label for="computation-contract-version">{{ $t('uiText.contractVersion6002e135') }}</Label><Input id="computation-contract-version" v-model.number="editor.contractVersion" type="number" min="1" />
           </div>
         </div>
       </div>
@@ -288,7 +287,7 @@ async function save(): Promise<void> {
     >
       <section class="relative flex h-full min-h-0 flex-col overflow-hidden border-r">
         <div class="shrink-0 border-b px-3 py-2 text-sm font-medium">
-          Input JSON
+          {{ $t('uiText.inputJSONcd877d83') }}
         </div>
         <Textarea
           v-model="previewInput"
@@ -299,11 +298,11 @@ async function save(): Promise<void> {
 
       <section class="flex h-full min-h-0 flex-col">
         <div class="flex shrink-0 items-center justify-between border-b px-3 py-2">
-          <span class="text-sm font-medium">Output JSON</span>
+          <span class="text-sm font-medium">{{ $t('uiText.outputJSON830d1200') }}</span>
           <Button size="sm" :disabled="runningPreview" @click="runPreview">
             <Loader2 v-if="runningPreview" class="mr-2 size-4 animate-spin" />
             <Play v-else class="mr-2 size-4" />
-            Run preview
+            {{ $t('uiText.runPreview1aa4c89a') }}
           </Button>
         </div>
         <pre class="min-h-0 flex-1 overflow-auto bg-muted/30 p-3 text-xs">{{

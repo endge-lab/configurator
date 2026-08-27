@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { EndgeConfigurationContribution } from '@endge/core'
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 
@@ -199,7 +198,7 @@ async function launchRuntimePreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Запустить Runtime Preview проекта (⌘/Ctrl+Enter)
+              {{ $t('uiText.runProjectRuntimePreviewCtrlEnter64161c9b') }}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -224,7 +223,7 @@ async function launchRuntimePreview(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -237,7 +236,7 @@ async function launchRuntimePreview(): Promise<void> {
             <section class="max-w-2xl space-y-4">
               <DocumentIdField :document-id="editor.id" />
               <div class="space-y-2">
-                <Label for="project-identity">Identity</Label>
+                <Label for="project-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
                 <DocumentIdentityInput
                   id="project-identity"
                   v-model="editor.identity"
@@ -245,7 +244,7 @@ async function launchRuntimePreview(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label for="project-display-name">Display name</Label>
+                <Label for="project-display-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
                 <Input
                   id="project-display-name"
                   v-model="editor.displayName"
@@ -253,7 +252,7 @@ async function launchRuntimePreview(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label>Slug (URL)</Label>
+                <Label>{{ $t('uiText.slugURLfd185dc1') }}</Label>
                 <Input
                   :model-value="editor?.slug ?? ''"
                   placeholder="my-project"
@@ -264,7 +263,7 @@ async function launchRuntimePreview(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label>Описание</Label>
+                <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
                 <Textarea
                   :model-value="editor.description ?? ''"
                   :rows="4"
@@ -276,7 +275,7 @@ async function launchRuntimePreview(): Promise<void> {
                 />
               </div>
               <div class="space-y-2">
-                <Label>Порядок сортировки</Label>
+                <Label>{{ $t('uiText.sortOrderf6529d95') }}</Label>
                 <Input
                   type="number"
                   :model-value="editor?.order ?? ''"
@@ -296,7 +295,7 @@ async function launchRuntimePreview(): Promise<void> {
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
               <div class="space-y-2">
-                <Label>Навигация проекта</Label>
+                <Label>{{ $t('uiText.projectNavigation8cb2761e') }}</Label>
                 <DomainEntityDropTarget
                   :accept-section-types="[DomainSectionType.Navigation]"
                   @update:model-value="onNavigationDrop"
@@ -316,7 +315,7 @@ async function launchRuntimePreview(): Promise<void> {
                   </div>
                 </DomainEntityDropTarget>
                 <p class="text-xs text-muted-foreground">
-                  Главное меню / навигация приложения проекта.
+                  {{ $t('uiText.mainMenuProjectApplicationNavigationc0297fc0') }}
                 </p>
               </div>
             </section>

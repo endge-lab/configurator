@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { ExtractComponentFolderOption } from './extract-component.types'
 
 import { Check, ChevronsUpDown, Folder, FolderRoot } from 'lucide-vue-next'
@@ -77,7 +76,7 @@ function select(value: string | null): void {
             <Check v-if="modelValue === null" class="size-3.5 text-primary" />
           </span>
           <FolderRoot class="size-4 text-violet-500" />
-          <span>Корень компонентов</span>
+          <span>{{ $t('uiText.componentRoot941888a1') }}</span>
         </button>
 
         <button
@@ -98,7 +97,7 @@ function select(value: string | null): void {
         </button>
 
         <div v-if="query && !filteredOptions.length" class="px-4 py-6 text-center text-xs text-muted-foreground">
-          Папки не найдены
+          {{ $t('uiText.foldersNotFound0cb99bbf') }}
         </div>
       </div>
     </PopoverContent>

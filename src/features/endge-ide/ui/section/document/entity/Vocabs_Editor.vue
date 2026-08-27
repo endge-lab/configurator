@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor'
 
 import { Endge } from '@endge/core'
@@ -159,7 +158,7 @@ async function save(): Promise<void> {
                 <Database v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Полная загрузка provider и итогового items</TooltipContent>
+            <TooltipContent>{{ $t('uiText.fullLoadOfProviderAndFinalItems44f29de0') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -172,7 +171,7 @@ async function save(): Promise<void> {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -188,7 +187,7 @@ async function save(): Promise<void> {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сбросить source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -200,24 +199,24 @@ async function save(): Promise<void> {
           <DocumentIdField :document-id="editor.id" />
           <label class="flex items-center gap-2 text-sm font-medium">
             <Checkbox v-model:checked="activeModel" />
-            Активен
+            {{ $t('uiText.active667904ef') }}
           </label>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <Label for="vocab-identity">Identity</Label>
+              <Label for="vocab-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput id="vocab-identity" v-model="editor.identity" spellcheck="false" />
             </div>
             <div class="space-y-2">
-              <Label for="vocab-name">Название</Label>
+              <Label for="vocab-name">{{ $t('uiText.name3de49828') }}</Label>
               <Input id="vocab-name" v-model="editor.displayName" />
             </div>
           </div>
           <div class="space-y-2">
-            <Label for="vocab-description">Описание</Label>
+            <Label for="vocab-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea id="vocab-description" v-model="editor.description" :rows="3" />
           </div>
           <div class="max-w-xs space-y-2">
-            <Label for="vocab-source-version">Source version</Label>
+            <Label for="vocab-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label>
             <Input id="vocab-source-version" :model-value="editor.sourceVersion" type="number" disabled />
           </div>
         </div>

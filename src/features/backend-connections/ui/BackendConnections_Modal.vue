@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -92,7 +91,7 @@ defineExpose({ open })
       <DialogHeader class="border-b bg-muted/35 px-6 py-5 text-left">
         <DialogTitle class="flex items-center gap-2">
           <Server class="size-4 text-orange-500" />
-          Настройка подключений
+          {{ $t('endgeIde.headerMenu.file.connections') }}
         </DialogTitle>
       </DialogHeader>
 
@@ -135,7 +134,7 @@ defineExpose({ open })
             </Button>
           </div>
           <div v-if="state.status === 'loading'" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-            <Loader2 class="size-4 animate-spin" /> Загрузка каталога…
+            <Loader2 class="size-4 animate-spin" /> {{ $t('uiText.loadingDirectory276d1f8c') }}
           </div>
         </div>
 
@@ -145,17 +144,17 @@ defineExpose({ open })
           <Button type="submit" :disabled="isSubmitting || !newName.trim() || !newURL.trim()" class="shrink-0 gap-2">
             <Loader2 v-if="isSubmitting" class="size-4 animate-spin" />
             <Plus v-else class="size-4" />
-            Добавить
+            {{ $t('uiText.add559a87f7') }}
           </Button>
         </form>
         <p v-else class="border-t pt-4 text-xs text-muted-foreground">
-          Просмотр доступен всем пользователям. Добавление и удаление требует роли Platform Admin.
+          {{ $t('uiText.viewIsAvailableToAllUsersAddingAndRemovingRequiresTh8eb00164') }}
         </p>
       </div>
 
       <DialogFooter class="border-t bg-muted/25 px-6 py-3">
         <Button variant="outline" @click="openState = false">
-          Закрыть
+          {{ $t('grid.widget.close') }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCEventAction,
   ComponentSFCEventInputValue,
@@ -409,7 +408,7 @@ function toPortName(identity: string): string {
 <template>
   <div class="space-y-4 p-5">
     <div v-if="!projection.editable" class="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
-      {{ projection.message }} Редактор не будет переписывать этот блок.
+      {{ projection.message }} {{ $t('uiText.theEditorWillNotOverwriteThisBlock1aa1ac50') }}
     </div>
 
     <template v-if="mode === 'events'">
@@ -437,7 +436,7 @@ function toPortName(identity: string): string {
             <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ '-rotate-90': !expandedEvents.has(item.name) }" />
             <span class="min-w-0 flex-1">
               <span class="block font-mono text-sm">{{ item.name }}</span>
-              <span class="mt-0.5 block truncate text-xs text-muted-foreground">{{ item.displayName }} · {{ item.payloadType }}</span>
+              <span class="mt-0.5 block truncate text-xs text-muted-foreground">{{ item.displayName }} {{ $t('uiText.symbol1fdf0d90') }} {{ item.payloadType }}</span>
             </span>
             <span class="hidden max-w-[20rem] truncate text-xs text-muted-foreground sm:block">{{ reactionLabel(item.port) }}</span>
           </button>
@@ -471,13 +470,13 @@ function toPortName(identity: string): string {
       <div class="grid gap-3 xl:grid-cols-2">
         <section class="rounded-lg border p-3">
           <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Required
+            {{ $t('uiText.requiredeed6bfb4') }}
           </h4>
           <div v-for="port in requiredPorts" :key="`${port.kind}:${port.name}`" class="flex items-center gap-2 border-t py-2 first:border-0">
             <Badge variant="outline">
               {{ port.kind }}
             </Badge><span class="font-mono text-xs">{{ port.name }}</span>
-            <span class="truncate text-xs text-muted-foreground">{{ 'defaultIdentity' in port ? port.defaultIdentity : '' }}</span>
+            <span class="truncate text-xs text-muted-foreground">{{ 'defaultIdentity' in port ? port.defaultIdentity : undefined }}</span>
             <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('require', port.name)">
               <Trash2 class="size-3.5" />
             </Button>
@@ -485,11 +484,11 @@ function toPortName(identity: string): string {
         </section>
         <section class="rounded-lg border p-3">
           <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Provided
+            {{ $t('uiText.providede93470b0') }}
           </h4>
           <div v-for="port in providedPorts" :key="port.name" class="flex items-center gap-2 border-t py-2 first:border-0">
             <Badge variant="outline">
-              action
+              {{ $t('uiText.action34eb4c4e') }}
             </Badge><span class="font-mono text-xs">{{ port.name }}</span>
             <Button class="ml-auto" variant="ghost" size="icon" @click="removePort('provides', port.name)">
               <Trash2 class="size-3.5" />
@@ -502,33 +501,33 @@ function toPortName(identity: string): string {
         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
           <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm">
             <option value="require">
-              Required
+              {{ $t('uiText.requiredeed6bfb4') }}
             </option><option value="provides">
-              Provided
+              {{ $t('uiText.providede93470b0') }}
             </option>
           </select>
           <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'">
             <option value="action">
-              Action
+              {{ $t('uiText.action97c89a4d') }}
             </option><option value="query">
-              Query
+              {{ $t('uiText.querya618b4be') }}
             </option><option value="computation">
-              Computation
+              {{ $t('uiText.computationcd260770') }}
             </option><option value="component">
-              Component
+              {{ $t('uiText.componentc92c529e') }}
             </option>
           </select>
           <Input v-model="portName" placeholder="portName" />
           <Input v-model="portIdentity" placeholder="domain.identity" :disabled="portRole === 'provides'" />
           <Button :disabled="!projection.editable" @click="addPort">
-            <Plus class="mr-1 size-4" />Добавить
+            <Plus class="mr-1 size-4" />{{ $t('uiText.add559a87f7') }}
           </Button>
         </div>
       </DomainEntityDropTarget>
 
       <section class="rounded-lg border p-3">
         <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <Radio class="size-3.5" /> Events
+          <Radio class="size-3.5" /> {{ $t('uiText.eventsc5497bca') }}
         </h4>
         <div class="mt-2 flex flex-wrap gap-2">
           <Badge v-for="event in eventPorts" :key="event.name" variant="secondary">
@@ -539,11 +538,11 @@ function toPortName(identity: string): string {
 
       <section class="space-y-2 rounded-lg border p-3">
         <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <Braces class="size-3.5" /> Forwarding
+          <Braces class="size-3.5" /> {{ $t('uiText.forwardingd735aafe') }}
         </h4>
         <Textarea v-model="forwardDraft" class="min-h-28 font-mono text-xs" placeholder="{ from: 'table', ports: { emits: '*' } }" />
         <Button size="sm" :disabled="!projection.editable" @click="saveForward">
-          <Zap class="mr-1 size-4" />Сохранить forward
+          <Zap class="mr-1 size-4" />{{ $t('uiText.saveForwarda8daa4f8') }}
         </Button>
       </section>
     </template>

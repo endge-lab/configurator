@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { SFCRenderInspectionTreeNode } from '@endge/core'
 import type { RuntimePreviewRenderable, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
@@ -52,8 +51,12 @@ const resourceSelected = computed(() => selected.value?.kind === 'resource')
 const canControl = computed(() => {
   const entry = instance.value
   const node = selected.value
-  if (!entry || !node || node.kind === 'resource') { return false }
-  if (node.parentId == null) { return true }
+  if (!entry || !node || node.kind === 'resource') {
+    return false
+  }
+  if (node.parentId == null) {
+    return true
+  }
   return entry.status.value !== 'stopped'
     && entry.status.value !== 'error'
     && entry.status.value !== 'preparing'
@@ -138,7 +141,9 @@ function clampHierarchyPanelWidth(width: number): number {
 }
 
 function beginHierarchyResize(event: PointerEvent): void {
-  if (event.button !== 0) { return }
+  if (event.button !== 0) {
+    return
+  }
   event.preventDefault()
   hierarchyResizeStartX = event.clientX
   hierarchyResizeStartWidth = clampHierarchyPanelWidth(Number(hierarchyPanelWidth.value))
@@ -148,28 +153,36 @@ function beginHierarchyResize(event: PointerEvent): void {
 }
 
 function resizeHierarchyPanel(event: PointerEvent): void {
-  if (!isHierarchyResizing.value) { return }
+  if (!isHierarchyResizing.value) {
+    return
+  }
   hierarchyPanelWidth.value = clampHierarchyPanelWidth(
     hierarchyResizeStartWidth + hierarchyResizeStartX - event.clientX,
   )
 }
 
 function endHierarchyResize(): void {
-  if (!isHierarchyResizing.value) { return }
+  if (!isHierarchyResizing.value) {
+    return
+  }
   isHierarchyResizing.value = false
   document.body.classList.remove('select-none')
   document.body.style.cursor = ''
 }
 
 function resizeHierarchyPanelByKeyboard(event: KeyboardEvent): void {
-  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') { return }
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+    return
+  }
   event.preventDefault()
   const direction = event.key === 'ArrowLeft' ? 1 : -1
   hierarchyPanelWidth.value = clampHierarchyPanelWidth(Number(hierarchyPanelWidth.value) + direction * 24)
 }
 
 function inspectRenderedElement(event: PointerEvent): void {
-  if (!hierarchyPanelVisible.value || renderInspection.pinnedId.value) { return }
+  if (!hierarchyPanelVisible.value || renderInspection.pinnedId.value) {
+    return
+  }
   const target = event.target instanceof Element
     ? event.target.closest<HTMLElement>('[data-endge-inspect-id]')
     : null
@@ -179,18 +192,24 @@ function inspectRenderedElement(event: PointerEvent): void {
 }
 
 function pinRenderedElement(event: MouseEvent): void {
-  if (!hierarchyPanelVisible.value) { return }
+  if (!hierarchyPanelVisible.value) {
+    return
+  }
   const target = event.target instanceof Element
     ? event.target.closest<HTMLElement>('[data-endge-inspect-id]')
     : null
   const id = target?.dataset.endgeInspectId ?? null
-  if (!id) { return }
+  if (!id) {
+    return
+  }
   renderInspection.pin(id)
   setHighlightedElement(target)
 }
 
 function hoverInspectionNode(id: string): void {
-  if (renderInspection.pinnedId.value) { return }
+  if (renderInspection.pinnedId.value) {
+    return
+  }
   renderInspection.hover(id)
   setHighlightedElement(findInspectionElement(id))
 }
@@ -201,7 +220,9 @@ function pinInspectionNode(id: string): void {
 }
 
 function clearInspectionHover(): void {
-  if (renderInspection.pinnedId.value) { return }
+  if (renderInspection.pinnedId.value) {
+    return
+  }
   renderInspection.clearHover()
   setHighlightedElement(null)
 }
@@ -213,16 +234,22 @@ function unpinInspection(): void {
 
 function findInspectionElement(id: string): HTMLElement | null {
   const direct = findRenderedInspectionElement(id)
-  if (direct) { return direct }
+  if (direct) {
+    return direct
+  }
 
   const selectedTreeNode = findInspectionTreeNode(renderInspection.roots.value, id)
   const descendant = selectedTreeNode ? findRenderedDescendant(selectedTreeNode) : null
-  if (descendant) { return descendant }
+  if (descendant) {
+    return descendant
+  }
 
   let node = renderInspection.session.getNode(id)
   while (node?.parentId) {
     const parent = findRenderedInspectionElement(node.parentId)
-    if (parent) { return parent }
+    if (parent) {
+      return parent
+    }
     node = renderInspection.session.getNode(node.parentId)
   }
   return null
@@ -238,9 +265,13 @@ function findInspectionTreeNode(
   id: string,
 ): SFCRenderInspectionTreeNode | null {
   for (const node of roots) {
-    if (node.id === id) { return node }
+    if (node.id === id) {
+      return node
+    }
     const child = findInspectionTreeNode(node.children, id)
-    if (child) { return child }
+    if (child) {
+      return child
+    }
   }
   return null
 }
@@ -248,9 +279,13 @@ function findInspectionTreeNode(
 function findRenderedDescendant(node: SFCRenderInspectionTreeNode): HTMLElement | null {
   for (const child of node.children) {
     const direct = findRenderedInspectionElement(child.id)
-    if (direct) { return direct }
+    if (direct) {
+      return direct
+    }
     const nested = findRenderedDescendant(child)
-    if (nested) { return nested }
+    if (nested) {
+      return nested
+    }
   }
   return null
 }
@@ -261,14 +296,18 @@ function focusInspectionElement(element: HTMLElement | null): void {
 }
 
 function setHighlightedElement(element: HTMLElement | null): void {
-  if (highlightedElement === element) { return }
+  if (highlightedElement === element) {
+    return
+  }
   highlightedElement?.removeAttribute('data-endge-inspection-highlight')
   highlightedElement = element
   highlightedElement?.setAttribute('data-endge-inspection-highlight', '')
 }
 
 function handleInspectionKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && hierarchyPanelVisible.value) { unpinInspection() }
+  if (event.key === 'Escape' && hierarchyPanelVisible.value) {
+    unpinInspection()
+  }
 }
 
 function clampPropsPanelWidth(width: number): number {
@@ -276,7 +315,9 @@ function clampPropsPanelWidth(width: number): number {
 }
 
 function beginResize(event: PointerEvent): void {
-  if (event.button !== 0) { return }
+  if (event.button !== 0) {
+    return
+  }
   event.preventDefault()
   resizeStartX = event.clientX
   resizeStartWidth = clampPropsPanelWidth(Number(propsPanelWidth.value))
@@ -286,28 +327,38 @@ function beginResize(event: PointerEvent): void {
 }
 
 function resizePanel(event: PointerEvent): void {
-  if (!isResizing.value) { return }
+  if (!isResizing.value) {
+    return
+  }
   propsPanelWidth.value = clampPropsPanelWidth(resizeStartWidth + resizeStartX - event.clientX)
 }
 
 function endResize(): void {
-  if (!isResizing.value) { return }
+  if (!isResizing.value) {
+    return
+  }
   isResizing.value = false
   document.body.classList.remove('select-none')
   document.body.style.cursor = ''
 }
 
 function resizePanelByKeyboard(event: KeyboardEvent): void {
-  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') { return }
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+    return
+  }
   event.preventDefault()
   const direction = event.key === 'ArrowLeft' ? 1 : -1
   propsPanelWidth.value = clampPropsPanelWidth(Number(propsPanelWidth.value) + direction * 24)
 }
 
 async function run(operation: () => Promise<void>): Promise<void> {
-  if (busy.value) { return }
+  if (busy.value) {
+    return
+  }
   busy.value = true
-  try { await operation() }
+  try {
+    await operation()
+  }
   catch (error) {
     toast.error('Не удалось изменить состояние Runtime', {
       description: error instanceof Error ? error.message : String(error),
@@ -325,8 +376,12 @@ function collectCompositionChildren(node: RuntimePreviewTreeNode): RuntimePrevie
   const result: RuntimePreviewTreeNode[] = []
   const visit = (children: RuntimePreviewTreeNode[]) => {
     for (const child of children) {
-      if (child.kind === 'composition') { result.push(child) }
-      else if (child.kind === 'scope') { visit(child.children) }
+      if (child.kind === 'composition') {
+        result.push(child)
+      }
+      else if (child.kind === 'scope') {
+        visit(child.children)
+      }
     }
   }
   visit(node.children)
@@ -338,9 +393,13 @@ function findInspectionComponent(
   identity: string,
 ): SFCRenderInspectionTreeNode | null {
   for (const node of roots) {
-    if (node.calledComponentIdentity === identity) { return node }
+    if (node.calledComponentIdentity === identity) {
+      return node
+    }
     const child = findInspectionComponent(node.children, identity)
-    if (child) { return child }
+    if (child) {
+      return child
+    }
   }
   return null
 }
@@ -351,7 +410,9 @@ watch(componentRenderables, () => {
   setHighlightedElement(null)
 }, { immediate: true })
 watch(hierarchyPanelVisible, (visible) => {
-  if (visible) { return }
+  if (visible) {
+    return
+  }
   renderInspection.reset()
   setHighlightedElement(null)
 })
@@ -361,13 +422,17 @@ watch(
     () => renderInspection.roots.value,
   ],
   ([componentIdentity, roots]) => {
-    if (!componentIdentity) { return }
+    if (!componentIdentity) {
+      return
+    }
     if (!hierarchyPanelVisible.value) {
       hierarchyPanelVisible.value = true
       return
     }
     const node = findInspectionComponent(roots, componentIdentity)
-    if (node && renderInspection.pinnedId.value !== node.id) { pinInspectionNode(node.id) }
+    if (node && renderInspection.pinnedId.value !== node.id) {
+      pinInspectionNode(node.id)
+    }
   },
   { flush: 'post' },
 )
@@ -482,7 +547,7 @@ onBeforeUnmount(() => {
 
     <div v-if="instance?.status.value === 'preparing'" class="flex min-h-0 flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
       <LoaderCircle class="size-5 animate-spin" />
-      Подготавливаем preview runtime…
+      {{ $t('uiText.preparingPreviewRuntime26203ea9') }}
     </div>
 
     <div v-else-if="instance" ref="body" class="runtime-preview-surface__body">
@@ -512,14 +577,14 @@ onBeforeUnmount(() => {
             />
             <StoreRuntimePreview v-else-if="item.kind === 'store'" :runtime="item.runtime" />
             <div v-else class="rounded-md border border-dashed p-4 text-xs text-muted-foreground">
-              Runtime <code>{{ item.runtime.entityIdentity }}</code> имеет renderable capability, но пока не имеет отдельного preview renderer.
+              {{ $t('uiText.runtimec4740e4c') }} <code>{{ item.runtime.entityIdentity }}</code> {{ $t('uiText.hasRenderableCapabilityButDoesNotHaveASeparatePreviecad8e5d0') }}
             </div>
           </section>
         </div>
 
         <div v-if="inactiveRenderables.length" class="border-t p-4">
           <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Доступно для запуска
+            {{ $t('uiText.availableForLaunchb1a829d9') }}
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <button
@@ -531,7 +596,7 @@ onBeforeUnmount(() => {
             >
               <Play class="size-3.5 shrink-0 text-muted-foreground" />
               <span class="min-w-0 flex-1 truncate">{{ node.title }}</span>
-              <span class="text-[10px] text-muted-foreground">manual</span>
+              <span class="text-[10px] text-muted-foreground">{{ $t('uiText.manualb363713a') }}</span>
             </button>
           </div>
         </div>
@@ -543,31 +608,31 @@ onBeforeUnmount(() => {
             </div>
             <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <dt class="text-muted-foreground">
-                Resource
+                {{ $t('uiText.resource021493f3') }}
               </dt>
               <dd class="font-mono">
                 {{ selected.identity }}
               </dd>
               <dt class="text-muted-foreground">
-                Type
+                {{ $t('uiText.type3deb7456') }}
               </dt>
               <dd>{{ selected.entityType }}</dd>
               <dt class="text-muted-foreground">
-                Owner scope
+                {{ $t('uiText.ownerScopefbc2d136') }}
               </dt>
               <dd class="font-mono">
                 {{ selected.scopePath }}
               </dd>
             </dl>
             <p class="mt-3 text-[11px] leading-5 text-muted-foreground">
-              Resource не имеет независимого lifecycle. Его состояние принадлежит owner scope.
+              {{ $t('uiText.resourceDoesNotHaveAnIndependentLifecycleItsStateBel1a790b2a') }}
             </p>
           </div>
         </div>
 
         <div v-if="nestedCompositions.length" class="border-t p-4">
           <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {{ selected?.kind === 'project' ? 'Project compositions' : 'Вложенные compositions' }}
+            {{ selected?.kind === 'project' ? $t('uiText.projectCompositions373faff7') : $t('uiText.nestedCompositions4b2ce876') }}
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <button
@@ -590,7 +655,7 @@ onBeforeUnmount(() => {
         >
           <Boxes class="size-10 opacity-35" stroke-width="1.25" />
           <div class="max-w-sm text-xs leading-5">
-            В выбранном узле нет активных renderable runtime-сущностей. Выберите дочерний узел или запустите manual runtime.
+            {{ $t('uiText.noActiveRenderableRuntimeEntitiesInTheSelectedNodeSe983dbe17') }}
           </div>
         </div>
       </div>
@@ -691,7 +756,7 @@ onBeforeUnmount(() => {
     <div v-else class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
       <Boxes class="size-10 opacity-30" stroke-width="1.25" />
       <div class="max-w-sm text-xs leading-5">
-        Runtime Tree пуст. Запустите Project, Composition, Component SFC или Store через Debug Preview.
+        {{ $t('uiText.runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f') }}
       </div>
     </div>
   </div>

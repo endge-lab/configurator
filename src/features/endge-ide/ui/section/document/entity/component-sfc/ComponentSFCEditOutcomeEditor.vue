@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ComponentSFCEditOutcomeProjection,
   ComponentSFCInteractionTriggerProjection,
@@ -144,7 +143,7 @@ function cloneTrigger(trigger: ComponentSFCInteractionTriggerProjection): Compon
   <div class="overflow-hidden rounded-lg border border-border/70">
     <div class="border-b border-border/60 bg-muted/20 px-3 py-2">
       <div class="text-sm font-medium">
-        Завершение редактирования
+        {{ $t('uiText.endEditingbf65a5a2') }}
       </div>
     </div>
 
@@ -162,7 +161,7 @@ function cloneTrigger(trigger: ComponentSFCInteractionTriggerProjection): Compon
               <span class="flex items-center gap-2 text-sm font-medium">
                 {{ row.label }}
                 <Badge v-if="row.projection.usesDefault" variant="secondary" class="h-4 px-1.5 text-[9px]">
-                  Наследуется
+                  {{ $t('uiText.inherited273151c2') }}
                 </Badge>
               </span>
               <span class="mt-1 flex flex-wrap gap-1">
@@ -181,7 +180,7 @@ function cloneTrigger(trigger: ComponentSFCInteractionTriggerProjection): Compon
           >
             <GitBranchPlus v-if="row.projection.usesDefault" class="size-3.5" />
             <RotateCcw v-else class="size-3.5" />
-            {{ row.projection.usesDefault ? 'Переопределить' : 'Наследовать' }}
+            {{ row.projection.usesDefault ? $t('uiText.overridecc6644df') : $t('uiText.inherit818928ec') }}
           </Button>
         </div>
 
@@ -205,7 +204,7 @@ function cloneTrigger(trigger: ComponentSFCInteractionTriggerProjection): Compon
             </ComponentSFCInteractionBindingEditor>
             <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addTrigger(row.kind)">
               <Plus class="size-3.5" />
-              Альтернативный trigger
+              {{ $t('uiText.alternativeTriggerf046e22b') }}
             </Button>
           </div>
         </CollapsibleContent>

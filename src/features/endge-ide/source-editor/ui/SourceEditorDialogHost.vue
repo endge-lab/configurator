@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import { onBeforeUnmount } from 'vue'
 
 import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
@@ -9,7 +8,9 @@ const cancelDialog = (): void => dialogs.cancel()
 const resolveDialog = (result: unknown): void => dialogs.resolve(result)
 
 function onOpenChange(open: boolean): void {
-  if (!open) { cancelDialog() }
+  if (!open) {
+    cancelDialog()
+  }
 }
 
 onBeforeUnmount(cancelDialog)

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { SFCRenderInspectionTreeNode } from '@endge/core'
 
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
@@ -27,15 +26,25 @@ const label = computed(() => props.node.kind === 'component'
 const instanceLabel = computed(() => {
   const rowKey = props.node.locals.rowKey
   const columnKey = props.node.locals.columnKey
-  if (rowKey != null || columnKey != null) { return `[row=${String(rowKey)}, col=${String(columnKey)}]` }
-  if (props.node.meta?.iterationKey != null) { return `[key=${String(props.node.meta.iterationKey)}]` }
+  if (rowKey != null || columnKey != null) {
+    return `[row=${String(rowKey)}, col=${String(columnKey)}]`
+  }
+  if (props.node.meta?.iterationKey != null) {
+    return `[key=${String(props.node.meta.iterationKey)}]`
+  }
   return ''
 })
 
 watch(() => props.pinnedId, async (id) => {
-  if (!id) { return }
-  if (containsNode(props.node, id)) { expanded.value = true }
-  if (props.node.id !== id) { return }
+  if (!id) {
+    return
+  }
+  if (containsNode(props.node, id)) {
+    expanded.value = true
+  }
+  if (props.node.id !== id) {
+    return
+  }
   await nextTick()
   rowElement.value?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   rowElement.value?.focus({ preventScroll: true })
@@ -67,11 +76,11 @@ function containsNode(node: SFCRenderInspectionTreeNode, id: string): boolean {
         <ChevronDown v-if="hasChildren && expanded" class="size-3" />
         <ChevronRight v-else-if="hasChildren" class="size-3" />
       </span>
-      <span class="sfc-tree-node__bracket">&lt;</span>
+      <span class="sfc-tree-node__bracket">{{ $t('uiText.symbolc4dd3c8c') }}</span>
       <span class="sfc-tree-node__tag">{{ label }}</span>
-      <span v-if="node.meta?.definition" class="sfc-tree-node__badge">template</span>
+      <span v-if="node.meta?.definition" class="sfc-tree-node__badge">{{ $t('uiText.template3226ecbe') }}</span>
       <span v-if="instanceLabel" class="sfc-tree-node__instance">{{ instanceLabel }}</span>
-      <span class="sfc-tree-node__bracket">&gt;</span>
+      <span class="sfc-tree-node__bracket">{{ $t('uiText.symbol091385be') }}</span>
     </button>
 
     <ul v-if="hasChildren && expanded" class="m-0 list-none p-0">

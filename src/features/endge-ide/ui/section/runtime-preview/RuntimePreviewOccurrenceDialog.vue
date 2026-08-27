@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import { Boxes, GitBranch, Play, TriangleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -32,7 +31,9 @@ const hasLiveRisk = computed(() =>
 )
 
 function setOpen(value: boolean): void {
-  if (!value) { preview.chooseOccurrence(null) }
+  if (!value) {
+    preview.chooseOccurrence(null)
+  }
 }
 </script>
 
@@ -43,7 +44,7 @@ function setOpen(value: boolean): void {
         <div class="mb-2 flex size-9 items-center justify-center rounded-md border bg-muted/40">
           <GitBranch class="size-4 text-muted-foreground" />
         </div>
-        <DialogTitle>Запустить в контексте проекта</DialogTitle>
+        <DialogTitle>{{ $t('uiText.runInProjectContextd1462887') }}</DialogTitle>
         <DialogDescription>
           {{ promptDescription }}
         </DialogDescription>
@@ -56,10 +57,10 @@ function setOpen(value: boolean): void {
         <TriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <div>
           <div class="font-medium text-foreground">
-            Включён Live mode
+            {{ $t('uiText.liveModeIsEnabledb2683ff2') }}
           </div>
           <div class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            Активация отмеченной ветки может выполнить Query из onMount-графа.
+            {{ $t('uiText.activatingTheMarkedBranchMayExecuteQueryFromTheOnMou24c05f34') }}
           </div>
         </div>
       </div>
@@ -83,14 +84,14 @@ function setOpen(value: boolean): void {
                     {{ occurrence.path.at(-1) }}
                   </span>
                   <Badge variant="outline" class="h-5 shrink-0 px-1.5 text-[10px] font-normal">
-                    {{ occurrence.kind === 'composition' ? 'Composition' : 'Component' }}
+                    {{ occurrence.kind === 'composition' ? $t('uiText.compositionca5e0012') : $t('uiText.componentc92c529e') }}
                   </Badge>
                   <Badge
                     v-if="prompt?.liveMode && occurrence.mayExecuteQueries"
                     variant="outline"
                     class="h-5 shrink-0 border-amber-500/40 px-1.5 text-[10px] font-normal text-amber-700 dark:text-amber-300"
                   >
-                    может выполнить Query
+                    {{ $t('uiText.canExecuteQueryac0b71e0') }}
                   </Badge>
                 </div>
                 <div class="mt-1.5 line-clamp-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
@@ -105,10 +106,10 @@ function setOpen(value: boolean): void {
 
       <DialogFooter class="border-t pt-4 sm:justify-between">
         <Button variant="outline" @click="preview.chooseOccurrence('standalone')">
-          Запустить standalone
+          {{ $t('uiText.runStandalone7b1861a4') }}
         </Button>
         <Button variant="ghost" @click="preview.chooseOccurrence(null)">
-          Отмена
+          {{ $t('uiText.cancel0ec753be') }}
         </Button>
       </DialogFooter>
     </DialogContent>

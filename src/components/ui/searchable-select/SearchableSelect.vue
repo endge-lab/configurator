@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type { HTMLAttributes } from 'vue'
 
 import { Check, ChevronDown } from 'lucide-vue-next'
@@ -46,12 +45,16 @@ const open = ref(false)
 const searchQuery = ref('')
 
 watch(open, (v) => {
-  if (!v) { searchQuery.value = '' }
+  if (!v) {
+    searchQuery.value = ''
+  }
 })
 
 const filteredOptions = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) { return props.options }
+  if (!q) {
+    return props.options
+  }
   return props.options.filter(o => (
     o.label.toLowerCase().includes(q)
     || o.value.toLowerCase().includes(q)
@@ -80,16 +83,24 @@ const optionGroups = computed(() => {
 
 const selectedSet = computed(() => {
   const v = props.modelValue
-  if (Array.isArray(v)) { return new Set(v.map(String)) }
-  if (v != null && v !== '') { return new Set([String(v)]) }
+  if (Array.isArray(v)) {
+    return new Set(v.map(String))
+  }
+  if (v != null && v !== '') {
+    return new Set([String(v)])
+  }
   return new Set<string>()
 })
 
 const triggerLabel = computed(() => {
   const v = props.modelValue
   if (Array.isArray(v)) {
-    if (!v.length) { return props.placeholder }
-    if (v.length === 1 && v[0] === '*') { return props.allOption?.label ?? '*' }
+    if (!v.length) {
+      return props.placeholder
+    }
+    if (v.length === 1 && v[0] === '*') {
+      return props.allOption?.label ?? '*'
+    }
     if (v.length === 1) {
       const o = props.options.find(op => op.value === v[0])
       return o?.label ?? v[0]
@@ -128,7 +139,9 @@ function toggleOption(value: string): void {
 }
 
 function onAllOptionClick(): void {
-  if (!props.multiple || !props.allOption) { return }
+  if (!props.multiple || !props.allOption) {
+    return
+  }
   emit('update:modelValue', [props.allOption.value])
   open.value = false
 }
@@ -208,7 +221,7 @@ const triggerCls = computed(() =>
             v-if="!optionsToShow.length"
             class="px-2 py-3 text-center text-sm text-muted-foreground"
           >
-            Ничего не найдено
+            {{ $t('uiText.nothingFound1e1b70b1') }}
           </li>
         </ul>
       </div>

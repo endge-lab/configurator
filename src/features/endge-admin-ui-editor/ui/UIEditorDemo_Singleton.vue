@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { Component, CSSProperties } from 'vue'
 import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
 
@@ -262,8 +261,8 @@ onBeforeUnmount(() => {
             @click="removeContextNode"
           >
             <Trash2 class="size-3.5" />
-            <span>Удалить</span>
-            <kbd class="ml-auto font-mono text-[9px] text-muted-foreground">⌫</kbd>
+            <span>{{ $t('uiText.delete86ea33ae') }}</span>
+            <kbd class="ml-auto font-mono text-[9px] text-muted-foreground">{{ $t('uiText.symbol6b93fd28') }}</kbd>
           </button>
         </div>
       </div>

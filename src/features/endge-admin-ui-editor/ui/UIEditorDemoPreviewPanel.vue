@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
@@ -100,7 +99,7 @@ onBeforeUnmount(() => {
         class="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground"
       >
         <LoaderCircle class="size-4 animate-spin" />
-        Building preview runtime…
+        {{ $t('uiText.buildingPreviewRuntime43c520df') }}
       </div>
 
       <div

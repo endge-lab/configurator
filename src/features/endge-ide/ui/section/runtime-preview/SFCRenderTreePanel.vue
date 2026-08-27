@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { SFCRenderInspectionTreeNode } from '@endge/core'
 
 import { ListTree, PinOff, X } from 'lucide-vue-next'
@@ -24,7 +23,7 @@ const emit = defineEmits<{
   <aside class="sfc-tree-panel" @mouseleave="emit('leave')">
     <header class="sfc-tree-panel__header">
       <ListTree class="size-3.5 text-sky-400" />
-      <span>SFC hierarchy</span>
+      <span>{{ $t('uiText.sfcHierarchy466e1afd') }}</span>
       <span class="sfc-tree-panel__count">{{ roots.length }}</span>
       <button v-if="pinnedId" type="button" title="Снять фиксацию" @click="emit('unpin')">
         <PinOff class="size-3.5" />
@@ -49,7 +48,7 @@ const emit = defineEmits<{
     </div>
     <div v-else class="sfc-tree-panel__empty">
       <ListTree class="size-7 opacity-35" />
-      <span>Tree will appear after the SFC render pass.</span>
+      <span>{{ $t('uiText.treeWillAppearAfterTheSFCRenderPass3bbe5dfd') }}</span>
     </div>
   </aside>
 </template>

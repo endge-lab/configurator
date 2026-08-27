@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 
@@ -199,11 +198,11 @@ function removeSelected(): void {
     <div class="min-h-0 flex-1 space-y-5 overflow-auto p-4">
       <section v-if="(selectedNode.kind === 'text' || selectedNode.kind === 'button')">
         <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Содержимое
+          {{ $t('uiText.content2547ea7f') }}
         </div>
         <div v-if="selectedNode.kind === 'text' && hasUIEditorSFCTextBinding(selectedNode)" class="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
           <LockKeyhole class="mt-0.5 size-3.5 shrink-0" />
-          Текст вычисляется выражением и редактируется в Source.
+          {{ $t('uiText.textIsComputedByAnExpressionAndEditedInSourcedf3372b7') }}
         </div>
         <textarea
           v-else
@@ -215,7 +214,7 @@ function removeSelected(): void {
 
       <section v-if="managedProperties.length">
         <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Layout
+          {{ $t('uiText.layout972ad8d8') }}
         </div>
         <div class="grid grid-cols-2 gap-3">
           <label v-for="property in managedProperties" :key="property.key" class="min-w-0 space-y-1.5 text-xs">
@@ -250,7 +249,7 @@ function removeSelected(): void {
 
       <section v-if="hasGridPlacement && selectedNode.layout">
         <div class="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Grid placement
+          {{ $t('uiText.gridPlacement0ec4616b') }}
         </div>
         <div class="grid grid-cols-2 gap-3">
           <label
@@ -276,7 +275,7 @@ function removeSelected(): void {
       <section v-if="staticAttributes.length || dynamicAttributes.length || sourceDirectives.length">
         <div class="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           <Code2 class="size-3" />
-          SFC attributes
+          {{ $t('uiText.sfcAttributes40bf7515') }}
         </div>
         <div class="space-y-3">
           <label v-for="attribute in staticAttributes" :key="attribute.name" class="block space-y-1.5 text-xs">
@@ -317,7 +316,7 @@ function removeSelected(): void {
     <footer v-if="selectedNode.id !== props.state.document.rootId" class="shrink-0 border-t border-border/70 p-3">
       <Button variant="ghost" class="h-8 w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive" @click="removeSelected">
         <Trash2 class="mr-2 size-3.5" />
-        Удалить элемент
+        {{ $t('uiText.deleteItem288dbd8a') }}
       </Button>
     </footer>
   </aside>

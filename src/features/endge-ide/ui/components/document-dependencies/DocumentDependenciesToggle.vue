@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import { GitFork } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
@@ -38,7 +37,7 @@ const emit = defineEmits<{
       </Button>
     </TooltipTrigger>
     <TooltipContent>
-      {{ open ? "Скрыть зависимости" : "Показать зависимости" }}
+      {{ open ? $t('uiText.hideDependencies387a47a6') : $t('uiText.showDependencies8239edf7') }}
     </TooltipContent>
   </Tooltip>
 </template>

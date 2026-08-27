@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   CompositionPreviewLiteral,
   CompositionPreviewProps,
@@ -33,20 +32,28 @@ export function analyzeCompositionRuntimeProps(
   materializePreviewValue: (value: CompositionPreviewPropValue) => CompositionPreviewLiteral | undefined
     = materializeLiteralPreviewValue,
 ): CompositionRuntimePropsIssue[] {
-  if (!owner) { return [] }
+  if (!owner) {
+    return []
+  }
 
   return owner.runtimes.flatMap((runtime) => {
-    if (runtime.kind !== 'composition') { return [] }
+    if (runtime.kind !== 'composition') {
+      return []
+    }
 
     const target = resolveContract(runtime.identity)
-    if (!target) { return [] }
+    if (!target) {
+      return []
+    }
 
     const requiredProps = target.props.filter(prop => !prop.optional && prop.defaultValue === undefined)
     const missingProps = requiredProps
       .map(prop => prop.key)
       .filter(prop => !Object.hasOwn(runtime.props, prop))
 
-    if (!missingProps.length) { return [] }
+    if (!missingProps.length) {
+      return []
+    }
 
     const previewProps = Object.fromEntries(
       missingProps.flatMap((prop) => {
@@ -59,7 +66,9 @@ export function analyzeCompositionRuntimeProps(
     const generatedProps = Object.fromEntries(
       missingProps.flatMap((prop) => {
         const previewValue = previewProps[prop]
-        if (!previewValue) { return [] }
+        if (!previewValue) {
+          return []
+        }
         const value = materializePreviewValue(previewValue)
         return value === undefined ? [] : [[prop, value]]
       }),
@@ -94,17 +103,23 @@ export function generateCompositionRuntimeProps(
   owner: CompositionProgramPayload,
   issue: CompositionRuntimePropsIssue,
 ): string {
-  if (!issue.canGenerate) { return source }
+  if (!issue.canGenerate) {
+    return source
+  }
 
   const runtime = owner.runtimes.find(item => item.path === issue.runtimePath && item.identity === issue.runtimeIdentity)
   const locations = runtime?.sourceLocations
-  if (!runtime || !locations) { return source }
+  if (!runtime || !locations) {
+    return source
+  }
 
   const entries = issue.missingProps.flatMap((prop) => {
     const value = issue.generatedProps[prop]
     return value === undefined ? [] : [[prop, value] as const]
   })
-  if (entries.length !== issue.missingProps.length) { return source }
+  if (entries.length !== issue.missingProps.length) {
+    return source
+  }
 
   return locations.withProps
     ? insertIntoWithProps(source, locations.withProps, entries)
@@ -123,13 +138,19 @@ export function generateCompositionRuntimePreviewSource(
 
   for (let iteration = 0; iteration < maxIterations; iteration += 1) {
     const owner = compile(generated)
-    if (!owner) { return generated }
+    if (!owner) {
+      return generated
+    }
     const issue = analyzeCompositionRuntimeProps(owner, resolveContract, materializePreviewValue)
       .find(item => item.canGenerate)
-    if (!issue) { return generated }
+    if (!issue) {
+      return generated
+    }
 
     const next = generateCompositionRuntimeProps(generated, owner, issue)
-    if (next === generated) { return generated }
+    if (next === generated) {
+      return generated
+    }
     generated = next
   }
 

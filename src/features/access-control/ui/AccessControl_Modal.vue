@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { AccessControlUser, AccessGrant, WorkspaceAccessRole } from '@/features/access-control'
 
 import { Endge } from '@endge/core'
@@ -367,10 +366,10 @@ defineExpose({ open })
       <DialogHeader class="border-b bg-muted/35 px-6 py-5 text-left">
         <DialogTitle class="flex items-center gap-2">
           <ShieldCheck class="size-4 text-primary" />
-          Управление доступом
+          {{ $t('endgeIde.headerMenu.file.access') }}
         </DialogTitle>
         <DialogDescription>
-          {{ platformAdmin ? 'Права платформы и рабочих пространств' : `Workspace: ${workspaceIdentity}` }}
+          {{ platformAdmin ? $t('uiText.platformAndWorkspacePermissions7a8e46d9') : `Workspace: ${workspaceIdentity}` }}
         </DialogDescription>
       </DialogHeader>
 
@@ -381,13 +380,13 @@ defineExpose({ open })
       <Tabs v-model="activeTab" class="min-h-0 overflow-y-auto px-6 py-5">
         <TabsList v-if="platformAdmin" class="grid w-full grid-cols-3">
           <TabsTrigger value="workspace">
-            Текущий Workspace
+            {{ $t('uiText.currentWorkspace97365709') }}
           </TabsTrigger>
           <TabsTrigger value="platform">
-            Администраторы платформы
+            {{ $t('uiText.platformAdmins76699285') }}
           </TabsTrigger>
           <TabsTrigger value="user">
-            Доступ пользователя
+            {{ $t('uiText.userAccessee39d620') }}
           </TabsTrigger>
         </TabsList>
 
@@ -397,7 +396,7 @@ defineExpose({ open })
             <Input v-model="searchQuery" class="pl-9" placeholder="Начните вводить username…" autocomplete="off" />
           </div>
           <div v-if="searching" class="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
-            <Loader2 class="size-3.5 animate-spin" /> Поиск пользователей…
+            <Loader2 class="size-3.5 animate-spin" /> {{ $t('uiText.searchUsers3426d79a') }}
           </div>
           <div v-else-if="searchResults.length" class="mt-2 max-h-36 space-y-1 overflow-y-auto">
             <button
@@ -410,16 +409,16 @@ defineExpose({ open })
             >
               <span class="min-w-0">
                 <span class="block truncate text-sm font-medium">{{ user.displayName || user.username || user.id }}</span>
-                <span class="block truncate text-xs text-muted-foreground">{{ user.username }} · {{ user.providerId }}</span>
+                <span class="block truncate text-xs text-muted-foreground">{{ user.username }} {{ $t('uiText.symbol1fdf0d90') }} {{ user.providerId }}</span>
               </span>
               <UserPlus class="size-4 shrink-0 text-muted-foreground" />
             </button>
             <Button v-if="searchCursor" variant="ghost" size="sm" class="w-full" @click="searchUsers(true)">
-              Показать ещё
+              {{ $t('uiText.showMoreb53ec8fb') }}
             </Button>
           </div>
           <p v-else-if="searchQuery.trim().length >= 2 && !searching" class="px-2 py-3 text-xs text-muted-foreground">
-            Пользователи не найдены
+            {{ $t('uiText.noUsersFound942d94c3') }}
           </p>
         </div>
 
@@ -431,15 +430,15 @@ defineExpose({ open })
             </div>
             <select v-model="selectedRole" class="h-9 rounded-md border bg-background px-3 text-sm">
               <option value="viewer">
-                Viewer
+                {{ $t('uiText.viewerdbad9f12') }}
               </option><option value="editor">
-                Editor
+                {{ $t('uiText.editorc7e9fb2e') }}
               </option><option value="admin">
-                Admin
+                {{ $t('uiText.admin4e7afebc') }}
               </option>
             </select>
             <Button :disabled="submitting" class="gap-2" @click="addWorkspaceGrant">
-              <UserPlus class="size-4" /> Назначить
+              <UserPlus class="size-4" /> {{ $t('uiText.assignfe128585') }}
             </Button>
           </div>
 
@@ -451,16 +450,16 @@ defineExpose({ open })
                   {{ grant.user.displayName || grant.user.username || grant.user.id }}
                 </p>
                 <p class="truncate text-xs text-muted-foreground">
-                  {{ grant.user.username }} · {{ grant.user.providerId }}
+                  {{ grant.user.username }} {{ $t('uiText.symbol1fdf0d90') }} {{ grant.user.providerId }}
                 </p>
               </div>
               <select :value="grant.role" class="h-8 rounded-md border bg-background px-2 text-xs" :disabled="submitting" @change="updateWorkspaceGrant(grant, ($event.target as HTMLSelectElement).value as WorkspaceAccessRole)">
                 <option value="viewer">
-                  Viewer
+                  {{ $t('uiText.viewerdbad9f12') }}
                 </option><option value="editor">
-                  Editor
+                  {{ $t('uiText.editorc7e9fb2e') }}
                 </option><option value="admin">
-                  Admin
+                  {{ $t('uiText.admin4e7afebc') }}
                 </option>
               </select>
               <Button variant="ghost" size="icon" class="size-8 hover:text-destructive" :disabled="submitting" @click="removeGrant(grant)">
@@ -471,7 +470,7 @@ defineExpose({ open })
               <Loader2 class="size-5 animate-spin text-muted-foreground" />
             </div>
             <Button v-if="workspaceCursor && !loading" variant="outline" size="sm" class="w-full" @click="loadWorkspaceGrants(true)">
-              Показать ещё
+              {{ $t('uiText.showMoreb53ec8fb') }}
             </Button>
           </div>
         </TabsContent>
@@ -483,7 +482,7 @@ defineExpose({ open })
               <span class="font-medium">{{ selectedUser.displayName || selectedUser.username }}</span><span class="ml-2 text-xs text-muted-foreground">{{ selectedUser.username }}</span>
             </div>
             <Button :disabled="submitting" @click="addPlatformAdmin">
-              Сделать Platform Admin
+              {{ $t('uiText.makePlatformAdmin5db23a98') }}
             </Button>
           </div>
           <div class="max-h-[34vh] space-y-2 overflow-y-auto pr-1">
@@ -493,16 +492,16 @@ defineExpose({ open })
                 <p class="truncate text-sm font-medium">
                   {{ grant.user.displayName || grant.user.username }}
                 </p><p class="truncate text-xs text-muted-foreground">
-                  {{ grant.user.username }} · {{ grant.user.providerId }}
+                  {{ grant.user.username }} {{ $t('uiText.symbol1fdf0d90') }} {{ grant.user.providerId }}
                 </p>
               </div>
-              <span class="rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary">Platform Admin</span>
+              <span class="rounded bg-primary/10 px-2 py-1 text-xs font-medium text-primary">{{ $t('uiText.platformAdmin7c39b5a1') }}</span>
               <Button variant="ghost" size="icon" class="size-8 hover:text-destructive" :disabled="submitting" @click="removeGrant(grant)">
                 <Trash2 class="size-4" />
               </Button>
             </div>
             <Button v-if="platformCursor && !loading" variant="outline" size="sm" class="w-full" @click="loadPlatformGrants(true)">
-              Показать ещё
+              {{ $t('uiText.showMoreb53ec8fb') }}
             </Button>
           </div>
         </TabsContent>
@@ -515,7 +514,7 @@ defineExpose({ open })
                   {{ selectedUser.displayName || selectedUser.username }}
                 </p>
                 <p class="truncate text-xs text-muted-foreground">
-                  {{ selectedUser.username }} · {{ selectedUser.providerId }}
+                  {{ selectedUser.username }} {{ $t('uiText.symbol1fdf0d90') }} {{ selectedUser.providerId }}
                 </p>
               </div>
               <Button
@@ -524,27 +523,27 @@ defineExpose({ open })
                 :disabled="submitting"
                 @click="removeGrant(selectedUserPlatformGrant)"
               >
-                Отозвать Platform Admin
+                {{ $t('uiText.revokePlatformAdmind352c2b0') }}
               </Button>
               <Button v-else :disabled="submitting" @click="addPlatformAdmin">
-                Сделать Platform Admin
+                {{ $t('uiText.makePlatformAdmin5db23a98') }}
               </Button>
             </div>
             <div class="flex items-center gap-2 border-t pt-4">
               <select v-model="bulkRole" class="h-9 rounded-md border bg-background px-3 text-sm">
                 <option value="viewer">
-                  Viewer
+                  {{ $t('uiText.viewerdbad9f12') }}
                 </option><option value="editor">
-                  Editor
+                  {{ $t('uiText.editorc7e9fb2e') }}
                 </option><option value="admin">
-                  Admin
+                  {{ $t('uiText.admin4e7afebc') }}
                 </option>
               </select>
               <Button variant="outline" :disabled="submitting" @click="applyBulk(true)">
-                Все текущие Workspace
+                {{ $t('uiText.allCurrentWorkspaces390515ac') }}
               </Button>
               <Button :disabled="submitting || selectedWorkspaces.length === 0" @click="applyBulk(false)">
-                Применить к выбранным ({{ selectedWorkspaces.length }})
+                {{ $t('uiText.applyToSelectedbbab5211') }}{{ selectedWorkspaces.length }})
               </Button>
             </div>
             <div class="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto border-t pt-4">
@@ -556,7 +555,7 @@ defineExpose({ open })
             </div>
             <div class="max-h-52 space-y-2 overflow-y-auto border-t pt-4">
               <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Прямые права в Workspace
+                {{ $t('uiText.directPermissionsInWorkspace197efb51') }}
               </p>
               <div
                 v-for="grant in selectedUserGrants"
@@ -578,13 +577,13 @@ defineExpose({ open })
                   @change="updateSelectedWorkspaceGrant(grant, ($event.target as HTMLSelectElement).value as WorkspaceAccessRole)"
                 >
                   <option value="viewer">
-                    Viewer
+                    {{ $t('uiText.viewerdbad9f12') }}
                   </option>
                   <option value="editor">
-                    Editor
+                    {{ $t('uiText.editorc7e9fb2e') }}
                   </option>
                   <option value="admin">
-                    Admin
+                    {{ $t('uiText.admin4e7afebc') }}
                   </option>
                 </select>
                 <Button
@@ -598,7 +597,7 @@ defineExpose({ open })
                 </Button>
               </div>
               <p v-if="!loading && selectedUserGrants.length === 0" class="py-3 text-center text-xs text-muted-foreground">
-                Прямых назначений нет
+                {{ $t('uiText.noDirectAssignmentsdc167694') }}
               </p>
               <Button
                 v-if="selectedUserCursor && !loading"
@@ -607,19 +606,19 @@ defineExpose({ open })
                 class="w-full"
                 @click="loadSelectedUserAccess(true)"
               >
-                Показать ещё
+                {{ $t('uiText.showMoreb53ec8fb') }}
               </Button>
             </div>
           </div>
           <div v-else class="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
-            Найдите и выберите пользователя выше
+            {{ $t('uiText.findAndSelectAUserAboved6c45ceb') }}
           </div>
         </TabsContent>
       </Tabs>
 
       <DialogFooter class="border-t bg-muted/25 px-6 py-3">
         <Button variant="outline" @click="openState = false">
-          Закрыть
+          {{ $t('grid.widget.close') }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -279,11 +279,10 @@ const previewAreaLabels = computed(() =>
 </script>
 
 <template>
-  <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
   <div class="w-full h-full flex flex-col min-h-0">
     <div class="p-3 border-b flex items-center justify-between gap-3 shrink-0">
       <div class="text-lg font-semibold truncate">
-        Страница - {{ editor?.displayName ?? '-' }}
+        {{ $t('uiText.paged1ef898a') }} {{ editor?.displayName ?? '-' }}
       </div>
       <div class="flex items-center gap-2">
         <SaveDocumentButton :loading="EndgeIDE.busy.value" :disabled="externallyManaged" @click="save" />
@@ -294,32 +293,32 @@ const previewAreaLabels = computed(() =>
       <div class="max-w-3xl">
         <Card class="mb-4 p-4 space-y-4">
           <div class="font-semibold">
-            Основное
+            {{ $t('uiText.basic127492c2') }}
           </div>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
-              <Label>Identity</Label>
+              <Label>{{ $t('uiText.identity7e5a975b') }}</Label>
               <DocumentIdentityInput v-model="editor!.identity" :disabled="externallyManaged" placeholder="page.schedule" />
             </div>
             <div class="space-y-2">
-              <Label>Название</Label>
+              <Label>{{ $t('uiText.name3de49828') }}</Label>
               <Input v-model="editor!.displayName" :disabled="externallyManaged" placeholder="Расписание" />
             </div>
             <div class="space-y-2">
-              <Label>routeName</Label>
+              <Label>{{ $t('uiText.routenamedef8c1a0') }}</Label>
               <Input v-model="editor!.routeName" :disabled="externallyManaged" placeholder="schedule" />
             </div>
             <div class="space-y-2">
-              <Label>routePath</Label>
+              <Label>{{ $t('uiText.routepathdd2f7e60') }}</Label>
               <Input v-model="editor!.routePath" :disabled="externallyManaged" placeholder="/schedule" />
             </div>
           </div>
           <div class="space-y-2">
-            <Label>Описание</Label>
+            <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
             <Textarea v-model="editor!.description" :disabled="externallyManaged" :rows="2" />
           </div>
           <div class="space-y-2">
-            <Label>Шаблон страницы</Label>
+            <Label>{{ $t('uiText.pageTemplatebb1e6489') }}</Label>
             <SearchableSelect
               :model-value="editor?.templateId != null ? String(editor.templateId) : null"
               :options="templateOptions"
@@ -330,7 +329,7 @@ const previewAreaLabels = computed(() =>
             />
           </div>
           <div class="flex items-center justify-between gap-3">
-            <Label>Включена</Label>
+            <Label>{{ $t('uiText.enabled85dd4d46') }}</Label>
             <Switch
               :checked="editor?.enabled ?? true"
               :disabled="externallyManaged"
@@ -340,17 +339,17 @@ const previewAreaLabels = computed(() =>
         </Card>
         <Card class="p-4 space-y-3">
           <div class="font-semibold">
-            Превью шаблона
+            {{ $t('uiText.templatePreviewb7e23c78') }}
           </div>
           <p v-if="!editor?.templateId" class="text-xs text-muted-foreground">
-            Выберите шаблон страницы во вкладке «Основное», чтобы отобразить превью.
+            {{ $t('uiText.selectAPageTemplateInTheGeneralTabToDisplayThePrevieb9ff2990') }}
           </p>
           <p v-else-if="!pageTemplate?.preview?.rows?.length" class="text-xs text-muted-foreground">
-            У выбранного шаблона нет настроенного превью.
+            {{ $t('uiText.theSelectedTemplateHasNoConfiguredPreview2ebe4a03') }}
           </p>
           <div v-else class="max-w-lg">
             <p class="mb-2 text-xs text-muted-foreground">
-              Перетащите в область компонент или фильтр дочернего уровня выбранного контроллера.
+              {{ $t('uiText.dragAComponentOrAChildLevelFilterOfTheSelectedContro14f8a863') }}
             </p>
             <TemplatePreviewGrid
               :preview="pageTemplate?.preview ?? null"

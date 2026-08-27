@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor'
 
 import { Endge } from '@endge/core'
@@ -167,7 +166,7 @@ function updateOutputState(value: FilterOutputState): void {
                 <Save v-else class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сохранить</TooltipContent>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>
@@ -192,7 +191,7 @@ function updateOutputState(value: FilterOutputState): void {
                 <RotateCcw class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Сбросить source</TooltipContent>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -224,7 +223,7 @@ function updateOutputState(value: FilterOutputState): void {
               </TooltipTrigger>
               <TooltipContent>
                 {{
-                  outputState.collapsed ? "Показать output" : "Скрыть output"
+                  outputState.collapsed ? $t('uiText.showOutputc073c478') : $t('uiText.hideOutput0439b8c3')
                 }}
               </TooltipContent>
             </Tooltip>
@@ -238,7 +237,7 @@ function updateOutputState(value: FilterOutputState): void {
         <div class="max-w-xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
-            <Label for="filter-identity">Identity</Label>
+            <Label for="filter-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <DocumentIdentityInput
               id="filter-identity"
               v-model="editor.identity"
@@ -246,7 +245,7 @@ function updateOutputState(value: FilterOutputState): void {
             />
           </div>
           <div class="space-y-2">
-            <Label for="filter-display-name">Название</Label>
+            <Label for="filter-display-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input
               id="filter-display-name"
               v-model="editor.displayName"

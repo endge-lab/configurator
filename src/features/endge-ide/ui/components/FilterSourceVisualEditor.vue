@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   FilterSourceEditorDocument,
   FilterSourceEditorField,
@@ -375,14 +374,13 @@ function commitOptions(): void {
       <Card class="max-w-lg p-6 text-center">
         <FileCode2 class="mx-auto mb-3 size-8 text-muted-foreground" />
         <div class="font-medium">
-          Source временно недоступен для визуального редактирования
+          {{ $t('uiText.sourceIsTemporarilyUnavailableForVisualEditingd0bb6769') }}
         </div>
         <p class="mt-2 text-sm text-muted-foreground">
-          Исправьте диагностику во вкладке Source. Визуальный редактор не будет
-          перепечатывать неподдерживаемый или невалидный код.
+          {{ $t('uiText.fixTheDiagnosticsInTheSourceTabTheVisualEditorWillNo88881918') }}
         </p>
         <Button class="mt-4" variant="outline" @click="emit('openSource', 0)">
-          Открыть Source
+          {{ $t('uiText.openSource4dda88e1') }}
         </Button>
       </Card>
     </div>
@@ -394,18 +392,18 @@ function commitOptions(): void {
         </div>
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium">
-            Поля Filter
+            {{ $t('uiText.filterFieldsf69019f7') }}
           </div>
           <div class="truncate text-xs text-muted-foreground">
-            {{ identity }} · source-backed visual editor
+            {{ identity }} {{ $t('uiText.sourceBackedVisualEditor616d8cee') }}
           </div>
         </div>
         <Badge variant="secondary">
-          {{ fields.length }} полей
+          {{ fields.length }} {{ $t('uiText.fields97c557fb') }}
         </Badge>
         <Button size="sm" class="gap-1.5" @click="addField">
           <Plus class="size-3.5" />
-          Поле
+          {{ $t('uiText.fieldc52083fa') }}
         </Button>
       </div>
 
@@ -439,12 +437,12 @@ function commitOptions(): void {
                     {{ field.key }}
                   </div>
                   <div class="truncate text-xs text-muted-foreground">
-                    {{ field.type }}{{ field.array ? '[]' : '' }}
+                    {{ field.type }}{{ field.array ? $t('uiText.symbol97d170e1') : undefined }}
                     <template v-if="field.vocab">
-                      · vocab
+                      {{ $t('uiText.vocab6b8ba48f') }}
                     </template>
                     <template v-else-if="field.options">
-                      · options
+                      {{ $t('uiText.options4c9843da') }}
                     </template>
                   </div>
                 </div>
@@ -476,7 +474,7 @@ function commitOptions(): void {
                 v-if="!fields.length"
                 class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground"
               >
-                В source пока нет полей.
+                {{ $t('uiText.noFieldsArePresentInTheSourceYet582ce9a2') }}
               </div>
             </div>
           </ScrollArea>
@@ -486,7 +484,7 @@ function commitOptions(): void {
           <div class="shrink-0 p-2">
             <div class="mb-1 flex items-center gap-2 px-2 py-1">
               <Braces class="size-3.5 text-muted-foreground" />
-              <span class="text-xs font-medium">Outputs</span>
+              <span class="text-xs font-medium">{{ $t('uiText.outputs7835db44') }}</span>
               <Badge variant="outline" class="ml-auto h-5 px-1.5 text-[10px]">
                 {{ outputs.length }}
               </Badge>
@@ -515,10 +513,10 @@ function commitOptions(): void {
               </div>
               <div class="min-w-0 flex-1">
                 <div class="font-medium">
-                  Настройка поля
+                  {{ $t('uiText.fieldConfiguration3bba10fe') }}
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  Все изменения записываются непосредственно в defineFilter.fields.
+                  {{ $t('uiText.allChangesAreWrittenDirectlyToDefineFilterFieldsf34d03f9') }}
                 </div>
               </div>
               <Button
@@ -544,7 +542,7 @@ function commitOptions(): void {
             <Card class="space-y-4 p-4">
               <div class="grid gap-4 sm:grid-cols-2">
                 <div class="space-y-2">
-                  <Label>Key</Label>
+                  <Label>{{ $t('uiText.keyc67dd20e') }}</Label>
                   <Input
                     v-model="fieldDraft.key"
                     autocomplete="off"
@@ -553,7 +551,7 @@ function commitOptions(): void {
                   />
                 </div>
                 <div class="space-y-2">
-                  <Label>Type</Label>
+                  <Label>{{ $t('uiText.type3deb7456') }}</Label>
                   <SearchableSelect
                     :model-value="fieldDraft.type"
                     :options="typeOptions"
@@ -569,14 +567,14 @@ function commitOptions(): void {
                     :model-value="fieldDraft.optional"
                     @update:model-value="updateField({ optional: $event === true })"
                   />
-                  Optional
+                  {{ $t('uiText.optional0c6c4102') }}
                 </Label>
                 <Label class="flex cursor-pointer items-center gap-2">
                   <Checkbox
                     :model-value="fieldDraft.array"
                     @update:model-value="updateField({ array: $event === true })"
                   />
-                  Array
+                  {{ $t('uiText.array10700447') }}
                 </Label>
               </div>
             </Card>
@@ -584,10 +582,10 @@ function commitOptions(): void {
             <Card class="space-y-4 p-4">
               <div>
                 <div class="text-sm font-medium">
-                  Значение по умолчанию
+                  {{ $t('uiText.defaultValueA027b1fa') }}
                 </div>
                 <div class="mt-0.5 text-xs text-muted-foreground">
-                  Укажите source expression: строку, число, relativeDate(...) или другое поддерживаемое выражение.
+                  {{ $t('uiText.specifySourceExpressionStringNumberRelativeDateOrAno31b19646') }}
                 </div>
               </div>
               <Input
@@ -602,7 +600,7 @@ function commitOptions(): void {
             <Card class="space-y-4 p-4">
               <div class="grid items-end gap-4 sm:grid-cols-[12rem_1fr]">
                 <div class="space-y-2">
-                  <Label>Источник вариантов</Label>
+                  <Label>{{ $t('uiText.optionsSourceb0520549') }}</Label>
                   <Select
                     :model-value="fieldDraft.choiceMode"
                     @update:model-value="updateChoiceMode"
@@ -612,19 +610,19 @@ function commitOptions(): void {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="plain">
-                        Без вариантов
+                        {{ $t('uiText.noOptions5542a713') }}
                       </SelectItem>
                       <SelectItem value="options">
-                        Статический список
+                        {{ $t('uiText.staticList4a86d3c0') }}
                       </SelectItem>
                       <SelectItem value="vocab">
-                        Vocab
+                        {{ $t('uiText.vocab239c2f13') }}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  Select будет выбран runtime автоматически для options или vocab.
+                  {{ $t('uiText.selectWillBeAutomaticallyChosenAtRuntimeForOptionsOr239008e7') }}
                 </div>
               </div>
 
@@ -659,7 +657,7 @@ function commitOptions(): void {
                   </div>
                   <Button variant="outline" size="sm" class="gap-1.5" @click="addOption">
                     <Plus class="size-3.5" />
-                    Вариант
+                    {{ $t('uiText.option794e06ab') }}
                   </Button>
                 </div>
               </template>
@@ -667,7 +665,7 @@ function commitOptions(): void {
               <template v-else-if="fieldDraft.choiceMode === 'vocab'">
                 <Separator />
                 <div class="space-y-2">
-                  <Label>Vocab</Label>
+                  <Label>{{ $t('uiText.vocab239c2f13') }}</Label>
                   <SearchableSelect
                     :model-value="fieldDraft.vocabIdentity"
                     :options="vocabOptions"
@@ -677,14 +675,14 @@ function commitOptions(): void {
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
-                    <Label>Value path</Label>
+                    <Label>{{ $t('uiText.valuePathf284cabf') }}</Label>
                     <Input
                       v-model="fieldDraft.valuePath"
                       @blur="updateField({ valuePath: fieldDraft.valuePath })"
                     />
                   </div>
                   <div class="space-y-2">
-                    <Label>Label path</Label>
+                    <Label>{{ $t('uiText.labelPathb7d45e5e') }}</Label>
                     <Input
                       v-model="fieldDraft.labelPath"
                       @blur="updateField({ labelPath: fieldDraft.labelPath })"
@@ -696,7 +694,7 @@ function commitOptions(): void {
           </div>
 
           <div v-else class="grid min-h-72 place-items-center p-8 text-sm text-muted-foreground">
-            Выберите поле слева или добавьте новое.
+            {{ $t('uiText.selectAFieldFromTheLeftOrAddANewOne89d5eb93') }}
           </div>
         </ScrollArea>
       </div>
@@ -705,17 +703,17 @@ function commitOptions(): void {
     <AlertDialog :open="pendingRemovalKey != null" @update:open="open => { if (!open) pendingRemovalKey = null }">
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Удалить поле {{ pendingRemovalKey }}?</AlertDialogTitle>
+          <AlertDialogTitle>{{ $t('uiText.deleteFieldeba675fa') }} {{ pendingRemovalKey }}{{ $t('uiText.symbol5bab61eb') }}</AlertDialogTitle>
           <AlertDialogDescription>
-            Поле будет удалено из source. Локальные value(...) ссылки в outputs не удаляются автоматически.
+            {{ $t('uiText.theFieldWillBeRemovedFromTheSourceLocalValueReferenc78b4fc56') }}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel @click="pendingRemovalKey = null">
-            Отмена
+            {{ $t('uiText.cancel0ec753be') }}
           </AlertDialogCancel>
           <AlertDialogAction @click="removeField">
-            Удалить
+            {{ $t('uiText.delete86ea33ae') }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

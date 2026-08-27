@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable style/max-statements-per-line */
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
@@ -48,12 +47,16 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null
 let extensionDisposables: monaco.IDisposable[] = []
 
 const editorMinHeight = computed(() => {
-  if (typeof props.minHeight === 'number') { return `${props.minHeight}px` }
+  if (typeof props.minHeight === 'number') {
+    return `${props.minHeight}px`
+  }
 
   return props.minHeight
 })
 async function formatDocument(): Promise<void> {
-  if (!editor) { return }
+  if (!editor) {
+    return
+  }
 
   const model = editor.getModel()
   const formatLanguage = props.formatLanguage ?? (
@@ -170,7 +173,9 @@ watch(
   () => props.language,
   (language) => {
     const model = editor?.getModel()
-    if (model) { monaco.editor.setModelLanguage(model, language) }
+    if (model) {
+      monaco.editor.setModelLanguage(model, language)
+    }
   },
 )
 

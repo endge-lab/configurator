@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type { RComponentSFC, RType } from '@endge/core'
 import type * as Monaco from 'monaco-editor'
 import type { ExtractTypeCommandTarget, ExtractTypeDialogInput, ExtractTypeDialogResult } from './extract-type.types'
@@ -65,7 +64,9 @@ export function createExtractTypeContribution(options: ExtractTypeContributionOp
         const sequence = ++refreshSequence
         const sourceVersion = model.getVersionId()
         const declarations = analyzeExtractableSFCTypeDeclarations(model.getValue())
-        if (disposed || sequence !== refreshSequence || sourceVersion !== model.getVersionId()) { return }
+        if (disposed || sequence !== refreshSequence || sourceVersion !== model.getVersionId()) {
+          return
+        }
 
         decorations.set(declarations.map((declaration) => {
           const position = model.getPositionAt(declaration.actionAnchor)
@@ -101,7 +102,9 @@ export function createExtractTypeContribution(options: ExtractTypeContributionOp
       }
 
       const scheduleRefresh = (): void => {
-        if (refreshTimer) { clearTimeout(refreshTimer) }
+        if (refreshTimer) {
+          clearTimeout(refreshTimer)
+        }
         refreshTimer = setTimeout(() => {
           refreshTimer = null
           void refreshDecorations()
@@ -111,7 +114,9 @@ export function createExtractTypeContribution(options: ExtractTypeContributionOp
       const mouseListener = editor.onMouseDown((event) => {
         const injectedText = (event.target as unknown as MonacoInjectedTextMouseTarget).detail?.injectedText
         const actionData = injectedText?.options?.attachedData
-        if (!isExtractTypeActionData(actionData)) { return }
+        if (!isExtractTypeActionData(actionData)) {
+          return
+        }
         event.event.preventDefault()
         event.event.stopPropagation()
         void openExtractTypeDialog(model, actionData.target, options)
@@ -122,7 +127,9 @@ export function createExtractTypeContribution(options: ExtractTypeContributionOp
         dispose() {
           disposed = true
           refreshSequence += 1
-          if (refreshTimer) { clearTimeout(refreshTimer) }
+          if (refreshTimer) {
+            clearTimeout(refreshTimer)
+          }
           contentListener.dispose()
           mouseListener.dispose()
           decorations.clear()
@@ -163,7 +170,9 @@ async function openExtractTypeDialog(
     folderOptions: buildExtractTypeFolderOptions(Endge.domain.getFolders()),
   }
   const result = await EndgeIDE.sourceEditorDialogs.open<ExtractTypeDialogInput, ExtractTypeDialogResult>(DIALOG_ID, input)
-  if (!result) { return }
+  if (!result) {
+    return
+  }
 
   try {
     await EndgeIDE.runBusy(executeTypeExtraction(model, plan.root.range.start, result, options))
@@ -180,7 +189,9 @@ async function openExtractTypeDialog(
 }
 
 function isExtractTypeActionData(value: unknown): value is ExtractTypeActionData {
-  if (!value || typeof value !== 'object') { return false }
+  if (!value || typeof value !== 'object') {
+    return false
+  }
   const candidate = value as Partial<ExtractTypeActionData>
   return candidate.kind === ACTION_DATA_KIND
     && typeof candidate.target?.declarationStart === 'number'

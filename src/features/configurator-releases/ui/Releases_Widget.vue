@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text */
 import type {
   ConfiguratorCommit,
   ConfiguratorRelease,
@@ -364,7 +363,7 @@ onBeforeUnmount(stop)
       >
         <TabsTrigger value="commits" class="rounded-sm text-xs">
           <GitCommitHorizontal class="size-3.5" />
-          Коммиты
+          {{ $t('uiText.commitsb4f456d7') }}
           <span
             v-if="hasPendingRevisions"
             class="size-1.5 rounded-full bg-amber-500"
@@ -372,7 +371,7 @@ onBeforeUnmount(stop)
         </TabsTrigger>
         <TabsTrigger value="releases" class="rounded-sm text-xs">
           <Tag class="size-3.5" />
-          Релизы
+          {{ $t('uiText.releases56f8a21b') }}
           <span
             v-if="releases.length"
             class="text-[10px] text-muted-foreground"
@@ -407,17 +406,17 @@ onBeforeUnmount(stop)
                 <p class="text-xs font-semibold">
                   {{
                     hasPendingRevisions
-                      ? "Есть незакоммиченные изменения"
-                      : "Рабочая версия зафиксирована"
+                      ? $t('uiText.thereAreUncommittedChanges445ac940')
+                      : $t('uiText.workingVersionIsCommitted29033306')
                   }}
                 </p>
                 <p class="mt-0.5 text-[11px] leading-4 text-muted-foreground">
                   <template v-if="hasPendingRevisions">
-                    {{ commitPlan.revisionCount }} ревизий в
-                    {{ commitPlan.documentCount }} документах
+                    {{ commitPlan.revisionCount }} {{ $t('uiText.revisionsIn1dfcceac') }}
+                    {{ commitPlan.documentCount }} {{ $t('uiText.documentscff56568') }}
                   </template>
                   <template v-else>
-                    Новых ревизий после последнего коммита нет
+                    {{ $t('uiText.noNewRevisionsSinceTheLastCommitb0355954') }}
                   </template>
                 </p>
                 <div
@@ -425,7 +424,7 @@ onBeforeUnmount(stop)
                   class="mt-2 flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300"
                 >
                   <Users class="size-3" />
-                  В коммит войдут изменения нескольких участников
+                  {{ $t('uiText.thisCommitWillIncludeChangesFromMultipleContributors679c96d2') }}
                 </div>
               </div>
             </div>
@@ -463,7 +462,7 @@ onBeforeUnmount(stop)
                 v-else-if="commitPlan.contributors.length"
                 class="mt-1.5 truncate text-[10px] text-muted-foreground"
               >
-                Авторы: {{ commitPlan.contributors.map(actorName).join(", ") }}
+                {{ $t('uiText.authors27a67c1d') }} {{ commitPlan.contributors.map(actorName).join(", ") }}
               </p>
             </form>
           </section>
@@ -473,13 +472,13 @@ onBeforeUnmount(stop)
             class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
           >
             <Loader2 class="size-4 animate-spin" />
-            Загружаем историю…
+            {{ $t('uiText.loadingHistory5fc600ee') }}
           </div>
           <div
             v-else-if="commits.length === 0"
             class="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground"
           >
-            Коммитов пока нет
+            {{ $t('uiText.noCommitsYetea3fc6d3') }}
           </div>
           <div v-else class="relative space-y-0.5 pl-4">
             <div class="absolute bottom-4 left-[7px] top-4 w-px bg-border" />
@@ -512,25 +511,25 @@ onBeforeUnmount(stop)
                       variant="outline"
                       class="h-4 border-emerald-500/35 px-1.5 text-[9px] text-emerald-700 dark:text-emerald-300"
                     >
-                      Текущая
+                      {{ $t('uiText.current71e8b656') }}
                     </Badge>
                     <Badge
                       v-else-if="isBaseCommit(commit)"
                       variant="outline"
                       class="h-4 border-amber-500/35 px-1.5 text-[9px] text-amber-700 dark:text-amber-300"
                     >
-                      Последний
+                      {{ $t('uiText.laste863f95e') }}
                     </Badge>
                   </div>
                   <p class="mt-1 truncate text-[10px] text-muted-foreground">
-                    {{ actorName(commit.createdBy) }} ·
-                    {{ formatDate(commit.createdAt) }} ·
+                    {{ actorName(commit.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
+                    {{ formatDate(commit.createdAt) }} {{ $t('uiText.symbol1fdf0d90') }}
                     {{ operationLabel(commit.operation) }}
                   </p>
                   <p
                     class="mt-0.5 font-mono text-[9px] text-muted-foreground/70"
                   >
-                    {{ shortId(commit.id) }} · head {{ commit.headSequence }}
+                    {{ shortId(commit.id) }} {{ $t('uiText.heade80b21bb') }} {{ commit.headSequence }}
                   </p>
                 </button>
 
@@ -549,7 +548,7 @@ onBeforeUnmount(stop)
                     </TooltipTrigger>
                     <TooltipContent side="left" class="max-w-56">
                       <p class="mb-1 text-[10px] font-semibold">
-                        Релизы этого коммита
+                        {{ $t('uiText.releasesOfThisCommit282df137') }}
                       </p>
                       <p
                         v-for="release in releasesByCommit.get(commit.id)"
@@ -581,7 +580,7 @@ onBeforeUnmount(stop)
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      Восстановить эту версию
+                      {{ $t('uiText.restoreThisVersion8738260e') }}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -623,13 +622,13 @@ onBeforeUnmount(stop)
                 @click="activeTab = 'commits'"
               >
                 <AlertTriangle class="size-3" />
-                Сначала создайте коммит текущих изменений
+                {{ $t('uiText.firstCommitTheCurrentChanges40f607f3') }}
               </button>
               <p
                 v-else-if="latestCommit"
                 class="truncate text-[10px] text-muted-foreground"
               >
-                Источник: {{ latestCommit.message }} ·
+                {{ $t('uiText.source6604c0ef') }} {{ latestCommit.message }} {{ $t('uiText.symbol1fdf0d90') }}
                 {{ shortId(latestCommit.id) }}
               </p>
             </form>
@@ -640,13 +639,13 @@ onBeforeUnmount(stop)
             class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
           >
             <Loader2 class="size-4 animate-spin" />
-            Загружаем релизы…
+            {{ $t('uiText.loadingReleasesbc706c8b') }}
           </div>
           <div
             v-else-if="releases.length === 0"
             class="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground"
           >
-            Релизов пока нет
+            {{ $t('uiText.noReleasesYet6be9790d') }}
           </div>
           <template v-else>
             <article
@@ -670,17 +669,17 @@ onBeforeUnmount(stop)
                       variant="outline"
                       class="h-4 border-emerald-500/35 px-1.5 text-[9px] text-emerald-700 dark:text-emerald-300"
                     >
-                      Текущая
+                      {{ $t('uiText.current71e8b656') }}
                     </Badge>
                   </div>
                   <p class="mt-1 truncate text-[10px] text-muted-foreground">
-                    {{ actorName(release.createdBy) }} ·
+                    {{ actorName(release.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
                     {{ formatDate(release.createdAt) }}
                   </p>
                   <p
                     class="mt-0.5 font-mono text-[9px] text-muted-foreground/70"
                   >
-                    commit {{ shortId(release.sourceCommitId) }} · head
+                    {{ $t('uiText.commit4015b57a') }} {{ shortId(release.sourceCommitId) }} {{ $t('uiText.heade80b21bb') }}
                     {{ release.headSequence }}
                   </p>
                 </div>
@@ -698,7 +697,7 @@ onBeforeUnmount(stop)
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      Скачать JSON
+                      {{ $t('uiText.downloadJson2007ff2d') }}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip v-if="canRestore && !isCurrentRelease(release)">
@@ -721,7 +720,7 @@ onBeforeUnmount(stop)
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
-                      Восстановить релиз
+                      {{ $t('uiText.restoreRelease9e5b22ea') }}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -739,18 +738,18 @@ onBeforeUnmount(stop)
             {{ commitDetails?.message }}
           </DialogTitle>
           <DialogDescription v-if="commitDetails">
-            {{ actorName(commitDetails.createdBy) }} · {{ formatDate(commitDetails.createdAt) }} ·
+            {{ actorName(commitDetails.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }} {{ formatDate(commitDetails.createdAt) }} {{ $t('uiText.symbol1fdf0d90') }}
             {{ operationLabel(commitDetails.operation) }}
           </DialogDescription>
         </DialogHeader>
 
         <div v-if="commitDetails" class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           <div class="mb-3 flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2 text-[11px]">
-            <span class="text-muted-foreground">Commit</span>
+            <span class="text-muted-foreground">{{ $t('uiText.commit1a1873ab') }}</span>
             <span class="font-mono">{{ commitDetails.id }}</span>
           </div>
           <p class="mb-2 text-xs font-semibold">
-            Изменения · {{ commitDetails.changes.length }}
+            {{ $t('uiText.changes560792db') }} {{ commitDetails.changes.length }}
           </p>
           <div v-if="commitDetails.changes.length" class="space-y-1.5">
             <div
@@ -773,7 +772,7 @@ onBeforeUnmount(stop)
             </div>
           </div>
           <div v-else class="rounded-md border border-dashed p-5 text-center text-xs text-muted-foreground">
-            Детализированных изменений нет
+            {{ $t('uiText.noDetailedChanges6c8e9273') }}
           </div>
         </div>
       </DialogContent>
@@ -782,10 +781,9 @@ onBeforeUnmount(stop)
     <Dialog v-model:open="restoreDialogOpen">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Восстановить «{{ restoreTarget?.title }}»?</DialogTitle>
+          <DialogTitle>{{ $t('uiText.restore8074d192') }}{{ restoreTarget?.title }}{{ $t('uiText.symbolAd4e2955') }}</DialogTitle>
           <DialogDescription>
-            Workspace перейдёт к выбранному состоянию для всех пользователей.
-            История сохранится: backend создаст новый коммит восстановления.
+            {{ $t('uiText.workspaceWillTransitionToTheSelectedStateForAllUsers29153112') }}
           </DialogDescription>
         </DialogHeader>
 
@@ -795,7 +793,7 @@ onBeforeUnmount(stop)
           >
             <div>
               <p class="text-muted-foreground">
-                Объектов в плане
+                {{ $t('uiText.objectsInPlan3df74a2e') }}
               </p>
               <p class="mt-0.5 text-base font-semibold">
                 {{ restoreChanges }}
@@ -803,7 +801,7 @@ onBeforeUnmount(stop)
             </div>
             <div>
               <p class="text-muted-foreground">
-                Текущий head
+                {{ $t('uiText.currentHead4ebb4fec') }}
               </p>
               <p class="mt-0.5 font-mono text-base font-semibold">
                 {{ restorePlan.expectedHeadSequence }}
@@ -815,17 +813,14 @@ onBeforeUnmount(stop)
             class="flex gap-2 rounded-md border border-destructive/35 bg-destructive/[0.07] p-2.5 text-[11px] leading-4 text-destructive"
           >
             <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
-            Есть незакоммиченные изменения. После восстановления выбранной
-            версии они будут потеряны. Домен будет полностью перезагружен для всех
-            пользователей.
+            {{ $t('uiText.thereAreUncommittedChangesAfterRestoringTheSelectedV83a161c5') }}
           </div>
           <div
             v-else
             class="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-2.5 text-[11px] leading-4 text-amber-800 dark:text-amber-200"
           >
             <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
-            После восстановления домен будет полностью перезагружен для всех
-            пользователей.
+            {{ $t('uiText.afterRestorationTheDomainWillBeFullyReloadedForAllUs84f917d2') }}
           </div>
         </div>
 
@@ -836,7 +831,7 @@ onBeforeUnmount(stop)
             :disabled="loading"
             @click="restoreDialogOpen = false"
           >
-            Отмена
+            {{ $t('uiText.cancel0ec753be') }}
           </Button>
           <Button
             type="button"
@@ -846,7 +841,7 @@ onBeforeUnmount(stop)
           >
             <Loader2 v-if="loading" class="animate-spin" />
             <RotateCcw v-else />
-            Восстановить
+            {{ $t('uiText.restore29f3b29d') }}
           </Button>
         </DialogFooter>
       </DialogContent>

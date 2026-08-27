@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   ComponentSFCAttributeAnalysisOptions,
   ComponentSFCTagAttributeContract,
@@ -216,7 +215,9 @@ export function createSFCLanguageContribution(
       }
       const content = model.onDidChangeContent(() => {
         refreshHighlights()
-        if (diagnosticsTimer) { clearTimeout(diagnosticsTimer) }
+        if (diagnosticsTimer) {
+          clearTimeout(diagnosticsTimer)
+        }
         diagnosticsTimer = setTimeout(() => {
           diagnosticsTimer = null
           refreshDiagnostics()
@@ -224,17 +225,23 @@ export function createSFCLanguageContribution(
       })
       const folding = monaco.languages.registerFoldingRangeProvider('html', {
         provideFoldingRanges(currentModel) {
-          if (currentModel !== model) { return null }
+          if (currentModel !== model) {
+            return null
+          }
           return collectScriptFoldingRanges(monaco, model)
         },
       })
       const completions = monaco.languages.registerCompletionItemProvider('html', {
         triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\'', '.'],
         provideCompletionItems(currentModel, position) {
-          if (currentModel !== model) { return { suggestions: [] } }
+          if (currentModel !== model) {
+            return { suggestions: [] }
+          }
           const template = findTemplateContentRange(model.getValue())
           const offset = model.getOffsetAt(position)
-          if (!template || offset < template.start || offset > template.end) { return { suggestions: [] } }
+          if (!template || offset < template.start || offset > template.end) {
+            return { suggestions: [] }
+          }
           const configCompletion = contextConfigurationCompletions(monaco, model, offset)
           if (configCompletion) {
             return configCompletion
@@ -319,14 +326,20 @@ export function createSFCLanguageContribution(
       })
       const hover = monaco.languages.registerHoverProvider('html', {
         provideHover(currentModel, position) {
-          if (currentModel !== model) { return null }
+          if (currentModel !== model) {
+            return null
+          }
           const reference = findAttributeReference(model.getValue(), model.getOffsetAt(position))
-          if (!reference) { return null }
+          if (!reference) {
+            return null
+          }
           const contract = findAttributeContract(
             resolveComponentSFCTagAttributeContracts(reference.tag, options),
             reference.attribute.name,
           )
-          if (!contract) { return null }
+          if (!contract) {
+            return null
+          }
           const values = contract.values.map(formatHoverLiteral).join(' | ')
           const defaultLine = contract.defaultValue == null
             ? []
@@ -351,7 +364,9 @@ export function createSFCLanguageContribution(
 
       return {
         dispose() {
-          if (diagnosticsTimer) { clearTimeout(diagnosticsTimer) }
+          if (diagnosticsTimer) {
+            clearTimeout(diagnosticsTimer)
+          }
           highlights.clear()
           monaco.editor.setModelMarkers(model, 'endge-sfc-attributes', [])
           content.dispose()
@@ -425,18 +440,28 @@ function resolveAttributeCompletionContext(
 ): SFCAttributeCompletionContext | null {
   const openingStart = source.lastIndexOf('<', offset)
   const previousClose = source.lastIndexOf('>', offset - 1)
-  if (openingStart < 0 || openingStart <= previousClose) { return null }
+  if (openingStart < 0 || openingStart <= previousClose) {
+    return null
+  }
   const prefix = source.slice(openingStart, offset)
-  if (/^<\s*[!/]/.test(prefix)) { return null }
+  if (/^<\s*[!/]/.test(prefix)) {
+    return null
+  }
   const tagMatch = prefix.match(/^<([A-Z][\w.-]*)/i)
   const tag = tagMatch?.[1]
-  if (!tag || prefix.length === tagMatch[0].length) { return null }
+  if (!tag || prefix.length === tagMatch[0].length) {
+    return null
+  }
 
   const afterTag = prefix.slice(tagMatch[0].length)
-  if (!/^\s/.test(afterTag)) { return null }
+  if (!/^\s/.test(afterTag)) {
+    return null
+  }
   const existingAttributes = new Set<string>()
   for (const match of afterTag.matchAll(/(?:^|\s)(?::|v-bind:)?([A-Za-z_][\w.-]*)/g)) {
-    if (match[1]) { existingAttributes.add(match[1]) }
+    if (match[1]) {
+      existingAttributes.add(match[1])
+    }
   }
 
   const valueMatch = afterTag.match(/(?:^|\s)(:|v-bind:)?([A-Za-z_][\w.-]*)\s*=\s*(["'])([^"']*)$/)
@@ -454,7 +479,9 @@ function resolveAttributeCompletionContext(
 
   const nameMatch = afterTag.match(/(?:^|\s)([A-Z_][\w.-]*)$/i)
   const emptyName = /\s$/.test(afterTag)
-  if (!nameMatch && !emptyName) { return null }
+  if (!nameMatch && !emptyName) {
+    return null
+  }
   const partial = nameMatch?.[1] ?? ''
   return {
     tag,
@@ -469,18 +496,26 @@ function resolveAttributeCompletionContext(
 function findAttributeReference(source: string, offset: number): SFCAttributeReference | null {
   const ast = parseComponentSFC(source).ast
   const visit = (node: RComponentSFC_AST_TemplateNode): SFCAttributeReference | null => {
-    if (node.kind !== 'element') { return null }
+    if (node.kind !== 'element') {
+      return null
+    }
     const attribute = node.attributes.find(item => offset >= item.range.start && offset <= item.range.end)
-    if (attribute) { return { tag: node.tag, attribute } }
+    if (attribute) {
+      return { tag: node.tag, attribute }
+    }
     for (const child of node.children) {
       const reference = visit(child)
-      if (reference) { return reference }
+      if (reference) {
+        return reference
+      }
     }
     return null
   }
   for (const root of ast?.template?.roots ?? []) {
     const reference = visit(root)
-    if (reference) { return reference }
+    if (reference) {
+      return reference
+    }
   }
   return null
 }
@@ -494,7 +529,9 @@ function findAttributeContract(
 
 function attributeSnippet(contract: ComponentSFCTagAttributeContract): string {
   const value = contract.defaultValue ?? contract.values[0] ?? ''
-  if (typeof value === 'string') { return `${contract.name}="\${1:${value}}"` }
+  if (typeof value === 'string') {
+    return `${contract.name}="\${1:${value}}"`
+  }
   return `:${contract.name}="\${1:${String(value)}}"`
 }
 
@@ -502,7 +539,9 @@ function formatAttributeCompletionValue(
   value: ComponentSFCTagAttributeLiteral,
   dynamic: boolean,
 ): string {
-  if (!dynamic) { return String(value) }
+  if (!dynamic) {
+    return String(value)
+  }
   return typeof value === 'string'
     ? JSON.stringify(value)
     : String(value)
@@ -528,11 +567,15 @@ function collectExpressionDecorations(
     let previousToken: ts.SyntaxKind | null = null
 
     for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-      if (isTrivia(token)) { continue }
+      if (isTrivia(token)) {
+        continue
+      }
 
       const start = expression.start + scanner.getTokenPos()
       const end = expression.start + scanner.getTextPos()
-      if (end <= start) { continue }
+      if (end <= start) {
+        continue
+      }
 
       const tokenKind = classifyExpressionToken(token, previousToken)
       decorations.push({
@@ -555,7 +598,9 @@ function collectExpressionDecorations(
 function collectTemplateExpressions(source: string): SourceExpression[] {
   const expressions: SourceExpression[] = []
   const templateRange = findTemplateContentRange(source)
-  if (!templateRange) { return expressions }
+  if (!templateRange) {
+    return expressions
+  }
   const templateSource = source.slice(templateRange.start, templateRange.end)
 
   for (const match of templateSource.matchAll(DYNAMIC_ATTRIBUTE_PATTERN)) {
@@ -563,7 +608,9 @@ function collectTemplateExpressions(source: string): SourceExpression[] {
     const quote = match[1] ?? ''
     const matchStart = templateRange.start + (match.index ?? 0)
     const quoteOffset = match[0].indexOf(quote)
-    if (!quote || quoteOffset < 0) { continue }
+    if (!quote || quoteOffset < 0) {
+      continue
+    }
 
     expressions.push({
       start: matchStart + quoteOffset + quote.length,
@@ -583,14 +630,18 @@ function collectTemplateExpressions(source: string): SourceExpression[] {
 
 function findTemplateContentRange(source: string): { start: number, end: number } | null {
   const opening = TEMPLATE_OPEN_PATTERN.exec(source)
-  if (!opening) { return null }
+  if (!opening) {
+    return null
+  }
 
   const start = (opening.index ?? 0) + opening[0].length
   let end = -1
   for (const closing of source.matchAll(TEMPLATE_CLOSE_PATTERN)) {
     end = closing.index ?? end
   }
-  if (end < start) { return null }
+  if (end < start) {
+    return null
+  }
 
   return { start, end }
 }
@@ -604,8 +655,12 @@ function classifyExpressionToken(
       ? 'property'
       : 'identifier'
   }
-  if (token >= ts.SyntaxKind.FirstKeyword && token <= ts.SyntaxKind.LastKeyword) { return 'keyword' }
-  if (token === ts.SyntaxKind.NumericLiteral || token === ts.SyntaxKind.BigIntLiteral) { return 'number' }
+  if (token >= ts.SyntaxKind.FirstKeyword && token <= ts.SyntaxKind.LastKeyword) {
+    return 'keyword'
+  }
+  if (token === ts.SyntaxKind.NumericLiteral || token === ts.SyntaxKind.BigIntLiteral) {
+    return 'number'
+  }
   if (
     token === ts.SyntaxKind.StringLiteral
     || token === ts.SyntaxKind.RegularExpressionLiteral
@@ -671,14 +726,20 @@ function scanScriptFoldingRanges(
       delimiters.push({ kind: token, offset: tokenStart })
       continue
     }
-    if (!isClosingDelimiter(token)) { continue }
+    if (!isClosingDelimiter(token)) {
+      continue
+    }
 
     const openingKind = openingDelimiterFor(token)
     const openingIndex = findLastDelimiterIndex(delimiters, openingKind)
-    if (openingIndex < 0) { continue }
+    if (openingIndex < 0) {
+      continue
+    }
 
     const [opening] = delimiters.splice(openingIndex, 1)
-    if (!opening) { continue }
+    if (!opening) {
+      continue
+    }
 
     const startLine = model.getPositionAt(opening.offset).lineNumber
     const closingLine = model.getPositionAt(tokenStart).lineNumber
@@ -707,7 +768,9 @@ function openingDelimiterFor(token: ts.SyntaxKind): ts.SyntaxKind {
 
 function findLastDelimiterIndex(delimiters: Delimiter[], kind: ts.SyntaxKind): number {
   for (let index = delimiters.length - 1; index >= 0; index -= 1) {
-    if (delimiters[index]?.kind === kind) { return index }
+    if (delimiters[index]?.kind === kind) {
+      return index
+    }
   }
   return -1
 }

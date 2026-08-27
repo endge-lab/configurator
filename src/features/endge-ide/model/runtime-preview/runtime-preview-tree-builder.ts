@@ -1,4 +1,3 @@
-/* eslint-disable style/max-statements-per-line */
 import type {
   CompositionProgramPayload,
   CompositionRuntimeDescriptor,
@@ -19,9 +18,15 @@ export function buildRuntimePreviewTree(
   target: RuntimePreviewTarget,
   artifacts: RuntimeArtifactReader = Endge.program,
 ): RuntimePreviewTreeNode[] {
-  if (target.entityType === 'project') { return [buildProjectNode(target.identity, artifacts)] }
-  if (target.entityType === 'composition') { return [buildRootCompositionNode(target.identity, artifacts)] }
-  if (target.entityType === 'component-sfc') { return [buildComponentNode(target.identity)] }
+  if (target.entityType === 'project') {
+    return [buildProjectNode(target.identity, artifacts)]
+  }
+  if (target.entityType === 'composition') {
+    return [buildRootCompositionNode(target.identity, artifacts)]
+  }
+  if (target.entityType === 'component-sfc') {
+    return [buildComponentNode(target.identity)]
+  }
   return [buildStoreNode(target.identity)]
 }
 
@@ -257,7 +262,9 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
   documentType: DomainDocumentType
   identity: string
 } {
-  if (runtime.kind === 'component') { return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity } }
+  if (runtime.kind === 'component') {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity }
+  }
   if (runtime.kind === 'query') {
     const query = Endge.domain.getQuery(runtime.identity)
     return { documentType: query?.type ?? QueryType.REST, identity: runtime.identity }
@@ -266,6 +273,8 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
     const filter = Endge.domain.getFilter(runtime.identity)
     return { documentType: filter?.type ?? FilterType.DefaultFilter, identity: runtime.identity }
   }
-  if (runtime.kind === 'filter-view' && runtime.componentIdentity) { return { documentType: ComponentType.SFC, identity: runtime.componentIdentity } }
+  if (runtime.kind === 'filter-view' && runtime.componentIdentity) {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity }
+  }
   return { documentType: FilterType.DefaultFilter, identity: runtime.identity }
 }

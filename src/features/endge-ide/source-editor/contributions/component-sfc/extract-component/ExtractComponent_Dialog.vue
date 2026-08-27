@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable @intlify/vue-i18n/no-raw-text, style/max-statements-per-line */
 import type {
   ExtractComponentDialogDependency,
   ExtractComponentDialogInput,
@@ -49,7 +48,9 @@ const openModel = computed({
 const hasWrites = computed(() => props.input.column.dependencies.some(dependency => dependency.hasWrite))
 const normalizedTag = computed(() => tag.value.trim())
 const tagIsValid = computed(() => {
-  if (!normalizedTag.value) { return true }
+  if (!normalizedTag.value) {
+    return true
+  }
   return /^[A-Z_$][\w$-]*(?:\.[A-Z_$][\w$-]*)*$/i.test(normalizedTag.value)
 })
 const parsedProps = computed(() => parseExtractComponentPropsJson(propsJson.value, dependencies.value))
@@ -63,7 +64,9 @@ const formIsValid = computed(() => Boolean(
 watch(
   () => [props.open, props.input] as const,
   ([open]) => {
-    if (!open) { return }
+    if (!open) {
+      return
+    }
 
     name.value = props.input.suggestedName
     identity.value = props.input.suggestedIdentity
@@ -81,7 +84,9 @@ watch(
 )
 
 function submit(): void {
-  if (!formIsValid.value || hasWrites.value) { return }
+  if (!formIsValid.value || hasWrites.value) {
+    return
+  }
 
   emit('submit', {
     name: name.value.trim(),
@@ -102,9 +107,9 @@ function submit(): void {
             <Box class="size-4 text-emerald-500" />
           </div>
           <div class="min-w-0 space-y-1">
-            <DialogTitle>Экспорт компонента</DialogTitle>
+            <DialogTitle>{{ $t('uiText.exportComponentf87c3c0d') }}</DialogTitle>
             <p class="text-sm text-muted-foreground">
-              Разметка колонки станет отдельным SFC, а таблица получит ссылку на него.
+              {{ $t('uiText.columnMarkupWillBecomeASeparateSFCAndTheTableWillGet665a1ef3') }}
             </p>
           </div>
         </div>
@@ -113,19 +118,19 @@ function submit(): void {
       <div class="grid min-h-0 gap-5 px-6 py-5 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_300px_260px]">
         <div class="space-y-4">
           <div class="space-y-2">
-            <Label for="extract-component-name">Название</Label>
+            <Label for="extract-component-name">{{ $t('uiText.name3de49828') }}</Label>
             <Input id="extract-component-name" v-model="name" autofocus />
           </div>
 
           <div class="space-y-2">
-            <Label for="extract-component-identity">Identity</Label>
+            <Label for="extract-component-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
             <Input id="extract-component-identity" v-model="identity" class="font-mono" spellcheck="false" />
           </div>
 
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-3">
-              <Label for="extract-component-tag">Tag</Label>
-              <span class="text-[11px] text-muted-foreground">optional</span>
+              <Label for="extract-component-tag">{{ $t('uiText.tag982963c1') }}</Label>
+              <span class="text-[11px] text-muted-foreground">{{ $t('uiText.optional48a7b888') }}</span>
             </div>
             <Input
               id="extract-component-tag"
@@ -135,7 +140,7 @@ function submit(): void {
               spellcheck="false"
             />
             <p v-if="!tagIsValid" class="text-xs text-destructive">
-              Tag должен состоять из допустимых сегментов, разделённых точкой.
+              {{ $t('uiText.tagMustConsistOfValidSegmentsSeparatedByADotdc20b72d') }}
             </p>
             <div v-else class="flex items-center gap-2 text-xs text-muted-foreground">
               <code class="rounded border bg-muted/50 px-1.5 py-0.5">
@@ -149,10 +154,10 @@ function submit(): void {
           <div class="flex items-center justify-between border-b px-3 py-2.5">
             <div class="flex items-center gap-2 text-sm font-medium">
               <Braces class="size-4 text-sky-500" />
-              Входные данные
+              {{ $t('uiText.inputs5d8f6298') }}
             </div>
             <Badge variant="outline" class="font-mono text-[10px]">
-              {{ dependencies.length }} props
+              {{ dependencies.length }} {{ $t('uiText.propsaa609687') }}
             </Badge>
           </div>
 
@@ -168,7 +173,7 @@ function submit(): void {
               {{ parsedProps.error }}
             </p>
             <p v-else class="text-[11px] leading-4 text-muted-foreground">
-              Ключ — имя prop, значение — TypeScript type. Source expressions определены автоматически.
+              {{ $t('uiText.keyPropNameValueTypeScriptTypeSourceExpressionsAreDec2cebef4') }}
             </p>
           </div>
         </aside>
@@ -176,7 +181,7 @@ function submit(): void {
         <aside class="min-w-0 overflow-hidden rounded-lg border bg-muted/20 md:col-span-2 lg:col-span-1">
           <div class="flex items-center gap-2 border-b px-3 py-2.5 text-sm font-medium">
             <FolderTree class="size-4 text-amber-500" />
-            Папка компонента
+            {{ $t('uiText.componentFolder6c894853') }}
           </div>
 
           <div class="space-y-3 p-3">
@@ -185,10 +190,10 @@ function submit(): void {
               :options="input.folderOptions"
             />
             <p class="text-xs leading-5 text-muted-foreground">
-              По умолчанию компонент будет создан в корне секции «Компоненты».
+              {{ $t('uiText.byDefaultTheComponentWillBeCreatedInTheRootOfTheComp7c7ca1e0') }}
             </p>
             <div class="rounded-md border border-dashed bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
-              Доступно папок: <span class="font-mono text-foreground">{{ input.folderOptions.length }}</span>
+              {{ $t('uiText.availableFolders949cfb5f') }} <span class="font-mono text-foreground">{{ input.folderOptions.length }}</span>
             </div>
           </div>
         </aside>
@@ -196,18 +201,18 @@ function submit(): void {
 
       <Alert v-if="hasWrites" variant="destructive" class="mx-6 mb-5 w-auto">
         <CircleAlert class="size-4" />
-        <AlertTitle>Найдена запись во внешние данные</AlertTitle>
+        <AlertTitle>{{ $t('uiText.recordFoundInExternalDatad32a7dee') }}</AlertTitle>
         <AlertDescription>
-          Для такого фрагмента нужен output contract. Автоматический экспорт пока недоступен.
+          {{ $t('uiText.anOutputContractIsNeededForThisFragmentAutomaticExpo6d6b43ba') }}
         </AlertDescription>
       </Alert>
 
       <DialogFooter class="border-t bg-muted/20 px-6 py-4">
         <Button type="button" variant="ghost" @click="emit('cancel')">
-          Отмена
+          {{ $t('uiText.cancel0ec753be') }}
         </Button>
         <Button type="button" :disabled="!formIsValid || hasWrites" @click="submit">
-          Создать и заменить
+          {{ $t('uiText.createAndReplace91d50c5a') }}
         </Button>
       </DialogFooter>
     </DialogContent>
