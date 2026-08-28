@@ -1,4 +1,14 @@
 {
+  "aiWorkbench": {
+    "widget": {
+      "messagePlaceholder": "Сообщение ассистенту…",
+      "model": "Модель AI",
+      "modelsUnavailable": "Модели не настроены",
+      "newDialog": "Создать новый диалог",
+      "newQuestion": "Новый вопрос",
+      "readOnly": "Диалог доступен только для чтения"
+    }
+  },
   "app": {
     "description": "Среда конфигурации Endge",
     "title": "Конфигуратор"

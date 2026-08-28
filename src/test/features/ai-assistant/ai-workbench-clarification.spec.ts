@@ -1,7 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { AIClarification, AIClarificationCandidate } from '@/features/ai-assistant/domain/types'
-
+import { describe, expect, it } from 'vitest'
 import { buildClarificationRunLinkage } from '@/features/ai-assistant/model/clarification'
 
 const clarification: AIClarification = {

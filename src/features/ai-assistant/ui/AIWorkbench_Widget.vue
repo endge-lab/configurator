@@ -68,7 +68,7 @@ function onKeydown(event: KeyboardEvent): void {
           class="min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-xs"
           :value="state.selectedModelId"
           :disabled="(hasMessages && !readOnly) || state.running || models.length === 0"
-          aria-label="Модель AI"
+          :aria-label="$t('aiWorkbench.widget.model')"
           @change="AIWorkbench.setModel(($event.target as HTMLSelectElement).value)"
         >
           <option value="" disabled>
@@ -78,7 +78,7 @@ function onKeydown(event: KeyboardEvent): void {
             {{ model.displayName }} {{ $t('uiText.symbol1fdf0d90') }} {{ model.adapter }}
           </option>
         </select>
-        <Button size="icon" variant="ghost" :disabled="!state.selectedModelId || state.running" title="Создать новый диалог" @click="AIWorkbench.newConversation()">
+        <Button size="icon" variant="ghost" :disabled="!state.selectedModelId || state.running" :title="$t('aiWorkbench.widget.newDialog')" @click="AIWorkbench.newConversation()">
           <Plus class="size-4" />
         </Button>
       </header>
@@ -122,11 +122,16 @@ function onKeydown(event: KeyboardEvent): void {
                 :disabled="state.running"
                 @click="AIWorkbench.answerClarification(candidate)"
               >
-                {{ candidate.displayName || candidate.identity }}
+                <span class="flex min-w-0 flex-col items-start text-left">
+                  <span class="max-w-56 truncate">{{ candidate.displayName || candidate.identity }}</span>
+                  <span class="max-w-56 truncate text-[10px] font-normal text-muted-foreground">
+                    {{ candidate.documentType }} {{ $t('uiText.symbol1fdf0d90') }} {{ candidate.identity }}
+                  </span>
+                </span>
               </Button>
             </div>
             <Button class="mt-2 px-0 text-xs" size="sm" variant="link" :disabled="state.running" @click="AIWorkbench.startIndependentQuestion()">
-              Новый вопрос
+              {{ $t('aiWorkbench.widget.newQuestion') }}
             </Button>
           </section>
         </div>
@@ -144,7 +149,7 @@ function onKeydown(event: KeyboardEvent): void {
             v-model="prompt"
             class="min-h-16 resize-none text-sm"
             :disabled="!canSend"
-            :placeholder="models.length === 0 ? 'Модели не настроены' : readOnly ? 'Диалог доступен только для чтения' : 'Сообщение ассистенту…'"
+            :placeholder="models.length === 0 ? $t('aiWorkbench.widget.modelsUnavailable') : readOnly ? $t('aiWorkbench.widget.readOnly') : $t('aiWorkbench.widget.messagePlaceholder')"
             @keydown="onKeydown"
           />
           <Button size="icon" :disabled="!canSend || !prompt.trim()" @click="send">

@@ -67,8 +67,8 @@ export class RuntimePreviewInstance {
     return selected ? this._collectInactiveRenderableChildren(selected) : []
   })
 
-  private _project: ProjectRuntimeSession | null = null
-  private _composition: CompositionSession | null = null
+  private _project: ProjectRuntimeSession<CompositionRuntimeHost> | null = null
+  private _composition: CompositionSession<CompositionRuntimeHost> | null = null
   private _component: ComponentSFCRuntimeHost | null = null
   private _componentContext: ComponentPreviewContext | null = null
   private _store: StoreRuntimeHost | null = null
@@ -501,7 +501,7 @@ export class RuntimePreviewInstance {
     return runtime
   }
 
-  private async _mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession> {
+  private async _mountDraftComposition(draft: RuntimePreviewDraft): Promise<CompositionSession<CompositionRuntimeHost>> {
     await Endge.build()
     ensureCompositionRuntimeArtifacts(draft.source, new Set([this.target.identity]))
     const model = createPreviewComposition({
@@ -530,7 +530,7 @@ export class RuntimePreviewInstance {
     )
   }
 
-  private async _mountComposition(identity: string): Promise<CompositionSession> {
+  private async _mountComposition(identity: string): Promise<CompositionSession<CompositionRuntimeHost>> {
     const model = Endge.domain.getComposition(identity)
     const artifact = this._artifactReader.getArtifact<CompositionProgramPayload>('composition', identity)
     if (!model || !artifact || artifact.status === 'error') {
@@ -544,7 +544,7 @@ export class RuntimePreviewInstance {
     artifact: ProgramArtifact<CompositionProgramPayload>,
     artifactReader: RuntimeArtifactReader,
     dataRuntimes?: Record<string, string>,
-  ): Promise<CompositionSession> {
+  ): Promise<CompositionSession<CompositionRuntimeHost>> {
     const host = Endge.runtime.execute(model, {
       artifactReader,
       persistence: 'disabled',

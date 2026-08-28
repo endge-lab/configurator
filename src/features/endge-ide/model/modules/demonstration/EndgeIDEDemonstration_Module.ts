@@ -72,7 +72,7 @@ export class EndgeIDEDemonstration_Module {
     }
 
     try {
-      const result = await query.run({})
+      const result = await Endge.runtime.query.run(query, {})
       const resultByKey = Array.isArray(result)
         ? { data: result }
         : normalizeQueryResult(result)

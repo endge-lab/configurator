@@ -2,7 +2,7 @@
 import type { DomainDocumentType, RComponentSFC, RComposition, RDocument, RUpdate } from '@endge/core'
 import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
 
-import { ComponentType, DocumentDraftFactory, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
+import { ComponentType, createNewDomainDocument, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -652,7 +652,7 @@ async function onSubmit(): Promise<void> {
     if (isQueryComposition && rootFolderId == null) {
       throw new Error('Системная папка запросов не найдена')
     }
-    const draft = DocumentDraftFactory.create(targetDocumentType, {
+    const draft = createNewDomainDocument(targetDocumentType, {
       identity: id,
       name: name.value.trim() || activeOption.value.defaultName,
       folderId: showFolderSelect.value && selectedFolderId.value !== ROOT_FOLDER_VALUE

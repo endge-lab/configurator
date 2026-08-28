@@ -1,4 +1,14 @@
 {
+  "aiWorkbench": {
+    "widget": {
+      "messagePlaceholder": "Message the assistant…",
+      "model": "AI model",
+      "modelsUnavailable": "Models are not configured",
+      "newDialog": "Create a new dialog",
+      "newQuestion": "New question",
+      "readOnly": "This dialog is read-only"
+    }
+  },
   "app": {
     "description": "Endge configuration environment",
     "title": "Configurator"

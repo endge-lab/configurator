@@ -11,7 +11,7 @@ import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/a
 
 import {
   ComponentType,
-  DocumentDraftFactory,
+  createNewDomainDocument,
   Endge,
   isComponentSFCBuiltInTag,
 } from '@endge/core'
@@ -234,7 +234,7 @@ async function executeExtraction(
 
   const childSource = buildExtractedComponentSource(currentColumn, result.dependencies)
   const parentSource = replaceExtractedColumnBody(currentSource, currentColumn, result)
-  const child = DocumentDraftFactory.create(ComponentType.SFC, {
+  const child = createNewDomainDocument(ComponentType.SFC, {
     identity: result.identity,
     name: result.name,
     folderId: result.folderId ?? undefined,

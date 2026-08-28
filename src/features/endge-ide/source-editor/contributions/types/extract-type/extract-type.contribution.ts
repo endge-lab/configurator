@@ -6,7 +6,7 @@ import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/a
 
 import {
   ComponentType,
-  DocumentDraftFactory,
+  createNewDomainDocument,
   Endge,
   serializeTypeSourceDocument,
 } from '@endge/core'
@@ -233,7 +233,7 @@ async function executeTypeExtraction(
     if (!name || !declaration.document) {
       throw new Error(`Не задано название для RType "${declaration.identity}".`)
     }
-    const type = DocumentDraftFactory.create('type', {
+    const type = createNewDomainDocument('type', {
       identity: declaration.identity,
       name,
       folderId,
