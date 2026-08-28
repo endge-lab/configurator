@@ -45,6 +45,42 @@ describe('aIWorkbench_Service', () => {
     expect(events).toEqual(['started', 'content_delta', 'completed'])
   })
 
+  it('passes clarification linkage and parses the terminal clarification event', async () => {
+    const frame = 'event: clarification_required\ndata: {"type":"clarification_required","interactionId":"interaction-1","clarification":{"id":"clarification-1","interactionId":"interaction-1","taskId":"task-1","slot":"entity","question":"Choose","candidates":[],"planVersion":2},"createdAt":"2026-08-26T00:00:00Z"}\n\n'
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(frame))
+        controller.close()
+      },
+    })
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }))
+    const service = new AIWorkbench_HTTP_Adapter('http://backend.local', 'workspace-a')
+    const events: string[] = []
+
+    await service.run('conversation-1', {
+      requestId: crypto.randomUUID(),
+      modelProfileId: crypto.randomUUID(),
+      prompt: 'Sample',
+      interactionId: 'interaction-1',
+      replyToClarificationId: 'clarification-1',
+      selectedCandidateId: 'candidate-1',
+    }, event => events.push(event.type), new AbortController().signal)
+
+    expect(events).toEqual(['clarification_required'])
+    const body = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+    expect(body).toMatchObject({ interactionId: 'interaction-1', replyToClarificationId: 'clarification-1', selectedCandidateId: 'candidate-1' })
+  })
+
+  it('restores an open clarification from the messages response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      items: [],
+      openClarification: { id: 'clarification-1', interactionId: 'interaction-1', taskId: 'task-1', slot: 'entity', question: 'Choose', candidates: [], planVersion: 2 },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    const service = new AIWorkbench_HTTP_Adapter('http://backend.local', 'workspace-a')
+
+    await expect(service.messages('conversation-1')).resolves.toMatchObject({ openClarification: { id: 'clarification-1' } })
+  })
+
   it('uses physical DELETE for catalog resources', async () => {
     const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
     const service = new AIWorkbench_HTTP_Adapter('http://backend.local', 'workspace-a')

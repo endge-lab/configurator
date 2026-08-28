@@ -1,6 +1,7 @@
 import type {
   AIAdapter,
   AICapabilities,
+  AIClarification,
   AIConnectionWithModel,
   AIConversation,
   AICreateConnectionWithModel,
@@ -61,7 +62,7 @@ export class AIWorkbench_HTTP_Adapter {
     })
   }
 
-  public messages(id: string, cursor = ''): Promise<{ items: AIMessage[], nextCursor?: string }> {
+  public messages(id: string, cursor = ''): Promise<{ items: AIMessage[], nextCursor?: string, openClarification?: AIClarification }> {
     const query = new URLSearchParams({ limit: '50' })
     if (cursor) {
       query.set('cursor', cursor)
@@ -71,7 +72,7 @@ export class AIWorkbench_HTTP_Adapter {
 
   public async run(
     id: string,
-    input: { requestId: string, modelProfileId: string, prompt: string },
+    input: { requestId: string, modelProfileId: string, prompt: string, interactionId?: string, replyToClarificationId?: string, selectedCandidateId?: string },
     onEvent: (event: AIRunEvent) => void,
     signal: AbortSignal,
   ): Promise<void> {

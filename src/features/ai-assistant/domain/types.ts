@@ -51,6 +51,23 @@ export interface AIMessage {
   createdAt: string
 }
 
+export interface AIClarificationCandidate {
+  candidateId: string
+  documentType: string
+  identity: string
+  displayName: string
+}
+
+export interface AIClarification {
+  id: string
+  interactionId: string
+  taskId: string
+  slot: string
+  question: string
+  candidates: AIClarificationCandidate[]
+  planVersion: number
+}
+
 export interface AIProviderConnection {
   id: string
   name: string
@@ -85,11 +102,13 @@ export interface AIConnectionWithModel {
 }
 
 export interface AIRunEvent {
-  type: 'started' | 'content_delta' | 'completed' | 'failed'
+  type: 'started' | 'content_delta' | 'clarification_required' | 'completed' | 'failed'
   runId?: string
   messageId?: string
   delta?: string
   errorCode?: string
   errorMessage?: string
+  interactionId?: string
+  clarification?: AIClarification
   createdAt: string
 }

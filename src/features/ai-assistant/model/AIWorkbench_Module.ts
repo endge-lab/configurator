@@ -1,6 +1,8 @@
 import type {
   AIAdapter,
   AICapabilities,
+  AIClarification,
+  AIClarificationCandidate,
   AIConversation,
   AICreateConnectionWithModel,
   AIMessage,
@@ -13,6 +15,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { createWidgetInstance, getWidget, hideWidget, registerWidget, unregisterWidget } from '@/components/layouts/grid'
 import { AIWorkbench_HTTP_Adapter } from '@/features/ai-assistant/adapters/AIWorkbench_HTTP_Adapter'
+import { buildClarificationRunLinkage } from '@/features/ai-assistant/model/clarification'
 import { AI_AGENT_WIDGET_DEFINITION, AI_AGENT_WIDGET_ID } from '@/features/ai-assistant/model/widget'
 
 interface State {
@@ -26,6 +29,7 @@ interface State {
   error: string
   selectedModelId: string
   managementOpen: boolean
+  openClarification: AIClarification | null
 }
 
 class AIWorkbench_Module {
@@ -45,6 +49,7 @@ class AIWorkbench_Module {
     error: '',
     selectedModelId: '',
     managementOpen: false,
+    openClarification: null,
   })
 
   /** Readonly reactive views для UI. */
@@ -77,7 +82,7 @@ class AIWorkbench_Module {
     this._unregisterWidget()
     this._initialized = false
     this._service = null
-    Object.assign(this._state, { capabilities: null, conversation: null, messages: [], previousCursor: '', streamingText: '', loading: false, running: false, error: '', selectedModelId: '', managementOpen: false })
+    Object.assign(this._state, { capabilities: null, conversation: null, messages: [], previousCursor: '', streamingText: '', loading: false, running: false, error: '', selectedModelId: '', managementOpen: false, openClarification: null })
   }
 
   public async refreshCapabilities(): Promise<void> {
@@ -157,9 +162,10 @@ class AIWorkbench_Module {
     this._state.messages = []
     this._state.previousCursor = ''
     this._state.streamingText = ''
+    this._state.openClarification = null
   }
 
-  public async send(prompt: string): Promise<void> {
+  public async send(prompt: string, selectedCandidate?: AIClarificationCandidate): Promise<void> {
     const text = prompt.trim()
     if (!text || !this._state.selectedModelId || this._state.running) {
       return
@@ -184,6 +190,7 @@ class AIWorkbench_Module {
         requestId: crypto.randomUUID(),
         modelProfileId: this._state.selectedModelId,
         prompt: text,
+        ...buildClarificationRunLinkage(this._state.openClarification, selectedCandidate),
       }, event => this._acceptEvent(event), this._stream.signal)
       await this._loadLatestMessages()
     }
@@ -197,6 +204,15 @@ class AIWorkbench_Module {
       this._state.streamingText = ''
       this._stream = null
     }
+  }
+
+  public answerClarification(candidate: AIClarificationCandidate): Promise<void> {
+    return this.send(candidate.displayName || candidate.identity, candidate)
+  }
+
+  public startIndependentQuestion(): void {
+    this._state.openClarification = null
+    this._state.error = ''
   }
 
   /** Открывает общее окно настройки public/private AI connections. */
@@ -274,19 +290,24 @@ class AIWorkbench_Module {
     if (!this._state.conversation) {
       this._state.messages = []
       this._state.previousCursor = ''
+      this._state.openClarification = null
       return
     }
     const page = await this._transport.messages(this._state.conversation.id)
     this._state.messages = page.items
     this._state.previousCursor = page.nextCursor ?? ''
+    this._state.openClarification = page.openClarification ?? null
   }
 
-  private _acceptEvent(event: { type: string, delta?: string, errorMessage?: string }): void {
+  private _acceptEvent(event: { type: string, delta?: string, errorMessage?: string, clarification?: AIClarification }): void {
     if (event.type === 'content_delta') {
       this._state.streamingText += event.delta ?? ''
     }
     if (event.type === 'failed') {
       this._state.error = event.errorMessage || 'Не удалось получить ответ'
+    }
+    if (event.type === 'clarification_required') {
+      this._state.openClarification = event.clarification ?? null
     }
   }
 

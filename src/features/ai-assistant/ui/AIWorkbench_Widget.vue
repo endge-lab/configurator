@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bot, Loader2, Plus, Send } from 'lucide-vue-next'
+import { Bot, Loader2, MessageCircleQuestion, Plus, Send } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,9 @@ const hasMessages = computed(() => (state.conversation?.messageCount ?? state.me
 const readOnly = computed(() => hasMessages.value && !currentModelAvailable.value)
 const canSend = computed(() => state.capabilities?.canRun === true && !!state.selectedModelId && !readOnly.value && !state.running)
 const showConfigurationEmptyState = computed(() => models.value.length === 0 && !hasMessages.value && !state.streamingText && !state.loading)
+const clarificationQuestionInHistory = computed(() => state.openClarification
+  ? state.messages.some(message => message.role === 'assistant' && message.content === state.openClarification?.question)
+  : false)
 
 watch(() => [state.messages.length, state.streamingText], async () => {
   await nextTick()
@@ -104,6 +107,28 @@ function onKeydown(event: KeyboardEvent): void {
           <article v-if="state.streamingText" class="mr-auto max-w-[92%] whitespace-pre-wrap rounded-xl border bg-muted/40 px-3 py-2 text-sm leading-relaxed">
             {{ state.streamingText }}<span class="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-fuchsia-500" />
           </article>
+
+          <section v-if="state.openClarification" class="mr-auto w-full max-w-[92%] rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
+            <div v-if="!clarificationQuestionInHistory" class="flex items-start gap-2 text-sm font-medium">
+              <MessageCircleQuestion class="mt-0.5 size-4 shrink-0 text-fuchsia-500" />
+              <span>{{ state.openClarification.question }}</span>
+            </div>
+            <div v-if="state.openClarification.candidates.length" class="mt-3 flex flex-wrap gap-2">
+              <Button
+                v-for="candidate in state.openClarification.candidates"
+                :key="candidate.candidateId"
+                size="sm"
+                variant="outline"
+                :disabled="state.running"
+                @click="AIWorkbench.answerClarification(candidate)"
+              >
+                {{ candidate.displayName || candidate.identity }}
+              </Button>
+            </div>
+            <Button class="mt-2 px-0 text-xs" size="sm" variant="link" :disabled="state.running" @click="AIWorkbench.startIndependentQuestion()">
+              Новый вопрос
+            </Button>
+          </section>
         </div>
       </ScrollArea>
 
