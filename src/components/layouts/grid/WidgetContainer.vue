@@ -54,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 /** Снимок домена для виджета агента (двухшаговый запрос: потребность - вопрос + сущности). */
-provide('agentDomainSnapshot', () => Endge.domain.toPlain())
+provide('agentDomainSnapshot', () => Endge.domainSnapshot.serialize(Endge.domain))
 
 const { t } = useI18n()
 
