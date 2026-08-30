@@ -1,17 +1,16 @@
-import type { EndgeDomainBundle } from '@endge/core'
 import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
 
-const snapshot = {
+const snapshotJSON = JSON.stringify({
   kind: 'workspace-snapshot',
   schemaVersion: 1,
   workspace: {},
   installedIntegrations: [],
   documents: {},
-} as unknown as EndgeDomainBundle
+})
 
 describe('serviceBackendDomainTransfer_Service', () => {
   beforeEach(() => {
@@ -37,7 +36,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
 
     await expect(service.planImport({
       workspaceIdentity: 'workspace-a',
-      snapshot,
+      snapshotJSON,
     })).resolves.toMatchObject({
       valid: true,
       incoming: { documents: 12 },
@@ -55,7 +54,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
         'Content-Type': 'application/json',
         'X-Endge-Workspace': 'workspace-a',
       },
-      body: JSON.stringify({ snapshot }),
+      body: snapshotJSON,
       signal: undefined,
     })
   })
@@ -70,6 +69,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
       deletes: 3,
       commitId: 'commit-id',
       parentCommitId: 'parent-commit-id',
+      domainVersion: 'dv2:sha256:test',
     }, 201))
     vi.stubGlobal('fetch', fetchMock)
     const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
@@ -107,7 +107,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
 
     await expect(service.planImport({
       workspaceIdentity: 'workspace-a',
-      snapshot,
+      snapshotJSON,
     })).rejects.toMatchObject({
       code: 'workspace_admin_required',
       status: 403,

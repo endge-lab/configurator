@@ -43,8 +43,7 @@ describe('модуль переноса домена', () => {
       import: vi.fn().mockResolvedValue(result),
     }
     const module = new EndgeIDEDomainTransfer_Module(adapter)
-    const snapshot = { version: '1', documents: [], integrations: [] } as never
-    const planRequest = { workspaceIdentity: 'workspace-1', snapshot }
+    const planRequest = { workspaceIdentity: 'workspace-1', snapshotJSON: '{"schemaVersion":1}' }
     const importRequest = {
       workspaceIdentity: 'workspace-1',
       planId: 'plan-1',

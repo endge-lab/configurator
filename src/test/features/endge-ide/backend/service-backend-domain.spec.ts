@@ -2,7 +2,6 @@ import type {
   ServiceBackendDomainError,
 } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
 
-import { ENDGE_DOMAIN_BUNDLE_VERSION } from '@endge/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -38,7 +37,7 @@ const DOCUMENT_KEYS = [
 function snapshot(): Record<string, unknown> {
   return {
     kind: 'workspace-snapshot',
-    schemaVersion: ENDGE_DOMAIN_BUNDLE_VERSION,
+    schemaVersion: 1,
     workspace: {
       identity: 'workspace-a',
       displayName: 'Workspace A',

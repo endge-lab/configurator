@@ -12,8 +12,6 @@ import type {
   EndgeWorkspaceServerState,
 } from '@endge/core'
 
-import { ENDGE_DOMAIN_BUNDLE_VERSION } from '@endge/core'
-
 type UnknownRecord = Record<string, unknown>
 
 const SNAPSHOT_DOCUMENT_KEYS = [
@@ -305,7 +303,9 @@ function isLiveSnapshot(value: UnknownRecord, workspaceIdentity: string): value 
   const workspace = value.workspace
   const documents = value.documents
   if (value.kind !== 'workspace-snapshot'
-    || value.schemaVersion !== ENDGE_DOMAIN_BUNDLE_VERSION
+    || typeof value.schemaVersion !== 'number'
+    || !Number.isInteger(value.schemaVersion)
+    || value.schemaVersion < 1
     || !isRecord(workspace)
     || stringValue(workspace.identity) !== workspaceIdentity
     || !stringValue(workspace.displayName)

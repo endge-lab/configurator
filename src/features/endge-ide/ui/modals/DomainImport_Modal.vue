@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EndgeDomainBundle } from '@endge/core'
 import type {
   ServiceBackendDomainImportPlan,
   ServiceBackendDomainImportResult,
@@ -31,6 +30,7 @@ import { startConfiguratorLogin } from '@/features/configurator-session'
 import {
   ServiceBackendDomainTransferError,
 } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
+import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
 
 type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
 
@@ -139,10 +139,9 @@ async function selectFile(file: File): Promise<void> {
   importState.value = 'checking'
 
   try {
-    const snapshot = parseSnapshot(await file.text())
     const nextPlan = await EndgeIDE.domainTransfer.planImport({
       workspaceIdentity: workspaceIdentity.value,
-      snapshot,
+      snapshotJSON: await file.text(),
       signal: controller.signal,
     })
     if (controller.signal.aborted) {
@@ -230,31 +229,8 @@ function handleTransferError(error: unknown, fallback: string): void {
   errorMessage.value = `${fallback}: ${errorText(error)}`
 }
 
-function parseSnapshot(text: string): EndgeDomainBundle {
-  let raw: unknown
-  try {
-    raw = JSON.parse(text)
-  }
-  catch {
-    throw new Error('файл не является корректным JSON')
-  }
-  if (!isRecord(raw)
-    || raw.kind !== 'workspace-snapshot'
-    || typeof raw.schemaVersion !== 'number'
-    || !isRecord(raw.workspace)
-    || !isRecord(raw.documents)
-    || !Array.isArray(raw.installedIntegrations)) {
-    throw new Error('ожидается полный workspace-snapshot, скачанный через экспорт домена')
-  }
-  return raw as unknown as EndgeDomainBundle
-}
-
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 </script>
 

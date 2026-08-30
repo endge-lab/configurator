@@ -1,5 +1,3 @@
-import type { EndgeDomainBundle } from '@endge/core'
-
 /** Нормализованный результат проверки безопасного ревизионного импорта. */
 export interface ServiceBackendDomainImportPlan {
   planId?: string
@@ -39,7 +37,7 @@ export interface ServiceBackendDomainImportResult {
 
 export interface ServiceBackendDomainImportPlanRequest {
   workspaceIdentity: string
-  snapshot: EndgeDomainBundle
+  snapshotJSON: string
   signal?: AbortSignal
 }
 

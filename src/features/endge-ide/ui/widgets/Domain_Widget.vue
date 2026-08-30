@@ -139,7 +139,6 @@ type MenuAction
     | { type: 'duplicate-doc', node: FsFileNode }
     | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
-    | { type: 'download-selected' }
     | { type: 'generate-vocab-mock' }
 
 const domainStore = useDomainStore()
@@ -1656,19 +1655,18 @@ async function confirmRename(): Promise<void> {
   Endge.domain.notify()
 }
 
-function downloadSelectedDocuments(): void {
+async function downloadDomain(): Promise<void> {
   try {
-    Endge.download(selectedExportNodes.value.map(node => ({
-      id: node.id,
-      identity: node.identity,
-      sectionType: node.sectionType,
-      docType: node.docType,
-    })))
-    toast.success(`Скачано сущностей: ${selectedExportNodes.value.length}`)
+    const workspaceIdentity = String(Endge.workspace.current.identity ?? '').trim()
+    if (!workspaceIdentity) {
+      throw new Error('Не выбрано рабочее пространство')
+    }
+    await EndgeIDE.domainTransfer.downloadExport(workspaceIdentity)
+    toast.success('Экспорт домена сформирован backend')
   }
   catch (error) {
-    console.error(`[Domain_Widget] Не удалось скачать выбранные сущности: ${error instanceof Error ? error.message : String(error)}`)
-    toast.error('Не удалось скачать выбранные сущности', { description: (error as Error)?.message })
+    console.error(`[Domain_Widget] Не удалось скачать домен: ${error instanceof Error ? error.message : String(error)}`)
+    toast.error('Не удалось скачать домен', { description: error instanceof Error ? error.message : String(error) })
   }
 }
 
@@ -1781,14 +1779,6 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
         label: SHOW_DEPENDENCIES_LABEL,
         icon: ListFilter,
         action: { type: 'filter-dependencies', node: fileNode },
-      })
-    }
-
-    if (isContextFileSelected && selectedExportNodes.value.length > 1) {
-      items.push({
-        label: `Скачать выбранные (${selectedExportNodes.value.length})`,
-        icon: Download,
-        action: { type: 'download-selected' },
       })
     }
 
@@ -1938,11 +1928,6 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
-  if (a.type === 'download-selected') {
-    downloadSelectedDocuments()
-    return
-  }
-
   if (a.type === 'launch-runtime-previews') {
     await EndgeIDE.runBusy(launchRuntimePreviews(a.nodes))
   }
@@ -1986,7 +1971,7 @@ function rowClasses(item: FlatFsItem): string {
           <div class="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" @click="() => Endge.download()">
+                <Button size="icon" variant="ghost" class="size-7" @click="downloadDomain">
                   <Download class="size-3.5" />
                 </Button>
               </TooltipTrigger>

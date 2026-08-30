@@ -62,7 +62,7 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     const response = await this._request('/api/v1/domain/import/plan', {
       method: 'POST',
       workspaceIdentity: request.workspaceIdentity,
-      body: { snapshot: request.snapshot },
+      body: request.snapshotJSON,
       signal: request.signal,
     })
     const plan = normalizeImportPlan(response.payload)
@@ -104,7 +104,7 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     options: {
       method: 'POST'
       workspaceIdentity: string
-      body: UnknownRecord
+      body: UnknownRecord | string
       ifMatch?: string
       signal?: AbortSignal
     },
@@ -120,7 +120,7 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
           'X-Endge-Workspace': options.workspaceIdentity,
           ...(options.ifMatch ? { 'If-Match': options.ifMatch } : {}),
         },
-        body: JSON.stringify(options.body),
+        body: typeof options.body === 'string' ? options.body : JSON.stringify(options.body),
         signal: options.signal,
       })
     }
