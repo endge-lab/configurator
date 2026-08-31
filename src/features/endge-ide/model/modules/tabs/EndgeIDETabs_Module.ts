@@ -17,7 +17,7 @@ import type {
   RUpdate,
   SourceDocumentReference,
 } from '@endge/core'
-import type { Component } from 'vue'
+import type { Component, ShallowRef } from 'vue'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/components/ui/smart-tabs/types.ts'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/model/modules/busy/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/model/modules/ui-state/EndgeIDEUIState_Module'
@@ -173,15 +173,14 @@ export class EndgeIDETabs_Module {
   private _isRegistryBootstrapped = false
   private _sessionByTabId = new Map<string, EditorSession>()
   private _sourceNavigationToken = 0
+  private readonly _documentEditorModel = shallowRef<unknown | null>(null)
+  private readonly _documentModel = shallowRef<unknown | null>(null)
+  private readonly _sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
-  /** ACCESS */
-  public readonly documentEditorModel = shallowRef<unknown | null>(null)
-
-  /** ACCESS */
-  public readonly documentModel = shallowRef<unknown | null>(null)
-
-  /** One-shot Source navigation consumed by document editors after their tab becomes active. */
-  public readonly sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
+  /** Readonly reactive views текущего editor, model и одноразовой Source navigation. */
+  public readonly documentEditorModel: Readonly<ShallowRef<unknown | null>> = this._documentEditorModel
+  public readonly documentModel: Readonly<ShallowRef<unknown | null>> = this._documentModel
+  public readonly sourceNavigationRequest: Readonly<ShallowRef<DocumentSourceNavigationRequest | null>> = this._sourceNavigationRequest
 
   public constructor(
     private readonly _busy: EndgeIDEBusy_Module,
@@ -243,8 +242,8 @@ export class EndgeIDETabs_Module {
     })
     this._isRegistryBootstrapped = false
     this._sessionByTabId.clear()
-    this.documentEditorModel.value = null
-    this.documentModel.value = null
+    this._documentEditorModel.value = null
+    this._documentModel.value = null
   }
 
   public openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
@@ -423,7 +422,7 @@ export class EndgeIDETabs_Module {
     }
     this.openTab(tabRef)
     if (Number.isFinite(options.sourceOffset)) {
-      this.sourceNavigationRequest.value = {
+      this._sourceNavigationRequest.value = {
         documentId,
         documentType: docType,
         offset: Math.max(0, Number(options.sourceOffset)),
@@ -1366,8 +1365,8 @@ export class EndgeIDETabs_Module {
   }
 
   private _setCurrentFromSession(session: EditorSession): void {
-    this.documentEditorModel.value = session.editor != null ? reactive(session.editor as object) : null
-    this.documentModel.value = session.model ?? null
+    this._documentEditorModel.value = session.editor != null ? reactive(session.editor as object) : null
+    this._documentModel.value = session.model ?? null
   }
 
   /** Синхронизирует контекст инспектора с сессией вкладки (чтобы инспектор отображал данные активной вкладки). */

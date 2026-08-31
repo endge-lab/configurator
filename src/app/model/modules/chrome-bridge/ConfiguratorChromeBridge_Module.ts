@@ -93,6 +93,11 @@ export class ConfiguratorChromeBridge_Module {
     this._installed = false
   }
 
+  /** Собирает readonly domain bundle для локального browser consumer. */
+  public exportDomainBundle(): EndgeAdminBridgeBundle {
+    return this._buildBundle()
+  }
+
   /**
    * ----------------------------------------
    * PRIVATE
@@ -129,7 +134,7 @@ export class ConfiguratorChromeBridge_Module {
       platform: 'endge-admin',
       version: BRIDGE_VERSION,
       ping: () => this._buildPingPayload(),
-      exportDomainBundle: () => this._buildBundle(),
+      exportDomainBundle: () => this.exportDomainBundle(),
     }
   }
 

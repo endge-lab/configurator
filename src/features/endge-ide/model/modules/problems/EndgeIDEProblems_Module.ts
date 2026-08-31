@@ -1,3 +1,4 @@
+import type { Ref } from 'vue'
 import { Endge } from '@endge/core'
 import { computed, ref } from 'vue'
 
@@ -8,9 +9,10 @@ import { buildProblemsEntityEntries, buildProblemsSeverityGroups } from '@/featu
 /** Presentation controller самостоятельной рабочей области Problems. */
 export class EndgeIDEProblems_Module {
   private readonly _revision = ref(0)
+  private readonly _selectedEntityKey = ref<string | null>(null)
   private _unsubscribe: (() => void) | null = null
 
-  public readonly selectedEntityKey = ref<string | null>(null)
+  public readonly selectedEntityKey: Readonly<Ref<string | null>> = this._selectedEntityKey
   public readonly entries = computed(() => {
     void this._revision.value
     return buildProblemsEntityEntries(Endge.diagnostics.problems.query())
@@ -37,14 +39,14 @@ export class EndgeIDEProblems_Module {
   public reset(): void {
     this._unsubscribe?.()
     this._unsubscribe = null
-    this.selectedEntityKey.value = null
+    this._selectedEntityKey.value = null
     this._revision.value = 0
   }
 
   /** Выбирает проблемную сущность для отображения в основной части workspace. */
   public selectEntity(entityKey: string): void {
     if (this.entries.value.some(entry => entry.key === entityKey)) {
-      this.selectedEntityKey.value = entityKey
+      this._selectedEntityKey.value = entityKey
     }
   }
 
@@ -62,7 +64,7 @@ export class EndgeIDEProblems_Module {
   private _synchronizeSelection(): void {
     const selectedExists = this.entries.value.some(entry => entry.key === this.selectedEntityKey.value)
     if (!selectedExists) {
-      this.selectedEntityKey.value = this.entries.value[0]?.key ?? null
+      this._selectedEntityKey.value = this.entries.value[0]?.key ?? null
     }
   }
 }

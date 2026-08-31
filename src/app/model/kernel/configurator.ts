@@ -100,6 +100,10 @@ export class Configurator {
     return this._modules.i18n
   }
 
+  public static get chromeBridge() {
+    return this._modules.chromeBridge
+  }
+
   public static get questions() {
     return this._modules.questions
   }

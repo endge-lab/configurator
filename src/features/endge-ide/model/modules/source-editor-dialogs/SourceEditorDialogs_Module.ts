@@ -1,4 +1,4 @@
-import type { Component } from 'vue'
+import type { Component, ShallowRef } from 'vue'
 
 import { markRaw, shallowRef } from 'vue'
 
@@ -14,11 +14,11 @@ interface ActiveSourceEditorDialog {
 
 /** Owns source-editor dialog definitions, active request and request settlement. */
 export class SourceEditorDialogs_Module {
-  public readonly active = shallowRef<ActiveSourceEditorDialog | null>(null)
-
+  private readonly _active = shallowRef<ActiveSourceEditorDialog | null>(null)
   private readonly _definitions = new Map<string, SourceEditorDialogDefinition>()
   private readonly _instanceSequences = new Map<string, number>()
   private _settleActive: ((result: unknown | undefined) => void) | null = null
+  public readonly active: Readonly<ShallowRef<ActiveSourceEditorDialog | null>> = this._active
 
   public register(definition: SourceEditorDialogDefinition): void {
     const existing = this._definitions.get(definition.id)
@@ -42,7 +42,7 @@ export class SourceEditorDialogs_Module {
     }
 
     this.cancel()
-    this.active.value = { definition, input }
+    this._active.value = { definition, input }
 
     return new Promise<TResult | undefined>((resolve) => {
       this._settleActive = resolve as (result: unknown | undefined) => void
@@ -52,14 +52,14 @@ export class SourceEditorDialogs_Module {
   public resolve(result: unknown): void {
     const settle = this._settleActive
     this._settleActive = null
-    this.active.value = null
+    this._active.value = null
     settle?.(result)
   }
 
   public cancel(): void {
     const settle = this._settleActive
     this._settleActive = null
-    this.active.value = null
+    this._active.value = null
     settle?.(undefined)
   }
 

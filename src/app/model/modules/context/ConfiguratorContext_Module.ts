@@ -60,9 +60,32 @@ export class ConfiguratorContext_Module {
     const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
 
     registerEndgeMockProviders()
-    await Endge.boot(ctx)
-    this._restoreDataModeOverride()
-    this._assertWorkspaceRendererReady()
+    let bootCompleted = false
+    try {
+      await Endge.boot(ctx)
+      bootCompleted = true
+      this._restoreDataModeOverride()
+      this._assertWorkspaceRendererReady()
+    }
+    catch (cause) {
+      this._isInitialized = false
+      this._currentContext = {}
+      this._requestedContext = {}
+      this._notify()
+
+      if (bootCompleted) {
+        try {
+          await Endge.reset()
+        }
+        catch (resetCause) {
+          throw new AggregateError(
+            [cause, resetCause],
+            '[EndgeIDE] initialization failed and Core cleanup was incomplete',
+          )
+        }
+      }
+      throw cause
+    }
 
     this._isInitialized = true
     this._currentContext = { ...Endge.context.getExecutionContext() }

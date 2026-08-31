@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
-import { Endge } from '@endge/core'
 import {
   AppWindowMac,
   Ellipsis,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-vue-next'
 import { computed, onMounted, onUnmounted, provide, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Configurator } from '@/app/model/kernel/configurator'
 import { getIconComponent } from '@/components/layouts/grid/icons.ts'
 import {
   addHeaderAction,
@@ -54,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 /** Снимок домена для виджета агента (двухшаговый запрос: потребность - вопрос + сущности). */
-provide('agentDomainSnapshot', () => Endge.domainSnapshot.serialize(Endge.domain))
+provide('agentDomainSnapshot', () => Configurator.chromeBridge.exportDomainBundle().domain)
 
 const { t } = useI18n()
 

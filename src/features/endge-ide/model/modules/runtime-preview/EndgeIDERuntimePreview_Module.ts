@@ -1,4 +1,5 @@
 import type { AuthProfileSchema, OidcBrowserSession_Adapter } from '@endge/core'
+import type { Ref, ShallowRef } from 'vue'
 import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
   RuntimePreviewAuthPrompt,
@@ -25,16 +26,25 @@ import { findRuntimePreviewOccurrences } from '@/features/endge-ide/model/runtim
 
 /** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
 export class EndgeIDERuntimePreview_Module {
-  public readonly entries = shallowRef<RuntimePreviewInstance[]>([])
-  public readonly selectedEntryKey = ref<string | null>(null)
-  public readonly selectedEntry = computed(() => this.get(this.selectedEntryKey.value))
-  public readonly selectedNode = computed(() => this.selectedEntry.value?.selectedNode.value ?? null)
-  public readonly occurrencePrompt = shallowRef<RuntimePreviewOccurrencePrompt | null>(null)
-  public readonly authPrompt = shallowRef<RuntimePreviewAuthPrompt | null>(null)
-  public readonly treeExpansionRequest = shallowRef<{
+  private readonly _entries = shallowRef<RuntimePreviewInstance[]>([])
+  private readonly _selectedEntryKey = ref<string | null>(null)
+  private readonly _occurrencePrompt = shallowRef<RuntimePreviewOccurrencePrompt | null>(null)
+  private readonly _authPrompt = shallowRef<RuntimePreviewAuthPrompt | null>(null)
+  private readonly _treeExpansionRequest = shallowRef<{
     id: number
     preset: RuntimeTreeExpansionPreset
   } | null>(null)
+
+  public readonly entries: Readonly<ShallowRef<RuntimePreviewInstance[]>> = this._entries
+  public readonly selectedEntryKey: Readonly<Ref<string | null>> = this._selectedEntryKey
+  public readonly selectedEntry = computed(() => this.get(this.selectedEntryKey.value))
+  public readonly selectedNode = computed(() => this.selectedEntry.value?.selectedNode.value ?? null)
+  public readonly occurrencePrompt: Readonly<ShallowRef<RuntimePreviewOccurrencePrompt | null>> = this._occurrencePrompt
+  public readonly authPrompt: Readonly<ShallowRef<RuntimePreviewAuthPrompt | null>> = this._authPrompt
+  public readonly treeExpansionRequest: Readonly<ShallowRef<{
+    id: number
+    preset: RuntimeTreeExpansionPreset
+  } | null>> = this._treeExpansionRequest
 
   private readonly _instances = new Map<string, RuntimePreviewInstance>()
   private _runtimeOff: (() => void) | null = null
@@ -137,7 +147,7 @@ export class EndgeIDERuntimePreview_Module {
       this._syncEntries()
       this._persistEntries()
     }
-    this.selectedEntryKey.value = key
+    this._selectedEntryKey.value = key
     if (revealTree) {
       showWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
     }
@@ -213,7 +223,7 @@ export class EndgeIDERuntimePreview_Module {
 
   /** Requests a one-shot expansion preset from the Runtime Tree surface. */
   public requestTreeExpansion(preset: RuntimeTreeExpansionPreset): void {
-    this.treeExpansionRequest.value = {
+    this._treeExpansionRequest.value = {
       id: ++this._treeExpansionRequestId,
       preset,
     }
@@ -221,14 +231,14 @@ export class EndgeIDERuntimePreview_Module {
 
   public consumeTreeExpansionRequest(requestId: number): void {
     if (this.treeExpansionRequest.value?.id === requestId) {
-      this.treeExpansionRequest.value = null
+      this._treeExpansionRequest.value = null
     }
   }
 
   public chooseOccurrence(choice: string | 'standalone' | null): void {
     const resolve = this._resolveOccurrencePrompt
     this._resolveOccurrencePrompt = null
-    this.occurrencePrompt.value = null
+    this._occurrencePrompt.value = null
     resolve?.(choice)
   }
 
@@ -243,7 +253,7 @@ export class EndgeIDERuntimePreview_Module {
     if (!profile || !source) {
       return
     }
-    this.authPrompt.value = { ...prompt, pending: true, error: null }
+    this._authPrompt.value = { ...prompt, pending: true, error: null }
     try {
       await source.loginPopup()
       Endge.auth.session.connect(profile.identity, source)
@@ -255,15 +265,15 @@ export class EndgeIDERuntimePreview_Module {
       if (nextIndex >= prompt.profiles.length) {
         const resolve = this._resolveAuthPrompt
         this._resolveAuthPrompt = null
-        this.authPrompt.value = null
+        this._authPrompt.value = null
         resolve?.(true)
       }
       else {
-        this.authPrompt.value = { profiles: prompt.profiles, currentIndex: nextIndex, pending: false, error: null }
+        this._authPrompt.value = { profiles: prompt.profiles, currentIndex: nextIndex, pending: false, error: null }
       }
     }
     catch (error) {
-      this.authPrompt.value = {
+      this._authPrompt.value = {
         ...prompt,
         pending: false,
         error: error instanceof Error ? error.message : String(error),
@@ -275,7 +285,7 @@ export class EndgeIDERuntimePreview_Module {
   public cancelAuthorization(): void {
     const resolve = this._resolveAuthPrompt
     this._resolveAuthPrompt = null
-    this.authPrompt.value = null
+    this._authPrompt.value = null
     resolve?.(false)
   }
 
@@ -298,7 +308,7 @@ export class EndgeIDERuntimePreview_Module {
     if (!instance) {
       return
     }
-    this.selectedEntryKey.value = entryKey
+    this._selectedEntryKey.value = entryKey
     await instance.select(nodeId)
   }
 
@@ -330,7 +340,7 @@ export class EndgeIDERuntimePreview_Module {
     await instance.dispose()
     this._instances.delete(instanceId)
     if (this.selectedEntryKey.value === instanceId) {
-      this.selectedEntryKey.value = this.entries.value.find(item => item.key !== instanceId)?.key ?? null
+      this._selectedEntryKey.value = this.entries.value.find(item => item.key !== instanceId)?.key ?? null
     }
     this._syncEntries()
     this._persistEntries()
@@ -444,8 +454,8 @@ export class EndgeIDERuntimePreview_Module {
     this.cancelAuthorization()
     const instances = [...this._instances.values()]
     this._instances.clear()
-    this.entries.value = []
-    this.selectedEntryKey.value = null
+    this._entries.value = []
+    this._selectedEntryKey.value = null
     await Promise.all(instances.map(instance => instance.dispose()))
   }
 
@@ -456,7 +466,7 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   private _syncEntries(): void {
-    this.entries.value = [...this._instances.values()]
+    this._entries.value = [...this._instances.values()]
   }
 
   private _restoreRememberedEntries(): void {
@@ -478,7 +488,7 @@ export class EndgeIDERuntimePreview_Module {
     prompt: RuntimePreviewOccurrencePrompt,
   ): Promise<string | 'standalone' | null> {
     this.chooseOccurrence(null)
-    this.occurrencePrompt.value = prompt
+    this._occurrencePrompt.value = prompt
     return new Promise((resolve) => {
       this._resolveOccurrencePrompt = resolve
     })
@@ -503,7 +513,7 @@ export class EndgeIDERuntimePreview_Module {
       return true
     }
     this.cancelAuthorization()
-    this.authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
+    this._authPrompt.value = { profiles: missing, currentIndex: 0, pending: false, error: null }
     return new Promise((resolve) => {
       this._resolveAuthPrompt = resolve
     })
@@ -544,7 +554,7 @@ export class EndgeIDERuntimePreview_Module {
 
   private _openAuthorizationPrompt(profiles: AuthProfileSchema[]): void {
     this.cancelAuthorization()
-    this.authPrompt.value = { profiles, currentIndex: 0, pending: false, error: null }
+    this._authPrompt.value = { profiles, currentIndex: 0, pending: false, error: null }
   }
 
   private _oidcSource(profile: AuthProfileSchema): OidcBrowserSession_Adapter {

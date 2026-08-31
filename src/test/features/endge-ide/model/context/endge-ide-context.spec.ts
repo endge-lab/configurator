@@ -146,6 +146,25 @@ describe('endgeIDE context', () => {
     expect(mocks.requireActive.mock.calls[0]?.[0]).not.toHaveProperty('renderer')
   })
 
+  /** Откатывает уже запущенный Core и разрешает повторный init после ошибки renderer contract. */
+  it('rolls back Core when post-boot validation fails and allows retry', async () => {
+    mocks.requireActive.mockImplementationOnce(() => {
+      throw new Error('renderer unavailable')
+    })
+
+    await expect(context.init({ backendConfig, domainProvider, workspaceRole: 'editor' }))
+      .rejects
+      .toThrow('renderer unavailable')
+
+    expect(mocks.reset).toHaveBeenCalledOnce()
+    expect(context.isInitialized).toBe(false)
+
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
+
+    expect(mocks.boot).toHaveBeenCalledTimes(2)
+    expect(context.isInitialized).toBe(true)
+  })
+
   it('disposes registered surfaces before a project context reboot', async () => {
     const beforeContextReset = vi.fn()
     const unregister = context.registerSurface('test-surface', { beforeContextReset })
