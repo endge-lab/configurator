@@ -184,10 +184,16 @@ function insertTemplate(value: string | string[] | null): 'action' | 'query' | '
 
 function serializeAction(identity: string): string {
   const definition = Endge.actions.getDefinition(identity)
-  const params = [...(definition?.input?.params?.values() ?? [])]
+  const inputContract = definition?.contract.input
+  const params = inputContract
+    && typeof inputContract === 'object'
+    && 'params' in inputContract
+    && inputContract.params instanceof Map
+    ? [...inputContract.params.values()] as Array<{ name: string }>
+    : []
   const input = params.length
     ? `{ ${params.map(param => `${param.name}: ${eventInputSource(param.name)}`).join(', ')} }`
-    : definition?.input
+    : inputContract
       ? props.eventName === 'edited'
         ? `{ value: event('value'), previousValue: event('previousValue') }`
         : 'event()'

@@ -146,7 +146,7 @@ async function save(): Promise<void> {
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="value => editor && (editor.active = value === true)" /><Label>{{ $t('uiText.activeNeuter76ddd792') }}</Label>
+          <Checkbox :checked="editor.active" :disabled="editor.readOnly" @update:checked="(value: unknown) => editor && (editor.active = value === true)" /><Label>{{ $t('uiText.activeNeuter76ddd792') }}</Label>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ describe('document create helpers', () => {
     const types = DOCUMENT_CREATE_DESCRIPTORS.map(item => item.type)
 
     expect(new Set(types).size).toBe(types.length)
-    expect(DOCUMENT_CREATE_DESCRIPTORS.find(item => item.type === 'integration')).toMatchObject({
+    expect(DOCUMENT_CREATE_DESCRIPTORS.find(item => item.type === 'update')).toMatchObject({
       supportsFolder: false,
       supportsDescription: true,
     })

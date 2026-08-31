@@ -32,6 +32,7 @@ export function resolveSourceReferenceDocumentTarget(
   }
 
   const fixedTargets = {
+    'action': { documentType: 'action', resolve: () => Endge.domain.getAction(reference.identity) },
     'auth-profile': { documentType: 'auth-profile', resolve: () => Endge.domain.getAuthProfile(reference.identity) },
     'composition': { documentType: 'composition', resolve: () => Endge.domain.getComposition(reference.identity) },
     'computation': { documentType: 'computation', resolve: () => Endge.domain.getComputation(reference.identity) },
@@ -40,7 +41,9 @@ export function resolveSourceReferenceDocumentTarget(
     'i18n-bundles': { documentType: 'i18n-bundles', resolve: () => Endge.domain.getI18nBundle(reference.identity) },
     'mock': { documentType: 'mock', resolve: () => Endge.domain.getMock(reference.identity) },
     'store': { documentType: 'store', resolve: () => Endge.domain.getStore(reference.identity) },
+    'stream': { documentType: 'stream', resolve: () => Endge.domain.getStream(reference.identity) },
     'style': { documentType: 'style', resolve: () => Endge.domain.getStyle(reference.identity) },
+    'update': { documentType: 'update', resolve: () => Endge.domain.getUpdate(reference.identity) },
     'vocabs': { documentType: 'vocabs', resolve: () => Endge.domain.getVocab(reference.identity) },
   } satisfies Record<
     Exclude<SourceDocumentReference['target'], 'query' | 'component' | 'filter' | 'type'>,

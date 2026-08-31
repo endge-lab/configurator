@@ -730,7 +730,7 @@ function applyFilter(): void {
                         {{ $t('uiText.expressionReadonlyB258bf34') }}
                       </div>
                       <Input
-                        :model-value="field.expression"
+                        :model-value="field.expression ?? ''"
                         disabled
                       />
                     </div>

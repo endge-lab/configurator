@@ -80,7 +80,8 @@ export function buildCompositionDropPlan(
   const existingDependencies = new Set([
     ...document.data.map(item => `data:${item.kind}:${item.identity}`),
     ...document.resources
-      .filter(item => item.scopePath === 'scope_default')
+      .filter((item): item is Extract<typeof item, { identity: string }> =>
+        item.scopePath === 'scope_default' && 'identity' in item)
       .map(item => `resources:${item.kind}:${item.identity}`),
   ])
   let duplicateCount = 0

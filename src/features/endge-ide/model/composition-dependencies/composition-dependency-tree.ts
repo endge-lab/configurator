@@ -8,6 +8,7 @@ import type {
 import type {
   DocumentDependencyDiagnostic,
   DocumentDependencyNode,
+  DocumentDependencyNodeKind,
   DocumentDependencyTreeResult,
 } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
 
@@ -363,15 +364,18 @@ function buildScopeContents(
   ancestors: Set<string>,
 ): CompositionDependencyNode[] {
   const result = payload.resources
-    .filter(item => item.scopePath === scopePath)
+    .filter((item): item is Extract<typeof item, { identity: string }> =>
+      item.scopePath === scopePath && 'identity' in item)
     .map(resource =>
       makeDocumentNode({
         id: `${occurrenceId}/resource:${resource.path}`,
         kind: 'resource',
         identity: resource.identity,
         alias: resource.name,
-        documentType: 'style',
-        exists: Boolean(Endge.domain.getStyle(resource.identity)),
+        documentType: resource.kind === 'i18n' ? 'i18n-bundles' : 'style',
+        exists: resource.kind === 'i18n'
+          ? Boolean(Endge.domain.getI18nBundle(resource.identity))
+          : Boolean(Endge.domain.getStyle(resource.identity)),
       }),
     )
 
@@ -506,7 +510,7 @@ function runtimeDocumentTarget(
 
 function makeDocumentNode(input: {
   id: string
-  kind: Exclude<CompositionDependencyNodeKind, 'scope'>
+  kind: Exclude<DocumentDependencyNodeKind, 'scope'>
   identity: string
   alias: string | null
   documentType: DomainDocumentType

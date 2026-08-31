@@ -710,6 +710,7 @@ export class EndgeIDETabs_Module {
 
   private _sourceReferenceLabel(target: SourceDocumentReference['target']): string {
     return {
+      'action': 'Action',
       'auth-profile': 'Auth profile',
       'component': 'Component',
       'composition': 'Composition',
@@ -722,7 +723,9 @@ export class EndgeIDETabs_Module {
       'query': 'Query',
       'store': 'Store',
       'style': 'Style',
+      'stream': 'Stream',
       'type': 'Type',
+      'update': 'Update',
       'vocabs': 'Vocab',
     }[target]
   }

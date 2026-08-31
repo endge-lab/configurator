@@ -30,7 +30,7 @@ describe('buildDomainTree', () => {
 
   it('places Mock directly after dictionaries in the Data root block', async () => {
     const { getDomainTreeRootBlocks } = await import('@/features/endge-ide/model/domain/domain-tree')
-    const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-mocks', 'root-integrations'])
+    const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-mocks', 'root-auth-profiles'])
 
     expect(blocks.map(block => block.title)).toEqual(['Контекст', 'Данные', 'Инфраструктура'])
     expect(blocks[1]?.rootIds).toEqual(['root-stores', 'root-vocabs', 'root-mocks'])

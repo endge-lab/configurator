@@ -39,7 +39,7 @@ export class ConfiguratorBootstrapError extends Error {
 
 /** Application-scoped federation and the only owner of Configurator boot. */
 export class Configurator {
-  private static readonly _modules: ConfiguratorModules = createConfiguratorModules()
+  private static readonly _modules: ConfiguratorModules = createConfiguratorModules(() => EndgeIDE.reset())
   private static _initialization: Promise<ConfiguratorStatus> | null = null
   private static _status: 'idle' | ConfiguratorStatus = 'idle'
   private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null

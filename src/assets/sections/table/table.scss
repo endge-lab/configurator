@@ -42,7 +42,7 @@ div[variant='secondary']:hover, div[variant='gray']:hover {
   background-color: #cfd0d3 !important;
 }
 
-// GREEN Cell
+/* GREEN Cell */
 div[variant='success'], div[variant='green'],
 .with-variant-color[variant='success'], .with-variant-color[variant='green'] {
   background-color: #c3efd7 !important;
@@ -153,7 +153,7 @@ td:has(span.row_id) {
 }
 
 .gh-time-table,
-.gh-time-table > .v-table__wrapper > table, {
+.gh-time-table > .v-table__wrapper > table {
   height: 100%;
 }
 
@@ -176,7 +176,7 @@ revogr-attribution {
 }
 
 .endge-table {
-  // хедеры
+  /* Заголовки */
   .header-content {
     justify-content: center !important;
     text-align: center !important;

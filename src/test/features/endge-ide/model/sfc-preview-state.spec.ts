@@ -58,10 +58,12 @@ interface CellProps { point?: Output }
 const props = defineProps<{ value?: string }>()
 definePreviewProps({ value: 'preview' })
 const ports = definePorts({
-  state: computation<Input, Output>({ default: 'preview-state' }),
-  cell: component<CellProps>({ tag: 'Preview.Cell', default: 'preview-cell' }),
+  require: {
+    state: computation<Input, Output>({ default: 'preview-state' }),
+    cell: component<CellProps>({ tag: 'Preview.Cell', default: 'preview-cell' }),
+  },
 })
-const state = ports.state({ value: props.value })
+const state = ports.require.state({ value: props.value })
 </script>
 <template><Preview.Cell :point="state.value" /></template>`,
     })

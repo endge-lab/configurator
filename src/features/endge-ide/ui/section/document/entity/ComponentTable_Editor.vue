@@ -812,7 +812,7 @@ watch(
                               ]"
                               :show-hint="false"
                               @update:model-value="
-                                (v) => addConverterToAccessor(acc, v)
+                                (v) => addConverterToAccessor(acc, String(v ?? ''))
                               "
                             >
                               <DropdownMenu>
@@ -863,7 +863,7 @@ watch(
                               : SORT_BY_OFF
                           "
                           @update:model-value="
-                            (v: string) => setSortBy(selectedColumn!, v)
+                            (v) => setSortBy(selectedColumn!, String(v ?? ''))
                           "
                         >
                           <SelectTrigger class="w-[180px]">
@@ -883,7 +883,7 @@ watch(
                           :model-value="selectedColumn!.sort?.type ?? 'String'"
                           :disabled="!selectedColumn!.sort"
                           @update:model-value="
-                            (v: string) => setSortType(selectedColumn!, v)
+                            (v) => setSortType(selectedColumn!, String(v ?? ''))
                           "
                         >
                           <SelectTrigger class="w-[130px]">
@@ -939,7 +939,7 @@ watch(
                               :accept-section-types="[DomainSectionType.Action]"
                               :show-hint="false"
                               @update:model-value="
-                                (v) => (ev.actionId = v ?? null)
+                                (v) => (ev.actionId = v == null ? null : String(v))
                               "
                             >
                               <Input
@@ -948,8 +948,7 @@ watch(
                                 "
                                 placeholder="actionId"
                                 @update:model-value="
-                                  (v) =>
-                                    (ev.actionId = v ? Number(v) || v : null)
+                                  (v) => (ev.actionId = v ? String(v) : null)
                                 "
                               />
                             </DomainEntityDropTarget>
@@ -1065,7 +1064,7 @@ watch(
                             size="icon"
                             variant="ghost"
                             class="text-destructive"
-                            @click="removeInputField(idx)"
+                            @click="removeInputField(Number(idx))"
                           >
                             <Trash2 class="size-4" />
                           </Button>

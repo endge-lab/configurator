@@ -1,6 +1,6 @@
 import type { FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
 
-import { DomainSectionType } from '@endge/core'
+import { ComponentType, DomainSectionType } from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
 import { attachResolvedActionTree } from '@/features/endge-ide/model/domain/domain-tree'
@@ -19,7 +19,7 @@ describe('domain resolved Actions tree', () => {
           identity: 'orders-table',
           name: 'Таблица заказов',
           type: 'file',
-          docType: 'component-sfc',
+          docType: ComponentType.SFC,
           sectionType: DomainSectionType.Component,
         }],
       },

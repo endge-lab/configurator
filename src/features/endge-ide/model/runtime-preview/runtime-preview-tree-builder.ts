@@ -171,13 +171,28 @@ function buildScopeContents(
 ): RuntimePreviewTreeNode[] {
   const result: RuntimePreviewTreeNode[] = []
   for (const resource of payload.resources.filter(item => item.scopePath === scopePath)) {
+    if (resource.kind === 'operation-history') {
+      result.push(makeNode({
+        id: `${compositionNodeId(address)}:resource:${resource.path}`,
+        parentId,
+        kind: 'resource',
+        title: resource.name,
+        entityType: resource.kind,
+        identity: resource.name,
+        composition: address,
+        scopePath,
+        resourcePath: resource.path,
+      }))
+      continue
+    }
+    const documentType = resource.kind === 'i18n' ? 'i18n-bundles' : 'style'
     result.push(makeNode({
       id: `${compositionNodeId(address)}:resource:${resource.path}`,
       parentId,
       kind: 'resource',
       entityType: resource.kind,
       identity: resource.identity,
-      ...domainNodeFields('style', resource.identity, resource.name),
+      ...domainNodeFields(documentType, resource.identity, resource.name),
       composition: address,
       scopePath,
       resourcePath: resource.path,

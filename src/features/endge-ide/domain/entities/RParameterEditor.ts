@@ -1,12 +1,6 @@
-import type { RParameter } from '@endge/core'
+import type { FilterFieldSchema, RParameter } from '@endge/core'
 
 /** Поле параметра (как в query.types). */
-interface ParameterFieldSchema {
-  key: string
-  label?: string
-  [key: string]: any
-}
-
 /** Ссылка на runtime-фильтр. */
 interface RuntimeFilterLinkItem {
   identity: string
@@ -22,14 +16,14 @@ export class RParameterEditor {
   identity!: string
   displayName!: string
   description?: string
-  fields: Map<string, ParameterFieldSchema> = new Map()
+  fields: Map<string, FilterFieldSchema> = new Map()
   runtimeFilters: RuntimeFilterLinkItem[] = []
 
   fillFromSource(source: RParameter): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
     this.displayName = String(source.displayName ?? '').trim()
-    this.description = source.description
+    this.description = source.description ?? undefined
     this.fields = new Map()
     for (const [k, v] of source.fields) {
       this.fields.set(k, { ...v })
@@ -42,7 +36,7 @@ export class RParameterEditor {
     source.identity = this.identity
     source.displayName = this.displayName
     source.name = this.displayName
-    source.description = this.description
+    source.description = this.description ?? null
     source.fields = new Map()
     for (const [k, v] of this.fields) {
       source.fields.set(k, { ...v })

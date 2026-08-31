@@ -1,4 +1,4 @@
-import { RField, RuntimeFilterLinkEntity } from '@endge/core'
+import { RField } from '@endge/core'
 import { TypeMap } from '@endge/utils'
 import { Expose, Type } from 'class-transformer'
 
@@ -27,9 +27,6 @@ export class RFieldEditor {
   @TypeMap(RFieldEditor, 'name')
   params: Map<string, RFieldEditor> = new Map()
 
-  @Expose({ name: 'runtime-filters' })
-  runtimeFilters: RuntimeFilterLinkEntity[] = new RuntimeFilterLinkEntity()
-
   addParam(name: string, type: RFieldEditor): void {
     this.params.set(name, type)
   }
@@ -43,8 +40,6 @@ export class RFieldEditor {
     source.type = this.type
     source.isArray = this.isArray
     source.optional = this.optional
-    source.runtimeFilters = this.runtimeFilters
-
     if (this.params && this.params.size > 0) {
       source.params = new Map()
       for (const [key, paramEditor] of this.params) {
@@ -63,8 +58,6 @@ export class RFieldEditor {
     this.type = source.type
     this.isArray = source.isArray
     this.optional = source.optional
-    this.runtimeFilters = source.runtimeFilters
-
     // гарантируем Map, даже если кто-то подсунул object
     this.params = new Map()
 

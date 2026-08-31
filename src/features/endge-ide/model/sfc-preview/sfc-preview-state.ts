@@ -246,8 +246,8 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
       kind: 'action' as const,
       identity: target.identity,
       active: target.active !== false && !target.deletedAt,
-      input: previewFieldContract(target.input),
-      output: previewFieldContract(target.output),
+      input: previewFieldContract(target.contract.input),
+      output: previewFieldContract(target.contract.output),
     }
   }
   if (target instanceof RQuery) {
@@ -263,14 +263,15 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
   return null
 }
 
-function previewFieldContract(field: { type: string, isArray?: boolean, optional?: boolean } | null | undefined) {
-  if (!field) {
+function previewFieldContract(field: unknown) {
+  if (!field || typeof field !== 'object' || !('type' in field) || typeof field.type !== 'string') {
     return null
   }
+  const contract = field as { type: string, isArray?: boolean, optional?: boolean }
   return {
-    type: field.type,
-    isArray: field.isArray === true,
-    optional: field.optional === true,
+    type: contract.type,
+    isArray: contract.isArray === true,
+    optional: contract.optional === true,
   }
 }
 

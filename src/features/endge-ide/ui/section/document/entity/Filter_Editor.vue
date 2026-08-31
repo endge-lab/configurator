@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor'
 
-import { Endge } from '@endge/core'
+import { Endge, FilterType } from '@endge/core'
 import {
   Code2,
   FileJson,
@@ -112,7 +112,7 @@ function updateOutputState(value: FilterOutputState): void {
     :document-id="editor.id"
     :identity="editor.identity"
     :display-name="editor.displayName"
-    document-type="default-filter"
+    :document-type="FilterType.DefaultFilter"
     :dependency-source="editor.source"
     :dependency-draft="editor"
   >

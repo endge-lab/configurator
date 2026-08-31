@@ -115,7 +115,7 @@ function label(slotId: string): string {
           :show-hint="false"
           class="min-h-0 flex flex-col p-1.5 bg-background border border-border/50 rounded-sm"
           :class="rowHeightClass(rowIdx)"
-          @entity-drop="({ id, sectionType }) => emit('drop', { slotId, id, sectionType })"
+          @entity-drop="({ id, sectionType }) => emit('drop', { slotId: String(slotId), id: String(id), sectionType })"
         >
           <div class="text-[10px] font-medium text-muted-foreground truncate mb-0.5">
             {{ label(slotId) }}

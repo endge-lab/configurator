@@ -2,6 +2,7 @@
 import type {
   ComponentSFCEventAction,
   ComponentSFCEventInputValue,
+  ComponentSFCEventOperationAction,
   ComponentSFCEventPort,
   ComponentSFCPortRole,
   QueryProgramPayload,
@@ -333,12 +334,28 @@ function serializeReaction(reaction: ComponentSFCEventAction): string {
   if (reaction.kind === 'emit') {
     return `emit(${JSON.stringify(reaction.event)}${reaction.payload ? `, ${serializeEventInput(reaction.payload)}` : ''})`
   }
+  if (reaction.kind === 'operation') {
+    const input = reaction.input ? `input: ${serializeEventInput(reaction.input)}, ` : ''
+    const redo = reaction.redo ? `, redo: ${serializeOperationBlock(reaction.redo)}` : ''
+    return `operation({ ${input}run: ${serializeOperationBlock(reaction.run)}, undo: ${serializeOperationBlock(reaction.undo)}${redo} })`
+  }
   return `ports.require.${reaction.port}(${reaction.input ? serializeEventInput(reaction.input) : '{}'})`
+}
+
+function serializeOperationBlock(block: ComponentSFCEventOperationAction['run']): string {
+  const steps = block.steps
+    .map(step => `${JSON.stringify(step.name)}: ${serializeReaction(step.action)}`)
+    .join(', ')
+  const output = block.output ? `, output: output(${JSON.stringify(block.output)})` : ''
+  return `{ steps: { ${steps} }${output} }`
 }
 
 function serializeEventInput(input: ComponentSFCEventInputValue): string {
   if (input.kind === 'event') {
     return input.path == null ? 'event()' : `event(${JSON.stringify(input.path)})`
+  }
+  if (input.kind === 'operation-input') {
+    return input.path == null ? 'input()' : `input(${JSON.stringify(input.path)})`
   }
   if (input.kind === 'now') {
     return 'now()'

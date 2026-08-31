@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref, shallowRef } from 'vue'
 
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/modules/runtime-preview/EndgeIDERuntimePreview_Module'
@@ -119,6 +119,10 @@ function createManager(): EndgeIDERuntimePreview_Module {
 
 describe('endgeIDE Runtime Preview manager', () => {
   beforeEach(() => {
+    vi.stubGlobal('location', {
+      origin: 'http://localhost:5173',
+      href: 'http://localhost:5173/',
+    })
     mocks.valid = true
     mocks.mockMode = false
     mocks.showWidget.mockReset()
@@ -138,6 +142,10 @@ describe('endgeIDE Runtime Preview manager', () => {
     mocks.leftArea.expanded = true
     mocks.leftArea.activeWidget = 'runtime-tree'
     mocks.authInteractionListener = null
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('passes the current editor draft to the stable runtime entry', async () => {

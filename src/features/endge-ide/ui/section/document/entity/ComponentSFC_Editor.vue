@@ -5,6 +5,7 @@ import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-s
 
 import {
   compileComponentSFC,
+  ComponentType,
   createComponentSFCAttributeContractsFromInputs,
   Endge,
   inspectComponentSFCVisual,
@@ -283,7 +284,7 @@ async function launchPreview(): Promise<void> {
     :document-id="editor.id"
     :identity="editor.identity"
     :display-name="editor.displayName || editor.name"
-    document-type="component-sfc"
+    :document-type="ComponentType.SFC"
     :dependency-source="editor.source"
     :dependency-draft="editor"
   >

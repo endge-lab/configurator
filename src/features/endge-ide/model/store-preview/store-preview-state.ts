@@ -94,6 +94,6 @@ export function createPreviewStoreArtifact(model: RStore): ProgramArtifact<Store
     dependencies,
     capabilities: ['compilable', 'executable', 'data-provider'],
     metadata: createEmptyProgramMetadata(),
-    payload: payload ?? { type: 'store', sourceVersion: model.sourceVersion, data: [] },
+    payload: payload ?? { type: 'store', sourceVersion: model.sourceVersion, data: [], updateHandlers: [] },
   }
 }

@@ -125,7 +125,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
         displayName: type.displayName,
         category: type.category,
         definition: type.definition,
-        entityReference: type.entityReference,
+        entityReference: 'entityReference' in type ? type.entityReference : undefined,
       })),
     }
   }

@@ -23,7 +23,7 @@ import { DomainVersions_Module } from '@/features/domain-version/model/DomainVer
 import { getEndgeBackendConfig } from '@/features/endge-ide/model/config/endge-backend'
 
 /** Creates the single application-scoped module graph. */
-export function createConfiguratorModules(): ConfiguratorModules {
+export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>): ConfiguratorModules {
   const backendConfig = getEndgeBackendConfig()
   const connections = new BackendConnections_Module(
     backendConfig.primaryBackendURL,
@@ -43,9 +43,7 @@ export function createConfiguratorModules(): ConfiguratorModules {
     diagnostics: new ConfiguratorDiagnostics_Module(
       CONFIGURATOR_DIAGNOSTICS_CONFIG,
       () => {
-        void import('@/features/endge-ide/model/kernel/endge-ide')
-          .then(({ EndgeIDE }) => EndgeIDE.reset())
-          .catch(() => undefined)
+        void resetEndgeIDE().catch(() => undefined)
       },
       new ConfiguratorDiagnosticsStorage_Adapter(),
     ),

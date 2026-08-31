@@ -1,5 +1,6 @@
 import type {
   ComponentSFCPreviewProps,
+  EndgeRuntimeContextSnapshot,
   RComponentSFC_AST_Attribute,
   RComponentSFC_AST_ElementNode,
   RComponentSFC_AST_TemplateNode,
@@ -17,7 +18,13 @@ import type {
   UIEditorSourceNodeLocations,
 } from '@/features/endge-admin-ui-editor/types'
 
-import { compileComponentSFC, Endge, parseComponentSFC } from '@endge/core'
+import {
+  compileComponentSFC,
+  createDefaultEndgeConfiguration,
+  createEndgePublicConfigurationSnapshot,
+  Endge,
+  parseComponentSFC,
+} from '@endge/core'
 import { evaluateSFCExpression } from '@endge/ui-vue'
 
 import { printUIEditorDocumentSFC, printUIEditorDocumentTemplate } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-jsx'
@@ -591,7 +598,7 @@ function formatPreviewValue(value: unknown): string {
 function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | null): SFCVueRenderContext {
   return {
     props: materializeLiteralPreviewProps(previewProps),
-    context: Object.freeze(Endge.context.serialize()),
+    context: createPreviewRuntimeContext(),
     locals: {},
     iteration: null,
     renderVersion: 0,
@@ -607,6 +614,21 @@ function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | nul
     metadata: null,
     tooltipManager: null,
   }
+}
+
+/** Создаёт runtime context для preview до и после разрешения workspace-конфигурации. */
+function createPreviewRuntimeContext(): Readonly<EndgeRuntimeContextSnapshot> {
+  if (Endge.configuration.isResolved) {
+    return Object.freeze(Endge.context.runtimeSnapshot())
+  }
+
+  return Object.freeze({
+    ...Endge.context.serialize(),
+    config: createEndgePublicConfigurationSnapshot(createDefaultEndgeConfiguration()),
+    input: {
+      keyboard: Endge.context.getKeyboardState(),
+    },
+  })
 }
 
 function materializeLiteralPreviewProps(previewProps: ComponentSFCPreviewProps | null): Record<string, unknown> {

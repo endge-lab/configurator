@@ -21,7 +21,7 @@ vi.mock('@endge/core', async importOriginal => ({
       getCompositions: () => compositions,
     },
     program: {
-      getCompositionArtifact: (identity: string) => artifacts.get(identity) ?? null,
+      getArtifact: (type: string, identity: string) => type === 'composition' ? artifacts.get(identity) ?? null : null,
     },
   },
 }))
@@ -62,7 +62,7 @@ describe('runtime Preview tree builder', () => {
     expect(entry?.children.map(node => node.kind)).toEqual(['resource', 'runtime', 'scope'])
     expect(entry).toMatchObject({
       title: 'Entry',
-      presentation: { icon: 'Network', colorClass: 'text-sky-500' },
+      presentation: { icon: 'Network', colorClass: 'text-violet-500' },
     })
     expect(entry?.children[0]).toMatchObject({
       title: 'Airport theme',

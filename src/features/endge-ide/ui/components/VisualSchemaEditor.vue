@@ -458,11 +458,11 @@ function expandAll(): void {
 
 function normalizePanelSizes(sizes: readonly number[], panelCount: number): number[] {
   if (sizes.length !== panelCount || sizes.some(size => !Number.isFinite(size) || size <= 0)) {
-    return Array.from({ length: panelCount }).fill(1 / panelCount)
+    return Array.from<number>({ length: panelCount }).fill(1 / panelCount)
   }
   const total = sizes.reduce((sum, size) => sum + size, 0)
   if (total <= 0) {
-    return Array.from({ length: panelCount }).fill(1 / panelCount)
+    return Array.from<number>({ length: panelCount }).fill(1 / panelCount)
   }
   return sizes.map(size => size / total)
 }

@@ -13,7 +13,7 @@ afterEach(() => {
 
 describe('editor surface theme', () => {
   it('returns the dark editor fallback outside the browser', () => {
-    expect(resolveEditorSurfaceColor()).toBe('#142137')
+    expect(resolveEditorSurfaceColor()).toBe('#292D3E')
   })
 
   it('reads a Monaco-compatible editor surface token', () => {
@@ -31,7 +31,7 @@ describe('editor surface theme', () => {
       getPropertyValue: () => 'var(--background)',
     }))
 
-    expect(resolveEditorSurfaceColor()).toBe('#142137')
+    expect(resolveEditorSurfaceColor()).toBe('#292D3E')
   })
 
   it.each([

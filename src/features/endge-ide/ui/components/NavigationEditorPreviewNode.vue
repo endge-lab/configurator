@@ -36,7 +36,7 @@ function toggle(): void {
         </span>
       </span>
       <span class="text-xs text-muted-foreground">
-        {{ openedIds.has(node.id) ? открыть : закрыть }}
+        {{ openedIds.has(node.id) ? $t('uiText.close4ae50d30') : $t('uiText.open1259571a') }}
       </span>
     </button>
 

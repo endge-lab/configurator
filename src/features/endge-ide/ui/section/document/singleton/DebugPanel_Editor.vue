@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { Bug } from 'lucide-vue-next'
-
-// import TimelineDebug from '@/features/endge-admin/app/timeline-debug/TimelineDebug.vue'
 </script>
 
 <template>
@@ -18,9 +16,7 @@ import { Bug } from 'lucide-vue-next'
         </div>
       </div>
 
-      <div class="flex-1 min-h-0">
-        <!--        <TimelineDebug /> -->
-      </div>
+      <div class="flex-1 min-h-0" />
     </div>
   </div>
 </template>

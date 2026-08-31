@@ -13,10 +13,11 @@ interface PopoverCtx {
 }
 
 const attrs = useAttrs()
-const popover = inject<PopoverCtx>('popover')
-if (!popover) {
+const injectedPopover = inject<PopoverCtx>('popover')
+if (!injectedPopover) {
   throw new Error('PopoverContent must be used inside Popover')
 }
+const popover: PopoverCtx = injectedPopover
 
 const contentEl = ref<HTMLElement | null>(null)
 const style = ref<Record<string, string>>({})
