@@ -2,7 +2,7 @@
  * Дублирование сущности домена: получение по docType и полная копия через duplicate() / duplicateComponent().
  */
 
-import type { DomainDocumentType, EndgeDomain } from '@endge/core'
+import type { DomainDocumentType, EndgeDomain_Module } from '@endge/core'
 
 import {
   ComponentType,
@@ -21,7 +21,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
  * Возвращает сущность домена по id и типу документа.
  */
 export function getEntityByDocType(
-  domain: EndgeDomain,
+  domain: EndgeDomain_Module,
   id: string | number,
   docType: DomainDocumentType,
 ): unknown {

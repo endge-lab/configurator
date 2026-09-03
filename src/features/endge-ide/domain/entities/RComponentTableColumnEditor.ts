@@ -1,10 +1,16 @@
-import type { AccessorDescriptor, ColumnComponentType, ColumnSortConfig, EndgeEventBinding, RComponentTableColumn } from '@endge/core'
+import type { ColumnComponentType, ColumnSortConfig, EndgeEventBinding, RComponentTableColumn } from '@endge/core'
 import {
   RComponentTableColumn_isComponent,
   RComponentTableColumn_isHtml,
   RComponentTableColumn_TypeCtor,
 } from '@endge/core'
 import { randomString } from '@endge/utils'
+
+interface TableColumnAccessorEditor {
+  name: string
+  accessor: string
+  converter?: string
+}
 
 function normalizeRelationId(value: unknown): number | null {
   if (value == null) {
@@ -41,7 +47,7 @@ export class RComponentTableColumnEditor {
   pin: 'left' | 'right' | 'none' = 'none'
 
   // Новый массив accessors
-  accessors: AccessorDescriptor[] = []
+  accessors: TableColumnAccessorEditor[] = []
 
   /** Индекс строки привязки данных (dataPaths), на которой фокус - для инспектора */
   selectedAccessorIndex: number = 0

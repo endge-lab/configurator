@@ -29,7 +29,7 @@ describe('configurator data mode repository', () => {
     expect(repository.read('https://backend-b.test', 'workspace-a')).toBe('live')
   })
 
-  it('clears the override so EndgeContext can return to the Workspace default', () => {
+  it('clears the override so EndgeContext_Module can return to the Workspace default', () => {
     const repository = new ConfiguratorDataModeRepository()
     repository.write('https://backend.test', 'workspace-a', 'mock')
 

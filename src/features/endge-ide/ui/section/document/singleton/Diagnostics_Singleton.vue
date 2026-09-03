@@ -2,7 +2,7 @@
 import { Endge } from '@endge/core'
 import { useSubscribableRefAuto } from '@endge/ui-vue'
 /**
- * Вкладка «Диагностика» показывает bounded session, которую хранит EndgeDiagnostics.
+ * Вкладка «Диагностика» показывает bounded session, которую хранит EndgeDiagnostics_Module.
  * Компонент не меняет core records и отвечает только за presentation layer.
  */
 import { Activity, Eraser } from 'lucide-vue-next'

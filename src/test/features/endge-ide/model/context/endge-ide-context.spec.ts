@@ -211,7 +211,7 @@ describe('endgeIDE context', () => {
     })
   })
 
-  it('persists the Configurator override outside Core and applies it to EndgeContext', () => {
+  it('persists the Configurator override outside Core and applies it to EndgeContext_Module', () => {
     const listener = vi.fn()
     const off = context.subscribe(listener)
 
