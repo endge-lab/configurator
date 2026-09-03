@@ -18,7 +18,7 @@ import {
 import { defineAsyncComponent } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 import { buildExtractComponentFolderOptions } from './extract-component.folders'
 import {

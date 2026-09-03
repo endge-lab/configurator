@@ -2,9 +2,9 @@
 import type { NavigationTreeNodeEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor'
 
 import { computed, ref, watch } from 'vue'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import NavigationEditorPreviewNode from '@/features/endge-ide/ui/components/NavigationEditorPreviewNode.vue'
+import { Badge } from '@/shared/ui/badge'
+import { ScrollArea } from '@/shared/ui/scroll-area'
 
 const props = defineProps<{
   tree?: NavigationTreeNodeEditor[]

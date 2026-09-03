@@ -4,8 +4,8 @@ import type { NavigationTreeNodeEditor, NavigationTreeNodeType } from '@/feature
 import { ChevronDown, ChevronRight, FolderTree, Link2, Plus, PlusSquare } from 'lucide-vue-next'
 import { ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const props = defineProps<{
   node: NavigationTreeNodeEditor

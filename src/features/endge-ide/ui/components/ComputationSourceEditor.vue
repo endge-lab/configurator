@@ -3,7 +3,7 @@ import type * as Monaco from 'monaco-editor'
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { runComputationSourcePreview } from '@/features/endge-ide/model/computation-preview/computation-source-preview'
+import { runComputationSourcePreview } from '@/features/endge-ide/services/computation-preview/computation-source-preview'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'

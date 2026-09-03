@@ -14,22 +14,22 @@ import type {
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
+import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
+import { useBackendVersions } from '@/features/backend-connections/ui/use-backend-versions'
+import { DomainVersionBadge, useDomainVersions } from '@/features/domain-version'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/shared/ui/dialog'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
-import { useBackendVersions } from '@/features/backend-connections/ui/use-backend-versions'
-import { DomainVersionBadge, useDomainVersions } from '@/features/domain-version'
+} from '@/shared/ui/tooltip'
 
 type ServiceVersionRowStatus = 'available' | 'loading' | 'unavailable'
 

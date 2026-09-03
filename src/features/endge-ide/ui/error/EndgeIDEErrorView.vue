@@ -3,16 +3,16 @@ import { ChevronDown, RefreshCw, ServerCrash } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useLayout } from '@/app/tools/layout.ts'
+import { Button } from '@/shared/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty'
-import { useLayout } from '@/lib/layout.ts'
+} from '@/shared/ui/empty'
 
 const props = defineProps<{
   isNotFound?: boolean

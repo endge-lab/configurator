@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeft, LogIn, ShieldAlert } from 'lucide-vue-next'
 
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
 
 const requirement = Configurator.authenticationRequirement
 const canSwitchToPrimary = !Configurator.connections.isPrimaryActive

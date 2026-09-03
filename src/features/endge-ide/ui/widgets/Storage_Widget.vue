@@ -2,10 +2,10 @@
 import { Raph } from '@endge/raph'
 import { computed, ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import LazyJsonNode from '@/features/endge-ide/ui/widgets/components/LazyJsonNode.vue'
+import { Button } from '@/shared/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
+import { ScrollArea } from '@/shared/ui/scroll-area'
 
 /** Реактивный снимок Raph.data для отображения (обновляется по кнопке). */
 const storageSnapshot = ref<Record<string, unknown>>({})

@@ -1,0 +1,7 @@
+export { default as Card } from '@/shared/ui/card/Card.vue'
+export { default as CardAction } from '@/shared/ui/card/CardAction.vue'
+export { default as CardContent } from '@/shared/ui/card/CardContent.vue'
+export { default as CardDescription } from '@/shared/ui/card/CardDescription.vue'
+export { default as CardFooter } from '@/shared/ui/card/CardFooter.vue'
+export { default as CardHeader } from '@/shared/ui/card/CardHeader.vue'
+export { default as CardTitle } from '@/shared/ui/card/CardTitle.vue'

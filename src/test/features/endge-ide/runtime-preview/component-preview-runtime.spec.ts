@@ -3,7 +3,7 @@ import type { ComponentSFCPreviewProps } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { resolveComponentPreviewInput } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
+import { resolveComponentPreviewInput } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 
 const STORE_PATH = 'test.runtimePreview.store.items'
 const LOCAL_PATH = 'test.runtimePreview.local'

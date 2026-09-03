@@ -1,10 +1,10 @@
+import type { DomainVersionHttp_Adapter } from '@/features/domain-version/adapters/DomainVersionHttp_Adapter'
 import type { DomainStatus } from '@/features/domain-version/domain/types/domain-version.type'
-import type { DomainVersionHttp_Adapter } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { DomainVersionServiceError } from '@/features/domain-version/model/adapters/DomainVersionHttp_Adapter'
-import { DomainVersions_Module } from '@/features/domain-version/model/DomainVersions_Module'
+import { DomainVersionServiceError } from '@/features/domain-version/adapters/DomainVersionHttp_Adapter'
+import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_Module'
 
 const target = { backendURL: 'https://test.example.com', workspace: 'default' }
 

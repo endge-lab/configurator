@@ -1,6 +1,6 @@
 import type { AIClarification, AIClarificationCandidate } from '@/features/ai-assistant/domain/types'
 import { describe, expect, it } from 'vitest'
-import { buildClarificationRunLinkage } from '@/features/ai-assistant/model/clarification'
+import { buildClarificationRunLinkage } from '@/features/ai-assistant/services/clarification'
 
 const clarification: AIClarification = {
   id: 'clarification-1',

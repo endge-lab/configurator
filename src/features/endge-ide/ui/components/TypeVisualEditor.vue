@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
 
 import { computed } from 'vue'
 
 import {
   parseTypeVisualSource,
   serializeTypeSourceDocument,
-} from '@/features/endge-ide/model/type-visual-editor'
+} from '@/features/endge-ide/services/type-visual-editor'
 import VisualSchemaEditor from '@/features/endge-ide/ui/components/VisualSchemaEditor.vue'
 
 const props = defineProps<{

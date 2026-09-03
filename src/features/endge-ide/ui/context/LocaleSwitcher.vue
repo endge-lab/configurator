@@ -4,13 +4,13 @@ import { useCurrentLocale } from '@endge/ui-vue'
 import { ChevronsUpDown } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/shared/ui/dropdown-menu'
 
 const { current, setCurrent } = useCurrentLocale()
 const workspaceVersion = ref(0)

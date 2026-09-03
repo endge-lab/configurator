@@ -7,7 +7,7 @@ import {
   ConfiguratorSessionHttp_Adapter,
   startConfiguratorLogin,
 } from '@/features/configurator-session'
-import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX } from '@/features/configurator-session/model/config/configurator-session'
+import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX } from '@/features/configurator-session/config/configurator-session'
 
 const BACKEND_URL = 'https://backend.test'
 const CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY

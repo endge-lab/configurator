@@ -1,1 +1,1 @@
-export { Configurator, ConfiguratorBootstrapError } from '@/app/model/kernel/configurator'
+export { Configurator, ConfiguratorBootstrapError } from '@/app/Configurator'

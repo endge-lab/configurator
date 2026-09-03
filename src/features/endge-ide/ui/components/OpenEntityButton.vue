@@ -4,9 +4,9 @@ import { ComponentType, DomainSectionType, Endge, FilterType } from '@endge/core
 import { ExternalLink } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const props = defineProps<{
   /** ID сущности домена */

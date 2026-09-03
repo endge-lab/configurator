@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
+import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 
 import { ChevronsDownUp, ChevronsUpDown, ListCollapse, Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   collectRuntimeTreeExpansion,
   createRuntimeTreeStructure,
   readRuntimeTreeViewState,
   runtimeTreeViewStorageKey,
   writeRuntimeTreeViewState,
-} from '@/features/endge-ide/model/runtime-preview/runtime-tree-view-state'
+} from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 import RuntimeTreeNode from '@/features/endge-ide/ui/widgets/components/RuntimeTreeNode.vue'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 interface RuntimeContextMenu {
   entryKey: string

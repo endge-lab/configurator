@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref, shallowRef } from 'vue'
 
-import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/model/modules/runtime-preview/EndgeIDERuntimePreview_Module'
+import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
 
 const mocks = vi.hoisted(() => ({
   valid: true,
@@ -55,25 +55,25 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-auth', () => ({
+vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-auth', () => ({
   collectRuntimePreviewAuthProfiles: () => mocks.runtimeAuthProfiles,
 }))
 
 vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError, warning: mocks.toastWarning } }))
-vi.mock('@/components/layouts/grid/layout', () => ({
+vi.mock('@/app/ui/layouts/grid/layout', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
 }))
-vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-history', () => ({
+vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-history', () => ({
   readRuntimePreviewHistory: mocks.readHistory,
   writeRuntimePreviewHistory: mocks.writeHistory,
 }))
-vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard', () => ({
+vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-context-guard', () => ({
   validateRuntimePreviewContext: () => mocks.valid
     ? { valid: true }
     : { valid: false, message: 'Context mismatch', description: 'Switch context first' },
 }))
-vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-instance', () => ({
+vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-instance', () => ({
   RuntimePreviewInstance: class RuntimePreviewInstance {
     public key: string
     public tree = shallowRef<any[]>([])

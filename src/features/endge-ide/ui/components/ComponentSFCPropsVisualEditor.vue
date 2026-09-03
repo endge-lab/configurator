@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TypeSourceDocument } from '@endge/core'
-import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
 
 import {
   inspectComponentSFCProps,
@@ -10,13 +10,13 @@ import { Code2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
 import {
   collectComponentSFCPropTypeIdentities,
   componentSFCPropsToVisualDocument,
   visualDocumentToComponentSFCProps,
-} from '@/features/endge-ide/model/component-sfc-editor/component-sfc-props-visual'
+} from '@/features/endge-ide/services/component-sfc-editor/component-sfc-props-visual'
 import VisualSchemaEditor from '@/features/endge-ide/ui/components/VisualSchemaEditor.vue'
+import { Button } from '@/shared/ui/button'
 
 const props = defineProps<{
   source: string

@@ -2,14 +2,14 @@
 import { Loader2, Plug, Save } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(() => tabs.documentEditorModel.value as { id: number | string, identity: string, displayName: string, description: string } | null ?? null)

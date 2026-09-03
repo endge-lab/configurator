@@ -9,7 +9,7 @@ import { getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
 import { FileCode2, Plus, Trash2 } from 'lucide-vue-next'
 import { nextTick, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 
 import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'

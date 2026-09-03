@@ -4,13 +4,13 @@ import type { EndgeJSONValue, TypeProgramCatalogEntry } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'
 
-import SearchableSelect from '@/components/ui/searchable-select/SearchableSelect.vue'
 import {
   getConfigurationReferenceDropKinds,
   getConfigurationReferenceOptions,
   getConfigurationReferenceSectionTypes,
-} from '@/features/endge-ide/model/config/configuration-reference-options'
+} from '@/features/endge-ide/config/configuration-reference-options'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import SearchableSelect from '@/shared/ui/searchable-select/SearchableSelect.vue'
 
 const props = defineProps<{
   modelValue: EndgeJSONValue

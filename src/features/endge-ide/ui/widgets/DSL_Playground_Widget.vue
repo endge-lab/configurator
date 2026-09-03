@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
+import { Label } from '@/shared/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
-import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
-import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
+} from '@/shared/ui/select'
 
 const DSL_DEMO_OPTIONS: { id: string, label: string, jsx: string }[] = [
   { id: 'text', label: 'Text', jsx: '<Text bold color="#d32f2f" size="16">Привет, мир</Text>' },

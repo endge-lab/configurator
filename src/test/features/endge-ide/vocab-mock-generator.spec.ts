@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   commitVocabMockGeneration,
   prepareVocabMockGeneration,
-} from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
+} from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 
 describe('vocab Mock generator', () => {
   afterEach(() => {

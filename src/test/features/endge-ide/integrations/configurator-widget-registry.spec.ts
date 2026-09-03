@@ -8,8 +8,8 @@ import {
   getWidget,
   getWidgetInstances,
   unregisterAllWidgets,
-} from '@/components/layouts/grid/layout'
-import { ConfiguratorWidgetRegistry } from '@/features/endge-ide/model/modules/integrations/ConfiguratorWidgetRegistry'
+} from '@/app/ui/layouts/grid/layout'
+import { ConfiguratorWidgetRegistry } from '@/features/endge-ide/modules/integrations/ConfiguratorWidgetRegistry'
 
 const context: IntegrationContext = {
   integrationId: -1,

@@ -2,7 +2,7 @@
 import { DomainSectionType } from '@endge/core'
 import { computed, ref } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const props = withDefaults(
   defineProps<{

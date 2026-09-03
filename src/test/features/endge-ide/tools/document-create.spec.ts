@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DOCUMENT_CREATE_DESCRIPTORS } from '@/features/endge-ide/model/config/document-create'
+import { DOCUMENT_CREATE_DESCRIPTORS } from '@/features/endge-ide/config/document-create'
 import { suggestDocumentIdentity } from '@/features/endge-ide/tools/document-create'
 
 describe('document create helpers', () => {

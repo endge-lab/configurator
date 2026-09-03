@@ -14,17 +14,17 @@ import {
 import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { resolveConfigValueEditor } from '@/features/endge-ide/config/ConfigValueEditorRegistry'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { resolveConfigValueEditor } from '@/features/endge-ide/model/config/ConfigValueEditorRegistry'
+} from '@/shared/ui/select'
+import { Switch } from '@/shared/ui/switch'
 
 import ConfigurationJSONEditor from './ConfigurationJSONEditor.vue'
 import ConfigurationReferenceValueEditor from './ConfigurationReferenceValueEditor.vue'

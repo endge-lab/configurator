@@ -3,7 +3,7 @@ import { Building2, ChevronRight, LogOut, ServerOff } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
 
 const workspaces = computed(() => Configurator.workspaceSelection)
 const logoutPending = ref(false)

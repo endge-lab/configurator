@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RComponentDiagnostic } from '@endge/core'
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
 
 import {
   compileComponentSFCLocalEventAction,
@@ -12,13 +12,13 @@ import { useDomainStore } from '@endge/ui-vue'
 import { ChevronDown, Plus, Save, Trash2, X } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
-import { Label } from '@/components/ui/label'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { Collapsible, CollapsibleContent } from '@/shared/ui/collapsible'
+import { Label } from '@/shared/ui/label'
+import { SearchableSelect } from '@/shared/ui/searchable-select'
+import { Textarea } from '@/shared/ui/textarea'
 
 const props = withDefaults(defineProps<{
   modelValue: string | null

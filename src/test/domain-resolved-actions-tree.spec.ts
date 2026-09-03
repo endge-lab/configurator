@@ -1,9 +1,9 @@
-import type { FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
+import type { FsFolderNode, FsNode } from '@/features/endge-ide/services/domain/domain-tree'
 
 import { ComponentType, DomainSectionType } from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
-import { attachResolvedActionTree } from '@/features/endge-ide/model/domain/domain-tree'
+import { attachResolvedActionTree } from '@/features/endge-ide/services/domain/domain-tree'
 
 describe('domain resolved Actions tree', () => {
   it('keeps persisted Actions in place and groups virtual origins', () => {

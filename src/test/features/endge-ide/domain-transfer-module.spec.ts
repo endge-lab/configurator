@@ -4,7 +4,7 @@ import type {
   ServiceBackendDomainTransferAdapter,
 } from '@/features/endge-ide/domain/types/domain-transfer.type'
 import { describe, expect, it, vi } from 'vitest'
-import { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/model/modules/domain-transfer/EndgeIDEDomainTransfer_Module'
+import { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/modules/EndgeIDEDomainTransfer_Module'
 
 const plan: ServiceBackendDomainImportPlan = {
   valid: true,

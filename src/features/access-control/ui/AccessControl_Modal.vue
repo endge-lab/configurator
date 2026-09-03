@@ -5,8 +5,8 @@ import { Endge } from '@endge/core'
 import { KeyRound, Loader2, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Configurator } from '@/app/model/kernel/configurator'
-import { Button } from '@/components/ui/button'
+import { Configurator } from '@/app/Configurator'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 const openState = ref(false)
 const activeTab = ref('workspace')

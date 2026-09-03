@@ -8,12 +8,12 @@ import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { Activity, Eraser } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { buildDiagnosticsTree } from '@/features/endge-ide/model/diagnostics/diagnostics-tree'
+import { buildDiagnosticsTree } from '@/features/endge-ide/services/diagnostics/diagnostics-tree'
 import LogTree from '@/features/endge-ide/ui/components/LogTree.vue'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
+import { ScrollArea } from '@/shared/ui/scroll-area'
 
 const telemetryRef = useSubscribableRefAuto(Endge.diagnostics.telemetry)
 const problemsRef = useSubscribableRefAuto(Endge.diagnostics.problems)

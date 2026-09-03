@@ -2,7 +2,7 @@ import type { DomainVersionTarget } from '@/features/domain-version/domain/types
 
 import { onScopeDispose, ref } from 'vue'
 
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
 
 export function useDomainVersions() {
   const revision = ref(0)

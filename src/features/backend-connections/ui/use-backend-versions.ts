@@ -2,7 +2,7 @@ import type { BackendVersionState } from '@/features/backend-connections/domain/
 
 import { onScopeDispose, ref } from 'vue'
 
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
 
 export function useBackendVersions() {
   const revision = ref(0)

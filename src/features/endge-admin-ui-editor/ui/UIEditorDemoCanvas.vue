@@ -8,13 +8,13 @@ import { SFCRenderInspectionSession } from '@endge/core'
 import { AlertTriangle, Code2, GripVertical, LoaderCircle, MousePointer2, Play, RefreshCw, Settings2, Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import EndgeAdapterRoot from '@/components/endge/EndgeAdapterRoot'
-import { Button } from '@/components/ui/button'
 import { isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
 import { getUIEditorSFCSourceTag } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 import UIEditorDemoRuntimeInspector from '@/features/endge-admin-ui-editor/ui/UIEditorDemoRuntimeInspector.vue'
+import { Button } from '@/shared/ui/button'
+import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
 
 interface CanvasRect {
   left: number

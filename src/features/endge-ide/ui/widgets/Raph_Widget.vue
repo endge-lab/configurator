@@ -3,12 +3,12 @@ import type { RaphPhase } from '@endge/raph'
 import { Raph } from '@endge/raph'
 import { onBeforeUnmount, onMounted, ref, triggerRef } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import RaphTreeItem from '@/features/endge-ide/ui/widgets/components/RaphTreeItem.vue'
-import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
+import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { Button } from '@/shared/ui/button'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 /** Дерево узлов (Raph.debug.getTree()) */
 interface NodeTree {

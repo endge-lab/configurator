@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { validateRuntimePreviewContext } from '@/features/endge-ide/model/runtime-preview/runtime-preview-context-guard'
+import { validateRuntimePreviewContext } from '@/features/endge-ide/services/runtime-preview/runtime-preview-context-guard'
 
 const state = vi.hoisted(() => ({
   switching: false,

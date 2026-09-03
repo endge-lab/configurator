@@ -10,11 +10,11 @@ import type {
   DragPayloadItem,
   FolderDeletionPlan,
   FolderDragPayloadItem,
-} from '@/features/endge-ide/model/domain/domain-drag-drop'
-import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/model/domain/domain-tree'
-import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/model/domain/domain-tree-working-set'
+} from '@/features/endge-ide/services/domain/domain-drag-drop'
+import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/services/domain/domain-tree'
+import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/services/domain/domain-tree-working-set'
 
-import type { PreparedVocabMockGeneration } from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
+import type { PreparedVocabMockGeneration } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
@@ -72,20 +72,14 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { toast } from 'vue-sonner'
-import { Configurator } from '@/app/model/kernel/configurator'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/model/domain-working-set/domain-working-set-persistence'
-import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/model/domain-working-set/endge-domain-working-set-graph'
+import { Configurator } from '@/app/Configurator'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
-} from '@/features/endge-ide/model/domain/domain-document-presentation'
+} from '@/features/endge-ide/services/domain/domain-document-presentation'
 import {
   canDelete,
   createSubfolder as createDomainSubfolder,
@@ -94,8 +88,8 @@ import {
   deleteFolderRecursively,
   executeDrop,
   getDropFolderId,
-} from '@/features/endge-ide/model/domain/domain-drag-drop'
-import { buildEventCatalogRoot } from '@/features/endge-ide/model/domain/domain-event-catalog'
+} from '@/features/endge-ide/services/domain/domain-drag-drop'
+import { buildEventCatalogRoot } from '@/features/endge-ide/services/domain/domain-event-catalog'
 import {
   attachResolvedActionTree,
   attachResolvedTypeTree,
@@ -106,21 +100,27 @@ import {
   getRootFolderOrder,
   ROOT_FOLDER_LABELS,
   withoutDeleted,
-} from '@/features/endge-ide/model/domain/domain-tree'
+} from '@/features/endge-ide/services/domain/domain-tree'
 import {
   domainFileNodeToWorkingSetRef,
   groupDomainWorkingSetItems,
   projectDomainWorkingSetItems,
-} from '@/features/endge-ide/model/domain/domain-tree-working-set'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
+} from '@/features/endge-ide/services/domain/domain-tree-working-set'
+import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 import {
   commitVocabMockGeneration,
 
   prepareVocabMockGeneration,
-} from '@/features/endge-ide/model/vocab-mock/vocab-mock-generator'
+} from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
-import { useSafeLocalStorage } from '@/lib/use-safe-local-storage'
+import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { Button } from '@/shared/ui/button'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 

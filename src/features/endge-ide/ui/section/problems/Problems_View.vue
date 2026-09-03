@@ -5,13 +5,13 @@ import type { Component } from 'vue'
 import { Bug, CircleCheck, ExternalLink, ShieldAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { showWidget } from '@/components/layouts/grid'
-import { getIconComponent } from '@/components/layouts/grid/icons'
-import { Button } from '@/components/ui/button'
-import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
-import { getDomainDocumentPresentation } from '@/features/endge-ide/model/domain/domain-document-presentation'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { showWidget } from '@/app/ui/layouts/grid'
+import { getIconComponent } from '@/app/ui/layouts/grid/icons'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
+import { getDomainDocumentPresentation } from '@/features/endge-ide/services/domain/domain-document-presentation'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import { Button } from '@/shared/ui/button'
 
 const problems = EndgeIDE.problems
 const selectedEntry = computed(() => problems.selectedEntry.value)

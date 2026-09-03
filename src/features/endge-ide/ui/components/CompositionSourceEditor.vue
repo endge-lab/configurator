@@ -8,19 +8,19 @@ import type {
   CompositionDropDescriptor,
   CompositionDropPayloadItem,
   CompositionDropPlan,
-} from '@/features/endge-ide/model/composition-source-drop'
+} from '@/features/endge-ide/services/composition-source-drop'
 
 import { Endge } from '@endge/core'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { resolveCompositionI18nContext } from '@/features/endge-ide/model/composition-i18n-hints/composition-i18n-context'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { resolveCompositionI18nContext } from '@/features/endge-ide/services/composition-i18n-hints/composition-i18n-context'
 import {
   buildCompositionDropPlan,
   resolveCompositionDropDescriptor,
-} from '@/features/endge-ide/model/composition-source-drop'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+} from '@/features/endge-ide/services/composition-source-drop'
 import { createCompositionRuntimePropsContribution } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 

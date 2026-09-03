@@ -3,14 +3,14 @@ import { Copy } from 'lucide-vue-next'
 import { computed, useAttrs } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/shared/ui/tooltip'
 
 defineOptions({ inheritAttrs: false })
 

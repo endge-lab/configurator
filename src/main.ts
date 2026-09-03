@@ -1,17 +1,17 @@
 /* eslint-disable perfectionist/sort-imports -- Configurator registers Endge plugins before UI modules are evaluated */
-import { Configurator } from '@/app/model/kernel/configurator'
+import { Configurator } from '@/app/Configurator'
 
 import { installEndgeVueWarnHandler } from '@endge/ui-vue'
 import { createApp } from 'vue'
 
 import { configuratorSessionBindingKey } from '@/features/configurator-session'
-import { getCanonicalLocalhostURL } from '@/features/endge-ide/model/auth/oidc-browser-url'
+import { getCanonicalLocalhostURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 import '@/features/endge-ide/source-editor/adapters/monaco/configure-monaco-workers'
-import { i18n } from '@/i18n'
+import { i18n } from '@/app/i18n'
 import App from './App.vue'
-import router from './router'
+import router from './app/router'
 import 'reflect-metadata'
-import './assets/main.css'
+import './app/assets/main.css'
 import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 /* eslint-enable perfectionist/sort-imports */

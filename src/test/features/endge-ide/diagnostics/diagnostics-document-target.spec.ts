@@ -1,7 +1,7 @@
 import { Endge, QueryType } from '@endge/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/model/diagnostics/diagnostics-document-target'
+import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
 
 describe('diagnostics document target', () => {
   afterEach(() => {

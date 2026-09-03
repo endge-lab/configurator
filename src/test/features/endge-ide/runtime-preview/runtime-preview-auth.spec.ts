@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/model/runtime-preview/runtime-preview-auth'
+import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/services/runtime-preview/runtime-preview-auth'
 
 const mocks = vi.hoisted(() => ({
   mockMode: false,

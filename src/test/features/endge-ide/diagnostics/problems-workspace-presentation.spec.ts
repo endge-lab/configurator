@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildProblemsEntityEntries,
   buildProblemsSeverityGroups,
-} from '@/features/endge-ide/model/diagnostics/problems-workspace-presentation'
+} from '@/features/endge-ide/services/diagnostics/problems-workspace-presentation'
 
 function problem(
   id: string,

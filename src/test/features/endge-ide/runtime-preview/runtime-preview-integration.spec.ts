@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { routes } from '@/router/routes'
+import { routes } from '@/app/router/routes'
 
 describe('runtime Preview IDE integration', () => {
   it('does not expose a standalone preview route', () => {

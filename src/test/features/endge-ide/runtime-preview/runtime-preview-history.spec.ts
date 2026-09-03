@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   parseRuntimePreviewHistory,
   runtimePreviewHistoryStorageKey,
-} from '@/features/endge-ide/model/runtime-preview/runtime-preview-history'
+} from '@/features/endge-ide/services/runtime-preview/runtime-preview-history'
 
 const mocks = vi.hoisted(() => ({
   workspace: 'workspace-a',

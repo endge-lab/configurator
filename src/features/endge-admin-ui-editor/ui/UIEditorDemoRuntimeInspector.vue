@@ -5,7 +5,6 @@ import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
 import { Code2, LockKeyhole, Trash2, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Button } from '@/components/ui/button'
 import {
   getUIEditorSFCAttributeBindings,
   getUIEditorSFCSourceAttributes,
@@ -14,6 +13,7 @@ import {
   hasUIEditorSFCTextBinding,
 } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
+import { Button } from '@/shared/ui/button'
 
 interface ManagedProperty {
   key: string

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const dialogs = EndgeIDE.sourceEditorDialogs
 const cancelDialog = (): void => dialogs.cancel()

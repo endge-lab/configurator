@@ -1,5 +1,5 @@
 import type { CompositionProgramPayload } from '@endge/core'
-import type { CompositionRuntimePropsContract } from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
+import type { CompositionRuntimePropsContract } from '@/features/endge-ide/services/composition-runtime-props/composition-runtime-props'
 
 import { Endge } from '@endge/core'
 import { describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import {
   analyzeCompositionRuntimeProps,
   generateCompositionRuntimeProps,
-} from '@/features/endge-ide/model/composition-runtime-props/composition-runtime-props'
+} from '@/features/endge-ide/services/composition-runtime-props/composition-runtime-props'
 import { compositionRuntimePropsActionAnchor } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 
 const previewRequirements = {

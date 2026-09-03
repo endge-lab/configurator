@@ -1,4 +1,4 @@
-import { currentTargetStorageNamespace } from '@/features/backend-connections/model/backend-connection-storage'
+import { currentTargetStorageNamespace } from '@/features/backend-connections/services/backend-connection-storage'
 
 export function createEndgeIDETabsConfig() {
   return {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Loader2, Save } from 'lucide-vue-next'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 withDefaults(defineProps<{
   loading?: boolean

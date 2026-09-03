@@ -8,25 +8,25 @@ import { Code2, Eye, FileJson2, ListTree, Loader2, RotateCcw, Save, Settings2 } 
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { useSmartTabSelection, useSmartTabSharedViewState } from '@/components/ui/smart-tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   createVisualSchemaWorkspaceState,
   isVisualSchemaWorkspaceState,
   visualSchemaLayoutKey,
-} from '@/features/endge-ide/model/visual-schema-workspace-state'
+} from '@/features/endge-ide/services/visual-schema-workspace-state'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
 import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { Separator } from '@/shared/ui/separator'
+import { useSmartTabSelection, useSmartTabSharedViewState } from '@/shared/ui/smart-tabs'
+import { Textarea } from '@/shared/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 interface SourceEditorHandle {
   formatDocument: () => Promise<void>

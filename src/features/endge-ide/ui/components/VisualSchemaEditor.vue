@@ -6,7 +6,7 @@ import type {
   TypeSourceField,
 } from '@endge/core'
 import type { CSSProperties } from 'vue'
-import type { VisualSchemaDiagnostic, VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
+import type { VisualSchemaDiagnostic, VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
 
 import {
   AlertCircle,
@@ -25,19 +25,19 @@ import {
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useSmartTabViewState } from '@/components/ui/smart-tabs'
-import { Textarea } from '@/components/ui/textarea'
 import {
   cloneTypeSourceDocument,
   createDefaultTypeSourceField,
   parseTypeVisualSource,
-} from '@/features/endge-ide/model/type-visual-editor'
+} from '@/features/endge-ide/services/type-visual-editor'
+import { Button } from '@/shared/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
+import { Input } from '@/shared/ui/input'
+import { SearchableSelect } from '@/shared/ui/searchable-select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { useSmartTabViewState } from '@/shared/ui/smart-tabs'
+import { Textarea } from '@/shared/ui/textarea'
 
 interface TypeVisualRow {
   id: string

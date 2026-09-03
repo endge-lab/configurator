@@ -5,10 +5,10 @@ import { Endge } from '@endge/core'
 import { ChevronRight, CircleCheck, RefreshCw, ShieldAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import ProblemsTreeEntityNode from '@/features/endge-ide/ui/widgets/components/ProblemsTreeEntityNode.vue'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const problems = EndgeIDE.problems
 const isAnalyzing = ref(false)

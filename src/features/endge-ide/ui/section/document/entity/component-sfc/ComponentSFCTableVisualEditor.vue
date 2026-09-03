@@ -13,14 +13,14 @@ import type {
   ProgramMetadataMap,
   RComponentContractInput,
 } from '@endge/core'
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
 import type {
   TableCellBindingValueKind,
   TableCellComponentOption,
-} from '@/features/endge-ide/model/component-sfc-editor/table-cell-binding.types'
-import type { TableVisualColumnPinSide } from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
-import type { TableVisualColumnSortDirection } from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
-import type { VisualSchemaTypeOption } from '@/features/endge-ide/model/visual-schema-editor.types'
+} from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
+import type { TableVisualColumnPinSide } from '@/features/endge-ide/services/component-sfc-editor/table-column-pin-state'
+import type { TableVisualColumnSortDirection } from '@/features/endge-ide/services/component-sfc-editor/table-column-sort-state'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
+import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
 
 import {
   compileComponentSFCExpression,
@@ -71,42 +71,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useSmartTabSelection, useSmartTabViewState } from '@/components/ui/smart-tabs'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   parseTableDefaultPin,
   updateTableDefaultPin,
-} from '@/features/endge-ide/model/component-sfc-editor/table-column-pin-state'
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-pin-state'
 import {
   isTableColumnSortPath,
   moveTableDefaultSort,
@@ -115,19 +82,52 @@ import {
   renameTableDefaultSortKey,
   serializeTableColumnSortPaths,
   updateTableDefaultSort,
-} from '@/features/endge-ide/model/component-sfc-editor/table-column-sort-state'
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-sort-state'
 import {
   parseTableDefaultHidden,
   updateTableDefaultHidden,
-} from '@/features/endge-ide/model/component-sfc-editor/table-column-visibility-state'
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-visibility-state'
 import {
   createVisualSchemaWorkspaceState,
   isVisualSchemaWorkspaceState,
   visualSchemaLayoutKey,
-} from '@/features/endge-ide/model/visual-schema-workspace-state'
+} from '@/features/endge-ide/services/visual-schema-workspace-state'
 import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { SearchableSelect } from '@/shared/ui/searchable-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
+import { useSmartTabSelection, useSmartTabViewState } from '@/shared/ui/smart-tabs'
+import { Switch } from '@/shared/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/ui/tooltip'
 
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'

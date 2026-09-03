@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LazyJsonNodeDescriptor } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
+import type { LazyJsonNodeDescriptor } from '@/features/endge-ide/services/json-tree/lazy-json-tree'
 
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -12,8 +12,8 @@ import {
   lazyJsonNodeValue,
   lazyJsonValueTone,
   shouldAutoExpandLazyJsonNode,
-} from '@/features/endge-ide/model/json-tree/lazy-json-tree'
-import { LazyJsonTreeControllerKey } from '@/features/endge-ide/model/json-tree/lazy-json-tree-controller'
+} from '@/features/endge-ide/services/json-tree/lazy-json-tree'
+import { LazyJsonTreeControllerKey } from '@/features/endge-ide/services/json-tree/lazy-json-tree-controller'
 
 defineOptions({ name: 'SourceJsonTreeNode' })
 

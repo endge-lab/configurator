@@ -1,8 +1,8 @@
-import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
+import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainTransferHttp_Adapter'
+import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
 
 const snapshotJSON = JSON.stringify({
   kind: 'workspace-snapshot',

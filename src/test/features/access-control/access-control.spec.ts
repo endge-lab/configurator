@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { canManageAccess } from '@/features/access-control/model/access-control.policy'
-import { AccessControlHttp_Adapter } from '@/features/access-control/model/adapters/AccessControlHttp_Adapter'
+import { AccessControlHttp_Adapter } from '@/features/access-control/adapters/AccessControlHttp_Adapter'
+import { canManageAccess } from '@/features/access-control/services/access-control.policy'
 
 describe('access control service', () => {
   afterEach(() => vi.unstubAllGlobals())

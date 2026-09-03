@@ -5,7 +5,7 @@ import { Raph } from '@endge/raph'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { readStorePreviewFields } from '@/features/endge-ide/model/store-preview/store-preview-fields'
+import { readStorePreviewFields } from '@/features/endge-ide/services/store-preview/store-preview-fields'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'

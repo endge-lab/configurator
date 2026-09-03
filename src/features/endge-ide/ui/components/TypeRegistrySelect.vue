@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { TypeProgramCatalogEntry } from '@endge/core'
 import type { HTMLAttributes } from 'vue'
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
 
 import { useDomainStore } from '@endge/ui-vue'
 import { computed } from 'vue'
 
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { SearchableSelect } from '@/shared/ui/searchable-select'
 
 const props = withDefaults(defineProps<{
   modelValue?: string | null

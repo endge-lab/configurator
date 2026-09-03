@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LazyJsonNodeDescriptor, LazyJsonValueNode } from '@/features/endge-ide/model/json-tree/lazy-json-tree'
+import type { LazyJsonNodeDescriptor, LazyJsonValueNode } from '@/features/endge-ide/services/json-tree/lazy-json-tree'
 
 import { Braces, Copy, KeyRound } from 'lucide-vue-next'
 import {
@@ -16,8 +16,8 @@ import {
   DEFAULT_JSON_TREE_EAGER_LIMIT,
   DEFAULT_JSON_TREE_NODE_BUDGET,
   DEFAULT_JSON_TREE_PAGE_SIZE,
-} from '@/features/endge-ide/model/json-tree/lazy-json-tree'
-import { LazyJsonTreeControllerKey } from '@/features/endge-ide/model/json-tree/lazy-json-tree-controller'
+} from '@/features/endge-ide/services/json-tree/lazy-json-tree'
+import { LazyJsonTreeControllerKey } from '@/features/endge-ide/services/json-tree/lazy-json-tree-controller'
 import SourceJsonTreeNode from '@/features/endge-ide/ui/components/SourceJsonTreeNode.vue'
 
 const props = withDefaults(defineProps<{

@@ -5,14 +5,14 @@ import { ChevronsUpDown } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
+import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
+import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
+} from '@/shared/ui/dropdown-menu'
 
 const domainStore = useDomainStore()
 const context = useEndgeIDEContext()

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import type { DocumentDependencyNode } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
+import type { DocumentDependencyNode } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
 import { AlertTriangle, ChevronRight, RotateCcw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { getIconComponent } from '@/components/layouts/grid/icons'
+import { getIconComponent } from '@/app/ui/layouts/grid/icons'
 
 defineOptions({ name: 'DocumentDependencyTreeNode' })
 

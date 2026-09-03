@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { SmartTabRef } from '@/components/ui/smart-tabs/types'
+import type { SmartTabRef } from '@/shared/ui/smart-tabs/types'
 
 import { computed } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const props = defineProps<{
   tab: SmartTabRef | null

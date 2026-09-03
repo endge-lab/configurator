@@ -8,7 +8,7 @@ import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
 import {
   createRuntimePreviewLaunchRequest,
   createRuntimePreviewLaunchRequestFromDocument,
-} from '@/features/endge-ide/model/runtime-preview/runtime-preview-launch-request'
+} from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 
 describe('runtime Preview launch request', () => {
   it('maps runtime-capable source editors to their current draft', () => {

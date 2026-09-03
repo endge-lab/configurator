@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { GitBranchPlus, RotateCcw } from 'lucide-vue-next'
 
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/shared/ui/button'
+import { Label } from '@/shared/ui/label'
 
 defineProps<{
   label: string

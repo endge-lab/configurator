@@ -1,6 +1,6 @@
 import type { OidcDiscoveryAdapter } from '@/app/domain/types/oidc-discovery.type'
 import { describe, expect, it, vi } from 'vitest'
-import { OidcDiscovery_Module } from '@/app/model/modules/oidc-discovery/OidcDiscovery_Module'
+import { OidcDiscovery_Module } from '@/app/modules/OidcDiscovery_Module'
 
 describe('oidcDiscovery_Module', () => {
   /** Не запускает transport без заданного issuer. */

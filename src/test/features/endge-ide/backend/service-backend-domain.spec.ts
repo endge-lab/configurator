@@ -1,12 +1,12 @@
 import type {
   ServiceBackendDomainError,
-} from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
+} from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ServiceBackendDomainHttp_Adapter,
-} from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
+} from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 
 const DOCUMENT_KEYS = [
   'projects',

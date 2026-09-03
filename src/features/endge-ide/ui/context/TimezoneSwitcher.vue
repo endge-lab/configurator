@@ -4,8 +4,8 @@ import { useCurrentTimezone } from '@endge/ui-vue'
 import { ChevronsUpDown, Clock3 } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Button } from '@/shared/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
 
 const { current, setCurrent } = useCurrentTimezone()
 const workspaceVersion = ref(0)

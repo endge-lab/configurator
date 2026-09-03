@@ -2,7 +2,7 @@ import type { ProgramArtifact, RuntimeArtifactReader } from '@endge/core'
 
 import { describe, expect, it } from 'vitest'
 
-import { createRuntimePreviewArtifactReader } from '@/features/endge-ide/model/runtime-preview/runtime-preview-data-mode'
+import { createRuntimePreviewArtifactReader } from '@/features/endge-ide/services/runtime-preview/runtime-preview-data-mode'
 
 describe('runtime Preview data mode policy', () => {
   it('overlays Composition data mode without mutating the compiled artifact', () => {

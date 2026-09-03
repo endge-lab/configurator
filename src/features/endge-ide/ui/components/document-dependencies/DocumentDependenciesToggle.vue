@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { GitFork } from 'lucide-vue-next'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/shared/ui/tooltip'
 
 defineProps<{
   open: boolean

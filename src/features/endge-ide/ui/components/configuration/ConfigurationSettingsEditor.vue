@@ -33,9 +33,12 @@ import {
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
+import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 import {
   Select,
   SelectContent,
@@ -43,15 +46,12 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/select'
 import {
   useSmartTabSelection,
   useSmartTabViewState,
-} from '@/components/ui/smart-tabs'
-import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
-import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
+} from '@/shared/ui/smart-tabs'
+import { TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 import ConfigurationCollectionRowActions from './ConfigurationCollectionRowActions.vue'
 import ConfigurationOverrideField from './ConfigurationOverrideField.vue'

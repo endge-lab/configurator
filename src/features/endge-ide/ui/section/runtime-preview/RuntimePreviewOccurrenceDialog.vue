@@ -2,8 +2,9 @@
 import { Boxes, GitBranch, Play, TriangleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+} from '@/shared/ui/dialog'
+import { ScrollArea } from '@/shared/ui/scroll-area'
 
 const preview = EndgeIDE.runtimePreview
 const prompt = computed(() => preview.occurrencePrompt.value)

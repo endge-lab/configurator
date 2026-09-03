@@ -9,8 +9,8 @@ import {
 } from '@endge/core'
 import { toast } from 'vue-sonner'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import { resolveEndgeTypeDefinition } from '@/features/endge-ide/model/types/type-definition-resolver'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
 import { resolveComponentSFCTagReference } from '@/features/endge-ide/source-editor/contributions/component-sfc/component-tag-reference'
 

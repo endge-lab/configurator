@@ -1,6 +1,6 @@
 import type { InjectionKey } from 'vue'
+import type { ConfiguratorSession_Module } from '@/features/configurator-session/ConfiguratorSession_Module'
 import type { ConfiguratorSessionState } from '@/features/configurator-session/domain/types/configurator-session.type'
-import type { ConfiguratorSession_Module } from '@/features/configurator-session/model/ConfiguratorSession_Module'
 
 import { computed, inject, onScopeDispose, ref } from 'vue'
 

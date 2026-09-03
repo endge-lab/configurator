@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
 
 import AuthCredentialField from './AuthCredentialField.vue'
 

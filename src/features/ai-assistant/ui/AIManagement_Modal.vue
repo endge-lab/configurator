@@ -4,13 +4,13 @@ import type { AIAdapter, AIModelProfile, AIProviderConnection, AIVisibility } fr
 import { Bot, Check, ChevronDown, ChevronRight, Globe2, KeyRound, Loader2, LockKeyhole, Pencil, Plus, Server, Sparkles, Star, Trash2, TriangleAlert, UserRound, X } from 'lucide-vue-next'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { Configurator } from '@/app/model/kernel/configurator'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
+import { Configurator } from '@/app/Configurator'
 import { AIWorkbench } from '@/features/ai-assistant'
+import { Button } from '@/shared/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
+import { Input } from '@/shared/ui/input'
+import { Switch } from '@/shared/ui/switch'
 
 interface AdapterPresentation {
   label: string

@@ -2,7 +2,7 @@ import type { IntegrationContext } from '@endge/integration-api'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { ConfiguratorMenuRegistry } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
+import { ConfiguratorMenuRegistry } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 const context: IntegrationContext = {
   integrationId: 1,

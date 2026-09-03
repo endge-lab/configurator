@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/model/adapters/ConfiguratorReleasesHttp_Adapter'
+import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {

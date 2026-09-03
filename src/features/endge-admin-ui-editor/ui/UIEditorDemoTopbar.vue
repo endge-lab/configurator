@@ -11,7 +11,7 @@ import {
 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
-import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
+import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
 import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'

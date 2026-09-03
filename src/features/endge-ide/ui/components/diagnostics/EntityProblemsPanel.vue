@@ -23,8 +23,8 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { useSmartTabSelection } from '@/components/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 const props = defineProps<{
   entityRef?: DiagnosticsEntityRef

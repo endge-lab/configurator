@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { CircleMinus, Trash2 } from 'lucide-vue-next'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 defineProps<{
   excluded?: boolean

@@ -2,15 +2,15 @@ import type { BackendConnectionListResponse, BackendConnectionsService } from '@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/model/adapters/BackendConnectionsHttp_Adapter'
+import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/adapters/BackendConnectionsHttp_Adapter'
+import { BackendConnections_Module } from '@/features/backend-connections/modules/BackendConnections_Module'
 import {
   ACTIVE_BACKEND_STORAGE_KEY,
   BackendConnectionStorage,
   normalizeBackendURL,
   workspaceStorageKey,
-} from '@/features/backend-connections/model/backend-connection-storage'
-import { BackendConnections_Module } from '@/features/backend-connections/model/BackendConnections_Module'
-import { resolveConfiguratorWorkspace } from '@/features/backend-connections/model/resolve-configurator-workspace'
+} from '@/features/backend-connections/services/backend-connection-storage'
+import { resolveConfiguratorWorkspace } from '@/features/backend-connections/services/resolve-configurator-workspace'
 
 class MemoryStorage implements Storage {
   private readonly _values = new Map<string, string>()

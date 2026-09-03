@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const harness = vi.hoisted(() => {
   const debugReleases: Array<ReturnType<typeof vi.fn>> = []
@@ -93,12 +93,12 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-vi.mock('@/features/endge-ide/model/config/endge-ide-debug-flags', () => ({
+vi.mock('@/features/endge-ide/config/endge-ide-debug-flags', () => ({
   isIDERuntimeDebuggerDisabled: () => false,
   isIDEWidgetsDisabled: () => false,
 }))
 
-vi.mock('@/features/endge-ide/model/config/modules.config', () => ({
+vi.mock('@/features/endge-ide/config/modules.config', () => ({
   createEndgeIDEModules: () => harness.modules,
 }))
 

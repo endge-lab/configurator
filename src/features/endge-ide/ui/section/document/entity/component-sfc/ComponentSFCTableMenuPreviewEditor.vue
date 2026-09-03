@@ -7,7 +7,7 @@ import type {
   ComponentSFCTableVisualMenuKind,
   ComponentSFCVisualSourceValue,
 } from '@endge/core'
-import type { SearchableSelectOption } from '@/components/ui/searchable-select'
+import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
 
 import { readComponentSFCTranslationFallback } from '@endge/core'
 import {
@@ -28,24 +28,24 @@ import {
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { SearchableSelect } from '@/components/ui/searchable-select'
+import ComponentSFCExpressionInput from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCExpressionInput.vue'
+import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
+import { Label } from '@/shared/ui/label'
+import { SearchableSelect } from '@/shared/ui/searchable-select'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/shared/ui/select'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import ComponentSFCExpressionInput from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCExpressionInput.vue'
+} from '@/shared/ui/tooltip'
 
 interface MenuItemDraft {
   labelMode: 'text' | 'translation'

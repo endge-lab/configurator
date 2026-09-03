@@ -6,7 +6,7 @@ import {
   EndgeIDEHotkeys_Module,
   isCloseTabShortcut,
   REGISTERED_HOTKEYS,
-} from '@/features/endge-ide/model/modules/hotkeys/EndgeIDEHotkeys_Module'
+} from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 
 describe('endgeIDE workspace hotkeys', () => {
   afterEach(() => {

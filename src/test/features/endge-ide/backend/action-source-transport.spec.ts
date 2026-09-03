@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/model/backend/adapters/ServiceBackendDomainHttp_Adapter'
+import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 
 describe('action Source backend transport', () => {
   beforeEach(() => {

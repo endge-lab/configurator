@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/model/diagnostics/editor-diagnostics-entity-ref'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 
 describe('createEditorDiagnosticsEntityRef', () => {
   it('использует persisted id и identity редактора', () => {

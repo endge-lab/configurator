@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildRuntimePreviewTree } from '@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder'
+import { buildRuntimePreviewTree } from '@/features/endge-ide/services/runtime-preview/runtime-preview-tree-builder'
 
 const { artifacts, compositions } = vi.hoisted(() => ({
   artifacts: new Map<string, any>(),

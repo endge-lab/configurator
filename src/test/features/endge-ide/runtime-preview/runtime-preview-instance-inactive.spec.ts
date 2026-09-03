@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { RuntimePreviewInstance } from '@/features/endge-ide/model/runtime-preview/runtime-preview-instance'
+import { RuntimePreviewInstance } from '@/features/endge-ide/services/runtime-preview/runtime-preview-instance'
 
 vi.mock('@endge/core', () => ({
   Endge: {},
   RComponentSFC: {},
 }))
 vi.mock('@endge/ui-vue', () => ({ materializeEndgeCSSForDOM: vi.fn() }))
-vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder', () => ({
+vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-tree-builder', () => ({
   buildRuntimePreviewTree: () => [{
     id: 'composition:entry',
     parentId: null,
@@ -42,21 +42,21 @@ vi.mock('@/features/endge-ide/model/runtime-preview/runtime-preview-tree-builder
     }],
   }],
 }))
-vi.mock('@/features/endge-ide/model/composition-preview/composition-preview-state', () => ({
+vi.mock('@/features/endge-ide/services/composition-preview/composition-preview-state', () => ({
   createPreviewComposition: vi.fn(),
   ensureCompositionRuntimeArtifacts: vi.fn(),
   resolvePreviewStoreRuntimes: vi.fn(),
 }))
-vi.mock('@/features/endge-ide/model/preview-runtime/component-preview-runtime', () => ({
+vi.mock('@/features/endge-ide/services/preview-runtime/component-preview-runtime', () => ({
   destroyComponentPreviewContext: vi.fn(),
   prepareComponentPreviewContext: vi.fn(),
   resolveComponentPreviewInput: vi.fn(),
 }))
-vi.mock('@/features/endge-ide/model/sfc-preview/sfc-preview-state', () => ({
+vi.mock('@/features/endge-ide/services/sfc-preview/sfc-preview-state', () => ({
   createPreviewArtifact: vi.fn(),
   ensurePreviewPortArtifacts: vi.fn(),
 }))
-vi.mock('@/features/endge-ide/model/store-preview/store-preview-state', () => ({
+vi.mock('@/features/endge-ide/services/store-preview/store-preview-state', () => ({
   createPreviewStore: vi.fn(),
   createPreviewStoreArtifact: vi.fn(),
 }))

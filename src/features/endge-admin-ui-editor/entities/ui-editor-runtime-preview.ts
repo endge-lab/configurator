@@ -6,7 +6,7 @@ import type {
   ProgramDiagnostic,
   RuntimeHostInputSource,
 } from '@endge/core'
-import type { ComponentPreviewContext } from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
+import type { ComponentPreviewContext } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 
 import { Endge, RComponentSFC } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
@@ -16,11 +16,11 @@ import {
   destroyComponentPreviewContext,
   prepareComponentPreviewContext,
   resolveComponentPreviewInput,
-} from '@/features/endge-ide/model/preview-runtime/component-preview-runtime'
+} from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 import {
   createPreviewArtifact,
   ensurePreviewPortArtifacts,
-} from '@/features/endge-ide/model/sfc-preview/sfc-preview-state'
+} from '@/features/endge-ide/services/sfc-preview/sfc-preview-state'
 
 export type UIEditorRuntimePreviewStatus = 'idle' | 'preparing' | 'active' | 'stale' | 'error'
 

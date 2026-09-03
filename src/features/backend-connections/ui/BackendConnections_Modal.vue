@@ -2,17 +2,17 @@
 import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { Configurator } from '@/app/model/kernel/configurator'
-import { Button } from '@/components/ui/button'
+import { Configurator } from '@/app/Configurator'
+import { useBackendConnections } from '@/features/backend-connections'
+import { Button } from '@/shared/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { useBackendConnections } from '@/features/backend-connections'
+} from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
 
 const openState = ref(false)
 const newName = ref('')

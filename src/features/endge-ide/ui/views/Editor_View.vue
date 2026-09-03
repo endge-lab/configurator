@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import type { SmartTabRef } from '@/components/ui/smart-tabs'
+import type { SmartTabRef } from '@/shared/ui/smart-tabs'
 
 import { Box, Loader2 } from 'lucide-vue-next'
 import { computed, onBeforeMount, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { Configurator } from '@/app/model/kernel/configurator'
-import { getLayoutState, useLayout } from '@/components/layouts/grid'
-import { SmartTabsHost } from '@/components/ui/smart-tabs'
+import { Configurator } from '@/app/Configurator'
+import { getLayoutState, useLayout } from '@/app/ui/layouts/grid'
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import UIEditorDemo_Singleton from '@/features/endge-admin-ui-editor/ui/UIEditorDemo_Singleton.vue'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SourceEditorDialogHost from '@/features/endge-ide/source-editor/ui/SourceEditorDialogHost.vue'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
@@ -20,6 +19,7 @@ import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPrev
 import Problems_View from '@/features/endge-ide/ui/section/problems/Problems_View.vue'
 import RuntimePreview_View from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreview_View.vue'
 import RuntimePreviewOccurrenceDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewOccurrenceDialog.vue'
+import { SmartTabsHost } from '@/shared/ui/smart-tabs'
 
 const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals

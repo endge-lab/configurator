@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/model/modules/integrations/ConfiguratorMenuRegistry'
+import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
 import { ArrowUpRight, BookOpen, Bot, Boxes, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { Configurator } from '@/app/model/kernel/configurator'
-import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
+import { Configurator } from '@/app/Configurator'
+import { getIconComponent, toggleWidget } from '@/app/ui/layouts/grid'
+import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
+import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
+import { AIWorkbench } from '@/features/ai-assistant'
+import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
+import { ServiceVersionsDialog } from '@/features/backend-connections'
+import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/config/documentation.config'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
+import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
+import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
+import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
+import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,21 +31,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
-import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
-import { AIWorkbench } from '@/features/ai-assistant'
-import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
-import { ServiceVersionsDialog } from '@/features/backend-connections'
-import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
-import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
-import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/model/config/documentation.config'
-import { useEndgeIDEContext } from '@/features/endge-ide/model/context/use-endge-ide-context'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
-import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
-import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
-import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
+} from '@/shared/ui/dropdown-menu'
 
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()

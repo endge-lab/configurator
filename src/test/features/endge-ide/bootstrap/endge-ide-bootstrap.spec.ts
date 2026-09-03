@@ -15,24 +15,24 @@ class MemoryStorage implements Storage {
   public setItem(key: string, value: string): void { this._values.set(key, value) }
 }
 
-vi.mock('@/features/endge-ide/model/bootstrap/endge-runtime-plugins', () => ({}))
-vi.mock('@/features/endge-ide/model/bootstrap/endge-renderer-plugins', () => ({}))
-vi.mock('@/features/endge-ide/model/kernel/endge-ide', () => ({
+vi.mock('@/features/endge-ide/bootstrap/endge-runtime-plugins', () => ({}))
+vi.mock('@/features/endge-ide/bootstrap/endge-renderer-plugins', () => ({}))
+vi.mock('@/features/endge-ide/EndgeIDE', () => ({
   EndgeIDE: {
     setup: vi.fn(),
     reset: vi.fn(),
   },
 }))
-vi.mock('@/features/endge-ide/model/config/endge-backend', () => ({
+vi.mock('@/features/endge-ide/config/endge-backend', () => ({
   getEndgeBackendConfig: mocks.config,
 }))
-vi.mock('@/app/model/modules/context/ConfiguratorContext_Module', () => ({
+vi.mock('@/app/modules/ConfiguratorContext_Module', () => ({
   ConfiguratorContext_Module: class {
     public init = mocks.init
     public reset = vi.fn()
   },
 }))
-vi.mock('@/app/model/modules/i18n/ConfiguratorI18n_Module', () => ({
+vi.mock('@/app/modules/ConfiguratorI18n_Module', () => ({
   ConfiguratorI18n_Module: class {
     public availableLocales = { value: [] }
     public init = vi.fn()

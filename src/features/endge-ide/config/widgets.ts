@@ -1,4 +1,4 @@
-import type { WidgetDefinition } from '@/components/layouts/grid'
+import type { WidgetDefinition } from '@/app/ui/layouts/grid'
 
 import { defineAsyncComponent, markRaw } from 'vue'
 

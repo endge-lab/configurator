@@ -1,1 +1,1 @@
-export { AIWorkbench } from '@/features/ai-assistant/model/AIWorkbench_Module'
+export { AIWorkbench } from '@/features/ai-assistant/AIWorkbench_Module'

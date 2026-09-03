@@ -3,32 +3,32 @@ import type { DomainDocumentType } from '@endge/core'
 import type {
   DocumentDependencyNode,
   DocumentDependencyTreeResult,
-} from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
+} from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
 import { Endge } from '@endge/core'
 import { GitFork, Network, TriangleAlert } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useSmartTabViewState } from '@/components/ui/smart-tabs'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import {
+  buildCompositionDependencyHierarchy,
+  buildCompositionDependencyTree,
+} from '@/features/endge-ide/services/composition-dependencies/composition-dependency-tree'
+import {
+  buildDocumentDependencyHierarchy,
+  buildDocumentDependencyTree,
+} from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
+import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
+import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
+import { Button } from '@/shared/ui/button'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { useSmartTabViewState } from '@/shared/ui/smart-tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
-  buildCompositionDependencyHierarchy,
-  buildCompositionDependencyTree,
-} from '@/features/endge-ide/model/composition-dependencies/composition-dependency-tree'
-import {
-  buildDocumentDependencyHierarchy,
-  buildDocumentDependencyTree,
-} from '@/features/endge-ide/model/document-dependencies/document-dependency-graph'
-import { countDocumentDependencies } from '@/features/endge-ide/model/document-dependencies/document-dependency-types'
-import { EndgeIDE } from '@/features/endge-ide/model/kernel/endge-ide'
-import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
+} from '@/shared/ui/tooltip'
 
 const props = defineProps<{
   documentType: DomainDocumentType
