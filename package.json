@@ -1,7 +1,7 @@
 {
   "name": "@endge/configurator",
   "type": "module",
-  "version": "2.5.7",
+  "version": "2.6.0",
   "version_updated": "03.09.2026",
   "private": false,
   "packageManager": "pnpm@10.18.2",

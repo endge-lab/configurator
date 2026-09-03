@@ -2,7 +2,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { ArrowUpRight, BookOpen, Bot, Boxes, Download, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,6 +17,7 @@ import BackendConnections_Modal from '@/features/backend-connections/ui/BackendC
 import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/config/documentation.config'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentImport_Modal from '@/features/endge-ide/modules/document-import/ui/DocumentImport_Modal.vue'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
 import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
@@ -38,7 +39,8 @@ const context = useEndgeIDEContext()
 const { t } = useI18n()
 const configuratorMenuItems = EndgeIDE.integrations.menuItems
 const isBusy = computed(() => EndgeIDE.busy.value)
-const canImportDomain = computed(() => Configurator.context.workspaceRole === 'admin')
+const canImportWorkspaceSnapshot = computed(() => Configurator.context.workspaceRole === 'admin')
+const canImportDocuments = computed(() => Endge.domainRepository.capabilities.mutations)
 const currentProjectIdentity = computed(() =>
   String(context.currentContext().projectIdentity ?? '').trim(),
 )
@@ -74,6 +76,10 @@ async function exportCurrentDomain(): Promise<void> {
 
 function openDomainImport(): void {
   void domainImportModal.value?.open()
+}
+
+function openDocumentImport(format: 'graphql' | 'openapi'): void {
+  EndgeIDE.documentImport.open(format)
 }
 
 function openBackendConnections(): void {
@@ -168,10 +174,29 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             <Download class="size-3.5" />
             {{ t('endgeIde.headerMenu.file.export') }}
           </DropdownMenuItem>
-          <DropdownMenuItem :disabled="isBusy || !canImportDomain" @click="openDomainImport">
-            <Upload class="size-3.5" />
-            {{ canImportDomain ? t('endgeIde.headerMenu.file.import') : t('endgeIde.headerMenu.file.importWorkspaceAdmin') }}
-          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger :disabled="isBusy">
+              <Upload class="size-3.5" />
+              {{ t('endgeIde.headerMenu.file.import') }}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent class="w-64">
+              <DropdownMenuItem :disabled="!canImportWorkspaceSnapshot" @click="openDomainImport">
+                <Upload class="size-3.5" />
+                {{ canImportWorkspaceSnapshot
+                  ? t('endgeIde.headerMenu.file.importWorkspaceSnapshot')
+                  : t('endgeIde.headerMenu.file.importWorkspaceAdmin') }}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem :disabled="!canImportDocuments" @click="openDocumentImport('graphql')">
+                <Braces class="size-3.5" />
+                {{ t('endgeIde.headerMenu.file.importGraphQL') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem :disabled="!canImportDocuments" @click="openDocumentImport('openapi')">
+                <FileCode2 class="size-3.5" />
+                {{ t('endgeIde.headerMenu.file.importOpenAPI') }}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem @click="openBackendConnections">
             <Settings2 class="size-3.5" />
@@ -322,6 +347,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
 
   <EditorView />
   <DomainImport_Modal ref="domainImportModal" />
+  <DocumentImport_Modal />
   <BackendConnections_Modal ref="backendConnectionsModal" />
   <AccessControl_Modal ref="accessControlModal" />
   <AIManagement_Modal ref="aiManagementModal" />

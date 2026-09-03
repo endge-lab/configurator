@@ -32,9 +32,49 @@
         "connections": "Connection settings",
         "export": "Export",
         "import": "Import",
+        "importGraphQL": "Types from GraphQL…",
+        "importOpenAPI": "Types from OpenAPI…",
         "importWorkspaceAdmin": "Import is available only to Workspace Admin",
+        "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "File"
       }
+    },
+    "documentImport": {
+      "apply": "Import: {count}",
+      "applying": "Importing…",
+      "cancel": "Cancel",
+      "clearSelection": "Clear selection",
+      "close": "Close",
+      "completed": "Import completed",
+      "description": "Review the discovered types, select the documents you need, and choose a destination folder.",
+      "destination": "Type folder",
+      "dropzone": "Drop a file here or choose one",
+      "empty": "No supported types were found in the document.",
+      "error": "Import failed:",
+      "fieldSummary": "Fields: {fields}, required: {required}",
+      "fileHint": {
+        "graphql": ".graphql, .gql, or .graphqls files",
+        "openapi": "OpenAPI 3.x in YAML or JSON"
+      },
+      "found": "Types found: {count}",
+      "selectAll": "Select all available",
+      "selected": "Selected: {count}",
+      "skipped": "Skipped constructs: {count}",
+      "sourceLabel": "Source document",
+      "sourcePreview": "Show generated Type Source",
+      "status": {
+        "conflict": "Already exists",
+        "invalid": "Error",
+        "ready": "Will be created"
+      },
+      "title": "Import types from {format}",
+      "toast": {
+        "failedTitle": "Import failed",
+        "partialTitle": "Import completed partially",
+        "result": "Created: {imported}, skipped: {skipped}, failed: {failed}",
+        "successTitle": "Types imported"
+      },
+      "typeRoot": "Type root"
     }
   },
   "grid": {

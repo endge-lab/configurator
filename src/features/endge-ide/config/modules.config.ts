@@ -6,6 +6,7 @@ import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/En
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { AgentTableActions_Module } from '@/features/endge-ide/modules/AgentTableActions_Module'
 import { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/modules/AuthProfileEditorRegistry_Module'
+import { EndgeIDEDocumentImport_Module } from '@/features/endge-ide/modules/document-import/EndgeIDEDocumentImport_Module'
 import { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import { EndgeIDEDemonstration_Module } from '@/features/endge-ide/modules/EndgeIDEDemonstration_Module'
 import { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/modules/EndgeIDEDomainDrag_Module'
@@ -40,6 +41,7 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     domainTransfer: new EndgeIDEDomainTransfer_Module(
       new ServiceBackendDomainTransferHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
     ),
+    documentImport: new EndgeIDEDocumentImport_Module(),
     modals: new EndgeIDEModals_Module(),
     tabs: new EndgeIDETabs_Module(busy, uiState),
     uiState,

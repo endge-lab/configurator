@@ -35,6 +35,10 @@ export class EndgeIDE {
     return this._requireModules().domainTransfer
   }
 
+  public static get documentImport() {
+    return this._requireModules().documentImport
+  }
+
   public static get modals() {
     return this._requireModules().modals
   }
@@ -126,6 +130,7 @@ export class EndgeIDE {
       modules.modals.reset()
       modules.demonstration.reset()
       modules.domainDrag.reset()
+      modules.documentImport.reset()
       modules.busy.reset()
       modules.agentTableActions.reset()
       Endge.runtimeDebugger.reset()

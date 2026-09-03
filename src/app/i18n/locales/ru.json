@@ -32,9 +32,49 @@
         "connections": "Настройка подключений",
         "export": "Экспорт",
         "import": "Импорт",
+        "importGraphQL": "Типы из GraphQL…",
+        "importOpenAPI": "Типы из OpenAPI…",
         "importWorkspaceAdmin": "Импорт доступен только Workspace Admin",
+        "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "Файл"
       }
+    },
+    "documentImport": {
+      "apply": "Импортировать: {count}",
+      "applying": "Импортируем…",
+      "cancel": "Отмена",
+      "clearSelection": "Снять выбор",
+      "close": "Закрыть",
+      "completed": "Импорт завершён",
+      "description": "Проверьте найденные типы, выберите нужные документы и папку назначения.",
+      "destination": "Папка типов",
+      "dropzone": "Перетащите файл сюда или выберите его",
+      "empty": "Поддерживаемые типы в документе не найдены.",
+      "error": "Не удалось выполнить импорт:",
+      "fieldSummary": "Полей: {fields}, обязательных: {required}",
+      "fileHint": {
+        "graphql": "Файлы .graphql, .gql или .graphqls",
+        "openapi": "OpenAPI 3.x в YAML или JSON"
+      },
+      "found": "Найдено типов: {count}",
+      "selectAll": "Выбрать все доступные",
+      "selected": "Выбрано: {count}",
+      "skipped": "Пропущено конструкций: {count}",
+      "sourceLabel": "Исходный документ",
+      "sourcePreview": "Показать сгенерированный Type Source",
+      "status": {
+        "conflict": "Уже существует",
+        "invalid": "Ошибка",
+        "ready": "Будет создан"
+      },
+      "title": "Импорт типов из {format}",
+      "toast": {
+        "failedTitle": "Импорт не выполнен",
+        "partialTitle": "Импорт завершён частично",
+        "result": "Создано: {imported}, пропущено: {skipped}, ошибок: {failed}",
+        "successTitle": "Типы импортированы"
+      },
+      "typeRoot": "Корень типов"
     }
   },
   "grid": {
