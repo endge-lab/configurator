@@ -7,7 +7,7 @@ export async function runComputationSourcePreview(
   identity: string,
 ): Promise<unknown> {
   const input = JSON.parse(inputSource || '{}')
-  return Endge.runtime.computation.runSource(
+  return Endge.computations.runSource(
     source,
     input,
     identity.trim() || 'computation-editor-preview',

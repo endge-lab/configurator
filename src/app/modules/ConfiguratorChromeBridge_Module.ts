@@ -112,7 +112,7 @@ export class ConfiguratorChromeBridge_Module {
       sourceUrl: this._browser.page().url,
       projectId: Endge.context.getCurrentProject(),
       environment: Endge.context.getCurrentEnvironment(),
-      domain: Endge.domainSnapshot.serialize(Endge.domain),
+      domain: Endge.domain.toPlain(),
     }
   }
 
