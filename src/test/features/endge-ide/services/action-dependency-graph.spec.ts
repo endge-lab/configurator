@@ -3,13 +3,13 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { buildDocumentDependencyTree } from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
 
-describe('action dependency graph', () => {
+describe('граф зависимостей Action', () => {
   afterEach(() => {
     Endge.program.clear()
     Endge.domain.reset()
   })
 
-  it('uses draft Action compilation dependencies for every supported executable and transform', () => {
+  it('использует зависимости компиляции черновика Action для каждого поддерживаемого executable и transform', () => {
     const result = buildDocumentDependencyTree({
       documentType: 'action',
       id: 'schedule.edit',

@@ -7,8 +7,8 @@ import {
   serializeTypeSourceDocument,
 } from '@/features/endge-ide/services/type-visual-editor'
 
-describe('type visual editor model', () => {
-  it('round-trips an object Type Source through the semantic document', () => {
+describe('модель визуального редактора Type', () => {
+  it('сохраняет объектный Type Source при двустороннем преобразовании через семантический документ', () => {
     const parsed = parseTypeVisualSource(`defineType({
   identity: field(String)
     .description('Stable identifier'),
@@ -30,7 +30,7 @@ describe('type visual editor model', () => {
     expect(reparsed.document).toEqual(parsed.document)
   })
 
-  it('keeps the parsed document immutable while editing a detached copy', () => {
+  it('сохраняет разобранный документ неизменяемым при редактировании отделённой копии', () => {
     const parsed = parseTypeVisualSource('defineType({ value: field(\'String\') })')
     const copy = cloneTypeSourceDocument(parsed.document!)
 
@@ -42,7 +42,7 @@ describe('type visual editor model', () => {
     expect(copy.definition.kind === 'object' && copy.definition.fields).toHaveLength(2)
   })
 
-  it('round-trips enum, union and array roots', () => {
+  it('сохраняет корни enum, union и array при двустороннем преобразовании', () => {
     const sources = [
       'defineType(enumOf([\'draft\', \'active\']))',
       'defineType(unionOf(String, Number))',
@@ -56,7 +56,7 @@ describe('type visual editor model', () => {
     }
   })
 
-  it('round-trips recursive objectOf expressions without turning them into references', () => {
+  it('сохраняет рекурсивные выражения objectOf при двустороннем преобразовании, не превращая их в ссылки', () => {
     const source = `defineType({
       order: field(objectOf({
         customer: field(Customer),
@@ -79,7 +79,7 @@ describe('type visual editor model', () => {
     expect(parseTypeVisualSource(serialized).document).toEqual(parsed.document)
   })
 
-  it('round-trips inline union and array variants', () => {
+  it('сохраняет inline-варианты union и array при двустороннем преобразовании', () => {
     const source = `defineType(unionOf(
       Known,
       objectOf({ value: field(String) }),

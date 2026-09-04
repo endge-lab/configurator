@@ -61,7 +61,7 @@ vi.mock('@/features/endge-ide/services/context/configurator-data-mode-repository
   },
 }))
 
-describe('endgeIDE context', () => {
+describe('контекст EndgeIDE', () => {
   let context: ConfiguratorContext_Module
   const backendConfig = {
     serviceBackendURL: 'https://backend.test',
@@ -118,7 +118,7 @@ describe('endgeIDE context', () => {
     mocks.reset.mockClear()
   })
 
-  it('boots the initial IDE context and validates its renderer', async () => {
+  it('запускает начальный контекст IDE и проверяет его renderer', async () => {
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
 
     expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({
@@ -147,7 +147,7 @@ describe('endgeIDE context', () => {
   })
 
   /** Откатывает уже запущенный Core и разрешает повторный init после ошибки renderer contract. */
-  it('rolls back Core when post-boot validation fails and allows retry', async () => {
+  it('откатывает Core при ошибке проверки после запуска и разрешает повторную попытку', async () => {
     mocks.requireActive.mockImplementationOnce(() => {
       throw new Error('renderer unavailable')
     })
@@ -165,7 +165,7 @@ describe('endgeIDE context', () => {
     expect(context.isInitialized).toBe(true)
   })
 
-  it('disposes registered surfaces before a project context reboot', async () => {
+  it('освобождает зарегистрированные surfaces перед перезапуском контекста проекта', async () => {
     const beforeContextReset = vi.fn()
     const unregister = context.registerSurface('test-surface', { beforeContextReset })
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
@@ -184,7 +184,7 @@ describe('endgeIDE context', () => {
     unregister()
   })
 
-  it('rolls back to the previous context after a failed reboot', async () => {
+  it('возвращается к предыдущему контексту после неудачного перезапуска', async () => {
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
     mocks.boot.mockClear()
     mocks.boot.mockImplementation(async (ctx: { context: Record<string, unknown> }) => {
@@ -211,7 +211,7 @@ describe('endgeIDE context', () => {
     })
   })
 
-  it('persists the Configurator override outside Core and applies it to EndgeContext_Module', () => {
+  it('сохраняет переопределение Configurator вне Core и применяет его к EndgeContext_Module', () => {
     const listener = vi.fn()
     const off = context.subscribe(listener)
 
@@ -225,7 +225,7 @@ describe('endgeIDE context', () => {
     off()
   })
 
-  it('restores the Workspace-scoped Configurator override after boot', async () => {
+  it('восстанавливает ограниченное Workspace переопределение Configurator после запуска', async () => {
     mocks.readDataModeOverride.mockReturnValue('mock')
 
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })

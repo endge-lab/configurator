@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor'
 
-describe('rStyleEditor', () => {
-  it('round-trips only source-first authored fields', () => {
+describe('редактор RStyle', () => {
+  it('сохраняет при двустороннем преобразовании только поля с приоритетом Source', () => {
     const style = RStyle.fromPlain({
       id: 9,
       identity: 'flight-board',
@@ -30,7 +30,7 @@ describe('rStyleEditor', () => {
     expect(style.toPlain()).not.toHaveProperty('styles')
   })
 
-  it('allows empty source before the EndgeCSS grammar exists', () => {
+  it('разрешает пустой Source до появления грамматики EndgeCSS', () => {
     const editor = new RStyleEditor()
     editor.identity = 'custom-style'
     editor.source = ''
@@ -41,7 +41,7 @@ describe('rStyleEditor', () => {
     expect(editor.diagnostics).toEqual([])
   })
 
-  it('keeps system identity protected while allowing source updates', () => {
+  it('защищает системный identity, разрешая обновления Source', () => {
     const style = RStyle.fromPlain({
       id: 1,
       identity: 'default',

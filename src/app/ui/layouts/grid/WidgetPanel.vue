@@ -185,7 +185,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
 
 <template>
   <div class="flex flex-col items-center w-10 shrink-0 gap-1">
-    <!-- Top drop zone: left panel -> left area, right panel -> right area -->
+    <!-- Верхняя зона сброса: левая панель — в левую область, правая — в правую -->
     <div
       class="relative flex-1 w-full min-h-12 flex flex-col items-center rounded-lg transition-colors"
       :class="{
@@ -227,7 +227,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
       </div>
     </div>
 
-    <!-- Bottom drop zone: left panel -> bottom area, right panel -> floating -->
+    <!-- Нижняя зона сброса: левая панель — в нижнюю область, правая — в плавающую -->
     <div
       class="relative w-full min-h-12 flex flex-col items-center rounded-lg transition-colors"
       :class="{
@@ -265,12 +265,12 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
           </TooltipContent>
         </Tooltip>
 
-        <!-- Popup widgets (only in right panel) -->
+        <!-- Popup-виджеты только на правой панели -->
         <template v-if="position === 'right' && popupWidgetGroups.length > 0">
           <Separator class="my-1 w-6" />
 
           <template v-for="group in popupWidgetGroups" :key="group.definition.id">
-            <!-- Single instance: direct click -->
+            <!-- Один экземпляр: прямой клик -->
             <Tooltip v-if="group.instances.length === 1">
               <TooltipTrigger as-child>
                 <Button
@@ -290,7 +290,7 @@ function handleIconDrop(event: DragEvent, targetWidget: WidgetDefinition & Widge
               </TooltipContent>
             </Tooltip>
 
-            <!-- Multiple instances: dropdown -->
+            <!-- Несколько экземпляров: выпадающий список -->
             <DropdownMenu v-else>
               <DropdownMenuTrigger as-child>
                 <Button

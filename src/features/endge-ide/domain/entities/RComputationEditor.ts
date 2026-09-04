@@ -1,6 +1,6 @@
 import type { RComputation } from '@endge/core'
 
-/** Editor state for a persisted Computation document. */
+/** Состояние редактора сохранённого документа Computation. */
 export class RComputationEditor {
   id!: string | number
   identity!: string

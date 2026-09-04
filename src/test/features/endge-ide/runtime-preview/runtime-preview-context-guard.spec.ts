@@ -23,7 +23,7 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-describe('runtime Preview context guard', () => {
+describe('защита контекста Runtime Preview', () => {
   beforeEach(() => {
     state.switching = false
     state.project = 'airport'
@@ -32,7 +32,7 @@ describe('runtime Preview context guard', () => {
     state.compositions.clear()
   })
 
-  it('allows only the current project root', () => {
+  it('разрешает только корень текущего проекта', () => {
     expect(validateRuntimePreviewContext({ entityType: 'project', identity: 'airport' }).valid).toBe(true)
     expect(validateRuntimePreviewContext({ entityType: 'project', identity: 'other' })).toMatchObject({
       valid: false,
@@ -47,12 +47,12 @@ describe('runtime Preview context guard', () => {
     ['environment', 'prod', false],
     ['tenant', 'base', true],
     ['tenant', 'customer', false],
-  ])('validates %s-owned compositions', (kind, kindIdentity, expected) => {
+  ])('проверяет Compositions, принадлежащие %s', (kind, kindIdentity, expected) => {
     state.compositions.set('entry', { identity: 'entry', kind, kindIdentity })
     expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'entry' }).valid).toBe(expected)
   })
 
-  it('allows general compositions and blocks launches while context is switching', () => {
+  it('разрешает общие Compositions и блокирует запуск во время переключения контекста', () => {
     state.compositions.set('library-entry', { identity: 'library-entry', kind: 'library', kindIdentity: null })
     expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'library-entry' }).valid).toBe(true)
 

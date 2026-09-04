@@ -13,6 +13,13 @@
     "description": "Endge configuration environment",
     "title": "Configurator"
   },
+  "common": {
+    "delete": "Delete",
+    "pleaseWait": "Please wait",
+    "search": "Search…",
+    "select": "Select",
+    "selectedCount": "Selected: {count}"
+  },
   "endgeIde": {
     "headerMenu": {
       "additional": {

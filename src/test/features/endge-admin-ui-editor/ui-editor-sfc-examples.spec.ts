@@ -5,15 +5,15 @@ import { UI_EDITOR_SFC_DEFINITION_CONTRACTS } from '@/features/endge-admin-ui-ed
 import { UI_EDITOR_SFC_EXAMPLES } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
 import { projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
-describe('ui editor SFC examples', () => {
-  it('covers every primitive tag exposed by the library', () => {
+describe('примеры SFC UI-редактора', () => {
+  it('охватывает каждый тег примитива, доступный в библиотеке', () => {
     const contractTags = new Set(UI_EDITOR_SFC_DEFINITION_CONTRACTS.map(contract => contract.tag))
     const exampleTags = new Set(UI_EDITOR_SFC_EXAMPLES.map(example => example.tag))
 
     expect(exampleTags).toEqual(contractTags)
   })
 
-  it.each(UI_EDITOR_SFC_EXAMPLES)('$title is a complete compilable and visual example', (example) => {
+  it.each(UI_EDITOR_SFC_EXAMPLES)('$title является полным компилируемым визуальным примером', (example) => {
     expect(example.source).toContain('defineProps<')
     expect(example.source).toContain('definePreviewProps({')
 

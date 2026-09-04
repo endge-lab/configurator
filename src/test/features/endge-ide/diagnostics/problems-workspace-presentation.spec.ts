@@ -31,8 +31,8 @@ function problem(
   }
 }
 
-describe('problems workspace presentation', () => {
-  it('aggregates one entity across phases and keeps its highest severity', () => {
+describe('представление проблем Workspace', () => {
+  it('объединяет одну сущность между фазами и сохраняет её максимальную severity', () => {
     const entries = buildProblemsEntityEntries([
       problem('authoring-warning', 'authoring', 'warning'),
       problem('build-error', 'build', 'error'),
@@ -47,7 +47,7 @@ describe('problems workspace presentation', () => {
     expect(entries[0]?.problems).toHaveLength(2)
   })
 
-  it('places an entity only in the group of its highest current severity', () => {
+  it('помещает сущность только в группу её текущей максимальной severity', () => {
     const entries = buildProblemsEntityEntries([
       problem('runtime-warning', 'runtime', 'warning'),
       problem('build-fatal', 'build', 'fatal'),

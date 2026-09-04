@@ -2,7 +2,7 @@ import type { EndgeDataMode } from '@endge/core'
 
 const STORAGE_KEY_PREFIX = 'endge-ide:data-mode-override:v2'
 
-/** Configurator-only persistence for a Workspace-scoped runtime data mode override. */
+/** Хранилище переопределения runtime-режима данных уровня Workspace только для Configurator. */
 export class ConfiguratorDataModeRepository {
   public read(backendURL: string, workspaceIdentity: string): EndgeDataMode | null {
     if (typeof window === 'undefined') {
@@ -27,7 +27,7 @@ export class ConfiguratorDataModeRepository {
       window.localStorage.setItem(this.storageKey(backendURL, workspaceIdentity), mode)
     }
     catch {
-      // Configurator remains usable when browser storage is unavailable.
+      // Configurator сохраняет работоспособность, когда browser storage недоступен.
     }
   }
 
@@ -40,7 +40,7 @@ export class ConfiguratorDataModeRepository {
       window.localStorage.removeItem(this.storageKey(backendURL, workspaceIdentity))
     }
     catch {
-      // Configurator remains usable when browser storage is unavailable.
+      // Configurator сохраняет работоспособность, когда browser storage недоступен.
     }
   }
 

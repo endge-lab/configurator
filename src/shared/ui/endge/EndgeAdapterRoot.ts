@@ -11,7 +11,7 @@ import {
   useSlots,
 } from 'vue'
 
-/** Renders an opaque root entry point owned by the active UI adapter. */
+/** Отображает непрозрачную корневую точку входа, принадлежащую активному UI-адаптеру. */
 export default defineComponent({
   name: 'EndgeAdapterRoot',
   inheritAttrs: false,

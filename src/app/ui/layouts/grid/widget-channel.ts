@@ -2,7 +2,7 @@ import type { WidgetPosition } from '@/app/ui/layouts/grid/types.ts'
 
 const CHANNEL_NAME = 'replaceme:widget-channel'
 
-// Serializable version of header action (no Component or function references)
+// Сериализуемая версия action заголовка без ссылок на Component или функции
 export interface SerializableHeaderAction {
   id: string
   title?: string
@@ -130,7 +130,7 @@ export function createWidgetChannel() {
   }
 }
 
-// Singleton for host window
+// Единственный экземпляр для host-окна
 let hostChannel: ReturnType<typeof createWidgetChannel> | null = null
 
 export function getHostWidgetChannel() {
@@ -140,7 +140,7 @@ export function getHostWidgetChannel() {
   return hostChannel
 }
 
-// Track open popup windows
+// Отслеживание открытых popup-окон
 const openPopups = new Map<string, Window>()
 
 export function registerPopupWindow(instanceId: string, windowRef: Window) {

@@ -1,5 +1,5 @@
 import type { UIEditorSFCBaseTag } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
-import type { UIEditorDocument, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorDocument, UIEditorNode } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import {
   getUIEditorSFCAttributeBindings,
@@ -287,7 +287,7 @@ export function printUIEditorDocumentTemplate(document: UIEditorDocument): strin
   return printNode(document, document.rootId, 1)
 }
 
-/** @deprecated Use printUIEditorDocumentSFC. */
+/** @deprecated Используйте printUIEditorDocumentSFC. */
 export function printUIEditorDocumentJsx(document: UIEditorDocument): string {
   return printUIEditorDocumentSFC(document)
 }

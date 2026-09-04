@@ -9,13 +9,13 @@ function json(value: unknown, status = 200): Response {
   })
 }
 
-describe('configurator versions service', () => {
+describe('сервис версий Configurator', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('creates a release from the explicitly selected commit without an implicit commit', async () => {
+  it('создаёт release из явно выбранного commit без неявного commit', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       json(
         {
@@ -50,7 +50,7 @@ describe('configurator versions service', () => {
     )
   })
 
-  it('creates a preserve commit using the preview head sequence', async () => {
+  it('создаёт сохраняющий commit с head sequence из предварительного плана', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       json(
         {
@@ -85,7 +85,7 @@ describe('configurator versions service', () => {
     )
   })
 
-  it('plans and restores a selected commit', async () => {
+  it('планирует и восстанавливает выбранный commit', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(

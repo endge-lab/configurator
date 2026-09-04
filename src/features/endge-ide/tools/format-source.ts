@@ -40,9 +40,9 @@ const STYLE_LANG_ATTRIBUTE_RE
   = /\blang\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i
 
 /**
- * Vue parser treats `[name='value']` as a JavaScript assignment and adds
- * parentheses. In Endge templates this is a DataPath selector, so it must stay
- * opaque while Prettier formats the surrounding Vue source.
+ * Парсер Vue воспринимает `[name='value']` как присваивание JavaScript и добавляет
+ * скобки. В шаблонах Endge это селектор DataPath, поэтому он должен оставаться
+ * непрозрачным для Prettier при форматировании окружающего Vue-кода.
  */
 function protectEndgeSelectors(source: string): ProtectedSource {
   const selectors: string[] = []

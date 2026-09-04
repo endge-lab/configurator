@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
 
-describe('diagnostics document target', () => {
+describe('целевой документ диагностики', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('resolves generic compiler query type to its authoring document type', () => {
+  it('сопоставляет общий тип Query компилятора с типом исходного документа', () => {
     vi.spyOn(Endge.domain, 'getQuery').mockReturnValue({
       id: 42,
       identity: 'hub-flights-arrival',
@@ -25,7 +25,7 @@ describe('diagnostics document target', () => {
     })
   })
 
-  it('opens direct document types by stable identity instead of storage id', () => {
+  it('открывает прямые типы документов по стабильному identity вместо ID хранилища', () => {
     expect(resolveDiagnosticsDocumentTarget({
       entityType: 'computation',
       id: 17,
@@ -36,7 +36,7 @@ describe('diagnostics document target', () => {
     })
   })
 
-  it('does not create a query tab when the source document is absent', () => {
+  it('не создаёт вкладку Query, если исходный документ отсутствует', () => {
     vi.spyOn(Endge.domain, 'getQuery').mockReturnValue(null)
 
     expect(resolveDiagnosticsDocumentTarget({

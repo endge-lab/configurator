@@ -6,8 +6,8 @@ import {
   executeDrop,
 } from '@/features/endge-ide/services/domain/domain-drag-drop'
 
-describe('domain management actions', () => {
-  it('rejects deletion of an integration-managed document', async () => {
+describe('действия управления доменом', () => {
+  it('запрещает удаление документа под управлением интеграции', async () => {
     await expect(deleteEntity({
       id: '7',
       identity: 'example.operations',
@@ -20,7 +20,7 @@ describe('domain management actions', () => {
     })).rejects.toThrow('Управляемый извне документ нельзя удалить')
   })
 
-  it('rejects folder movement in the global integration registry', async () => {
+  it('запрещает перемещение папок в глобальном реестре интеграций', async () => {
     const result = await executeDrop([{
       id: '7',
       identity: 'example.operations',

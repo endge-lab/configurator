@@ -6,7 +6,7 @@ export interface ScriptEditorMonacoContext {
   model: Monaco.editor.ITextModel
 }
 
-/** Isolated Monaco extension installed for one ScriptEditor instance. */
+/** Изолированное расширение Monaco для одного экземпляра ScriptEditor. */
 export interface ScriptEditorExtension {
   id: string
   install: (context: ScriptEditorMonacoContext) => Monaco.IDisposable | void

@@ -8,14 +8,14 @@ import {
   buildDocumentDependencyTree,
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
 
-describe('document dependency graph', () => {
+describe('граф зависимостей документов', () => {
   afterEach(() => {
     Endge.program.clear()
     Endge.domain.reset()
     Endge.mock.reset()
   })
 
-  it('uses live Store source as the current-tab dependency overlay', () => {
+  it('использует текущий Source Store как overlay зависимостей активной вкладки', () => {
     addMock('persisted-mock', 101)
     addMock('draft-mock', 102)
     const store = addStore('flight-store', 'persisted-mock')
@@ -38,7 +38,7 @@ describe('document dependency graph', () => {
     })
   })
 
-  it('builds reverse usage from compiled Program dependencies', () => {
+  it('строит обратные использования из скомпилированных зависимостей Program', () => {
     const mock = addMock('groundhandling', 201)
     const store = addStore('groundhandling-store', mock.identity)
     addStoreArtifact(store, mock.identity)
@@ -61,7 +61,7 @@ describe('document dependency graph', () => {
     })
   })
 
-  it('keeps the root and reverse graph available when draft compilation fails', () => {
+  it('сохраняет доступными корень и обратный граф при ошибке компиляции черновика', () => {
     const store = addStore('broken-store', 'missing-mock')
 
     const result = buildDocumentDependencyHierarchy({

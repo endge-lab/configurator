@@ -3,7 +3,7 @@ import { Endge } from '@endge/core'
 
 const REQUIRED_RUNTIME_MODULE_KEYS = ['computationSandbox'] as const
 
-/** Runtime plugins must be registered before the Endge federation is configured. */
+/** Runtime-плагины необходимо зарегистрировать до конфигурации федерации Endge. */
 if (!Endge.isConfigured) {
   Endge.use(EndgeComputationSandboxPlugin)
 }

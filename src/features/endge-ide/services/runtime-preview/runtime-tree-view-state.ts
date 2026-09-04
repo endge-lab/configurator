@@ -96,7 +96,7 @@ export function writeRuntimeTreeViewState(
     window.localStorage.setItem(storageKey, JSON.stringify(payload))
   }
   catch {
-    // Runtime Tree remains usable when browser storage is unavailable.
+    // Runtime Tree сохраняет работоспособность, когда browser storage недоступен.
   }
 }
 

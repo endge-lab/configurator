@@ -19,15 +19,15 @@ const candidate: AIClarificationCandidate = {
   displayName: 'Example One',
 }
 
-describe('aI clarification linkage', () => {
-  it('links free text to the open clarification', () => {
+describe('связь уточнений AI', () => {
+  it('связывает свободный текст с открытым уточнением', () => {
     expect(buildClarificationRunLinkage(clarification)).toEqual({
       interactionId: 'interaction-1',
       replyToClarificationId: 'clarification-1',
     })
   })
 
-  it('adds the closed candidate ID for a candidate click', () => {
+  it('добавляет ID закрытого варианта при выборе варианта', () => {
     expect(buildClarificationRunLinkage(clarification, candidate)).toEqual({
       interactionId: 'interaction-1',
       replyToClarificationId: 'clarification-1',
@@ -35,7 +35,7 @@ describe('aI clarification linkage', () => {
     })
   })
 
-  it('creates an independent request after clarification state is cleared', () => {
+  it('создаёт независимый запрос после очистки состояния уточнения', () => {
     expect(buildClarificationRunLinkage(null)).toEqual({})
   })
 })

@@ -6,7 +6,7 @@ import type {
   TypeSourceField,
 } from '@endge/core'
 
-/** Builds an ephemeral schema document. The canonical value remains defineProps in SFC Source. */
+/** Строит временный документ схемы. Каноническим значением остаётся defineProps в Source SFC. */
 export function componentSFCPropsToVisualDocument(
   projection: ComponentSFCPropsVisualProjection,
 ): TypeSourceDocument {
@@ -18,7 +18,7 @@ export function componentSFCPropsToVisualDocument(
   }
 }
 
-/** Converts the visual projection back to the compiler's flat public props contract. */
+/** Преобразует визуальную проекцию обратно в плоский публичный контракт props компилятора. */
 export function visualDocumentToComponentSFCProps(
   document: TypeSourceDocument,
 ): RComponentSFC_IR_Prop[] {

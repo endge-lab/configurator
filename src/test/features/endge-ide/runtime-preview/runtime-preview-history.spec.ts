@@ -23,7 +23,7 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-describe('runtime Preview history', () => {
+describe('история Runtime Preview', () => {
   beforeEach(() => {
     mocks.workspace = 'workspace-a'
     mocks.execution = {
@@ -33,7 +33,7 @@ describe('runtime Preview history', () => {
     }
   })
 
-  it('keeps only valid unique runtime targets in their original order', () => {
+  it('сохраняет только валидные уникальные цели runtime в исходном порядке', () => {
     expect(parseRuntimePreviewHistory({
       version: 1,
       targets: [
@@ -49,7 +49,7 @@ describe('runtime Preview history', () => {
     ])
   })
 
-  it('scopes history by workspace and structural execution context', () => {
+  it('разделяет историю по Workspace и структурному контексту выполнения', () => {
     const first = runtimePreviewHistoryStorageKey()
     mocks.execution.projectIdentity = 'project-b'
     const second = runtimePreviewHistoryStorageKey()

@@ -7,6 +7,7 @@ const harness = vi.hoisted(() => {
   const snapshotReleases: Array<ReturnType<typeof vi.fn>> = []
   const method = () => vi.fn()
   const modules = {
+    uiEditor: { reset: method() },
     demonstration: {
       init: method(),
       reset: method(),
@@ -57,6 +58,7 @@ const harness = vi.hoisted(() => {
     sourceEditorDialogs: { reset: method() },
     authProfileEditors: { reset: method() },
     integrations: { init: method().mockResolvedValue(undefined), reset: method().mockResolvedValue(undefined) },
+    documentImport: { reset: method() },
     busy: { state: {}, run: <T>(operation: Promise<T>) => operation, reset: method() },
     agentTableActions: { reset: method() },
   }
@@ -102,8 +104,8 @@ vi.mock('@/features/endge-ide/config/modules.config', () => ({
   createEndgeIDEModules: () => harness.modules,
 }))
 
-describe('endgeIDE debug inspection leases', () => {
-  it('owns one Configurator lease per active IDE session and releases it on reset', async () => {
+describe('аренды debug-инспекции EndgeIDE', () => {
+  it('владеет одной арендой Configurator на активную сессию IDE и освобождает её при reset', async () => {
     EndgeIDE.setup({} as any)
 
     await Promise.all([EndgeIDE.init(), EndgeIDE.init()])
@@ -126,7 +128,7 @@ describe('endgeIDE debug inspection leases', () => {
     expect(harness.snapshotReleases[1]).toHaveBeenCalledTimes(1)
   })
 
-  it('releases both leases when IDE initialization fails', async () => {
+  it('освобождает обе аренды при ошибке инициализации IDE', async () => {
     const leaseIndex = harness.debugReleases.length
     harness.modules.integrations.init.mockRejectedValueOnce(new Error('integration init failed'))
 

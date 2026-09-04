@@ -25,7 +25,7 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-describe('runtime Preview auth preflight', () => {
+describe('предварительная проверка авторизации Runtime Preview', () => {
   beforeEach(() => {
     mocks.mockMode = false
     mocks.artifacts.clear()
@@ -35,7 +35,7 @@ describe('runtime Preview auth preflight', () => {
     mocks.profiles.set('service-auth', profile('service-auth'))
   })
 
-  it('collects auth profiles in mock preview for a non-blocking warning', () => {
+  it('собирает профили авторизации в mock preview для неблокирующего предупреждения', () => {
     mocks.mockMode = true
     mocks.artifacts.set('composition:root', artifact('composition', [dependency('query', 'inherited')]))
     mocks.artifacts.set('query:inherited', artifact('query', [], { auth: { mode: 'inherit' } }))
@@ -44,7 +44,7 @@ describe('runtime Preview auth preflight', () => {
       .toEqual([mocks.defaultProfile])
   })
 
-  it('collects inherited and explicit Query profiles from the program graph', () => {
+  it('собирает унаследованные и явные профили Query из графа программы', () => {
     mocks.artifacts.set('composition:root', artifact('composition', [dependency('query', 'inherited'), dependency('query', 'explicit')]))
     mocks.artifacts.set('query:inherited', artifact('query', [], { auth: { mode: 'inherit' } }))
     mocks.artifacts.set('query:explicit', artifact('query', [], { auth: { mode: 'profile', profile: 'service-auth' } }))

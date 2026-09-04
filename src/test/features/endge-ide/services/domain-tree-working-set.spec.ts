@@ -8,8 +8,8 @@ import {
 } from '@/features/endge-ide/services/domain/domain-tree-working-set'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 
-describe('domain working-set projection', () => {
-  it('groups matched entities under their original root folders without nested folders', () => {
+describe('проекция рабочего набора домена', () => {
+  it('группирует найденные сущности под исходными корневыми папками без вложенных папок', () => {
     const tree: FsNode[] = [
       {
         type: 'folder',

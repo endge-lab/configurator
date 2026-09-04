@@ -8,8 +8,8 @@ import { describe, expect, it } from 'vitest'
 
 import { buildEventCatalogRoot } from '@/features/endge-ide/services/domain/domain-event-catalog'
 
-describe('frontend Event catalog', () => {
-  it('groups built-in and local own/forwarded Events without persisted entities', () => {
+describe('каталог frontend Events', () => {
+  it('группирует встроенные и локальные собственные или перенаправленные Events без сохраняемых сущностей', () => {
     const local = createEmptyComponentSFCPortManifest()
     local.emits.events.push(
       { kind: 'event', role: 'emits', name: 'opened', payloadType: '{ id: string }', sourceRange: { start: 10, end: 20 } },

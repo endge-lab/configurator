@@ -20,8 +20,8 @@ afterEach(async () => {
   }
 })
 
-describe('configurator menu registry', () => {
-  it('registers a namespaced top-level item and removes it through its disposer', async () => {
+describe('реестр меню Configurator', () => {
+  it('регистрирует верхнеуровневый элемент с namespace и удаляет его через disposer', async () => {
     const registry = new ConfiguratorMenuRegistry()
     const dispose = registry.add(context, {
       id: 'hello',
@@ -43,7 +43,7 @@ describe('configurator menu registry', () => {
     expect(registry.items.value).toEqual([])
   })
 
-  it('rejects nested items until a nested menu renderer is introduced', () => {
+  it('отклоняет вложенные элементы до появления renderer вложенного меню', () => {
     const registry = new ConfiguratorMenuRegistry()
 
     expect(() => registry.add(context, {

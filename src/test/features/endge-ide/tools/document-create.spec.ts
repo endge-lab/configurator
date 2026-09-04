@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { DOCUMENT_CREATE_DESCRIPTORS } from '@/features/endge-ide/config/document-create'
 import { suggestDocumentIdentity } from '@/features/endge-ide/tools/document-create'
 
-describe('document create helpers', () => {
-  it('suggests a stable identity from Russian and English text', () => {
+describe('вспомогательные функции создания документа', () => {
+  it('предлагает стабильный identity из русского и английского текста', () => {
     expect(suggestDocumentIdentity('Модель расчёта тарифов')).toBe('model-rascheta-tarifov')
     expect(suggestDocumentIdentity('Flight Board / Main')).toBe('flight-board-main')
   })
 
-  it('declares unique descriptor types and capability-backed descriptions', () => {
+  it('объявляет уникальные типы descriptor и описания на основе capabilities', () => {
     const types = DOCUMENT_CREATE_DESCRIPTORS.map(item => item.type)
 
     expect(new Set(types).size).toBe(types.length)

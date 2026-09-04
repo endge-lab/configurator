@@ -11,8 +11,8 @@ import {
   replaceExtractedColumnBody,
 } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component/extract-component.transform'
 
-describe('sFC Column extract component contribution', () => {
-  it('extracts Cell children and groups row field reads into one prop', () => {
+describe('проверка Contribution извлечения компонента из Column SFC', () => {
+  it('извлекает дочерние узлы Cell и объединяет чтения полей строки в один prop', () => {
     const source = `<script setup lang="ts">
 defineProps<{ flights: FlightLeg[] }>()
 </script>
@@ -52,7 +52,7 @@ defineProps<{ flights: FlightLeg[] }>()
       .toBe('<Column key="aircraft" title="ВС">')
   })
 
-  it('anchors the inline action on the tag-name line for a multiline Column', () => {
+  it('привязывает inline action к строке имени тега многострочной Column', () => {
     const source = `<template>
   <Table>
     <Column
@@ -72,7 +72,7 @@ defineProps<{ flights: FlightLeg[] }>()
     expect(anchorPrefix.split('\n')).toHaveLength(3)
   })
 
-  it('anchors the inline action after a one-line opening tag with attributes', () => {
+  it('привязывает inline action после однострочного открывающего тега с атрибутами', () => {
     const source = `<template>
   <Table>
     <Column key="nextFlight" title="След > рейс" width="150">
@@ -87,7 +87,7 @@ defineProps<{ flights: FlightLeg[] }>()
       .toBe('<Column key="nextFlight" title="След > рейс" width="150">')
   })
 
-  it('supports a Column without Cell and keeps v-for aliases local', () => {
+  it('поддерживает Column без Cell и оставляет aliases v-for локальными', () => {
     const source = `<script setup lang="ts">
 defineProps<{ suffix: string }>()
 </script>
@@ -108,7 +108,7 @@ defineProps<{ suffix: string }>()
     expect(column?.dependencies.some(item => item.propName === 'item')).toBe(false)
   })
 
-  it('does not offer export for an existing direct component reference', () => {
+  it('не предлагает извлечение для существующей прямой ссылки на компонент', () => {
     const byTag = `<template>
   <Table>
     <Column key="tail"><Cell><AircraftTail :row="row" /></Cell></Column>
@@ -124,7 +124,7 @@ defineProps<{ suffix: string }>()
     expect(analyzeExtractableSFCColumns(byIdentity)).toEqual([])
   })
 
-  it('extracts plain text from a Column without Cell', () => {
+  it('извлекает обычный текст из Column без Cell', () => {
     const source = `<template>
   <Table>
     <Column key="status">Нет данных</Column>
@@ -137,7 +137,7 @@ defineProps<{ suffix: string }>()
     expect(column?.dependencies).toEqual([])
   })
 
-  it('keeps Cell in the table and calls the new component by tag', () => {
+  it('оставляет Cell в таблице и вызывает новый компонент по тегу', () => {
     const source = `<template>
   <Table>
     <Column key="tail">
@@ -165,7 +165,7 @@ defineProps<{ suffix: string }>()
     expect(childSource).toContain('<template>\n  <Text>{{ row.tail }}</Text>\n</template>')
   })
 
-  it('uses Component is when tag is empty and blocks writable dependencies', () => {
+  it('использует Component is при пустом теге и блокирует изменяемые зависимости', () => {
     const source = `<template>
   <Table>
     <Column key="tail">
@@ -188,7 +188,7 @@ defineProps<{ suffix: string }>()
     expect(parentSource).toContain('<Component is="aircraft-tail" :row="row" />')
   })
 
-  it('treats Endge attribute selectors as row reads, not writable props', () => {
+  it('считает селекторы атрибутов Endge чтениями строки, а не изменяемыми props', () => {
     const source = `<template>
   <Table>
     <Column key="tail">
@@ -203,7 +203,7 @@ defineProps<{ suffix: string }>()
     expect(column?.dependencies[0]?.hasWrite).toBe(false)
   })
 
-  it('edits detected prop types through a flat JSON map', () => {
+  it('редактирует обнаруженные типы props через плоскую JSON-карту', () => {
     const dependencies = [{
       propName: 'row',
       sourceExpression: 'row',
@@ -220,7 +220,7 @@ defineProps<{ suffix: string }>()
     expect(parseExtractComponentPropsJson('{ "row": "unknown", "extra": "string" }', dependencies).error).toContain('extra')
   })
 
-  it('builds a searchable component-folder tree below root-components', () => {
+  it('строит дерево папок компонентов с поиском ниже root-components', () => {
     const options = buildExtractComponentFolderOptions([
       { id: 1, identity: 'root-components', displayName: 'Компоненты', entityType: 'components', parent: null },
       { id: 2, identity: 'base', displayName: 'Базовые', entityType: 'components', parent: 1 },

@@ -61,8 +61,8 @@ vi.mock('@/features/endge-ide/services/store-preview/store-preview-state', () =>
   createPreviewStoreArtifact: vi.fn(),
 }))
 
-describe('runtime Preview inactive entry', () => {
-  it('allows selecting a remembered child without activating its runtime', async () => {
+describe('неактивная запись Runtime Preview', () => {
+  it('позволяет выбрать запомненный дочерний узел без активации его runtime', async () => {
     const instance = new RuntimePreviewInstance({ entityType: 'composition', identity: 'entry' })
 
     await instance.select('composition:entry:runtime:table')

@@ -1,6 +1,6 @@
 import type { SmartTabViewFactory } from '@/shared/ui/smart-tabs/types'
 
-/** Instance-owned registry of view factories for one SmartTabs workspace. */
+/** Реестр фабрик представлений, принадлежащий экземпляру одного рабочего пространства SmartTabs. */
 export class SmartTabViewRegistry {
   private readonly _views = new Map<string, SmartTabViewFactory>()
 

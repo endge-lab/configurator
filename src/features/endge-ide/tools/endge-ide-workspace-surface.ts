@@ -4,7 +4,7 @@ import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-edit
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
-/** Widgets that temporarily replace the main editor surface. */
+/** Виджеты, временно заменяющие основную поверхность редактора. */
 export const ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS = [
   ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
   ENDGE_IDE_PROBLEMS_WIDGET_ID,
@@ -17,7 +17,7 @@ function isDockablePosition(position: WidgetPosition | undefined): position is D
   return position === 'left' || position === 'right' || position === 'bottom'
 }
 
-/** Returns true when a standalone widget currently replaces the editor tab surface. */
+/** Возвращает true, когда отдельный виджет сейчас заменяет поверхность вкладки редактора. */
 export function isStandaloneWorkspaceWidgetActive(
   widgets: LayoutWidgetsState,
   widgetId: string,
@@ -31,7 +31,7 @@ export function isStandaloneWorkspaceWidgetActive(
   return area.expanded && area.activeWidget === widgetId
 }
 
-/** The normal editor surface is visible only while no standalone workspace owns it. */
+/** Обычная поверхность редактора видна, только пока ею не владеет отдельное рабочее пространство. */
 export function isEditorTabSurfaceVisible(widgets: LayoutWidgetsState): boolean {
   return !ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS.some(widgetId =>
     isStandaloneWorkspaceWidgetActive(widgets, widgetId),

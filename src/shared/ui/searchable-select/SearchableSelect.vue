@@ -3,6 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { Check, ChevronDown } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/shared/tools/utils.ts'
 import { Input } from '@/shared/ui/input'
@@ -29,7 +30,6 @@ const props = withDefaults(
     allOption?: SearchableSelectOption | null
   }>(),
   {
-    placeholder: 'Выберите',
     contentMaxHeight: 'min(320px, 60vh)',
     size: 'default',
     disabled: false,
@@ -41,8 +41,11 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string | string[] | null): void
 }>()
 
+const { t } = useI18n()
+
 const open = ref(false)
 const searchQuery = ref('')
+const resolvedPlaceholder = computed(() => props.placeholder ?? t('common.select'))
 
 watch(open, (v) => {
   if (!v) {
@@ -96,7 +99,7 @@ const triggerLabel = computed(() => {
   const v = props.modelValue
   if (Array.isArray(v)) {
     if (!v.length) {
-      return props.placeholder
+      return resolvedPlaceholder.value
     }
     if (v.length === 1 && v[0] === '*') {
       return props.allOption?.label ?? '*'
@@ -105,13 +108,13 @@ const triggerLabel = computed(() => {
       const o = props.options.find(op => op.value === v[0])
       return o?.label ?? v[0]
     }
-    return `Выбрано: ${v.length}`
+    return t('common.selectedCount', { count: v.length })
   }
   if (v != null && v !== '') {
     const o = props.options.find(op => op.value === String(v))
     return o?.label ?? String(v)
   }
-  return props.placeholder
+  return resolvedPlaceholder.value
 })
 
 function isSelected(value: string): boolean {
@@ -178,7 +181,7 @@ const triggerCls = computed(() =>
       <div class="border-b p-1.5">
         <Input
           v-model="searchQuery"
-          placeholder="Поиск..."
+          :placeholder="t('common.search')"
           class="h-8 text-sm"
           @keydown.stop
         />

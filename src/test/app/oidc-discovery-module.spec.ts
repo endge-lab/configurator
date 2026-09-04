@@ -2,7 +2,7 @@ import type { OidcDiscoveryAdapter } from '@/app/domain/types/oidc-discovery.typ
 import { describe, expect, it, vi } from 'vitest'
 import { OidcDiscovery_Module } from '@/app/modules/OidcDiscovery_Module'
 
-describe('oidcDiscovery_Module', () => {
+describe('модуль обнаружения OIDC', () => {
   /** Не запускает transport без заданного issuer. */
   it('отклоняет пустой issuer до обращения к adapter', async () => {
     const adapter: OidcDiscoveryAdapter = { load: vi.fn() }

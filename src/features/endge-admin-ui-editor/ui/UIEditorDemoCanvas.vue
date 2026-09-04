@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import type { SFCRenderInspectionNode, SFCRenderInspectionTreeNode } from '@endge/core'
 import type { CSSProperties } from 'vue'
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorDragPayload, UIEditorNode } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 import { SFCRenderInspectionSession } from '@endge/core'
 import { AlertTriangle, Code2, GripVertical, LoaderCircle, MousePointer2, Play, RefreshCw, Settings2, Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
 import { getUIEditorSFCSourceTag } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { getUIEditorSFCDefinitionContract } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
+import { isUIEditorContainer, UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import UIEditorDemoRuntimeInspector from '@/features/endge-admin-ui-editor/ui/UIEditorDemoRuntimeInspector.vue'
 import { Button } from '@/shared/ui/button'
 import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
@@ -36,7 +36,7 @@ interface RuntimeDropTarget {
 }
 
 const props = defineProps<{
-  state: UIEditorDemoState
+  state: UIEditorModule
 }>()
 
 const runtimeSession = new UIEditorRuntimePreviewSession({

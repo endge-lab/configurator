@@ -5,7 +5,7 @@ import { Bot, Check, ChevronDown, ChevronRight, Globe2, KeyRound, Loader2, LockK
 import { computed, reactive, ref, watch } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
-import { AIWorkbench } from '@/features/ai-assistant'
+import { AIWorkbench } from '@/features/ai-assistant/AIWorkbench_Module'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
@@ -97,8 +97,7 @@ const canCreateConnection = computed(() => {
   return connectionForm.adapter === 'anthropic' ? Boolean(connectionForm.credential.trim()) : Boolean(connectionForm.baseUrl.trim())
 })
 
-async function open(): Promise<void> {
-  await AIWorkbench.init(Configurator.context.backendConfig!.serviceBackendURL, Configurator.context.workspaceIdentity)
+function open(): void {
   AIWorkbench.openManagement()
 }
 

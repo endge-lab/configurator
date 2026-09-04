@@ -1964,7 +1964,7 @@ function rowClasses(item: FlatFsItem): string {
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- header tools -->
+    <!-- инструменты заголовка -->
     <div class="rounded-none border-x-0 border-t-0 shrink-0">
       <div class="px-2 py-1 flex items-center justify-between gap-1">
         <TooltipProvider :delay-duration="150">
@@ -2113,7 +2113,7 @@ function rowClasses(item: FlatFsItem): string {
       </div>
     </div>
 
-    <!-- tree -->
+    <!-- дерево -->
     <div class="flex-1 min-h-0" @click="closeContextMenu">
       <ScrollArea class="h-full">
         <div class="p-2 text-[13px] leading-5">
@@ -2341,7 +2341,7 @@ function rowClasses(item: FlatFsItem): string {
       </DialogContent>
     </Dialog>
 
-    <!-- create folder dialog -->
+    <!-- диалог создания папки -->
     <Dialog v-model:open="createFolderDialog.open">
       <DialogContent
         class="sm:max-w-md"
@@ -2383,7 +2383,7 @@ function rowClasses(item: FlatFsItem): string {
       </DialogContent>
     </Dialog>
 
-    <!-- recursive folder deletion confirmation -->
+    <!-- подтверждение рекурсивного удаления папки -->
     <Dialog v-model:open="folderDeletionDialog.open">
       <DialogContent
         class="sm:max-w-md"
@@ -2419,7 +2419,7 @@ function rowClasses(item: FlatFsItem): string {
       </DialogContent>
     </Dialog>
 
-    <!-- rename folder dialog -->
+    <!-- диалог переименования папки -->
     <Dialog v-model:open="renameDialog.open">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>

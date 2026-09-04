@@ -178,7 +178,7 @@ const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
   { label: 'emit edited', detail: 'Publish edited from a custom edit variant', insertText: `emit('edited', event('\${1:value}'))` },
 ]
 
-/** Adds SFC expression highlighting and TypeScript-aware folding to an HTML Monaco model. */
+/** Добавляет подсветку выражений SFC и сворачивание с учётом TypeScript в HTML-модель Monaco. */
 export function createSFCLanguageContribution(
   options: SFCLanguageContributionOptions = {},
 ): ScriptEditorExtension {

@@ -2,7 +2,8 @@
 import type { SmartTabRef } from '@/shared/ui/smart-tabs'
 
 import { Box, Loader2 } from 'lucide-vue-next'
-import { computed, onBeforeMount, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { Configurator } from '@/app/Configurator'
@@ -24,6 +25,7 @@ import { SmartTabsHost } from '@/shared/ui/smart-tabs'
 const tabs = EndgeIDE.tabs
 const modals = EndgeIDE.modals
 const route = useRoute()
+const { t } = useI18n()
 const { widgets } = getLayoutState()
 const createDocumentOpen = computed({
   get: () => modals.isCreateDocumentOpen.value,
@@ -70,7 +72,7 @@ const isUIEditorActive = computed(() => {
 })
 const isBusy = computed(() => EndgeIDE.busy.value)
 const hotkeysList = computed(() => EndgeIDE.hotkeys.getAllHotkeys())
-const busyText = 'Подождите'
+const busyText = computed(() => t('common.pleaseWait'))
 
 function getIconClass(tab: { meta?: Record<string, unknown> | undefined }): string | null {
   const icon = tab.meta?.icon
@@ -85,12 +87,6 @@ useLayout({
   title: computed(() => 'Endge'),
 })
 
-onBeforeMount(() => {
-  void EndgeIDE.init().catch((error) => {
-    console.error(`[EndgeIDE] Failed to initialize workspace: ${error instanceof Error ? error.message : String(error)}`)
-  })
-})
-
 onMounted(() => {
   if (route.query.guardTest === '1') {
     Configurator.diagnostics.triggerTest({
@@ -98,10 +94,6 @@ onMounted(() => {
       componentName: 'EndgeAdminEditorView',
     })
   }
-})
-
-onBeforeUnmount(() => {
-  void EndgeIDE.reset()
 })
 </script>
 

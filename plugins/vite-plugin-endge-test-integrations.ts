@@ -10,7 +10,7 @@ export interface EndgeTestIntegrationsPluginOptions {
   registryPath: string
 }
 
-/** Exposes the external test-integration registry only for local development. */
+/** Открывает внешний реестр тестовых интеграций только для локальной разработки. */
 export function endgeTestIntegrations(
   options: EndgeTestIntegrationsPluginOptions,
 ): Plugin {

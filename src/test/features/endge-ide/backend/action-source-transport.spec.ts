@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 
-describe('action Source backend transport', () => {
+describe('проверка Backend-транспорт Source для Action', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('patches and reads Action source fields without legacy Flow payload', async () => {
+  it('изменяет и читает поля Source у Action без legacy payload Flow', async () => {
     const source = `defineAction({
   steps: {
     save: action({ identity: 'orders.save', input: input() }),

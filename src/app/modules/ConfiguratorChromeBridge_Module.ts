@@ -12,7 +12,7 @@ const REQUEST_SOURCE = 'endge-chrome-extension'
 const RESPONSE_SOURCE = 'endge-admin-bridge'
 const BRIDGE_VERSION = '1.0.0'
 
-/** Owns the browser bridge for the complete Configurator application lifetime. */
+/** Владеет браузерным мостом на всём протяжении работы приложения Configurator. */
 export class ConfiguratorChromeBridge_Module {
   /** Browser adapter, installation state и stable event callback. */
   private readonly _browser: ConfiguratorChromeBridge_Adapter

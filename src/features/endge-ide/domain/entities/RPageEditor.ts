@@ -92,7 +92,7 @@ export class RPageEditor {
     source.routeName = this.routeName || null
     source.routePath = this.routePath || null
     source.templateId = this.templateId
-    // legacy aliases are cleared to avoid persisting mutable identity links
+    // Legacy-псевдонимы очищаются, чтобы не сохранять изменяемые связи идентичности
     sourceLegacy.templateIdentity = null
     source.enabled = this.enabled
     source.areas = this.areas.map(a => ({

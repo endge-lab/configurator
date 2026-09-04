@@ -10,12 +10,11 @@ import type {
 } from '@/app/domain/types/configurator.type'
 import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
 import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
-import type { AccessControlModule } from '@/features/access-control'
 import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
+import { Endge } from '@endge/core'
 import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session/adapters/ConfiguratorSessionHttp_Adapter'
-import { createAccessControlModule } from '@/features/access-control'
 import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
 import {
   clearConfiguratorLoginRedirectGuard,
@@ -25,6 +24,11 @@ import { resolveConfiguratorWorkspace } from '@/features/backend-connections/ser
 
 import { createConfiguratorModules } from '@/app/config/modules.config'
 import { VueErrorBoundary_Adapter } from '@/app/adapters/VueErrorBoundary_Adapter'
+import { AccessControl_Module } from '@/features/access-control/AccessControl_Module'
+import { AccessControlHttp_Adapter } from '@/features/access-control/adapters/AccessControlHttp_Adapter'
+import { AIWorkbench } from '@/features/ai-assistant'
+import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
+import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
 import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
@@ -37,7 +41,7 @@ export class ConfiguratorBootstrapError extends Error {
   }
 }
 
-/** Application-scoped federation and the only owner of Configurator boot. */
+/** Федерация уровня приложения и единственный владелец запуска Configurator. */
 export class Configurator {
   private static readonly _modules: ConfiguratorModules = createConfiguratorModules(() => EndgeIDE.reset())
   private static _initialization: Promise<ConfiguratorStatus> | null = null
@@ -45,7 +49,8 @@ export class Configurator {
   private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
   private static _backendConnectionFailure: ConfiguratorBackendConnectionFailure | null = null
   private static _errorBoundary: VueErrorBoundary_Adapter | null = null
-  private static _accessControl: AccessControlModule | null = null
+  private static _accessControl: AccessControl_Module | null = null
+  private static _releases: ConfiguratorReleases_Module | null = null
 
   private constructor() {}
 
@@ -117,9 +122,22 @@ export class Configurator {
   }
 
   /** Возвращает application-scoped access-control module для активного backend. */
-  public static get accessControl(): AccessControlModule {
-    this._accessControl ??= createAccessControlModule(this._modules.connections.activeBackendURL)
+  public static get accessControl(): AccessControl_Module {
+    this._accessControl ??= new AccessControl_Module(
+      new AccessControlHttp_Adapter(this._modules.connections.activeBackendURL),
+    )
     return this._accessControl
+  }
+
+  /** Возвращает application-owned историю версий активного workspace. */
+  public static get releases(): ConfiguratorReleases_Module {
+    this._releases ??= new ConfiguratorReleases_Module(
+      new ConfiguratorReleasesHttp_Adapter(
+        getEndgeBackendConfig().serviceBackendURL,
+        () => Endge.workspace.current.identity,
+      ),
+    )
+    return this._releases
   }
 
   public static setup(app: App, router: Router): void {
@@ -133,7 +151,7 @@ export class Configurator {
     EndgeIDE.setup(this._modules.context)
   }
 
-  /** Checks session and starts Endge once for the initial router navigation. */
+  /** Проверяет сессию и однократно запускает Endge при первой навигации router. */
   public static async init(): Promise<ConfiguratorStatus> {
     if (this._status !== 'idle') {
       return this._status
@@ -188,7 +206,7 @@ export class Configurator {
   }
 
   public static async reset(): Promise<void> {
-    await EndgeIDE.reset()
+    await this.deactivateIDE()
     this._modules.i18n.reset()
     await this._modules.context.reset()
     this._modules.session.reset()
@@ -196,6 +214,7 @@ export class Configurator {
     this._modules.questions.reset()
     this._modules.layout.reset()
     this._accessControl = null
+    this._releases = null
     this._authenticationRequirement = null
     this._backendConnectionFailure = null
     this._status = 'idle'
@@ -206,6 +225,28 @@ export class Configurator {
     this._errorBoundary?.destroy()
     this._errorBoundary = null
     this._modules.chromeBridge.destroy()
+  }
+
+  /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */
+  public static async activateIDE(): Promise<void> {
+    await EndgeIDE.init()
+    try {
+      await AIWorkbench.init(
+        this.context.backendConfig!.serviceBackendURL,
+        this.context.workspaceIdentity,
+      )
+    }
+    catch (cause) {
+      AIWorkbench.reset()
+      await EndgeIDE.reset()
+      throw cause
+    }
+  }
+
+  /** Освобождает route-scoped feature owners в обратном порядке. */
+  public static async deactivateIDE(): Promise<void> {
+    AIWorkbench.reset()
+    await EndgeIDE.reset()
   }
 
   private static async _initialize(): Promise<ConfiguratorStatus> {

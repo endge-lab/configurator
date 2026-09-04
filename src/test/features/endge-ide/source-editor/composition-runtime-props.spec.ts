@@ -18,8 +18,8 @@ const previewRequirements = {
   },
 }
 
-describe('composition runtime props authoring', () => {
-  it('reports a warning and generates withProps when every missing prop has a preview fixture', () => {
+describe('редактирование runtime props Composition', () => {
+  it('сообщает предупреждение и генерирует withProps, если для каждого отсутствующего prop есть preview fixture', () => {
     const source = `defineComposition({
   data: {
     db: store('groundhandling'),
@@ -52,7 +52,7 @@ describe('composition runtime props authoring', () => {
     })
   })
 
-  it('places the generation action after same-line runtime modifiers', () => {
+  it('размещает действие генерации после runtime-модификаторов в той же строке', () => {
     const source = `defineComposition({
   data: {
     db: store('groundhandling'),
@@ -73,7 +73,7 @@ describe('composition runtime props authoring', () => {
     expect(source[actionAnchor]).toBe('\n')
   })
 
-  it('merges missing preview props into an existing withProps object', () => {
+  it('добавляет отсутствующие preview props в существующий объект withProps', () => {
     const source = `defineComposition({
   runtimes: {
     requests: composition('groundhandling-query-general').withProps({
@@ -96,7 +96,7 @@ describe('composition runtime props authoring', () => {
     })
   })
 
-  it('keeps an error and hides generation when a required prop has no preview fixture', () => {
+  it('сохраняет ошибку и скрывает генерацию, если у обязательного prop нет preview fixture', () => {
     const source = `defineComposition({
   runtimes: {
     requests: composition('groundhandling-query-general'),
@@ -112,7 +112,7 @@ describe('composition runtime props authoring', () => {
     }])
   })
 
-  it('keeps a warning but hides generation when a preview mock cannot be materialized', () => {
+  it('сохраняет предупреждение, но скрывает генерацию, если preview mock нельзя материализовать', () => {
     const source = `defineComposition({
   runtimes: {
     requests: composition('groundhandling-query-general'),
@@ -130,7 +130,7 @@ describe('composition runtime props authoring', () => {
     }])
   })
 
-  it('materializes a preview mock before generating explicit runtime props', () => {
+  it('материализует preview mock перед генерацией явных runtime props', () => {
     const source = `defineComposition({
   runtimes: {
     requests: composition('groundhandling-query-general'),

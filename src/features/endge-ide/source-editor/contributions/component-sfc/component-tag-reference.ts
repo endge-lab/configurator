@@ -2,7 +2,7 @@ import type { SourceDocumentReference } from '@endge/core'
 
 import { Endge, isComponentSFCBuiltInTag, parseComponentSFC } from '@endge/core'
 
-/** Resolves a persisted ComponentSFC tag under the cursor to its authoring document. */
+/** Преобразует сохранённый тег ComponentSFC под курсором в его authoring-документ. */
 export function resolveComponentSFCTagReference(
   source: string,
   offset: number,
@@ -24,8 +24,8 @@ export function resolveComponentSFCTagReference(
     }
   }
 
-  // The editor can be opened before the next compiler build. Reproduce the
-  // registry's unambiguous-tag rule from the current persisted domain.
+  // Редактор может открыться до следующей сборки компилятора. Воспроизводим
+  // правило однозначного тега из реестра по текущему сохранённому домену.
   const owners = Endge.domain.getComponentSFCs()
     .filter(component => component.tag?.trim() === token.tag)
   if (owners.length !== 1) {
@@ -44,7 +44,7 @@ interface ComponentSFCTagToken {
   range: SourceDocumentReference['range']
 }
 
-/** Finds only an opening/closing tag name inside the SFC template block. */
+/** Находит только имя открывающего или закрывающего тега внутри template-блока SFC. */
 function findComponentSFCTagAtOffset(
   source: string,
   offset: number,

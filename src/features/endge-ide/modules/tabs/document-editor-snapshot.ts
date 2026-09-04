@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 
-// Internal snapshot support owned by the tabs module.
+// Внутренняя поддержка snapshot принадлежит модулю tabs.
 
 type SnapshotAdapter = (editor: Record<string, unknown>) => unknown
 
@@ -52,13 +52,13 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
   return editor
 }
 
-/** Explicit coverage registry for every persisted document editor family. */
+/** Явный реестр покрытия для каждого семейства редакторов сохраняемых документов. */
 export const DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS: ReadonlyMap<string, SnapshotAdapter> = new Map([
   ['RActionEditor', captureDefaultEditorState],
   ...DEFAULT_EDITOR_NAMES.map(name => [name, captureDefaultEditorState] as const),
 ])
 
-/** Builds a deterministic snapshot from the authoring fields of an editor model. */
+/** Строит детерминированный snapshot из authoring-полей модели редактора. */
 export function createDocumentEditorSnapshot(editor: unknown): string {
   if (!editor || typeof editor !== 'object') {
     return JSON.stringify(null)

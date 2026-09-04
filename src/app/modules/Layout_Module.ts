@@ -2,7 +2,7 @@ import type { BreadcrumbItem } from '@/app/domain/types/layout.type'
 
 import { computed, reactive } from 'vue'
 
-/** Owns application layout presentation state shared across routes. */
+/** Владеет состоянием отображения layout приложения, общим для маршрутов. */
 export class Layout_Module {
   private readonly _state = reactive({
     breadcrumbs: [] as BreadcrumbItem[],

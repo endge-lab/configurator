@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor'
 
-describe('rTypeEditor source editing', () => {
-  it('persists Type Source as the only structural type definition', () => {
+describe('редактирование Source в RTypeEditor', () => {
+  it('сохраняет Type Source как единственное структурное определение типа', () => {
     const model = new RType('PassengerProfile')
     model.identity = 'PassengerProfile'
     model.source = ''

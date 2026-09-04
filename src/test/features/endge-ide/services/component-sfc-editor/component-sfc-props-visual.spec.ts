@@ -16,8 +16,8 @@ function projection(props: ComponentSFCPropsVisualProjection['props']): Componen
   }
 }
 
-describe('component SFC props visual projection', () => {
-  it('keeps array item types separate from the array modifier', () => {
+describe('визуальная проекция props компонента SFC', () => {
+  it('хранит типы элементов массива отдельно от модификатора массива', () => {
     const document = componentSFCPropsToVisualDocument(projection([
       { name: 'rows', type: 'Array<Flight>', isArray: true },
     ]))
@@ -35,7 +35,7 @@ describe('component SFC props visual projection', () => {
     ])
   })
 
-  it('serializes inline objects created by the reusable schema editor', () => {
+  it('сериализует inline-объекты, созданные переиспользуемым редактором схемы', () => {
     const props = visualDocumentToComponentSFCProps({
       definition: {
         kind: 'object',

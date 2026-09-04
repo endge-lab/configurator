@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import { migratePersistedWidgetId, removePersistedWidgetId } from '@/app/ui/layouts/grid/layout'
 
-describe('runtime preview widget layout migration', () => {
-  it('copies reactive persisted state without using structuredClone on a proxy', () => {
+describe('миграция layout виджета Runtime Preview', () => {
+  it('копирует сохранённое реактивное состояние без structuredClone над proxy', () => {
     expect(() => migratePersistedWidgetId('preview-runtime-tree', 'runtime-tree')).not.toThrow()
   })
 
-  it('removes a retired widget id without resetting the layout', () => {
+  it('удаляет устаревший ID виджета без reset layout', () => {
     expect(() => removePersistedWidgetId('help')).not.toThrow()
   })
 })

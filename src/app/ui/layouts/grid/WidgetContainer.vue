@@ -115,7 +115,7 @@ const instanceTitle = computed(() =>
   activeInstance.value?.title ?? props.definition.title,
 )
 
-// Ref to track iframe elements for each instance
+// Ссылка для отслеживания элементов iframe каждого экземпляра
 const iframeRefs = ref<Map<string, HTMLIFrameElement>>(new Map())
 
 function setIframeRef(instanceId: string, el: HTMLIFrameElement | null) {
@@ -127,14 +127,14 @@ function setIframeRef(instanceId: string, el: HTMLIFrameElement | null) {
   }
 }
 
-// Handle messages from iframe content
+// Обработка сообщений от содержимого iframe
 function handleIframeMessage(event: MessageEvent) {
   const data = event.data
   if (!data || typeof data !== 'object' || !activeInstance.value) {
     return
   }
 
-  // Verify the message came from our iframe
+  // Проверка, что сообщение пришло из нашего iframe
   const iframe = iframeRefs.value.get(activeInstance.value.id)
   if (!iframe || event.source !== iframe.contentWindow) {
     return
@@ -156,7 +156,7 @@ function handleIframeMessage(event: MessageEvent) {
   }
 }
 
-// Convert serializable action from iframe to actual WidgetHeaderAction
+// Преобразование сериализуемого action из iframe в настоящий WidgetHeaderAction
 function handleIframeAddHeaderAction(
   instanceId: string,
   action: { id: string, title?: string, icon?: string, order?: number, disabled?: boolean },
@@ -169,7 +169,7 @@ function handleIframeAddHeaderAction(
     order: action.order,
     disabled: action.disabled,
     onClick: () => {
-      // Send click event back to iframe
+      // Отправка события клика обратно в iframe
       const iframe = iframeRefs.value.get(instanceId)
       iframe?.contentWindow?.postMessage({
         type: 'widget-action-clicked',

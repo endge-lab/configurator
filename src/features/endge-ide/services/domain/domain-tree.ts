@@ -23,7 +23,7 @@ export interface FsNodeBase {
   type: FsNodeType
   virtual?: boolean
   badges?: string[]
-  /** Frontend-only Workspace projection; never belongs to Endge Domain. */
+  /** Проекция Workspace только для frontend; она никогда не принадлежит Endge Domain. */
   workspaceIdentity?: string
   activeWorkspace?: boolean
 }
@@ -33,7 +33,7 @@ export interface FsFolderNode extends FsNodeBase {
   id: string
   identity?: string
   sectionType: DomainSectionType
-  /** Runtime-only origin group. Built-in and provided groups precede persisted children. */
+  /** Группа происхождения только для runtime. Встроенная и предоставленная группы предшествуют сохранённым дочерним элементам. */
   virtualOrigin?: 'builtin' | 'derived' | 'local'
   isRoot?: boolean
   managedBy?: ManagedBy
@@ -55,12 +55,12 @@ export interface FsFileNode extends FsNodeBase {
   parentComponentId?: string
   presentationKind?: CompositionPresentationKind
   origin?: EntityOrigin
-  /** Persisted authoring document represented by this virtual projection. */
+  /** Сохраняемый authoring-документ, представленный этой виртуальной проекцией. */
   sourceDocument?: {
     identity: string
     docType: DomainDocumentType
   }
-  /** Frontend-only Event catalog metadata. */
+  /** Метаданные каталога Event только для frontend. */
   eventPort?: {
     payloadType: string
     origin: 'builtin' | 'own' | 'forwarded'
@@ -86,7 +86,7 @@ export interface ConfigurationTreeProjectionInput {
   deletedAt?: string | null
 }
 
-/** Projects only the active Workspace configurations as flat, folderless children. */
+/** Проецирует только конфигурации активного Workspace в виде плоских дочерних элементов без папок. */
 export function buildWorkspaceTreeNodes(
   workspaces: readonly WorkspaceTreeProjectionInput[],
   activeWorkspaceIdentity: string,
@@ -380,7 +380,7 @@ export interface BuildDomainTreeParams {
   rootOrder: string[]
   rootLabels: Record<string, string>
   allFolders: any[]
-  /** Composition documents presented by kind rather than their persisted folder. */
+  /** Документы Composition отображаются по виду, а не по сохранённой папке. */
   contextualCompositions?: Array<{
     id?: string | number
     identity?: string
@@ -390,7 +390,7 @@ export interface BuildDomainTreeParams {
     kindIdentity?: string | null
     folderId?: string | number | null
   }>
-  /** Store-owned Updates displayed only as children of their owner Store. */
+  /** Updates, принадлежащие Store, отображаются только среди дочерних элементов своего Store. */
   storeUpdates?: Array<{
     id?: string | number
     identity?: string
@@ -603,7 +603,7 @@ function attachStoreUpdates(
   }
 }
 
-/** Adds effective non-persisted Actions and annotates persisted overrides. */
+/** Добавляет фактические несохраняемые Actions и отмечает сохранённые переопределения. */
 export function attachResolvedActionTree(
   tree: FsNode[],
   actions: readonly ResolvedActionDescriptor[],
@@ -801,7 +801,7 @@ export function attachResolvedActionTree(
   }
 }
 
-/** Adds code-owned built-in Types as the first virtual group under Types. */
+/** Добавляет встроенные Types из кода первой виртуальной группой внутри Types. */
 export function attachResolvedTypeTree(
   tree: FsNode[],
   types: readonly TypeProgramCatalogEntry[],

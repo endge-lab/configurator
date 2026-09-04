@@ -8,8 +8,8 @@ import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_
 
 const target = { backendURL: 'https://test.example.com', workspace: 'default' }
 
-describe('domain versions module', () => {
-  it('stores a clean domain version for one backend and workspace target', async () => {
+describe('модуль версий домена', () => {
+  it('хранит чистую версию домена для одной пары backend и Workspace', async () => {
     const value: DomainStatus = {
       workspace: 'default',
       state: 'clean',
@@ -29,7 +29,7 @@ describe('domain versions module', () => {
     expect(get).toHaveBeenCalledOnce()
   })
 
-  it('keeps dirty state without presenting a current domain version', async () => {
+  it('сохраняет состояние с изменениями, не показывая его как текущую версию домена', async () => {
     const get = vi.fn().mockResolvedValue({
       workspace: 'default',
       state: 'dirty',
@@ -50,7 +50,7 @@ describe('domain versions module', () => {
     expect((module.state(target) as { value: DomainStatus }).value).not.toHaveProperty('domainVersion')
   })
 
-  it('keeps authentication failures local to the unavailable target', async () => {
+  it('локализует ошибки аутентификации в недоступной цели', async () => {
     const get = vi.fn().mockRejectedValue(new DomainVersionServiceError('unauthorized', 'Login required', 401))
     const module = new DomainVersions_Module({ get } as unknown as DomainVersionHttp_Adapter)
 

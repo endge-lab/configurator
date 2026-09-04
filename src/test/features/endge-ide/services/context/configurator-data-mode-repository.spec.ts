@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ConfiguratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
 
-describe('configurator data mode repository', () => {
+describe('репозиторий режима данных Configurator', () => {
   beforeEach(() => {
     const storage = new Map<string, string>()
     Object.defineProperty(globalThis, 'window', {
@@ -17,7 +17,7 @@ describe('configurator data mode repository', () => {
     })
   })
 
-  it('persists overrides independently for each backend and Workspace', () => {
+  it('сохраняет переопределения независимо для каждой пары backend и Workspace', () => {
     const repository = new ConfiguratorDataModeRepository()
 
     repository.write('https://backend-a.test', 'workspace-a', 'mock')
@@ -29,7 +29,7 @@ describe('configurator data mode repository', () => {
     expect(repository.read('https://backend-b.test', 'workspace-a')).toBe('live')
   })
 
-  it('clears the override so EndgeContext_Module can return to the Workspace default', () => {
+  it('очищает переопределение, чтобы EndgeContext_Module вернулся к значению Workspace по умолчанию', () => {
     const repository = new ConfiguratorDataModeRepository()
     repository.write('https://backend.test', 'workspace-a', 'mock')
 

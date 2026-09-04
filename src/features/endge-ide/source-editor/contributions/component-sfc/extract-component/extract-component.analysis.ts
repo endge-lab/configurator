@@ -486,8 +486,8 @@ function isIdentifierReference(node: ts.Identifier): boolean {
     && ts.isElementAccessExpression(parent.parent)
     && parent.parent.argumentExpression === parent
   ) {
-    // Endge SFC supports selectors such as attributes[name='ACTail'].
-    // The selector key is part of the access syntax, not an external binding.
+    // Endge SFC поддерживает селекторы наподобие attributes[name='ACTail'].
+    // Ключ селектора является частью синтаксиса доступа, а не внешним binding.
     return false
   }
 

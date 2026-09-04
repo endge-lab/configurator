@@ -1,7 +1,7 @@
 import type { DomainDocumentType } from '@endge/core'
 import type { SmartTabRef } from '@/shared/ui/smart-tabs/types'
 
-// Restored document resolution is private to the tabs module.
+// Разрешение восстановленных документов является внутренней частью модуля tabs.
 
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 

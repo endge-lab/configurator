@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -9,7 +9,7 @@ import { Button } from '@/shared/ui/button'
 import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
 
 const props = defineProps<{
-  state: UIEditorDemoState
+  state: UIEditorModule
 }>()
 
 const session = new UIEditorRuntimePreviewSession()

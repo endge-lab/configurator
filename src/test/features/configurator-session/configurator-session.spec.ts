@@ -55,13 +55,13 @@ function installWindow(): { assign: ReturnType<typeof vi.fn>, storage: Map<strin
   return { assign, storage }
 }
 
-describe('configurator developer session', () => {
+describe('пользовательская сессия Configurator', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('uses one credentialed session request and keeps only the safe projection', async () => {
+  it('использует один запрос с credentials и сохраняет только безопасную проекцию сессии', async () => {
     const fetchMock = vi.fn().mockResolvedValue(sessionResponse())
     vi.stubGlobal('fetch', fetchMock)
     const module = new ConfiguratorSession_Module(
@@ -99,7 +99,7 @@ describe('configurator developer session', () => {
     })
   })
 
-  it('builds returnTo once and stops a redirect loop for two minutes', () => {
+  it('однократно формирует returnTo и на две минуты предотвращает цикл перенаправлений', () => {
     const { assign } = installWindow()
 
     expect(startConfiguratorLogin('https://backend.test/auth/login', BACKEND_URL)).toEqual({ redirected: true })
@@ -114,7 +114,7 @@ describe('configurator developer session', () => {
     expect(assign).toHaveBeenCalledOnce()
   })
 
-  it('clears the redirect marker after a successful session check', () => {
+  it('очищает маркер перенаправления после успешной проверки сессии', () => {
     const { storage } = installWindow()
     storage.set(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY, String(Date.now()))
 
@@ -123,7 +123,7 @@ describe('configurator developer session', () => {
     expect(storage.has(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY)).toBe(false)
   })
 
-  it('posts logout with credentials and clears module state', async () => {
+  it('отправляет logout с credentials и очищает состояние модуля', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(sessionResponse())
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
@@ -142,7 +142,7 @@ describe('configurator developer session', () => {
     expect(module.state).toEqual({ status: 'idle' })
   })
 
-  it('clears Configurator browser storage during forced logout', () => {
+  it('очищает браузерное хранилище Configurator при принудительном выходе', () => {
     const localStorageClear = vi.fn()
     const sessionStorageClear = vi.fn()
     vi.stubGlobal('window', {

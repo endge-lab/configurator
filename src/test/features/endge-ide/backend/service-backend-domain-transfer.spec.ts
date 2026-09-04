@@ -12,13 +12,13 @@ const snapshotJSON = JSON.stringify({
   documents: {},
 })
 
-describe('serviceBackendDomainTransfer_Service', () => {
+describe('сервис переноса домена через backend', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('creates an import plan with cookie credentials and workspace scope', async () => {
+  it('создаёт план импорта с cookie credentials и областью Workspace', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
       valid: true,
       planId: '550e8400-e29b-41d4-a716-446655440006',
@@ -59,7 +59,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
     })
   })
 
-  it('applies only the checked plan with exact confirmation and If-Match', async () => {
+  it('применяет только проверенный план с точным подтверждением и If-Match', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
       workspace: 'workspace-a',
       imported: { documents: 12, integrations: 0 },
@@ -98,7 +98,7 @@ describe('serviceBackendDomainTransfer_Service', () => {
     })
   })
 
-  it('returns workspace admin denial without treating it as a new login', async () => {
+  it('возвращает отказ для Workspace Admin, не считая его новым входом', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
       code: 'workspace_admin_required',
       message: 'Workspace Admin role is required',

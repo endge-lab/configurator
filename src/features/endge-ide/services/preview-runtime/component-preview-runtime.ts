@@ -31,7 +31,7 @@ interface ComponentPreviewContextOptions {
   vocabDependencies?: readonly RComponentSFC_RuntimeVocabDependency[]
 }
 
-/** Materializes definePreviewProps options into a runtime context shared by preview surfaces. */
+/** Материализует параметры definePreviewProps в runtime-контекст, общий для поверхностей preview. */
 export async function prepareComponentPreviewContext(
   options: ComponentSFCPreviewOptions | null,
   props: ComponentSFCPreviewProps,
@@ -97,7 +97,7 @@ export async function prepareComponentPreviewContext(
   return { host, dataAliases }
 }
 
-/** Resolves literal, fromStore and fromData declarations into the renderer input contract. */
+/** Преобразует объявления literal, fromStore и fromData во входной контракт renderer. */
 export function resolveComponentPreviewInput(
   previewProps: ComponentSFCPreviewProps,
   context: ComponentPreviewContext | null,

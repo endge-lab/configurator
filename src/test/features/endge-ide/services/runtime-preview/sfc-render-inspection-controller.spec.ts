@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import { SFCRenderInspectionController } from '@/features/endge-ide/services/runtime-preview/sfc-render-inspection-controller'
 
-describe('sFCRenderInspectionController', () => {
-  it('uses hover until a live node is pinned and exposes its concrete data', async () => {
+describe('контроллер инспекции SFC render', () => {
+  it('использует hover, пока live-узел не закреплён, и предоставляет его конкретные данные', async () => {
     const controller = new SFCRenderInspectionController()
     const row = { id: 'SU-100', status: 'boarding' }
     const id = controller.session.registerNode(createNode({

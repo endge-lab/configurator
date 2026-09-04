@@ -1,8 +1,8 @@
 import { Endge } from '@endge/core'
 import { describe, expect, it } from 'vitest'
 
-describe('action Source language', () => {
-  it('provides Action DSL completions and source diagnostics', () => {
+describe('язык Action Source', () => {
+  it('предоставляет автодополнение Action DSL и диагностику Source', () => {
     const completions = Endge.source.completions('action', {
       source: '',
       position: { lineNumber: 1, column: 1 },
@@ -13,7 +13,7 @@ describe('action Source language', () => {
     expect(diagnostics).toContainEqual(expect.objectContaining({ code: 'action-operation-undo-required' }))
   })
 
-  it('provides documented call signatures', () => {
+  it('предоставляет документированные сигнатуры вызовов', () => {
     const source = `computation('orders.total', {})`
     const signature = Endge.source.signatureHelp('action', {
       source,

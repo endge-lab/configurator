@@ -59,7 +59,7 @@ const effectiveItemsToDisplay = computed(() => {
 
 const allButLastTwoItems = computed(() => {
   if (effectiveItemsToDisplay.value === 1) {
-    return props.items.slice(0, -1) // All items except the last one
+    return props.items.slice(0, -1) // Все элементы, кроме последнего
   }
   if (props.items.length <= effectiveItemsToDisplay.value) {
     return []
@@ -69,10 +69,10 @@ const allButLastTwoItems = computed(() => {
 
 const remainingItems = computed(() => {
   if (effectiveItemsToDisplay.value === 1) {
-    return props.items.slice(-1) // Show only the last item when itemsToDisplay is 1
+    return props.items.slice(-1) // Отображение только последнего элемента, когда itemsToDisplay равно 1
   }
   if (props.items.length <= effectiveItemsToDisplay.value) {
-    return props.items.slice(1) // All items except the first one
+    return props.items.slice(1) // Все элементы, кроме первого
   }
   return props.items.slice(-(effectiveItemsToDisplay.value - 1))
 })

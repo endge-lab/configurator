@@ -29,8 +29,8 @@ function isPersistedMonacoViewState(value: unknown): value is PersistedMonacoVie
 }
 
 /**
- * Cheap content identity guard. Two independent 32-bit accumulators plus length
- * make accidental restoration onto different source text vanishingly unlikely.
+ * Недорогая защита идентичности содержимого. Два независимых 32-битных аккумулятора
+ * вместе с длиной делают случайное восстановление для другого Source практически невозможным.
  */
 function sourceFingerprint(source: string): string {
   let first = 0x811C9DC5

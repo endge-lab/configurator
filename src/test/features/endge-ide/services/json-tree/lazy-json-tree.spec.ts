@@ -25,8 +25,8 @@ function root(value: unknown): LazyJsonValueNode {
   }
 }
 
-describe('lazy JSON tree planning', () => {
-  it('does not read 10k array items before a range is expanded', () => {
+describe('ленивое планирование дерева JSON', () => {
+  it('не читает 10 тысяч элементов массива до раскрытия диапазона', () => {
     let itemReads = 0
     const rows = new Proxy(
       Array.from({ length: 10_000 }, (_, index) => ({ id: index, flight: `GH${index}` })),
@@ -53,7 +53,7 @@ describe('lazy JSON tree planning', () => {
     expect(shouldAutoExpandLazyJsonNode(ranges[0], 1, 2)).toBe(false)
   })
 
-  it('materializes collections of up to 100 items directly', () => {
+  it('непосредственно материализует коллекции размером до 100 элементов', () => {
     const values = Array.from({ length: 100 }, (_, index) => index)
     const children = createLazyJsonChildren(root(values), options)
 
@@ -62,7 +62,7 @@ describe('lazy JSON tree planning', () => {
     expect(shouldAutoExpandLazyJsonNode(root(values), 0, 2)).toBe(true)
   })
 
-  it('keeps fan-out bounded for collections much larger than one page', () => {
+  it('ограничивает ветвление для коллекций значительно больше одной страницы', () => {
     const millionRows = Array.from({ length: 1_000_000 })
     const levelOne = createLazyJsonChildren(root(millionRows), options)
     expect(levelOne).toHaveLength(100)
@@ -73,7 +73,7 @@ describe('lazy JSON tree planning', () => {
     expect(levelTwo[0]).toMatchObject({ kind: 'range', start: 0, end: 100 })
   })
 
-  it('stops circular branches without traversing them', () => {
+  it('останавливает циклические ветви без их обхода', () => {
     const value: Record<string, unknown> = {}
     value.self = value
     const self = createLazyJsonChildren(root(value), options)[0] as LazyJsonValueNode

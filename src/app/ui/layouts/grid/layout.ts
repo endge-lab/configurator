@@ -161,7 +161,7 @@ function getNextZIndex(): number {
 
 let _isLayoutHydrated = false
 
-/** Switches the global Grid host to an isolated persisted layout workspace. */
+/** Переключает глобальный host Grid на изолированное сохраняемое рабочее пространство layout. */
 export function setLayoutScope(scope: string): void {
   const normalized = String(scope ?? '').trim() || DEFAULT_LAYOUT_SCOPE
   if (activeLayoutScope.value === normalized) {
@@ -301,7 +301,7 @@ export function getWidgetOrder(position: WidgetPosition): string[] {
   return persistedState.value.areas[position]?.order ?? []
 }
 
-/** Renames one persisted widget definition without resetting the user's layout. */
+/** Переименовывает сохранённое определение виджета без сброса пользовательского layout. */
 export function migratePersistedWidgetId(previousId: string, nextId: string): void {
   const previous = String(previousId ?? '').trim()
   const next = String(nextId ?? '').trim()
@@ -340,7 +340,7 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
   persistedState.value = state
 }
 
-/** Removes a retired widget definition from persisted layout state. */
+/** Удаляет устаревшее определение виджета из сохранённого состояния layout. */
 export function removePersistedWidgetId(widgetId: string): void {
   const id = String(widgetId ?? '').trim()
   if (!id) {
@@ -436,7 +436,7 @@ export function useStateProvider(state: {
   })
 }
 
-// Area state getters and setters
+// Методы чтения и изменения состояния области
 type DockablePosition = 'left' | 'right' | 'bottom'
 
 function ensurePersistedArea(position: DockablePosition): void {
@@ -502,7 +502,7 @@ export function setAreaActiveWidget(position: DockablePosition, widgetId: string
 }
 
 export function registerWidget(definition: WidgetDefinition): void {
-  // Validate required fields
+  // Проверяем обязательные поля
   if (!definition.id || typeof definition.id !== 'string') {
     throw new Error('Widget definition must have a valid string id')
   }
@@ -516,7 +516,7 @@ export function registerWidget(definition: WidgetDefinition): void {
     throw new Error('Widget definition content must be "component" or "iframe"')
   }
 
-  // Validate content-specific fields
+  // Проверяем поля, зависящие от вида содержимого
   if (definition.content === 'iframe') {
     if ('defaultComponent' in definition && definition.defaultComponent !== undefined) {
       throw new Error('iframe widget cannot have defaultComponent')
@@ -531,7 +531,7 @@ export function registerWidget(definition: WidgetDefinition): void {
     }
   }
 
-  // Validate popup restrictions for component widgets
+  // Проверяем ограничения popup для компонентных виджетов
   if (definition.content === 'component') {
     if (definition.allowedPositions?.includes('popup')) {
       throw new Error('component widget cannot include "popup" in allowedPositions')
@@ -541,14 +541,14 @@ export function registerWidget(definition: WidgetDefinition): void {
     }
   }
 
-  // Validate defaultPosition is in allowedPositions
+  // Проверяем наличие defaultPosition в allowedPositions
   if (definition.allowedPositions && definition.defaultPosition) {
     if (!definition.allowedPositions.includes(definition.defaultPosition)) {
       throw new Error(`defaultPosition "${definition.defaultPosition}" must be included in allowedPositions`)
     }
   }
 
-  // Validate floatingConstraints only when floating is allowed
+  // Проверяем floatingConstraints только когда разрешён режим floating
   if (definition.floatingConstraints) {
     const allowedPositions = definition.allowedPositions ?? ['left', 'right', 'bottom', 'floating']
     if (!allowedPositions.includes('floating')) {
@@ -557,7 +557,7 @@ export function registerWidget(definition: WidgetDefinition): void {
   }
 
   const savedPosition = persistedState.value.definitionPositions[definition.id]
-  // popup is a transient state (opens browser window), so fall back to floating or default
+  // popup является временным состоянием с отдельным окном браузера, поэтому используем floating или значение по умолчанию
   const position = savedPosition === 'popup'
     ? (definition.defaultPosition ?? 'floating')
     : (savedPosition ?? definition.defaultPosition ?? 'left')
@@ -570,7 +570,7 @@ export function registerWidget(definition: WidgetDefinition): void {
 
   layoutState.widgets.definitions[definition.id] = definitionWithState
 
-  // Restore persisted activeWidget or set as active if none
+  // Восстанавливаем сохранённый activeWidget либо назначаем активный виджет при его отсутствии
   if (position === 'left' || position === 'right' || position === 'bottom') {
     ensurePersistedArea(position)
     const persistedArea = persistedState.value.areas[position]
@@ -641,10 +641,10 @@ export function unregisterWidget(definitionId: string): void {
     delete layoutState.widgets.instances[id]
   })
 
-  // Delete definition first so it's not included in the search for other widgets
+  // Сначала удаляем определение, чтобы оно не участвовало в поиске других виджетов
   delete layoutState.widgets.definitions[definitionId]
 
-  // Find another widget in the same area to activate
+  // Находим другой виджет в той же области и делаем его активным
   if (position === 'left' || position === 'right' || position === 'bottom') {
     const area = layoutState.widgets.areas[position]
     if (area.activeWidget === definitionId) {
@@ -699,10 +699,10 @@ export function getWidgetInstances(definitionId: string) {
     .filter(i => i.definitionId === definitionId)
 }
 
-// Track popups that sent 'popup-unloading' - pending close/refresh detection
+// Отслеживаем popup, отправившие 'popup-unloading', пока определяется закрытие или обновление
 const popupUnloadingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-// Track popup close check intervals so they can be cancelled on intentional moves
+// Храним интервалы проверки закрытия popup, чтобы отменять их при намеренном перемещении
 const popupCloseCheckIntervals = new Map<string, ReturnType<typeof setInterval>>()
 
 export function moveWidget(definitionId: string, position: WidgetPosition): void {
@@ -751,17 +751,17 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
     }
   }
 
-  // Close all popup windows when moving from popup to another position
+  // Закрываем все окна popup при перемещении из popup в другую позицию
   if (oldPosition === 'popup') {
     const instances = getWidgetInstances(definitionId)
     instances.forEach((instance) => {
-      // Cancel popup close check interval to prevent delayed destroy
+      // Отменяем интервал проверки закрытия popup, чтобы избежать отложенного уничтожения
       const interval = popupCloseCheckIntervals.get(instance.id)
       if (interval) {
         clearInterval(interval)
         popupCloseCheckIntervals.delete(instance.id)
       }
-      // Cancel any pending unloading timer
+      // Отменяем ожидающий таймер выгрузки
       const timer = popupUnloadingTimers.get(instance.id)
       if (timer) {
         clearTimeout(timer)
@@ -769,16 +769,16 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
       }
 
       if (isPopupOpen(instance.id)) {
-        // Send message to close popup without destroying instance
-        // The popup will close itself after receiving this message
+        // Отправляем команду закрыть popup без уничтожения экземпляра
+        // Popup закроется самостоятельно после получения этой команды
         getHostWidgetChannel().send({
           type: 'close-popup-keep-instance',
           instanceId: instance.id,
         })
-        // Unregister the popup reference (the popup will close itself)
+        // Удаляем регистрацию ссылки на popup, который закроется самостоятельно
         unregisterPopupWindow(instance.id)
       }
-      // Clear popup state
+      // Очищаем состояние popup
       delete layoutState.widgets.areas.popup.states[instance.id]
     })
   }
@@ -924,7 +924,7 @@ export function createWidgetInstance(
     throw new Error(`Widget definition "${definitionId}" not found`)
   }
 
-  // Validate content-specific instance fields
+  // Проверяем поля экземпляра, зависящие от вида содержимого
   if (definition.content === 'iframe') {
     if ('component' in instance && instance.component !== undefined) {
       throw new Error('iframe widget instance cannot have component')
@@ -933,7 +933,7 @@ export function createWidgetInstance(
       throw new Error('iframe widget instance cannot have props')
     }
 
-    // Check if url is required (no default url in definition)
+    // Проверяем обязательность url, когда в определении нет значения по умолчанию
     const hasUrl = 'url' in instance && instance.url !== undefined
     const hasDefaultUrl = 'defaultUrl' in definition && definition.defaultUrl !== undefined
     if (!hasUrl && !hasDefaultUrl) {
@@ -946,7 +946,7 @@ export function createWidgetInstance(
       throw new Error('component widget instance cannot have url')
     }
 
-    // Check if component is required (no default component in definition)
+    // Проверяем обязательность component, когда в определении нет компонента по умолчанию
     const hasComponent = 'component' in instance && instance.component !== undefined
     const hasDefaultComponent = 'defaultComponent' in definition && definition.defaultComponent !== undefined
     if (!hasComponent && !hasDefaultComponent) {
@@ -995,7 +995,7 @@ export function destroyWidgetInstance(instanceId: string): void {
   if (remainingInstances.length === 0 && definition) {
     definition.minimized = true
 
-    // If this widget was active in its area, activate another widget in the same area
+    // Если виджет был активным в своей области, активируем другой виджет в той же области
     const position = definition.position
     if (position === 'left' || position === 'right' || position === 'bottom') {
       const area = layoutState.widgets.areas[position]
@@ -1019,7 +1019,7 @@ export function destroyAllWidgetInstances(definitionId: string): void {
   if (definition) {
     definition.minimized = true
 
-    // If this widget was active in its area, activate another widget in the same area
+    // Если виджет был активным в своей области, активируем другой виджет в той же области
     const position = definition.position
     if (position === 'left' || position === 'right' || position === 'bottom') {
       const area = layoutState.widgets.areas[position]
@@ -1133,7 +1133,7 @@ export function resetLayout() {
   layoutState.title = ''
 }
 
-// Popup window management
+// Управление окнами popup
 export function openWidgetPopup(instanceId: string): Window | null {
   const instance = layoutState.widgets.instances[instanceId]
   if (!instance) {
@@ -1145,7 +1145,7 @@ export function openWidgetPopup(instanceId: string): Window | null {
     return null
   }
 
-  // Check if popup is already open
+  // Проверяем, открыт ли popup
   if (isPopupOpen(instanceId)) {
     return null
   }
@@ -1157,15 +1157,15 @@ export function openWidgetPopup(instanceId: string): Window | null {
   if (popup) {
     registerPopupWindow(instanceId, popup)
 
-    // Monitor popup close
+    // Отслеживаем закрытие popup
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed)
         popupCloseCheckIntervals.delete(instanceId)
         unregisterPopupWindow(instanceId)
 
-        // If no unloading signal was received (e.g. browser killed the window),
-        // start a grace period to detect refresh vs true close
+        // Если сигнал выгрузки не получен, например браузер принудительно закрыл окно,
+        // запускаем период ожидания, чтобы отличить обновление от фактического закрытия
         if (!popupUnloadingTimers.has(instanceId)) {
           schedulePopupCloseCheck(instanceId)
         }
@@ -1212,7 +1212,7 @@ export function getWidgetPopupState(instanceId: string): WidgetPopupState | null
 
   const headerActions = instance.headerActions ?? definition.defaultHeaderActions
 
-  // Spread arrays to ensure they are plain arrays (not Vue reactive)
+  // Копируем массивы через spread, чтобы они были обычными, а не реактивными Vue-массивами
   const allowedPositions = [...(definition.allowedPositions ?? ['left', 'right', 'bottom', 'floating'])]
 
   return {
@@ -1232,7 +1232,7 @@ export function getWidgetPopupState(instanceId: string): WidgetPopupState | null
 function handleWidgetChannelMessage(message: WidgetChannelMessage) {
   switch (message.type) {
     case 'request-popup-state': {
-      // Popup reconnected after refresh - cancel pending destroy
+      // Popup переподключился после обновления — отменяем ожидающее уничтожение
       const pendingTimer = popupUnloadingTimers.get(message.instanceId)
       if (pendingTimer) {
         clearTimeout(pendingTimer)
@@ -1252,9 +1252,9 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
     case 'move-widget': {
       const instance = layoutState.widgets.instances[message.instanceId]
       if (instance) {
-        // The popup that sent this message already set shouldDestroyOnClose = false
-        // So we just need to close it and move the widget
-        // moveWidget will handle closing other popup instances with close-popup-keep-instance
+        // Popup, отправивший сообщение, уже установил shouldDestroyOnClose = false
+        // Поэтому достаточно закрыть его и переместить виджет
+        // moveWidget закроет остальные экземпляры popup через close-popup-keep-instance
         moveWidget(instance.definitionId, message.position)
       }
       break
@@ -1279,7 +1279,7 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
         if (message.updates.headerActions !== undefined) {
           instance.headerActions = message.updates.headerActions
         }
-        // Send updated state back to popup
+        // Отправляем обновлённое состояние обратно в popup
         const state = getWidgetPopupState(message.instanceId)
         if (state) {
           getHostWidgetChannel().send({
@@ -1319,7 +1319,7 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
           order: message.action.order,
           disabled: message.action.disabled,
           onClick: () => {
-            // Send click event back to popup iframe via channel
+            // Отправляем событие клика обратно в iframe popup через канал
             getHostWidgetChannel().send({
               type: 'header-action',
               instanceId: message.instanceId,
@@ -1333,7 +1333,7 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
         else {
           addHeaderAction(message.instanceId, widgetAction)
         }
-        // Send updated state back to popup
+        // Отправляем обновлённое состояние обратно в popup
         const state = getWidgetPopupState(message.instanceId)
         if (state) {
           getHostWidgetChannel().send({
@@ -1350,7 +1350,7 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
       if (instance) {
         removeHeaderAction(message.instanceId, message.actionId)
         removeOptionsAction(message.instanceId, message.actionId)
-        // Send updated state back to popup
+        // Отправляем обновлённое состояние обратно в popup
         const state = getWidgetPopupState(message.instanceId)
         if (state) {
           getHostWidgetChannel().send({
@@ -1363,26 +1363,26 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
       break
     }
     case 'popup-minimized': {
-      // Cancel popup close check interval to prevent delayed destroy
+      // Отменяем интервал проверки закрытия popup, чтобы избежать отложенного уничтожения
       const interval = popupCloseCheckIntervals.get(message.instanceId)
       if (interval) {
         clearInterval(interval)
         popupCloseCheckIntervals.delete(message.instanceId)
       }
-      // Cancel any pending unloading timer
+      // Отменяем ожидающий таймер выгрузки
       const timer = popupUnloadingTimers.get(message.instanceId)
       if (timer) {
         clearTimeout(timer)
         popupUnloadingTimers.delete(message.instanceId)
       }
-      // Unregister popup window reference (it's closing)
+      // Удаляем регистрацию ссылки на закрывающееся окно popup
       unregisterPopupWindow(message.instanceId)
-      // Track minimized state for popup instance
+      // Отслеживаем свёрнутое состояние экземпляра popup
       layoutState.widgets.areas.popup.states[message.instanceId] = { minimized: true }
       break
     }
     case 'popup-unloading': {
-      // Popup is unloading (refresh or close) - schedule a delayed check
+      // Popup выгружается при обновлении или закрытии — планируем отложенную проверку
       schedulePopupCloseCheck(message.instanceId)
       break
     }
@@ -1390,18 +1390,18 @@ function handleWidgetChannelMessage(message: WidgetChannelMessage) {
 }
 
 function schedulePopupCloseCheck(instanceId: string) {
-  // Clear any existing timer for this instance
+  // Очищаем существующий таймер этого экземпляра
   const existing = popupUnloadingTimers.get(instanceId)
   if (existing) {
     clearTimeout(existing)
   }
 
-  // Wait for the popup to potentially reconnect (refresh)
-  // If request-popup-state arrives within this window, the timer is cancelled
+  // Ожидаем возможного переподключения popup после обновления
+  // Если за это время приходит request-popup-state, таймер отменяется
   const timer = setTimeout(() => {
     popupUnloadingTimers.delete(instanceId)
 
-    // If popup didn't reconnect, it was truly closed - destroy the instance
+    // Если popup не переподключился, он действительно закрыт — уничтожаем экземпляр
     const instance = layoutState.widgets.instances[instanceId]
     if (instance) {
       closePopupWindow(instanceId)
@@ -1412,7 +1412,7 @@ function schedulePopupCloseCheck(instanceId: string) {
   popupUnloadingTimers.set(instanceId, timer)
 }
 
-// Initialize channel listener for host window
+// Инициализируем слушатель канала для host-окна
 let channelInitialized = false
 
 export function initWidgetChannel() {
@@ -1424,7 +1424,7 @@ export function initWidgetChannel() {
   const channel = getHostWidgetChannel()
   channel.subscribe(handleWidgetChannelMessage)
 
-  // Handle popups when host window closes
+  // Обрабатываем popup при закрытии host-окна
   window.addEventListener('beforeunload', handleHostWindowClose)
 }
 
@@ -1435,14 +1435,14 @@ export function handleHostWindowClose() {
     if (definition?.content === 'iframe') {
       if (isPopupOpen(instance.id)) {
         if (definition.detachablePopup) {
-          // Detachable popups stay open but become "detached"
+          // Отделяемые popup остаются открытыми, но переходят в состояние «detached»
           channel.send({
             type: 'popup-detached',
             instanceId: instance.id,
           })
         }
         else {
-          // Non-detachable popups are closed
+          // Неотделяемые popup закрываются
           channel.send({
             type: 'popup-closed',
             instanceId: instance.id,
@@ -1485,12 +1485,12 @@ export function restorePopupInstance(instanceId: string) {
     return
   }
 
-  // Clear minimized state
+  // Сбрасываем свёрнутое состояние
   if (layoutState.widgets.areas.popup.states[instanceId]) {
     layoutState.widgets.areas.popup.states[instanceId].minimized = false
   }
 
-  // If popup is open, focus it directly using window reference
+  // Если popup открыт, переводим фокус напрямую через ссылку на окно
   if (isPopupOpen(instanceId)) {
     const popupWindow = getPopupWindow(instanceId)
     if (popupWindow && !popupWindow.closed) {
@@ -1498,7 +1498,7 @@ export function restorePopupInstance(instanceId: string) {
     }
   }
   else {
-    // Open new popup window
+    // Открываем новое окно popup
     openWidgetPopup(instanceId)
   }
 }

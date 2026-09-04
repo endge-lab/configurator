@@ -55,13 +55,13 @@ function snapshot(): Record<string, unknown> {
   }
 }
 
-describe('serviceBackendDomain_Service', () => {
+describe('сервис домена через backend', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('loads one snapshot with cookie credentials, workspace header, signal and ETag', async () => {
+  it('загружает один snapshot с cookie credentials, заголовком Workspace, signal и ETag', async () => {
     const abort = new AbortController()
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(snapshot()), {
       status: 200,
@@ -91,7 +91,7 @@ describe('serviceBackendDomain_Service', () => {
     expect(unauthorized).not.toHaveBeenCalled()
   })
 
-  it('updates a document with cookie, workspace and optimistic revision', async () => {
+  it('обновляет документ с cookie, Workspace и оптимистичной ревизией', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       identity: 'query-a',
       displayName: 'Query A',
@@ -121,7 +121,7 @@ describe('serviceBackendDomain_Service', () => {
     expect(result.etag).toBe('"4"')
   })
 
-  it('moves several documents through one atomic backend request', async () => {
+  it('перемещает несколько документов одним атомарным запросом backend', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       documents: [
         {
@@ -163,7 +163,7 @@ describe('serviceBackendDomain_Service', () => {
     expect(result.documents.map(item => item.document.state.revision)).toEqual([4, 6])
   })
 
-  it('does not restart login for forbidden workspace access', async () => {
+  it('не перезапускает вход при запрещённом доступе к Workspace', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: 'workspace_forbidden',
       message: 'Workspace access is forbidden',
@@ -179,7 +179,7 @@ describe('serviceBackendDomain_Service', () => {
     expect(unauthorized).not.toHaveBeenCalled()
   })
 
-  it('rejects malformed documents before returning a snapshot', async () => {
+  it('отклоняет некорректные документы до возврата snapshot', async () => {
     const invalid = snapshot()
     ;(invalid.documents as Record<string, unknown>).queries = [{ identity: 'query-without-state' }]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(invalid), {

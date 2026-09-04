@@ -1,6 +1,6 @@
 import type { RuntimeArtifactReader } from '@endge/core'
 
-/** Preview-only policy: global mock wins over source-local Composition live overrides. */
+/** Политика только для preview: глобальный mock имеет приоритет над локальными live-переопределениями Composition из Source. */
 export function createRuntimePreviewArtifactReader(
   base: RuntimeArtifactReader,
   forceMock: boolean,

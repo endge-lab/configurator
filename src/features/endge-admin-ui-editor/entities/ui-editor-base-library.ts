@@ -1,7 +1,7 @@
 import type {
   UIEditorLibraryGroup,
   UIEditorLibraryItem,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import { UI_EDITOR_SFC_DEFINITION_CONTRACTS } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-contract'
 

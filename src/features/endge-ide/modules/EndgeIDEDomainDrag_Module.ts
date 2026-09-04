@@ -5,7 +5,7 @@ import type {
 
 import { ref } from 'vue'
 
-/** Owns the current domain-tree drag interaction shared by drag sources and drop targets. */
+/** Владеет текущим взаимодействием перетаскивания в дереве домена, общим для источников и целей. */
 export class EndgeIDEDomainDrag_Module {
   private readonly _state = ref<DomainDragState>({
     active: false,

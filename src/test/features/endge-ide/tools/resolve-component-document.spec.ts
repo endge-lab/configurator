@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { resolveComponentDocument } from '@/features/endge-ide/tools/resolve-component-document'
 
-describe('resolveComponentDocument', () => {
+describe('разрешение документа компонента', () => {
   afterEach(() => {
     Endge.domain.reset()
   })
 
-  it('resolves an executable SFC component', () => {
+  it('разрешает исполняемый компонент SFC', () => {
     const component = new RComponentSFC()
     component.id = 71
     component.identity = 'groundhandling-control-table'
@@ -21,7 +21,7 @@ describe('resolveComponentDocument', () => {
     })
   })
 
-  it('keeps legacy component lookup as a fallback', () => {
+  it('сохраняет legacy-поиск компонента как резервный путь', () => {
     const component = new RComponentTable()
     component.id = 72
     component.identity = 'legacy-table'

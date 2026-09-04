@@ -10,8 +10,8 @@ import {
   updateTableDefaultSort,
 } from '@/features/endge-ide/services/component-sfc-editor/table-column-sort-state'
 
-describe('table visual column sort state', () => {
-  it('reads directions in priority order and defaults a missing direction to asc', () => {
+describe('визуальное состояние сортировки колонок таблицы', () => {
+  it('читает направления в порядке приоритета и использует asc, если направление отсутствует', () => {
     expect(parseTableDefaultSort('status:asc,broken:up,flight,date:desc')).toEqual([
       { key: 'status', direction: 'asc' },
       { key: 'flight', direction: 'asc' },
@@ -19,26 +19,26 @@ describe('table visual column sort state', () => {
     ])
   })
 
-  it('updates direction in place and preserves unrelated invalid tokens', () => {
+  it('обновляет направление на месте и сохраняет несвязанные невалидные токены', () => {
     expect(updateTableDefaultSort('status:asc,broken:up,date:desc', 'status', 'desc'))
       .toBe('status:desc,broken:up,date:desc')
   })
 
-  it('removes the value when the last default sort is cleared', () => {
+  it('удаляет значение после очистки последней сортировки по умолчанию', () => {
     expect(updateTableDefaultSort('status:asc', 'status', null)).toBeNull()
   })
 
-  it('renames a key without changing its priority', () => {
+  it('переименовывает ключ без изменения его приоритета', () => {
     expect(renameTableDefaultSortKey('status:asc,date:desc', 'status', 'state'))
       .toBe('state:asc,date:desc')
   })
 
-  it('moves one sort item while keeping invalid source tokens', () => {
+  it('перемещает один элемент сортировки, сохраняя невалидные токены Source', () => {
     expect(moveTableDefaultSort('status:asc,broken:up,date:desc', 'date', -1))
       .toBe('date:desc,broken:up,status:asc')
   })
 
-  it('round-trips ordered Column sort-by paths', () => {
+  it('сохраняет упорядоченные пути sort-by Column при двустороннем преобразовании', () => {
     const paths = parseTableColumnSortPaths('departureLeg.aircraft.tail, departureLeg.aircraft.type')
     expect(paths).toEqual(['departureLeg.aircraft.tail', 'departureLeg.aircraft.type'])
     expect(serializeTableColumnSortPaths(paths))
@@ -46,7 +46,7 @@ describe('table visual column sort state', () => {
     expect(serializeTableColumnSortPaths([])).toBeNull()
   })
 
-  it('accepts dot paths and DataPath selectors supported by the adapters', () => {
+  it('принимает dot paths и селекторы DataPath, поддерживаемые адаптерами', () => {
     expect(isTableColumnSortPath('departureLeg.aircraft.tail')).toBe(true)
     expect(isTableColumnSortPath('departureLeg.attributes[name=\'ACTail\'].text')).toBe(true)
     expect(isTableColumnSortPath('row items.value')).toBe(false)

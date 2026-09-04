@@ -24,7 +24,7 @@ import { RuntimePreviewInstance } from '@/features/endge-ide/services/runtime-pr
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 import { findRuntimePreviewOccurrences } from '@/features/endge-ide/services/runtime-preview/runtime-preview-occurrence'
 
-/** Persistent multi-root Runtime Preview workspace owned by EndgeIDE. */
+/** Постоянное многоуровневое рабочее пространство Runtime Preview, принадлежащее EndgeIDE. */
 export class EndgeIDERuntimePreview_Module {
   private readonly _entries = shallowRef<RuntimePreviewInstance[]>([])
   private readonly _selectedEntryKey = ref<string | null>(null)
@@ -91,7 +91,7 @@ export class EndgeIDERuntimePreview_Module {
     return this._launch(rawTarget, true)
   }
 
-  /** Launches persisted document targets in selection order and reveals the tree once after the batch. */
+  /** Запускает цели сохранённых документов в порядке выбора и однократно раскрывает дерево после всей группы. */
   public async launchAll(rawTargets: readonly RuntimePreviewLaunchRequest[]): Promise<number> {
     const targets = [...new Map(rawTargets.map(target => [runtimePreviewKey(target), target])).values()]
     let launched = 0
@@ -169,7 +169,7 @@ export class EndgeIDERuntimePreview_Module {
     }
   }
 
-  /** Launches the active editor only when its document type has a runtime contract. */
+  /** Запускает активный редактор, только если тип его документа имеет runtime-контракт. */
   public async launchEditor(editor: unknown): Promise<boolean> {
     const request = createRuntimePreviewLaunchRequest(editor)
     if (!request) {
@@ -221,7 +221,7 @@ export class EndgeIDERuntimePreview_Module {
     return createRuntimePreviewLaunchRequest(editor) != null
   }
 
-  /** Requests a one-shot expansion preset from the Runtime Tree surface. */
+  /** Запрашивает однократный preset раскрытия у поверхности Runtime Tree. */
   public requestTreeExpansion(preset: RuntimeTreeExpansionPreset): void {
     this._treeExpansionRequest.value = {
       id: ++this._treeExpansionRequestId,
@@ -289,7 +289,7 @@ export class EndgeIDERuntimePreview_Module {
     resolve?.(false)
   }
 
-  /** Escape navigation: leave Runtime Preview without stopping its runtimes. */
+  /** Навигация по Escape: закрывает Runtime Preview без остановки его runtime. */
   public returnToProject(): boolean {
     const area = getLayoutState().widgets.value.areas.left
     if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) {
@@ -350,7 +350,7 @@ export class EndgeIDERuntimePreview_Module {
     await Promise.all(this.entries.value.map(instance => instance.pause()))
   }
 
-  /** Starts every idle root and resumes roots paused by the user. */
+  /** Запускает все неактивные корни и возобновляет корни, приостановленные пользователем. */
   public async startAll(): Promise<void> {
     await Promise.all(this.entries.value.map((instance) => {
       if (instance.status.value === 'paused') {
@@ -367,12 +367,12 @@ export class EndgeIDERuntimePreview_Module {
     await Promise.all(this.entries.value.map(instance => instance.stop()))
   }
 
-  /** Recreates every remembered Runtime Preview root and its nested runtimes. */
+  /** Пересоздаёт все запомненные корни Runtime Preview и их вложенные runtime. */
   public async restartAll(): Promise<void> {
     await Promise.all(this.entries.value.map(instance => instance.restart()))
   }
 
-  /** Recreates mounted preview roots so Store initialization follows the new data mode. */
+  /** Пересоздаёт смонтированные корни preview, чтобы Store инициализировался в новом режиме данных. */
   public async restartForDataModeChange(): Promise<void> {
     const candidates = this.entries.value
       .map(instance => ({ instance, state: instance.status.value }))
@@ -395,7 +395,7 @@ export class EndgeIDERuntimePreview_Module {
     }))
   }
 
-  /** Removes every remembered root and disposes any runtime still owned by it. */
+  /** Удаляет все запомненные корни и освобождает runtime, которыми они ещё владеют. */
   public async removeAll(): Promise<void> {
     await this.disposeAll()
     writeRuntimePreviewHistory([])
@@ -588,7 +588,7 @@ export class EndgeIDERuntimePreview_Module {
     await instance.restart()
   }
 
-  /** Handles auth requested by a Query that appeared after Preview startup. */
+  /** Обрабатывает авторизацию, запрошенную Query, появившимся после запуска Preview. */
   private _handleInteractionRequired(error: AuthInteractionRequiredError): void {
     const instance = this.selectedEntry.value
     if (!instance) {

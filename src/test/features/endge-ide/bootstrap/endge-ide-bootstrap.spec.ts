@@ -40,7 +40,7 @@ vi.mock('@/app/modules/ConfiguratorI18n_Module', () => ({
   },
 }))
 
-describe('endge IDE backend bootstrap', () => {
+describe('инициализация Endge IDE через backend', () => {
   let Configurator: typeof import('@/app').Configurator
 
   beforeEach(async () => {
@@ -59,7 +59,7 @@ describe('endge IDE backend bootstrap', () => {
     Configurator = bootstrapModule.Configurator
   })
 
-  it('checks developer session before continuing service-backend boot', async () => {
+  it('проверяет пользовательскую сессию перед продолжением запуска service backend', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
       user: {
         id: 'developer-id',
@@ -108,7 +108,7 @@ describe('endge IDE backend bootstrap', () => {
     })
   })
 
-  it('redirects on missing session and stops Core boot', async () => {
+  it('перенаправляет при отсутствии сессии и останавливает запуск Core', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: 'unauthorized',
       loginUrl: 'https://backend.test/auth/login',
@@ -137,7 +137,7 @@ describe('endge IDE backend bootstrap', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
-  it('offers an explicit login retry when session is still missing after callback', async () => {
+  it('предлагает явно повторить вход, если после callback сессия по-прежнему отсутствует', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: 'unauthorized',
       loginUrl: 'https://backend.test/auth/login',
@@ -174,7 +174,7 @@ describe('endge IDE backend bootstrap', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
-  it('boots Viewer with read-only provider capabilities', async () => {
+  it('запускает Viewer с возможностями провайдера только для чтения', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
@@ -203,7 +203,7 @@ describe('endge IDE backend bootstrap', () => {
     }))
   })
 
-  it('requires Workspace selection without running Endge boot when saved value and seed are unavailable', async () => {
+  it('требует выбрать Workspace без запуска Endge, если сохранённое и начальное значения недоступны', async () => {
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', '')
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -224,7 +224,7 @@ describe('endge IDE backend bootstrap', () => {
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
-  it('keeps an unavailable remote backend selected and exposes a recoverable bootstrap failure', async () => {
+  it('сохраняет выбор недоступного удалённого backend и предоставляет восстанавливаемую ошибку запуска', async () => {
     vi.resetModules()
     const localStorage = new MemoryStorage()
     localStorage.setItem('endge:configurator:active-backend-url:v1', 'https://remote.test')

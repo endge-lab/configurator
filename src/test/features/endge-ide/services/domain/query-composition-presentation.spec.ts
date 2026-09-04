@@ -6,8 +6,8 @@ import {
   setQueryCompositionRole,
 } from '../../../../../features/endge-ide/services/domain/query-composition-presentation'
 
-describe('query Composition presentation', () => {
-  it('adds the role without losing user metadata', () => {
+describe('представление query Composition', () => {
+  it('добавляет role без потери пользовательских метаданных', () => {
     const meta = setQueryCompositionRole({ owner: 'aodb', endge: { pinned: true } }, true)
 
     expect(meta).toEqual({
@@ -17,7 +17,7 @@ describe('query Composition presentation', () => {
     expect(isQueryComposition({ meta })).toBe(true)
   })
 
-  it('removes only the role and keeps the remaining namespace', () => {
+  it('удаляет только role и сохраняет остальной namespace', () => {
     const meta = setQueryCompositionRole({
       owner: 'aodb',
       endge: { pinned: true, role: QUERY_COMPOSITION_ROLE },

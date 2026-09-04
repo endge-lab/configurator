@@ -8,7 +8,7 @@ import {
   prepareVocabMockGeneration,
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 
-describe('vocab Mock generator', () => {
+describe('генератор Mock для Vocab', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     Endge.domain.reset()
@@ -16,7 +16,7 @@ describe('vocab Mock generator', () => {
     Endge.mock.reset()
   })
 
-  it('preloads every provider Vocab and preserves unrelated Mock keys', async () => {
+  it('предварительно загружает каждый Vocab провайдера и сохраняет несвязанные ключи Mock', async () => {
     const airlines = vocab(1, 'airlines')
     const stations = vocab(2, 'stations')
     Endge.domain.addVocab(airlines)
@@ -48,7 +48,7 @@ describe('vocab Mock generator', () => {
     expect(prepared.document.airlines).toHaveLength(10)
   })
 
-  it('writes Mock before patching Vocab documents', async () => {
+  it('записывает Mock до изменения документов Vocab', async () => {
     const airlines = vocab(1, 'airlines')
     const stations = vocab(2, 'stations')
     const mock = new RMock()

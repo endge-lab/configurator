@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UIComponentDefinition, UIPresentationSurface } from '@endge/core'
-import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorNode } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 defineProps<{
   node: UIEditorNode<'button'>

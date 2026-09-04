@@ -4,7 +4,7 @@ import type {
   UIEditorSFCSourceAttribute,
   UIEditorSFCSourceDirective,
   UIEditorSFCTextSegment,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 export const UI_EDITOR_SFC_TEXT_SEGMENTS_META_KEY = 'sfcTextSegments'
 export const UI_EDITOR_SFC_CONTENT_PREVIEW_META_KEY = 'sfcContentPreview'

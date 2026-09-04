@@ -220,7 +220,7 @@ export class ConfiguratorContext_Module {
     return () => this._listeners.delete(listener)
   }
 
-  /** Registers a mounted application surface that owns runtime handles across context reboots. */
+  /** Регистрирует смонтированную поверхность приложения, владеющую runtime handles между перезапусками контекста. */
   public registerSurface(id: string, lifecycle: ConfiguratorContextSurfaceLifecycle): () => void {
     const key = String(id ?? '').trim()
     if (!key) {
@@ -246,7 +246,7 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Restores the Configurator-only override after Workspace has been loaded by Endge.boot(). */
+  /** Восстанавливает переопределение Configurator после загрузки Workspace через Endge.boot(). */
   private _restoreDataModeOverride(): void {
     const workspaceIdentity = Endge.workspace.current.identity
     const mode = configuratorDataModeRepository.read(this._activeBackendURL(), workspaceIdentity)
@@ -307,22 +307,22 @@ export class ConfiguratorContext_Module {
     return this._workspaceRole
   }
 
-  /** Workspace selected during authenticated Configurator bootstrap. */
+  /** Workspace, выбранный при авторизованном запуске Configurator. */
   public get workspaceIdentity(): string {
     return this._workspaceIdentity ?? Endge.workspace.current.identity
   }
 
-  /** Returns the effective data mode used by Store fixtures and Query execution. */
+  /** Возвращает фактический режим данных для fixtures Store и выполнения Query. */
   public get isMockEnabled(): boolean {
     return Endge.context.isMockEnabled
   }
 
-  /** Shows whether the Configurator currently overrides the Workspace default. */
+  /** Показывает, переопределяет ли Configurator текущее значение Workspace по умолчанию. */
   public get isDataModeOverridden(): boolean {
     return Endge.context.isDataModeOverridden
   }
 
-  /** Updates mock mode without rebuilding the immutable structural context. */
+  /** Обновляет mock-режим без перестроения неизменяемого структурного контекста. */
   public setMockEnabled(enabled: boolean): void {
     const mode = enabled ? 'mock' : 'live'
     configuratorDataModeRepository.write(this._activeBackendURL(), Endge.workspace.current.identity, mode)
@@ -330,7 +330,7 @@ export class ConfiguratorContext_Module {
     this._notify()
   }
 
-  /** Returns data execution to the persisted Workspace default. */
+  /** Возвращает выполнение данных к сохранённому значению Workspace по умолчанию. */
   public clearDataModeOverride(): void {
     configuratorDataModeRepository.clear(this._activeBackendURL(), Endge.workspace.current.identity)
     Endge.context.clearDataModeOverride()

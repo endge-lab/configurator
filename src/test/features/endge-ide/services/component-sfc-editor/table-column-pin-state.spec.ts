@@ -5,15 +5,15 @@ import {
   updateTableDefaultPin,
 } from '@/features/endge-ide/services/component-sfc-editor/table-column-pin-state'
 
-describe('table visual column pin state', () => {
-  it('reads only the first valid side for every key', () => {
+describe('визуальное состояние закрепления колонок таблицы', () => {
+  it('читает только первую валидную сторону для каждого ключа', () => {
     expect([...parseTableDefaultPin('flight:left,status:right,broken:start,flight:right')]).toEqual([
       ['flight', 'left'],
       ['status', 'right'],
     ])
   })
 
-  it('updates one key and preserves unrelated raw tokens', () => {
+  it('обновляет один ключ и сохраняет несвязанные исходные токены', () => {
     expect(updateTableDefaultPin(
       'flight:left,broken:start,status:right,flight:right',
       'flight',
@@ -21,7 +21,7 @@ describe('table visual column pin state', () => {
     )).toBe('broken:start,status:right,flight:right')
   })
 
-  it('removes the attribute value when the last pin is cleared', () => {
+  it('удаляет значение атрибута после снятия последнего закрепления', () => {
     expect(updateTableDefaultPin('flight:left', 'flight', null)).toBeNull()
   })
 })

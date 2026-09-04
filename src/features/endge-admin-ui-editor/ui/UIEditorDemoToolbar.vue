@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 import {
   Braces,
@@ -20,7 +20,7 @@ import {
 } from '@/shared/ui/tooltip'
 
 const props = defineProps<{
-  state: UIEditorDemoState
+  state: UIEditorModule
 }>()
 
 const isGridOverlayEnabled = computed(() => props.state.showGridOverlay)

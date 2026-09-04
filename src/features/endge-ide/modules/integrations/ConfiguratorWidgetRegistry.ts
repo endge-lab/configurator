@@ -25,7 +25,7 @@ function resolveVisual(visual: unknown): Component {
   throw new Error('[EndgeIDEIntegrations] Widget visual must be a Vue component or loader.')
 }
 
-/** Adapts the public integration widget slot to the existing Configurator grid. */
+/** Адаптирует публичный слот виджета интеграции к существующей сетке Configurator. */
 export class ConfiguratorWidgetRegistry {
   public register(
     context: IntegrationContext,

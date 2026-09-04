@@ -9,8 +9,8 @@ import {
 import { resolveConfigValueEditor } from '@/features/endge-ide/config/ConfigValueEditorRegistry'
 import { buildWorkspaceTreeNodes } from '@/features/endge-ide/services/domain/domain-tree'
 
-describe('configuration authoring registries', () => {
-  it('dispatches specialized and recursive JSON-safe editors', () => {
+describe('реестры редактирования Configuration', () => {
+  it('выбирает специализированные и рекурсивные редакторы, безопасные для JSON', () => {
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'Boolean' })).toBe('boolean')
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'TriggerSet' })).toBe('trigger-set')
     expect(resolveConfigValueEditor({ kind: 'reference', identity: 'JSON' })).toBe('json')
@@ -18,7 +18,7 @@ describe('configuration authoring registries', () => {
     expect(resolveConfigValueEditor({ kind: 'union', variants: [{ kind: 'reference', identity: 'String' }, { kind: 'reference', identity: 'Null' }] })).toBe('union')
   })
 
-  it('resolves reference options with declared storage and folder drops', () => {
+  it('разрешает варианты ссылок с объявленным storage и переносом папок', () => {
     const folderType = {
       id: 'RefFolder',
       identity: 'RefFolder',
@@ -39,7 +39,7 @@ describe('configuration authoring registries', () => {
     expect(getConfigurationReferenceSectionTypes(folderType)).toEqual([])
   })
 
-  it('nests flat Configuration documents only under the active Workspace', () => {
+  it('вкладывает плоские документы Configuration только в активный Workspace', () => {
     const nodes = buildWorkspaceTreeNodes([
       { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true },
       { id: 2, identity: 'other', displayName: 'Other', role: 'viewer', active: true },

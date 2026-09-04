@@ -20,7 +20,7 @@ ${template}
 `
 }
 
-/** Feature-local, runnable examples for every primitive exposed by the UI Editor library. */
+/** Локальные исполняемые примеры фичи для всех примитивов библиотеки UI Editor. */
 export const UI_EDITOR_SFC_EXAMPLES: readonly UIEditorSFCExample[] = [
   {
     id: 'example-text',

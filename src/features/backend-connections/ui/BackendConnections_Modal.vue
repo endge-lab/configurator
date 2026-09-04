@@ -3,7 +3,7 @@ import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucid
 import { computed, ref } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
-import { useBackendConnections } from '@/features/backend-connections'
+import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,

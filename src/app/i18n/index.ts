@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import en from './locales/en.json'
 import ru from './locales/ru.json'
 
-// Type-define 'en' as the master schema for the resource
+// Локаль 'en' задаёт основную схему ресурса для типов
 type MessageSchema = typeof en
 
 export type Locale = string

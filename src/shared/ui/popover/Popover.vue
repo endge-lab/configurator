@@ -20,7 +20,7 @@ function toggle(): void {
   open.value = !open.value
 }
 
-// ✅ controlled -> sync from outside
+// ✅ управляемый режим -> синхронизация извне
 watch(
   () => props.open,
   (v) => {
@@ -31,7 +31,7 @@ watch(
   { immediate: true },
 )
 
-// ✅ emit changes to outside (for v-model:open)
+// ✅ отправка изменений наружу для v-model:open
 watch(open, (v) => {
   emit('update:open', v)
 })

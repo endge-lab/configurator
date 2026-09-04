@@ -104,14 +104,14 @@ const BUILTIN_TYPE_NAMES = new Set([
   'void',
 ])
 
-/** Builds a graph tree for non-Composition documents from Program plus a live draft overlay. */
+/** Строит дерево графа для документов, отличных от Composition, из Program и живой проекции черновика. */
 export function buildDocumentDependencyTree(
   input: DocumentDependencyTreeInput,
 ): DocumentDependencyTreeResult {
   return buildTree(input, false)
 }
 
-/** Adds a reverse `Used by` traversal to the regular downstream tree. */
+/** Добавляет обратный обход `Используется в` к обычному нисходящему дереву. */
 export function buildDocumentDependencyHierarchy(
   input: DocumentDependencyTreeInput,
 ): DocumentDependencyTreeResult {

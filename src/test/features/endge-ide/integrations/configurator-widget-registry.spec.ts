@@ -18,12 +18,12 @@ const context: IntegrationContext = {
   workspaceId: 'test-workspace',
 }
 
-describe('configurator widget registry', () => {
+describe('реестр виджетов Configurator', () => {
   afterEach(() => {
     unregisterAllWidgets()
   })
 
-  it('registers an integration widget as a minimized floating singleton', async () => {
+  it('регистрирует виджет интеграции как свёрнутый плавающий singleton', async () => {
     const registry = new ConfiguratorWidgetRegistry()
     const visual = defineComponent({ template: '<p>Hello</p>' })
     const dispose = registry.register(context, {
@@ -51,7 +51,7 @@ describe('configurator widget registry', () => {
     expect(getWidget(id)).toBeNull()
   })
 
-  it('rejects slots that are not implemented yet', () => {
+  it('отклоняет ещё не реализованные slots', () => {
     const registry = new ConfiguratorWidgetRegistry()
 
     expect(() => registry.register(context, {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 
-describe('createEditorDiagnosticsEntityRef', () => {
+describe('создание ссылки на сущность диагностики редактора', () => {
   it('использует persisted id и identity редактора', () => {
     expect(createEditorDiagnosticsEntityRef('query', { id: 42, identity: 'flight-query' })).toEqual({
       entityType: 'query',

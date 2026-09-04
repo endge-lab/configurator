@@ -1,6 +1,6 @@
 import { computed, shallowRef } from 'vue'
 
-/** Owns the shared activity state for concurrent IDE mutations. */
+/** Владеет общим состоянием активности параллельных изменений IDE. */
 export class EndgeIDEBusy_Module {
   private readonly _pending = shallowRef(0)
   private readonly _busy = computed(() => this._pending.value > 0)

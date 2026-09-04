@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 
 import { attachResolvedActionTree } from '@/features/endge-ide/services/domain/domain-tree'
 
-describe('domain resolved Actions tree', () => {
-  it('keeps persisted Actions in place and groups virtual origins', () => {
+describe('разрешённое дерево Actions домена', () => {
+  it('сохраняет записанные Actions на месте и группирует виртуальные источники', () => {
     const tree: FsNode[] = [
       {
         id: 'root-components',

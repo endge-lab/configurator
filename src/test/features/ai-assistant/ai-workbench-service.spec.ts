@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AIWorkbench_HTTP_Adapter } from '@/features/ai-assistant/adapters/AIWorkbench_HTTP_Adapter'
 
-describe('aIWorkbench_Service', () => {
+describe('сервис AIWorkbench', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('scopes every request to the selected workspace', async () => {
+  it('ограничивает каждый запрос выбранным Workspace', async () => {
     const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
       available: true,
       canView: true,
@@ -23,7 +23,7 @@ describe('aIWorkbench_Service', () => {
     }))
   })
 
-  it('parses a hardcoded SSE stream incrementally', async () => {
+  it('инкрементально разбирает фиксированный поток SSE', async () => {
     const frames = [
       'event: started\ndata: {"type":"started","runId":"run-1","createdAt":"2026-08-26T00:00:00Z"}\n\n',
       'event: content_delta\ndata: {"type":"content_delta","delta":"hardcoded","createdAt":"2026-08-26T00:00:01Z"}\n\n',
@@ -45,7 +45,7 @@ describe('aIWorkbench_Service', () => {
     expect(events).toEqual(['started', 'content_delta', 'completed'])
   })
 
-  it('passes clarification linkage and parses the terminal clarification event', async () => {
+  it('передаёт связь уточнения и разбирает завершающее событие уточнения', async () => {
     const frame = 'event: clarification_required\ndata: {"type":"clarification_required","interactionId":"interaction-1","clarification":{"id":"clarification-1","interactionId":"interaction-1","taskId":"task-1","slot":"entity","question":"Choose","candidates":[],"planVersion":2},"createdAt":"2026-08-26T00:00:00Z"}\n\n'
     const stream = new ReadableStream({
       start(controller) {
@@ -71,7 +71,7 @@ describe('aIWorkbench_Service', () => {
     expect(body).toMatchObject({ interactionId: 'interaction-1', replyToClarificationId: 'clarification-1', selectedCandidateId: 'candidate-1' })
   })
 
-  it('restores an open clarification from the messages response', async () => {
+  it('восстанавливает открытое уточнение из ответа со списком сообщений', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
       items: [],
       openClarification: { id: 'clarification-1', interactionId: 'interaction-1', taskId: 'task-1', slot: 'entity', question: 'Choose', candidates: [], planVersion: 2 },
@@ -81,7 +81,7 @@ describe('aIWorkbench_Service', () => {
     await expect(service.messages('conversation-1')).resolves.toMatchObject({ openClarification: { id: 'clarification-1' } })
   })
 
-  it('uses physical DELETE for catalog resources', async () => {
+  it('использует физический DELETE для ресурсов каталога', async () => {
     const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
     const service = new AIWorkbench_HTTP_Adapter('http://backend.local', 'workspace-a')
 

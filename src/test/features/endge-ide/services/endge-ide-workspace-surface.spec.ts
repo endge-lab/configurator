@@ -38,20 +38,20 @@ function createWidgets(activeWidget: string | null, expanded = true): LayoutWidg
   }
 }
 
-describe('endge IDE workspace surface', () => {
+describe('рабочая поверхность Endge IDE', () => {
   it.each([
     ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
     ENDGE_IDE_PROBLEMS_WIDGET_ID,
     ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID,
-  ])('hides the editor tab surface while %s is active', (widgetId) => {
+  ])('скрывает поверхность вкладок редактора, пока активен %s', (widgetId) => {
     expect(isEditorTabSurfaceVisible(createWidgets(widgetId))).toBe(false)
   })
 
-  it('keeps the editor tab surface visible for an ordinary side widget', () => {
+  it('оставляет поверхность вкладок редактора видимой для обычного бокового виджета', () => {
     expect(isEditorTabSurfaceVisible(createWidgets('project'))).toBe(true)
   })
 
-  it('keeps the editor tab surface visible when a standalone widget area is collapsed', () => {
+  it('оставляет поверхность вкладок редактора видимой, когда область самостоятельного виджета свёрнута', () => {
     expect(isEditorTabSurfaceVisible(createWidgets(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, false))).toBe(true)
   })
 })

@@ -9,12 +9,12 @@ import {
 
 let entityId = 0
 
-describe('composition dependency tree', () => {
+describe('дерево зависимостей Composition', () => {
   afterEach(() => {
     Endge.domain.reset()
   })
 
-  it('keeps repeated Composition occurrences as separate branches', () => {
+  it('сохраняет повторные вхождения Composition как отдельные ветви', () => {
     addComposition(
       'shared-table',
       `
@@ -47,7 +47,7 @@ defineComposition({
     expect(countCompositionDependencies(result.root)).toBe(2)
   })
 
-  it('marks a repeated ancestor as a branch-local cycle', () => {
+  it('помечает повторного предка как локальный для ветви cycle', () => {
     const rootSource = `
 defineComposition({
   runtimes: {
@@ -77,7 +77,7 @@ defineComposition({
     expect(result.root?.children[0]?.children[0]?.status).toBe('cycle')
   })
 
-  it('returns a safe empty tree when the current source does not compile', () => {
+  it('возвращает безопасное пустое дерево, если текущий Source не компилируется', () => {
     const result = buildCompositionDependencyTree({
       identity: 'broken-composition',
       source: 'defineComposition({',
@@ -88,7 +88,7 @@ defineComposition({
     expect(result.diagnostics.length).toBeGreaterThan(0)
   })
 
-  it('keeps a nested compile error local to its branch', () => {
+  it('оставляет вложенную ошибку компиляции локальной для её ветви', () => {
     addComposition('broken-child', 'defineComposition({')
 
     const result = buildCompositionDependencyTree({
@@ -107,7 +107,7 @@ defineComposition({
     expect(result.root?.children[0]?.diagnosticCount).toBeGreaterThan(0)
   })
 
-  it('adds every direct and recursive usage occurrence in full hierarchy mode', () => {
+  it('добавляет каждое прямое и рекурсивное вхождение использования в режиме полной иерархии', () => {
     addComposition('current-composition', `
 defineComposition({
   runtimes: {},
@@ -163,7 +163,7 @@ defineComposition({
     expect(countCompositionDependencies(result.root)).toBe(5)
   })
 
-  it('stops reverse usage cycles at the repeated ancestor', () => {
+  it('останавливает обратные циклы использования на повторном предке', () => {
     const currentSource = `
 defineComposition({
   runtimes: {

@@ -11,7 +11,7 @@ export interface StorePreviewFieldSnapshot {
   value: unknown
 }
 
-/** Reads canonical live Store fields together with their Raph addresses. */
+/** Читает канонические live-поля Store вместе с их адресами Raph. */
 export function readStorePreviewFields(runtime: StoreRuntimeHost): StorePreviewFieldSnapshot[] {
   const snapshot = runtime.getDataSnapshot()
 

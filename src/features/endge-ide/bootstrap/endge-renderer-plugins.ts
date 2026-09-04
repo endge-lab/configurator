@@ -5,9 +5,9 @@ import { EndgeVueShadcnPlugin } from '@endge/ui-vue-shadcn'
 const REQUIRED_RENDERER_MODULE_KEYS = ['vue', 'vueShadcn'] as const
 
 /**
- * Renderer plugins must be registered before any import reads Endge modules and
- * therefore configures the federation. This module is intentionally imported
- * first from main.ts.
+ * Плагины renderer необходимо зарегистрировать до импорта, читающего модули Endge
+ * и тем самым конфигурирующего федерацию. Поэтому этот модуль намеренно
+ * импортируется первым из main.ts.
  */
 if (!Endge.isConfigured) {
   Endge.use(EndgeVuePlugin)

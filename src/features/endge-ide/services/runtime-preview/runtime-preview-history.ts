@@ -12,7 +12,7 @@ interface PersistedRuntimePreviewHistory {
   targets: RuntimePreviewTarget[]
 }
 
-/** Reads IDE preview roots only. Runtime hosts and lifecycle state are never persisted. */
+/** Читает только корни preview IDE. Runtime-hosts и состояние lifecycle никогда не сохраняются. */
 export function readRuntimePreviewHistory(): RuntimePreviewTarget[] {
   if (typeof window === 'undefined') {
     return []
@@ -29,7 +29,7 @@ export function readRuntimePreviewHistory(): RuntimePreviewTarget[] {
   }
 }
 
-/** Persists the ordered set of roots currently shown in Runtime Tree. */
+/** Сохраняет упорядоченный набор корней, показанных сейчас в Runtime Tree. */
 export function writeRuntimePreviewHistory(targets: readonly RuntimePreviewTarget[]): void {
   if (typeof window === 'undefined') {
     return
@@ -47,7 +47,7 @@ export function writeRuntimePreviewHistory(targets: readonly RuntimePreviewTarge
     window.localStorage.setItem(key, JSON.stringify(payload))
   }
   catch {
-    // Runtime Tree remains usable when browser storage is unavailable.
+    // Runtime Tree сохраняет работоспособность, когда browser storage недоступен.
   }
 }
 

@@ -11,7 +11,7 @@ function createTab(id: string) {
   return { id, label: id, viewId: 'test-view', closable: true }
 }
 
-describe('smart tabs persisted view state', () => {
+describe('сохраняемое состояние представлений Smart Tabs', () => {
   const values = new Map<string, string>()
   const persistence: SmartTabsPersistence = {
     read: <T>(key: string, fallback: T): T => {
@@ -31,7 +31,7 @@ describe('smart tabs persisted view state', () => {
     vi.restoreAllMocks()
   })
 
-  it('migrates v1 without losing open and active tabs', () => {
+  it('мигрирует v1 без потери открытых и активной вкладок', () => {
     values.set('tabs', JSON.stringify({
       v: 1,
       state: {
@@ -47,7 +47,7 @@ describe('smart tabs persisted view state', () => {
     })
   })
 
-  it('restores valid slices and ignores malformed slices independently', () => {
+  it('восстанавливает корректные slices и независимо игнорирует повреждённые', () => {
     values.set('tabs', JSON.stringify({
       v: 2,
       state: {
@@ -78,7 +78,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('persists a slice and removes it with its owning tab', async () => {
+  it('сохраняет slice и удаляет его вместе с владеющей вкладкой', async () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('query-orders'))
@@ -100,7 +100,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('notifies the owner when tabs are physically closed', () => {
+  it('уведомляет владельца при физическом закрытии вкладок', () => {
     const onTabClosed = vi.fn()
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence, onTabClosed }))!
@@ -115,7 +115,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('isolates equal slice keys between outer tabs', () => {
+  it('изолирует одинаковые ключи slice между внешними вкладками', () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('query-orders'))
@@ -129,7 +129,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('persists dependency panel layout independently for every document tab', async () => {
+  it('независимо сохраняет layout панели зависимостей для каждой вкладки документа', async () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('store-arrival'))
@@ -151,7 +151,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('persists shared view state after its originating tab is closed', async () => {
+  it('сохраняет общее состояние представления после закрытия исходной вкладки', async () => {
     const scope = effectScope()
     const api = scope.run(() => useSmartTabs({ storageKey: 'tabs', persistence }))!
     api.openTab(createTab('type-order'))
@@ -176,7 +176,7 @@ describe('smart tabs persisted view state', () => {
     scope.stop()
   })
 
-  it('falls back when a slice validator or migration fails', () => {
+  it('использует запасное значение при ошибке валидатора или миграции slice', () => {
     const options = {
       version: 2,
       defaultValue: () => 'source',
@@ -196,7 +196,7 @@ describe('smart tabs persisted view state', () => {
     })
   })
 
-  it('does not throw when storage rejects a write', () => {
+  it('не выбрасывает ошибку при отказе storage записать данные', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const rejectedPersistence: SmartTabsPersistence = {
       read: <T>(_key: string, fallback: T) => fallback,
@@ -211,7 +211,7 @@ describe('smart tabs persisted view state', () => {
     })).not.toThrow()
   })
 
-  it('falls back without throwing when storage rejects a read', () => {
+  it('использует запасное значение без ошибки при отказе storage прочитать данные', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const rejectedPersistence: SmartTabsPersistence = {
       read: () => { throw new Error('storage disabled') },

@@ -18,11 +18,22 @@ router.beforeEach(async (to) => {
     return false
   }
   if (to.name === 'oidc-popup-callback') {
+    if (Configurator.isReady) {
+      await Configurator.deactivateIDE()
+    }
     return true
   }
   const status = await Configurator.init()
-  return status === 'ready'
-    || status === 'authentication-required'
+  if (status === 'ready') {
+    if (to.meta.layoutScope === 'endge-ide') {
+      await Configurator.activateIDE()
+    }
+    else {
+      await Configurator.deactivateIDE()
+    }
+    return true
+  }
+  return status === 'authentication-required'
     || status === 'workspace-selection-required'
     || status === 'backend-connection-failed'
 })

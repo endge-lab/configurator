@@ -209,7 +209,7 @@ export class EndgeIDETabs_Module {
     return this._tabsApi.activeTabId
   }
 
-  /** Registry belongs to this tabs instance and is consumed by SmartTabsHost. */
+  /** Реестр принадлежит этому экземпляру tabs и используется SmartTabsHost. */
   public get viewRegistry(): SmartTabsApi['viewRegistry'] {
     return this._tabsApi.viewRegistry
   }
@@ -269,7 +269,7 @@ export class EndgeIDETabs_Module {
   public flushStorage(): void { this._tabsApi.flushStorage() }
   public clearStorage(): void { this._tabsApi.clearStorage() }
 
-  /** Returns true when the active editor differs from its last successful save. */
+  /** Возвращает true, когда активный редактор отличается от последнего успешного сохранения. */
   public isTabDirty(id: string): boolean {
     const session = this._sessionByTabId.get(id)
     if (!session?.editor || session.savedSnapshot == null) {
@@ -278,7 +278,7 @@ export class EndgeIDETabs_Module {
     return createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot
   }
 
-  /** Ctrl/Cmd+W guard. The regular close button intentionally bypasses this check. */
+  /** Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку. */
   public closeActiveTabFromHotkey(): void {
     const id = this.activeTabId.value
     if (!id) {

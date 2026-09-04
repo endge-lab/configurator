@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ENDGE_IDE_DOCUMENT_VIEW_ID, getMissingDocumentTabIds } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 
-describe('endge IDE restored document tabs', () => {
+describe('восстановленные вкладки документов Endge IDE', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('finds restored document tabs missing from the loaded domain', () => {
+  it('находит восстановленные вкладки документов, отсутствующие в загруженном домене', () => {
     vi.spyOn(Endge.domain, 'getQuery').mockImplementation((documentId) => {
       return documentId === 'existing-query' ? {} as never : null
     })

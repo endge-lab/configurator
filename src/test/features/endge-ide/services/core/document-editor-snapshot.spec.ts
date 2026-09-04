@@ -37,12 +37,12 @@ const EXPECTED_EDITOR_FAMILIES = [
   'RVocabsEditor',
 ]
 
-describe('document editor snapshot', () => {
-  it('declares snapshot coverage for every persisted editor family', () => {
+describe('проверка Snapshot редактора документа', () => {
+  it('объявляет поддержку snapshot для каждого семейства сохраняемых редакторов', () => {
     expect([...DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS.keys()].sort()).toEqual(EXPECTED_EDITOR_FAMILIES)
   })
 
-  it('detects authoring changes and becomes equal again after a revert', () => {
+  it('обнаруживает изменения редактирования и снова становится равным после отмены', () => {
     const editor = {
       identity: 'orders',
       source: 'defineType({})',
@@ -56,7 +56,7 @@ describe('document editor snapshot', () => {
     expect(createDocumentEditorSnapshot(editor)).toBe(saved)
   })
 
-  it('ignores diagnostics and selection-only editor state', () => {
+  it('игнорирует диагностику и состояние редактора, относящееся только к выделению', () => {
     const editor = {
       identity: 'orders',
       source: 'query({})',
@@ -73,7 +73,7 @@ describe('document editor snapshot', () => {
     expect(createDocumentEditorSnapshot(editor)).toBe(saved)
   })
 
-  it('tracks canonical Action Source directly', () => {
+  it('напрямую отслеживает канонический Action Source', () => {
     const editor = {
       constructor: { name: 'RActionEditor' },
       identity: 'orders.refresh',

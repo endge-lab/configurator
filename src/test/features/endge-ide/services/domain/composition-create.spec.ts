@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/services/domain/composition-create'
 
-describe('resolveCompositionCreatePlacement', () => {
-  it('creates a project-owned Composition with the project identity', () => {
+describe('определение места создания Composition', () => {
+  it('создаёт принадлежащую проекту Composition с identity проекта', () => {
     expect(resolveCompositionCreatePlacement({
       owner: {
         kind: 'project',
@@ -15,14 +15,14 @@ describe('resolveCompositionCreatePlacement', () => {
     })
   })
 
-  it('keeps query and library defaults when there is no owner', () => {
+  it('сохраняет значения query и library по умолчанию при отсутствии owner', () => {
     expect(resolveCompositionCreatePlacement({ queryComposition: true }))
       .toEqual({ kind: 'query', kindIdentity: null })
     expect(resolveCompositionCreatePlacement())
       .toEqual({ kind: 'library', kindIdentity: null })
   })
 
-  it('rejects an empty owner identity', () => {
+  it('отклоняет пустой identity owner', () => {
     expect(() => resolveCompositionCreatePlacement({
       owner: { kind: 'project', identity: '   ' },
     })).toThrow('Composition owner identity is required.')

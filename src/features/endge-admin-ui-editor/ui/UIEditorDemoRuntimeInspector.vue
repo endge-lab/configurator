@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
-import type { UIEditorNode } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorNode } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 import { Code2, LockKeyhole, Trash2, X } from 'lucide-vue-next'
 import { computed } from 'vue'
@@ -23,7 +23,7 @@ interface ManagedProperty {
 }
 
 const props = defineProps<{
-  state: UIEditorDemoState
+  state: UIEditorModule
 }>()
 
 const emit = defineEmits<{

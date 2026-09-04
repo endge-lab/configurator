@@ -13,6 +13,13 @@
     "description": "Среда конфигурации Endge",
     "title": "Конфигуратор"
   },
+  "common": {
+    "delete": "Удалить",
+    "pleaseWait": "Подождите",
+    "search": "Поиск…",
+    "select": "Выберите",
+    "selectedCount": "Выбрано: {count}"
+  },
   "endgeIde": {
     "headerMenu": {
       "additional": {

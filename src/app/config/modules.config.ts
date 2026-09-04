@@ -22,7 +22,7 @@ import { DomainVersionHttp_Adapter } from '@/features/domain-version/adapters/Do
 import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_Module'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 
-/** Creates the single application-scoped module graph. */
+/** Создаёт единый граф модулей уровня приложения. */
 export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>): ConfiguratorModules {
   const backendConfig = getEndgeBackendConfig()
   const connections = new BackendConnections_Module(

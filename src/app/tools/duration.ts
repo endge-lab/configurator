@@ -8,7 +8,7 @@ import { i18n } from '@/app/i18n'
 
 const { locale } = i18n.global
 
-// Cache DurationFormat instances by locale for performance
+// Кеширование экземпляров DurationFormat по локали для производительности
 const formatterCache = new Map<string, DurationFormat>()
 
 function getFormatter(lang: string): DurationFormat {
@@ -23,8 +23,8 @@ export interface GetDurationOptions {
 }
 
 /**
- * Parse ISO8601 duration string (e.g., "PT1H30M", "P1DT2H30M15S")
- * Returns duration in milliseconds
+ * Разбирает строку длительности ISO8601, например "PT1H30M" или "P1DT2H30M15S".
+ * Возвращает длительность в миллисекундах.
  */
 function parseISO8601Duration(duration: string): number {
   try {
@@ -38,7 +38,7 @@ function parseISO8601Duration(duration: string): number {
 }
 
 /**
- * Convert date-like value to timestamp
+ * Преобразует значение даты во временную метку.
  */
 function toTimestamp(date: Date | number | string): number {
   if (typeof date === 'string') {
@@ -57,7 +57,7 @@ function toTimestamp(date: Date | number | string): number {
 }
 
 /**
- * Format duration in milliseconds to human-readable string
+ * Форматирует длительность в миллисекундах в удобочитаемую строку.
  */
 function formatDuration(durationMs: number, lang: string): string {
   const absMs = Math.abs(durationMs)
@@ -75,7 +75,7 @@ function formatDuration(durationMs: number, lang: string): string {
   const months = totalMonths % 12
   const years = Math.floor(totalMonths / 12)
 
-  // Build duration object for DurationFormat
+  // Формирование объекта длительности для DurationFormat
   const duration: Record<string, number> = {}
 
   if (years > 0) {
@@ -97,7 +97,7 @@ function formatDuration(durationMs: number, lang: string): string {
     duration.seconds = seconds
   }
 
-  // If no duration components, show 0 seconds
+  // Если компоненты длительности отсутствуют, показываем 0 секунд
   if (Object.keys(duration).length === 0) {
     duration.seconds = 0
   }
@@ -109,10 +109,10 @@ function formatDuration(durationMs: number, lang: string): string {
 }
 
 /**
- * Get formatted duration string
- * @param durationOrStart - ISO8601 duration string or start date
- * @param endOrOptions - End date (optional, defaults to now) or options if first param is ISO8601
- * @param options - Options (only used when endOrOptions is a date)
+ * Возвращает отформатированную строку длительности.
+ * @param durationOrStart - строка длительности ISO8601 или дата начала
+ * @param endOrOptions - дата окончания (необязательно, по умолчанию текущее время) либо настройки, если первый параметр имеет формат ISO8601
+ * @param options - настройки (используются только когда endOrOptions является датой)
  */
 export function getDuration(
   durationOrStart: string | Date | number,
@@ -122,13 +122,13 @@ export function getDuration(
   let durationMs: number
   let opts: GetDurationOptions
 
-  // Check if first parameter is ISO8601 duration string
+  // Проверяем, является ли первый параметр строкой длительности ISO8601
   if (typeof durationOrStart === 'string' && durationOrStart.startsWith('P')) {
     durationMs = parseISO8601Duration(durationOrStart)
     opts = (endOrOptions as GetDurationOptions) || {}
   }
   else {
-    // Calculate duration from start and end dates
+    // Вычисляем длительность по датам начала и окончания
     const startMs = toTimestamp(durationOrStart)
     const endMs = (endOrOptions && typeof endOrOptions !== 'object') || endOrOptions instanceof Date
       ? toTimestamp(endOrOptions as Date | number | string)
@@ -143,17 +143,17 @@ export function getDuration(
 }
 
 /**
- * Reactive duration composable
- * @param durationOrStart - ISO8601 duration string or start date (can be reactive)
- * @param endOrOptions - End date (optional, defaults to now, can be reactive) or options if first param is ISO8601
- * @param options - Options (only used when endOrOptions is a date)
+ * Реактивный composable для длительности.
+ * @param durationOrStart - строка длительности ISO8601 или дата начала (может быть реактивной)
+ * @param endOrOptions - дата окончания (необязательно, по умолчанию текущее время, может быть реактивной) либо настройки, если первый параметр имеет формат ISO8601
+ * @param options - настройки (используются только когда endOrOptions является датой)
  */
 export function useDuration(
   durationOrStart: MaybeRef<string | Date | number>,
   endOrOptions?: MaybeRef<Date | number | string | undefined> | GetDurationOptions,
   options?: GetDurationOptions,
 ) {
-  // Reactive trigger for live duration updates
+  // Реактивный триггер для обновления длительности в реальном времени
   const updateTrigger = ref(0)
 
   const value = computed(() => {
@@ -163,12 +163,12 @@ export function useDuration(
     const start = unref(durationOrStart)
     const endOrOpts = unref(endOrOptions)
 
-    // Check if first parameter is ISO8601 duration string
+    // Проверяем, является ли первый параметр строкой длительности ISO8601
     if (typeof start === 'string' && start.startsWith('P')) {
       return getDuration(start, endOrOpts as GetDurationOptions)
     }
     else {
-      // If end is not provided or is undefined, use current time
+      // Если дата окончания не передана, используем текущее время
       if (endOrOpts === undefined || (typeof endOrOpts === 'object' && !('getTime' in endOrOpts) && !('lang' in endOrOpts))) {
         return getDuration(start, Date.now(), options)
       }
@@ -181,22 +181,22 @@ export function useDuration(
   function scheduleUpdate() {
     const start = unref(durationOrStart)
 
-    // Only schedule updates if we're calculating from dates (not ISO8601 string)
+    // Планируем обновления только при вычислении по датам, а не по строке ISO8601
     if (typeof start === 'string' && start.startsWith('P')) {
       return
     }
 
     const endOrOpts = unref(endOrOptions)
 
-    // Only auto-update if end date is not provided (using current time)
+    // Автоматически обновляем только при отсутствии даты окончания, когда используется текущее время
     if (endOrOpts === undefined || (typeof endOrOpts === 'object' && 'lang' in endOrOpts)) {
-      // Update every second for live duration
+      // Обновляем каждую секунду для отображения актуальной длительности
       timer = setTimeout(update, 1000)
     }
   }
 
   function update() {
-    // Trigger recomputation by updating the reactive trigger
+    // Запускаем повторное вычисление обновлением реактивного триггера
     updateTrigger.value++
     scheduleUpdate()
   }
@@ -226,7 +226,7 @@ export function useDuration(
 }
 
 /**
- * Duration component
+ * Компонент отображения длительности.
  */
 export const Duration = defineComponent({
   name: 'Duration',
@@ -253,7 +253,7 @@ export const Duration = defineComponent({
       lang: props.lang,
     }))
 
-    // Determine which mode to use based on props
+    // Выбираем режим по переданным props
     const durationOrStart = computed(() => {
       if (props.duration) {
         return props.duration
@@ -268,17 +268,17 @@ export const Duration = defineComponent({
 
     const endOrOptions = computed(() => {
       if (props.duration) {
-        // For ISO8601 duration, second param is options
+        // Для длительности ISO8601 второй параметр содержит настройки
         return options.value
       }
       else {
-        // For start/end dates, second param is end date (can be undefined)
-        // When undefined, useDuration will use current time and auto-update
+        // Для дат начала и окончания второй параметр содержит дату окончания и может быть undefined
+        // При undefined useDuration использует текущее время и автоматически обновляет значение
         return props.end !== undefined ? props.end : undefined
       }
     })
 
-    // When using start/end dates, pass options as third parameter
+    // При использовании дат начала и окончания передаём настройки третьим параметром
     const value = props.duration
       ? useDuration(durationOrStart.value, endOrOptions.value)
       : useDuration(durationOrStart.value, endOrOptions.value, options.value)

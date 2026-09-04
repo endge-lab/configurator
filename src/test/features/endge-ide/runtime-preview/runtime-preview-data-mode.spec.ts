@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import { createRuntimePreviewArtifactReader } from '@/features/endge-ide/services/runtime-preview/runtime-preview-data-mode'
 
-describe('runtime Preview data mode policy', () => {
-  it('overlays Composition data mode without mutating the compiled artifact', () => {
+describe('политика режима данных Runtime Preview', () => {
+  it('накладывает режим данных Composition без изменения скомпилированного артефакта', () => {
     const composition = artifact('composition', { dataMode: 'live' })
     const query = artifact('query', { type: 'query-rest' })
     const reader = createRuntimePreviewArtifactReader(createReader(composition, query), true)
@@ -15,7 +15,7 @@ describe('runtime Preview data mode policy', () => {
     expect(reader.getArtifact('query', 'flights')).toBe(query)
   })
 
-  it('keeps the original artifact reader in live preview', () => {
+  it('сохраняет исходный reader артефакта в live preview', () => {
     const reader = createReader(artifact('composition', { dataMode: 'live' }))
 
     expect(createRuntimePreviewArtifactReader(reader, false)).toBe(reader)

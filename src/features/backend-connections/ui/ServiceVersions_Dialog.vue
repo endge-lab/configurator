@@ -9,7 +9,7 @@ import type {
 import type {
   DomainVersionTarget,
   DomainVersionTargetState,
-} from '@/features/domain-version'
+} from '@/features/domain-version/domain/types/domain-version.type'
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -17,7 +17,8 @@ import { useI18n } from 'vue-i18n'
 import { Configurator } from '@/app/Configurator'
 import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
 import { useBackendVersions } from '@/features/backend-connections/ui/use-backend-versions'
-import { DomainVersionBadge, useDomainVersions } from '@/features/domain-version'
+import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
+import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 import {
   Dialog,
   DialogContent,

@@ -3,14 +3,13 @@ import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/module
 
 import { Endge } from '@endge/core'
 import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Configurator } from '@/app/Configurator'
 import { getIconComponent, toggleWidget } from '@/app/ui/layouts/grid'
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
-import { AIWorkbench } from '@/features/ai-assistant'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
@@ -97,12 +96,6 @@ function openAIManagement(): void {
 function openServiceVersions(): void {
   serviceVersionsDialog.value?.open()
 }
-
-onMounted(() => {
-  void AIWorkbench.init(Configurator.context.backendConfig!.serviceBackendURL, Configurator.context.workspaceIdentity)
-})
-
-onBeforeUnmount(() => AIWorkbench.reset())
 
 function openDSLPlayground(): void {
   tabs.openDSLPlayground()

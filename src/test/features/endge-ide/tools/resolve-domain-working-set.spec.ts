@@ -11,8 +11,8 @@ function ref(entityType: string, identity: string): DomainWorkingSetRef {
   return { entityType, id: identity, identity }
 }
 
-describe('resolveDomainWorkingSet', () => {
-  it('follows only outgoing dependencies and does not include other consumers', () => {
+describe('разрешение рабочего набора домена', () => {
+  it('следует только по исходящим зависимостям и не включает других потребителей', () => {
     const compositionA = ref('composition', 'composition-a')
     const compositionB = ref('composition', 'composition-b')
     const dataView = ref('data-view', 'schedule-view')
@@ -35,7 +35,7 @@ describe('resolveDomainWorkingSet', () => {
     expect(result.members.has('composition:composition-b')).toBe(false)
   })
 
-  it('adds the owner chain as context without expanding owner dependencies', () => {
+  it('добавляет цепочку owner как контекст без раскрытия зависимостей owner', () => {
     const composition = ref('composition', 'project-composition')
     const project = ref('project', 'schedule-project')
     const tenant = ref('tenant', 'main-tenant')
@@ -59,7 +59,7 @@ describe('resolveDomainWorkingSet', () => {
     expect(result.members.has('composition:unrelated-composition')).toBe(false)
   })
 
-  it('deduplicates shared dependencies across multiple roots and stops cycles', () => {
+  it('дедублицирует общие зависимости нескольких корней и останавливает циклы', () => {
     const rootA = ref('composition', 'a')
     const rootB = ref('composition', 'b')
     const shared = ref('data-view', 'shared')

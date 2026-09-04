@@ -12,8 +12,8 @@ const nextConfiguration = {
   },
 } satisfies EndgeConfigurationContribution
 
-describe('system context configuration editors', () => {
-  it('updates only configuration for a system environment', () => {
+describe('редакторы конфигурации системного контекста', () => {
+  it('обновляет только configuration системного Environment', () => {
     const source = {
       id: 1,
       identity: 'dev',
@@ -37,7 +37,7 @@ describe('system context configuration editors', () => {
     expect(source.configuration).not.toBe(nextConfiguration)
   })
 
-  it('updates only configuration for a system tenant', () => {
+  it('обновляет только configuration системного Tenant', () => {
     const source = {
       id: 1,
       identity: 'default',

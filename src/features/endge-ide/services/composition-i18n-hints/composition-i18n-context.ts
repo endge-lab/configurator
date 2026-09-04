@@ -18,9 +18,9 @@ export interface CompositionI18nContextInput {
 }
 
 /**
- * Resolves editor translation context from the current Project and a transient
- * Composition artifact. Expected draft errors return no hints; unexpected
- * projection failures are logged and never escape into the editor lifecycle.
+ * Определяет контекст переводов редактора из текущего Project и временного
+ * артефакта Composition. Ожидаемые ошибки черновика не возвращают подсказок;
+ * неожиданные ошибки проекции журналируются и не выходят в lifecycle редактора.
  */
 export function resolveCompositionI18nContext(
   input: CompositionI18nContextInput,

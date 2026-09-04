@@ -34,7 +34,7 @@ export function collectSFCStyleEndgeCSSDiagnostics(source: string): SFCStyleEdit
   return diagnostics
 }
 
-/** Adds EndgeCSS diagnostics/completions to style blocks inside an HTML SFC model. */
+/** Добавляет диагностику и completions EndgeCSS в style-блоки HTML-модели SFC. */
 export function createSFCStyleEndgeCSSContribution(): ScriptEditorExtension {
   return {
     id: 'component-sfc:endgecss',

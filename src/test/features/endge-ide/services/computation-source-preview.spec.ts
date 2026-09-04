@@ -5,8 +5,8 @@ import {
   serializeComputationPreviewOutput,
 } from '@/features/endge-ide/services/computation-preview/computation-source-preview'
 
-describe('computation editor source preview', () => {
-  it('executes a draft with object input', async () => {
+describe('предварительное выполнение Source в редакторе Computation', () => {
+  it('выполняет черновик с объектом на входе', async () => {
     await expect(runComputationSourcePreview(
       `defineComputation({
         outputs: {
@@ -25,7 +25,7 @@ describe('computation editor source preview', () => {
     })
   })
 
-  it('accepts scalar JSON input because Computation contracts may be scalar', async () => {
+  it('принимает скалярный JSON на входе, поскольку контракты Computation могут быть скалярными', async () => {
     await expect(runComputationSourcePreview(
       `defineComputation({
         outputs: { result: input('') },
@@ -36,7 +36,7 @@ describe('computation editor source preview', () => {
     )).resolves.toBe(42)
   })
 
-  it('serializes undefined output as JSON null', () => {
+  it('сериализует undefined на выходе как JSON null', () => {
     expect(serializeComputationPreviewOutput(undefined)).toBe('null')
     expect(serializeComputationPreviewOutput({ value: 1 })).toBe(`{
   "value": 1

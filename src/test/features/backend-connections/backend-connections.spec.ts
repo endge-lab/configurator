@@ -31,7 +31,7 @@ class ServiceStub implements BackendConnectionsService {
   public async delete(id: string): Promise<void> { this.deleted.push(id) }
 }
 
-describe('backend connections', () => {
+describe('подключения к backend', () => {
   let localStorage: MemoryStorage
 
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe('backend connections', () => {
 
   afterEach(() => vi.unstubAllGlobals())
 
-  it('normalizes URLs and seeds a missing or corrupted active backend with primary', () => {
+  it('нормализует URL и заменяет отсутствующий или повреждённый активный backend основным', () => {
     expect(normalizeBackendURL(' https://Backend.Test/// ')).toBe('https://backend.test')
     expect(() => normalizeBackendURL('https://backend.test?')).toThrow()
     expect(() => normalizeBackendURL('https://@backend.test')).toThrow()
@@ -53,7 +53,7 @@ describe('backend connections', () => {
     expect(storage.readActiveBackend('https://primary.test')).toBe('https://primary.test')
   })
 
-  it('stores a separate Workspace identity for every normalized backend URL', () => {
+  it('хранит отдельный identity Workspace для каждого нормализованного URL backend', () => {
     const storage = new BackendConnectionStorage()
     storage.writeWorkspace('https://primary.test/', 'workspace-primary')
     storage.writeWorkspace('https://remote.test', 'workspace-remote')
@@ -63,7 +63,7 @@ describe('backend connections', () => {
     expect(workspaceStorageKey('https://primary.test')).not.toBe(workspaceStorageKey('https://remote.test'))
   })
 
-  it('synthesizes and deduplicates primary while switching only by storage plus reload', async () => {
+  it('создаёт и дедублицирует основное подключение, переключаясь только через хранилище и перезагрузку', async () => {
     const service = new ServiceStub()
     service.response = {
       canManage: true,
@@ -92,7 +92,7 @@ describe('backend connections', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('always reads the catalog from the primary service URL', async () => {
+  it('всегда читает каталог с основного URL сервиса', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       items: [],
       total: 0,
@@ -109,7 +109,7 @@ describe('backend connections', () => {
     )
   })
 
-  it('keeps a legacy connection visible when an older backend has no name yet', async () => {
+  it('оставляет legacy-подключение видимым, если старый backend ещё не имеет имени', async () => {
     const service = new ServiceStub()
     service.response = {
       canManage: false,
@@ -131,7 +131,7 @@ describe('backend connections', () => {
     })
   })
 
-  it('sends the user-defined name together with the normalized URL', async () => {
+  it('отправляет заданное пользователем имя вместе с нормализованным URL', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({}), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
@@ -150,7 +150,7 @@ describe('backend connections', () => {
     )
   })
 
-  it('falls back to primary and reloads when active remote is absent from the catalog', async () => {
+  it('возвращается к основному подключению и перезагружает приложение, если активного удалённого backend нет в каталоге', async () => {
     localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://removed.test')
     const service = new ServiceStub()
     const reload = vi.fn()
@@ -169,7 +169,7 @@ describe('backend connections', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('prefers stored active Workspace, then optional seed, otherwise requires selection', () => {
+  it('предпочитает сохранённый активный Workspace, затем необязательное начальное значение, иначе требует выбора', () => {
     const workspaces = [
       { id: 'a', identity: 'workspace-a', displayName: 'A', active: true, role: 'editor' as const },
       { id: 'b', identity: 'workspace-b', displayName: 'B', active: false, role: 'admin' as const },

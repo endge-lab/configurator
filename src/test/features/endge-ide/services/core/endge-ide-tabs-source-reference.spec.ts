@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 
-describe('source reference document target', () => {
+describe('целевой документ ссылки Source', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('opens a Type by stable identity instead of its display name', () => {
+  it('открывает Type по стабильному identity вместо отображаемого имени', () => {
     vi.spyOn(Endge.domain, 'getType').mockReturnValue({
       identity: 'Customer',
       name: 'Customer model',

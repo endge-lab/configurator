@@ -13,7 +13,7 @@ export const ENDGE_MONACO_SCROLLBAR_OPTIONS: Monaco.editor.IEditorScrollbarOptio
   useShadows: false,
 }
 
-/** Returns the semantic editor surface as a Monaco-compatible hex color. */
+/** Возвращает семантическую поверхность редактора как совместимый с Monaco HEX-цвет. */
 export function resolveEditorSurfaceColor(): string {
   if (typeof document === 'undefined') {
     return FALLBACK_EDITOR_SURFACE
@@ -26,7 +26,7 @@ export function resolveEditorSurfaceColor(): string {
   return /^#[\da-f]{6}$/i.test(color) ? color : FALLBACK_EDITOR_SURFACE
 }
 
-/** Defines the Endge dark palette and applies the Monaco theme for the current UI mode. */
+/** Определяет тёмную палитру Endge и применяет тему Monaco для текущего режима UI. */
 export function applyEndgeMonacoTheme(monaco: typeof Monaco, isDark: boolean): string {
   monaco.editor.defineTheme(ENDGE_MONACO_DARK_THEME, {
     base: 'vs-dark',

@@ -22,7 +22,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Configurator } from '@/app/Configurator'
-import { configuratorReleases } from '@/features/configurator-releases'
 import { ConfiguratorVersionsError } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -70,19 +69,19 @@ const canWrite = computed(
 const canRestore = computed(() => role.value === 'admin')
 const releases = computed(() => {
   void stateVersion.value
-  return configuratorReleases.releases
+  return Configurator.releases.releases
 })
 const commits = computed(() => {
   void stateVersion.value
-  return configuratorReleases.commits
+  return Configurator.releases.commits
 })
 const commitPlan = computed(() => {
   void stateVersion.value
-  return configuratorReleases.commitPlan
+  return Configurator.releases.commitPlan
 })
 const loading = computed(() => {
   void stateVersion.value
-  return configuratorReleases.loading
+  return Configurator.releases.loading
 })
 const hasPendingRevisions = computed(
   () => Number(commitPlan.value?.revisionCount || 0) > 0,
@@ -145,13 +144,13 @@ const restoreChanges = computed(() => {
   return plan ? plan.creates + plan.updates + plan.restores + plan.deletes : 0
 })
 
-const stop = configuratorReleases.subscribe(() => {
+const stop = Configurator.releases.subscribe(() => {
   stateVersion.value += 1
 })
 
 async function loadVersions(): Promise<void> {
   try {
-    await configuratorReleases.load()
+    await Configurator.releases.load()
   }
   catch (error) {
     toast.error(errorMessage(error, 'Не удалось загрузить версии'))
@@ -175,7 +174,7 @@ async function createCommit(): Promise<void> {
   }
   try {
     const message = commitMessage.value.trim()
-    await configuratorReleases.createCommit(message)
+    await Configurator.releases.createCommit(message)
     refreshActiveDomainVersion()
     commitMessage.value = ''
     commitMessageTouched.value = false
@@ -198,7 +197,7 @@ async function createRelease(): Promise<void> {
   }
   try {
     const identity = releaseName.value.trim()
-    await configuratorReleases.createRelease(identity, latestCommit.value.id)
+    await Configurator.releases.createRelease(identity, latestCommit.value.id)
     releaseName.value = ''
     releaseNameTouched.value = false
     toast.success('Релиз создан', { description: identity })
@@ -210,7 +209,7 @@ async function createRelease(): Promise<void> {
 
 async function downloadRelease(identity: string): Promise<void> {
   try {
-    await configuratorReleases.download(identity)
+    await Configurator.releases.download(identity)
   }
   catch (error) {
     toast.error(errorMessage(error, 'Не удалось скачать релиз'))
@@ -219,7 +218,7 @@ async function downloadRelease(identity: string): Promise<void> {
 
 async function openCommitDetails(commit: ConfiguratorCommit): Promise<void> {
   try {
-    commitDetails.value = await configuratorReleases.getCommitDiff(commit.id)
+    commitDetails.value = await Configurator.releases.getCommitDiff(commit.id)
     commitDetailsOpen.value = true
   }
   catch (error) {
@@ -232,11 +231,11 @@ async function requestRestore(target: RestoreTarget): Promise<void> {
     return
   }
   try {
-    await configuratorReleases.load()
+    await Configurator.releases.load()
     const plan
       = target.kind === 'commit'
-        ? await configuratorReleases.planCommitRestore(target.id)
-        : await configuratorReleases.planReleaseRestore(target.id)
+        ? await Configurator.releases.planCommitRestore(target.id)
+        : await Configurator.releases.planReleaseRestore(target.id)
     restoreHasPendingRevisions.value
       = hasPendingRevisions.value
         || plan.expectedHeadSequence > (latestCommit.value?.headSequence ?? 0)
@@ -257,13 +256,13 @@ async function confirmRestore(): Promise<void> {
   }
   try {
     if (target.kind === 'commit') {
-      await configuratorReleases.restoreCommit(
+      await Configurator.releases.restoreCommit(
         target.id,
         plan.expectedHeadSequence,
       )
     }
     else {
-      await configuratorReleases.restoreRelease(
+      await Configurator.releases.restoreRelease(
         target.id,
         plan.expectedHeadSequence,
       )

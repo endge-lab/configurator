@@ -15,7 +15,7 @@ export interface TypeVisualParseResult {
   valid: boolean
 }
 
-/** Parses canonical Type Source into the small semantic document consumed by the visual editor. */
+/** Разбирает канонический Type Source в компактный семантический документ визуального редактора. */
 export function parseTypeVisualSource(source: string): TypeVisualParseResult {
   const result = Endge.source.compile('type', source)
   const diagnostics = (result.diagnostics ?? []) as ProgramDiagnostic[]
@@ -26,12 +26,12 @@ export function parseTypeVisualSource(source: string): TypeVisualParseResult {
   }
 }
 
-/** Creates a detached editor copy. Type Source v1 documents contain JSON-compatible values only. */
+/** Создаёт независимую копию редактора. Документы Type Source v1 содержат только JSON-совместимые значения. */
 export function cloneTypeSourceDocument(document: TypeSourceDocument): TypeSourceDocument {
   return JSON.parse(JSON.stringify(document)) as TypeSourceDocument
 }
 
-/** Serializes the semantic authoring document into deterministic Type Source v1. */
+/** Сериализует семантический authoring-документ в детерминированный Type Source v1. */
 export function serializeTypeSourceDocument(document: TypeSourceDocument): string {
   return serializeCoreTypeSourceDocument(document)
 }

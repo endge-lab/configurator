@@ -2,7 +2,7 @@ import type {
   UIEditorLibraryGroup,
   UIEditorLibraryItem,
   UIEditorNodeKind,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import { Endge } from '@endge/core'
 

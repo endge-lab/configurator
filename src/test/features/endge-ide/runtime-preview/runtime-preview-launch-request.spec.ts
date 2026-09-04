@@ -10,8 +10,8 @@ import {
   createRuntimePreviewLaunchRequestFromDocument,
 } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 
-describe('runtime Preview launch request', () => {
-  it('maps runtime-capable source editors to their current draft', () => {
+describe('запрос запуска Runtime Preview', () => {
+  it('сопоставляет поддерживающие runtime редакторы Source с их текущими черновиками', () => {
     const component = Object.assign(new RComponentSFCEditor(), {
       id: 7,
       identity: 'flight-table',
@@ -40,7 +40,7 @@ describe('runtime Preview launch request', () => {
     expect(createRuntimePreviewLaunchRequest(store)?.draft?.source).toBe(store.source)
   })
 
-  it('launches a project without a synthetic draft and rejects unsupported editors', () => {
+  it('запускает проект без синтетического черновика и отклоняет неподдерживаемые редакторы', () => {
     const project = Object.assign(new RProjectEditor(), { identity: 'operations' })
 
     expect(createRuntimePreviewLaunchRequest(project)).toEqual({
@@ -50,7 +50,7 @@ describe('runtime Preview launch request', () => {
     expect(createRuntimePreviewLaunchRequest({ identity: 'query' })).toBeNull()
   })
 
-  it('maps persisted runtime documents and ignores unsupported or unidentified documents', () => {
+  it('сопоставляет сохранённые runtime-документы и игнорирует неподдерживаемые либо неопознанные документы', () => {
     expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'project', identity: 'operations' })).toEqual({
       entityType: 'project',
       identity: 'operations',

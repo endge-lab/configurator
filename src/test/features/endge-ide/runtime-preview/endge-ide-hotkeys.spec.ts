@@ -8,12 +8,12 @@ import {
   REGISTERED_HOTKEYS,
 } from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 
-describe('endgeIDE workspace hotkeys', () => {
+describe('горячие клавиши Workspace в EndgeIDE', () => {
   afterEach(() => {
     document.body.replaceChildren()
   })
 
-  it('registers cross-platform runtime launch and shared project return shortcuts', () => {
+  it('регистрирует кроссплатформенные сочетания запуска runtime и возврата к общему проекту', () => {
     expect(REGISTERED_HOTKEYS).toEqual(expect.arrayContaining([
       expect.objectContaining({ action: 'runRuntime', keys: ['ctrl+enter', 'meta+enter'] }),
       expect.objectContaining({ action: 'returnToProject', keys: 'escape', label: 'Вернуться к Project' }),
@@ -21,7 +21,7 @@ describe('endgeIDE workspace hotkeys', () => {
     ]))
   })
 
-  it('matches the physical Ctrl/Cmd+W shortcut independently of keyboard layout', () => {
+  it('распознаёт физическое сочетание Ctrl/Cmd+W независимо от раскладки клавиатуры', () => {
     expect(isCloseTabShortcut({ code: 'KeyW', key: 'w', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe(true)
     expect(isCloseTabShortcut({ code: 'KeyW', key: 'W', ctrlKey: false, metaKey: true, altKey: false, shiftKey: false })).toBe(true)
     expect(isCloseTabShortcut({ code: 'KeyW', key: 'ц', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe(true)
@@ -29,7 +29,7 @@ describe('endgeIDE workspace hotkeys', () => {
     expect(isCloseTabShortcut({ code: 'KeyQ', key: 'w', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe(false)
   })
 
-  it('returns to Project only for an unconsumed Escape', () => {
+  it('возвращает к Project только по необработанному Escape', () => {
     const hotkeys = new EndgeIDEHotkeys_Module()
     const returnToProject = vi.fn(() => true)
     hotkeys.setReturnToProjectHandler(returnToProject)

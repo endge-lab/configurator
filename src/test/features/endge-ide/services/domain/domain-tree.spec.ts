@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildDomainTree, buildWorkspaceTreeNodes } from '@/features/endge-ide/services/domain/domain-tree'
 
-describe('buildDomainTree', () => {
-  it('expands only the active Workspace with flat active Configuration children', () => {
+describe('построение дерева домена', () => {
+  it('раскрывает только активный Workspace с плоскими дочерними активными Configuration', () => {
     const tree = buildWorkspaceTreeNodes([
       { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true },
       { id: 2, identity: 'remote', displayName: 'Remote', role: 'viewer', active: true },
@@ -28,7 +28,7 @@ describe('buildDomainTree', () => {
     expect(tree[1]?.children).toBeUndefined()
   })
 
-  it('places Mock directly after dictionaries in the Data root block', async () => {
+  it('размещает Mock сразу после словарей в корневом блоке Data', async () => {
     const { getDomainTreeRootBlocks } = await import('@/features/endge-ide/services/domain/domain-tree')
     const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-mocks', 'root-auth-profiles'])
 
@@ -36,7 +36,7 @@ describe('buildDomainTree', () => {
     expect(blocks[1]?.rootIds).toEqual(['root-stores', 'root-vocabs', 'root-mocks'])
   })
 
-  it('uses configured labels for persisted root folders', () => {
+  it('использует настроенные подписи для сохраняемых корневых папок', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-data-views': {
@@ -56,7 +56,7 @@ describe('buildDomainTree', () => {
     expect(tree[0]?.name).toBe('Представления')
   })
 
-  it('projects system and integration management without identity fallbacks', () => {
+  it('проецирует управление системой и интеграциями без резервных identity', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-integrations': {
@@ -84,7 +84,7 @@ describe('buildDomainTree', () => {
     })
   })
 
-  it('keeps query Composition canonical while applying its query presentation', () => {
+  it('сохраняет каноничность query Composition при применении её query-представления', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-queries': {
@@ -116,7 +116,7 @@ describe('buildDomainTree', () => {
     })
   })
 
-  it('places an unowned query Composition in its persisted query folder', () => {
+  it('размещает query Composition без owner в её сохранённой папке запросов', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-queries': {
@@ -150,7 +150,7 @@ describe('buildDomainTree', () => {
     })
   })
 
-  it('attaches a project Composition to its owner and ignores its persisted folder', () => {
+  it('привязывает Composition проекта к её owner и игнорирует сохранённую папку', () => {
     const tree = buildDomainTree({
       rootToSection: {
         'root-projects': {
@@ -190,7 +190,7 @@ describe('buildDomainTree', () => {
     ])
   })
 
-  it('stops traversing cyclic folder branches from malformed folder data', () => {
+  it('останавливает обход циклических ветвей папок из некорректных данных', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const tree = buildDomainTree({

@@ -11,7 +11,7 @@ export interface RuntimePreviewDocumentReference {
   identity?: string | null
 }
 
-/** Maps a persisted project-tree document to the same runtime target used by its editor. */
+/** Сопоставляет сохранённый документ дерева проекта с той же runtime-целью, которую использует его редактор. */
 export function createRuntimePreviewLaunchRequestFromDocument(
   document: RuntimePreviewDocumentReference,
 ): RuntimePreviewLaunchRequest | null {
@@ -34,7 +34,7 @@ export function createRuntimePreviewLaunchRequestFromDocument(
   }
 }
 
-/** Maps only documents with an executable runtime contract to a launch request. */
+/** Преобразует в запрос запуска только документы с исполняемым runtime-контрактом. */
 export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePreviewLaunchRequest | null {
   if (editor instanceof RProjectEditor) {
     return {

@@ -2,7 +2,7 @@ import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, DomainSectionType, FilterType, ParameterType, QueryType } from '@endge/core'
 
-/** IDE-specific visual metadata for domain documents. */
+/** Визуальные метаданные доменных документов, специфичные для IDE. */
 export interface DomainDocumentPresentation {
   icon: string
   colorClass: string

@@ -77,8 +77,8 @@
   --editor-type-reference: #005cf1;
   --editor-type-reference-unresolved: #dc2626;
   /*
-   * Input is intentionally a stronger border token in light themes.
-   * Editor controls need a quieter fill, close to the surrounding surface.
+   * В светлых темах Input намеренно использует более выраженный token границы.
+   * Элементам редактора нужна спокойная заливка, близкая к окружающей поверхности.
    */
   --editor-control: color-mix(in oklab, var(--editor-surface) 88%, var(--input));
   --editor-active-tab: var(--primary);
@@ -127,9 +127,9 @@
 }
 
 /*
- * Entity editors share one semantic surface hierarchy. Keeping this cascade on
- * the editor host avoids per-editor dark-theme overrides and leaves cards and
- * form controls outside the IDE unchanged.
+ * Редакторы сущностей используют общую иерархию семантических поверхностей.
+ * Каскад на host редактора исключает отдельные переопределения тёмной темы
+ * и не меняет карточки и элементы форм за пределами IDE.
  */
 .endge-editor-surface {
   -webkit-user-select: none;
@@ -179,7 +179,7 @@ body:not(.select-none) .endge-editor-surface :where(
   color: var(--editor-active-tab-foreground);
 }
 
-/* Some vertical editor tabs assign a primary color directly to their icon. */
+/* Некоторые вертикальные вкладки редактора напрямую задают иконке основной цвет. */
 :root:not(.dark) .endge-editor-surface [data-slot='tabs-trigger'][data-state='active'] svg {
   color: currentColor;
 }

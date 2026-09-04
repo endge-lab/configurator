@@ -12,14 +12,14 @@ import { useBackendConnections } from '@/features/backend-connections'
 import { Spinner } from '@/shared/ui/spinner'
 import { TooltipProvider } from '@/shared/ui/tooltip'
 
-// Initialize widget channel for popup communication
+// Инициализация канала виджетов для обмена с popup
 initWidgetChannel()
 
 const route = useRoute()
 setLayoutScope(String(route.meta.layoutScope ?? 'endge-ide'))
 const { isPrimaryActive } = useBackendConnections()
 
-// Close non-detachable popups on route change
+// Закрытие неотделяемых popup при смене маршрута
 watch(() => route.fullPath, () => {
   closeNonDetachablePopups()
 })

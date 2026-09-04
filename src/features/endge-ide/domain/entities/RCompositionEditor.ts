@@ -2,7 +2,7 @@ import type { RComposition } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Source-first editor model Composition. */
+/** Source-first модель редактора Composition. */
 export class RCompositionEditor {
   id!: string | number
   identity!: string

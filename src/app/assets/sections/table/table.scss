@@ -27,7 +27,7 @@ table {
   color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
 }
 
-/* GRAY cell */
+/* Серая ячейка */
 div[variant='secondary'], div[variant='gray'],
 .with-variant-color[variant='secondary'], .with-variant-color[variant='gray'] {
   background-color: #dcdddf !important;
@@ -42,7 +42,7 @@ div[variant='secondary']:hover, div[variant='gray']:hover {
   background-color: #cfd0d3 !important;
 }
 
-/* GREEN Cell */
+/* Зелёная ячейка */
 div[variant='success'], div[variant='green'],
 .with-variant-color[variant='success'], .with-variant-color[variant='green'] {
   background-color: #c3efd7 !important;
@@ -57,7 +57,7 @@ div[variant='success']:hover, div[variant='green']:hover {
   background-color: #afeaca !important;
 }
 
-/* RED cell */
+/* Красная ячейка */
 div[variant='danger'], div[variant='red'],
 .with-variant-color[variant='danger'], .with-variant-color[variant='red'] {
   background-color: #f9cfcf !important;
@@ -72,7 +72,7 @@ div[variant='danger']:hover, div[variant='red']:hover {
   background-color: #f6b8b8 !important;
 }
 
-/* YELLOW cell */
+/* Жёлтая ячейка */
 div[variant='warning'], div[variant='yellow'],
 .with-variant-color[variant='warning'], .with-variant-color[variant='yellow'] {
   background-color: #ffffa4 !important;

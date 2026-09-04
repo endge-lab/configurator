@@ -11,12 +11,12 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('editor surface theme', () => {
-  it('returns the dark editor fallback outside the browser', () => {
+describe('тема поверхности редактора', () => {
+  it('возвращает резервную тёмную тему редактора вне браузера', () => {
     expect(resolveEditorSurfaceColor()).toBe('#292D3E')
   })
 
-  it('reads a Monaco-compatible editor surface token', () => {
+  it('читает совместимый с Monaco токен поверхности редактора', () => {
     vi.stubGlobal('document', { documentElement: {} })
     vi.stubGlobal('getComputedStyle', () => ({
       getPropertyValue: () => '#223047',
@@ -25,7 +25,7 @@ describe('editor surface theme', () => {
     expect(resolveEditorSurfaceColor()).toBe('#223047')
   })
 
-  it('falls back when the token is not a hex color Monaco can consume', () => {
+  it('использует резервное значение, если токен не является hex-цветом, поддерживаемым Monaco', () => {
     vi.stubGlobal('document', { documentElement: {} })
     vi.stubGlobal('getComputedStyle', () => ({
       getPropertyValue: () => 'var(--background)',
@@ -37,7 +37,7 @@ describe('editor surface theme', () => {
   it.each([
     [true, ENDGE_MONACO_DARK_THEME],
     [false, ENDGE_MONACO_LIGHT_THEME],
-  ])('applies the Monaco theme for dark=%s', (isDark, expectedTheme) => {
+  ])('применяет тему Monaco при dark=%s', (isDark, expectedTheme) => {
     const defineTheme = vi.fn()
     const setTheme = vi.fn()
     const monaco = { editor: { defineTheme, setTheme } }

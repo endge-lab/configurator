@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 
@@ -18,10 +19,8 @@ const props = withDefaults(defineProps<{
   searchPlaceholder?: string
   maxChips?: number
 }>(), {
-  placeholder: 'Выберите ...',
   disabled: false,
   searchable: true,
-  searchPlaceholder: 'Поиск ...',
   maxChips: 3,
 })
 
@@ -29,7 +28,11 @@ const emit = defineEmits<{
   (e: 'update:modelValue', v: string[]): void
 }>()
 
+const { t } = useI18n()
+
 const q = ref<string>('')
+const resolvedPlaceholder = computed(() => props.placeholder ?? t('common.select'))
+const resolvedSearchPlaceholder = computed(() => props.searchPlaceholder ?? t('common.search'))
 
 const optionsByValue = computed(() => {
   const m = new Map<string, Option>()
@@ -135,7 +138,7 @@ watch(
               v-for="c in chipsVisible"
               :key="c.value"
               class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs max-w-[140px]"
-              title="Удалить"
+              :title="t('common.delete')"
             >
               <span class="truncate">{{ c.label }}</span>
               <span
@@ -156,7 +159,7 @@ watch(
         </template>
 
         <span v-else class="text-sm text-muted-foreground">
-          {{ placeholder }}
+          {{ resolvedPlaceholder }}
         </span>
 
         <span class="ml-auto text-muted-foreground text-xs">{{ $t('uiText.symbol535a8b58') }}</span>
@@ -169,7 +172,7 @@ watch(
           <input
             v-model="q"
             class="h-9 w-full rounded-md border px-3 text-sm"
-            :placeholder="searchPlaceholder"
+            :placeholder="resolvedSearchPlaceholder"
             :disabled="disabled"
           >
         </div>

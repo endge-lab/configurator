@@ -1,6 +1,8 @@
 import type { IntegrationModule } from '@endge/integration-api'
 import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 
+import { UIEditorStorage_Adapter } from '@/features/endge-admin-ui-editor/modules/ui-editor/adapters/UIEditorStorage_Adapter'
+import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
@@ -29,11 +31,12 @@ async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
   return modules
 }
 
-/** Creates the complete route-scoped IDE module graph. */
+/** Создаёт полный граф модулей IDE уровня маршрута. */
 export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEModules {
   const busy = new EndgeIDEBusy_Module()
   const uiState = new EndgeIDEUIState_Module()
   return {
+    uiEditor: createUIEditorModule(new UIEditorStorage_Adapter()),
     busy,
     agentTableActions: new AgentTableActions_Module(),
     demonstration: new EndgeIDEDemonstration_Module(),

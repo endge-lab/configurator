@@ -8,8 +8,8 @@ import {
 } from '@/features/endge-ide/source-editor/contributions/types/extract-type/extract-type.analysis'
 import { buildExtractTypeFolderOptions } from '@/features/endge-ide/source-editor/contributions/types/extract-type/extract-type.folders'
 
-describe('sFC local type extraction', () => {
-  it('finds a safe declaration and removes only that declaration', () => {
+describe('извлечение локального типа SFC', () => {
+  it('находит безопасное объявление и удаляет только его', () => {
     const source = `<script setup lang="ts">
 interface FlightRow {
   id: string
@@ -36,7 +36,7 @@ const props = defineProps<FlightRow>()
     expect(next).toContain('<template>')
   })
 
-  it('keeps unsupported generic aliases visible with a reason', () => {
+  it('оставляет неподдерживаемые generic aliases видимыми вместе с причиной', () => {
     const [declaration] = analyzeExtractableSFCTypeDeclarations(`<script setup lang="ts">
 type Entity<T> = { value: T }
 </script>`)
@@ -48,7 +48,7 @@ type Entity<T> = { value: T }
     })
   })
 
-  it('collects transitive local dependencies in dependency-first order', () => {
+  it('собирает транзитивные локальные зависимости в порядке от зависимостей', () => {
     const source = `<script setup lang="ts">
 interface Airport { code: string }
 interface Flight { origin: Airport }
@@ -70,7 +70,7 @@ defineProps<Board>()
     expect(next).toContain('defineProps<Board>()')
   })
 
-  it('rejects a dependency cycle without hiding the declaration', () => {
+  it('отклоняет цикл зависимостей, не скрывая объявление', () => {
     const source = `<script setup lang="ts">
 interface NodeA { next: NodeB }
 interface NodeB { next: NodeA }
@@ -83,7 +83,7 @@ interface NodeB { next: NodeA }
     expect(plan?.unsupportedReason).toBe('Циклическая локальная зависимость: NodeA - NodeB - NodeA.')
   })
 
-  it('builds selectable folders only below the types root', () => {
+  it('строит доступные для выбора папки только ниже корня типов', () => {
     const folders = buildExtractTypeFolderOptions([
       { id: 'types', identity: 'root-types', entityType: 'types' },
       { id: 'contracts', identity: 'contracts', name: 'Contracts', entityType: 'types', parent: 'types' },

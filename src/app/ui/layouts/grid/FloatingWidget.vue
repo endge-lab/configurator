@@ -159,7 +159,7 @@ function handleClick() {
       @header-mousedown="handleMouseDown"
     />
 
-    <!-- Overlay to prevent iframe from capturing mouse events during drag/resize -->
+    <!-- Слой, не позволяющий iframe перехватывать события мыши при перетаскивании и изменении размера -->
     <div
       v-if="isDragging || isResizing"
       class="absolute inset-0 z-10"

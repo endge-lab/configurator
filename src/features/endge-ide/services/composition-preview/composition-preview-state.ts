@@ -40,7 +40,7 @@ export type CompositionPreviewRenderable
     input: RuntimeHostInputSource
   }
 
-/** Owns one legacy standalone Composition preview and its runtime resources. */
+/** Владеет одним отдельным legacy-preview Composition и его runtime-ресурсами. */
 export class CompositionPreviewSession {
   public readonly runtime = shallowRef<CompositionRuntimeHost | null>(null)
   public readonly error = shallowRef<string | null>(null)

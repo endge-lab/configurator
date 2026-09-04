@@ -1,28 +1,29 @@
 <script setup lang="ts">
 import type { Component, CSSProperties } from 'vue'
-import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorPanel } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import { Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { ensureUIEditorDemoCoreRenderersRegistered } from '@/features/endge-admin-ui-editor/entities/ui-editor-core-renderers'
-import { uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import UIEditorDemoCanvas from '@/features/endge-admin-ui-editor/ui/UIEditorDemoCanvas.vue'
 import UIEditorDemoCodePanel from '@/features/endge-admin-ui-editor/ui/UIEditorDemoCodePanel.vue'
 import UIEditorDemoPreviewPanel from '@/features/endge-admin-ui-editor/ui/UIEditorDemoPreviewPanel.vue'
 import UIEditorDemoToolbar from '@/features/endge-admin-ui-editor/ui/UIEditorDemoToolbar.vue'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 ensureUIEditorDemoCoreRenderersRegistered()
+const uiEditor = EndgeIDE.uiEditor
 
 const splitContainerRef = ref<HTMLElement | null>(null)
 const isSplitResizing = ref(false)
 const SPLIT_KEYBOARD_STEP = 0.02
 const activeDividerIndex = ref<number | null>(null)
-const activePanels = computed(() => uiEditorDemoState.activePanels)
-const panelSizes = computed(() => uiEditorDemoState.getActivePanelSizes())
+const activePanels = computed(() => uiEditor.activePanels)
+const panelSizes = computed(() => uiEditor.getActivePanelSizes())
 const contextMenuButtonRef = ref<HTMLButtonElement | null>(null)
 const contextMenuStyle = computed<CSSProperties>(() => {
-  const menu = uiEditorDemoState.contextMenu
+  const menu = uiEditor.contextMenu
   if (!menu) {
     return {}
   }
@@ -45,24 +46,24 @@ function handleEditorKeydown(event: KeyboardEvent): void {
   }
 
   if (event.key === 'Escape') {
-    if (uiEditorDemoState.nodeDragSession) {
-      uiEditorDemoState.cancelNodeDrag()
+    if (uiEditor.nodeDragSession) {
+      uiEditor.cancelNodeDrag()
       return
     }
-    if (uiEditorDemoState.contextMenu) {
-      uiEditorDemoState.closeContextMenu()
+    if (uiEditor.contextMenu) {
+      uiEditor.closeContextMenu()
       return
     }
-    if (uiEditorDemoState.editingNodeId) {
-      uiEditorDemoState.cancelInlineEdit()
+    if (uiEditor.editingNodeId) {
+      uiEditor.cancelInlineEdit()
       return
     }
-    uiEditorDemoState.clearSelection()
+    uiEditor.clearSelection()
     return
   }
 
-  if (event.key === 'Enter' && uiEditorDemoState.selectedNodeId) {
-    if (uiEditorDemoState.beginInlineEdit(uiEditorDemoState.selectedNodeId)) {
+  if (event.key === 'Enter' && uiEditor.selectedNodeId) {
+    if (uiEditor.beginInlineEdit(uiEditor.selectedNodeId)) {
       event.preventDefault()
     }
     return
@@ -75,24 +76,24 @@ function handleEditorKeydown(event: KeyboardEvent): void {
     return
   }
 
-  const selectedNodeId = uiEditorDemoState.selectedNodeId
-  if (!selectedNodeId || selectedNodeId === uiEditorDemoState.document.rootId) {
+  const selectedNodeId = uiEditor.selectedNodeId
+  if (!selectedNodeId || selectedNodeId === uiEditor.document.rootId) {
     return
   }
 
   event.preventDefault()
-  uiEditorDemoState.removeNode(selectedNodeId)
+  uiEditor.removeNode(selectedNodeId)
 }
 
 function removeContextNode(): void {
-  const nodeId = uiEditorDemoState.contextMenu?.nodeId
+  const nodeId = uiEditor.contextMenu?.nodeId
   if (nodeId) {
-    uiEditorDemoState.removeNode(nodeId)
+    uiEditor.removeNode(nodeId)
   }
 }
 
 watch(
-  () => uiEditorDemoState.contextMenu,
+  () => uiEditor.contextMenu,
   async (menu) => {
     if (!menu) {
       return
@@ -112,7 +113,7 @@ function updatePanelBoundary(clientX: number, persist: boolean): void {
   if (rect.width <= 0) {
     return
   }
-  uiEditorDemoState.setPanelDividerBoundary(dividerIndex, (clientX - rect.left) / rect.width, persist)
+  uiEditor.setPanelDividerBoundary(dividerIndex, (clientX - rect.left) / rect.width, persist)
 }
 
 function onSplitPointerMove(event: PointerEvent): void {
@@ -128,9 +129,9 @@ function endSplitResize(): void {
   }
   isSplitResizing.value = false
   if (activeDividerIndex.value != null) {
-    uiEditorDemoState.setPanelDividerBoundary(
+    uiEditor.setPanelDividerBoundary(
       activeDividerIndex.value,
-      uiEditorDemoState.getPanelDividerBoundary(activeDividerIndex.value),
+      uiEditor.getPanelDividerBoundary(activeDividerIndex.value),
     )
   }
   activeDividerIndex.value = null
@@ -165,12 +166,12 @@ function resizeSplitByKeyboard(dividerIndex: number, event: KeyboardEvent): void
   if (direction !== 0) {
     event.preventDefault()
     const step = event.shiftKey ? SPLIT_KEYBOARD_STEP * 5 : SPLIT_KEYBOARD_STEP
-    uiEditorDemoState.resizePanelDivider(dividerIndex, direction * step)
+    uiEditor.resizePanelDivider(dividerIndex, direction * step)
   }
 }
 
 function resetSplitRatio(): void {
-  uiEditorDemoState.resetActivePanelLayout()
+  uiEditor.resetActivePanelLayout()
 }
 
 function panelComponent(panel: UIEditorPanel): Component {
@@ -195,14 +196,14 @@ function panelStyle(index: number): CSSProperties {
 onMounted(() => window.addEventListener('keydown', handleEditorKeydown))
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleEditorKeydown)
-  uiEditorDemoState.closeContextMenu()
+  uiEditor.closeContextMenu()
   endSplitResize()
 })
 </script>
 
 <template>
   <div class="relative flex h-full min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#fbfdff_0%,#f4f8fc_100%)] text-foreground dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_34%),linear-gradient(180deg,#111827_0%,#0b1120_100%)]">
-    <UIEditorDemoToolbar :state="uiEditorDemoState" />
+    <UIEditorDemoToolbar :state="uiEditor" />
 
     <div
       ref="splitContainerRef"
@@ -214,7 +215,7 @@ onBeforeUnmount(() => {
           :data-ui-editor-panel="panel"
           :style="panelStyle(index)"
         >
-          <component :is="panelComponent(panel)" :state="uiEditorDemoState" />
+          <component :is="panelComponent(panel)" :state="uiEditor" />
         </div>
 
         <div
@@ -224,7 +225,7 @@ onBeforeUnmount(() => {
           role="separator"
           :aria-label="`Изменить ширину панелей ${panel} и ${activePanels[index + 1]}`"
           aria-orientation="vertical"
-          :aria-valuenow="Math.round(uiEditorDemoState.getPanelDividerBoundary(index) * 100)"
+          :aria-valuenow="Math.round(uiEditor.getPanelDividerBoundary(index) * 100)"
           aria-valuemin="18"
           aria-valuemax="82"
           tabindex="0"
@@ -240,10 +241,10 @@ onBeforeUnmount(() => {
 
     <Teleport to="body">
       <div
-        v-if="uiEditorDemoState.contextMenu"
+        v-if="uiEditor.contextMenu"
         class="fixed inset-0 z-[120]"
-        @pointerdown="uiEditorDemoState.closeContextMenu()"
-        @contextmenu.prevent="uiEditorDemoState.closeContextMenu()"
+        @pointerdown="uiEditor.closeContextMenu()"
+        @contextmenu.prevent="uiEditor.closeContextMenu()"
       >
         <div
           role="menu"

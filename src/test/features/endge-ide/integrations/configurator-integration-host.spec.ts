@@ -50,7 +50,7 @@ vi.mock('@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry', ()
   },
 }))
 
-describe('configurator integration host', () => {
+describe('хост интеграций Configurator', () => {
   beforeEach(() => {
     testState.integrations.clear()
     testState.workspace.installedIntegrations.splice(0)
@@ -59,7 +59,7 @@ describe('configurator integration host', () => {
     testState.removeSurface.mockClear()
   })
 
-  it('materializes and disposes a local integration with its workspace binding', async () => {
+  it('создаёт и освобождает локальную интеграцию вместе с её привязкой к Workspace', async () => {
     const visual = {}
     const module: IntegrationModule = {
       manifest: {

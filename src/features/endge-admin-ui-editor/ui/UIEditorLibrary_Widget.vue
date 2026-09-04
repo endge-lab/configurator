@@ -3,7 +3,7 @@ import type { UIEditorSFCExample } from '@/features/endge-admin-ui-editor/entiti
 import type {
   UIEditorLibraryGroup,
   UIEditorLibraryItem,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import {
   BookOpenText,
@@ -20,9 +20,10 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { UI_EDITOR_DND_MIME, uiEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import { buildUIEditorLibraryGroups } from '@/features/endge-admin-ui-editor/entities/ui-editor-library-catalog'
 import { UI_EDITOR_SFC_EXAMPLES } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
+import { UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -33,6 +34,7 @@ const UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY = 'endge-admin-ui-editor-library-
 const UI_EDITOR_EXAMPLES_GROUP_ID = 'examples'
 const EXPAND_ALL_LABEL = 'Развернуть все блоки'
 const COLLAPSE_ALL_LABEL = 'Свернуть все блоки'
+const uiEditor = EndgeIDE.uiEditor
 
 const query = ref('')
 const expandedGroupKeys = useSafeLocalStorage<Record<string, boolean>>(
@@ -91,7 +93,7 @@ const filteredExamples = computed<readonly UIEditorSFCExample[]>(() => {
   )
 })
 const activeExampleId = computed(() =>
-  UI_EDITOR_SFC_EXAMPLES.find(example => example.source === uiEditorDemoState.source)?.id ?? null,
+  UI_EDITOR_SFC_EXAMPLES.find(example => example.source === uiEditor.source)?.id ?? null,
 )
 
 const allGroupIds = computed<string[]>(() => [
@@ -160,7 +162,7 @@ function onDragstart(event: DragEvent, item: UIEditorLibraryItem): void {
     layoutPatch: item.layoutPatch,
   }
 
-  uiEditorDemoState.beginGridDrag(payload)
+  uiEditor.beginGridDrag(payload)
   event.dataTransfer?.setData(UI_EDITOR_DND_MIME, JSON.stringify(payload))
   event.dataTransfer?.setData('text/plain', item.label)
   if (event.dataTransfer) {
@@ -170,11 +172,11 @@ function onDragstart(event: DragEvent, item: UIEditorLibraryItem): void {
 }
 
 function onDragend(): void {
-  uiEditorDemoState.endGridInteraction()
+  uiEditor.endGridInteraction()
 }
 
 function loadExample(example: UIEditorSFCExample): void {
-  uiEditorDemoState.applySFCSource(example.source)
+  uiEditor.applySFCSource(example.source)
 }
 
 function getGroupIcon(groupId: string) {

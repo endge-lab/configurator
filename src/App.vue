@@ -43,7 +43,7 @@ const currentLayout = computed(() => {
 })
 const currentLayoutKey = computed(() => String(route.meta.layoutScope ?? route.meta.layout ?? 'empty'))
 
-// Clear error on route change
+// Очистка ошибки при смене маршрута
 watch(() => route.fullPath, () => {
   error.value = null
   errorInfo.value = ''
@@ -51,9 +51,9 @@ watch(() => route.fullPath, () => {
   Configurator.diagnostics.reset()
 })
 
-// Capture errors from child components
+// Перехват ошибок дочерних компонентов
 onErrorCaptured((err, instance, info) => {
-  // Try to find the page component by traversing up the tree
+  // Поиск компонента страницы проходом вверх по дереву
   let current = instance
   let componentName = 'Unknown'
 

@@ -33,7 +33,7 @@ export interface UIEditorRuntimePreviewOptions {
   mode?: 'preview' | 'editor'
 }
 
-/** Owns the single disposable runtime rendered by the feature-local Preview panel. */
+/** Владеет единственным освобождаемым runtime, отображаемым локальной Preview-панелью фичи. */
 export class UIEditorRuntimePreviewSession {
   public readonly runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
   public readonly input = shallowRef<RuntimeHostInputSource>({ kind: 'local', props: {} })

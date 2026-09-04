@@ -38,7 +38,7 @@ export function normalizeQueryResult(result: unknown): Record<string, unknown[]>
   return {}
 }
 
-/** Query result kept for inspection without creating a legacy table runtime. */
+/** Результат Query сохраняется для просмотра без создания legacy runtime таблицы. */
 export interface HelpData {
   queryIdentity: string
   resultByKey: Record<string, unknown[]>

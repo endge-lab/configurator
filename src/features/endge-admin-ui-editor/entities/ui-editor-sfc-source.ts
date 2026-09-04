@@ -16,7 +16,7 @@ import type {
   UIEditorSFCTextSegment,
   UIEditorSourceNodeLocation,
   UIEditorSourceNodeLocations,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import {
   compileComponentSFC,
@@ -152,7 +152,7 @@ export function patchUIEditorSFCTemplate(source: string, document: UIEditorDocum
   return `${source.slice(0, range.start)}${template}${source.slice(range.end)}`
 }
 
-/** Applies one literal attribute edit without reprinting the rest of the SFC template. */
+/** Изменяет один литеральный атрибут без повторной печати остальной части шаблона SFC. */
 export function patchUIEditorSFCStaticAttribute(
   source: string,
   location: UIEditorSourceNodeLocation,

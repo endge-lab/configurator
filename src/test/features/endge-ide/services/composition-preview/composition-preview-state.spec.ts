@@ -8,7 +8,7 @@ import {
   ensureCompositionRuntimeArtifacts,
 } from '../../../../../features/endge-ide/services/composition-preview/composition-preview-state'
 
-describe('composition preview artifacts', () => {
+describe('артефакты preview Composition', () => {
   let preview: CompositionPreviewSession
 
   beforeEach(() => prepareCompilerContext())
@@ -26,7 +26,7 @@ describe('composition preview artifacts', () => {
     vi.restoreAllMocks()
   })
 
-  it('builds nested Composition dependencies before the preview owner', () => {
+  it('собирает вложенные зависимости Composition до owner предварительного просмотра', () => {
     const query = new RQuery()
     query.id = 1
     query.identity = 'groundhandling-query'
@@ -76,7 +76,7 @@ defineComposition({
     expect(Endge.program.getCompositionArtifact('groundhandling-default')?.status).toBe('valid')
   })
 
-  it('passes definePreviewProps literals to the preview Composition runtime', async () => {
+  it('передаёт литералы definePreviewProps в runtime предварительного просмотра Composition', async () => {
     vi.spyOn(Endge, 'build').mockResolvedValue(undefined)
     const query = new RQuery()
     query.id = 201
@@ -120,7 +120,7 @@ defineComposition({
     })
   })
 
-  it('uses nested Composition preview props without changing the authored parent source', async () => {
+  it('использует preview props вложенной Composition без изменения исходного Source родителя', async () => {
     vi.spyOn(Endge, 'build').mockResolvedValue(undefined)
     const child = new RComposition()
     child.id = 301

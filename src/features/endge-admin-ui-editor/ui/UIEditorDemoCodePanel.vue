@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -7,7 +7,7 @@ import { createUIEditorSourceSelectionExtension } from '@/features/endge-admin-u
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 
 const props = defineProps<{
-  state: UIEditorDemoState
+  state: UIEditorModule
 }>()
 
 const draftSource = ref(props.state.toSFCSource())

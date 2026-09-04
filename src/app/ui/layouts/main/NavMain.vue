@@ -48,7 +48,7 @@ function isGroupActive(item: NavItemGroup): boolean {
   return isGroupActiveByRoute(item, route)
 }
 
-// Initialize open groups based on current route
+// Инициализация открытых групп по текущему маршруту
 function updateOpenGroups(): void {
   navigation.value.forEach((group, groupIndex) => {
     group.items.forEach((item, itemIndex) => {
@@ -82,7 +82,7 @@ watch(navigation, () => {
 </script>
 
 <template>
-  <!-- Header -->
+  <!-- Заголовок -->
   <div class="flex items-center gap-2 p-3">
     <Logo icon-height="h-8" />
 
@@ -109,7 +109,7 @@ watch(navigation, () => {
 
       <SidebarMenu>
         <template v-for="(item, itemIndex) in group.items" :key="itemIndex">
-          <!-- LINK -->
+          <!-- ССЫЛКА -->
           <SidebarMenuItem v-if="isItemLink(item) && !item.hidden" class="relative w-full">
             <template v-if="item.asGroupButton">
               <a

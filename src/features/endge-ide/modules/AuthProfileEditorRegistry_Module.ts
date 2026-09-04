@@ -67,7 +67,7 @@ const BUILTIN_AUTH_PROFILE_EDITORS: AuthProfileAdapterEditorRegistration[] = [
   },
 ]
 
-/** Owns the extensible mapping from auth profile adapters to Vue editors. */
+/** Владеет расширяемым сопоставлением адаптеров профиля авторизации с Vue-редакторами. */
 export class AuthProfileEditorRegistry_Module {
   private readonly _editors = new Map<string, AuthProfileAdapterEditorRegistration>()
 

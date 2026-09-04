@@ -7,11 +7,12 @@ import type {
 } from '@/features/configurator-releases/domain/types/configurator-release.type'
 
 export class ConfiguratorReleases_Module {
-  public releases: ConfiguratorRelease[] = []
-  public commits: ConfiguratorCommit[] = []
-  public commitPlan: ConfiguratorCommitPlan | null = null
-  public loading = false
-  public error: string | null = null
+  /** Изменяемое состояние истории версий принадлежит только модулю. */
+  private _releases: ConfiguratorRelease[] = []
+  private _commits: ConfiguratorCommit[] = []
+  private _commitPlan: ConfiguratorCommitPlan | null = null
+  private _loading = false
+  private _error: string | null = null
   private readonly _listeners = new Set<() => void>()
 
   public constructor(private readonly _service: ConfiguratorReleasesHttp_Adapter) {}
@@ -27,7 +28,7 @@ export class ConfiguratorReleases_Module {
 
   public async createCommit(message: string): Promise<ConfiguratorCommit> {
     return this._run(async () => {
-      const plan = this.commitPlan ?? (await this._service.planCommit())
+      const plan = this._commitPlan ?? (await this._service.planCommit())
       const commit = await this._service.createCommit(
         message,
         plan.headSequence,
@@ -93,25 +94,25 @@ export class ConfiguratorReleases_Module {
       this._service.listCommits(),
       this._service.planCommit(),
     ])
-    this.releases = releases
-    this.commits = commits
-    this.commitPlan = commitPlan
+    this._releases = releases
+    this._commits = commits
+    this._commitPlan = commitPlan
   }
 
   private async _run<T>(operation: () => Promise<T>): Promise<T> {
-    this.loading = true
-    this.error = null
+    this._loading = true
+    this._error = null
     this._notify()
     try {
       return await operation()
     }
     catch (error) {
-      this.error
-        = error instanceof Error ? error.message : 'Version operation failed'
+      this._error
+        = error instanceof Error ? error.message : 'Не удалось выполнить операцию с версиями'
       throw error
     }
     finally {
-      this.loading = false
+      this._loading = false
       this._notify()
     }
   }
@@ -120,5 +121,30 @@ export class ConfiguratorReleases_Module {
     for (const listener of this._listeners) {
       listener()
     }
+  }
+
+  /** Возвращает только доступную для чтения историю релизов. */
+  public get releases(): readonly ConfiguratorRelease[] {
+    return this._releases
+  }
+
+  /** Возвращает только доступную для чтения историю коммитов. */
+  public get commits(): readonly ConfiguratorCommit[] {
+    return this._commits
+  }
+
+  /** Возвращает актуальный план следующего коммита. */
+  public get commitPlan(): ConfiguratorCommitPlan | null {
+    return this._commitPlan
+  }
+
+  /** Показывает выполнение текущей операции с версиями. */
+  public get loading(): boolean {
+    return this._loading
+  }
+
+  /** Возвращает последнюю ошибку операции с версиями. */
+  public get error(): string | null {
+    return this._error
   }
 }

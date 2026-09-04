@@ -48,7 +48,7 @@ function reloadPage() {
         {{ isNotFound ? t('nav.error.notFound.subtitle') : t('nav.error.subtitle') }}
       </EmptyDescription>
 
-      <!-- Reload button for non-404 errors -->
+      <!-- Кнопка перезагрузки для ошибок, отличных от 404 -->
       <div v-if="!isNotFound" class="mt-4">
         <Button @click="reloadPage">
           <RefreshCw class="mr-2 h-4 w-4" />
@@ -56,7 +56,7 @@ function reloadPage() {
         </Button>
       </div>
 
-      <!-- Technical info collapsible for non-404 errors -->
+      <!-- Сворачиваемая техническая информация для ошибок, отличных от 404 -->
       <Collapsible v-if="!isNotFound && error" v-model:open="isOpen" class="w-full mt-6">
         <CollapsibleTrigger as-child>
           <Button variant="secondary" size="sm" class="w-full justify-between">

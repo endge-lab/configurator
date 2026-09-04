@@ -16,12 +16,12 @@ export interface LayoutOptions {
 export function useLayout(options?: LayoutOptions) {
   const route = useRoute()
 
-  // Function to apply layout settings
+  // Применение настроек layout
   const applyLayoutSettings = () => {
-    // Set breadcrumbs limit if provided, otherwise reset to default
+    // Установка лимита breadcrumbs либо сброс к значению по умолчанию
     Configurator.layout.setBreadcrumbsLimit(options?.breadcrumbsLimit ?? 3)
 
-    // Set breadcrumbs if provided
+    // Установка breadcrumbs, если они переданы
     if (options?.breadcrumbs) {
       const breadcrumbsValue = toValue(options.breadcrumbs)
       if (breadcrumbsValue) {
@@ -33,10 +33,10 @@ export function useLayout(options?: LayoutOptions) {
     }
   }
 
-  // Apply settings immediately
+  // Немедленное применение настроек
   applyLayoutSettings()
 
-  // Watch for route changes and reapply settings
+  // Отслеживание смены маршрута и повторное применение настроек
   const stopRouteWatch = watch(
     () => route.fullPath,
     () => {
@@ -44,7 +44,7 @@ export function useLayout(options?: LayoutOptions) {
     },
   )
 
-  // Watch breadcrumbs if they're reactive
+  // Отслеживание breadcrumbs, если они реактивны
   let stopBreadcrumbsWatch: (() => void) | undefined
   if (options?.breadcrumbs) {
     stopBreadcrumbsWatch = watch(
@@ -57,7 +57,7 @@ export function useLayout(options?: LayoutOptions) {
     )
   }
 
-  // Cleanup on unmount
+  // Очистка при размонтировании
   onBeforeUnmount(() => {
     stopRouteWatch()
     stopBreadcrumbsWatch?.()
@@ -78,7 +78,7 @@ export function useLayout(options?: LayoutOptions) {
   }
 }
 
-// Export the state for use in layout components
+// Экспорт состояния для использования в компонентах layout
 export function getLayoutState() {
   return {
     breadcrumbs: Configurator.layout.breadcrumbs,
@@ -86,7 +86,7 @@ export function getLayoutState() {
   }
 }
 
-// Reset function for router hooks
+// Функция сброса для хуков router
 export function resetLayout() {
   Configurator.layout.reset()
 }

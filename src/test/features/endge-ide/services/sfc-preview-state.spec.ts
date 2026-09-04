@@ -5,7 +5,7 @@ import {
   SFCPreviewSession,
 } from '@/features/endge-ide/services/sfc-preview/sfc-preview-state'
 
-describe('componentSFC port preview', () => {
+describe('предварительный просмотр порта ComponentSFC', () => {
   let preview: SFCPreviewSession
 
   beforeEach(() => prepareCompilerContext())
@@ -22,7 +22,7 @@ describe('componentSFC port preview', () => {
     Endge.workspace.reset()
   })
 
-  it('compiles default providers without Composition port configuration', async () => {
+  it('компилирует провайдеры по умолчанию без конфигурации порта Composition', async () => {
     const computation = new RComputation()
     computation.id = 101
     computation.identity = 'preview-state'

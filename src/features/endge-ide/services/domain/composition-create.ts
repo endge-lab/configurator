@@ -11,7 +11,7 @@ export interface CompositionCreatePlacement {
   kindIdentity: string | null
 }
 
-/** Resolves canonical Composition placement for every create mode. */
+/** Определяет каноническое размещение Composition для каждого режима создания. */
 export function resolveCompositionCreatePlacement(options: {
   queryComposition?: boolean
   owner?: CompositionCreateOwner | null

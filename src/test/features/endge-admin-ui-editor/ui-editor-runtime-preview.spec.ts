@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
 
-describe('ui editor runtime preview session', () => {
+describe('сессия runtime preview UI-редактора', () => {
   let session: UIEditorRuntimePreviewSession
 
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('ui editor runtime preview session', () => {
     Endge.workspace.reset()
   })
 
-  it('mounts the current draft through ComponentSFCRuntimeHost and disposes it', async () => {
+  it('монтирует текущий черновик через ComponentSFCRuntimeHost и освобождает его', async () => {
     const launched = await session.launch(`<script setup lang="ts">
 defineProps<{ label: string }>()
 definePreviewProps({ label: 'Runtime value' })
@@ -37,7 +37,7 @@ definePreviewProps({ label: 'Runtime value' })
     expect(Endge.runtime.getRuntimeById(runtimeId)).toBeNull()
   })
 
-  it('keeps the last valid runtime when the next source is invalid', async () => {
+  it('сохраняет последний корректный runtime, если следующий Source невалиден', async () => {
     await session.launch('<template><Flex><Text>Valid</Text></Flex></template>')
     const runtime = session.runtime.value
 

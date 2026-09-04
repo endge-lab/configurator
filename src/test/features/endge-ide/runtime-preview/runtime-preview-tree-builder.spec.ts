@@ -26,13 +26,13 @@ vi.mock('@endge/core', async importOriginal => ({
   },
 }))
 
-describe('runtime Preview tree builder', () => {
+describe('построитель дерева Runtime Preview', () => {
   beforeEach(() => {
     artifacts.clear()
     compositions.splice(0)
   })
 
-  it('flattens scope_default and preserves named scopes and nested compositions', () => {
+  it('разворачивает scope_default и сохраняет именованные scopes и вложенные Compositions', () => {
     compositions.push(
       { identity: 'project-entry', displayName: 'Entry', kind: 'project', kindIdentity: 'airport', active: true },
       { identity: 'child', displayName: 'Child', kind: 'library', active: true },
@@ -89,7 +89,7 @@ describe('runtime Preview tree builder', () => {
     })
   })
 
-  it('creates a standalone renderable Store root', () => {
+  it('создаёт самостоятельный рендеримый корень Store', () => {
     const [store] = buildRuntimePreviewTree({ entityType: 'store', identity: 'flights' })
 
     expect(store).toMatchObject({

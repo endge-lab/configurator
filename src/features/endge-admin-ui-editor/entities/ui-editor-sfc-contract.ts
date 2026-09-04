@@ -1,4 +1,4 @@
-import type { UIEditorNodeKind, UIEditorNodeLayout } from '@/features/endge-admin-ui-editor/types'
+import type { UIEditorNodeKind, UIEditorNodeLayout } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 export type UIEditorSFCBaseTag
   = | 'Text'
@@ -78,7 +78,7 @@ function leafContract(input: {
   }
 }
 
-/** Feature-local authoring vocabulary matching the base Endge SFC adapter tags. */
+/** Локальный словарь авторинга фичи, соответствующий тегам базового адаптера Endge SFC. */
 export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionContract[] = [
   {
     definitionRef: 'ui.text',

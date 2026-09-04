@@ -18,11 +18,11 @@ process.env.VITE_GIT_SHA = execSync('git rev-parse --short=8 HEAD').toString().t
 
 // https://vite.dev/config/
 export default defineConfig(({ mode, command }) => {
-  const cwd = dirname(fileURLToPath(import.meta.url)) // same as process.cwd()
+  const cwd = dirname(fileURLToPath(import.meta.url)) // соответствует process.cwd()
   const env = loadEnv(mode, cwd)
   const isDevServer = command === 'serve'
   const testIntegrationsEnabled = isDevServer || mode === 'test-integrations'
-  const testIntegrationsRoot = fileURLToPath(new URL('../integrations/test', import.meta.url))
+  const testIntegrationsRoot = fileURLToPath(new URL('./src/test/integrations/local-registry', import.meta.url))
   const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url))
   const runsFromParentWorkspace = existsSync(new URL('../../pnpm-workspace.yaml', import.meta.url))
   const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
@@ -42,7 +42,7 @@ export default defineConfig(({ mode, command }) => {
       endgeCodegen({ enabled: codegenEnabled }),
       endgeTestIntegrations({
         enabled: testIntegrationsEnabled,
-        registryPath: fileURLToPath(new URL('../integrations/test/index.ts', import.meta.url)),
+        registryPath: fileURLToPath(new URL('./src/test/integrations/local-registry/index.ts', import.meta.url)),
       }),
     ],
     server: {
@@ -61,10 +61,10 @@ export default defineConfig(({ mode, command }) => {
       exclude: ['@endge/core'],
     },
     resolve: {
-      // Endge runtime packages and class-transformer share singleton state.
-      // Without dedupe, optimizeDeps can resolve nested published copies:
-      // Raph then exposes an older API, while class-transformer loses the
-      // decorator metadata used by Serialize.fromJSON in @endge/core.
+      // Runtime-пакеты Endge и class-transformer используют общее состояние singleton.
+      // Без dedupe optimizeDeps может разрешить вложенные опубликованные копии:
+      // Тогда Raph предоставляет более старый API, а class-transformer теряет
+      // метаданные декораторов, используемые Serialize.fromJSON в @endge/core.
       dedupe: ['@endge/core', '@endge/raph', '@endge/utils', 'class-transformer'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

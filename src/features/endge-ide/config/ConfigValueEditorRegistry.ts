@@ -2,7 +2,7 @@ import type { TypeSourceExpression } from '@endge/core'
 
 export type ConfigValueEditorKind = 'string' | 'number' | 'boolean' | 'enum' | 'time' | 'datetime' | 'trigger-set' | 'json' | 'array' | 'object' | 'record' | 'union'
 
-/** Single dispatch registry for source defaults and effective context values. */
+/** Единый реестр диспетчеризации исходных значений по умолчанию и фактических значений контекста. */
 export function resolveConfigValueEditor(type: TypeSourceExpression): ConfigValueEditorKind {
   if (type.kind === 'enum') {
     return 'enum'

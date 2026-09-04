@@ -1,4 +1,4 @@
-import type { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 
 import { watch } from 'vue'
@@ -6,7 +6,7 @@ import { watch } from 'vue'
 import { findUIEditorSourceNodeAtOffset, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
 
 export function createUIEditorSourceSelectionExtension(
-  state: UIEditorDemoState,
+  state: UIEditorModule,
 ): ScriptEditorExtension {
   return {
     id: 'endge-ui-editor-source-selection',

@@ -7,7 +7,7 @@ export function getConfiguratorOidcPopupCallbackURL(origin: string = location.or
   return new URL('/auth/oidc/popup-callback', parsed.origin).href
 }
 
-/** Returns the same application URL on localhost so PKCE state and callback share one origin. */
+/** Возвращает тот же URL приложения на localhost, чтобы состояние PKCE и callback имели общий origin. */
 export function getCanonicalLocalhostURL(href: string = location.href): string | null {
   const parsed = new URL(href)
   if (parsed.hostname !== '127.0.0.1' && parsed.hostname !== '[::1]') {

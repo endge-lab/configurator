@@ -106,7 +106,7 @@ export class EndgeIDEHotkeys_Module {
         })
       }
       else if (item.action === 'closeTab' || item.action === 'returnToProject') {
-        // These shortcuts use dedicated listeners below to preserve their event-phase semantics.
+        // Эти сочетания используют отдельные listeners ниже, чтобы сохранить семантику фаз событий.
         continue
       }
       else if (item.action === 'createDocument') {
@@ -156,7 +156,7 @@ export class EndgeIDEHotkeys_Module {
     }
     this._browser.addKeydown(this._createDocumentCaptureBound, true)
 
-    // Monaco and other source editors may consume Enter, so runtime launch uses capture phase.
+    // Monaco и другие редакторы Source могут перехватывать Enter, поэтому запуск runtime использует фазу захвата.
     this._runRuntimeCaptureBound = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' || (!e.ctrlKey && !e.metaKey) || e.altKey || e.shiftKey) {
         return
@@ -169,7 +169,7 @@ export class EndgeIDEHotkeys_Module {
     }
     this._browser.addKeydown(this._runRuntimeCaptureBound, true)
 
-    // Bubble phase lets dialogs and context menus consume Escape before workspace navigation.
+    // Фаза всплытия позволяет диалогам и контекстным меню обработать Escape до навигации рабочего пространства.
     this._returnToProjectBound = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) {
         return

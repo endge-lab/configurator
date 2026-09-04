@@ -3,17 +3,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AccessControlHttp_Adapter } from '@/features/access-control/adapters/AccessControlHttp_Adapter'
 import { canManageAccess } from '@/features/access-control/services/access-control.policy'
 
-describe('access control service', () => {
+describe('сервис управления доступом', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('shows access management only to Platform Admin or Workspace Admin', () => {
+  it('показывает управление доступом только Platform Admin или Workspace Admin', () => {
     expect(canManageAccess(true, 'viewer')).toBe(true)
     expect(canManageAccess(false, 'admin')).toBe(true)
     expect(canManageAccess(false, 'editor')).toBe(false)
     expect(canManageAccess(false, 'viewer')).toBe(false)
   })
 
-  it('searches users lazily on the active backend with workspace authorization context', async () => {
+  it('лениво ищет пользователей в активном backend с контекстом авторизации Workspace', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       items: [{ id: 'user-1', providerId: 'oidc', username: 'ivan', active: true }],
       nextCursor: 'next',
@@ -31,7 +31,7 @@ describe('access control service', () => {
     )
   })
 
-  it('writes grants by user UUID and supports one transactional all-active command', async () => {
+  it('записывает права по UUID пользователя и поддерживает единую транзакционную команду для всех активных Workspace', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'grant-1' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ affected: 3, created: 2, updated: 1 }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
@@ -55,7 +55,7 @@ describe('access control service', () => {
     expect(bulk).toEqual({ affected: 3, created: 2, updated: 1 })
   })
 
-  it('loads one user access by UUID without relying on a non-unique username', async () => {
+  it('загружает права одного пользователя по UUID без зависимости от неуникального username', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [] }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ describe('access control service', () => {
     )
   })
 
-  it('preserves structured backend authorization errors for the modal', async () => {
+  it('сохраняет структурированные ошибки авторизации backend для модального окна', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       code: 'last_platform_admin_required',
       message: 'The last Platform Admin cannot be removed',

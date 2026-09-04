@@ -2,7 +2,7 @@ import type { ConfigurationSourceValueDefinition, ManagedBy, ProgramDiagnostic, 
 
 import { compileConfigurationSource, Endge, isSystemManaged, patchConfigurationSource } from '@endge/core'
 
-/** Source-backed editor state for one Workspace configuration category. */
+/** Состояние редактора одной категории конфигурации Workspace с Source в качестве основы. */
 export class RConfigurationEditor {
   id!: string | number
   identity!: string

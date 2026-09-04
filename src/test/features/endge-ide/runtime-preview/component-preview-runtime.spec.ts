@@ -8,13 +8,13 @@ import { resolveComponentPreviewInput } from '@/features/endge-ide/services/prev
 const STORE_PATH = 'test.runtimePreview.store.items'
 const LOCAL_PATH = 'test.runtimePreview.local'
 
-describe('component preview runtime input', () => {
+describe('проверка Runtime-вход предварительного просмотра компонента', () => {
   afterEach(() => {
     Raph.delete(STORE_PATH)
     Raph.delete(LOCAL_PATH)
   })
 
-  it('keeps literal definePreviewProps as an isolated local input', () => {
+  it('сохраняет литеральные definePreviewProps как изолированный локальный вход', () => {
     const previewProps: ComponentSFCPreviewProps = {
       title: 'Flights',
       rows: [{ id: 1, status: 'boarding' }],
@@ -29,7 +29,7 @@ describe('component preview runtime input', () => {
     expect(input.kind === 'local' && input.props.rows).not.toBe(previewProps.rows)
   })
 
-  it('materializes fromStore and literal props through one reactive input source', () => {
+  it('материализует fromStore и литеральные props через единый реактивный источник входных данных', () => {
     Raph.set(STORE_PATH, [{ id: 2, status: 'delayed' }])
     const input = resolveComponentPreviewInput({
       rows: { type: 'store', path: STORE_PATH },
@@ -47,7 +47,7 @@ describe('component preview runtime input', () => {
     expect(Raph.get(`${LOCAL_PATH}.title`)).toBe('Flights')
   })
 
-  it('requires a mounted preview context for fromData props', () => {
+  it('требует смонтированный контекст preview для props из fromData', () => {
     expect(() => resolveComponentPreviewInput({
       rows: { type: 'data', store: 'flight-store', path: 'items' },
     }, null, LOCAL_PATH)).toThrow('Preview Store not mounted: "flight-store".')

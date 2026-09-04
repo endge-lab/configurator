@@ -7,8 +7,8 @@ import {
 } from '../../../../../features/endge-ide/services/domain/domain-document-presentation'
 import { QUERY_COMPOSITION_PRESENTATION_KIND } from '../../../../../features/endge-ide/services/domain/query-composition-presentation'
 
-describe('domain document presentation', () => {
-  it('uses Send for query sections and documents', () => {
+describe('представление документа домена', () => {
+  it('использует Send для секций и документов Query', () => {
     expect(getDomainSectionPresentation(DomainSectionType.Query)).toEqual({
       icon: 'Send',
       colorClass: 'text-orange-500',
@@ -19,7 +19,7 @@ describe('domain document presentation', () => {
     })
   })
 
-  it('keeps one presentation for every component document type', () => {
+  it('сохраняет единое представление для каждого типа документа компонента', () => {
     expect(getDomainDocumentPresentation(ComponentType.DSL)).toEqual({
       icon: 'Puzzle',
       colorClass: 'text-blue-500',
@@ -36,7 +36,7 @@ describe('domain document presentation', () => {
     })
   })
 
-  it('keeps the composition violet in every presentation context', () => {
+  it('сохраняет фиолетовый цвет Composition во всех контекстах представления', () => {
     const compositionPresentation = {
       icon: 'Network',
       colorClass: 'text-violet-500',
@@ -50,7 +50,7 @@ describe('domain document presentation', () => {
     expect(getDomainDocumentPresentation('composition', 'environment')).toEqual(compositionPresentation)
   })
 
-  it('keeps computation and filter presentations aligned with their sections', () => {
+  it('согласует представления Computation и Filter с их секциями', () => {
     expect(getDomainDocumentPresentation('computation')).toEqual(
       getDomainSectionPresentation(DomainSectionType.Computation),
     )
@@ -59,7 +59,7 @@ describe('domain document presentation', () => {
     )
   })
 
-  it('uses infrastructure and presentation color families', () => {
+  it('использует цветовые семейства инфраструктуры и представления', () => {
     expect(getDomainSectionPresentation(DomainSectionType.Environment)).toEqual({
       icon: 'ServerCog',
       colorClass: 'text-lime-500',

@@ -5,16 +5,16 @@ import {
   updateTableDefaultHidden,
 } from '@/features/endge-ide/services/component-sfc-editor/table-column-visibility-state'
 
-describe('table visual column visibility state', () => {
-  it('reads a sparse list of hidden column keys', () => {
+describe('визуальное состояние видимости колонок таблицы', () => {
+  it('читает разреженный список ключей скрытых колонок', () => {
     expect([...parseTableDefaultHidden('gate, status,gate')]).toEqual(['gate', 'status'])
   })
 
-  it('hides a column without changing unrelated keys', () => {
+  it('скрывает колонку без изменения несвязанных ключей', () => {
     expect(updateTableDefaultHidden('gate,status,status', 'flight', true)).toBe('gate,status,status,flight')
   })
 
-  it('removes the attribute value when the last column becomes visible', () => {
+  it('удаляет значение атрибута, когда последняя колонка становится видимой', () => {
     expect(updateTableDefaultHidden('gate', 'gate', false)).toBeNull()
   })
 })

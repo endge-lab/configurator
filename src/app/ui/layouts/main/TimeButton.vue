@@ -67,7 +67,7 @@ const badgeText = computed<string>(() => `${timeZone.value} ${dateString.value}`
 
 <template>
   <div class="relative inline-flex items-center cursor-pointer">
-    <!-- BADGE -->
+    <!-- МЕТКА -->
     <Badge
       variant="secondary"
       class="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] leading-none select-none pointer-events-none"
@@ -75,7 +75,7 @@ const badgeText = computed<string>(() => `${timeZone.value} ${dateString.value}`
       {{ badgeText }}
     </Badge>
 
-    <!-- BUTTON -->
+    <!-- КНОПКА -->
     <Button
       variant="outline"
       size="sm"

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { UIEditorDemoState } from '@/features/endge-admin-ui-editor/entities/ui-editor-demo-state'
 import {
   getUIEditorSFCAttributeBindings,
   getUIEditorSFCContentPreview,
@@ -9,6 +8,7 @@ import {
   hasUIEditorSFCTextBinding,
 } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-bindings'
 import { patchUIEditorSFCTemplate, projectUIEditorDocumentFromSFC } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-source'
+import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 
 const SOURCE = `<script setup lang="ts">
 const marker = 'preserve-me'
@@ -29,8 +29,8 @@ Text { color: green; }
 </style>
 `
 
-describe('ui editor SFC source projection', () => {
-  it('projects supported base tags into the visual document', () => {
+describe('проекция SFC Source в UI-редакторе', () => {
+  it('проецирует поддерживаемые базовые теги в визуальный документ', () => {
     const result = projectUIEditorDocumentFromSFC(SOURCE)
 
     expect(result.diagnostics).toEqual([])
@@ -50,7 +50,7 @@ describe('ui editor SFC source projection', () => {
     expect(row.children).toHaveLength(2)
   })
 
-  it('reuses stable node ids for the same structural paths', () => {
+  it('повторно использует стабильные ID узлов для одинаковых структурных путей', () => {
     const first = projectUIEditorDocumentFromSFC(SOURCE).document!
     const firstTextId = first.nodes[first.rootId]!.children[0]!
     const nextSource = SOURCE.replace('<Text>Hello</Text>', '<Text>Updated</Text>')
@@ -61,8 +61,8 @@ describe('ui editor SFC source projection', () => {
     expect(second.nodes[firstTextId]!.props).toMatchObject({ text: 'Updated' })
   })
 
-  it('maps nested visual nodes to precise source ranges in both directions', () => {
-    const state = new UIEditorDemoState()
+  it('связывает вложенные визуальные узлы с точными диапазонами Source в обоих направлениях', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(SOURCE)).toBe(true)
 
     const root = state.document.nodes[state.document.rootId]!
@@ -83,7 +83,7 @@ describe('ui editor SFC source projection', () => {
     expect(state.selectionOrigin).toBe('visual')
   })
 
-  it('keeps Flex children in flow and drops stale hidden grid placement', () => {
+  it('оставляет дочерние узлы Flex в потоке и удаляет устаревшее скрытое размещение Grid', () => {
     const first = projectUIEditorDocumentFromSFC(SOURCE).document!
     const textId = first.nodes[first.rootId]!.children[0]!
     first.nodes[textId]!.layout = {
@@ -105,7 +105,7 @@ describe('ui editor SFC source projection', () => {
     expect(patched).not.toContain('colSpan=')
   })
 
-  it('round-trips Grid container and child placement through Source', () => {
+  it('сохраняет контейнер Grid и размещение дочерних узлов при двустороннем преобразовании через Source', () => {
     const source = `<template>
   <Grid columns="12" gap="10px" p="10px" autoRows="28px">
     <Text colStart="2" colSpan="5" rowStart="3" rowSpan="2">Placed</Text>
@@ -135,7 +135,7 @@ describe('ui editor SFC source projection', () => {
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('preserves root Flex layout semantics in visual projection and Source round-trip', () => {
+  it('сохраняет семантику корневого layout Flex в визуальной проекции и при двустороннем преобразовании Source', () => {
     const source = `<template>
   <Flex direction="row" align="center" justify="space-between" wrap gap="12px" p="8px">
     <Text>Flight</Text>
@@ -162,7 +162,7 @@ describe('ui editor SFC source projection', () => {
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('uses the runtime Flex default direction when direction is omitted', () => {
+  it('использует направление Flex по умолчанию из runtime, если direction не задан', () => {
     const projected = projectUIEditorDocumentFromSFC('<template><Flex><Text>A</Text><Text>B</Text></Flex></template>')
 
     expect(projected.diagnostics).toEqual([])
@@ -170,7 +170,7 @@ describe('ui editor SFC source projection', () => {
     expect(root.props).toMatchObject({ direction: 'row' })
   })
 
-  it('projects Flex shorthands and keeps source-owned SFC syntax round-trip safe', () => {
+  it('проецирует сокращённые свойства Flex и безопасно сохраняет принадлежащий Source синтаксис SFC при двустороннем преобразовании', () => {
     const source = `<script setup lang="ts">
 defineProps<{ mode: 'create' | 'edit', flight: { daysOfWeek: boolean[] } }>()
 definePreviewProps({ mode: 'edit', flight: { daysOfWeek: [true, false] } })
@@ -219,7 +219,7 @@ definePreviewProps({ mode: 'edit', flight: { daysOfWeek: [true, false] } })
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('preserves dynamic visual layout attributes instead of replacing them with fallback values', () => {
+  it('сохраняет динамические атрибуты визуального layout вместо замены резервными значениями', () => {
     const source = `<script setup lang="ts">
 defineProps<{ spacing: number }>()
 definePreviewProps({ spacing: 3 })
@@ -233,7 +233,7 @@ definePreviewProps({ spacing: 3 })
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('does not enable Flex wrapping for an explicit false boolean attribute', () => {
+  it('не включает перенос Flex при явно заданном boolean-атрибуте false', () => {
     const projected = projectUIEditorDocumentFromSFC('<template><Flex wrap="false"><Text>A</Text><Text>B</Text></Flex></template>')
 
     expect(projected.diagnostics).toEqual([])
@@ -241,7 +241,7 @@ definePreviewProps({ spacing: 3 })
     expect(root.props).toMatchObject({ wrap: false })
   })
 
-  it('patches only template content and preserves script and style', () => {
+  it('изменяет только содержимое template и сохраняет script и style', () => {
     const document = projectUIEditorDocumentFromSFC(SOURCE).document!
     const textId = document.nodes[document.rootId]!.children[0]!
     const text = document.nodes[textId]!
@@ -257,7 +257,7 @@ definePreviewProps({ spacing: 3 })
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('keeps source-owned dynamic attributes in the visual projection', () => {
+  it('сохраняет принадлежащие Source динамические атрибуты в визуальной проекции', () => {
     const result = projectUIEditorDocumentFromSFC(`<script setup lang="ts"></script>
 <template><Flex><Text :value="label" /></Flex></template>`)
 
@@ -275,7 +275,7 @@ definePreviewProps({ spacing: 3 })
 <template><Flex><Text :value="label" /></Flex></template>`, document)).toContain(':value="label"')
   })
 
-  it('renders Text interpolation from literal definePreviewProps and preserves its binding', () => {
+  it('рендерит интерполяцию Text из литерального definePreviewProps и сохраняет её binding', () => {
     const source = `<script setup lang="ts">
 defineProps<{ flight: { status: string } }>()
 definePreviewProps({ flight: { status: 'Boarding' } })
@@ -302,7 +302,7 @@ definePreviewProps({ flight: { status: 'Boarding' } })
     expect(patched).not.toContain('<Text>Status: Boarding</Text>')
   })
 
-  it('shows the original interpolation when definePreviewProps has no matching value', () => {
+  it('показывает исходную интерполяцию, если в definePreviewProps нет подходящего значения', () => {
     const source = `<script setup lang="ts">
 defineProps<{ flight: { status: string } }>()
 </script>
@@ -320,7 +320,7 @@ defineProps<{ flight: { status: string } }>()
     expect(patchUIEditorSFCTemplate(source, document)).toContain('<Text>{{ flight.status }}</Text>')
   })
 
-  it('renders Badge content and tone from definePreviewProps while preserving bindings', () => {
+  it('рендерит содержимое и tone Badge из definePreviewProps, сохраняя bindings', () => {
     const source = `<script setup lang="ts">
 defineProps<{
   flight: { number: string, status: string, statusTone: string }
@@ -371,7 +371,7 @@ definePreviewProps({
     expect(projectUIEditorDocumentFromSFC(patched).diagnostics).toEqual([])
   })
 
-  it('keeps unresolved Badge expressions visible in the visual projection', () => {
+  it('оставляет неразрешённые выражения Badge видимыми в визуальной проекции', () => {
     const source = `<script setup lang="ts">
 defineProps<{ flight: { status: string, statusTone: string } }>()
 </script>
@@ -393,8 +393,8 @@ defineProps<{ flight: { status: string, statusTone: string } }>()
     ])
   })
 
-  it('keeps source-bound Text read-only in inline visual editing', () => {
-    const state = new UIEditorDemoState()
+  it('оставляет привязанный к Source Text доступным только для чтения при встроенном визуальном редактировании', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(`<script setup lang="ts">
 defineProps<{ label: string }>()
 definePreviewProps({ label: 'Preview label' })
@@ -407,8 +407,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.editingNodeId).toBeNull()
   })
 
-  it('synchronizes source and visual state in both directions', () => {
-    const state = new UIEditorDemoState()
+  it('синхронизирует Source и визуальное состояние в обоих направлениях', () => {
+    const state = createUIEditorModule()
 
     expect(state.applySFCSource(SOURCE)).toBe(true)
     const textId = state.document.nodes[state.document.rootId]!.children[0]!
@@ -422,8 +422,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.selectedNodeId).toBeNull()
   })
 
-  it('keeps inline text edits local until commit and then updates Source', () => {
-    const state = new UIEditorDemoState()
+  it('хранит встроенные изменения текста локально до commit, а затем обновляет Source', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(SOURCE)).toBe(true)
     const textId = state.document.nodes[state.document.rootId]!.children[0]!
     const sourceBeforeEdit = state.source
@@ -441,8 +441,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.source).toContain('<Text>Edited on canvas</Text>')
   })
 
-  it('cancels an inline draft without changing the visual document', () => {
-    const state = new UIEditorDemoState()
+  it('отменяет встроенный черновик без изменения визуального документа', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(SOURCE)).toBe(true)
     const textId = state.document.nodes[state.document.rootId]!.children[0]!
 
@@ -454,8 +454,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.source).toContain('<Text>Hello</Text>')
   })
 
-  it('previews node reordering without changing Source and commits it atomically', () => {
-    const state = new UIEditorDemoState()
+  it('предварительно показывает перестановку узлов без изменения Source и применяет её атомарно', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(`<template>
   <Flex direction="column">
     <Text>First</Text>
@@ -487,8 +487,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.source.indexOf('<Text>Third</Text>')).toBeLessThan(state.source.indexOf('<Text>First</Text>'))
   })
 
-  it('keeps the last valid visual tree while source is temporarily invalid', () => {
-    const state = new UIEditorDemoState()
+  it('сохраняет последнее корректное визуальное дерево, пока Source временно невалиден', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(SOURCE)).toBe(true)
     const previousRootId = state.document.rootId
 
@@ -504,8 +504,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.source).toBe('<template><Flex>')
   })
 
-  it('toggles panels independently and keeps at least one panel visible', () => {
-    const state = new UIEditorDemoState()
+  it('переключает панели независимо и оставляет видимой хотя бы одну панель', () => {
+    const state = createUIEditorModule()
 
     expect(state.activePanels).toEqual(['visual'])
     expect(state.togglePanel('source')).toBe(true)
@@ -520,8 +520,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.activePanels).toEqual(['preview'])
   })
 
-  it('stores independent splitter proportions for each panel combination', () => {
-    const state = new UIEditorDemoState()
+  it('хранит независимые пропорции разделителей для каждой комбинации панелей', () => {
+    const state = createUIEditorModule()
 
     state.togglePanel('source')
     state.setPanelDividerBoundary(0, 0.8, false)
@@ -535,8 +535,8 @@ definePreviewProps({ label: 'Preview label' })
     expect(state.getActivePanelSizes()[0]).toBeCloseTo(0.8)
   })
 
-  it('opens one delete context menu for non-root nodes and closes it after removal', () => {
-    const state = new UIEditorDemoState()
+  it('открывает единое контекстное меню удаления для некорневых узлов и закрывает его после удаления', () => {
+    const state = createUIEditorModule()
     expect(state.applySFCSource(SOURCE)).toBe(true)
     const rootId = state.document.rootId
     const childId = state.document.nodes[rootId]!.children[0]!

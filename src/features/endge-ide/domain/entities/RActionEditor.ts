@@ -1,7 +1,7 @@
 import type { ActionImplementation, ActionTargetSelector, EntityOrigin, ImplementationBindingScope, ProgramDiagnostic, RAction } from '@endge/core'
 import { Endge } from '@endge/core'
 
-/** Source-like editor state for a persisted or read-only code-owned Action. */
+/** Source-подобное состояние редактора для сохранённого или доступного только для чтения Action из кода. */
 export class RActionEditor {
   id!: string | number
   identity!: string

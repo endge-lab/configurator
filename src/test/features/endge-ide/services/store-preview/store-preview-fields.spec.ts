@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import { readStorePreviewFields } from '../../../../../features/endge-ide/services/store-preview/store-preview-fields'
 
-describe('store preview fields', () => {
-  it('projects value and derived fields with their canonical Raph paths', () => {
+describe('поля preview Store', () => {
+  it('проецирует value и derived fields с их каноническими путями Raph', () => {
     const runtime = {
       getDataSnapshot: () => ({
         raw: { pairsArrival: [{ id: 'arrival-1' }] },

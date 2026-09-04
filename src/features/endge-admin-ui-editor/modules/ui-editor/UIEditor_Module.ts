@@ -1,4 +1,5 @@
 import type { UIPrimitiveKind } from '@endge/core'
+import type { UIEditorStoragePort } from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor-storage.type'
 import type {
   UIEditorBreakpoint,
   UIEditorBreakpointConfig,
@@ -16,7 +17,7 @@ import type {
   UIEditorSourceNodeLocation,
   UIEditorSourceNodeLocations,
   UIEditorTreeNode,
-} from '@/features/endge-admin-ui-editor/types'
+} from '@/features/endge-admin-ui-editor/modules/ui-editor/domain/types/ui-editor.type'
 
 import {
   Endge,
@@ -390,10 +391,6 @@ function isBreakpoint(value: unknown): value is UIEditorBreakpoint {
   return value === 'desktop' || value === 'tablet' || value === 'mobile'
 }
 
-function hasBrowserStorage(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
-}
-
 function isUIEditorDocument(value: unknown): value is UIEditorDocument {
   if (!value || typeof value !== 'object') {
     return false
@@ -554,7 +551,7 @@ function normalizePageChildrenPositions(
   return nodes
 }
 
-function readPersistedState(): {
+function readPersistedState(storage: UIEditorStoragePort): {
   document: UIEditorDocument
   activeBreakpoint: UIEditorBreakpoint
   visiblePanels: UIEditorPanelVisibility
@@ -563,14 +560,8 @@ function readPersistedState(): {
   showGridOverlay: boolean
   source: string
 } | null {
-  if (!hasBrowserStorage()) {
-    return null
-  }
-
   try {
-    const raw = UI_EDITOR_DEMO_STORAGE_KEYS
-      .map(key => window.localStorage.getItem(key))
-      .find(Boolean)
+    const raw = storage.readFirst(UI_EDITOR_DEMO_STORAGE_KEYS)
     if (!raw) {
       return null
     }
@@ -586,7 +577,7 @@ function readPersistedState(): {
       selectedNodeId?: string | null
       showGridOverlay?: boolean
       source?: string
-      // Kept only to migrate the previous two-pane preference.
+      // Поле сохраняется только для миграции прежней двухпанельной настройки.
       showGeneratedCode?: boolean
     }
 
@@ -632,12 +623,15 @@ function readPersistedState(): {
     }
   }
   catch (error) {
-    console.warn(`[UIEditorDemoState] failed to read persisted state: ${error instanceof Error ? error.message : String(error)}`)
+    console.warn(`[UIEditorModule] failed to read persisted state: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
 }
 
-export class UIEditorDemoState {
+class UIEditor_Module {
+  /** Persistence adapter принадлежит модулю и не раскрывается UI. */
+  private readonly _storage: UIEditorStoragePort
+
   public document: UIEditorDocument = createDefaultDocument()
   public activeBreakpoint: UIEditorBreakpoint = 'desktop'
   public visiblePanels: UIEditorPanelVisibility = { ...DEFAULT_PANEL_VISIBILITY }
@@ -657,7 +651,8 @@ export class UIEditorDemoState {
   public showGridOverlay = false
   public contextMenu: { nodeId: string, x: number, y: number } | null = null
 
-  public constructor() {
+  public constructor(storage: UIEditorStoragePort) {
+    this._storage = storage
     this._restorePersistedState()
     const projection = projectUIEditorDocumentFromSFC(this.source, this.document)
     this.sourceDiagnostics = projection.diagnostics
@@ -1403,7 +1398,7 @@ export class UIEditorDemoState {
   }
 
   private _restorePersistedState(): void {
-    const persistedState = readPersistedState()
+    const persistedState = readPersistedState(this._storage)
     if (!persistedState) {
       return
     }
@@ -1436,12 +1431,8 @@ export class UIEditorDemoState {
   }
 
   private _persistState(): void {
-    if (!hasBrowserStorage()) {
-      return
-    }
-
     try {
-      window.localStorage.setItem(UI_EDITOR_DEMO_STORAGE_KEY, JSON.stringify({
+      this._storage.write(UI_EDITOR_DEMO_STORAGE_KEY, JSON.stringify({
         document: this.document,
         activeBreakpoint: this.activeBreakpoint,
         visiblePanels: this.visiblePanels,
@@ -1452,7 +1443,7 @@ export class UIEditorDemoState {
       }))
     }
     catch (error) {
-      console.warn(`[UIEditorDemoState] failed to persist state: ${error instanceof Error ? error.message : String(error)}`)
+      console.warn(`[UIEditorModule] failed to persist state: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -1551,4 +1542,15 @@ export class UIEditorDemoState {
   }
 }
 
-export const uiEditorDemoState = reactive(new UIEditorDemoState()) as UIEditorDemoState
+/** Readonly public shape не позволяет consumer-у присваивать state напрямую. */
+export type UIEditorModule = Readonly<UIEditor_Module>
+
+const EMPTY_STORAGE: UIEditorStoragePort = {
+  readFirst: () => null,
+  write: () => undefined,
+}
+
+/** Создаёт изолированный state owner UI-редактора для composition или теста. */
+export function createUIEditorModule(storage: UIEditorStoragePort = EMPTY_STORAGE): UIEditorModule {
+  return reactive(new UIEditor_Module(storage)) as UIEditorModule
+}

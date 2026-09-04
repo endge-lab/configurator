@@ -8,7 +8,7 @@ import { Raph } from '@endge/raph'
 import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { createEndgeIDEModules } from '@/features/endge-ide/config/modules.config'
 
-/** Route-scoped federation for the mounted IDE workspace. */
+/** Федерация уровня маршрута для смонтированного рабочего пространства IDE. */
 export class EndgeIDE {
   private static _modules: EndgeIDEModules | null = null
   private static _initialized = false
@@ -25,6 +25,11 @@ export class EndgeIDE {
 
   public static get demonstration() {
     return this._requireModules().demonstration
+  }
+
+  /** Возвращает принадлежащий IDE state owner визуального UI-редактора. */
+  public static get uiEditor() {
+    return this._requireModules().uiEditor
   }
 
   public static get domainDrag() {
@@ -118,6 +123,7 @@ export class EndgeIDE {
     const modules = this._requireModules()
     try {
       await modules.integrations.reset()
+      modules.uiEditor.reset()
       modules.problems.reset()
       modules.sourceEditorDialogs.reset()
       modules.authProfileEditors.reset()

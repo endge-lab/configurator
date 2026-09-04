@@ -64,10 +64,10 @@ interface RuntimeFilterField {
   description?: string
 }
 
-// -------------------- persistent UI state --------------------
+// -------------------- сохраняемое состояние UI --------------------
 
 const LS_KEY = 'endge:parameters'
-type FiltersStore = Record<string, any> // identity -> payload
+type FiltersStore = Record<string, any> // идентификатор -> данные
 
 function loadAllSaved(): FiltersStore {
   return EndgeIDE.uiState.read<FiltersStore>(LS_KEY, {})
@@ -88,7 +88,7 @@ function saveByIdentity(identity: string, payload: any): void {
   saveAllSaved(all)
 }
 
-// -------------------- state --------------------
+// -------------------- состояние --------------------
 
 const tabs = EndgeIDE.tabs
 async function save(): Promise<void> {
@@ -610,7 +610,7 @@ function applyFilter(): void {
                       {{ field.description }}
                     </p>
 
-                    <!-- STATIC ARRAY -->
+                    <!-- СТАТИЧЕСКИЙ МАССИВ -->
                     <div v-if="isStaticArray(field)" class="mt-1">
                       <MultiSelectChips
                         v-model="form[field.key]"
@@ -619,7 +619,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- STATIC SINGLE -->
+                    <!-- ОДНО СТАТИЧЕСКОЕ ЗНАЧЕНИЕ -->
                     <div v-else-if="isStaticSingle(field)" class="mt-1">
                       <Select v-model="form[field.key]">
                         <SelectTrigger class="w-full">
@@ -637,7 +637,7 @@ function applyFilter(): void {
                       </Select>
                     </div>
 
-                    <!-- MANUAL DATE -->
+                    <!-- РУЧНАЯ ДАТА -->
                     <div v-else-if="isManualDate(field)" class="mt-1">
                       <Input
                         :model-value="form[field.key] instanceof Date ? (form[field.key] as Date).toISOString().slice(0, 10) : form[field.key]"
@@ -646,7 +646,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- MANUAL DATETIME -->
+                    <!-- РУЧНЫЕ ДАТА И ВРЕМЯ -->
                     <div v-else-if="isManualDateTime(field)" class="mt-1">
                       <Input
                         :model-value="form[field.key] instanceof Date ? (form[field.key] as Date).toISOString().slice(0, 16) : form[field.key]"
@@ -655,7 +655,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- MANUAL NUMBER -->
+                    <!-- РУЧНОЕ ЧИСЛО -->
                     <div v-else-if="isManualNumber(field)" class="mt-1">
                       <Input
                         v-model="form[field.key]"
@@ -664,7 +664,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- MANUAL BOOLEAN -->
+                    <!-- РУЧНОЕ ЛОГИЧЕСКОЕ ЗНАЧЕНИЕ -->
                     <div v-else-if="isManualBoolean(field)" class="mt-1 flex items-center gap-2">
                       <Checkbox
                         :model-value="!!form[field.key]"
@@ -673,7 +673,7 @@ function applyFilter(): void {
                       <span class="text-sm">{{ $t('uiText.enabled2e304ad8') }}</span>
                     </div>
 
-                    <!-- MANUAL STRING -->
+                    <!-- РУЧНАЯ СТРОКА -->
                     <div v-else-if="isManualString(field)" class="mt-1">
                       <Input
                         v-model="form[field.key]"
@@ -681,7 +681,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- MANUAL JSON -->
+                    <!-- РУЧНОЙ JSON -->
                     <div v-else-if="isManualJson(field)" class="mt-1">
                       <Textarea
                         v-model="form[field.key]"
@@ -691,7 +691,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- DYNAMIC ARRAY -->
+                    <!-- ДИНАМИЧЕСКИЙ МАССИВ -->
                     <div v-else-if="isDynamicArray(field)" class="mt-1">
                       <div class="text-xs text-muted-foreground mb-1">
                         {{ dynamicSourceLabel(field) }}
@@ -703,7 +703,7 @@ function applyFilter(): void {
                       />
                     </div>
 
-                    <!-- DYNAMIC SINGLE -->
+                    <!-- ОДНО ДИНАМИЧЕСКОЕ ЗНАЧЕНИЕ -->
                     <div v-else-if="isDynamicSingle(field)" class="mt-1">
                       <div class="text-xs text-muted-foreground mb-1">
                         {{ dynamicSourceLabel(field) }}
@@ -724,7 +724,7 @@ function applyFilter(): void {
                       </Select>
                     </div>
 
-                    <!-- EXPRESSION -->
+                    <!-- ВЫРАЖЕНИЕ -->
                     <div v-else-if="isExpression(field)" class="mt-1">
                       <div class="text-xs text-muted-foreground mb-1">
                         {{ $t('uiText.expressionReadonlyB258bf34') }}

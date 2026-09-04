@@ -20,7 +20,7 @@ interface TraversalContext {
   occurrences: RuntimePreviewOccurrence[]
 }
 
-/** Finds persisted usages without mounting Runtime or evaluating authored source. */
+/** Находит сохранённые использования без монтирования Runtime и выполнения пользовательского Source. */
 export function findRuntimePreviewOccurrences(
   target: RuntimePreviewTarget,
   projectIdentity: string,

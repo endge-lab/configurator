@@ -33,7 +33,7 @@ interface ActiveIntegration {
   disposers: IntegrationDisposer[]
 }
 
-/** Owns configurator-only integration entrypoints for the active IDE surface. */
+/** Владеет точками входа интеграций Configurator для активной поверхности IDE. */
 export class EndgeIDEIntegrations_Module {
   private readonly _menu = new ConfiguratorMenuRegistry()
   private readonly _widgets = new ConfiguratorWidgetRegistry()

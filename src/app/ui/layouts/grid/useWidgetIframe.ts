@@ -1,6 +1,6 @@
 /**
- * Serializable header action for iframe communication.
- * Icon is passed as a string (icon name from lucide-vue-next).
+ * Сериализуемый action заголовка для обмена с iframe.
+ * Иконка передаётся строкой с именем из lucide-vue-next.
  */
 export interface SerializableWidgetHeaderAction {
   readonly id: string
@@ -11,20 +11,20 @@ export interface SerializableWidgetHeaderAction {
 }
 
 /**
- * Composable for iframe content to communicate with its parent widget container.
- * Works both when the widget is embedded in the main layout and when opened as a popup.
+ * Composable для обмена содержимого iframe с родительским контейнером виджета.
+ * Работает как для встроенного в основной layout виджета, так и для popup.
  *
- * Usage in iframe content:
+ * Пример использования внутри iframe:
  * ```ts
  * const { setTitle, setLoading, addHeaderAction } = useWidgetIframe()
  *
- * // Update widget title
+ * // Обновление заголовка виджета
  * setTitle('Flight #123 Details')
  *
- * // Show/hide loading state
+ * // Отображение или скрытие состояния загрузки
  * setLoading(true)
  *
- * // Add custom header action
+ * // Добавление пользовательского action в заголовок
  * addHeaderAction({
  *   id: 'refresh',
  *   title: 'Refresh',

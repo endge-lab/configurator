@@ -1,3 +1,4 @@
+import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import type { AgentTableActions_Module } from '@/features/endge-ide/modules/AgentTableActions_Module'
 import type { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/modules/AuthProfileEditorRegistry_Module'
 import type { EndgeIDEDocumentImport_Module } from '@/features/endge-ide/modules/document-import/EndgeIDEDocumentImport_Module'
@@ -24,6 +25,7 @@ export interface EndgeIDEContextPort {
 }
 
 export interface EndgeIDEModules {
+  uiEditor: UIEditorModule
   busy: EndgeIDEBusy_Module
   agentTableActions: AgentTableActions_Module
   demonstration: EndgeIDEDemonstration_Module
