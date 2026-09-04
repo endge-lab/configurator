@@ -14,7 +14,10 @@ vi.mock('@endge/core', async importOriginal => ({
       getProject: (identity: string) => identity === 'airport' ? { identity, displayName: 'Airport' } : null,
       getComponentSFC: (identity: string) => ({ identity, displayName: identity === 'table-sfc' ? 'Flight table' : identity }),
       getStore: (identity: string) => identity === 'flights' ? { identity, displayName: 'Flights' } : null,
+      getVocab: (identity: string) => identity === 'airports' ? { identity, displayName: 'Airports' } : null,
       getStyle: (identity: string) => identity === 'airport-theme' ? { identity, name: 'Airport theme' } : null,
+      getI18nBundle: (identity: string) => identity === 'airport-default' ? { identity, displayName: 'Airport translations' } : null,
+      getStream: (identity: string) => identity === 'flight-events' ? { identity, displayName: 'Flight events' } : null,
       getQuery: () => null,
       getFilter: () => null,
       getComposition: (identity: string) => compositions.find(item => item.identity === identity) ?? null,
@@ -38,9 +41,18 @@ describe('построитель дерева Runtime Preview', () => {
       { identity: 'child', displayName: 'Child', kind: 'library', active: true },
     )
     artifacts.set('project-entry', artifact(payload({
-      resources: [{ name: 'theme', path: 'theme', kind: 'style', identity: 'airport-theme', scopePath: 'scope_default' }],
+      data: [
+        { name: 'flights', path: 'flights', kind: 'store', identity: 'flights', scopePath: 'scope_default' },
+        { name: 'airports', path: 'airports', kind: 'vocab', identity: 'airports', scopePath: 'scope_default' },
+      ],
+      resources: [
+        { name: 'theme', path: 'theme', kind: 'style', identity: 'airport-theme', scopePath: 'scope_default' },
+        { name: 'translations', path: 'translations', kind: 'i18n', identity: 'airport-default', scopePath: 'scope_default' },
+        { name: 'operations', path: 'operations', kind: 'operation-history', scopePath: 'scope_default' },
+      ],
       runtimes: [
         runtime('table', 'component', 'scope_default', 'table-sfc'),
+        runtime('events', 'stream', 'scope_default', 'flight-events'),
         runtime('childRuntime', 'composition', 'pages', 'child'),
       ],
       scopes: [
@@ -59,15 +71,41 @@ describe('построитель дерева Runtime Preview', () => {
       title: 'Airport',
       presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
     })
-    expect(entry?.children.map(node => node.kind)).toEqual(['resource', 'runtime', 'scope'])
+    expect(entry?.children.map(node => node.kind)).toEqual(['group', 'runtime', 'runtime', 'scope'])
     expect(entry).toMatchObject({
       title: 'Entry',
       presentation: { icon: 'Network', colorClass: 'text-violet-500' },
     })
-    expect(entry?.children[0]).toMatchObject({
+    const dependencies = entry?.children[0]
+    expect(dependencies).toMatchObject({
+      kind: 'group',
+      entityType: 'data-resources',
+      title: 'data-resources',
+    })
+    expect(dependencies?.children.map(node => node.kind)).toEqual(['data', 'data', 'resource', 'resource', 'resource'])
+    expect(dependencies?.children[0]).toMatchObject({
+      title: 'Flights',
+      subtitle: 'flights',
+      presentation: { icon: 'Database', colorClass: 'text-emerald-500' },
+    })
+    expect(dependencies?.children[1]).toMatchObject({
+      title: 'Airports',
+      subtitle: 'airports',
+      presentation: { icon: 'BookOpen', colorClass: 'text-teal-500' },
+    })
+    expect(dependencies?.children[2]).toMatchObject({
       title: 'Airport theme',
       subtitle: 'theme',
       presentation: { icon: 'Palette', colorClass: 'text-fuchsia-500' },
+    })
+    expect(dependencies?.children[3]).toMatchObject({
+      title: 'Airport translations',
+      subtitle: 'translations',
+      presentation: { icon: 'Languages', colorClass: 'text-amber-500' },
+    })
+    expect(dependencies?.children[4]).toMatchObject({
+      title: 'operations',
+      entityType: 'operation-history',
     })
     expect(entry?.children[1]).toMatchObject({
       title: 'Flight table',
@@ -75,7 +113,13 @@ describe('построитель дерева Runtime Preview', () => {
       renderable: true,
       presentation: { icon: 'Puzzle', colorClass: 'text-blue-500' },
     })
-    const pages = entry?.children[2]
+    expect(entry?.children[2]).toMatchObject({
+      kind: 'runtime',
+      title: 'Flight events',
+      subtitle: 'events',
+      entityType: 'stream',
+    })
+    const pages = entry?.children[3]
     expect(pages?.kind).toBe('scope')
     expect(pages?.children[0]).toMatchObject({
       kind: 'composition',
@@ -110,6 +154,7 @@ function artifact(value: any) {
 function payload(overrides: Record<string, any> = {}) {
   return {
     activation: { mode: 'startup' },
+    data: [],
     resources: [],
     runtimes: [],
     scopes: [scope('scope_default', null)],

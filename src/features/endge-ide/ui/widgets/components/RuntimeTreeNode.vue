@@ -4,6 +4,7 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
@@ -24,19 +25,30 @@ const emit = defineEmits<{
   toggleExpanded: [nodeKey: string, expanded: boolean]
 }>()
 
+const { t } = useI18n()
 const preview = EndgeIDE.runtimePreview
 const nodeKey = computed(() => runtimeTreeNodeExpansionKey(props.entryKey, props.node.id))
 const expanded = computed(() => props.expandedNodeKeys.has(nodeKey.value))
+const isGroup = computed(() => props.node.kind === 'group')
 const selected = computed(() => preview.selectedEntryKey.value === props.entryKey
   && preview.selectedNode.value?.id === props.node.id)
 const state = computed(() => preview.lifecycleState(props.entryKey, props.node))
 const hasChildren = computed(() => props.node.children.length > 0)
 const leftPadding = computed(() => `${Math.max(0, props.depth ?? 0) * 14 + 8}px`)
-const nodeIcon = computed<Component>(() => getIconComponent(props.node.presentation?.icon) as Component ?? Braces)
+const nodeIcon = computed<Component>(() => getIconComponent(
+  isGroup.value && expanded.value ? 'FolderOpen' : props.node.presentation?.icon,
+) as Component ?? Braces)
 const badgeIcon = computed<Component | null>(() => getIconComponent(props.node.presentation?.badgeIcon ?? undefined) as Component | null)
 const iconColorClass = computed(() => props.node.presentation?.colorClass ?? 'text-muted-foreground')
+const displayTitle = computed(() => props.node.entityType === 'data-resources'
+  ? t('uiText.dataAndResources84e9c2fe')
+  : props.node.title)
 
 function select(): void {
+  if (isGroup.value) {
+    toggleExpanded()
+    return
+  }
   void preview.select(props.entryKey, props.node.id)
 }
 
@@ -51,6 +63,9 @@ function forwardToggleExpanded(childNodeKey: string, childExpanded: boolean): vo
 }
 
 function openContextMenu(event: MouseEvent): void {
+  if (isGroup.value) {
+    return
+  }
   emit('contextmenu', {
     entryKey: props.entryKey,
     node: props.node,
@@ -71,6 +86,7 @@ function openContextMenu(event: MouseEvent): void {
           : 'border-transparent text-muted-foreground hover:bg-muted/65 hover:text-foreground',
         node.subtitle ? 'min-h-10 py-1' : 'h-8',
       ]"
+      :aria-expanded="hasChildren ? expanded : undefined"
       :style="{ paddingLeft: leftPadding }"
       @click="select"
       @contextmenu.prevent.stop="openContextMenu"
@@ -94,8 +110,8 @@ function openContextMenu(event: MouseEvent): void {
           :class="iconColorClass"
         />
       </span>
-      <span class="flex min-w-0 flex-1 flex-col" :title="node.subtitle ?? node.title">
-        <span class="truncate font-medium text-foreground">{{ node.title }}</span>
+      <span class="flex min-w-0 flex-1 flex-col" :title="node.subtitle ?? displayTitle">
+        <span class="truncate font-medium text-foreground">{{ displayTitle }}</span>
         <span v-if="node.subtitle" class="truncate text-[10px] leading-3 text-muted-foreground/75">
           {{ node.subtitle }}
         </span>
@@ -106,7 +122,7 @@ function openContextMenu(event: MouseEvent): void {
       >
         {{ $t('uiText.manualb363713a') }}
       </span>
-      <RuntimeLifecycleStatusIcon :state="state" />
+      <RuntimeLifecycleStatusIcon v-if="!isGroup" :state="state" />
     </button>
 
     <div v-if="expanded && hasChildren">

@@ -170,11 +170,27 @@ function buildScopeContents(
   artifacts: RuntimeArtifactReader,
 ): RuntimePreviewTreeNode[] {
   const result: RuntimePreviewTreeNode[] = []
+  const dependencyGroupId = `${compositionNodeId(address)}:scope:${scopePath}:group:data-resources`
+  const dependencies: RuntimePreviewTreeNode[] = []
+  for (const data of payload.data.filter(item => (item.scopePath ?? 'scope_default') === scopePath)) {
+    const documentType = data.kind === 'store' ? 'store' : 'vocabs'
+    const dataPath = data.path ?? data.name
+    dependencies.push(makeNode({
+      id: `${compositionNodeId(address)}:data:${dataPath}`,
+      parentId: dependencyGroupId,
+      kind: 'data',
+      entityType: data.kind,
+      identity: data.identity,
+      ...domainNodeFields(documentType, data.identity, data.name),
+      composition: address,
+      scopePath,
+    }))
+  }
   for (const resource of payload.resources.filter(item => item.scopePath === scopePath)) {
     if (resource.kind === 'operation-history') {
-      result.push(makeNode({
+      dependencies.push(makeNode({
         id: `${compositionNodeId(address)}:resource:${resource.path}`,
-        parentId,
+        parentId: dependencyGroupId,
         kind: 'resource',
         title: resource.name,
         entityType: resource.kind,
@@ -186,9 +202,9 @@ function buildScopeContents(
       continue
     }
     const documentType = resource.kind === 'i18n' ? 'i18n-bundles' : 'style'
-    result.push(makeNode({
+    dependencies.push(makeNode({
       id: `${compositionNodeId(address)}:resource:${resource.path}`,
-      parentId,
+      parentId: dependencyGroupId,
       kind: 'resource',
       entityType: resource.kind,
       identity: resource.identity,
@@ -196,6 +212,26 @@ function buildScopeContents(
       composition: address,
       scopePath,
       resourcePath: resource.path,
+    }))
+  }
+  if (dependencies.length) {
+    result.push(makeNode({
+      id: dependencyGroupId,
+      parentId,
+      kind: 'group',
+      title: 'data-resources',
+      entityType: 'data-resources',
+      identity: 'data-resources',
+      presentation: {
+        documentType: null,
+        icon: 'Folder',
+        colorClass: 'text-slate-500',
+        badgeIcon: null,
+        runtimeName: null,
+      },
+      composition: address,
+      scopePath,
+      children: dependencies,
     }))
   }
   for (const runtime of payload.runtimes.filter(item => item.scopePath === scopePath)) {

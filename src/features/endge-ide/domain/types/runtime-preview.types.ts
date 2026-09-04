@@ -20,7 +20,7 @@ export const ENDGE_IDE_RUNTIME_TREE_WIDGET_ID = 'runtime-tree'
 export const LEGACY_ENDGE_PREVIEW_WIDGET_ID = 'preview-runtime-tree'
 
 export type RuntimePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store'
-export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'runtime' | 'resource' | 'component-sfc'
+export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'group' | 'runtime' | 'data' | 'resource' | 'component-sfc'
 export type RuntimePreviewLifecycleState
   = | 'inactive'
     | 'preparing'

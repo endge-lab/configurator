@@ -16,6 +16,10 @@ export interface RuntimeTreeViewEntry {
   tree: readonly RuntimePreviewTreeNode[]
 }
 
+interface RuntimeTreeExpansionOptions {
+  includeGroups?: boolean
+}
+
 interface PersistedRuntimeTreeViewState {
   version: 1
   structure: string
@@ -48,11 +52,12 @@ export function createRuntimeTreeStructure(
 export function collectRuntimeTreeExpansion(
   entries: readonly RuntimeTreeViewEntry[],
   preset: RuntimeTreeExpansionPreset,
+  options: RuntimeTreeExpansionOptions = {},
 ): Set<string> {
   const expanded = new Set<string>()
   for (const entry of entries) {
     for (const node of entry.tree) {
-      collectNodeExpansion(expanded, entry.key, node, null, preset)
+      collectNodeExpansion(expanded, entry.key, node, null, preset, options)
     }
   }
   return expanded
@@ -142,12 +147,13 @@ function collectNodeExpansion(
   node: RuntimePreviewTreeNode,
   parentKind: RuntimePreviewTreeNode['kind'] | null,
   preset: RuntimeTreeExpansionPreset,
+  options: RuntimeTreeExpansionOptions,
 ): void {
-  if (node.children.length > 0 && shouldExpandNode(node, parentKind, preset)) {
+  if (node.children.length > 0 && shouldExpandNode(node, parentKind, preset, options)) {
     expanded.add(runtimeTreeNodeExpansionKey(entryKey, node.id))
   }
   for (const child of node.children) {
-    collectNodeExpansion(expanded, entryKey, child, node.kind, preset)
+    collectNodeExpansion(expanded, entryKey, child, node.kind, preset, options)
   }
 }
 
@@ -155,7 +161,11 @@ function shouldExpandNode(
   node: RuntimePreviewTreeNode,
   parentKind: RuntimePreviewTreeNode['kind'] | null,
   preset: RuntimeTreeExpansionPreset,
+  options: RuntimeTreeExpansionOptions,
 ): boolean {
+  if (node.kind === 'group' && options.includeGroups === false) {
+    return false
+  }
   if (preset === 'expanded') {
     return true
   }

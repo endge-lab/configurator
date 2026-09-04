@@ -228,7 +228,7 @@ export class RuntimePreviewInstance {
       if (!composition) {
         return 'inactive'
       }
-      if (node.kind === 'scope' || node.kind === 'resource') {
+      if (node.kind === 'scope' || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
         return scopeState(composition.getScope(node.scopePath ?? ''))
       }
       return handleState(composition.getRuntimeHandle(node.runtimePath ?? '')?.state)
@@ -611,7 +611,7 @@ export class RuntimePreviewInstance {
     if (node.kind === 'composition') {
       await composition.getScope('scope_default')?.activate()
     }
-    else if (node.kind === 'scope' || node.kind === 'resource') {
+    else if (node.kind === 'scope' || node.kind === 'data' || node.kind === 'resource') {
       await composition.getScope(node.scopePath ?? '')?.activate()
     }
     else if (node.kind === 'runtime') {
@@ -620,7 +620,7 @@ export class RuntimePreviewInstance {
   }
 
   private async _controlNode(node: RuntimePreviewTreeNode, operation: 'pause' | 'deactivate'): Promise<void> {
-    if (!node.composition || node.kind === 'resource') {
+    if (!node.composition || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
       return
     }
     if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._project) {

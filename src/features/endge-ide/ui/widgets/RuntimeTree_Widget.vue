@@ -63,7 +63,7 @@ let activeStructure = ''
 let knownExpandableNodeKeys = new Set<string>()
 
 function openContextMenu(payload: RuntimeContextMenu): void {
-  if (payload.node.kind === 'resource') {
+  if (payload.node.kind === 'group' || payload.node.kind === 'data' || payload.node.kind === 'resource') {
     return
   }
   contextMenu.value = payload
@@ -169,6 +169,11 @@ function restoreOrReconcileExpansion(structure: string): void {
   }
   const storageKey = runtimeTreeViewStorageKey()
   const expandable = collectRuntimeTreeExpansion(treeEntries.value, 'expanded')
+  const initiallyExpanded = collectRuntimeTreeExpansion(
+    treeEntries.value,
+    'expanded',
+    { includeGroups: false },
+  )
   if (storageKey !== activeStorageKey || !activeStructure) {
     const stored = readRuntimeTreeViewState(storageKey)
     expandedNodeKeys.value
@@ -176,13 +181,13 @@ function restoreOrReconcileExpansion(structure: string): void {
         ? new Set(
             [...stored.expanded].filter(nodeKey => expandable.has(nodeKey)),
           )
-        : expandable
+        : initiallyExpanded
   }
   else if (structure !== activeStructure) {
     const next = new Set(
       [...expandedNodeKeys.value].filter(nodeKey => expandable.has(nodeKey)),
     )
-    for (const nodeKey of expandable) {
+    for (const nodeKey of initiallyExpanded) {
       if (!knownExpandableNodeKeys.has(nodeKey)) {
         next.add(nodeKey)
       }

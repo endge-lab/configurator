@@ -47,11 +47,11 @@ const componentRenderables = computed<ComponentRenderable[]>(() => renderables.v
   .filter((item): item is ComponentRenderable => item.kind === 'component-sfc'))
 const inactiveRenderables = computed(() => instance.value?.inactiveRenderableChildren.value ?? [])
 const nestedCompositions = computed(() => selected.value ? collectCompositionChildren(selected.value) : [])
-const resourceSelected = computed(() => selected.value?.kind === 'resource')
+const dependencySelected = computed(() => selected.value?.kind === 'data' || selected.value?.kind === 'resource')
 const canControl = computed(() => {
   const entry = instance.value
   const node = selected.value
-  if (!entry || !node || node.kind === 'resource') {
+  if (!entry || !node || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
     return false
   }
   if (node.parentId == null) {
@@ -601,14 +601,14 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="resourceSelected && selected" class="p-4">
+        <div v-if="dependencySelected && selected" class="p-4">
           <div class="rounded-md border bg-muted/20 p-4">
             <div class="text-xs font-semibold">
               {{ selected.title }}
             </div>
             <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
               <dt class="text-muted-foreground">
-                {{ $t('uiText.resource021493f3') }}
+                {{ selected.kind === 'data' ? $t('uiText.dataD8e5fd81') : $t('uiText.resource021493f3') }}
               </dt>
               <dd class="font-mono">
                 {{ selected.identity }}
@@ -625,7 +625,9 @@ onBeforeUnmount(() => {
               </dd>
             </dl>
             <p class="mt-3 text-[11px] leading-5 text-muted-foreground">
-              {{ $t('uiText.resourceDoesNotHaveAnIndependentLifecycleItsStateBel1a790b2a') }}
+              {{ selected.kind === 'data'
+                ? $t('uiText.dataDependencyIsResolvedInTheCompositionContextLifecycleRemainsWithTheOwnerScopeOrResolvedRuntime068b4339')
+                : $t('uiText.resourceDoesNotHaveAnIndependentLifecycleItsStateBel1a790b2a') }}
             </p>
           </div>
         </div>
@@ -650,7 +652,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="!resourceSelected && !renderables.length && !inactiveRenderables.length && !nestedCompositions.length"
+          v-if="!dependencySelected && !renderables.length && !inactiveRenderables.length && !nestedCompositions.length"
           class="flex min-h-64 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground"
         >
           <Boxes class="size-10 opacity-35" stroke-width="1.25" />
