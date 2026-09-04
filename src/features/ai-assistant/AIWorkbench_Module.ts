@@ -13,7 +13,7 @@ import type {
 
 import { computed, reactive, readonly } from 'vue'
 
-import { createWidgetInstance, getWidget, hideWidget, registerWidget, unregisterWidget } from '@/app/ui/layouts/grid'
+import { createWidgetInstance, getWidget, hideWidget, registerWidget, unregisterWidget } from '@/components/layouts/grid'
 import { AIWorkbench_HTTP_Adapter } from '@/features/ai-assistant/adapters/AIWorkbench_HTTP_Adapter'
 import { buildClarificationRunLinkage } from '@/features/ai-assistant/services/clarification'
 import { AI_AGENT_WIDGET_DEFINITION, AI_AGENT_WIDGET_ID } from '@/features/ai-assistant/services/widget'

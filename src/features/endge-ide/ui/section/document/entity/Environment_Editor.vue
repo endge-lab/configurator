@@ -5,23 +5,23 @@ import { Endge } from '@endge/core'
 import { Loader2, Save, Settings2, SlidersHorizontal } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
-import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
-import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
-import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { Separator } from '@/shared/ui/separator'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const tabs = EndgeIDE.tabs
 const editor = computed(

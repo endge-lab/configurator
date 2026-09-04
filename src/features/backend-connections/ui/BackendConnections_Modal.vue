@@ -3,16 +3,16 @@ import { Loader2, LockKeyhole, Plus, Server, Trash2, TriangleAlert } from 'lucid
 import { computed, ref } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
-import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
 
 const openState = ref(false)
 const newName = ref('')

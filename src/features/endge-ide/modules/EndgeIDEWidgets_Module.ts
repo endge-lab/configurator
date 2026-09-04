@@ -11,7 +11,7 @@ import {
   setAreaActiveWidget,
   setAreaExpanded,
   unregisterAllWidgets,
-} from '@/app/ui/layouts/grid/layout'
+} from '@/components/layouts/grid/layout'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import {

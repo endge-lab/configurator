@@ -8,8 +8,8 @@ import { COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS } from '@endge/core'
 import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
+import { Button } from '@/components/ui/button'
 import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
-import { Button } from '@/shared/ui/button'
 
 const props = defineProps<{
   modelValue: ComponentSFCInteractionTrigger[]

@@ -5,7 +5,7 @@ import type { DocumentDependencyNode } from '@/features/endge-ide/services/docum
 import { AlertTriangle, ChevronRight, RotateCcw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { getIconComponent } from '@/app/ui/layouts/grid/icons'
+import { getIconComponent } from '@/components/layouts/grid/icons'
 
 defineOptions({ name: 'DocumentDependencyTreeNode' })
 

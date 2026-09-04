@@ -6,7 +6,7 @@ import { KeyRound, Loader2, Search, ShieldCheck, Trash2, UserPlus, Users } from 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const openState = ref(false)
 const activeTab = ref('workspace')

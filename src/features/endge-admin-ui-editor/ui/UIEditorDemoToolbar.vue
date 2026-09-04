@@ -11,13 +11,13 @@ import {
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
 
 const props = defineProps<{
   state: UIEditorModule

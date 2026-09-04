@@ -1,4 +1,4 @@
-import type { LayoutWidgetsState, WidgetDefinition, WidgetDefinitionState } from '@/app/ui/layouts/grid/types'
+import type { LayoutWidgetsState, WidgetDefinition, WidgetDefinitionState } from '@/components/layouts/grid/types'
 
 import { describe, expect, it } from 'vitest'
 

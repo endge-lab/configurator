@@ -2,10 +2,10 @@
 import { Bot, Loader2, MessageCircleQuestion, Plus, Send } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
 import { AIWorkbench } from '@/features/ai-assistant/AIWorkbench_Module'
-import { Button } from '@/shared/ui/button'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { Textarea } from '@/shared/ui/textarea'
 
 const prompt = ref('')
 const viewport = ref<HTMLElement | null>(null)

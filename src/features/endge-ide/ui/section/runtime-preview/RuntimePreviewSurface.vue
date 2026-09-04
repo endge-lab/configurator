@@ -7,17 +7,17 @@ import { Boxes, Braces, CircleAlert, ListTree, LoaderCircle, Pause, Play, Refres
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { SFCRenderInspectionController } from '@/features/endge-ide/services/runtime-preview/sfc-render-inspection-controller'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
+import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import SFCRenderTreePanel from '@/features/endge-ide/ui/section/runtime-preview/SFCRenderTreePanel.vue'
 import StoreRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/StoreRuntimePreview.vue'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
-import { Button } from '@/shared/ui/button'
-import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
 
 interface SourceJsonTreeHandle {
   expandAll: () => void

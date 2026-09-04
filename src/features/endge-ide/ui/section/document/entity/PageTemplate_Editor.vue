@@ -5,16 +5,16 @@ import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { computed, ref, watch } from 'vue'
 
 import { toast } from 'vue-sonner'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import TemplatePreviewGrid from '@/features/endge-ide/ui/components/TemplatePreviewGrid.vue'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { Textarea } from '@/shared/ui/textarea'
 
 const props = defineProps<{
   tabContext?: { editor?: RPageTemplateEditor }

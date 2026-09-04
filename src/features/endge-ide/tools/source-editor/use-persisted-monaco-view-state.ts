@@ -1,6 +1,6 @@
 import type * as Monaco from 'monaco-editor'
 
-import { useSmartTabViewState, useSmartTabViewStateFlush } from '@/shared/ui/smart-tabs'
+import { useSmartTabViewState, useSmartTabViewStateFlush } from '@/features/endge-ide/ui/smart-tabs'
 
 const CAPTURE_DELAY_MS = 180
 

@@ -14,6 +14,28 @@ import {
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
@@ -21,29 +43,7 @@ import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-doc
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
-import { Separator } from '@/shared/ui/separator'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Textarea } from '@/shared/ui/textarea'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/shared/ui/tooltip'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface ScriptEditorHandle {
   formatDocument: () => Promise<void>

@@ -1,9 +1,9 @@
 import { Endge } from '@endge/core'
 import { shallowRef, watch } from 'vue'
 
-import { i18n } from '@/app/i18n'
-import en from '@/app/i18n/locales/en.json'
-import ru from '@/app/i18n/locales/ru.json'
+import { i18n } from '@/i18n'
+import en from '@/i18n/locales/en.json'
+import ru from '@/i18n/locales/ru.json'
 
 type MessageSchema = typeof en
 export type ConfiguratorLocale = string

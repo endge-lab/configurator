@@ -20,12 +20,12 @@ import type {
 import type { Component, ShallowRef } from 'vue'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
-import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/shared/ui/smart-tabs/types.ts'
+import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
 
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-import { getLayoutState, hideWidget, showWidget } from '@/app/ui/layouts/grid/layout'
+import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
 
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
 import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
@@ -70,7 +70,7 @@ import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/doma
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
-import { useSmartTabs } from '@/shared/ui/smart-tabs'
+import { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
 const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))

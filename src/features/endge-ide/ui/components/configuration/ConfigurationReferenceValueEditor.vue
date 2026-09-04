@@ -10,7 +10,7 @@ import {
   getConfigurationReferenceSectionTypes,
 } from '@/features/endge-ide/config/configuration-reference-options'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import SearchableSelect from '@/shared/ui/searchable-select/SearchableSelect.vue'
+import SearchableSelect from '@/features/endge-ide/ui/components/searchable-select/SearchableSelect.vue'
 
 const props = defineProps<{
   modelValue: EndgeJSONValue

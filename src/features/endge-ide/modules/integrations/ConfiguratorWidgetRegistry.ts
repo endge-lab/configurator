@@ -13,7 +13,7 @@ import {
   hideWidget,
   registerWidget,
   unregisterWidget,
-} from '@/app/ui/layouts/grid/layout'
+} from '@/components/layouts/grid/layout'
 
 function resolveVisual(visual: unknown): Component {
   if (typeof visual === 'function') {

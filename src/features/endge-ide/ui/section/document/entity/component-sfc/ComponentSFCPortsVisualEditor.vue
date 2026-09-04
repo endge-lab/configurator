@@ -7,7 +7,7 @@ import type {
   ComponentSFCPortRole,
   QueryProgramPayload,
 } from '@endge/core'
-import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
+import type { SearchableSelectOption } from '@/features/endge-ide/ui/components/searchable-select'
 
 import {
   DomainSectionType,
@@ -21,13 +21,13 @@ import { Braces, ChevronDown, Plus, Radio, Trash2, Zap } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Collapsible, CollapsibleContent } from '@/shared/ui/collapsible'
-import { Input } from '@/shared/ui/input'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
-import { Textarea } from '@/shared/ui/textarea'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 

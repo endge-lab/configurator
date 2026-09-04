@@ -3,15 +3,15 @@ import { Copy } from 'lucide-vue-next'
 import { computed, useId } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
 
 const props = defineProps<{
   documentId?: string | number | null

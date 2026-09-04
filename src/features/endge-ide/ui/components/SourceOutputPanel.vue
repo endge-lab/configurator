@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FileJson } from 'lucide-vue-next'
 
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 
 withDefaults(defineProps<{
   title: string

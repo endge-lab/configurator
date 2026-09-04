@@ -7,7 +7,17 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Configurator } from '@/app/Configurator'
-import { getIconComponent, toggleWidget } from '@/app/ui/layouts/grid'
+import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
@@ -22,16 +32,6 @@ import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Moda
 import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 
 const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()

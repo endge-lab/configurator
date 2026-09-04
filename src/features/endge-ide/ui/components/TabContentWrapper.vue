@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SmartTabRef } from '@/shared/ui/smart-tabs/types'
+import type { SmartTabRef } from '@/features/endge-ide/ui/smart-tabs/types'
 
 import { computed } from 'vue'
 

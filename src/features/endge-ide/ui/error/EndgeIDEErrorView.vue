@@ -4,15 +4,15 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useLayout } from '@/app/tools/layout.ts'
-import { Button } from '@/shared/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/shared/ui/empty'
+} from '@/components/ui/empty'
 
 const props = defineProps<{
   isNotFound?: boolean

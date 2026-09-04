@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
 
+import { TooltipProvider } from '@/components/ui/tooltip'
 import DocumentDependenciesPanel from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesPanel.vue'
 import DocumentDependenciesToggle from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesToggle.vue'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
-import { useSmartTabViewState } from '@/shared/ui/smart-tabs'
-import { TooltipProvider } from '@/shared/ui/tooltip'
+import { useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 defineProps<{
   documentId?: string | number | null

@@ -7,6 +7,13 @@ import { Code2, Eye, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } fro
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import ConfigValueEditor from '@/features/endge-ide/ui/components/configuration/ConfigValueEditor.vue'
@@ -17,14 +24,7 @@ import DocumentIdField from '@/features/endge-ide/ui/components/source-document-
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Separator } from '@/shared/ui/separator'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Textarea } from '@/shared/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{ tabContext?: { editor?: RConfigurationEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)

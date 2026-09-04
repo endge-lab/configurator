@@ -7,6 +7,13 @@ import { useDomainStore } from '@endge/ui-vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import {
   COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
   DOCUMENT_CREATE_DESCRIPTORS,
@@ -20,14 +27,7 @@ import {
   setQueryCompositionRole,
 } from '@/features/endge-ide/services/domain/query-composition-presentation'
 import { suggestDocumentIdentity } from '@/features/endge-ide/tools/document-create'
-import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Textarea } from '@/shared/ui/textarea'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 const props = defineProps<{
   open: boolean

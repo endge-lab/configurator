@@ -1,4 +1,4 @@
-import type { LayoutWidgetsState, WidgetPosition } from '@/app/ui/layouts/grid/types'
+import type { LayoutWidgetsState, WidgetPosition } from '@/components/layouts/grid/types'
 
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'

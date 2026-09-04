@@ -2,9 +2,9 @@
 import { Eye, EyeOff } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = withDefaults(defineProps<{ modelValue: string, label: string, secret?: boolean, placeholder?: string }>(), {
   secret: true,

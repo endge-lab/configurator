@@ -22,9 +22,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Configurator } from '@/app/Configurator'
-import { ConfiguratorVersionsError } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -32,15 +31,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
+import { ConfiguratorVersionsError } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 
 type VersionTab = 'commits' | 'releases'
 interface RestoreTarget {

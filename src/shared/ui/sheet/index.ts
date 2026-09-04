@@ -1,8 +1,0 @@
-export { default as Sheet } from '@/shared/ui/sheet/Sheet.vue'
-export { default as SheetClose } from '@/shared/ui/sheet/SheetClose.vue'
-export { default as SheetContent } from '@/shared/ui/sheet/SheetContent.vue'
-export { default as SheetDescription } from '@/shared/ui/sheet/SheetDescription.vue'
-export { default as SheetFooter } from '@/shared/ui/sheet/SheetFooter.vue'
-export { default as SheetHeader } from '@/shared/ui/sheet/SheetHeader.vue'
-export { default as SheetTitle } from '@/shared/ui/sheet/SheetTitle.vue'
-export { default as SheetTrigger } from '@/shared/ui/sheet/SheetTrigger.vue'

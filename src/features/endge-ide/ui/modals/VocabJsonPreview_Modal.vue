@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import LazyJsonNode from '@/features/endge-ide/ui/widgets/components/LazyJsonNode.vue'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -10,8 +9,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { ScrollArea } from '@/shared/ui/scroll-area'
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import LazyJsonNode from '@/features/endge-ide/ui/widgets/components/LazyJsonNode.vue'
 
 const props = defineProps<{
   open: boolean

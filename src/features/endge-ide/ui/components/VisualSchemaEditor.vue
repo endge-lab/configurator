@@ -25,19 +25,19 @@ import {
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import {
   cloneTypeSourceDocument,
   createDefaultTypeSourceField,
   parseTypeVisualSource,
 } from '@/features/endge-ide/services/type-visual-editor'
-import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { useSmartTabViewState } from '@/shared/ui/smart-tabs'
-import { Textarea } from '@/shared/ui/textarea'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import { useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 interface TypeVisualRow {
   id: string

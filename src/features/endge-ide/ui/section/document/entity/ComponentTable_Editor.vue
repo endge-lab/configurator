@@ -19,41 +19,41 @@ import {
   watch,
 } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide'
-import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
-import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
-import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
-import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide'
+import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistrySelect.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)

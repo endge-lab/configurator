@@ -7,18 +7,18 @@ import type {
   ComponentSFCIntrinsicEventDefinition,
   ComponentSFCTableCellInteractionModifier,
 } from '@endge/core'
-import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
+import type { SearchableSelectOption } from '@/features/endge-ide/ui/components/searchable-select'
 
 import { ChevronDown, CircleDot, X } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, ref, useSlots, watch } from 'vue'
 
-import { Button } from '@/shared/ui/button'
-import { Collapsible, CollapsibleContent } from '@/shared/ui/collapsible'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 type BindingMode = 'trigger' | 'condition'
 type PhysicalModifier = 'shift' | 'ctrl' | 'alt' | 'meta' | 'altGraph'

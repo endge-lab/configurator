@@ -1,7 +1,0 @@
-export { default as Breadcrumb } from '@/shared/ui/breadcrumb/Breadcrumb.vue'
-export { default as BreadcrumbEllipsis } from '@/shared/ui/breadcrumb/BreadcrumbEllipsis.vue'
-export { default as BreadcrumbItem } from '@/shared/ui/breadcrumb/BreadcrumbItem.vue'
-export { default as BreadcrumbLink } from '@/shared/ui/breadcrumb/BreadcrumbLink.vue'
-export { default as BreadcrumbList } from '@/shared/ui/breadcrumb/BreadcrumbList.vue'
-export { default as BreadcrumbPage } from '@/shared/ui/breadcrumb/BreadcrumbPage.vue'
-export { default as BreadcrumbSeparator } from '@/shared/ui/breadcrumb/BreadcrumbSeparator.vue'

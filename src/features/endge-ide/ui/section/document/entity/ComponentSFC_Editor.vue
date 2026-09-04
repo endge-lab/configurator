@@ -14,6 +14,18 @@ import { useDomainStore } from '@endge/ui-vue'
 import { AlertCircle, Code2, Columns3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
@@ -29,19 +41,7 @@ import DocumentIdField from '@/features/endge-ide/ui/components/source-document-
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { Separator } from '@/shared/ui/separator'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Textarea } from '@/shared/ui/textarea'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/shared/ui/tooltip'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface ScriptEditorHandle {
   focusOffset: (offset: number) => void

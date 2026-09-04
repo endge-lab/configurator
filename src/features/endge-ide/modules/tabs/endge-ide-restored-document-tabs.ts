@@ -1,5 +1,5 @@
 import type { DomainDocumentType } from '@endge/core'
-import type { SmartTabRef } from '@/shared/ui/smart-tabs/types'
+import type { SmartTabRef } from '@/features/endge-ide/ui/smart-tabs/types'
 
 // Разрешение восстановленных документов является внутренней частью модуля tabs.
 

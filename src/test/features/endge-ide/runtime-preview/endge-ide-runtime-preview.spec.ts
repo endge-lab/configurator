@@ -60,7 +60,7 @@ vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-auth', ()
 }))
 
 vi.mock('vue-sonner', () => ({ toast: { error: mocks.toastError, warning: mocks.toastWarning } }))
-vi.mock('@/app/ui/layouts/grid/layout', () => ({
+vi.mock('@/components/layouts/grid/layout', () => ({
   getLayoutState: () => ({ widgets: ref({ areas: { left: mocks.leftArea } }) }),
   showWidget: mocks.showWidget,
 }))

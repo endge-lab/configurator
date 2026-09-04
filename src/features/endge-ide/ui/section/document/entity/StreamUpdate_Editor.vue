@@ -7,6 +7,9 @@ import { Code2, FileJson, Loader2, RotateCcw, Save, Settings2, TriangleAlert } f
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
@@ -15,10 +18,7 @@ import DocumentIdField from '@/features/endge-ide/ui/components/source-document-
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import StreamSourceEditor from '@/features/endge-ide/ui/components/StreamSourceEditor.vue'
 import UpdateSourceEditor from '@/features/endge-ide/ui/components/UpdateSourceEditor.vue'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{
   sourceKind: 'stream' | 'update'

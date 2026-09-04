@@ -4,8 +4,8 @@ import { useUI } from '@endge/ui-vue'
 import { ChevronsUpDown, Palette } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
 
-import { Button } from '@/shared/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const ui = useUI()
 const workspaceVersion = ref(0)

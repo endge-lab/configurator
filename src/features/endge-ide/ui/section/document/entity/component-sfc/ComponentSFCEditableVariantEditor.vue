@@ -8,7 +8,7 @@ import type {
   TableCellBindingValueKind,
   TableCellComponentOption,
 } from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
-import type { SearchableSelectOption } from '@/shared/ui/searchable-select'
+import type { SearchableSelectOption } from '@/features/endge-ide/ui/components/searchable-select'
 
 import {
   compileComponentSFCExpression,
@@ -17,18 +17,18 @@ import {
 import { Blocks, ExternalLink, FileCode2, Tags } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { TABLE_CELL_EDITOR_TAGS } from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { SearchableSelect } from '@/shared/ui/searchable-select'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/shared/ui/tooltip'
+} from '@/components/ui/tooltip'
+import { TABLE_CELL_EDITOR_TAGS } from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 interface BindingField extends RComponentContractInput {
   sourceOnly?: boolean

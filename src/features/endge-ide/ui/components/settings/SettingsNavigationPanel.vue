@@ -3,8 +3,8 @@ import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { Tabs } from '@/components/ui/tabs'
 import { cn } from '@/shared/tools/utils'
-import { Tabs } from '@/shared/ui/tabs'
 
 const props = withDefaults(defineProps<{
   modelValue: TValue

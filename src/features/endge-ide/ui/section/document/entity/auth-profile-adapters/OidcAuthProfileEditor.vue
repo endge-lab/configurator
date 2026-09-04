@@ -3,9 +3,9 @@ import { CheckCircle2, Loader2, XCircle } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
-import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = defineProps<{ config: Record<string, unknown>, credentials: Record<string, unknown> }>()
 const emit = defineEmits<{ 'update:config': [Record<string, unknown>], 'update:credentials': [Record<string, unknown>] }>()

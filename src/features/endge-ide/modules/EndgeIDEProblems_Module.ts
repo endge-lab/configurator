@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import { Endge } from '@endge/core'
 import { computed, ref } from 'vue'
 
-import { getLayoutState, showWidget } from '@/app/ui/layouts/grid/layout'
+import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { buildProblemsEntityEntries, buildProblemsSeverityGroups } from '@/features/endge-ide/services/diagnostics/problems-workspace-presentation'
 

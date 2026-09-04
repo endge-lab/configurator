@@ -5,21 +5,21 @@ import { DomainSectionType, Endge } from '@endge/core'
 import { Clock, Filter, GripVertical, ListChecks, Loader2, Plus, Save, Trash2 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
 /** Legacy fields editor. Он намеренно не читает и не изменяет Filter source. */
 const tabs = EndgeIDE.tabs

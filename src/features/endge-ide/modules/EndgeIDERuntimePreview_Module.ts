@@ -14,7 +14,7 @@ import { AuthInteractionRequiredError, Endge } from '@endge/core'
 import { computed, ref, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { getLayoutState, showWidget } from '@/app/ui/layouts/grid/layout'
+import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/services/runtime-preview/runtime-preview-auth'

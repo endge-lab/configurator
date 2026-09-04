@@ -4,9 +4,9 @@ import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { Button } from '@/components/ui/button'
 import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
-import { Button } from '@/shared/ui/button'
-import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
+import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 
 const props = defineProps<{
   state: UIEditorModule

@@ -2,23 +2,23 @@
 import { compileComponentSFC } from '@endge/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import EndgeAdapterRoot from '@/shared/ui/endge/EndgeAdapterRoot'
-import { Label } from '@/shared/ui/label'
-import { ScrollArea } from '@/shared/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
+import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
 
 const SPLIT_MIN = 0.22
 const SPLIT_MAX = 0.68

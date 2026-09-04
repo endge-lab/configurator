@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { routes } from '@/app/router/routes'
+import { routes } from '@/router/routes'
 
 describe('интеграция Runtime Preview с IDE', () => {
   it('не предоставляет отдельный маршрут preview', () => {

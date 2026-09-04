@@ -9,6 +9,14 @@ import { Endge } from '@endge/core'
 import { GitFork, Network, TriangleAlert } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
 
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   buildCompositionDependencyHierarchy,
@@ -20,15 +28,7 @@ import {
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
 import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
-import { Button } from '@/shared/ui/button'
-import { ScrollArea } from '@/shared/ui/scroll-area'
-import { useSmartTabViewState } from '@/shared/ui/smart-tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/shared/ui/tooltip'
+import { useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{
   documentType: DomainDocumentType

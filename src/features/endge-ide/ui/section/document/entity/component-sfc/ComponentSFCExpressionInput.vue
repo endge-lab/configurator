@@ -8,8 +8,8 @@ import type { HTMLAttributes } from 'vue'
 import { Endge, resolveComponentSFCExpressionCompletions } from '@endge/core'
 import { computed, nextTick, ref, useId, watch } from 'vue'
 
-import { Input } from '@/shared/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 const props = defineProps<{
   modelValue: string

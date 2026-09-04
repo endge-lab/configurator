@@ -8,9 +8,9 @@ import { COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS } from '@endge/core'
 import { ChevronDown, GitBranchPlus, Plus, RotateCcw, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Collapsible, CollapsibleContent } from '@/shared/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 
 import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 

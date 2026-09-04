@@ -15,12 +15,7 @@ import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Configurator } from '@/app/Configurator'
-import { startConfiguratorLogin } from '@/features/configurator-session'
-import {
-  ServiceBackendDomainTransferError,
-} from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -28,9 +23,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { startConfiguratorLogin } from '@/features/configurator-session'
+import {
+  ServiceBackendDomainTransferError,
+} from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
 

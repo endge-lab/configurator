@@ -3,26 +3,26 @@ import { Raph } from '@endge/raph'
 import { Loader2, Save } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
-import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
-import { Checkbox } from '@/shared/ui/checkbox'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
-import { MultiSelectChips } from '@/shared/ui/multi-select-chips'
-import { ScrollArea } from '@/shared/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select'
-import { useSmartTabSelection } from '@/shared/ui/smart-tabs'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Textarea } from '@/shared/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { MultiSelectChips } from '@/features/endge-ide/ui/components/multi-select-chips'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 type FilterValueType
   = | 'string'

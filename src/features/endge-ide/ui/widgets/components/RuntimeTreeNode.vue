@@ -5,7 +5,7 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-import { getIconComponent } from '@/app/ui/layouts/grid/icons'
+import { getIconComponent } from '@/components/layouts/grid/icons'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { runtimeTreeNodeExpansionKey } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'

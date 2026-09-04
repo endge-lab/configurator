@@ -20,11 +20,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import { buildDocumentImportFolderOptions } from '@/features/endge-ide/modules/document-import/tools/document-import-folders'
-import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Checkbox } from '@/shared/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -32,9 +30,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog'
-import { Label } from '@/shared/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { buildDocumentImportFolderOptions } from '@/features/endge-ide/modules/document-import/tools/document-import-folders'
 
 const ROOT_FOLDER_VALUE = '__root__'
 
@@ -156,13 +156,6 @@ function statusVariant(candidate: DocumentImportCandidate): 'secondary' | 'destr
   return candidate.status === 'conflict' ? 'outline' : 'secondary'
 }
 
-function fileSizeLabel(size: number): string {
-  if (size < 1024) {
-    return `${size} B`
-  }
-  return `${Math.max(1, Math.ceil(size / 1024))} KB`
-}
-
 function diagnosticText(diagnostic: DocumentImportDiagnostic): string {
   const location = diagnostic.line ? `${diagnostic.line}:${diagnostic.column ?? 1} · ` : ''
   return `${location}${diagnostic.message}`
@@ -201,7 +194,7 @@ async function applyImport(): Promise<void> {
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent class="max-h-[92vh] overflow-hidden p-0 sm:max-w-[900px]">
+    <DialogContent class="max-h-[92vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-[900px]">
       <DialogHeader class="border-b bg-primary/[0.035] px-6 py-5 pr-14">
         <div class="flex items-start gap-3">
           <div class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
@@ -229,7 +222,18 @@ async function applyImport(): Promise<void> {
             class="hidden"
             @change="onFileChange"
           >
+          <div
+            v-if="state.fileName"
+            class="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-2.5"
+          >
+            <Loader2 v-if="state.status === 'preparing'" class="size-5 shrink-0 animate-spin text-primary" />
+            <FileCode2 v-else class="size-5 shrink-0 text-primary" />
+            <div class="min-w-0 flex-1 truncate text-sm font-medium" :title="state.fileName">
+              {{ state.fileName }}
+            </div>
+          </div>
           <button
+            v-else
             type="button"
             class="group flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed px-5 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             :class="isDragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/30 hover:bg-muted/35'"
@@ -240,15 +244,13 @@ async function applyImport(): Promise<void> {
             @dragleave="onDragLeave"
             @drop="onDrop"
           >
-            <Loader2 v-if="state.status === 'preparing'" class="size-7 animate-spin text-primary" />
-            <FileCode2 v-else-if="state.fileName" class="size-7 text-primary" />
-            <UploadCloud v-else class="size-7 text-muted-foreground transition-colors group-hover:text-foreground" />
+            <UploadCloud class="size-7 text-muted-foreground transition-colors group-hover:text-foreground" />
             <div class="space-y-1">
               <div class="text-sm font-medium">
-                {{ state.fileName || t('endgeIde.documentImport.dropzone') }}
+                {{ t('endgeIde.documentImport.dropzone') }}
               </div>
               <div class="text-xs text-muted-foreground">
-                {{ state.fileName ? fileSizeLabel(state.fileSize) : fileHint }}
+                {{ fileHint }}
               </div>
             </div>
           </button>
@@ -275,7 +277,7 @@ async function applyImport(): Promise<void> {
             </div>
           </div>
 
-          <div class="max-h-[340px] divide-y overflow-y-auto rounded-md border">
+          <div class="divide-y overflow-hidden rounded-md border">
             <label
               v-for="candidate in state.plan.candidates"
               :key="candidate.id"

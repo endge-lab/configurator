@@ -6,6 +6,8 @@ import { ChevronsDownUp, ChevronsUpDown, ListCollapse, Pause, Play, RefreshCw, S
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   collectRuntimeTreeExpansion,
@@ -15,8 +17,6 @@ import {
   writeRuntimeTreeViewState,
 } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 import RuntimeTreeNode from '@/features/endge-ide/ui/widgets/components/RuntimeTreeNode.vue'
-import { Button } from '@/shared/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 interface RuntimeContextMenu {
   entryKey: string

@@ -3,8 +3,8 @@ import { ChevronsDownUp, ChevronsUpDown, Copy } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { toast } from 'vue-sonner'
 
-import { Button } from '@/shared/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const props = defineProps<{
   copyValue: unknown

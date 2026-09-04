@@ -4,8 +4,8 @@ import type { ExtractComponentFolderOption } from './extract-component.types'
 import { Check, ChevronsUpDown, Folder, FolderRoot } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
-import { Input } from '@/shared/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 const props = defineProps<{
   modelValue: string | null

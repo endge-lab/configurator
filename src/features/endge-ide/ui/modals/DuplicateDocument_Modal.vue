@@ -4,12 +4,12 @@ import type { DomainDocumentType } from '@endge/core'
 import { computed, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { duplicateEntity } from '@/features/endge-ide/services/domain/domain-duplicate'
-import { Button } from '@/shared/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 
 export interface DuplicateSourcePayload {
   id: string
