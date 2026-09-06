@@ -214,8 +214,42 @@ function buildScopeContents(
       resourcePath: resource.path,
     }))
   }
+  for (const runtime of payload.runtimes.filter(item => item.scopePath === scopePath)) {
+    if (runtime.kind === 'composition') {
+      result.push(buildCompositionNode(
+        runtime.identity,
+        { rootIdentity: address.rootIdentity, invocationPath: [...address.invocationPath, runtime.path] },
+        parentId,
+        ancestors,
+        runtime.effectiveActivation.mode,
+        runtime.name,
+        artifacts,
+      ))
+      continue
+    }
+    const target = runtimeDocumentTarget(runtime)
+    const runtimeNode = makeNode({
+      id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
+      parentId: runtime.kind === 'stream' ? dependencyGroupId : parentId,
+      kind: 'runtime',
+      entityType: String(target.documentType),
+      identity: target.identity,
+      ...domainNodeFields(target.documentType, target.identity, runtime.name),
+      activationMode: runtime.effectiveActivation.mode,
+      composition: address,
+      runtimePath: runtime.path,
+      scopePath,
+      renderable: runtime.kind === 'component' || runtime.kind === 'filter-view',
+    })
+    if (runtime.kind === 'stream') {
+      dependencies.push(runtimeNode)
+    }
+    else {
+      result.push(runtimeNode)
+    }
+  }
   if (dependencies.length) {
-    result.push(makeNode({
+    result.unshift(makeNode({
       id: dependencyGroupId,
       parentId,
       kind: 'group',
@@ -232,34 +266,6 @@ function buildScopeContents(
       composition: address,
       scopePath,
       children: dependencies,
-    }))
-  }
-  for (const runtime of payload.runtimes.filter(item => item.scopePath === scopePath)) {
-    if (runtime.kind === 'composition') {
-      result.push(buildCompositionNode(
-        runtime.identity,
-        { rootIdentity: address.rootIdentity, invocationPath: [...address.invocationPath, runtime.path] },
-        parentId,
-        ancestors,
-        runtime.effectiveActivation.mode,
-        runtime.name,
-        artifacts,
-      ))
-      continue
-    }
-    const target = runtimeDocumentTarget(runtime)
-    result.push(makeNode({
-      id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
-      parentId,
-      kind: 'runtime',
-      entityType: String(target.documentType),
-      identity: target.identity,
-      ...domainNodeFields(target.documentType, target.identity, runtime.name),
-      activationMode: runtime.effectiveActivation.mode,
-      composition: address,
-      runtimePath: runtime.path,
-      scopePath,
-      renderable: runtime.kind === 'component' || runtime.kind === 'filter-view',
     }))
   }
   return result

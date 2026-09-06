@@ -71,7 +71,7 @@ describe('построитель дерева Runtime Preview', () => {
       title: 'Airport',
       presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
     })
-    expect(entry?.children.map(node => node.kind)).toEqual(['group', 'runtime', 'runtime', 'scope'])
+    expect(entry?.children.map(node => node.kind)).toEqual(['group', 'runtime', 'scope'])
     expect(entry).toMatchObject({
       title: 'Entry',
       presentation: { icon: 'Network', colorClass: 'text-violet-500' },
@@ -82,7 +82,7 @@ describe('построитель дерева Runtime Preview', () => {
       entityType: 'data-resources',
       title: 'data-resources',
     })
-    expect(dependencies?.children.map(node => node.kind)).toEqual(['data', 'data', 'resource', 'resource', 'resource'])
+    expect(dependencies?.children.map(node => node.kind)).toEqual(['data', 'data', 'resource', 'resource', 'resource', 'runtime'])
     expect(dependencies?.children[0]).toMatchObject({
       title: 'Flights',
       subtitle: 'flights',
@@ -107,19 +107,19 @@ describe('построитель дерева Runtime Preview', () => {
       title: 'operations',
       entityType: 'operation-history',
     })
+    expect(dependencies?.children[5]).toMatchObject({
+      kind: 'runtime',
+      title: 'Flight events',
+      subtitle: 'events',
+      entityType: 'stream',
+    })
     expect(entry?.children[1]).toMatchObject({
       title: 'Flight table',
       subtitle: 'table',
       renderable: true,
       presentation: { icon: 'Puzzle', colorClass: 'text-blue-500' },
     })
-    expect(entry?.children[2]).toMatchObject({
-      kind: 'runtime',
-      title: 'Flight events',
-      subtitle: 'events',
-      entityType: 'stream',
-    })
-    const pages = entry?.children[3]
+    const pages = entry?.children[2]
     expect(pages?.kind).toBe('scope')
     expect(pages?.children[0]).toMatchObject({
       kind: 'composition',
@@ -130,6 +130,27 @@ describe('построитель дерева Runtime Preview', () => {
       title: 'flight-filter',
       subtitle: 'filter',
       renderable: true,
+    })
+  })
+
+  it('создаёт группу для scope, содержащего только Stream runtime', () => {
+    compositions.push({ identity: 'stream-only', displayName: 'Stream only', kind: 'library', active: true })
+    artifacts.set('stream-only', artifact(payload({
+      runtimes: [runtime('events', 'stream', 'scope_default', 'flight-events')],
+    })))
+
+    const [composition] = buildRuntimePreviewTree({ entityType: 'composition', identity: 'stream-only' })
+
+    expect(composition?.children).toHaveLength(1)
+    expect(composition?.children[0]).toMatchObject({
+      kind: 'group',
+      entityType: 'data-resources',
+      children: [{
+        kind: 'runtime',
+        entityType: 'stream',
+        identity: 'flight-events',
+        runtimePath: 'events',
+      }],
     })
   })
 

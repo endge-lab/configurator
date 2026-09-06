@@ -19,6 +19,7 @@ import {
 } from '@endge/core'
 import {
   Braces,
+  ChevronRight,
   Clock3,
   HeartPulse,
   Languages,
@@ -50,6 +51,7 @@ import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings
 import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
 import {
   useSmartTabSelection,
+  useSmartTabSharedViewState,
   useSmartTabViewState,
 } from '@/features/endge-ide/ui/smart-tabs'
 
@@ -82,6 +84,7 @@ type SystemConfigurationSection
     | 'diagnostics'
 type ConfigurationSection
   = SystemConfigurationSection | `configuration:${string}`
+type ExpandableNavigationGroup = 'editing' | 'tooltips'
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
 type TooltipField = keyof EndgeTooltipConfiguration
@@ -144,6 +147,13 @@ const tooltipSection = useSmartTabSelection<TooltipSection>(
   'configuration.tooltips-section',
   'ui',
   ['ui', 'trigger'],
+)
+const expandedNavigationGroups = useSmartTabSharedViewState<Record<ExpandableNavigationGroup, boolean>>(
+  'configuration.navigation-expansion',
+  {
+    defaultValue: () => ({ editing: true, tooltips: true }),
+    validate: isNavigationExpansionState,
+  },
 )
 const systemSections = [
   {
@@ -355,6 +365,21 @@ function setActiveSection(value: unknown): void {
   }
 }
 
+function isNavigationExpansionState(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+  const candidate = value as Partial<Record<ExpandableNavigationGroup, unknown>>
+  return typeof candidate.editing === 'boolean' && typeof candidate.tooltips === 'boolean'
+}
+
+function toggleNavigationGroup(group: ExpandableNavigationGroup): void {
+  expandedNavigationGroups.value = {
+    ...expandedNavigationGroups.value,
+    [group]: !expandedNavigationGroups.value[group],
+  }
+}
+
 function setContributionMode(mode: string): void {
   if (mode === 'replace') {
     const replacement = clone(props.upstream!)
@@ -522,6 +547,7 @@ function setSFCEditingTriggers(
 
 function setEditingSection(value: unknown): void {
   if (value === 'cancelOn' || value === 'commitOn') {
+    activeSection.value = 'editing'
     editingSection.value = value
   }
 }
@@ -544,6 +570,7 @@ function tooltipValue(
 
 function setTooltipSection(value: unknown): void {
   if (value === 'ui' || value === 'trigger') {
+    activeSection.value = 'tooltips'
     tooltipSection.value = value
   }
 }
@@ -995,19 +1022,35 @@ function isEqual(left: unknown, right: unknown): boolean {
               class="my-1 border-t border-border/70"
               aria-hidden="true"
             />
-            <TabsTrigger
-              :value="section.id"
-              class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-            >
-              <component
-                :is="section.icon"
-                class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary"
-              />
-              <span>{{ section.label }}</span>
-            </TabsTrigger>
+            <div class="relative">
+              <TabsTrigger
+                :value="section.id"
+                class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                :class="section.id === 'editing' || section.id === 'tooltips' ? 'pr-9' : ''"
+              >
+                <component
+                  :is="section.icon"
+                  class="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=active]:text-primary"
+                />
+                <span>{{ section.label }}</span>
+              </TabsTrigger>
+              <button
+                v-if="section.id === 'editing' || section.id === 'tooltips'"
+                type="button"
+                class="absolute right-1 top-1 flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                :aria-label="expandedNavigationGroups[section.id] ? `Свернуть ${section.label}` : `Развернуть ${section.label}`"
+                :aria-expanded="expandedNavigationGroups[section.id]"
+                @click="toggleNavigationGroup(section.id)"
+              >
+                <ChevronRight
+                  class="size-3.5 transition-transform"
+                  :class="expandedNavigationGroups[section.id] ? 'rotate-90' : ''"
+                />
+              </button>
+            </div>
 
             <div
-              v-if="section.id === 'editing' && activeSection === 'editing'"
+              v-if="section.id === 'editing' && expandedNavigationGroups.editing"
               class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
             >
               <button
@@ -1027,7 +1070,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             </div>
 
             <div
-              v-if="section.id === 'tooltips' && activeSection === 'tooltips'"
+              v-if="section.id === 'tooltips' && expandedNavigationGroups.tooltips"
               class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
             >
               <button
