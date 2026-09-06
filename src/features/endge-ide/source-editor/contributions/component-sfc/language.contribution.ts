@@ -232,7 +232,7 @@ export function createSFCLanguageContribution(
         },
       })
       const completions = monaco.languages.registerCompletionItemProvider('html', {
-        triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\'', '.'],
+        triggerCharacters: ['<', ' ', ':', '@', '-', '=', '"', '\'', '.', '$'],
         provideCompletionItems(currentModel, position) {
           if (currentModel !== model) {
             return { suggestions: [] }
@@ -245,6 +245,10 @@ export function createSFCLanguageContribution(
           const configCompletion = contextConfigurationCompletions(monaco, model, offset)
           if (configCompletion) {
             return configCompletion
+          }
+          const dataMetaCompletion = dataMetaCompletions(monaco, model, offset)
+          if (dataMetaCompletion) {
+            return dataMetaCompletion
           }
           const attributeContext = resolveAttributeCompletionContext(model.getValue(), offset)
           if (attributeContext) {
@@ -329,7 +333,21 @@ export function createSFCLanguageContribution(
           if (currentModel !== model) {
             return null
           }
-          const reference = findAttributeReference(model.getValue(), model.getOffsetAt(position))
+          const offset = model.getOffsetAt(position)
+          const dataMetaRange = findDataMetaReference(model.getValue(), offset)
+          if (dataMetaRange) {
+            return {
+              range: monaco.Range.fromPositions(
+                model.getPositionAt(dataMetaRange.start),
+                model.getPositionAt(dataMetaRange.end),
+              ),
+              contents: [
+                { value: '**$data.metaOf(reference[, namespace])**' },
+                { value: 'Реактивно читает Raph Meta-plane, связанный с входным prop или полем текущей строки. Без namespace возвращает объект всех namespaces.' },
+              ],
+            }
+          }
+          const reference = findAttributeReference(model.getValue(), offset)
           if (!reference) {
             return null
           }
@@ -377,6 +395,37 @@ export function createSFCLanguageContribution(
       }
     },
   }
+}
+
+function dataMetaCompletions(monaco: typeof Monaco, model: Monaco.editor.ITextModel, offset: number) {
+  const before = model.getValue().slice(0, offset)
+  const match = /\$(?:d|da|dat|data)(?:\.metaOf)?\.?$/.exec(before)
+  if (!match) {
+    return null
+  }
+  const start = offset - match[0].length
+  return {
+    suggestions: [{
+      label: '$data.metaOf',
+      detail: 'Read-only Raph Meta для входного значения',
+      documentation: '$data.metaOf(reference[, namespace])',
+      insertText: `$data.metaOf(\${1:row.field}, \${2:'namespace'})`,
+      range: monaco.Range.fromPositions(model.getPositionAt(start), model.getPositionAt(offset)),
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+    }],
+  }
+}
+
+function findDataMetaReference(source: string, offset: number): { start: number, end: number } | null {
+  for (const match of source.matchAll(/\$data\.metaOf/g)) {
+    const start = match.index ?? 0
+    const end = start + match[0].length
+    if (offset >= start && offset <= end) {
+      return { start, end }
+    }
+  }
+  return null
 }
 
 function contextConfigurationCompletions(monaco: typeof Monaco, model: Monaco.editor.ITextModel, offset: number) {
@@ -577,7 +626,7 @@ function collectExpressionDecorations(
         continue
       }
 
-      const tokenKind = classifyExpressionToken(token, previousToken)
+      const tokenKind = classifyExpressionToken(token, previousToken, scanner.getTokenText())
       decorations.push({
         range: monaco.Range.fromPositions(
           model.getPositionAt(start),
@@ -649,8 +698,12 @@ function findTemplateContentRange(source: string): { start: number, end: number 
 function classifyExpressionToken(
   token: ts.SyntaxKind,
   previousToken: ts.SyntaxKind | null,
+  text: string,
 ): ExpressionTokenKind {
   if (token === ts.SyntaxKind.Identifier || token === ts.SyntaxKind.PrivateIdentifier) {
+    if (text === '$data') {
+      return 'keyword'
+    }
     return previousToken === ts.SyntaxKind.DotToken || previousToken === ts.SyntaxKind.QuestionDotToken
       ? 'property'
       : 'identifier'

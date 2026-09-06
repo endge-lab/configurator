@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   ComponentSFCInteractionTrigger,
+  ComponentSFCInteractionTriggerActivation,
   EndgeJSONValue,
   TypeProgramCatalogEntry,
   TypeSourceExpression,
@@ -29,6 +30,7 @@ import { resolveConfigValueEditor } from '@/features/endge-ide/config/ConfigValu
 import ConfigurationJSONEditor from './ConfigurationJSONEditor.vue'
 import ConfigurationReferenceValueEditor from './ConfigurationReferenceValueEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
+import SFCInteractionTriggerActivationEditor from './SFCInteractionTriggerActivationEditor.vue'
 
 const props = defineProps<{
   modelValue: EndgeJSONValue
@@ -94,6 +96,15 @@ function triggerValue(): ComponentSFCInteractionTrigger[] {
   return props.modelValue as unknown as ComponentSFCInteractionTrigger[]
 }
 function emitTriggers(value: ComponentSFCInteractionTrigger[]): void {
+  emit(
+    'update:modelValue',
+    JSON.parse(JSON.stringify(value)) as EndgeJSONValue,
+  )
+}
+function triggerActivationValue(): ComponentSFCInteractionTriggerActivation {
+  return props.modelValue as unknown as ComponentSFCInteractionTriggerActivation
+}
+function emitTriggerActivation(value: ComponentSFCInteractionTriggerActivation): void {
   emit(
     'update:modelValue',
     JSON.parse(JSON.stringify(value)) as EndgeJSONValue,
@@ -249,6 +260,13 @@ function fieldType(
     kind="generic"
     :disabled="disabled"
     @update:model-value="emitTriggers"
+  />
+  <SFCInteractionTriggerActivationEditor
+    v-else-if="kind === 'trigger-activation'"
+    :model-value="triggerActivationValue()"
+    kind="generic"
+    :disabled="disabled"
+    @update:model-value="emitTriggerActivation"
   />
   <div v-else-if="kind === 'array'" class="space-y-2">
     <div

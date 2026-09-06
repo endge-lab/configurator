@@ -42,14 +42,42 @@
           "description": "Choose which records are delivered to each output channel.",
           "title": "Routing"
         },
-        "snapshots": {
-          "description": "Configure the contents of manual and automatic Core snapshots.",
-          "title": "Snapshots"
+        "automaticSnapshots": {
+          "description": "Configure the condition and output channel for snapshots Core creates after runtime errors.",
+          "title": "Automatic snapshots"
+        },
+        "hotkeySnapshot": {
+          "description": "Configure the keyboard shortcut and contents of the snapshot downloaded by Core.",
+          "title": "Hotkey snapshot"
+        },
+        "manualSnapshot": {
+          "description": "Configure the JSON snapshot that can be downloaded from Configurator.",
+          "title": "Manual snapshot"
         }
       }
     },
     "snapshot": {
+      "activation": {
+        "addStep": "Add step",
+        "cancel": "Cancel",
+        "finish": "Done",
+        "interval": "Maximum interval",
+        "milliseconds": "ms",
+        "recordingHint": "Press shortcuts in order with natural pauses. Holding a key does not record repeated steps.",
+        "recordingTitle": "Recording sequence",
+        "recordSequence": "Record sequence",
+        "sequence": "Sequence",
+        "sequenceHint": "Each step is a TriggerSet with alternatives. The interval is the maximum pause after the previous step.",
+        "set": "Single shortcut",
+        "step": "Step",
+        "waiting": "Press the first shortcut…",
+        "withinInterval": "≤ {value} ms"
+      },
+      "automatic": {
+        "enabledTitle": "Create snapshots automatically"
+      },
       "clearAll": "Clear selection",
+      "contentTitle": "Snapshot contents",
       "diagnosticsConfiguration": "Diagnostics configuration",
       "domain": "Loaded domain",
       "groups": {
@@ -71,7 +99,15 @@
       "raphGraph": "Raph graph",
       "redactionHint": "Before download, Core converts data to JSON and replaces sensitive field values with [REDACTED].",
       "runtime": "Runtime instances",
-      "selectAll": "Select all"
+      "selectAll": "Select all",
+      "shortcut": {
+        "contentDescription": "These sections are used only for downloads started by the configured shortcut.",
+        "contentTitle": "Shortcut snapshot contents",
+        "description": "Core listens for keyboard events globally and downloads a snapshot when a shortcut or the full sequence matches.",
+        "empty": "No shortcut is configured. Hotkey download is disabled.",
+        "title": "Keyboard shortcut snapshot",
+        "triggerTitle": "Keyboard shortcut"
+      }
     }
   },
   "endgeIde": {

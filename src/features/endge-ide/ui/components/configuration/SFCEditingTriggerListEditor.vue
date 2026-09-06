@@ -13,7 +13,7 @@ import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/sectio
 
 const props = defineProps<{
   modelValue: ComponentSFCInteractionTrigger[]
-  kind: 'cancel' | 'commit' | 'generic'
+  kind: 'cancel' | 'commit' | 'generic' | 'shortcut'
   disabled?: boolean
 }>()
 
@@ -22,6 +22,9 @@ const emit = defineEmits<{
 }>()
 
 const triggers = computed(() => props.modelValue.map(toProjection))
+const availableEvents = computed(() => props.kind === 'shortcut'
+  ? COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS.filter(event => event.name === 'keydown' || event.name === 'keyup')
+  : COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS)
 
 function updateTrigger(index: number, value: ComponentSFCInteractionTriggerProjection): void {
   const next = triggers.value.map(cloneProjection)
@@ -37,9 +40,11 @@ function addTrigger(): void {
       ? createProjection('click')
       : {
           ...createProjection('keydown'),
-          key: ['Enter'],
-          code: ['Enter'],
-          flags: { prevent: true },
+          ...(props.kind === 'commit' ? { key: ['Enter'], code: ['Enter'] } : {}),
+          ...(props.kind === 'shortcut' ? { repeat: false, composing: false } : {}),
+          flags: props.kind === 'shortcut'
+            ? { prevent: true, stop: true }
+            : { prevent: true },
         })
   publish(next)
 }
@@ -140,14 +145,17 @@ function cloneProjection(trigger: ComponentSFCInteractionTriggerProjection): Com
       v-if="!triggers.length"
       class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground"
     >
-      {{ $t('uiText.triggersNotSetTheModeCanOnlyBeCompletedViaASemanticE8deef814') }}
+      {{ kind === 'shortcut'
+        ? $t('diagnostics.snapshot.shortcut.empty')
+        : $t('uiText.triggersNotSetTheModeCanOnlyBeCompletedViaASemanticE8deef814') }}
     </div>
 
     <ComponentSFCInteractionBindingEditor
       v-for="(trigger, index) in triggers"
       :key="`${index}:${trigger.event}`"
       :trigger="trigger"
-      :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+      :events="availableEvents"
+      :recording-mode="kind === 'shortcut' ? 'portable-shortcut' : 'default'"
       :disabled="disabled"
       @update:trigger="updateTrigger(index, $event)"
     >

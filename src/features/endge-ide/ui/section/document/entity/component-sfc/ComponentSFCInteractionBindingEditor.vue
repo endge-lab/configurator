@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 type BindingMode = 'trigger' | 'condition'
+type RecordingMode = 'default' | 'portable-shortcut'
 type PhysicalModifier = 'shift' | 'ctrl' | 'alt' | 'meta' | 'altGraph'
 
 interface RecordedGesture {
@@ -37,12 +38,14 @@ const props = withDefaults(defineProps<{
   trigger?: ComponentSFCInteractionTriggerProjection | null
   condition?: ComponentSFCInteractionKeyboardCondition | null
   events?: readonly ComponentSFCIntrinsicEventDefinition[]
+  recordingMode?: RecordingMode
   disabled?: boolean
 }>(), {
   mode: 'trigger',
   trigger: null,
   condition: null,
   events: () => [],
+  recordingMode: 'default',
   disabled: false,
 })
 
@@ -350,9 +353,9 @@ function recordedKeyboardGesture(event: KeyboardEvent): RecordedGesture {
   const triggerCode = event.code || event.key
   const held = [...pressedKeys.entries()].filter(([code]) => code !== triggerCode)
   return {
-    key: [event.key],
+    key: props.recordingMode === 'portable-shortcut' ? [] : [event.key],
     code: [triggerCode],
-    heldKey: held.map(([, key]) => key),
+    heldKey: props.recordingMode === 'portable-shortcut' ? [] : held.map(([, key]) => key),
     heldCode: held.map(([code]) => code).filter(code => !code.startsWith('key:')),
     modifiers: capturedModifiers(event),
     button: null,
@@ -414,14 +417,19 @@ function capturedModifiers(event: MouseEvent | KeyboardEvent): ComponentSFCInter
   if (event.shiftKey) {
     modifiers.shift = true
   }
-  if (event.ctrlKey) {
-    modifiers.ctrl = true
-  }
   if (event.altKey) {
     modifiers.alt = true
   }
-  if (event.metaKey) {
-    modifiers.meta = true
+  if (props.recordingMode === 'portable-shortcut' && event.ctrlKey !== event.metaKey) {
+    modifiers.mod = true
+  }
+  else {
+    if (event.ctrlKey) {
+      modifiers.ctrl = true
+    }
+    if (event.metaKey) {
+      modifiers.meta = true
+    }
   }
   if (event.getModifierState?.('AltGraph')) {
     modifiers.altGraph = true
@@ -677,6 +685,7 @@ function splitList(value: string): string[] {
         <div
           v-if="recording"
           :ref="setRecordingSurface"
+          data-endge-trigger-recording="true"
           class="rounded-lg border border-primary/45 bg-primary/5 p-3 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           :draggable="isTriggerMode && triggerDraft.event.startsWith('drag')"
           tabindex="0"

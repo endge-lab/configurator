@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
   >
     <aside
       :class="cn(
-        'hidden min-h-0 shrink-0 overflow-hidden overscroll-none bg-muted/25 lg:flex lg:flex-col',
+        'hidden min-h-0 shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain bg-muted/25 lg:flex lg:flex-col',
         props.navigationClass,
       )"
       :style="{

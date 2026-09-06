@@ -1,7 +1,6 @@
 import type { Ref } from 'vue'
 
 import { Endge } from '@endge/core'
-import { useContextState } from '@endge/ui-vue'
 
 interface ConfiguratorStateOptions<T> {
   legacyKeys?: readonly string[]
@@ -21,7 +20,7 @@ export function useConfiguratorState<T>(
     Endge.context.setState(key, options.merge(stored, initialValue))
   }
 
-  return useContextState(key, () => structuredClone(initialValue))
+  return Endge.vue.useContextState(key, () => structuredClone(initialValue))
 }
 
 function migrateLegacyState(key: string, legacyKeys: readonly string[]): void {

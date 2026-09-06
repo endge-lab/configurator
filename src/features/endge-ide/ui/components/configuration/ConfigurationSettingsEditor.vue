@@ -87,7 +87,14 @@ type ConfigurationSection
 type ExpandableNavigationGroup = 'editing' | 'tooltips' | 'diagnostics'
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
-type DiagnosticsSection = 'collection' | 'history' | 'outputs' | 'routing' | 'snapshots'
+type DiagnosticsSection
+  = | 'collection'
+    | 'history'
+    | 'outputs'
+    | 'routing'
+    | 'manual-snapshot'
+    | 'hotkey-snapshot'
+    | 'automatic-snapshots'
 type TooltipField = keyof EndgeTooltipConfiguration
 interface ConfigurationValueIssue {
   identity: string
@@ -152,7 +159,15 @@ const tooltipSection = useSmartTabSelection<TooltipSection>(
 const diagnosticsSection = useSmartTabSelection<DiagnosticsSection>(
   'configuration.diagnostics-section',
   'collection',
-  ['collection', 'history', 'outputs', 'routing', 'snapshots'],
+  [
+    'collection',
+    'history',
+    'outputs',
+    'routing',
+    'manual-snapshot',
+    'hotkey-snapshot',
+    'automatic-snapshots',
+  ],
 )
 const expandedNavigationGroups = useSmartTabSharedViewState<Record<ExpandableNavigationGroup, boolean>>(
   'configuration.navigation-expansion',
@@ -351,7 +366,9 @@ const diagnosticsSections = [
   { id: 'history', label: 'История' },
   { id: 'outputs', label: 'Каналы вывода' },
   { id: 'routing', label: 'Маршрутизация' },
-  { id: 'snapshots', label: 'Снимки' },
+  { id: 'manual-snapshot', label: 'Ручной снимок' },
+  { id: 'hotkey-snapshot', label: 'Хоткей снимок' },
+  { id: 'automatic-snapshots', label: 'Автоматические снимки' },
 ] as const
 const activeEditingSection = computed(
   () =>
@@ -591,9 +608,9 @@ function setTooltipSection(value: unknown): void {
 }
 
 function setDiagnosticsSection(value: unknown): void {
-  if (value === 'collection' || value === 'history' || value === 'outputs' || value === 'routing' || value === 'snapshots') {
+  if (diagnosticsSections.some(section => section.id === value)) {
     activeSection.value = 'diagnostics'
-    diagnosticsSection.value = value
+    diagnosticsSection.value = value as DiagnosticsSection
   }
 }
 
@@ -916,8 +933,54 @@ function createDiagnosticsPatch(
       item => item,
     ),
   })
+  const shortcutContent = compactObject({
+    telemetry: scalarPatch(
+      upstream.snapshots.shortcut.content.telemetry,
+      value.snapshots.shortcut.content.telemetry,
+    ),
+    problems: scalarPatch(
+      upstream.snapshots.shortcut.content.problems,
+      value.snapshots.shortcut.content.problems,
+    ),
+    configuration: scalarPatch(
+      upstream.snapshots.shortcut.content.configuration,
+      value.snapshots.shortcut.content.configuration,
+    ),
+    effectiveConfiguration: scalarPatch(
+      upstream.snapshots.shortcut.content.effectiveConfiguration,
+      value.snapshots.shortcut.content.effectiveConfiguration,
+    ),
+    domain: scalarPatch(
+      upstream.snapshots.shortcut.content.domain,
+      value.snapshots.shortcut.content.domain,
+    ),
+    program: scalarPatch(
+      upstream.snapshots.shortcut.content.program,
+      value.snapshots.shortcut.content.program,
+    ),
+    runtime: scalarPatch(
+      upstream.snapshots.shortcut.content.runtime,
+      value.snapshots.shortcut.content.runtime,
+    ),
+    raphData: scalarPatch(
+      upstream.snapshots.shortcut.content.raphData,
+      value.snapshots.shortcut.content.raphData,
+    ),
+    raphGraph: scalarPatch(
+      upstream.snapshots.shortcut.content.raphGraph,
+      value.snapshots.shortcut.content.raphGraph,
+    ),
+  })
+  const shortcut = compactObject({
+    triggerSet: scalarPatch(
+      upstream.snapshots.shortcut.triggerSet,
+      value.snapshots.shortcut.triggerSet,
+    ),
+    content: hasKeys(shortcutContent) ? shortcutContent : undefined,
+  })
   const snapshots = compactObject({
     content: hasKeys(content) ? content : undefined,
+    shortcut: hasKeys(shortcut) ? shortcut : undefined,
     automatic: hasKeys(automatic) ? automatic : undefined,
   })
   const result = compactObject({

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type {
+  ComponentSFCInteractionTriggerActivation,
   DiagnosticsPhase,
   DiagnosticsSeverityNumber,
   DiagnosticsSignal,
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsOutputConfiguration,
   EndgeDiagnosticsRoute,
+  EndgeDiagnosticsSnapshotContentConfiguration,
 } from '@endge/core'
 import type { WritableComputedRef } from 'vue'
 
@@ -32,11 +34,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import DiagnosticsSnapshotContentEditor from '@/features/endge-ide/ui/components/configuration/DiagnosticsSnapshotContentEditor.vue'
+import SFCInteractionTriggerActivationEditor from '@/features/endge-ide/ui/components/configuration/SFCInteractionTriggerActivationEditor.vue'
 
 type DiagnosticsSeverity = 'TRACE' | 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL'
 type DiagnosticsRoutePhase = 'any' | DiagnosticsPhase
 type DiagnosticsAdapterType = 'console' | 'sentry'
-type DiagnosticsSection = 'collection' | 'history' | 'outputs' | 'routing' | 'snapshots'
+type DiagnosticsSection
+  = | 'collection'
+    | 'history'
+    | 'outputs'
+    | 'routing'
+    | 'manual-snapshot'
+    | 'hotkey-snapshot'
+    | 'automatic-snapshots'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
@@ -85,15 +96,18 @@ const maxRecords = computed({
   get: () => draft.value.telemetry.collection.maxRecords,
   set: (value) => { draft.value.telemetry.collection.maxRecords = Math.max(1, Number(value) || 1) },
 })
-const includeTelemetry = createSnapshotContentModel('telemetry')
-const includeProblems = createSnapshotContentModel('problems')
-const includeConfiguration = createSnapshotContentModel('configuration')
-const includeEffectiveConfiguration = createSnapshotContentModel('effectiveConfiguration')
-const includeDomain = createSnapshotContentModel('domain')
-const includeProgram = createSnapshotContentModel('program')
-const includeRuntime = createSnapshotContentModel('runtime')
-const includeRaphData = createSnapshotContentModel('raphData')
-const includeRaphGraph = createSnapshotContentModel('raphGraph')
+const manualSnapshotContent = computed({
+  get: () => draft.value.snapshots.content,
+  set: (value: EndgeDiagnosticsSnapshotContentConfiguration) => { draft.value.snapshots.content = clone(value) },
+})
+const shortcutSnapshotActivation = computed({
+  get: () => draft.value.snapshots.shortcut.triggerSet,
+  set: (value: ComponentSFCInteractionTriggerActivation) => { draft.value.snapshots.shortcut.triggerSet = clone(value) },
+})
+const shortcutSnapshotContent = computed({
+  get: () => draft.value.snapshots.shortcut.content,
+  set: (value: EndgeDiagnosticsSnapshotContentConfiguration) => { draft.value.snapshots.shortcut.content = clone(value) },
+})
 const automaticSnapshotEnabled = computed({
   get: () => draft.value.snapshots.automatic.enabled,
   set: (value) => { draft.value.snapshots.automatic.enabled = value },
@@ -114,18 +128,22 @@ const storedRecords = computed(() => {
 })
 const historyUsage = computed(() => Math.min(100, Math.round(storedRecords.value / Math.max(maxRecords.value, 1) * 100)))
 const sectionTitle = computed(() => ({
-  collection: t('diagnostics.configuration.sections.collection.title'),
-  history: t('diagnostics.configuration.sections.history.title'),
-  outputs: t('diagnostics.configuration.sections.outputs.title'),
-  routing: t('diagnostics.configuration.sections.routing.title'),
-  snapshots: t('diagnostics.configuration.sections.snapshots.title'),
+  'collection': t('diagnostics.configuration.sections.collection.title'),
+  'history': t('diagnostics.configuration.sections.history.title'),
+  'outputs': t('diagnostics.configuration.sections.outputs.title'),
+  'routing': t('diagnostics.configuration.sections.routing.title'),
+  'manual-snapshot': t('diagnostics.configuration.sections.manualSnapshot.title'),
+  'hotkey-snapshot': t('diagnostics.configuration.sections.hotkeySnapshot.title'),
+  'automatic-snapshots': t('diagnostics.configuration.sections.automaticSnapshots.title'),
 })[props.section])
 const sectionDescription = computed(() => ({
-  collection: t('diagnostics.configuration.sections.collection.description'),
-  history: t('diagnostics.configuration.sections.history.description'),
-  outputs: t('diagnostics.configuration.sections.outputs.description'),
-  routing: t('diagnostics.configuration.sections.routing.description'),
-  snapshots: t('diagnostics.configuration.sections.snapshots.description'),
+  'collection': t('diagnostics.configuration.sections.collection.description'),
+  'history': t('diagnostics.configuration.sections.history.description'),
+  'outputs': t('diagnostics.configuration.sections.outputs.description'),
+  'routing': t('diagnostics.configuration.sections.routing.description'),
+  'manual-snapshot': t('diagnostics.configuration.sections.manualSnapshot.description'),
+  'hotkey-snapshot': t('diagnostics.configuration.sections.hotkeySnapshot.description'),
+  'automatic-snapshots': t('diagnostics.configuration.sections.automaticSnapshots.description'),
 })[props.section])
 
 onMounted(() => {
@@ -171,16 +189,6 @@ function createSignalModel(signal: DiagnosticsSignal): WritableComputedRef<boole
       const signals = draft.value.telemetry.collection.signals.filter(item => item !== signal)
       draft.value.telemetry.collection.signals = enabled ? [...signals, signal] : signals
     },
-  })
-}
-
-/** Создаёт writable model одного флага состава snapshot. */
-function createSnapshotContentModel(
-  key: keyof EndgeDiagnosticsConfiguration['snapshots']['content'],
-): WritableComputedRef<boolean> {
-  return computed({
-    get: () => draft.value.snapshots.content[key] ?? false,
-    set: (value: boolean) => { draft.value.snapshots.content[key] = value },
   })
 }
 
@@ -287,32 +295,24 @@ async function testOutput(output: EndgeDiagnosticsOutputConfiguration): Promise<
     : 'Канал станет доступен после применения configuration'
 }
 
-/** Создаёт core snapshot и скачивает его средствами browser UI. */
+/** Создаёт snapshot текущего Core и скачивает его через общий diagnostics owner. */
 function prepareSnapshot(): void {
-  const snapshot = Endge.diagnostics.snapshot({
-    includeTelemetry: includeTelemetry.value,
-    includeProblems: includeProblems.value,
-    includeConfiguration: includeConfiguration.value,
-    includeEffectiveConfiguration: includeEffectiveConfiguration.value,
-    includeDomain: includeDomain.value,
-    includeProgram: includeProgram.value,
-    includeRuntime: includeRuntime.value,
-    includeRaphData: includeRaphData.value,
-    includeRaphGraph: includeRaphGraph.value,
-  })
-  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `endge-diagnostics-${snapshot.generatedAt}.json`
-  link.click()
-  URL.revokeObjectURL(link.href)
+  Endge.diagnostics.downloadSnapshot(snapshotOptions(manualSnapshotContent.value))
   feedback.value = 'Диагностический снимок скачан'
 }
 
-/** Включает или выключает все доступные части диагностического snapshot. */
-function setAllSnapshotContent(value: boolean): void {
-  for (const key of Object.keys(draft.value.snapshots.content) as Array<keyof EndgeDiagnosticsConfiguration['snapshots']['content']>) {
-    draft.value.snapshots.content[key] = value
+/** Переводит редактируемый content policy в options ручного snapshot. */
+function snapshotOptions(content: EndgeDiagnosticsSnapshotContentConfiguration) {
+  return {
+    includeTelemetry: content.telemetry,
+    includeProblems: content.problems,
+    includeConfiguration: content.configuration,
+    includeEffectiveConfiguration: content.effectiveConfiguration,
+    includeDomain: content.domain,
+    includeProgram: content.program,
+    includeRuntime: content.runtime,
+    includeRaphData: content.raphData,
+    includeRaphGraph: content.raphGraph,
   }
 }
 
@@ -407,7 +407,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               <div class="space-y-3">
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
-                    <Checkbox v-model:checked="collectLogs" :disabled="disabled || !diagnosticsEnabled" />
+                    <Checkbox v-model="collectLogs" :disabled="disabled || !diagnosticsEnabled" />
                     {{ $t('uiText.logs853d620e') }}
                   </label>
                   <Tooltip>
@@ -423,7 +423,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
-                    <Checkbox v-model:checked="collectSpans" :disabled="disabled || !diagnosticsEnabled" />
+                    <Checkbox v-model="collectSpans" :disabled="disabled || !diagnosticsEnabled" />
                     {{ $t('uiText.operationsaa0afc4b') }}
                   </label>
                   <Tooltip>
@@ -530,10 +530,10 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 <div>
                   <Label class="text-xs">{{ $t('uiText.recordFields829af3a9') }}</Label>
                   <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeTimestamp') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeTimestamp', $event === true)" />{{ $t('uiText.timeC80d7e81') }}</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeScope') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeScope', $event === true)" />{{ $t('uiText.scope4651a34e') }}</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'includeAttributes') !== false" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'includeAttributes', $event === true)" />{{ $t('uiText.attributesa6652617') }}</label>
-                    <label class="flex items-center gap-2 text-xs"><Checkbox :checked="outputOption(output, 'groupByTrace') === true" :disabled="disabled || !output.enabled" @update:checked="setOutputOption(output, 'groupByTrace', $event === true)" />{{ $t('uiText.groupByTrace5984f22b') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeTimestamp') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeTimestamp', $event === true)" />{{ $t('uiText.timeC80d7e81') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeScope') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeScope', $event === true)" />{{ $t('uiText.scope4651a34e') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeAttributes') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeAttributes', $event === true)" />{{ $t('uiText.attributesa6652617') }}</label>
+                    <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'groupByTrace') === true" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'groupByTrace', $event === true)" />{{ $t('uiText.groupByTrace5984f22b') }}</label>
                   </div>
                 </div>
               </div>
@@ -582,9 +582,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
                 <label class="flex items-end gap-2 pb-2 text-xs md:col-span-1 xl:col-span-3">
                   <Checkbox
-                    :checked="outputOption(output, 'sendSnapshots') !== false"
+                    :model-value="outputOption(output, 'sendSnapshots') !== false"
                     :disabled="disabled || !output.enabled"
-                    @update:checked="setOutputOption(output, 'sendSnapshots', $event === true)"
+                    @update:model-value="setOutputOption(output, 'sendSnapshots', $event === true)"
                   />
                   {{ $t('uiText.sendSnapshotsAsJSONAttachment52a5ae5e') }}
                 </label>
@@ -682,70 +682,17 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           </div>
         </div>
 
-        <div v-else-if="section === 'snapshots'">
+        <div v-else-if="section === 'manual-snapshot'">
           <section class="settings-section">
             <div class="settings-row">
               <div>
-                <Label class="text-sm font-medium">{{ $t('uiText.manualSnapshot78b1ca3f') }}</Label>
+                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.contentTitle') }}</Label>
                 <p class="settings-hint">
                   {{ $t('uiText.jsonFileForAnalysisAndSupport3b241d20') }}
                 </p>
               </div>
               <div class="space-y-4">
-                <div class="flex flex-wrap gap-2">
-                  <Button size="sm" variant="ghost" :disabled="disabled" @click="setAllSnapshotContent(true)">
-                    {{ $t('diagnostics.snapshot.selectAll') }}
-                  </Button>
-                  <Button size="sm" variant="ghost" :disabled="disabled" @click="setAllSnapshotContent(false)">
-                    {{ $t('diagnostics.snapshot.clearAll') }}
-                  </Button>
-                </div>
-
-                <div class="grid gap-3 xl:grid-cols-2">
-                  <div class="snapshot-group">
-                    <div>
-                      <p class="snapshot-group-title">
-                        {{ $t('diagnostics.snapshot.groups.diagnostics.title') }}
-                      </p>
-                      <p class="settings-hint">
-                        {{ $t('diagnostics.snapshot.groups.diagnostics.description') }}
-                      </p>
-                    </div>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeTelemetry" :disabled="disabled" />{{ $t('uiText.telemetryc2d0b0e9') }}</label>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeProblems" :disabled="disabled" />{{ $t('uiText.issues7c80872c') }}</label>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeConfiguration" :disabled="disabled" />{{ $t('diagnostics.snapshot.diagnosticsConfiguration') }}</label>
-                  </div>
-
-                  <div class="snapshot-group">
-                    <div>
-                      <p class="snapshot-group-title">
-                        {{ $t('diagnostics.snapshot.groups.model.title') }}
-                      </p>
-                      <p class="settings-hint">
-                        {{ $t('diagnostics.snapshot.groups.model.description') }}
-                      </p>
-                    </div>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeEffectiveConfiguration" :disabled="disabled" />{{ $t('uiText.effectiveConfiguration15051cb3') }}</label>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeDomain" :disabled="disabled" />{{ $t('diagnostics.snapshot.domain') }}</label>
-                    <label class="snapshot-option"><Checkbox v-model:checked="includeProgram" :disabled="disabled" />{{ $t('diagnostics.snapshot.program') }}</label>
-                  </div>
-
-                  <div class="snapshot-group xl:col-span-2">
-                    <div>
-                      <p class="snapshot-group-title">
-                        {{ $t('diagnostics.snapshot.groups.runtime.title') }}
-                      </p>
-                      <p class="settings-hint">
-                        {{ $t('diagnostics.snapshot.groups.runtime.description') }}
-                      </p>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-3">
-                      <label class="snapshot-option"><Checkbox v-model:checked="includeRuntime" :disabled="disabled" />{{ $t('diagnostics.snapshot.runtime') }}</label>
-                      <label class="snapshot-option"><Checkbox v-model:checked="includeRaphData" :disabled="disabled" />{{ $t('diagnostics.snapshot.raphData') }}</label>
-                      <label class="snapshot-option"><Checkbox v-model:checked="includeRaphGraph" :disabled="disabled" />{{ $t('diagnostics.snapshot.raphGraph') }}</label>
-                    </div>
-                  </div>
-                </div>
+                <DiagnosticsSnapshotContentEditor v-model="manualSnapshotContent" :disabled="disabled" />
 
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 p-3">
                   <p class="max-w-xl text-xs leading-5 text-muted-foreground">
@@ -757,15 +704,51 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
               </div>
             </div>
+          </section>
+        </div>
 
+        <div v-else-if="section === 'hotkey-snapshot'">
+          <section class="settings-section">
+            <div class="settings-row">
+              <div>
+                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.shortcut.triggerTitle') }}</Label>
+                <p class="settings-hint">
+                  {{ $t('diagnostics.snapshot.shortcut.description') }}
+                </p>
+              </div>
+              <SFCInteractionTriggerActivationEditor
+                v-model="shortcutSnapshotActivation"
+                kind="shortcut"
+                :disabled="disabled"
+              />
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.shortcut.contentTitle') }}</Label>
+                <p class="settings-hint">
+                  {{ $t('diagnostics.snapshot.shortcut.contentDescription') }}
+                </p>
+              </div>
+              <DiagnosticsSnapshotContentEditor v-model="shortcutSnapshotContent" :disabled="disabled" />
+            </div>
+          </section>
+        </div>
+
+        <div v-else-if="section === 'automatic-snapshots'">
+          <section class="settings-section">
             <div class="settings-row items-center">
               <div>
-                <Label class="text-sm font-medium">{{ $t('uiText.automaticSnapshots644d4fab') }}</Label>
+                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.automatic.enabledTitle') }}</Label>
                 <p class="settings-hint">
                   {{ $t('uiText.createSnapshotOnASeriesOfRuntimeErrors272c42ac') }}
                 </p>
               </div>
-              <Switch v-model:checked="automaticSnapshotEnabled" :disabled="disabled || !outputs.length" aria-label="Включить автоматические снимки" />
+              <Switch
+                v-model:checked="automaticSnapshotEnabled"
+                :disabled="disabled || !outputs.length"
+                :aria-label="$t('diagnostics.snapshot.automatic.enabledTitle')"
+              />
             </div>
 
             <div v-if="automaticSnapshotEnabled" class="settings-row">
@@ -822,27 +805,6 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
   color: var(--muted-foreground);
   font-size: 0.75rem;
   line-height: 1.25rem;
-}
-
-.snapshot-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 2px);
-}
-
-.snapshot-group-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.snapshot-option {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-size: 0.75rem;
 }
 
 .field-label {

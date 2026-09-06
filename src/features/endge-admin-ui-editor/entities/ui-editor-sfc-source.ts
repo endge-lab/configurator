@@ -601,6 +601,7 @@ function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | nul
     context: createPreviewRuntimeContext(),
     locals: {},
     iteration: null,
+    dataScope: null,
     renderVersion: 0,
     host: null,
     runtimeState: null,
