@@ -14,7 +14,7 @@ import {
 import { formatJsx } from '@/features/endge-ide/tools/format-jsx'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const DSL_DEMO_OPTIONS: { id: string, label: string, jsx: string }[] = [
   { id: 'text', label: 'Text', jsx: '<Text bold color="#d32f2f" size="16">Привет, мир</Text>' },
@@ -24,7 +24,11 @@ const DSL_DEMO_OPTIONS: { id: string, label: string, jsx: string }[] = [
   { id: 'datetime', label: 'DateTime', jsx: '<DateTime value="2024-10-01T12:00:00Z" format="dd.MM.yyyy HH:mm" timezone="Europe/Moscow" />' },
 ]
 
-const jsxScript = useSafeLocalStorage('dsl-playground-jsx', '<Text>Hello World</Text>')
+const jsxScript = useConfiguratorState(
+  'configurator.playground.dsl.source',
+  '<Text>Hello World</Text>',
+  { legacyKeys: ['dsl-playground-jsx'] },
+)
 const selectedDemoId = ref('')
 
 async function insertDemo(): Promise<void> {

@@ -28,7 +28,7 @@ import { buildUIEditorLibraryGroups } from '@/features/endge-admin-ui-editor/ent
 import { UI_EDITOR_SFC_EXAMPLES } from '@/features/endge-admin-ui-editor/entities/ui-editor-sfc-examples'
 import { UI_EDITOR_DND_MIME } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY = 'endge-admin-ui-editor-library-expanded-groups'
 const UI_EDITOR_EXAMPLES_GROUP_ID = 'examples'
@@ -37,9 +37,10 @@ const COLLAPSE_ALL_LABEL = 'Свернуть все блоки'
 const uiEditor = EndgeIDE.uiEditor
 
 const query = ref('')
-const expandedGroupKeys = useSafeLocalStorage<Record<string, boolean>>(
-  UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY,
+const expandedGroupKeys = useConfiguratorState<Record<string, boolean>>(
+  'configurator.ui-editor.library-expanded-groups',
   {},
+  { legacyKeys: [UI_EDITOR_LIBRARY_EXPANDED_GROUPS_LS_KEY] },
 )
 const hasActiveQuery = computed(() => query.value.trim().length > 0)
 

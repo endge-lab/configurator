@@ -341,7 +341,13 @@ export class Configurator {
       loginUrl => this._startLoginOrThrow(loginUrl),
       role !== 'viewer',
     )
-    await this._modules.context.init({ backendConfig, domainProvider, workspaceRole: role, workspaceIdentity })
+    await this._modules.context.init({
+      backendConfig,
+      domainProvider,
+      workspaceRole: role,
+      workspaceIdentity,
+      userIdentity: sessionState.session.developer.subject,
+    })
     this._modules.i18n.init()
     return 'ready'
   }

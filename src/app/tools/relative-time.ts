@@ -1,5 +1,6 @@
 import type { MaybeRef } from 'vue'
 
+import { Endge } from '@endge/core'
 import { computed, defineComponent, onMounted, onUnmounted, ref, unref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
@@ -28,7 +29,7 @@ export function getRelativeTime(
 ): string {
   const { lang = locale.value, switchToAbsolute } = options
 
-  if (localStorage.getItem('app:date-format') === 'robot') {
+  if (readDateFormat() === 'robot') {
     const d = new Date(date)
     const hours = d.getHours().toString().padStart(2, '0')
     const minutes = d.getMinutes().toString().padStart(2, '0')
@@ -92,6 +93,30 @@ export function getRelativeTime(
   const value = deltaSeconds / divisor!
   const rounded = value < 0 ? Math.ceil(value) : Math.floor(value)
   return rtf.format(rounded, units[unitIndex]!)
+}
+
+function readDateFormat(): 'human' | 'robot' {
+  const stored = Endge.context.getState<'human' | 'robot'>('configurator.date-format')
+  if (stored === 'human' || stored === 'robot') {
+    return stored
+  }
+  if (typeof localStorage === 'undefined') {
+    return 'human'
+  }
+  try {
+    const legacy = localStorage.getItem('app:date-format')
+    const value = legacy === 'robot' ? 'robot' : 'human'
+    if (legacy != null) {
+      Endge.context.setState('configurator.date-format', value)
+      if (Endge.context.getState('configurator.date-format') !== undefined) {
+        localStorage.removeItem('app:date-format')
+      }
+    }
+    return value
+  }
+  catch {
+    return 'human'
+  }
 }
 
 export function useRelativeTime(

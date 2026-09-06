@@ -11,7 +11,7 @@ export interface SmartTab {
    */
   viewId: string
   /**
-   * Любые сериализуемые данные (для сохранения в LS).
+   * Любые сериализуемые данные (для сохранения через persistence owner).
    * Важно: функции/компоненты сюда НЕ класть.
    */
   payload?: Record<string, unknown>
@@ -22,6 +22,8 @@ export interface SmartTab {
 }
 
 export interface SmartTabRef extends SmartTab {
+  /** Не включать вкладку и её view state в persisted SmartTabs snapshot. */
+  ephemeral?: boolean
   /**
    * Можно ли закрыть вкладку
    */

@@ -84,9 +84,10 @@ type SystemConfigurationSection
     | 'diagnostics'
 type ConfigurationSection
   = SystemConfigurationSection | `configuration:${string}`
-type ExpandableNavigationGroup = 'editing' | 'tooltips'
+type ExpandableNavigationGroup = 'editing' | 'tooltips' | 'diagnostics'
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
+type DiagnosticsSection = 'collection' | 'history' | 'outputs' | 'routing' | 'snapshots'
 type TooltipField = keyof EndgeTooltipConfiguration
 interface ConfigurationValueIssue {
   identity: string
@@ -148,10 +149,15 @@ const tooltipSection = useSmartTabSelection<TooltipSection>(
   'ui',
   ['ui', 'trigger'],
 )
+const diagnosticsSection = useSmartTabSelection<DiagnosticsSection>(
+  'configuration.diagnostics-section',
+  'collection',
+  ['collection', 'history', 'outputs', 'routing', 'snapshots'],
+)
 const expandedNavigationGroups = useSmartTabSharedViewState<Record<ExpandableNavigationGroup, boolean>>(
   'configuration.navigation-expansion',
   {
-    defaultValue: () => ({ editing: true, tooltips: true }),
+    defaultValue: () => ({ editing: true, tooltips: true, diagnostics: true }),
     validate: isNavigationExpansionState,
   },
 )
@@ -340,6 +346,13 @@ const tooltipSections = [
   { id: 'ui', label: 'Настройки UI' },
   { id: 'trigger', label: 'Триггер' },
 ] as const
+const diagnosticsSections = [
+  { id: 'collection', label: 'Сбор' },
+  { id: 'history', label: 'История' },
+  { id: 'outputs', label: 'Каналы вывода' },
+  { id: 'routing', label: 'Маршрутизация' },
+  { id: 'snapshots', label: 'Снимки' },
+] as const
 const activeEditingSection = computed(
   () =>
     editingSections.find(section => section.id === editingSection.value)
@@ -370,7 +383,9 @@ function isNavigationExpansionState(value: unknown): boolean {
     return false
   }
   const candidate = value as Partial<Record<ExpandableNavigationGroup, unknown>>
-  return typeof candidate.editing === 'boolean' && typeof candidate.tooltips === 'boolean'
+  return typeof candidate.editing === 'boolean'
+    && typeof candidate.tooltips === 'boolean'
+    && typeof candidate.diagnostics === 'boolean'
 }
 
 function toggleNavigationGroup(group: ExpandableNavigationGroup): void {
@@ -572,6 +587,13 @@ function setTooltipSection(value: unknown): void {
   if (value === 'ui' || value === 'trigger') {
     activeSection.value = 'tooltips'
     tooltipSection.value = value
+  }
+}
+
+function setDiagnosticsSection(value: unknown): void {
+  if (value === 'collection' || value === 'history' || value === 'outputs' || value === 'routing' || value === 'snapshots') {
+    activeSection.value = 'diagnostics'
+    diagnosticsSection.value = value
   }
 }
 
@@ -846,6 +868,30 @@ function createDiagnosticsPatch(
       upstream.snapshots.content.configuration,
       value.snapshots.content.configuration,
     ),
+    effectiveConfiguration: scalarPatch(
+      upstream.snapshots.content.effectiveConfiguration,
+      value.snapshots.content.effectiveConfiguration,
+    ),
+    domain: scalarPatch(
+      upstream.snapshots.content.domain,
+      value.snapshots.content.domain,
+    ),
+    program: scalarPatch(
+      upstream.snapshots.content.program,
+      value.snapshots.content.program,
+    ),
+    runtime: scalarPatch(
+      upstream.snapshots.content.runtime,
+      value.snapshots.content.runtime,
+    ),
+    raphData: scalarPatch(
+      upstream.snapshots.content.raphData,
+      value.snapshots.content.raphData,
+    ),
+    raphGraph: scalarPatch(
+      upstream.snapshots.content.raphGraph,
+      value.snapshots.content.raphGraph,
+    ),
   })
   const automatic = compactObject({
     enabled: scalarPatch(
@@ -1026,7 +1072,7 @@ function isEqual(left: unknown, right: unknown): boolean {
               <TabsTrigger
                 :value="section.id"
                 class="group h-9 w-full flex-none justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-                :class="section.id === 'editing' || section.id === 'tooltips' ? 'pr-9' : ''"
+                :class="section.id === 'editing' || section.id === 'tooltips' || section.id === 'diagnostics' ? 'pr-9' : ''"
               >
                 <component
                   :is="section.icon"
@@ -1035,7 +1081,7 @@ function isEqual(left: unknown, right: unknown): boolean {
                 <span>{{ section.label }}</span>
               </TabsTrigger>
               <button
-                v-if="section.id === 'editing' || section.id === 'tooltips'"
+                v-if="section.id === 'editing' || section.id === 'tooltips' || section.id === 'diagnostics'"
                 type="button"
                 class="absolute right-1 top-1 flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 :aria-label="expandedNavigationGroups[section.id] ? `Свернуть ${section.label}` : `Развернуть ${section.label}`"
@@ -1086,6 +1132,26 @@ function isEqual(left: unknown, right: unknown): boolean {
                 @click="setTooltipSection(tooltipItem.id)"
               >
                 {{ tooltipItem.label }}
+              </button>
+            </div>
+
+            <div
+              v-if="section.id === 'diagnostics' && expandedNavigationGroups.diagnostics"
+              class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
+            >
+              <button
+                v-for="diagnosticsItem in diagnosticsSections"
+                :key="diagnosticsItem.id"
+                type="button"
+                class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground"
+                :class="
+                  diagnosticsSection === diagnosticsItem.id
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground'
+                "
+                @click="setDiagnosticsSection(diagnosticsItem.id)"
+              >
+                {{ diagnosticsItem.label }}
               </button>
             </div>
           </template>
@@ -1143,6 +1209,24 @@ function isEqual(left: unknown, right: unknown): boolean {
                 :value="tooltipItem.id"
               >
                 {{ tooltipItem.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            v-if="activeSection === 'diagnostics'"
+            :model-value="diagnosticsSection"
+            @update:model-value="setDiagnosticsSection"
+          >
+            <SelectTrigger class="mt-2 w-full bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="diagnosticsItem in diagnosticsSections"
+                :key="diagnosticsItem.id"
+                :value="diagnosticsItem.id"
+              >
+                {{ diagnosticsItem.label }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -1944,6 +2028,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             <DiagnosticsConfigurationEditor
               :model-value="effective.diagnostics"
               :variant="variant"
+              :section="diagnosticsSection"
               :disabled="disabled"
               @update:model-value="setDiagnosticsConfiguration"
             />

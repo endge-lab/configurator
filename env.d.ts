@@ -15,6 +15,7 @@ interface ImportMetaEnv {
   readonly VITE_ENDPOINT_AUTH?: string
   readonly VITE_OIDC_ISSUER?: string
   readonly VITE_DOCUMENTATION_URL?: string
+  readonly VITE_GOVERNANCE_PORTAL_URL?: string
   readonly VITE_SENTRY_DSN?: string
   readonly VITE_SENTRY_ENVIRONMENT?: string
   readonly VITE_SENTRY_RELEASE?: string

@@ -1,66 +1,42 @@
-interface UIStateStorage {
-  getItem: (key: string) => string | null
-  setItem: (key: string, value: string) => void
-  removeItem: (key: string) => void
-}
-
-type UIStateStorageResolver = () => UIStateStorage | null
-
-function resolveBrowserLocalStorage(): UIStateStorage | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  try {
-    return window.localStorage
-  }
-  catch {
-    return null
-  }
-}
+import { Endge } from '@endge/core'
 
 /** Централизованно управляет persistent UI state текущего IDE runtime. */
 export class EndgeIDEUIState_Module {
-  private readonly _resolveStorage: UIStateStorageResolver
-
-  /**
-   * --------------------
-   * PUBLIC
-   * --------------------
-   */
-
-  public constructor(resolveStorage: UIStateStorageResolver = resolveBrowserLocalStorage) {
-    this._resolveStorage = resolveStorage
-  }
-
   /** Возвращает сохранённое значение или переданное fallback-значение. */
   public read<T>(key: string, fallback: T): T {
-    try {
-      const raw = this._resolveStorage()?.getItem(key)
-      return raw == null ? fallback : JSON.parse(raw) as T
-    }
-    catch {
-      return fallback
-    }
+    return Endge.context.getState<T>(key) ?? fallback
   }
 
   /** Сохраняет сериализуемое UI-состояние. */
   public write(key: string, value: unknown): void {
-    try {
-      this._resolveStorage()?.setItem(key, JSON.stringify(value))
-    }
-    catch {
-      // Persistent UI state работает в best-effort режиме.
-    }
+    Endge.context.setState(key, value)
   }
 
   /** Удаляет сохранённое UI-состояние. */
   public remove(key: string): void {
-    try {
-      this._resolveStorage()?.removeItem(key)
+    Endge.context.removeState(key)
+  }
+
+  /** Однократно переносит первый найденный legacy localStorage key в context state. */
+  public migrateLegacy(key: string, legacyKeys: readonly string[]): void {
+    if (Endge.context.getState(key) !== undefined || typeof window === 'undefined') {
+      return
     }
-    catch {
-      // Persistent UI state работает в best-effort режиме.
+    for (const legacyKey of legacyKeys) {
+      try {
+        const raw = window.localStorage.getItem(legacyKey)
+        if (raw == null) {
+          continue
+        }
+        Endge.context.setState(key, JSON.parse(raw))
+        if (Endge.context.getState(key) !== undefined) {
+          window.localStorage.removeItem(legacyKey)
+        }
+        return
+      }
+      catch {
+        // Повреждённое legacy-состояние не должно блокировать IDE.
+      }
     }
   }
 }

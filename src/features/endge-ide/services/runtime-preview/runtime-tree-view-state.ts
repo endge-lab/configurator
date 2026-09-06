@@ -5,6 +5,7 @@ import { Endge } from '@endge/core'
 import { currentActiveBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
 
 const STORAGE_KEY_PREFIX = 'endge:runtime-tree:view:v2'
+const STATE_KEY = 'configurator.runtime-preview.tree-view'
 
 export type RuntimeTreeExpansionPreset
   = | 'collapsed'
@@ -66,15 +67,10 @@ export function collectRuntimeTreeExpansion(
 export function readRuntimeTreeViewState(
   storageKey = runtimeTreeViewStorageKey(),
 ): { structure: string, expanded: Set<string> } | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
   try {
-    const raw = window.localStorage.getItem(storageKey)
-    if (!raw) {
-      return null
-    }
-    const parsed = parseRuntimeTreeViewState(JSON.parse(raw))
+    const value = Endge.context.getState<unknown>(storageKey)
+      ?? (storageKey === STATE_KEY ? migrateLegacyTreeViewState() : undefined)
+    const parsed = parseRuntimeTreeViewState(value)
     return parsed
       ? { structure: parsed.structure, expanded: new Set(parsed.expanded) }
       : null
@@ -89,7 +85,7 @@ export function writeRuntimeTreeViewState(
   expanded: ReadonlySet<string>,
   storageKey = runtimeTreeViewStorageKey(),
 ): void {
-  if (typeof window === 'undefined' || !structure) {
+  if (!structure) {
     return
   }
   try {
@@ -98,7 +94,7 @@ export function writeRuntimeTreeViewState(
       structure,
       expanded: [...expanded].sort(),
     }
-    window.localStorage.setItem(storageKey, JSON.stringify(payload))
+    Endge.context.setState(storageKey, payload)
   }
   catch {
     // Runtime Tree сохраняет работоспособность, когда browser storage недоступен.
@@ -106,6 +102,10 @@ export function writeRuntimeTreeViewState(
 }
 
 export function runtimeTreeViewStorageKey(): string {
+  return STATE_KEY
+}
+
+function legacyRuntimeTreeViewStorageKey(): string {
   const workspace = Endge.context.getCurrentWorkspace() ?? 'detached'
   const context = Endge.context.getExecutionContext()
   return [
@@ -118,6 +118,28 @@ export function runtimeTreeViewStorageKey(): string {
   ]
     .map(value => encodeURIComponent(String(value ?? '')))
     .join(':')
+}
+
+function migrateLegacyTreeViewState(): unknown {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+  try {
+    const legacyKey = legacyRuntimeTreeViewStorageKey()
+    const raw = window.localStorage.getItem(legacyKey)
+    if (!raw) {
+      return undefined
+    }
+    const value: unknown = JSON.parse(raw)
+    Endge.context.setState(STATE_KEY, value)
+    if (Endge.context.getState(STATE_KEY) !== undefined) {
+      window.localStorage.removeItem(legacyKey)
+    }
+    return value
+  }
+  catch {
+    return undefined
+  }
 }
 
 function appendNodeStructure(

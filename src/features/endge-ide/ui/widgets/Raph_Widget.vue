@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import RaphTreeItem from '@/features/endge-ide/ui/widgets/components/RaphTreeItem.vue'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 /** Дерево узлов (Raph.debug.getTree()) */
 interface NodeTree {
@@ -26,7 +26,11 @@ interface EventGroup {
   resolvedSamples: Array<Array<{ segment: string, keyField: string, keyValue: unknown, index?: number }>>
 }
 
-const activeTab = useSafeLocalStorage('endge-raph-widget-tab', 'phases')
+const activeTab = useConfiguratorState(
+  'configurator.raph.active-tab',
+  'phases',
+  { legacyKeys: ['endge-raph-widget-tab'] },
+)
 const recordingEnabled = ref(false)
 const unsubscribe: (() => void)[] = []
 

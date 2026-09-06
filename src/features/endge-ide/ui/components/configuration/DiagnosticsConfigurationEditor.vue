@@ -12,6 +12,7 @@ import type { WritableComputedRef } from 'vue'
 import { Endge } from '@endge/core'
 import { CircleHelp, Download, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,28 +26,29 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 type DiagnosticsSeverity = 'TRACE' | 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL'
 type DiagnosticsRoutePhase = 'any' | DiagnosticsPhase
 type DiagnosticsAdapterType = 'console' | 'sentry'
+type DiagnosticsSection = 'collection' | 'history' | 'outputs' | 'routing' | 'snapshots'
 
 const props = defineProps<{
   variant: 'root' | 'contribution'
   modelValue: EndgeDiagnosticsConfiguration
+  section: DiagnosticsSection
   disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: EndgeDiagnosticsConfiguration]
 }>()
+const { t } = useI18n()
 
 const SEVERITY_NUMBER: Record<DiagnosticsSeverity, DiagnosticsSeverityNumber> = {
   TRACE: 1,
@@ -61,11 +63,6 @@ const SEVERITY_TEXT = Object.fromEntries(
 ) as Record<DiagnosticsSeverityNumber, DiagnosticsSeverity>
 
 const severityOptions: DiagnosticsSeverity[] = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']
-const activeTab = useSmartTabSelection(
-  'configuration.diagnostics.active-tab',
-  'collection',
-  ['collection', 'outputs', 'routing', 'snapshots'] as const,
-)
 const draft = ref(clone(props.modelValue))
 const feedback = ref('Изменения сохраняются в документе')
 const diagnosticsRevision = ref(0)
@@ -91,6 +88,12 @@ const maxRecords = computed({
 const includeTelemetry = createSnapshotContentModel('telemetry')
 const includeProblems = createSnapshotContentModel('problems')
 const includeConfiguration = createSnapshotContentModel('configuration')
+const includeEffectiveConfiguration = createSnapshotContentModel('effectiveConfiguration')
+const includeDomain = createSnapshotContentModel('domain')
+const includeProgram = createSnapshotContentModel('program')
+const includeRuntime = createSnapshotContentModel('runtime')
+const includeRaphData = createSnapshotContentModel('raphData')
+const includeRaphGraph = createSnapshotContentModel('raphGraph')
 const automaticSnapshotEnabled = computed({
   get: () => draft.value.snapshots.automatic.enabled,
   set: (value) => { draft.value.snapshots.automatic.enabled = value },
@@ -110,6 +113,20 @@ const storedRecords = computed(() => {
   return Endge.diagnostics.getCounters().totalRecords
 })
 const historyUsage = computed(() => Math.min(100, Math.round(storedRecords.value / Math.max(maxRecords.value, 1) * 100)))
+const sectionTitle = computed(() => ({
+  collection: t('diagnostics.configuration.sections.collection.title'),
+  history: t('diagnostics.configuration.sections.history.title'),
+  outputs: t('diagnostics.configuration.sections.outputs.title'),
+  routing: t('diagnostics.configuration.sections.routing.title'),
+  snapshots: t('diagnostics.configuration.sections.snapshots.title'),
+})[props.section])
+const sectionDescription = computed(() => ({
+  collection: t('diagnostics.configuration.sections.collection.description'),
+  history: t('diagnostics.configuration.sections.history.description'),
+  outputs: t('diagnostics.configuration.sections.outputs.description'),
+  routing: t('diagnostics.configuration.sections.routing.description'),
+  snapshots: t('diagnostics.configuration.sections.snapshots.description'),
+})[props.section])
 
 onMounted(() => {
   unsubscribeDiagnostics = Endge.diagnostics.subscribe(() => {
@@ -162,7 +179,7 @@ function createSnapshotContentModel(
   key: keyof EndgeDiagnosticsConfiguration['snapshots']['content'],
 ): WritableComputedRef<boolean> {
   return computed({
-    get: () => draft.value.snapshots.content[key],
+    get: () => draft.value.snapshots.content[key] ?? false,
     set: (value: boolean) => { draft.value.snapshots.content[key] = value },
   })
 }
@@ -276,6 +293,12 @@ function prepareSnapshot(): void {
     includeTelemetry: includeTelemetry.value,
     includeProblems: includeProblems.value,
     includeConfiguration: includeConfiguration.value,
+    includeEffectiveConfiguration: includeEffectiveConfiguration.value,
+    includeDomain: includeDomain.value,
+    includeProgram: includeProgram.value,
+    includeRuntime: includeRuntime.value,
+    includeRaphData: includeRaphData.value,
+    includeRaphGraph: includeRaphGraph.value,
   })
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
   const link = document.createElement('a')
@@ -284,6 +307,13 @@ function prepareSnapshot(): void {
   link.click()
   URL.revokeObjectURL(link.href)
   feedback.value = 'Диагностический снимок скачан'
+}
+
+/** Включает или выключает все доступные части диагностического snapshot. */
+function setAllSnapshotContent(value: boolean): void {
+  for (const key of Object.keys(draft.value.snapshots.content) as Array<keyof EndgeDiagnosticsConfiguration['snapshots']['content']>) {
+    draft.value.snapshots.content[key] = value
+  }
 }
 
 /** Читает JSON-safe option выбранного output. */
@@ -329,45 +359,36 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
 <template>
   <TooltipProvider :delay-duration="200">
-    <Tabs v-model="activeTab" class="min-h-full">
-      <header class="border-b bg-background px-6 pt-5">
+    <div class="min-h-full">
+      <header class="border-b bg-background px-6 py-5">
         <div class="flex items-start justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
               <h2 class="text-base font-semibold">
-                {{ $t('uiText.diagnosis9ba1e22a') }}
+                {{ sectionTitle }}
               </h2>
               <span v-if="variant === 'contribution'" class="text-[10px] text-muted-foreground">
                 {{ $t('uiText.currentLayerSettings30972ea5') }}
               </span>
             </div>
             <p class="mt-1 text-xs text-muted-foreground">
-              {{ $t('uiText.configureTelemetryOutputChannelsAndDiagnosticSnapsho7728c2bc') }}
+              {{ sectionDescription }}
             </p>
           </div>
-          <span class="pt-1 text-[10px] text-muted-foreground">{{ feedback }}</span>
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] text-muted-foreground">{{ feedback }}</span>
+            <Button v-if="section === 'outputs'" size="sm" variant="outline" :disabled="disabled" @click="addOutput">
+              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
+            </Button>
+            <Button v-else-if="section === 'routing'" size="sm" variant="outline" :disabled="disabled || !outputs.length" @click="addRoute">
+              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
+            </Button>
+          </div>
         </div>
-
-        <TabsList class="mt-5 flex h-auto w-full justify-start gap-5 overflow-x-auto rounded-none bg-transparent p-0">
-          <TabsTrigger value="collection" class="diagnostics-tab">
-            {{ $t('uiText.collectionAndHistorycc391535') }}
-          </TabsTrigger>
-          <TabsTrigger value="outputs" class="diagnostics-tab">
-            {{ $t('uiText.outputChannels98fea6e3') }}
-            <span class="ml-1 text-[10px] text-muted-foreground">{{ outputs.length }}</span>
-          </TabsTrigger>
-          <TabsTrigger value="routing" class="diagnostics-tab">
-            {{ $t('uiText.routingd84c192d') }}
-            <span class="ml-1 text-[10px] text-muted-foreground">{{ routes.length }}</span>
-          </TabsTrigger>
-          <TabsTrigger value="snapshots" class="diagnostics-tab">
-            {{ $t('uiText.snapshotsb0d827d3') }}
-          </TabsTrigger>
-        </TabsList>
       </header>
 
       <div class="w-full p-6">
-        <TabsContent value="collection" class="m-0 outline-none">
+        <div v-if="section === 'collection'">
           <section class="settings-section">
             <div class="settings-row items-center">
               <div>
@@ -437,10 +458,14 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </SelectContent>
               </Select>
             </div>
+          </section>
+        </div>
 
+        <div v-else-if="section === 'history'">
+          <section class="settings-section">
             <div class="settings-row">
               <div>
-                <Label for="diagnostics-max-records" class="text-sm font-medium">{{ $t('uiText.historyd5fec747') }}</Label>
+                <Label for="diagnostics-max-records" class="text-sm font-medium">{{ $t('diagnostics.configuration.history.recordLimit') }}</Label>
                 <p class="settings-hint">
                   {{ $t('uiText.oldRecordsAreDeletedWhenTheLimitIsReached7f977438') }}
                 </p>
@@ -456,24 +481,10 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               </div>
             </div>
           </section>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="outputs" class="m-0 outline-none">
-          <div class="section-heading">
-            <div>
-              <h3 class="text-sm font-semibold">
-                {{ $t('uiText.outputChannels98fea6e3') }}
-              </h3>
-              <p class="settings-hint">
-                {{ $t('uiText.whereToSendSelectedRecords93ca8cfd') }}
-              </p>
-            </div>
-            <Button size="sm" variant="outline" :disabled="disabled" @click="addOutput">
-              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
-            </Button>
-          </div>
-
-          <div v-if="outputs.length" class="mt-5 space-y-3">
+        <div v-else-if="section === 'outputs'">
+          <div v-if="outputs.length" class="space-y-3">
             <article v-for="output in outputs" :key="output.id" class="rounded-md border bg-background">
               <div class="flex items-center gap-3 border-b px-4 py-3">
                 <Switch v-model:checked="output.enabled" :disabled="disabled" :aria-label="`Включить ${output.name}`" />
@@ -584,24 +595,10 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <div v-else class="empty-state">
             {{ $t('uiText.outputChannelsAreNotConfigured0533a1d7') }}
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="routing" class="m-0 outline-none">
-          <div class="section-heading">
-            <div>
-              <h3 class="text-sm font-semibold">
-                {{ $t('uiText.routingRules83ac19a7') }}
-              </h3>
-              <p class="settings-hint">
-                {{ $t('uiText.whichRecordsToSendToEachChannel76c4b8d0') }}
-              </p>
-            </div>
-            <Button size="sm" variant="outline" :disabled="disabled || !outputs.length" @click="addRoute">
-              <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
-            </Button>
-          </div>
-
-          <div v-if="routes.length" class="mt-5 overflow-hidden rounded-md border">
+        <div v-else-if="section === 'routing'">
+          <div v-if="routes.length" class="overflow-hidden rounded-md border">
             <article v-for="routeItem in routes" :key="routeItem.id" class="border-b p-4 last:border-b-0">
               <div class="flex items-center gap-3">
                 <Switch v-model:checked="routeItem.enabled" :disabled="disabled" :aria-label="`Включить ${routeItem.name}`" />
@@ -683,9 +680,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           <div v-else class="empty-state">
             {{ $t('uiText.rulesNotConfigured0c795e3b') }}
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="snapshots" class="m-0 outline-none">
+        <div v-else-if="section === 'snapshots'">
           <section class="settings-section">
             <div class="settings-row">
               <div>
@@ -694,13 +691,70 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   {{ $t('uiText.jsonFileForAnalysisAndSupport3b241d20') }}
                 </p>
               </div>
-              <div class="space-y-3">
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeTelemetry" :disabled="disabled" />{{ $t('uiText.telemetryc2d0b0e9') }}</label>
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeProblems" :disabled="disabled" />{{ $t('uiText.issues7c80872c') }}</label>
-                <label class="flex items-center gap-2.5 text-sm"><Checkbox v-model:checked="includeConfiguration" :disabled="disabled" />{{ $t('uiText.effectiveConfiguration15051cb3') }}</label>
-                <Button size="sm" variant="outline" :disabled="disabled" @click="prepareSnapshot">
-                  <Download class="mr-1.5 size-3.5" /> {{ $t('uiText.downloadJson2007ff2d') }}
-                </Button>
+              <div class="space-y-4">
+                <div class="flex flex-wrap gap-2">
+                  <Button size="sm" variant="ghost" :disabled="disabled" @click="setAllSnapshotContent(true)">
+                    {{ $t('diagnostics.snapshot.selectAll') }}
+                  </Button>
+                  <Button size="sm" variant="ghost" :disabled="disabled" @click="setAllSnapshotContent(false)">
+                    {{ $t('diagnostics.snapshot.clearAll') }}
+                  </Button>
+                </div>
+
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <div class="snapshot-group">
+                    <div>
+                      <p class="snapshot-group-title">
+                        {{ $t('diagnostics.snapshot.groups.diagnostics.title') }}
+                      </p>
+                      <p class="settings-hint">
+                        {{ $t('diagnostics.snapshot.groups.diagnostics.description') }}
+                      </p>
+                    </div>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeTelemetry" :disabled="disabled" />{{ $t('uiText.telemetryc2d0b0e9') }}</label>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeProblems" :disabled="disabled" />{{ $t('uiText.issues7c80872c') }}</label>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeConfiguration" :disabled="disabled" />{{ $t('diagnostics.snapshot.diagnosticsConfiguration') }}</label>
+                  </div>
+
+                  <div class="snapshot-group">
+                    <div>
+                      <p class="snapshot-group-title">
+                        {{ $t('diagnostics.snapshot.groups.model.title') }}
+                      </p>
+                      <p class="settings-hint">
+                        {{ $t('diagnostics.snapshot.groups.model.description') }}
+                      </p>
+                    </div>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeEffectiveConfiguration" :disabled="disabled" />{{ $t('uiText.effectiveConfiguration15051cb3') }}</label>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeDomain" :disabled="disabled" />{{ $t('diagnostics.snapshot.domain') }}</label>
+                    <label class="snapshot-option"><Checkbox v-model:checked="includeProgram" :disabled="disabled" />{{ $t('diagnostics.snapshot.program') }}</label>
+                  </div>
+
+                  <div class="snapshot-group xl:col-span-2">
+                    <div>
+                      <p class="snapshot-group-title">
+                        {{ $t('diagnostics.snapshot.groups.runtime.title') }}
+                      </p>
+                      <p class="settings-hint">
+                        {{ $t('diagnostics.snapshot.groups.runtime.description') }}
+                      </p>
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-3">
+                      <label class="snapshot-option"><Checkbox v-model:checked="includeRuntime" :disabled="disabled" />{{ $t('diagnostics.snapshot.runtime') }}</label>
+                      <label class="snapshot-option"><Checkbox v-model:checked="includeRaphData" :disabled="disabled" />{{ $t('diagnostics.snapshot.raphData') }}</label>
+                      <label class="snapshot-option"><Checkbox v-model:checked="includeRaphGraph" :disabled="disabled" />{{ $t('diagnostics.snapshot.raphGraph') }}</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 p-3">
+                  <p class="max-w-xl text-xs leading-5 text-muted-foreground">
+                    {{ $t('diagnostics.snapshot.redactionHint') }}
+                  </p>
+                  <Button size="sm" variant="outline" :disabled="disabled" @click="prepareSnapshot">
+                    <Download class="mr-1.5 size-3.5" /> {{ $t('uiText.downloadJson2007ff2d') }}
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -738,34 +792,13 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               </div>
             </div>
           </section>
-        </TabsContent>
+        </div>
       </div>
-    </Tabs>
+    </div>
   </TooltipProvider>
 </template>
 
 <style scoped>
-.diagnostics-tab {
-  height: 2.25rem;
-  padding: 0 0 0.625rem;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 400;
-  box-shadow: none;
-}
-
-.diagnostics-tab[data-state='active'] {
-  border-bottom-color: var(--foreground);
-  background: transparent;
-  color: var(--foreground);
-  font-weight: 500;
-  box-shadow: none;
-}
-
 .settings-section {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -791,11 +824,25 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
   line-height: 1.25rem;
 }
 
-.section-heading {
+.snapshot-group {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.snapshot-group-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.snapshot-option {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.75rem;
 }
 
 .field-label {
@@ -806,7 +853,6 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 }
 
 .empty-state {
-  margin-top: 1.25rem;
   padding: 2.5rem 1.25rem;
   border: 1px dashed var(--border);
   border-radius: calc(var(--radius) - 2px);

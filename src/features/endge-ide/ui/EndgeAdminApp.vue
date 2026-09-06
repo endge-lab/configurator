@@ -2,7 +2,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -23,7 +23,7 @@ import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Moda
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
-import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/config/documentation.config'
+import { ENDGE_IDE_DOCUMENTATION_URL, ENDGE_IDE_GOVERNANCE_PORTAL_URL } from '@/features/endge-ide/config/documentation.config'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import DocumentImport_Modal from '@/features/endge-ide/modules/document-import/ui/DocumentImport_Modal.vue'
@@ -290,7 +290,18 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             {{ t('help.documentation') }}
             <ArrowUpRight class="ml-auto size-3.5 opacity-50" />
           </DropdownMenuItem>
-          <DropdownMenuSeparator v-if="ENDGE_IDE_DOCUMENTATION_URL" />
+          <DropdownMenuItem
+            v-if="ENDGE_IDE_GOVERNANCE_PORTAL_URL"
+            as="a"
+            :href="ENDGE_IDE_GOVERNANCE_PORTAL_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <LayoutDashboard class="size-3.5" />
+            {{ t('help.portal') }}
+            <ArrowUpRight class="ml-auto size-3.5 opacity-50" />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="ENDGE_IDE_DOCUMENTATION_URL || ENDGE_IDE_GOVERNANCE_PORTAL_URL" />
           <DropdownMenuItem @click="openServiceVersions">
             <Boxes class="size-3.5" />
             {{ t('help.serviceVersions.menu') }}

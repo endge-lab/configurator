@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const SPLIT_MIN = 0.22
 const SPLIT_MAX = 0.68
@@ -201,9 +201,21 @@ const LEGACY_DEMO_OPTIONS: SFCDemoOption[] = [
   },
 ]
 
-const source = useSafeLocalStorage('sfc-playground-source', DEFAULT_SOURCE)
-const contextJson = useSafeLocalStorage('sfc-playground-context', DEFAULT_CONTEXT)
-const splitRatio = useSafeLocalStorage('sfc-playground-split', SPLIT_DEFAULT)
+const source = useConfiguratorState(
+  'configurator.playground.sfc.source',
+  DEFAULT_SOURCE,
+  { legacyKeys: ['sfc-playground-source'] },
+)
+const contextJson = useConfiguratorState(
+  'configurator.playground.sfc.context',
+  DEFAULT_CONTEXT,
+  { legacyKeys: ['sfc-playground-context'] },
+)
+const splitRatio = useConfiguratorState(
+  'configurator.playground.sfc.split-ratio',
+  SPLIT_DEFAULT,
+  { legacyKeys: ['sfc-playground-split'] },
+)
 const selectedDemoId = ref('')
 const activeTab = useSmartTabSelection(
   'sfc-playground.active-tab',

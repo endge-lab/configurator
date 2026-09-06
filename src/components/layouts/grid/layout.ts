@@ -22,7 +22,7 @@ import {
   registerPopupWindow,
   unregisterPopupWindow,
 } from '@/components/layouts/grid/widget-channel.ts'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const STORAGE_KEY = 'app:grid-layout-state'
 const DEFAULT_LAYOUT_SCOPE = 'endge-ide'
@@ -116,10 +116,11 @@ const activeLayoutScope = ref(DEFAULT_LAYOUT_SCOPE)
 const persistedStates = new Map<string, Ref<PersistedState>>()
 
 function createPersistedState(scope: string): Ref<PersistedState> {
-  const storageKey = scope === DEFAULT_LAYOUT_SCOPE ? STORAGE_KEY : `${STORAGE_KEY}:${scope}`
-  return useSafeLocalStorage<PersistedState>(storageKey, structuredClone(defaultPersistedState), {
-    writeDefaults: false,
-    mergeDefaults: (storageValue, defaults) => {
+  const legacyKey = scope === DEFAULT_LAYOUT_SCOPE ? STORAGE_KEY : `${STORAGE_KEY}:${scope}`
+  const stateKey = `configurator.layout.grid.${scope}`
+  return useConfiguratorState<PersistedState>(stateKey, structuredClone(defaultPersistedState), {
+    legacyKeys: [legacyKey],
+    merge: (storageValue, defaults) => {
       const s = storageValue ?? {}
       const a = s.areas ?? {}
       return {

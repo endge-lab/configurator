@@ -120,7 +120,7 @@ import {
   prepareVocabMockGeneration,
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -268,26 +268,30 @@ onMounted(() => {
 })
 
 // ---------- expanded state (persisted) ----------
-const expandedKeys = useSafeLocalStorage<Record<string, boolean>>(
-  'endge-editor-domain-treeview-expanded',
+const expandedKeys = useConfiguratorState<Record<string, boolean>>(
+  'configurator.domain-tree.expanded',
   {},
+  { legacyKeys: ['endge-editor-domain-treeview-expanded'] },
 )
-const filteredExpandedKeys = useSafeLocalStorage<Record<string, boolean>>(
-  'endge-editor-domain-treeview-filtered-expanded',
+const filteredExpandedKeys = useConfiguratorState<Record<string, boolean>>(
+  'configurator.domain-tree.filtered-expanded',
   {},
+  { legacyKeys: ['endge-editor-domain-treeview-filtered-expanded'] },
 )
 
-const legacyShowRootHierarchyBackgrounds = useSafeLocalStorage(
-  'endge-editor-domain-tree-root-backgrounds',
+const legacyShowRootHierarchyBackgrounds = useConfiguratorState(
+  'configurator.domain-tree.legacy-root-backgrounds',
   true,
+  { legacyKeys: ['endge-editor-domain-tree-root-backgrounds'] },
 )
 
 type DomainTreeHighlightMode = 'root' | 'block' | 'none'
 
 const DOMAIN_TREE_HIGHLIGHT_MODES: readonly DomainTreeHighlightMode[] = ['root', 'block', 'none']
-const domainTreeHighlightMode = useSafeLocalStorage<DomainTreeHighlightMode>(
-  'endge-editor-domain-tree-highlight-mode',
+const domainTreeHighlightMode = useConfiguratorState<DomainTreeHighlightMode>(
+  'configurator.domain-tree.highlight-mode',
   legacyShowRootHierarchyBackgrounds.value ? 'block' : 'none',
+  { legacyKeys: ['endge-editor-domain-tree-highlight-mode'] },
 )
 
 const DOMAIN_TREE_HIGHLIGHT_PRESENTATION: Record<DomainTreeHighlightMode, { icon: any, label: string }> = {
@@ -310,9 +314,10 @@ interface DomainTreeSearchState {
   query: string
 }
 
-const persistedSearchState = useSafeLocalStorage<DomainTreeSearchState>(
-  'endge-editor-domain-tree-search',
+const persistedSearchState = useConfiguratorState<DomainTreeSearchState>(
+  'configurator.domain-tree.search',
   { open: false, query: '' },
+  { legacyKeys: ['endge-editor-domain-tree-search'] },
 )
 const searchOpen = computed({
   get: () => persistedSearchState.value.open,
@@ -346,9 +351,10 @@ function clearSearch(): void {
   searchQuery.value = ''
 }
 
-const persistedWorkingSetFilter = useSafeLocalStorage<DomainWorkingSetFilterState>(
-  'endge-editor-domain-working-set-filter',
+const persistedWorkingSetFilter = useConfiguratorState<DomainWorkingSetFilterState>(
+  'configurator.domain-tree.working-set-filter',
   { enabled: false, roots: [] },
+  { legacyKeys: ['endge-editor-domain-working-set-filter'] },
 )
 const workingSetFilterEnabled = ref(false)
 const workingSetRoots = ref<DomainWorkingSetRef[]>([])

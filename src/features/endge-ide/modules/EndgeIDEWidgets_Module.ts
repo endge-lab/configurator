@@ -25,8 +25,8 @@ type DockablePosition = 'left' | 'right' | 'bottom'
  * EndgeIDEWidgets
  *
  * Поведение:
- * - activeWidget восстанавливается из localStorage
- * - expanded (состояние области) восстанавливается из localStorage
+ * - activeWidget восстанавливается из Endge context state
+ * - expanded (состояние области) восстанавливается из Endge context state
  * - singleton-инстансы создаются, но:
  *   - НЕ активируются, если область свернута (expanded=false)
  *   - НЕ перетирают activeWidget при наличии persistedActive

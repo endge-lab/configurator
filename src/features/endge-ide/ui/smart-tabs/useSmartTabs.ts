@@ -97,10 +97,16 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     if (!persist || !persistence) {
       return
     }
+    const openTabs = state.openTabs.filter(tab => tab.ephemeral !== true)
+    const persistedTabIds = new Set(openTabs.map(tab => tab.id))
     const stateToSave = {
-      openTabs: state.openTabs,
-      activeTabId: state.activeTabId,
-      viewStateByTabId: state.viewStateByTabId,
+      openTabs,
+      activeTabId: state.activeTabId && persistedTabIds.has(state.activeTabId)
+        ? state.activeTabId
+        : (openTabs[0]?.id ?? null),
+      viewStateByTabId: Object.fromEntries(
+        Object.entries(state.viewStateByTabId).filter(([tabId]) => persistedTabIds.has(tabId)),
+      ),
       sharedViewState: state.sharedViewState,
     }
     saveSmartTabs(persistence, options.storageKey, stateToSave)

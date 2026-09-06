@@ -17,7 +17,7 @@ import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import SFCRenderTreePanel from '@/features/endge-ide/ui/section/runtime-preview/SFCRenderTreePanel.vue'
 import StoreRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/StoreRuntimePreview.vue'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
-import { useSafeLocalStorage } from '@/shared/tools/use-safe-local-storage'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 interface SourceJsonTreeHandle {
   expandAll: () => void
@@ -67,10 +67,26 @@ const propsTree = ref<SourceJsonTreeHandle | null>(null)
 const propsRevision = ref(0)
 const isResizing = ref(false)
 const isHierarchyResizing = ref(false)
-const propsPanelVisible = useSafeLocalStorage('endge:runtime-preview:props-panel-visible', true)
-const propsPanelWidth = useSafeLocalStorage('endge:runtime-preview:props-panel-width', PROPS_PANEL_DEFAULT_WIDTH)
-const hierarchyPanelVisible = useSafeLocalStorage('endge:runtime-preview:sfc-hierarchy-visible', false)
-const hierarchyPanelWidth = useSafeLocalStorage('endge:runtime-preview:sfc-hierarchy-width', HIERARCHY_PANEL_DEFAULT_WIDTH)
+const propsPanelVisible = useConfiguratorState(
+  'configurator.runtime-preview.props-panel-visible',
+  true,
+  { legacyKeys: ['endge:runtime-preview:props-panel-visible'] },
+)
+const propsPanelWidth = useConfiguratorState(
+  'configurator.runtime-preview.props-panel-width',
+  PROPS_PANEL_DEFAULT_WIDTH,
+  { legacyKeys: ['endge:runtime-preview:props-panel-width'] },
+)
+const hierarchyPanelVisible = useConfiguratorState(
+  'configurator.runtime-preview.sfc-hierarchy-visible',
+  false,
+  { legacyKeys: ['endge:runtime-preview:sfc-hierarchy-visible'] },
+)
+const hierarchyPanelWidth = useConfiguratorState(
+  'configurator.runtime-preview.sfc-hierarchy-width',
+  HIERARCHY_PANEL_DEFAULT_WIDTH,
+  { legacyKeys: ['endge:runtime-preview:sfc-hierarchy-width'] },
+)
 const renderInspection = new SFCRenderInspectionController()
 const resolvedProps = computed<Record<string, unknown>>(() => {
   void propsRevision.value

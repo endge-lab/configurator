@@ -2,8 +2,8 @@ import { currentTargetStorageNamespace } from '@/features/backend-connections/se
 
 export function createEndgeIDETabsConfig() {
   return {
-    storageKey: `endge-editor-tabs:v2:${currentTargetStorageNamespace()}`,
-    persist: true,
+    storageKey: 'configurator.smart-tabs',
+    legacyStorageKeys: [`endge-editor-tabs:v2:${currentTargetStorageNamespace()}`],
     maxTabs: 40,
   }
 }

@@ -186,12 +186,7 @@ export class EndgeIDETabs_Module {
     private readonly _busy: EndgeIDEBusy_Module,
     private readonly _uiState: EndgeIDEUIState_Module,
   ) {
-    this._tabsApi = useSmartTabs({
-      ...createEndgeIDETabsConfig(),
-      persist: !isIDETabStorageDisabled(),
-      persistence: this._uiState,
-      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
-    })
+    this._tabsApi = this._createTabsApi(false)
   }
 
   /** ACCESS */
@@ -219,11 +214,17 @@ export class EndgeIDETabs_Module {
     if (this._isRegistryBootstrapped) {
       return
     }
+    this._tabsApi = this._createTabsApi(!isIDETabStorageDisabled())
     this._tabsApi.closeTab('docs')
     this._tabsApi.closeTab('ui-editor-demo-singleton')
     this._tabsApi.closeTab('pulse')
     this._tabsApi.closeTab('architecture')
     this._tabsApi.closeTab('domain-analysis')
+    for (const tab of this._tabsApi.openTabs.value) {
+      if (tab.viewId === VIEW_ID_RUNTIME_DEBUG) {
+        this._tabsApi.closeTab(tab.id)
+      }
+    }
     this._removeMissingDocumentTabs()
     this._registerSystemViews()
     this._refreshPersistedDocumentTabs()
@@ -232,18 +233,26 @@ export class EndgeIDETabs_Module {
 
   /** LIFECYCLE */
   public reset(): void {
-    this._tabsApi.closeAll()
-    this._tabsApi.clearStorage()
-    this._tabsApi = useSmartTabs({
-      ...createEndgeIDETabsConfig(),
-      persist: !isIDETabStorageDisabled(),
-      persistence: this._uiState,
-      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
-    })
+    this._tabsApi.flushStorage()
+    this._tabsApi = this._createTabsApi(false)
     this._isRegistryBootstrapped = false
     this._sessionByTabId.clear()
     this._documentEditorModel.value = null
     this._documentModel.value = null
+  }
+
+  private _createTabsApi(persist: boolean): SmartTabsApi {
+    const config = createEndgeIDETabsConfig()
+    if (persist) {
+      this._uiState.migrateLegacy(config.storageKey, config.legacyStorageKeys)
+    }
+    return useSmartTabs({
+      storageKey: config.storageKey,
+      persist,
+      maxTabs: config.maxTabs,
+      persistence: this._uiState,
+      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
+    })
   }
 
   public openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
@@ -548,6 +557,7 @@ export class EndgeIDETabs_Module {
       } satisfies RuntimeDebugTabPayload,
       closable: true,
       singleton: false,
+      ephemeral: true,
       meta: { icon: 'ti ti-bug text-xl' },
     }
     this.openTab(tabRef, { activate: true })

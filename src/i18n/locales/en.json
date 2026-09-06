@@ -20,6 +20,60 @@
     "select": "Select",
     "selectedCount": "Selected: {count}"
   },
+  "diagnostics": {
+    "configuration": {
+      "history": {
+        "recordLimit": "Record limit"
+      },
+      "sections": {
+        "collection": {
+          "description": "Choose which diagnostic signals are stored in the current session.",
+          "title": "Collection"
+        },
+        "history": {
+          "description": "Configure the local history capacity and inspect its current usage.",
+          "title": "History"
+        },
+        "outputs": {
+          "description": "Configure where selected diagnostic records are delivered.",
+          "title": "Output channels"
+        },
+        "routing": {
+          "description": "Choose which records are delivered to each output channel.",
+          "title": "Routing"
+        },
+        "snapshots": {
+          "description": "Configure the contents of manual and automatic Core snapshots.",
+          "title": "Snapshots"
+        }
+      }
+    },
+    "snapshot": {
+      "clearAll": "Clear selection",
+      "diagnosticsConfiguration": "Diagnostics configuration",
+      "domain": "Loaded domain",
+      "groups": {
+        "diagnostics": {
+          "description": "Signal history, active problems, and effective configuration.",
+          "title": "Diagnostics"
+        },
+        "model": {
+          "description": "Persisted documents and a summary of the current compiled program.",
+          "title": "Domain and program"
+        },
+        "runtime": {
+          "description": "Live runtime hosts, Raph data, and the dependency graph.",
+          "title": "Runtime and Raph"
+        }
+      },
+      "program": "Compiled program",
+      "raphData": "Raph data",
+      "raphGraph": "Raph graph",
+      "redactionHint": "Before download, Core converts data to JSON and replaces sensitive field values with [REDACTED].",
+      "runtime": "Runtime instances",
+      "selectAll": "Select all"
+    }
+  },
   "endgeIde": {
     "headerMenu": {
       "additional": {
@@ -99,6 +153,7 @@
   },
   "help": {
     "documentation": "Documentation",
+    "portal": "Portal",
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
       "available": "Available",

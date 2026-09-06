@@ -1,3 +1,5 @@
+import { Endge } from '@endge/core'
+
 /** Выполняет emergency cleanup browser state Configurator. */
 export class ConfiguratorDiagnosticsStorage_Adapter {
   /** Удаляет persisted UI state, способный повторно вызвать render failure. */
@@ -6,6 +8,8 @@ export class ConfiguratorDiagnosticsStorage_Adapter {
       return
     }
     try {
+      Endge.context.removeState('configurator.smart-tabs')
+      Endge.context.removeState('configurator.layout.grid.endge-ide')
       localStorage.removeItem('endge-editor-tabs')
       localStorage.removeItem('app:grid-layout-state')
     }

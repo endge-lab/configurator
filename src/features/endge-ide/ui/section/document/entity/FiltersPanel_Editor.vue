@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Endge } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { Loader2, Save } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
@@ -66,15 +67,15 @@ interface RuntimeFilterField {
 
 // -------------------- сохраняемое состояние UI --------------------
 
-const LS_KEY = 'endge:parameters'
+const STATE_KEY = 'endge.runtime.parameters'
 type FiltersStore = Record<string, any> // идентификатор -> данные
 
 function loadAllSaved(): FiltersStore {
-  return EndgeIDE.uiState.read<FiltersStore>(LS_KEY, {})
+  return Endge.context.getState<FiltersStore>(STATE_KEY) ?? {}
 }
 
 function saveAllSaved(store: FiltersStore): void {
-  EndgeIDE.uiState.write(LS_KEY, store)
+  Endge.context.setState(STATE_KEY, store)
 }
 
 function loadSavedByIdentity(identity: string): any | null {

@@ -20,6 +20,60 @@
     "select": "Выберите",
     "selectedCount": "Выбрано: {count}"
   },
+  "diagnostics": {
+    "configuration": {
+      "history": {
+        "recordLimit": "Лимит записей"
+      },
+      "sections": {
+        "collection": {
+          "description": "Какие диагностические сигналы сохранять в текущей сессии.",
+          "title": "Сбор"
+        },
+        "history": {
+          "description": "Размер локальной истории и её текущее заполнение.",
+          "title": "История"
+        },
+        "outputs": {
+          "description": "Куда отправлять выбранные диагностические записи.",
+          "title": "Каналы вывода"
+        },
+        "routing": {
+          "description": "Какие записи направлять в каждый канал вывода.",
+          "title": "Маршрутизация"
+        },
+        "snapshots": {
+          "description": "Состав ручных и автоматических снимков состояния Core.",
+          "title": "Снимки"
+        }
+      }
+    },
+    "snapshot": {
+      "clearAll": "Очистить выбор",
+      "diagnosticsConfiguration": "Настройки диагностики",
+      "domain": "Открытый домен",
+      "groups": {
+        "diagnostics": {
+          "description": "История сигналов, актуальные проблемы и effective configuration.",
+          "title": "Диагностика"
+        },
+        "model": {
+          "description": "Persisted документы и сводка текущей compiled program.",
+          "title": "Домен и программа"
+        },
+        "runtime": {
+          "description": "Живые runtime hosts, данные Raph и граф зависимостей.",
+          "title": "Runtime и Raph"
+        }
+      },
+      "program": "Compiled program",
+      "raphData": "Данные Raph",
+      "raphGraph": "Граф Raph",
+      "redactionHint": "Перед скачиванием Core приводит данные к JSON и заменяет значения секретных полей на [REDACTED].",
+      "runtime": "Runtime-инстансы",
+      "selectAll": "Выбрать всё"
+    }
+  },
   "endgeIde": {
     "headerMenu": {
       "additional": {
@@ -99,6 +153,7 @@
   },
   "help": {
     "documentation": "Документация",
+    "portal": "Портал",
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
       "available": "Доступен",

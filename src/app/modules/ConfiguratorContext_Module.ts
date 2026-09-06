@@ -35,6 +35,7 @@ export class ConfiguratorContext_Module {
   private _domainProvider: EndgeDomainProvider | null = null
   private _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
   private _workspaceIdentity: string | null = null
+  private _userIdentity: string | null = null
   private readonly _listeners = new Set<() => void>()
   private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
 
@@ -57,6 +58,12 @@ export class ConfiguratorContext_Module {
     this._domainProvider = domainProvider
     this._workspaceRole = this._workspaceRole ?? options.workspaceRole ?? null
     this._workspaceIdentity = this._workspaceIdentity ?? options.workspaceIdentity ?? null
+    if (options.userIdentity !== undefined) {
+      this._userIdentity = String(options.userIdentity ?? '').trim() || null
+    }
+    if (this._userIdentity) {
+      Endge.context.setCurrentUser(this._userIdentity)
+    }
     const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
 
     registerEndgeMockProviders()
@@ -64,6 +71,11 @@ export class ConfiguratorContext_Module {
     try {
       await Endge.boot(ctx)
       bootCompleted = true
+      if (this._userIdentity) {
+        Endge.context.setSessionIdentityProvider({
+          getCurrentIdentity: () => ({ userId: this._userIdentity }),
+        })
+      }
       this._restoreDataModeOverride()
       this._assertWorkspaceRendererReady()
     }
