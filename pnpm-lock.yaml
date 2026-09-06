@@ -12,20 +12,20 @@ importers:
         specifier: 0.1.15
         version: 0.1.15
       '@endge/computation-sandbox':
-        specifier: 0.2.0
-        version: 0.2.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
-      '@endge/core':
-        specifier: 6.0.0
-        version: 6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@endge/raph':
-        specifier: 3.1.0
-        version: 3.1.0
-      '@endge/ui-vue':
-        specifier: 0.27.0
-        version: 0.27.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.1.0)(@endge/utils@0.26.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))
-      '@endge/ui-vue-shadcn':
         specifier: 0.3.0
-        version: 0.3.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.1.0)(@endge/utils@0.26.0)(vue@3.5.38(typescript@6.0.3))
+        version: 0.3.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
+      '@endge/core':
+        specifier: 7.0.1
+        version: 7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/raph':
+        specifier: 3.2.0
+        version: 3.2.0
+      '@endge/ui-vue':
+        specifier: 0.28.0
+        version: 0.28.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.2.0)(@endge/utils@0.26.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))
+      '@endge/ui-vue-shadcn':
+        specifier: 0.4.0
+        version: 0.4.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.2.0)(@endge/utils@0.26.0)(vue@3.5.38(typescript@6.0.3))
       '@endge/utils':
         specifier: 0.26.0
         version: 0.26.0
@@ -457,35 +457,35 @@ packages:
     resolution: {integrity: sha512-bRZ29y28/zaS2/U7tejQ5+QNEyHMzEZlqHK+8AxnMs9LD6FsjWkFxeJykY7Ql3IDpNU1LSWxsZFxycLCkAMJTA==}
     hasBin: true
 
-  '@endge/computation-sandbox@0.2.0':
-    resolution: {integrity: sha512-tcctXHtbcrxG6HgYa8iJuT+u3xLgkshm55XxRVi/wHcnKuLukqqn9yMJfWeJN4Bk/jq9AxoKH7+6XLaXcSn3sA==}
+  '@endge/computation-sandbox@0.3.0':
+    resolution: {integrity: sha512-WFtWsjvqNFoprCTOv8tCSHAh63mDe5m0PkMjeNIaOEnK0BSaPuYZm+LwP7hi91/ScArPxQbcDba9FuOFIOqPKQ==}
     peerDependencies:
-      '@endge/core': ^6.0.0
+      '@endge/core': ^7.0.0
 
-  '@endge/core@6.0.0':
-    resolution: {integrity: sha512-P/PmwVr/VvKyS1wuQrJ8/2kQMcwrlZxSOkSskDSEatD+rokAV19KLw0NXh0a0sAciVgxtNO6csPOuqic6bp/qQ==}
+  '@endge/core@7.0.1':
+    resolution: {integrity: sha512-n5yDGrjOy6UjWn2gW8uHeTSSNcRn6SF6thTNAhNRP2v1WVJSfSXARi2Wnmi0Iq/QVzQIJfi1nMH/F8n6O8jnRg==}
     peerDependencies:
-      '@endge/raph': ^3.1.0
+      '@endge/raph': ^3.2.0
       class-transformer: ^0.5.1
       class-validator: ^0.14.1
       reflect-metadata: ^0.2.2
 
-  '@endge/raph@3.1.0':
-    resolution: {integrity: sha512-K4+hybcrRjtpBirjw8fyLY4RgXCtZmhZCdtfqwX2YMmCEe4SbyAmAhD9lqSj728/hnX4M4jpgOduZIUwVHjB5Q==}
+  '@endge/raph@3.2.0':
+    resolution: {integrity: sha512-e3PPuN+0+Wz8gqibtJzV8DO0Rr4oxocNJO9rS/o7c+oit/Dp8G+Jx8O7O/KO0HzIu0rOFE1zAFa967R1uT2xNA==}
 
-  '@endge/ui-vue-shadcn@0.3.0':
-    resolution: {integrity: sha512-c1E3+oZWcqIl99PBllwiEeBTR1Z6n0ThUcv2Go/RaYrJ4ed0KUJnIUdYchD0ql2nDAKSq06s8nEsJRnBFGi4cg==}
+  '@endge/ui-vue-shadcn@0.4.0':
+    resolution: {integrity: sha512-V5oJ6nkLTLkImCxvzmYdgennKgBkckpWhpx4NEfUfsWYJwgpWKYwXfE4c12Yl8fO7yLEixy1UieXfWSG5j4BOg==}
     peerDependencies:
-      '@endge/core': ^6.0.0
-      '@endge/raph': ^3.1.0
+      '@endge/core': ^7.0.0
+      '@endge/raph': ^3.2.0
       '@endge/utils': ^0.26.0
       vue: ^3.5.0
 
-  '@endge/ui-vue@0.27.0':
-    resolution: {integrity: sha512-Jwb/ZNbdokZPiZOeYqGzGmjB6KxBG52hpF4HghnyLp6K2Ua2TLfpiV31VAzB85hmS+57ylcbIZNNcadf9I+91w==}
+  '@endge/ui-vue@0.28.0':
+    resolution: {integrity: sha512-ZDsknn95IxE8LVfV4jgezCl1Y+wE8AH/qsnUcQHUc85gqUbIVHCwHn2Xc2TYWEP9rAF5S+6ECG0I3SeoRZACMw==}
     peerDependencies:
-      '@endge/core': ^6.0.0
-      '@endge/raph': ^3.1.0
+      '@endge/core': ^7.0.0
+      '@endge/raph': ^3.2.0
       '@endge/utils': ^0.26.0
       '@primevue/themes': ^4.0.0-rc.1
       class-transformer: ^0.5.1
@@ -4633,18 +4633,18 @@ snapshots:
 
   '@endge/codegen@0.1.15': {}
 
-  '@endge/computation-sandbox@0.2.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
+  '@endge/computation-sandbox@0.3.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
     dependencies:
-      '@endge/core': 6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/core': 7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@jitl/quickjs-ng-wasmfile-release-sync': 0.32.0
       quickjs-emscripten-core: 0.32.0
       typescript: 6.0.3
 
-  '@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
+  '@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
     dependencies:
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
-      '@endge/raph': 3.1.0
+      '@endge/raph': 3.2.0
       '@endge/utils': 0.26.0
       '@vue/compiler-dom': 3.5.38
       '@vue/compiler-sfc': 3.5.38
@@ -4667,13 +4667,13 @@ snapshots:
       - debug
       - supports-color
 
-  '@endge/raph@3.1.0': {}
+  '@endge/raph@3.2.0': {}
 
-  '@endge/ui-vue-shadcn@0.3.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.1.0)(@endge/utils@0.26.0)(vue@3.5.38(typescript@6.0.3))':
+  '@endge/ui-vue-shadcn@0.4.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.2.0)(@endge/utils@0.26.0)(vue@3.5.38(typescript@6.0.3))':
     dependencies:
       '@babel/parser': 7.29.7
-      '@endge/core': 6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@endge/raph': 3.1.0
+      '@endge/core': 7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/raph': 3.2.0
       '@endge/utils': 0.26.0
       '@lucide/vue': 1.26.0(vue@3.5.38(typescript@6.0.3))
       '@tanstack/vue-table': 8.21.3(vue@3.5.38(typescript@6.0.3))
@@ -4681,11 +4681,11 @@ snapshots:
       sortablejs: 1.15.7
       vue: 3.5.38(typescript@6.0.3)
 
-  '@endge/ui-vue@0.27.0(@endge/core@6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.1.0)(@endge/utils@0.26.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))':
+  '@endge/ui-vue@0.28.0(@endge/core@7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.2.0)(@endge/utils@0.26.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))':
     dependencies:
       '@babel/parser': 7.29.7
-      '@endge/core': 6.0.0(@endge/raph@3.1.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@endge/raph': 3.1.0
+      '@endge/core': 7.0.1(@endge/raph@3.2.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/raph': 3.2.0
       '@endge/utils': 0.26.0
       '@primevue/themes': 4.5.4
       '@revolist/vue3-datagrid': 4.23.17
