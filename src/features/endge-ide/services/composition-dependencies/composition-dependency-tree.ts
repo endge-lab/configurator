@@ -14,6 +14,7 @@ import type {
 
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
+import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 
@@ -339,8 +340,7 @@ function buildScopeNode(
     alias: descriptor.name,
     title: descriptor.name,
     documentType: null,
-    icon: 'Layers3',
-    colorClass: 'text-slate-500',
+    ...DOCUMENT_AUXILIARY_PRESENTATION.scope,
     badgeIcon: null,
     activationMode: descriptor.effectiveActivation.mode,
     status: 'valid',
@@ -478,6 +478,13 @@ function runtimeDocumentTarget(
       documentType: query?.type ?? QueryType.REST,
       identity: runtime.identity,
       exists: Boolean(query),
+    }
+  }
+  if (runtime.kind === 'stream') {
+    return {
+      documentType: 'stream',
+      identity: runtime.identity,
+      exists: Boolean(Endge.domain.getStream(runtime.identity)),
     }
   }
   if (runtime.kind === 'filter') {

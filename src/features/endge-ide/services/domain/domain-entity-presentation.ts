@@ -2,7 +2,7 @@ import type { DomainDocumentType } from '@endge/core'
 
 import { ComponentType, Endge, FilterType, ParameterType } from '@endge/core'
 
-import { getDomainDocumentPresentation } from '@/features/endge-ide/services/domain/domain-document-presentation'
+import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 
 export interface ResolvedDomainEntityPresentation {
   title: string
@@ -101,7 +101,8 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
     return Endge.domain.getPolicy(id)?.name ?? id
   }
   if (key === 'style') {
-    return Endge.domain.getStyle(id)?.name ?? id
+    const style = Endge.domain.getStyle(id)
+    return style?.displayName ?? style?.name ?? id
   }
   if (key === 'configuration') {
     const configuration = Endge.domain.getConfiguration(id)

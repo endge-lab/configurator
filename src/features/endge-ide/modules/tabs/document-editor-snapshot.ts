@@ -37,7 +37,6 @@ const DEFAULT_EDITOR_NAMES = [
   'RPageTemplateEditor',
   'RParameterEditor',
   'RPolicyEditor',
-  'RProjectEditor',
   'RQueryEditor',
   'RStoreEditor',
   'RStreamEditor',
@@ -52,10 +51,15 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
   return editor
 }
 
+function captureProjectEditorState(editor: Record<string, unknown>): unknown {
+  return Object.fromEntries(Object.entries(editor).filter(([key]) => key !== 'workflow'))
+}
+
 /** Явный реестр покрытия для каждого семейства редакторов сохраняемых документов. */
 export const DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS: ReadonlyMap<string, SnapshotAdapter> = new Map([
   ['RActionEditor', captureDefaultEditorState],
   ...DEFAULT_EDITOR_NAMES.map(name => [name, captureDefaultEditorState] as const),
+  ['RProjectEditor', captureProjectEditorState],
 ])
 
 /** Строит детерминированный snapshot из authoring-полей модели редактора. */

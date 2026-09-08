@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { EndgeConfigurationContribution } from '@endge/core'
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
+import type { WorkflowNodeData } from '@/features/project-workflow/domain/ProjectWorkflow'
 
 import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
+  GitBranch,
   Loader2,
   Map,
   Play,
@@ -12,7 +14,8 @@ import {
   Settings2,
   SlidersHorizontal,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +43,9 @@ const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
 }>()
 
+const ProjectWorkflow_View = defineAsyncComponent(() => import('@/features/project-workflow/ui/ProjectWorkflow_View.vue'))
+const { t } = useI18n()
+
 const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(
   () => props.tabContext?.editor ?? null,
@@ -47,14 +53,27 @@ const editor = computed<RProjectEditor | null>(
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'general',
-  ['general', 'navigation', 'configuration'] as const,
+  ['general', 'workflow', 'navigation', 'configuration'] as const,
 )
 const launchLoading = ref(false)
-const tabButtons = [
+const tabButtons = computed(() => [
   { value: 'general', icon: Settings2, label: 'Основное' },
+  { value: 'workflow', icon: GitBranch, label: t('projectWorkflow.title') },
   { value: 'navigation', icon: Map, label: 'Навигация' },
   { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
-] as const
+] as const)
+
+watch([activeTab, editor], ([tab, model]) => {
+  if (tab === 'workflow' && model) {
+    EndgeIDE.tabs.prepareProjectWorkflow(model)
+  }
+}, { immediate: true })
+
+function openWorkflowDocument(data: WorkflowNodeData): void {
+  if (data.documentType) {
+    EndgeIDE.tabs.openDocument(data.identity, data.documentType)
+  }
+}
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
   set: (value) => {
@@ -229,9 +248,14 @@ async function launchRuntimePreview(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div class="min-h-0 flex-1 bg-muted/25 p-4">
-      <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
-        <ScrollArea v-if="activeTab === 'general'" class="h-full">
+    <div class="min-h-0 flex-1" :class="activeTab === 'workflow' ? '' : 'bg-muted/25 p-4'">
+      <div class="h-full w-full overflow-hidden" :class="activeTab === 'workflow' ? '' : 'rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface'">
+        <ProjectWorkflow_View
+          v-if="activeTab === 'workflow' && editor.workflow"
+          :workflow="editor.workflow"
+          @open-document="openWorkflowDocument"
+        />
+        <ScrollArea v-else-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
               <DocumentIdField :document-id="editor.id" />
@@ -322,7 +346,7 @@ async function launchRuntimePreview(): Promise<void> {
           </div>
         </ScrollArea>
 
-        <div v-else class="h-full min-h-0 p-4 lg:p-5">
+        <div v-else-if="activeTab === 'configuration'" class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor
             v-model="configuration"
             class="min-h-0"

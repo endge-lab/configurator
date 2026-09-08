@@ -22,11 +22,14 @@ import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEB
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
 
+import type { WorkflowDependency } from '@/features/project-workflow/domain/ProjectWorkflow'
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
 
+import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
+import { DOCUMENT_ICON_BADGE_SIZE, DOCUMENT_ICON_SIZES } from '@/features/document-presentation/config/document-presentation'
+import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
 import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
@@ -64,13 +67,14 @@ import {
   getMissingDocumentTabIds,
   resolveEndgeIDEDocumentIdentity,
 } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
+import { buildCompositionDependencyTree } from '@/features/endge-ide/services/composition-dependencies/composition-dependency-tree'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
-import { getDomainDocumentPresentation } from '@/features/endge-ide/services/domain/domain-document-presentation'
 import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/domain/domain-document-project-path'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
 import { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs'
+import { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
 const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))
@@ -116,12 +120,6 @@ const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
-
-function isQueryDocumentType(value: string): boolean {
-  return value === String(QueryType.REST)
-    || value === String(QueryType.GraphQL)
-    || value === String(QueryType.Custom)
-}
 
 interface DocumentTabPayload {
   documentId: string
@@ -265,6 +263,47 @@ export class EndgeIDETabs_Module {
   public closeOthers(id: string): void { this._tabsApi.closeOthers(id) }
   public closeAllToLeft(id: string): void { this._tabsApi.closeAllToLeft(id) }
   public closeAllToRight(id: string): void { this._tabsApi.closeAllToRight(id) }
+
+  /** Лениво создаёт снимок связей проекта без запуска runtime и записи документов. */
+  public prepareProjectWorkflow(editor: RProjectEditor, refresh = false): void {
+    if (editor.workflow && !refresh) {
+      return
+    }
+    const identity = Endge.domain.getProject(editor.id)?.identity ?? editor.identity
+    const compositions = Endge.domain.getCompositions()
+      .filter(item => item.kind === 'project' && item.kindIdentity === identity && !item.deletedAt)
+      .sort((left, right) => left.identity.localeCompare(right.identity))
+    const roots: WorkflowDependency[] = compositions.map((composition) => {
+      const result = buildCompositionDependencyTree({
+        identity: composition.identity,
+        displayName: composition.displayName,
+        source: composition.source,
+      })
+      return {
+        ...(result.root ?? {
+          id: `composition:${composition.identity}`,
+          kind: 'composition',
+          identity: composition.identity,
+          title: composition.displayName || composition.identity,
+          ...getDomainDocumentPresentation('composition'),
+          alias: null,
+          activationMode: null,
+          status: 'compile-error' as const,
+          children: [],
+        }),
+        documentType: 'composition',
+        inactive: composition.active === false,
+        diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
+      }
+    })
+    if (editor.workflow) {
+      editor.workflow.replaceRoots(roots)
+    }
+    else {
+      editor.workflow = new ProjectWorkflow(roots)
+    }
+  }
+
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
   public getTabViewState(tabId: string, key: string) { return this._tabsApi.getTabViewState(tabId, key) }
   public setTabViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabViewState']>[2]): void { this._tabsApi.setTabViewState(tabId, key, slice) }
@@ -424,9 +463,9 @@ export class EndgeIDETabs_Module {
       closable: true,
       meta: {
         icon: presentation.icon,
-        iconClass: `size-4 ${presentation.colorClass}`,
+        iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}`,
         iconBadge: presentation.badgeIcon ?? null,
-        iconBadgeClass: `size-2.5 ${presentation.colorClass}`,
+        iconBadgeClass: `${DOCUMENT_ICON_BADGE_SIZE} ${presentation.colorClass}`,
       },
     }
     this.openTab(tabRef)
@@ -567,96 +606,6 @@ export class EndgeIDETabs_Module {
     return getDomainDocumentLabel(id, docType)
   }
 
-  public getDocumentIcon(docType: DomainDocumentType, presentationKind?: string): string {
-    const key = String(docType)
-    if (key === String(ComponentType.Table)) {
-      return 'ti ti-table text-blue-500 text-xl'
-    }
-    if (key === String(ComponentType.DSL)) {
-      return 'ti ti-file-type-jsx text-blue-500 text-xl'
-    }
-    if (key === String(COMPONENT_SFC_TYPE)) {
-      return 'ti ti-file-type-tsx text-blue-500 text-xl'
-    }
-    if (isQueryDocumentType(key)) {
-      return 'ti ti-send text-orange-500 text-xl'
-    }
-    if (key === 'data-view') {
-      return 'ti ti-git-branch text-cyan-500 text-xl'
-    }
-    if (key === 'composition') {
-      const colorClass = getDomainDocumentPresentation(docType, presentationKind).colorClass
-      return `ti ti-topology-star-3 ${colorClass} text-xl`
-    }
-    if (key === 'store') {
-      return 'ti ti-database text-emerald-500 text-xl'
-    }
-    if (key === 'mock') {
-      return 'ti ti-braces text-[#8B5A2B] dark:text-[#C08A52] text-xl'
-    }
-    if (key === String(ParameterType.DefaultParameter)) {
-      return 'ti ti-form-input text-slate-500 text-xl'
-    }
-    if (key === String(FilterType.DefaultFilter)) {
-      return 'ti ti-filter text-rose-500 text-xl'
-    }
-    if (key === 'primitive') {
-      return 'ti ti-box-padding text-blue-500 text-xl'
-    }
-    if (key === 'type') {
-      return 'ti ti-box-multiple text-blue-500 text-xl'
-    }
-    if (key === 'action') {
-      return 'ti ti-bolt text-amber-500 text-2xl'
-    }
-    if (key === 'converter') {
-      return 'ti ti-exchange text-cyan-500 text-2xl'
-    }
-    if (key === 'computation') {
-      return 'ti ti-calculator text-orange-500 text-2xl'
-    }
-    if (key === 'integration') {
-      return 'ti ti-plug text-teal-500 text-2xl'
-    }
-    if (key === 'environment') {
-      return 'ti ti-server-cog text-lime-500 text-2xl'
-    }
-    if (key === 'tenant') {
-      return 'ti ti-building-community text-emerald-500 text-2xl'
-    }
-    if (key === 'policy') {
-      return 'ti ti-shield text-sky-500 text-2xl'
-    }
-    if (key === 'style') {
-      return 'ti ti-palette text-fuchsia-500 text-2xl'
-    }
-    if (key === 'configuration') {
-      return 'ti ti-adjustments-horizontal text-slate-500 text-2xl'
-    }
-    if (key === 'vocabs') {
-      return 'ti ti-book text-teal-500 text-2xl'
-    }
-    if (key === 'auth-profile') {
-      return 'ti ti-key text-sky-500 text-2xl'
-    }
-    if (key === 'i18n-bundles') {
-      return 'ti ti-language text-amber-500 text-2xl'
-    }
-    if (key === 'page-template') {
-      return 'ti ti-layout-navbar text-indigo-400 text-2xl'
-    }
-    if (key === 'page') {
-      return 'ti ti-layout-board text-indigo-400 text-2xl'
-    }
-    if (key === 'navigation') {
-      return 'ti ti-route text-cyan-400 text-2xl'
-    }
-    if (key === 'project') {
-      return 'ti ti-briefcase text-sky-500 text-2xl'
-    }
-    return 'ti ti-file-alert text-xl text-red-500'
-  }
-
   public getTabProjectPath(tab: SmartTabRef): string | null {
     if (tab.viewId !== VIEW_ID_DOCUMENT) {
       return null
@@ -688,9 +637,9 @@ export class EndgeIDETabs_Module {
       tab.meta = {
         ...tab.meta,
         icon: presentation.icon,
-        iconClass: `size-4 ${presentation.colorClass}`,
+        iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}`,
         iconBadge: presentation.badgeIcon ?? null,
-        iconBadgeClass: `size-2.5 ${presentation.colorClass}`,
+        iconBadgeClass: `${DOCUMENT_ICON_BADGE_SIZE} ${presentation.colorClass}`,
       }
     }
   }

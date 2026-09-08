@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { FALLBACK_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
+import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SaveDocumentButton from '@/features/endge-ide/ui/components/SaveDocumentButton.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
@@ -115,13 +117,6 @@ function getEntityKeys(entity: DomainEntity | null | undefined): Set<string> {
     keys.add(identity)
   }
   return keys
-}
-
-function compactIconClass(iconClass: string): string {
-  return `${iconClass
-    .replace(/\btext-(xl|2xl)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()} text-sm`
 }
 
 function getEntityByDrop(sectionType: DomainSectionType, id: string): DomainEntity | null {
@@ -237,12 +232,12 @@ const previewAreas = computed(() => {
         const identity = normalizeKey(entity?.identity) || normalizeKey(block.entityIdentity) || normalizeKey(entity?.id)
         const idValue = entity?.id ?? block.entityId ?? null
 
-        let iconClass = 'ti ti-cube text-primary text-sm'
+        let presentation = FALLBACK_PRESENTATION
         if (block.entityType === 'component') {
-          iconClass = compactIconClass(EndgeIDE.tabs.getDocumentIcon((entity?.type ?? ComponentType.Table) as any))
+          presentation = getDomainDocumentPresentation((entity?.type ?? ComponentType.Table) as any)
         }
         else if (block.entityType === 'filter') {
-          iconClass = compactIconClass(EndgeIDE.tabs.getDocumentIcon((entity?.type ?? FilterType.DefaultFilter) as any))
+          presentation = getDomainDocumentPresentation((entity?.type ?? FilterType.DefaultFilter) as any)
         }
 
         return {
@@ -251,7 +246,7 @@ const previewAreas = computed(() => {
           entityIdentity: identity || block.entityIdentity || block.key,
           entityId: idValue,
           displayName: name,
-          iconClass,
+          presentation,
         }
       }),
     }

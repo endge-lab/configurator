@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RPageTemplatePreviewSchema } from '@endge/core'
+import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
 
 import { DomainSectionType } from '@endge/core'
 import { computed } from 'vue'
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { FALLBACK_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
 interface PagePreviewBlock {
@@ -19,7 +22,7 @@ interface PagePreviewBlock {
   entityIdentity?: string | null
   entityId?: string | number | null
   displayName?: string | null
-  iconClass?: string | null
+  presentation?: DomainDocumentPresentation
 }
 
 interface PagePreviewArea {
@@ -134,9 +137,9 @@ function label(slotId: string): string {
                           type="button"
                           class="inline-flex h-6 w-6 items-center justify-center rounded border border-border bg-muted/40 hover:bg-muted/70"
                         >
-                          <i
-                            :class="b.iconClass ?? 'ti ti-cube text-primary'"
-                            class="text-sm leading-none"
+                          <DocumentIcon
+                            :presentation="b.presentation ?? FALLBACK_PRESENTATION"
+                            size="pagePreview"
                           />
                         </button>
                       </DropdownMenuTrigger>

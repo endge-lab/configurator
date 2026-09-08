@@ -192,6 +192,7 @@
     "portal": "Портал",
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
+      "mockGenerator": "Mock Generator",
       "available": "Доступен",
       "configurator": "Configurator",
       "loading": "Загрузка…",
@@ -1248,5 +1249,26 @@
     "worksIndependentlyOfRowSelectionWhen5a3ba996": "Работает независимо от выделения строк. При",
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
+  },
+  "projectWorkflow": {
+    "title": "Workflow проекта",
+    "emptyTitle": "У проекта пока нет композиций",
+    "emptyDescription": "Здесь появятся композиции, привязанные к этому проекту, и их зависимости.",
+    "openDocument": "Открыть документ: {name}",
+    "expand": "Раскрыть: {name}",
+    "collapse": "Свернуть: {name}",
+    "dependencies": "Зависимости: {count}",
+    "connectedResource": "Подключён к",
+    "includes": "Включает",
+    "missing": "Документ не найден",
+    "cycle": "Циклическая ссылка",
+    "invalid": "Ошибка конфигурации",
+    "inactive": "отключена",
+    "select": "Выделение рамкой",
+    "selectHint": "Выделение рамкой (Shift + перетаскивание). Перенос полотна — пробел + перетаскивание.",
+    "zoomIn": "Приблизить",
+    "zoomOut": "Отдалить",
+    "fit": "Показать всю схему",
+    "arrange": "Упорядочить блоки"
   }
 }

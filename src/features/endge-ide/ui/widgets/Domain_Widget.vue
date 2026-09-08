@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
+import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
 import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type {
   DomainWorkingSetFilterState,
@@ -19,55 +20,28 @@ import { DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPort
 import { useDomainStore } from '@endge/ui-vue'
 import {
   ArrowLeftRight,
-  BookOpen,
-  Braces,
-  Briefcase,
-  Building2,
   ChevronDown,
   ChevronRight,
   ChevronsDown,
   ChevronsUp,
-  Columns,
   Copy,
-  Database,
   Download,
-  FileCode2,
-  FileWarning,
-  Filter,
-  Folder,
   FolderPlus,
   FolderRoot,
-  FormInput,
-  GitBranch,
-  KeyRound,
-  Languages,
   Layers3,
-  Layout,
   ListFilter,
   Loader2,
   Network,
   Palette,
   Pencil,
   Play,
-  Plug,
   Plus,
-  Puzzle,
-  Radio,
-  RadioTower,
-  Route,
   Save,
   Search,
-  Send,
-  ServerCog,
-  Shield,
   SlidersHorizontal,
-  SquareFunction,
-  Table2,
   Trash2,
-  Type,
   WandSparkles,
   X,
-  Zap,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
@@ -80,13 +54,15 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
-import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
+import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_COLORS } from '@/features/document-presentation/config/document-presentation'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
-} from '@/features/endge-ide/services/domain/domain-document-presentation'
+} from '@/features/document-presentation/tools/resolve-document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
 import {
   canDelete,
   createSubfolder as createDomainSubfolder,
@@ -1009,77 +985,36 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
 }
 const ROOT_BLOCKS = computed(() => getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value))
 
-const DOMAIN_ICON_COMPONENTS: Record<string, any> = {
-  ArrowLeftRight,
-  BookOpen,
-  Braces,
-  Briefcase,
-  Building2,
-  Columns,
-  Database,
-  FileCode2,
-  FileWarning,
-  Filter,
-  FormInput,
-  GitBranch,
-  KeyRound,
-  Languages,
-  Layout,
-  Network,
-  Palette,
-  Plug,
-  Puzzle,
-  Route,
-  Send,
-  ServerCog,
-  Shield,
-  SlidersHorizontal,
-  SquareFunction,
-  Table2,
-  Type,
-  Zap,
-  Radio,
-  RadioTower,
-}
-
-function createSectionPresentation(sectionType: DomainSectionType): { icon: any, colorClass: string } {
-  const presentation = getDomainSectionPresentation(sectionType)
-  return {
-    icon: DOMAIN_ICON_COMPONENTS[presentation.icon] ?? FileWarning,
-    colorClass: presentation.colorClass,
-  }
-}
-
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
-const WORKSPACE_PRESENTATION = { icon: Building2, colorClass: 'text-orange-500' }
+const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
 
-const ROOT_FOLDER_ICONS: Record<string, { icon: any, colorClass: string }> = {
+const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-workspaces': WORKSPACE_PRESENTATION,
-  'root-types': createSectionPresentation(DomainSectionType.Type),
-  'root-queries': createSectionPresentation(DomainSectionType.Query),
-  'root-data-views': createSectionPresentation(DomainSectionType.DataView),
-  'root-compositions': createSectionPresentation(DomainSectionType.Composition),
-  'root-stores': createSectionPresentation(DomainSectionType.Store),
-  'root-components': createSectionPresentation(DomainSectionType.Component),
-  'root-actions': createSectionPresentation(DomainSectionType.Action),
-  'root-events': createSectionPresentation(DomainSectionType.Event),
-  'root-parameters': createSectionPresentation(DomainSectionType.Parameters),
-  'root-converters': createSectionPresentation(DomainSectionType.Converter),
-  'root-computations': createSectionPresentation(DomainSectionType.Computation),
-  'root-integrations': createSectionPresentation(DomainSectionType.Integration),
-  'root-filters': createSectionPresentation(DomainSectionType.Filters),
-  'root-environments': createSectionPresentation(DomainSectionType.Environment),
-  'root-tenants': createSectionPresentation(DomainSectionType.Tenant),
-  'root-policies': createSectionPresentation(DomainSectionType.Policy),
-  'root-styles': createSectionPresentation(DomainSectionType.Style),
-  'root-page-templates': createSectionPresentation(DomainSectionType.PageTemplate),
-  'root-pages': createSectionPresentation(DomainSectionType.Page),
-  'root-navigations': createSectionPresentation(DomainSectionType.Navigation),
-  'root-vocabs': createSectionPresentation(DomainSectionType.Vocabs),
-  'root-mocks': createSectionPresentation(DomainSectionType.Mock),
-  'root-i18n-bundles': createSectionPresentation(DomainSectionType.I18nBundles),
-  'root-auth-profiles': createSectionPresentation(DomainSectionType.AuthProfile),
-  'root-projects': createSectionPresentation(DomainSectionType.Project),
+  'root-types': getDomainSectionPresentation(DomainSectionType.Type),
+  'root-queries': getDomainSectionPresentation(DomainSectionType.Query),
+  'root-data-views': getDomainSectionPresentation(DomainSectionType.DataView),
+  'root-compositions': getDomainSectionPresentation(DomainSectionType.Composition),
+  'root-stores': getDomainSectionPresentation(DomainSectionType.Store),
+  'root-components': getDomainSectionPresentation(DomainSectionType.Component),
+  'root-actions': getDomainSectionPresentation(DomainSectionType.Action),
+  'root-events': getDomainSectionPresentation(DomainSectionType.Event),
+  'root-parameters': getDomainSectionPresentation(DomainSectionType.Parameters),
+  'root-converters': getDomainSectionPresentation(DomainSectionType.Converter),
+  'root-computations': getDomainSectionPresentation(DomainSectionType.Computation),
+  'root-integrations': getDomainSectionPresentation(DomainSectionType.Integration),
+  'root-filters': getDomainSectionPresentation(DomainSectionType.Filters),
+  'root-environments': getDomainSectionPresentation(DomainSectionType.Environment),
+  'root-tenants': getDomainSectionPresentation(DomainSectionType.Tenant),
+  'root-policies': getDomainSectionPresentation(DomainSectionType.Policy),
+  'root-styles': getDomainSectionPresentation(DomainSectionType.Style),
+  'root-page-templates': getDomainSectionPresentation(DomainSectionType.PageTemplate),
+  'root-pages': getDomainSectionPresentation(DomainSectionType.Page),
+  'root-navigations': getDomainSectionPresentation(DomainSectionType.Navigation),
+  'root-vocabs': getDomainSectionPresentation(DomainSectionType.Vocabs),
+  'root-mocks': getDomainSectionPresentation(DomainSectionType.Mock),
+  'root-i18n-bundles': getDomainSectionPresentation(DomainSectionType.I18nBundles),
+  'root-auth-profiles': getDomainSectionPresentation(DomainSectionType.AuthProfile),
+  'root-projects': getDomainSectionPresentation(DomainSectionType.Project),
 }
 
 /** Типы документов, которые можно дублировать (те же, что в «Создать»). */
@@ -1110,55 +1045,28 @@ function isManagedTypeFolder(node: FsFolderNode): boolean {
   return isExternallyManaged(node)
 }
 
-function getFolderIcon(node: FsFolderNode): any {
+function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
   if (node.workspaceIdentity) {
-    return WORKSPACE_PRESENTATION.icon
+    return WORKSPACE_PRESENTATION
   }
-  if (node.isRoot && node.id in ROOT_FOLDER_ICONS) {
-    return ROOT_FOLDER_ICONS[node.id]?.icon
+  if (node.isRoot && node.id in ROOT_FOLDER_PRESENTATION) {
+    return ROOT_FOLDER_PRESENTATION[node.id]
   }
-  return Folder
+  return node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived'
+    ? DOCUMENT_AUXILIARY_PRESENTATION.derivedFolder
+    : DOCUMENT_AUXILIARY_PRESENTATION.folder
 }
 
-function getFolderColorClass(node: FsFolderNode): string {
-  if (node.workspaceIdentity) {
-    return WORKSPACE_PRESENTATION.colorClass
+function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentation {
+  if (node.isTableColumn) {
+    return DOCUMENT_AUXILIARY_PRESENTATION.tableColumn
   }
-  if (node.isRoot && node.id in ROOT_FOLDER_ICONS) {
-    return ROOT_FOLDER_ICONS[node.id]?.colorClass ?? 'text-yellow-500'
-  }
-  if (node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived') {
-    return 'fill-sky-500/30 text-sky-600 dark:text-sky-400'
-  }
-  return 'fill-current text-yellow-500 dark:text-slate-400'
-}
-
-function getTreeDocumentIconClass(node: FsFileNode): string[] {
-  const iconClass = EndgeIDE.tabs.getDocumentIcon(node.docType, node.presentationKind)
-    .split(/\s+/)
-    .filter(token => token && !token.startsWith('text-') && !token.startsWith('dark:text-'))
-  const colorClass = node.origin?.kind === 'derived'
-    ? 'text-sky-500'
-    : getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
-  return [...iconClass, colorClass, 'text-base']
-}
-
-function getRootDocumentIcon(node: FsFileNode): any | null {
   const presentation = getDomainDocumentPresentation(node.docType, node.presentationKind)
-  return DOMAIN_ICON_COMPONENTS[presentation.icon] ?? FileWarning
+  return node.origin?.kind === 'derived'
+    ? { ...presentation, colorClass: DOCUMENT_COLORS.sky }
+    : presentation
 }
 
-function getRootDocumentIconColor(node: FsFileNode): string {
-  if (node.origin?.kind === 'derived') {
-    return 'text-sky-500'
-  }
-  return getDomainDocumentPresentation(node.docType, node.presentationKind).colorClass
-}
-
-function getRootDocumentBadgeIcon(node: FsFileNode): any | null {
-  const badgeIcon = getDomainDocumentPresentation(node.docType, node.presentationKind).badgeIcon
-  return badgeIcon == null ? null : DOMAIN_ICON_COMPONENTS[badgeIcon] ?? null
-}
 interface DomainSearchProjection {
   items: FlatFsItem[]
   hasMatch: boolean
@@ -1946,7 +1854,7 @@ function rowPaddingStyle(depth: number, isNestedEntity = false): Record<string, 
 }
 
 function getRootHierarchyColorClass(rootId: string): string {
-  return ROOT_FOLDER_ICONS[rootId]?.colorClass ?? 'text-muted-foreground'
+  return ROOT_FOLDER_PRESENTATION[rootId]?.colorClass ?? 'text-muted-foreground'
 }
 
 function rowClasses(item: FlatFsItem): string {
@@ -2173,41 +2081,10 @@ function rowClasses(item: FlatFsItem): string {
                   />
                 </span>
 
-                <template v-if="it.node.type === 'folder'">
-                  <component
-                    :is="getFolderIcon(it.node)"
-                    class="size-4 shrink-0"
-                    :class="getFolderColorClass(it.node)"
-                  />
-                </template>
-
-                <template v-else>
-                  <Columns
-                    v-if="(it.node as FsFileNode).isTableColumn"
-                    class="size-4 shrink-0 text-sky-500 mr-1"
-                  />
-                  <span
-                    v-else-if="getRootDocumentIcon(it.node as FsFileNode)"
-                    class="relative size-4 shrink-0"
-                  >
-                    <component
-                      :is="getRootDocumentIcon(it.node as FsFileNode)"
-                      class="size-4"
-                      :class="getRootDocumentIconColor(it.node as FsFileNode)"
-                    />
-                    <component
-                      :is="getRootDocumentBadgeIcon(it.node as FsFileNode)"
-                      v-if="getRootDocumentBadgeIcon(it.node as FsFileNode)"
-                      class="absolute -bottom-1 -right-1 size-2.5 rounded-[2px] bg-background p-px"
-                      :class="getRootDocumentIconColor(it.node as FsFileNode)"
-                    />
-                  </span>
-                  <i
-                    v-else
-                    :class="getTreeDocumentIconClass(it.node as FsFileNode)"
-                    class="shrink-0"
-                  />
-                </template>
+                <DocumentIcon
+                  :presentation="it.node.type === 'folder' ? getFolderPresentation(it.node) : getTreeDocumentPresentation(it.node)"
+                  size="tree"
+                />
 
                 <span class="truncate">{{ getNodeLabel(it.node) }}</span>
                 <span

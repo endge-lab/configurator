@@ -192,6 +192,7 @@
     "portal": "Portal",
     "serviceVersions": {
       "aiWorkbench": "AI Workbench",
+      "mockGenerator": "Mock Generator",
       "available": "Available",
       "configurator": "Configurator",
       "loading": "Loading…",
@@ -1248,5 +1249,26 @@
     "worksIndependentlyOfRowSelectionWhen5a3ba996": "Works independently of row selection. When",
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
+  },
+  "projectWorkflow": {
+    "title": "Project workflow",
+    "emptyTitle": "This project has no compositions yet",
+    "emptyDescription": "Compositions assigned to this project and their dependencies will appear here.",
+    "openDocument": "Open document: {name}",
+    "expand": "Expand: {name}",
+    "collapse": "Collapse: {name}",
+    "dependencies": "Dependencies: {count}",
+    "connectedResource": "Connected to",
+    "includes": "Includes",
+    "missing": "Document not found",
+    "cycle": "Cyclic reference",
+    "invalid": "Configuration error",
+    "inactive": "disabled",
+    "select": "Box selection",
+    "selectHint": "Box selection (Shift + drag). Pan the canvas with Space + drag.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit diagram",
+    "arrange": "Arrange nodes"
   }
 }

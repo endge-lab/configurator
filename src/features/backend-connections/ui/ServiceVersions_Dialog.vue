@@ -84,20 +84,28 @@ function connectedServiceRows(
   connection: BackendConnection,
   currentState: BackendVersionState,
 ): ServiceVersionRow[] {
-  if (currentState.status !== 'ready') {
-    return []
+  const services: ConnectedServiceVersion[] = currentState.status === 'ready'
+    ? [...currentState.value.services]
+    : []
+  if (!services.some(service => service.service === 'service_mock_generator')) {
+    services.push({ service: 'service_mock_generator', status: 'unavailable' })
   }
 
-  return currentState.value.services.map(service => ({
+  return services.map(service => ({
     key: `service:${connection.id}:${service.service}`,
     label: connectedServiceLabel(service),
     version: service.version,
-    status: service.status,
+    status: currentState.status === 'idle' || currentState.status === 'loading'
+      ? 'loading' as const
+      : service.status,
     nested: true,
   }))
 }
 
 function connectedServiceLabel(service: ConnectedServiceVersion): string {
+  if (service.service === 'service_mock_generator') {
+    return t('help.serviceVersions.mockGenerator')
+  }
   return isAIWorkbench(service.service)
     ? t('help.serviceVersions.aiWorkbench')
     : service.service

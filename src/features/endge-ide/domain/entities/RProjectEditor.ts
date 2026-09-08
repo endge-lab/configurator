@@ -1,4 +1,5 @@
 import type { EndgeConfigurationContribution, RProject } from '@endge/core'
+import type { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
 
 function normalizeRelationId(value: unknown): number | null {
   if (value == null) {
@@ -28,6 +29,8 @@ export class RProjectEditor {
   navigationId: number | null = null
   allowedEnvironmentIds: number[] = []
   configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
+  /** Временное полотно editor-сессии; не участвует в updateSource и dirty snapshot. */
+  workflow: ProjectWorkflow | null = null
 
   fillFromSource(source: RProject): void {
     this.id = source.id

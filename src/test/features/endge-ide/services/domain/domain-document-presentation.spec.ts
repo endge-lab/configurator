@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
-} from '../../../../../features/endge-ide/services/domain/domain-document-presentation'
+} from '../../../../../features/document-presentation/tools/resolve-document-presentation'
 import { QUERY_COMPOSITION_PRESENTATION_KIND } from '../../../../../features/endge-ide/services/domain/query-composition-presentation'
 
 describe('представление документа домена', () => {

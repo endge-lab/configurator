@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import {
   COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
   DOCUMENT_CREATE_DESCRIPTORS,
@@ -755,12 +757,13 @@ function onCancel(): void {
                   :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
                   @click="activeType = doc.type"
                 >
-                  <i
-                    :class="EndgeIDE.tabs.getDocumentIcon(
+                  <DocumentIcon
+                    :presentation="getDomainDocumentPresentation(
                       doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
                       doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
                     )"
-                    class="mt-0.5 shrink-0 text-lg"
+                    size="picker"
+                    class="mt-0.5"
                   />
                   <span class="min-w-0">
                     <span class="block text-sm font-medium">{{ doc.label }}</span>
@@ -779,12 +782,13 @@ function onCancel(): void {
         <div class="flex min-h-0 flex-col gap-3">
           <div class="rounded-lg border bg-muted/20 p-3">
             <div class="flex items-start gap-3">
-              <i
-                :class="EndgeIDE.tabs.getDocumentIcon(
+              <DocumentIcon
+                :presentation="getDomainDocumentPresentation(
                   activeType === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : activeType,
                   activeType === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
                 )"
-                class="mt-0.5 shrink-0 text-xl text-primary"
+                size="picker"
+                class="mt-0.5"
               />
               <div>
                 <div class="font-medium">

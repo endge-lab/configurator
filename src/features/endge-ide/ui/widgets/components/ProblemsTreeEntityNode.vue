@@ -7,9 +7,9 @@ import { Box, CircleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
+import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
-import { getDomainDocumentPresentation } from '@/features/endge-ide/services/domain/domain-document-presentation'
 
 const props = defineProps<{
   entry: ProblemsEntityEntry
