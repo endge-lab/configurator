@@ -4,7 +4,7 @@ import type { ProjectWorkflow, WorkflowNodeData } from '../domain/ProjectWorkflo
 
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { MarkerType, SelectionMode, VueFlow } from '@vue-flow/core'
-import { GitBranch, LayoutGrid, Maximize, Minus, Plus, SquareDashedMousePointer } from 'lucide-vue-next'
+import { LayoutGrid, Maximize, Minus, Plus, SquareDashedMousePointer, Workflow } from 'lucide-vue-next'
 import { computed, nextTick, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -99,7 +99,7 @@ function openDocument(data: WorkflowNodeData): void {
 <template>
   <section class="project-workflow" :aria-label="t('projectWorkflow.title')">
     <div v-if="!nodes.length" class="workflow-empty">
-      <GitBranch class="mb-4 size-8 text-violet-400" />
+      <Workflow class="mb-4 size-8 text-violet-400" />
       <h3 class="text-sm font-medium">
         {{ t('projectWorkflow.emptyTitle') }}
       </h3>

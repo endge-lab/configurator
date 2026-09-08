@@ -6,13 +6,13 @@ import type { WorkflowNodeData } from '@/features/project-workflow/domain/Projec
 import { DomainSectionType, Endge } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
-  GitBranch,
   Loader2,
   Map,
   Play,
   Save,
   Settings2,
   SlidersHorizontal,
+  Workflow,
 } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -58,7 +58,7 @@ const activeTab = useSmartTabSelection(
 const launchLoading = ref(false)
 const tabButtons = computed(() => [
   { value: 'general', icon: Settings2, label: 'Основное' },
-  { value: 'workflow', icon: GitBranch, label: t('projectWorkflow.title') },
+  { value: 'workflow', icon: Workflow, label: t('projectWorkflow.title') },
   { value: 'navigation', icon: Map, label: 'Навигация' },
   { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
 ] as const)
