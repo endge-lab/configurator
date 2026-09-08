@@ -140,7 +140,7 @@ export class UIEditorRuntimePreviewSession {
         context,
         'runtime-preview.ui-editor-demo.props',
       )
-      const runtime = this._scope.execute(model, {
+      const runtime = await this._scope.executeAsync(model, {
         instanceId: 'component',
         parent: context?.host ?? null,
         artifactReader: createOverlayArtifactReader(artifact),

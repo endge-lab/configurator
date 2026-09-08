@@ -125,7 +125,7 @@ export class CompositionPreviewSession {
         artifact.payload.previewProps,
         artifact.payload.dataMode ?? Endge.context.dataMode,
       )
-      const runtime = this._scope.execute(model, {
+      const runtime = await this._scope.executeAsync(model, {
         meta: {
           mode: 'preview',
           dataRuntimes,

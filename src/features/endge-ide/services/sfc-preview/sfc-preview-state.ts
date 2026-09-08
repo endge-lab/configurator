@@ -105,7 +105,7 @@ export class SFCPreviewSession {
         const artifactReader = {
           getArtifact: <TPayload>() => artifact as unknown as ProgramArtifact<TPayload>,
         }
-        const runtime = this._scope.execute(model, {
+        const runtime = await this._scope.executeAsync(model, {
           parent: composition?.host ?? null,
           artifactReader,
           meta: {
