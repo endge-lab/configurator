@@ -650,7 +650,7 @@ onBeforeUnmount(() => {
 
         <div v-if="nestedCompositions.length" class="border-t p-4">
           <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {{ selected?.kind === 'project' ? $t('uiText.projectCompositions373faff7') : $t('uiText.nestedCompositions4b2ce876') }}
+            {{ $t('uiText.nestedCompositions4b2ce876') }}
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <button

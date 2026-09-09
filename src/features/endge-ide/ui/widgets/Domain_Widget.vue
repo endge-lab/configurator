@@ -31,7 +31,6 @@ import {
   Layers3,
   ListFilter,
   Loader2,
-  Network,
   Palette,
   Pencil,
   Play,
@@ -109,7 +108,6 @@ type MenuAction
     | { type: 'rename-folder', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
     | { type: 'create-doc', node: FsFolderNode }
-    | { type: 'create-project-composition', node: FsFileNode }
     | { type: 'create-store-update', node: FsFileNode }
     | { type: 'remove-doc', node: FsFileNode }
     | { type: 'duplicate-doc', node: FsFileNode }
@@ -1712,14 +1710,6 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     const externallyManagedDoc = isExternallyManaged(fileNode)
     const canDeleteDoc = canDelete(fileNode.sectionType, fileNode.docType)
 
-    if (!externallyManagedDoc && fileNode.sectionType === DomainSectionType.Project) {
-      items.push({
-        label: 'Создать композицию',
-        icon: Network,
-        action: { type: 'create-project-composition', node: fileNode },
-      })
-    }
-
     if (!externallyManagedDoc && fileNode.docType === 'store') {
       items.push({
         label: 'Создать обновление',
@@ -1793,25 +1783,6 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     EndgeIDE.modals.openCreateDocument({
       sectionType: a.node.sectionType,
       folderId: a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
-    })
-    return
-  }
-
-  if (a.type === 'create-project-composition') {
-    const projectIdentity = String(a.node.identity ?? a.node.id ?? '').trim()
-    if (!projectIdentity) {
-      toast.error('Не удалось определить identity проекта')
-      return
-    }
-    closeContextMenu()
-    EndgeIDE.modals.openCreateDocument({
-      sectionType: DomainSectionType.Composition,
-      documentType: 'composition',
-      compositionOwner: {
-        kind: 'project',
-        identity: projectIdentity,
-        displayName: a.node.name,
-      },
     })
     return
   }

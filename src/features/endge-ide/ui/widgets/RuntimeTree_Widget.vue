@@ -268,15 +268,15 @@ onBeforeUnmount(closeContextMenu)
                 variant="ghost"
                 size="icon"
                 class="size-7"
-                aria-label="Показать содержимое композиций проекта"
+                :aria-label="$t('uiText.collapseToProjectContent')"
                 :disabled="!hasEntries"
-                @click="setExpansion('project-compositions')"
+                @click="setExpansion('project-content')"
               >
                 <ListCollapse class="size-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {{ $t('uiText.beforeCompositionContent955fe293') }}
+              {{ $t('uiText.collapseToProjectContent') }}
             </TooltipContent>
           </Tooltip>
 

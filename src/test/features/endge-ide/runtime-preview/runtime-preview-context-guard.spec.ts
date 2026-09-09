@@ -41,8 +41,6 @@ describe('защита контекста Runtime Preview', () => {
   })
 
   it.each([
-    ['project', 'airport', true],
-    ['project', 'other', false],
     ['environment', 'dev', true],
     ['environment', 'prod', false],
     ['tenant', 'base', true],

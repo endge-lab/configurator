@@ -38,18 +38,18 @@ function buildProjectNode(identity: string, artifacts: RuntimeArtifactReader): R
     identity,
     ...domainNodeFields('project', identity),
   })
-  const compositions = Endge.domain.getCompositions()
-    .filter(item => item.kind === 'project' && item.kindIdentity === identity && item.active !== false && !item.deletedAt)
-    .sort((left, right) => left.identity.localeCompare(right.identity))
-  node.children = compositions.map(composition => buildCompositionNode(
-    composition.identity,
-    { rootIdentity: composition.identity, invocationPath: [] },
-    node.id,
-    new Set(),
-    artifacts.getArtifact<CompositionProgramPayload>('composition', composition.identity)?.payload.activation?.mode ?? 'startup',
-    null,
-    artifacts,
-  ))
+  const artifact = artifacts.getArtifact<CompositionProgramPayload>('project', identity)
+  if (!artifact || artifact.status === 'error') {
+    node.subtitle = 'artifact unavailable'
+    return node
+  }
+  const address: RuntimePreviewCompositionAddress = { rootIdentity: identity, invocationPath: [] }
+  node.composition = address
+  node.activationMode = artifact.payload.activation?.mode ?? 'startup'
+  node.children = buildScopeContents(artifact.payload, 'scope_default', address, node.id, new Set(), artifacts)
+  for (const scope of artifact.payload.scopes.filter(item => item.parentPath === 'scope_default')) {
+    node.children.push(buildScopeNode(artifact.payload, scope.path, address, node.id, new Set(), artifacts))
+  }
   return node
 }
 

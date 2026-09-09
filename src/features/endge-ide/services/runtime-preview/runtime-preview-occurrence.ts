@@ -40,21 +40,10 @@ export function findRuntimePreviewOccurrences(
     artifacts,
     occurrences: [],
   }
-  const roots = Endge.domain.getCompositions()
-    .filter(item =>
-      item.kind === 'project'
-      && item.kindIdentity === normalizedProject
-      && item.active !== false
-      && !item.deletedAt,
-    )
-    .sort((left, right) => left.identity.localeCompare(right.identity))
-
-  for (const root of roots) {
-    visitComposition(context, root.identity, {
-      rootIdentity: root.identity,
-      invocationPath: [],
-    }, [entityTitle('composition', root.identity)], new Set())
-  }
+  visitComposition(context, normalizedProject, {
+    rootIdentity: normalizedProject,
+    invocationPath: [],
+  }, [entityTitle('project', normalizedProject)], new Set(), 'project')
   return context.occurrences
 }
 
@@ -64,11 +53,13 @@ function visitComposition(
   address: RuntimePreviewCompositionAddress,
   path: string[],
   ancestors: Set<string>,
+  entityType: 'project' | 'composition' = 'composition',
 ): void {
-  if (ancestors.has(identity)) {
+  const key = `${entityType}:${identity}`
+  if (ancestors.has(key)) {
     return
   }
-  const artifact = context.artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
+  const artifact = context.artifacts.getArtifact<CompositionProgramPayload>(entityType, identity)
   if (!artifact || artifact.status === 'error') {
     return
   }
@@ -77,8 +68,9 @@ function visitComposition(
     identity,
     context.artifacts,
     new Set(),
+    entityType,
   )
-  if (context.target.entityType === 'composition' && identity === context.target.identity) {
+  if (entityType === 'composition' && context.target.entityType === 'composition' && identity === context.target.identity) {
     context.occurrences.push(makeOccurrence(context, {
       kind: 'composition',
       address,
@@ -89,7 +81,7 @@ function visitComposition(
     }))
   }
 
-  const nextAncestors = new Set(ancestors).add(identity)
+  const nextAncestors = new Set(ancestors).add(key)
   for (const runtime of artifact.payload.runtimes) {
     const runtimePath = [...path, runtime.name]
     if (runtime.kind === 'composition') {
@@ -208,18 +200,20 @@ function compositionMayExecuteQueries(
   identity: string,
   artifacts: RuntimeArtifactReader,
   ancestors: Set<string>,
+  entityType: 'project' | 'composition' = 'composition',
 ): boolean {
-  if (ancestors.has(identity)) {
+  const key = `${entityType}:${identity}`
+  if (ancestors.has(key)) {
     return false
   }
-  const artifact = artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
+  const artifact = artifacts.getArtifact<CompositionProgramPayload>(entityType, identity)
   if (!artifact || artifact.status === 'error') {
     return false
   }
   if (artifact.payload.graph.mounts.length > 0) {
     return true
   }
-  const nextAncestors = new Set(ancestors).add(identity)
+  const nextAncestors = new Set(ancestors).add(key)
   return artifact.payload.runtimes
     .filter(runtime => runtime.kind === 'composition')
     .some(runtime => compositionMayExecuteQueries(runtime.identity, artifacts, nextAncestors))
@@ -235,10 +229,12 @@ function runtimeComponentIdentity(runtime: CompositionRuntimeDescriptor): string
   return null
 }
 
-function entityTitle(entityType: 'composition' | 'component-sfc', identity: string): string {
-  const model = entityType === 'composition'
-    ? Endge.domain.getComposition(identity)
-    : Endge.domain.getComponentSFC(identity)
+function entityTitle(entityType: 'project' | 'composition' | 'component-sfc', identity: string): string {
+  const model = entityType === 'project'
+    ? Endge.domain.getProject(identity)
+    : entityType === 'composition'
+      ? Endge.domain.getComposition(identity)
+      : Endge.domain.getComponentSFC(identity)
   return model?.displayName || model?.name || identity
 }
 

@@ -45,7 +45,7 @@ describe('представление документа домена', () => {
     expect(getDomainDocumentPresentation('composition')).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', QUERY_COMPOSITION_PRESENTATION_KIND)).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', 'query')).toEqual(compositionPresentation)
-    expect(getDomainDocumentPresentation('composition', 'project')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', 'environment')).toEqual(compositionPresentation)
   })

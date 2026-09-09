@@ -9,9 +9,11 @@ import {
   Endge,
   projectCompositionI18nCatalogs,
   RComposition,
+  RProject,
 } from '@endge/core'
 
 export interface CompositionI18nContextInput {
+  documentType?: 'composition' | 'project'
   documentId: string | number | undefined
   identity: string | undefined
   source: string
@@ -26,43 +28,27 @@ export function resolveCompositionI18nContext(
   input: CompositionI18nContextInput,
 ): SourceLanguageI18nContext | undefined {
   try {
-    const persisted = input.documentId == null
-      ? Endge.domain.getComposition(String(input.identity ?? '').trim())
-      : Endge.domain.getComposition(input.documentId)
+    const documentType = input.documentType ?? 'composition'
+    const id = input.documentId ?? String(input.identity ?? '').trim()
+    const persisted = documentType === 'project' ? Endge.domain.getProject(id) : Endge.domain.getComposition(id)
     if (!persisted) {
       return undefined
     }
-
-    const draft = RComposition.fromPlain({
-      id: persisted.id,
-      identity: persisted.identity,
-      name: persisted.name,
-      displayName: persisted.displayName,
-      description: persisted.description,
-      folderId: persisted.folderId,
-      active: persisted.active,
-      kind: persisted.kind,
-      kindIdentity: persisted.kindIdentity,
-      source: input.source,
-      sourceVersion: persisted.sourceVersion,
-    })
-    const artifact = Endge.compiler.compileCompositionArtifact(draft)
+    const plain = { ...persisted, source: input.source }
+    const artifact = documentType === 'project'
+      ? Endge.compiler.compileProjectArtifact(RProject.fromPlain(plain))
+      : Endge.compiler.compileCompositionArtifact(RComposition.fromPlain(plain))
     if (artifact.status === 'error') {
       return undefined
     }
 
-    const projectIdentity = Endge.context.getCurrentProject()
-    const rootIdentities = Endge.domain.getCompositions()
-      .filter(item => item.kind === 'project'
-        && item.kindIdentity === projectIdentity
-        && item.active !== false
-        && !item.deletedAt)
-      .map(item => item.identity)
-      .sort((left, right) => left.localeCompare(right))
+    const projectIdentity = documentType === 'project' ? persisted.identity : Endge.context.getCurrentProject()
     const occurrences = projectCompositionI18nCatalogs({
       artifacts: createOverlayArtifactReader(artifact),
-      rootIdentities,
+      rootIdentities: [projectIdentity],
+      rootEntityType: 'project',
       targetIdentity: persisted.identity,
+      targetEntityType: documentType,
     })
     if (!occurrences.length) {
       return undefined

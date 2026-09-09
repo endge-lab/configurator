@@ -870,7 +870,6 @@ export function attachResolvedTypeTree(
 const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {
   query: 'root-queries',
   tenant: 'root-tenants',
-  project: 'root-projects',
   environment: 'root-environments',
   workspace: 'root-compositions',
 }
@@ -878,7 +877,6 @@ const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {
 const COMPOSITION_KIND_SECTION: Partial<Record<RCompositionKind, DomainSectionType>> = {
   query: DomainSectionType.Query,
   tenant: DomainSectionType.Tenant,
-  project: DomainSectionType.Project,
   environment: DomainSectionType.Environment,
 }
 

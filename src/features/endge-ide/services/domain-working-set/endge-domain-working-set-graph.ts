@@ -19,11 +19,11 @@ const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
   'store',
   'filter',
   'composition',
+  'project',
   'style',
 ])
 
 const CONTEXTUAL_COMPOSITION_OWNER_TYPES = new Set([
-  'project',
   'tenant',
   'query',
   'environment',
@@ -78,15 +78,13 @@ function getOwner(ref: DomainWorkingSetRef): DomainWorkingSetRef | null {
     return null
   }
 
-  const owner = composition.kind === 'project'
-    ? Endge.domain.getProject(ownerIdentity)
-    : composition.kind === 'tenant'
-      ? Endge.domain.getTenant(ownerIdentity)
-      : composition.kind === 'query'
-        ? Endge.domain.getQuery(ownerIdentity)
-        : composition.kind === 'environment'
-          ? Endge.domain.getEnvironment(ownerIdentity)
-          : null
+  const owner = composition.kind === 'tenant'
+    ? Endge.domain.getTenant(ownerIdentity)
+    : composition.kind === 'query'
+      ? Endge.domain.getQuery(ownerIdentity)
+      : composition.kind === 'environment'
+        ? Endge.domain.getEnvironment(ownerIdentity)
+        : null
 
   return {
     entityType: composition.kind,

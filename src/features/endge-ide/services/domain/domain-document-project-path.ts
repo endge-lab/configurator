@@ -54,7 +54,6 @@ const ROOT_IDENTITY_BY_DOCUMENT_TYPE: ReadonlyMap<string, string> = new Map([
 const COMPOSITION_ROOT_BY_KIND: ReadonlyMap<string, string> = new Map([
   ['query', 'root-queries'],
   ['tenant', 'root-tenants'],
-  ['project', 'root-projects'],
   ['environment', 'root-environments'],
   ['workspace', 'root-compositions'],
 ])
@@ -146,10 +145,6 @@ function getContextOwner(
   if (kind === 'tenant') {
     const document = Endge.domain.getTenant(identity)
     return document ? { document, documentType: 'tenant' } : null
-  }
-  if (kind === 'project') {
-    const document = Endge.domain.getProject(identity)
-    return document ? { document, documentType: 'project' } : null
   }
   if (kind === 'environment') {
     const document = Endge.domain.getEnvironment(identity)

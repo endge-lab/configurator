@@ -136,9 +136,6 @@ const activeOption = computed<DocumentCreateDescriptor>(() =>
 
 const createContext = computed(() => EndgeIDE.modals.createDocumentContext.value)
 const lockedDocumentType = computed(() => createContext.value?.documentType ?? null)
-const compositionOwner = computed(() =>
-  activeType.value === 'composition' ? createContext.value?.compositionOwner ?? null : null,
-)
 const updateOwnerStoreIdentity = computed(() =>
   activeType.value === 'update' ? createContext.value?.updateOwnerStoreIdentity ?? null : null,
 )
@@ -206,7 +203,7 @@ const formError = computed(() => {
 })
 
 /** Показывать выбор папки для секций, которые поддерживают folder placement. */
-const showFolderSelect = computed(() => activeOption.value.supportsFolder && !compositionOwner.value)
+const showFolderSelect = computed(() => activeOption.value.supportsFolder)
 
 /** Папки только текущей секции (по entityType): корень + вложенные под этим root. */
 const folderOptions = computed(() => {
@@ -310,7 +307,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   const displayName = name.value.trim() || id
   const normalizedDescription = description.value.trim() || null
   const isQueryComposition = activeType.value === QUERY_COMPOSITION_CREATE_KIND
-  const owner = compositionOwner.value
   const folder = showFolderSelect.value && selectedFolderId.value !== ROOT_FOLDER_VALUE
     ? selectedFolderId.value
     : isQueryComposition ? getQueryRootFolderId() : null
@@ -364,7 +360,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
   if (activeType.value === 'composition' || isQueryComposition) {
     const placement = resolveCompositionCreatePlacement({
       queryComposition: isQueryComposition,
-      owner,
     })
     return {
       ...base,
@@ -610,7 +605,6 @@ async function onSubmit(): Promise<void> {
       if (targetDocumentType === 'composition') {
         Object.assign(parsed, resolveCompositionCreatePlacement({
           queryComposition: isQueryComposition,
-          owner: compositionOwner.value,
         }))
       }
       if (isQueryComposition) {
@@ -679,7 +673,6 @@ async function onSubmit(): Promise<void> {
     if (targetDocumentType === 'composition') {
       const placement = resolveCompositionCreatePlacement({
         queryComposition: isQueryComposition,
-        owner: compositionOwner.value,
       })
       const compositionDraft = draft as RComposition
       compositionDraft.kind = placement.kind
@@ -810,15 +803,6 @@ function onCancel(): void {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div
-            v-if="compositionOwner"
-            class="rounded-md border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
-          >
-            {{ $t('uiText.projectBindingb8d0866f') }}
-            <span class="font-medium text-foreground">{{ compositionOwner.displayName || compositionOwner.identity }}</span>
-            <span class="ml-1 font-mono">({{ compositionOwner.identity }})</span>
           </div>
 
           <Tabs v-model="createMode" class="flex min-h-0 flex-1 flex-col">

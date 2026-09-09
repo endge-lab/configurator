@@ -3,15 +3,16 @@ import type { EndgeConfigurationContribution } from '@endge/core'
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 import type { WorkflowNodeData } from '@/features/project-workflow/domain/ProjectWorkflow'
 
-import { DomainSectionType, Endge } from '@endge/core'
-import { useDomainStore } from '@endge/ui-vue'
+import { Endge } from '@endge/core'
 import {
+  Code2,
+  FileJson,
   Loader2,
-  Map,
   Play,
   Save,
   Settings2,
   SlidersHorizontal,
+  TriangleAlert,
   Workflow,
 } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
@@ -30,13 +31,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
-import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
-import OpenEntityButton from '@/features/endge-ide/ui/components/OpenEntityButton.vue'
-import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{
@@ -46,21 +48,39 @@ const props = defineProps<{
 const ProjectWorkflow_View = defineAsyncComponent(() => import('@/features/project-workflow/ui/ProjectWorkflow_View.vue'))
 const { t } = useI18n()
 
-const domainStore = useDomainStore()
 const editor = computed<RProjectEditor | null>(
   () => props.tabContext?.editor ?? null,
 )
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'general',
-  ['general', 'workflow', 'navigation', 'configuration'] as const,
+  ['general', 'composition', 'workflow', 'configuration', 'artifact', 'diagnostics'] as const,
 )
 const launchLoading = ref(false)
-const tabButtons = computed(() => [
-  { value: 'general', icon: Settings2, label: 'Основное' },
-  { value: 'workflow', icon: Workflow, label: t('projectWorkflow.title') },
-  { value: 'navigation', icon: Map, label: 'Навигация' },
-  { value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' },
+const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
+const artifactJson = computed(() => JSON.stringify(
+  editor.value ? Endge.source.compile('composition', editor.value.source).artifact ?? null : null,
+  null,
+  2,
+))
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('project', editor.value))
+const tabGroups = computed(() => [
+  {
+    label: 'Разделы проекта',
+    items: [
+      { value: 'general', icon: Settings2, label: 'Основное' },
+      { value: 'composition', icon: Code2, label: 'Композиция' },
+      { value: 'workflow', icon: Workflow, label: t('projectWorkflow.title') },
+    ],
+  },
+  {
+    label: 'Конфигурация проекта',
+    items: [{ value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' }],
+  },
+] as const)
+const runtimeTabs = computed(() => [
+  { value: 'diagnostics', icon: TriangleAlert, label: t('uiText.diagnosis9ba1e22a') },
+  { value: 'artifact', icon: FileJson, label: t('uiText.artifactA171cb33') },
 ] as const)
 
 watch([activeTab, editor], ([tab, model]) => {
@@ -70,7 +90,10 @@ watch([activeTab, editor], ([tab, model]) => {
 }, { immediate: true })
 
 function openWorkflowDocument(data: WorkflowNodeData): void {
-  if (data.documentType) {
+  if (data.documentType === 'project' && data.identity === editor.value?.identity) {
+    activeTab.value = 'composition'
+  }
+  else if (data.documentType) {
     EndgeIDE.tabs.openDocument(data.identity, data.documentType)
   }
 }
@@ -85,70 +108,6 @@ const configuration = computed<EndgeConfigurationContribution>({
 const upstreamConfiguration = computed(() =>
   Endge.configuration.resolveUpstream('project'),
 )
-
-const SELECT_NONE = '__none__'
-
-function normalizeRelationId(value: unknown): number | null {
-  if (value == null) {
-    return null
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null
-  }
-  const text = String(value).trim()
-  if (!text) {
-    return null
-  }
-  const id = Number(text)
-  return Number.isFinite(id) ? id : null
-}
-
-const navigationOptions = computed(() => {
-  const list = domainStore.navigations ?? []
-  return [
-    { value: SELECT_NONE, label: '- не выбран -' },
-    ...list
-      .map(
-        (n: {
-          id?: string | number
-          identity?: string
-          displayName?: string
-          name?: string
-        }) => ({
-          value: n?.id != null ? String(n.id) : '',
-          label:
-            (
-              n?.displayName
-              ?? n?.name
-              ?? n?.identity
-              ?? String(n?.id ?? '')
-            ).trim() || String(n?.id ?? ''),
-        }),
-      )
-      .filter((o: { value: string }) => o.value.length > 0),
-  ]
-})
-
-function navigationIdForSelect(): string {
-  const v = editor.value?.navigationId
-  return v != null ? String(v) : SELECT_NONE
-}
-
-function onNavigationSelect(value: string | string[] | null): void {
-  if (!editor.value) {
-    return
-  }
-  const selected = Array.isArray(value) ? value[0] : value
-  editor.value.navigationId
-    = selected === SELECT_NONE ? null : normalizeRelationId(selected)
-}
-
-function onNavigationDrop(id: string | number): void {
-  if (!editor.value) {
-    return
-  }
-  editor.value.navigationId = normalizeRelationId(id)
-}
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -173,34 +132,39 @@ async function launchRuntimePreview(): Promise<void> {
     v-if="editor"
     :document-id="editor.id"
     :identity="editor.identity"
+    :display-name="editor.displayName"
+    document-type="project"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
   >
     <template #center>
       <TooltipProvider>
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-          <Tooltip v-for="item in tabButtons" :key="item.value">
-            <TooltipTrigger as-child>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                class="h-7 w-7"
-                :class="
-                  activeTab === item.value
-                    ? 'bg-editor-control shadow-sm'
-                    : 'text-muted-foreground'
-                "
-                :aria-label="item.label"
-                @click="activeTab = item.value"
-              >
-                <component :is="item.icon" class="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{{ item.label }}</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <Separator orientation="vertical" class="mx-0.5 h-5" />
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <template v-for="group in tabGroups" :key="group.label">
+          <div role="group" :aria-label="group.label" class="flex items-center rounded-md border bg-muted/40 p-0.5">
+            <Tooltip v-for="item in group.items" :key="item.value">
+              <TooltipTrigger as-child>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  class="h-7 w-7"
+                  :class="
+                    activeTab === item.value
+                      ? 'bg-editor-control shadow-sm'
+                      : 'text-muted-foreground'
+                  "
+                  :aria-label="item.label"
+                  @click="activeTab = item.value"
+                >
+                  <component :is="item.icon" class="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ item.label }}</TooltipContent>
+            </Tooltip>
+          </div>
+          <Separator orientation="vertical" class="mx-0.5 h-5" />
+        </template>
+        <div role="group" aria-label="Запуск и диагностика" class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -219,6 +183,22 @@ async function launchRuntimePreview(): Promise<void> {
             <TooltipContent>
               {{ $t('uiText.runProjectRuntimePreviewCtrlEnter64161c9b') }}
             </TooltipContent>
+          </Tooltip>
+          <Tooltip v-for="item in runtimeTabs" :key="item.value">
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="activeTab === item.value ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                :aria-label="item.label"
+                @click="activeTab = item.value"
+              >
+                <component :is="item.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ item.label }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -248,10 +228,25 @@ async function launchRuntimePreview(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div class="min-h-0 flex-1" :class="activeTab === 'workflow' ? '' : 'bg-muted/25 p-4'">
-      <div class="h-full w-full overflow-hidden" :class="activeTab === 'workflow' ? '' : 'rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface'">
+    <template #right>
+      <SourceFormatButton v-if="activeTab === 'composition'" @click="sourceEditorRef?.formatDocument()" />
+    </template>
+
+    <div class="min-h-0 flex-1" :class="['workflow', 'composition'].includes(activeTab) ? '' : 'bg-muted/25 p-4'">
+      <div class="h-full w-full overflow-hidden" :class="['workflow', 'composition'].includes(activeTab) ? '' : 'rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface'">
+        <CompositionSourceEditor
+          v-if="activeTab === 'composition'"
+          ref="sourceEditorRef"
+          v-model="editor.source"
+          class="h-full"
+          owner-type="project"
+          :owner-id="editor.id"
+          :owner-identity="editor.identity"
+        />
+        <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto p-4 text-xs">{{ artifactJson }}</pre>
+        <EntityProblemsPanel v-else-if="activeTab === 'diagnostics' && diagnosticsEntityRef" :entity-ref="diagnosticsEntityRef" />
         <ProjectWorkflow_View
-          v-if="activeTab === 'workflow' && editor.workflow"
+          v-else-if="activeTab === 'workflow' && editor.workflow"
           :workflow="editor.workflow"
           @open-document="openWorkflowDocument"
         />
@@ -310,37 +305,6 @@ async function launchRuntimePreview(): Promise<void> {
                       && (editor.order = v === '' || v == null ? null : Number(v))
                   "
                 />
-              </div>
-            </section>
-          </div>
-        </ScrollArea>
-
-        <ScrollArea v-else-if="activeTab === 'navigation'" class="h-full">
-          <div class="w-full p-6 lg:p-8">
-            <section class="max-w-2xl space-y-4">
-              <div class="space-y-2">
-                <Label>{{ $t('uiText.projectNavigation8cb2761e') }}</Label>
-                <DomainEntityDropTarget
-                  :accept-section-types="[DomainSectionType.Navigation]"
-                  @update:model-value="onNavigationDrop"
-                >
-                  <div class="flex items-center gap-1">
-                    <SearchableSelect
-                      :model-value="navigationIdForSelect()"
-                      :options="navigationOptions"
-                      placeholder="Выберите навигацию"
-                      trigger-class="flex-1 min-w-0 h-9"
-                      @update:model-value="onNavigationSelect"
-                    />
-                    <OpenEntityButton
-                      :entity-id="editor?.navigationId ?? null"
-                      :section-type="DomainSectionType.Navigation"
-                    />
-                  </div>
-                </DomainEntityDropTarget>
-                <p class="text-xs text-muted-foreground">
-                  {{ $t('uiText.mainMenuProjectApplicationNavigationc0297fc0') }}
-                </p>
               </div>
             </section>
           </div>

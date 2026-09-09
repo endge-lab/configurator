@@ -6,6 +6,7 @@ import type {
   CompositionSession,
   EndgeStyleSheetArtifact,
   ProgramArtifact,
+  ProjectRuntimeHost,
   ProjectRuntimeSession,
   RuntimeArtifactReader,
   RuntimeHost,
@@ -22,7 +23,7 @@ import type {
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { ComponentPreviewContext } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 
-import { Endge, materializeCompositionPreviewProps, RComponentSFC } from '@endge/core'
+import { Endge, materializeCompositionPreviewProps, RComponentSFC, RProject } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -67,7 +68,7 @@ export class RuntimePreviewInstance {
     return selected ? this._collectInactiveRenderableChildren(selected) : []
   })
 
-  private _project: ProjectRuntimeSession<CompositionRuntimeHost> | null = null
+  private _project: ProjectRuntimeSession<ProjectRuntimeHost> | null = null
   private _composition: CompositionSession<CompositionRuntimeHost> | null = null
   private _component: ComponentSFCRuntimeHost | null = null
   private _componentContext: ComponentPreviewContext | null = null
@@ -145,9 +146,7 @@ export class RuntimePreviewInstance {
           this.contextualFocusComponentIdentity.value = occurrence.renderComponentIdentity
         }
         else {
-          for (const handle of this._project.compositions.getAll()) {
-            await handle.activate()
-          }
+          await this._project.composition.activate()
         }
       }
       else if (this.target.entityType === 'composition') {
@@ -244,10 +243,8 @@ export class RuntimePreviewInstance {
       return
     }
     if (this._project) {
-      for (const handle of this._project.compositions.getAll()) {
-        if (handle.state === 'active') {
-          await handle.pause()
-        }
+      if (this._project.composition.state === 'active') {
+        await this._project.composition.pause()
       }
     }
     else if (this._composition) {
@@ -269,10 +266,8 @@ export class RuntimePreviewInstance {
       return
     }
     if (this._project) {
-      for (const handle of this._project.compositions.getAll()) {
-        if (handle.state === 'paused') {
-          await handle.resume()
-        }
+      if (this._project.composition.state === 'paused') {
+        await this._project.composition.resume()
       }
     }
     else if (this._composition) {
@@ -449,6 +444,19 @@ export class RuntimePreviewInstance {
   }
 
   private _prepareArtifactReader(): RuntimeArtifactReader {
+    if (this.target.entityType === 'project' && this._draft && !this._contextual) {
+      const persisted = Endge.domain.getProject(this.target.identity)
+      if (!persisted) {
+        throw new Error(`[RuntimePreview] Project "${this.target.identity}" is unavailable.`)
+      }
+      const model = RProject.fromPlain({ ...persisted.toPlain(), ...this._draft })
+      const artifact = Endge.compiler.compileProjectArtifact(model)
+      if (artifact.status === 'error') {
+        throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
+          ?? 'Project source содержит ошибки.')
+      }
+      return createOverlayArtifactReader(artifact)
+    }
     if (!this._contextual || !this._draft) {
       return Endge.program
     }
@@ -623,15 +631,6 @@ export class RuntimePreviewInstance {
     if (!node.composition || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
       return
     }
-    if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._project) {
-      const handle = this._project.compositions.require(node.composition.rootIdentity)
-      if (operation === 'pause') {
-        await handle.pause()
-      }
-      else { await handle.deactivate() }
-      this.refresh()
-      return
-    }
     if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._composition) {
       const scope = this._composition.host.getScope('scope_default')
       if (operation === 'pause') {
@@ -672,10 +671,13 @@ export class RuntimePreviewInstance {
     this.refresh()
   }
 
-  private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost> {
-    let host: CompositionRuntimeHost
+  private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost<'composition' | 'project'>> {
+    let host: CompositionRuntimeHost<'composition' | 'project'>
     if (this._project) {
-      host = (await this._project.compositions.require(address.rootIdentity).activate()).host
+      if (address.rootIdentity !== this._project.composition.identity) {
+        throw new Error(`[RuntimePreview] Project "${address.rootIdentity}" belongs to another session.`)
+      }
+      host = (await this._project.composition.activate()).host
     }
     else if (this._composition?.host.entityIdentity === address.rootIdentity) {
       host = this._composition.host
@@ -691,8 +693,8 @@ export class RuntimePreviewInstance {
     return host
   }
 
-  private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost | null {
-    let host = this._project?.compositions.get(address.rootIdentity)?.host
+  private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost<'composition' | 'project'> | null {
+    let host = (this._project?.composition.identity === address.rootIdentity ? this._project.composition.host : null)
       ?? (this._composition?.host.entityIdentity === address.rootIdentity ? this._composition.host : null)
     if (!host) {
       return null
@@ -710,7 +712,7 @@ export class RuntimePreviewInstance {
   private _compositionState(address: RuntimePreviewCompositionAddress): RuntimePreviewLifecycleState {
     if (!address.invocationPath.length) {
       if (this._project) {
-        return handleState(this._project.compositions.get(address.rootIdentity)?.state)
+        return handleState(this._project.composition.identity === address.rootIdentity ? this._project.composition.state : undefined)
       }
       return scopeState(this._composition?.host.getScope('scope_default') ?? null)
     }
@@ -726,10 +728,9 @@ export class RuntimePreviewInstance {
     }
     const runtimes: RuntimeHost<any, any>[] = []
     if (selected.kind === 'project') {
-      for (const handle of this._project?.compositions.getAll() ?? []) {
-        if (handle.state === 'active' && handle.host) {
-          runtimes.push(...this._renderableChildren(handle.host))
-        }
+      const handle = this._project?.composition
+      if (handle?.state === 'active' && handle.host) {
+        runtimes.push(...this._renderableChildren(handle.host))
       }
     }
     else if (selected.kind === 'component-sfc' && this._component && isPreviewRenderableActive(this._component)) {
@@ -758,7 +759,7 @@ export class RuntimePreviewInstance {
     this.renderables.value = runtimes.map((runtime, index) => toRenderable(runtime, index))
   }
 
-  private _renderableChildren(host: CompositionRuntimeHost, scopePath?: string | null): RuntimeHost<any, any>[] {
+  private _renderableChildren(host: CompositionRuntimeHost<'composition' | 'project'>, scopePath?: string | null): RuntimeHost<any, any>[] {
     return host.getChildren()
       .filter(child => child.descriptor.kind !== 'composition')
       .filter(child => !scopePath || child.descriptor.scopePath === scopePath || child.descriptor.scopePath.startsWith(`${scopePath}.`))

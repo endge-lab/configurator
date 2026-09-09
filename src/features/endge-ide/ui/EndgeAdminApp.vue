@@ -122,7 +122,7 @@ async function launchCurrentProjectRuntime(): Promise<void> {
       identity,
     })
     if (launched) {
-      EndgeIDE.runtimePreview.requestTreeExpansion('project-compositions')
+      EndgeIDE.runtimePreview.requestTreeExpansion('project-content')
     }
   }
   finally {

@@ -40,12 +40,13 @@ describe('запрос запуска Runtime Preview', () => {
     expect(createRuntimePreviewLaunchRequest(store)?.draft?.source).toBe(store.source)
   })
 
-  it('запускает проект без синтетического черновика и отклоняет неподдерживаемые редакторы', () => {
-    const project = Object.assign(new RProjectEditor(), { identity: 'operations' })
+  it('передаёт собственный Source проекта в Preview и отклоняет неподдерживаемые редакторы', () => {
+    const project = Object.assign(new RProjectEditor(), { id: 10, identity: 'operations', displayName: 'Operations', source: 'defineComposition({ runtimes: {} })' })
 
     expect(createRuntimePreviewLaunchRequest(project)).toEqual({
       entityType: 'project',
       identity: 'operations',
+      draft: { id: 10, identity: 'operations', name: 'Operations', displayName: 'Operations', source: project.source, sourceVersion: 1 },
     })
     expect(createRuntimePreviewLaunchRequest({ identity: 'query' })).toBeNull()
   })

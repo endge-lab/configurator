@@ -23,6 +23,7 @@ export type CompositionDependencyTreeResult = DocumentDependencyTreeResult
 export type CompositionDependencyDiagnostic = DocumentDependencyDiagnostic
 
 export interface CompositionDependencyTreeInput {
+  documentType?: 'composition' | 'project'
   identity: string
   displayName?: string | null
   source: string
@@ -57,10 +58,11 @@ export function buildCompositionDependencyTree(
 
   const identity
     = String(input.identity || 'draft-composition').trim() || 'draft-composition'
-  const visual = resolveDomainEntityPresentation('composition', identity)
+  const documentType = input.documentType ?? 'composition'
+  const visual = resolveDomainEntityPresentation(documentType, identity)
   const root: CompositionDependencyNode = {
-    id: `composition:${identity}`,
-    kind: 'composition',
+    id: `${documentType}:${identity}`,
+    kind: documentType === 'project' ? 'document' : 'composition',
     identity,
     alias: null,
     title: String(input.displayName || visual.title || identity),
@@ -76,7 +78,7 @@ export function buildCompositionDependencyTree(
   root.children = buildCompositionContents(
     payload,
     root.id,
-    new Set([identity]),
+    new Set(documentType === 'composition' ? [identity] : []),
   )
   return { status: 'valid', root, diagnostics }
 }
@@ -243,15 +245,13 @@ function makeCompositionOwnerNode(
 
   const ownerType = composition.kind as Extract<
     DomainDocumentType,
-    'project' | 'tenant' | 'environment' | 'workspace'
+    'tenant' | 'environment' | 'workspace'
   >
-  const exists = ownerType === 'project'
-    ? Boolean(Endge.domain.getProject(identity))
-    : ownerType === 'tenant'
-      ? Boolean(Endge.domain.getTenant(identity))
-      : ownerType === 'environment'
-        ? Boolean(Endge.domain.getEnvironment(identity))
-        : Endge.workspace.current.identity === identity
+  const exists = ownerType === 'tenant'
+    ? Boolean(Endge.domain.getTenant(identity))
+    : ownerType === 'environment'
+      ? Boolean(Endge.domain.getEnvironment(identity))
+      : Endge.workspace.current.identity === identity
   const node = makeDocumentNode({
     id: `${occurrenceId}/owner:${ownerType}:${identity}`,
     kind: 'runtime',

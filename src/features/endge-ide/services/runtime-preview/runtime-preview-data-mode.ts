@@ -11,7 +11,7 @@ export function createRuntimePreviewArtifactReader(
   return {
     getArtifact: <TPayload>(entityType: Parameters<RuntimeArtifactReader['getArtifact']>[0], id: string | number) => {
       const artifact = base.getArtifact<TPayload>(entityType, id)
-      if (!artifact || entityType !== 'composition') {
+      if (!artifact || (entityType !== 'composition' && entityType !== 'project')) {
         return artifact
       }
       return {

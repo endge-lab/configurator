@@ -42,8 +42,6 @@ export function validateRuntimePreviewContext(
   }
 
   switch (composition.kind) {
-    case 'project':
-      return validateCoordinate('проект', composition.kindIdentity, Endge.context.getCurrentProject())
     case 'environment':
       return validateCoordinate('среду', composition.kindIdentity, Endge.context.getCurrentEnvironment())
     case 'tenant':

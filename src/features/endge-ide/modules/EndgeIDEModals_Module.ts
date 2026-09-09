@@ -1,5 +1,4 @@
 import type { DomainDocumentType, DomainSectionType } from '@endge/core'
-import type { CompositionCreateOwner } from '@/features/endge-ide/services/domain/composition-create'
 
 import { ref } from 'vue'
 
@@ -7,7 +6,6 @@ export interface CreateDocumentContext {
   sectionType?: DomainSectionType
   folderId?: string | number | null
   documentType?: DomainDocumentType
-  compositionOwner?: CompositionCreateOwner
   updateOwnerStoreIdentity?: string
 }
 

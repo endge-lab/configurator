@@ -40,6 +40,14 @@ export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePrevi
     return {
       entityType: 'project',
       identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        name: editor.displayName,
+        displayName: editor.displayName,
+        source: editor.source,
+        sourceVersion: editor.sourceVersion,
+      },
     }
   }
 

@@ -150,42 +150,42 @@ describe('построение дерева домена', () => {
     })
   })
 
-  it('привязывает Composition проекта к её owner и игнорирует сохранённую папку', () => {
+  it('привязывает Composition тенанта к её owner и игнорирует сохранённую папку', () => {
     const tree = buildDomainTree({
       rootToSection: {
-        'root-projects': {
-          section: DomainSectionType.Project,
+        'root-tenants': {
+          section: DomainSectionType.Tenant,
           items: () => [{
             id: 7,
-            identity: 'project-dev',
-            displayName: 'Project Dev',
-            folderId: 'root-projects',
+            identity: 'tenant-dev',
+            displayName: 'Tenant Dev',
+            folderId: 'root-tenants',
           }],
         },
       },
-      rootOrder: ['root-projects'],
-      rootLabels: { 'root-projects': 'Проекты' },
+      rootOrder: ['root-tenants'],
+      rootLabels: { 'root-tenants': 'Тенанты' },
       allFolders: [
-        { id: 'root-projects', identity: 'root-projects', name: 'Projects', parent: null },
-        { id: 'unrelated', identity: 'unrelated', name: 'Unrelated', parent: 'root-projects' },
+        { id: 'root-tenants', identity: 'root-tenants', name: 'Tenants', parent: null },
+        { id: 'unrelated', identity: 'unrelated', name: 'Unrelated', parent: 'root-tenants' },
       ],
       contextualCompositions: [{
         id: 21,
-        identity: 'project-dev-startup',
-        displayName: 'Project startup',
-        kind: 'project',
-        kindIdentity: 'project-dev',
+        identity: 'tenant-dev-startup',
+        displayName: 'Tenant startup',
+        kind: 'tenant',
+        kindIdentity: 'tenant-dev',
         folderId: 'unrelated',
       }],
     })
 
-    const project = tree[0]?.children?.find(node => node.type === 'file' && node.identity === 'project-dev')
-    expect(project?.children).toEqual([
+    const tenant = tree[0]?.children?.find(node => node.type === 'file' && node.identity === 'tenant-dev')
+    expect(tenant?.children).toEqual([
       expect.objectContaining({
         id: '21',
-        identity: 'project-dev-startup',
+        identity: 'tenant-dev-startup',
         docType: 'composition',
-        presentationKind: 'project',
+        presentationKind: 'tenant',
       }),
     ])
   })

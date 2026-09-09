@@ -26,6 +26,7 @@ import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/u
 
 const props = defineProps<{
   modelValue: string
+  ownerType?: 'composition' | 'project'
   ownerId?: string | number
   ownerIdentity?: string
 }>()
@@ -42,6 +43,7 @@ const monacoAdapter = useEndgeSourceMonaco({
   ownerIdentity: () => props.ownerIdentity,
   languageContext: currentSource => ({
     i18n: resolveCompositionI18nContext({
+      documentType: props.ownerType,
       documentId: props.ownerId,
       identity: props.ownerIdentity,
       source: currentSource,

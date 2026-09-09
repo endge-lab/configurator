@@ -24,7 +24,7 @@ vi.mock('@endge/core', async importOriginal => ({
       getCompositions: () => compositions,
     },
     program: {
-      getArtifact: (type: string, identity: string) => type === 'composition' ? artifacts.get(identity) ?? null : null,
+      getArtifact: (type: string, identity: string) => (type === 'composition' || type === 'project') ? artifacts.get(identity) ?? null : null,
     },
   },
 }))
@@ -37,10 +37,10 @@ describe('построитель дерева Runtime Preview', () => {
 
   it('разворачивает scope_default и сохраняет именованные scopes и вложенные Compositions', () => {
     compositions.push(
-      { identity: 'project-entry', displayName: 'Entry', kind: 'project', kindIdentity: 'airport', active: true },
+      { identity: 'project-entry', displayName: 'Entry', kind: 'library', kindIdentity: null, active: true },
       { identity: 'child', displayName: 'Child', kind: 'library', active: true },
     )
-    artifacts.set('project-entry', artifact(payload({
+    artifacts.set('airport', artifact(payload({
       data: [
         { name: 'flights', path: 'flights', kind: 'store', identity: 'flights', scopePath: 'scope_default' },
         { name: 'airports', path: 'airports', kind: 'vocab', identity: 'airports', scopePath: 'scope_default' },
@@ -65,7 +65,7 @@ describe('построитель дерева Runtime Preview', () => {
     })))
 
     const [project] = buildRuntimePreviewTree({ entityType: 'project', identity: 'airport' })
-    const entry = project?.children[0]
+    const entry = project
 
     expect(project).toMatchObject({
       title: 'Airport',
@@ -73,8 +73,9 @@ describe('построитель дерева Runtime Preview', () => {
     })
     expect(entry?.children.map(node => node.kind)).toEqual(['group', 'runtime', 'scope'])
     expect(entry).toMatchObject({
-      title: 'Entry',
-      presentation: { icon: 'Network', colorClass: 'text-violet-500' },
+      kind: 'project',
+      title: 'Airport',
+      presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
     })
     const dependencies = entry?.children[0]
     expect(dependencies).toMatchObject({

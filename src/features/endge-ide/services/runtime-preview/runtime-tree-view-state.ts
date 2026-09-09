@@ -9,7 +9,7 @@ const STATE_KEY = 'configurator.runtime-preview.tree-view'
 
 export type RuntimeTreeExpansionPreset
   = | 'collapsed'
-    | 'project-compositions'
+    | 'project-content'
     | 'expanded'
 
 export interface RuntimeTreeViewEntry {
@@ -58,7 +58,7 @@ export function collectRuntimeTreeExpansion(
   const expanded = new Set<string>()
   for (const entry of entries) {
     for (const node of entry.tree) {
-      collectNodeExpansion(expanded, entry.key, node, null, preset, options)
+      collectNodeExpansion(expanded, entry.key, node, preset, options)
     }
   }
   return expanded
@@ -167,21 +167,19 @@ function collectNodeExpansion(
   expanded: Set<string>,
   entryKey: string,
   node: RuntimePreviewTreeNode,
-  parentKind: RuntimePreviewTreeNode['kind'] | null,
   preset: RuntimeTreeExpansionPreset,
   options: RuntimeTreeExpansionOptions,
 ): void {
-  if (node.children.length > 0 && shouldExpandNode(node, parentKind, preset, options)) {
+  if (node.children.length > 0 && shouldExpandNode(node, preset, options)) {
     expanded.add(runtimeTreeNodeExpansionKey(entryKey, node.id))
   }
   for (const child of node.children) {
-    collectNodeExpansion(expanded, entryKey, child, node.kind, preset, options)
+    collectNodeExpansion(expanded, entryKey, child, preset, options)
   }
 }
 
 function shouldExpandNode(
   node: RuntimePreviewTreeNode,
-  parentKind: RuntimePreviewTreeNode['kind'] | null,
   preset: RuntimeTreeExpansionPreset,
   options: RuntimeTreeExpansionOptions,
 ): boolean {
@@ -196,8 +194,7 @@ function shouldExpandNode(
   }
   return (
     node.kind === 'project'
-    || (node.kind === 'composition'
-      && (parentKind === 'project' || node.parentId == null))
+    || (node.kind === 'composition' && node.parentId == null)
   )
 }
 

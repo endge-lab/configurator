@@ -271,34 +271,29 @@ export class EndgeIDETabs_Module {
     if (editor.workflow.initialized && !refresh) {
       return
     }
-    const identity = Endge.domain.getProject(editor.id)?.identity ?? editor.identity
-    const compositions = Endge.domain.getCompositions()
-      .filter(item => item.kind === 'project' && item.kindIdentity === identity && !item.deletedAt)
-      .sort((left, right) => left.identity.localeCompare(right.identity))
-    const roots: WorkflowDependency[] = compositions.map((composition) => {
-      const result = buildCompositionDependencyTree({
-        identity: composition.identity,
-        displayName: composition.displayName,
-        source: composition.source,
-      })
-      return {
-        ...(result.root ?? {
-          id: `composition:${composition.identity}`,
-          kind: 'composition',
-          identity: composition.identity,
-          title: composition.displayName || composition.identity,
-          ...getDomainDocumentPresentation('composition'),
-          alias: null,
-          activationMode: null,
-          status: 'compile-error' as const,
-          children: [],
-        }),
-        documentType: 'composition',
-        inactive: composition.active === false,
-        diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
-      }
+    const result = buildCompositionDependencyTree({
+      documentType: 'project',
+      identity: editor.identity,
+      displayName: editor.displayName,
+      source: editor.source,
     })
-    editor.workflow.replaceRoots(roots)
+    const root: WorkflowDependency = {
+      ...(result.root ?? {
+        id: `project:${editor.identity}`,
+        kind: 'project',
+        identity: editor.identity,
+        title: editor.displayName || editor.identity,
+        alias: null,
+        activationMode: null,
+        status: 'compile-error' as const,
+        children: [],
+      }),
+      ...getDomainDocumentPresentation('project'),
+      kind: 'project',
+      documentType: 'project',
+      diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
+    }
+    editor.workflow.replaceRoots([root])
   }
 
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
@@ -512,6 +507,9 @@ export class EndgeIDETabs_Module {
       return false
     }
     this.openDocument(target.documentId, target.documentType)
+    if (target.documentType === 'project') {
+      this._tabsApi.setTabViewState(`project-${target.documentId}`, 'editor.active-tab', { version: 1, value: 'composition' })
+    }
     return true
   }
 
@@ -675,6 +673,7 @@ export class EndgeIDETabs_Module {
       'data-view': 'DataView',
       'filter': 'Filter',
       'i18n-bundles': 'Словарь переводов',
+      'project': 'Project',
       'mock': 'Mock',
       'query': 'Query',
       'store': 'Store',

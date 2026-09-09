@@ -28,8 +28,9 @@ export class RProjectEditor {
   description: string | null = null
   slug: string | null = null
   order: number | null = null
-  navigationId: number | null = null
   allowedEnvironmentIds: number[] = []
+  source: string = ''
+  sourceVersion: number = 1
   configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
   /** Раскладка сохраняется в meta; структура и камера остаются в editor-сессии. */
   workflow = new ProjectWorkflow()
@@ -41,10 +42,11 @@ export class RProjectEditor {
     this.description = source.description ?? null
     this.slug = source.slug ?? null
     this.order = source.order ?? null
-    this.navigationId = normalizeRelationId(source.navigationId)
     this.allowedEnvironmentIds = Array.isArray(source.allowedEnvironmentIds)
       ? source.allowedEnvironmentIds.map(id => normalizeRelationId(id)).filter((id): id is number => id != null)
       : []
+    this.source = source.source
+    this.sourceVersion = source.sourceVersion
     this.configuration = clone(source.configuration)
     this.workflow = new ProjectWorkflow(readWorkflowLayout(source.meta))
   }
@@ -57,8 +59,9 @@ export class RProjectEditor {
     source.description = this.description ?? null
     source.slug = this.slug ?? null
     source.order = this.order ?? null
-    source.navigationId = this.navigationId ?? null
     source.allowedEnvironmentIds = Array.from(new Set(this.allowedEnvironmentIds))
+    source.source = this.source
+    source.sourceVersion = this.sourceVersion
     source.configuration = clone(this.configuration)
     source.meta = writeWorkflowLayout(source.meta, this.workflow.layout)
   }

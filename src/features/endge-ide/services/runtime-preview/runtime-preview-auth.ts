@@ -1,29 +1,30 @@
 import type { AuthProfileSchema, ProgramArtifact, QueryProgramPayload } from '@endge/core'
 import type { RuntimePreviewLaunchRequest } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
-import { Endge } from '@endge/core'
+import { Endge, RProject } from '@endge/core'
 
 /** Собирает только auth profiles Query, достижимых из запускаемого preview graph. */
 export function collectRuntimePreviewAuthProfiles(request: RuntimePreviewLaunchRequest): AuthProfileSchema[] {
-  const starts = request.entityType === 'project'
-    ? Endge.domain.getCompositions()
-        .filter(item => item.kind === 'project' && item.kindIdentity === request.identity && item.active !== false && !item.deletedAt)
-        .map(item => ({ entityType: 'composition', identity: item.identity }))
-    : [{ entityType: request.entityType, identity: request.identity }]
-  const queue = [...starts]
+  const projectDraft = request.entityType === 'project' && request.draft && !request.contextual
+    ? Endge.compiler.compileProjectArtifact(RProject.fromPlain({
+        ...Endge.domain.getProject(request.identity)?.toPlain(),
+        ...request.draft,
+        identity: request.identity,
+      }))
+    : null
+  const queue = [{ entityType: request.entityType as string, identity: request.identity }]
   const visited = new Set<string>()
   const identities = new Set<string>()
   while (queue.length) {
     const current = queue.shift()!
-    if (current.entityType === 'project') {
-      continue
-    }
     const key = `${current.entityType}:${current.identity}`
     if (visited.has(key)) {
       continue
     }
     visited.add(key)
-    const artifact = Endge.program.getArtifact(current.entityType as any, current.identity) as ProgramArtifact | null
+    const artifact = current.entityType === 'project' && projectDraft
+      ? projectDraft
+      : Endge.program.getArtifact(current.entityType as any, current.identity) as ProgramArtifact | null
     if (!artifact || artifact.status === 'error') {
       continue
     }
