@@ -76,8 +76,6 @@ const harness = vi.hoisted(() => {
       snapshotReleases.push(release)
       return { release }
     }),
-    runtimeDebuggerStart: vi.fn(),
-    runtimeDebuggerReset: vi.fn(),
   }
 })
 
@@ -88,15 +86,10 @@ vi.mock('@endge/raph', () => ({
 vi.mock('@endge/core', () => ({
   Endge: {
     runtime: { acquireDestroyedHostSnapshots: harness.snapshotAcquire },
-    runtimeDebugger: {
-      startListening: harness.runtimeDebuggerStart,
-      reset: harness.runtimeDebuggerReset,
-    },
   },
 }))
 
 vi.mock('@/features/endge-ide/config/endge-ide-debug-flags', () => ({
-  isIDERuntimeDebuggerDisabled: () => false,
   isIDEWidgetsDisabled: () => false,
 }))
 
@@ -113,12 +106,10 @@ describe('аренды debug-инспекции EndgeIDE', () => {
     expect(harness.debugAcquire).toHaveBeenCalledTimes(1)
     expect(harness.snapshotAcquire).toHaveBeenCalledWith(50)
     expect(harness.snapshotAcquire).toHaveBeenCalledTimes(1)
-    expect(harness.runtimeDebuggerStart).toHaveBeenCalledTimes(1)
 
     await EndgeIDE.reset()
     expect(harness.debugReleases[0]).toHaveBeenCalledTimes(1)
     expect(harness.snapshotReleases[0]).toHaveBeenCalledTimes(1)
-    expect(harness.runtimeDebuggerReset).toHaveBeenCalledTimes(1)
 
     await EndgeIDE.init()
     expect(harness.debugAcquire).toHaveBeenCalledTimes(2)
@@ -136,6 +127,5 @@ describe('аренды debug-инспекции EndgeIDE', () => {
 
     expect(harness.debugReleases[leaseIndex]).toHaveBeenCalledTimes(1)
     expect(harness.snapshotReleases[leaseIndex]).toHaveBeenCalledTimes(1)
-    expect(harness.runtimeDebuggerReset).toHaveBeenCalled()
   })
 })

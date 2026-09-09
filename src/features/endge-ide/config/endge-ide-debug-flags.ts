@@ -17,10 +17,6 @@ export function isIDEWidgetsDisabled(): boolean {
   return hasFlag('noWidgets')
 }
 
-export function isIDERuntimeDebuggerDisabled(): boolean {
-  return hasFlag('noRuntimeDebugger')
-}
-
 export function isIDEPlainMode(): boolean {
   return hasFlag('plainIDE') || hasFlag('plainAdmin')
 }

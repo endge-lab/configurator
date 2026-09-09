@@ -5,7 +5,7 @@ import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/
 import { Endge } from '@endge/core'
 import { Raph } from '@endge/raph'
 
-import { isIDERuntimeDebuggerDisabled, isIDEWidgetsDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags'
+import { isIDEWidgetsDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { createEndgeIDEModules } from '@/features/endge-ide/config/modules.config'
 
 /** Федерация уровня маршрута для смонтированного рабочего пространства IDE. */
@@ -139,7 +139,6 @@ export class EndgeIDE {
       modules.documentImport.reset()
       modules.busy.reset()
       modules.agentTableActions.reset()
-      Endge.runtimeDebugger.reset()
     }
     finally {
       this._raphDebugLease?.release()
@@ -154,7 +153,6 @@ export class EndgeIDE {
   private static async _initialize(): Promise<void> {
     const modules = this._requireModules()
     const widgetsDisabled = isIDEWidgetsDisabled()
-    const runtimeDebuggerDisabled = isIDERuntimeDebuggerDisabled()
 
     this._hasActiveModules = true
     try {
@@ -172,9 +170,6 @@ export class EndgeIDE {
       modules.problems.init()
       await modules.integrations.init()
 
-      if (!runtimeDebuggerDisabled) {
-        Endge.runtimeDebugger.startListening()
-      }
       this._initialized = true
     }
     catch (error) {

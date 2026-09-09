@@ -112,7 +112,6 @@ const Workspace_Editor = defineAsyncComponent(() => import('@/features/endge-ide
 const DSL_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'))
 const SFC_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'))
 const DemonstrationTab_View = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'))
-const Runtime_Debug_Tab = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/runtime-debug/Runtime_Debug_Tab.vue'))
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -121,7 +120,6 @@ const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
-const VIEW_ID_RUNTIME_DEBUG = 'endge-runtime-debug' as const
 
 interface DocumentTabPayload {
   documentId: string
@@ -134,12 +132,6 @@ interface DocumentSourceNavigationRequest {
   documentType: DomainDocumentType
   offset: number
   token: number
-}
-
-interface RuntimeDebugTabPayload {
-  id: string
-  url?: string
-  title?: string
 }
 
 type SupportedViewId = typeof VIEW_ID_DOCUMENT
@@ -221,7 +213,8 @@ export class EndgeIDETabs_Module {
     this._tabsApi.closeTab('architecture')
     this._tabsApi.closeTab('domain-analysis')
     for (const tab of this._tabsApi.openTabs.value) {
-      if (tab.viewId === VIEW_ID_RUNTIME_DEBUG) {
+      // Старые сохранённые debug-вкладки не имеют view после перехода на Bridge.
+      if (tab.viewId === 'endge-runtime-debug') {
         this._tabsApi.closeTab(tab.id)
       }
     }
@@ -598,26 +591,6 @@ export class EndgeIDETabs_Module {
     this.openTab(tabRef)
   }
 
-  /** Открыть вкладку анализа Runtime Debug для конкретной браузерной вкладки. */
-  public openRuntimeDebugTab(tab: { id: string, url?: string, title?: string }): void {
-    const label = tab.title || tab.url || tab.id
-    const tabRef: SmartTabRef = {
-      id: `runtime-debug-${tab.id}`,
-      label: `Debug: ${label}`,
-      viewId: VIEW_ID_RUNTIME_DEBUG,
-      payload: {
-        id: tab.id,
-        url: tab.url,
-        title: tab.title,
-      } satisfies RuntimeDebugTabPayload,
-      closable: true,
-      singleton: false,
-      ephemeral: true,
-      meta: { icon: 'ti ti-bug text-xl' },
-    }
-    this.openTab(tabRef, { activate: true })
-  }
-
   public getDocumentLabel(id: string, docType: DomainDocumentType): string {
     return getDomainDocumentLabel(id, docType)
   }
@@ -727,20 +700,6 @@ export class EndgeIDETabs_Module {
       component: markRaw(DemonstrationTab_View),
       props: {},
     }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_RUNTIME_DEBUG, (tab: SmartTabRef): SmartTabViewResolved => {
-      const raw = (tab.payload ?? null) as unknown
-      const payload = raw && typeof raw === 'object'
-        ? raw as RuntimeDebugTabPayload
-        : null
-      return {
-        component: markRaw(Runtime_Debug_Tab),
-        props: {
-          tabContext: {
-            debugTab: payload,
-          },
-        },
-      }
-    })
   }
 
   private _resolveDocumentTab(tab: SmartTabRef): SmartTabViewResolved | null {
