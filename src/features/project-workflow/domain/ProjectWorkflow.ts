@@ -43,13 +43,15 @@ export interface WorkflowResourceRow { type: string, items: WorkflowNodeData[] }
 export type WorkflowNodeData = Omit<WorkflowDependency, 'children'> & {
   resourceRows?: WorkflowResourceRow[]
   resourcesExpanded?: boolean
-  resourceColumns?: number
   width?: number
 }
 export interface WorkflowNode {
   id: string
   position: WorkflowPoint
   data: WorkflowNodeData
+  role?: 'resource-toggle' | 'compact-resource'
+  parentId?: string
+  hidden?: boolean
 }
 export interface WorkflowEdge {
   id: string
@@ -67,7 +69,12 @@ const ROW_GAP = 32
 const COLUMN_GAP = 112
 const STORE_COLUMNS = 4
 const RESOURCE_COLUMNS = 6
-const RESOURCE_ROW_HEIGHT = 64
+const RESOURCE_WIDTH = 68
+const RESOURCE_HEIGHT = 72
+const RESOURCE_GAP = 12
+const RESOURCE_ROW_HEIGHT = 80
+const RESOURCE_TOGGLE_Y = NODE_HEIGHT + 16
+const RESOURCE_CONTENT_Y = RESOURCE_TOGGLE_Y + 48
 const CONTENT_ROWS = 2
 const BRANCH_GAP = 80
 
@@ -105,7 +112,7 @@ export class ProjectWorkflow {
       return
     }
     for (const node of nodes) {
-      if (this._graph.nodes.has(node.id) && Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
+      if (this._graph.nodes.has(node.id) && !this._graph.resourceOwners.has(node.id) && Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
         this._layout.positions[node.id] = { ...node.position }
       }
     }
@@ -152,12 +159,11 @@ export class ProjectWorkflow {
     }
   }
 
-  /** Раскрывает панель, удерживая владельца на месте и не меняя сохранённую раскладку. */
+  /** Меняет только видимость привязанных узлов; геометрия дерева остаётся неизменной. */
   public toggleResources(id: string): void {
     if (!this._graph.resources.has(id)) {
       return
     }
-    const before = this.scene.nodes.find(node => node.id === id)?.position
     const expanded = new Set(this._expandedResources)
     if (expanded.has(id)) {
       expanded.delete(id)
@@ -166,13 +172,6 @@ export class ProjectWorkflow {
       expanded.add(id)
     }
     this._expandedResources = expanded
-    const after = this.scene.nodes.find(node => node.id === id)?.position
-    if (before && after) {
-      this._layoutShift = {
-        x: this._layoutShift.x + before.x - after.x,
-        y: this._layoutShift.y + before.y - after.y,
-      }
-    }
   }
 
   /** Transient selection принадлежит проекции и не входит в persisted layout/view state. */
@@ -216,16 +215,21 @@ export class ProjectWorkflow {
     return Math.min(RESOURCE_COLUMNS, Math.max(3, ...this._resourceRows(id).map(row => row.items.length)))
   }
 
-  private _nodeWidth(id: string): number {
-    return this._expandedResources.has(id) ? Math.max(NODE_WIDTH, 48 + this._resourceColumns(id) * 68) : NODE_WIDTH
+  /** Место под весь состав резервируется независимо от текущего раскрытия. */
+  private _blockWidth(id: string): number {
+    const columns = this._resourceColumns(id)
+    return this._graph.resources.has(id)
+      ? Math.max(NODE_WIDTH, columns * RESOURCE_WIDTH + (columns - 1) * RESOURCE_GAP)
+      : NODE_WIDTH
   }
 
-  private _nodeHeight(id: string): number {
-    if (!this._expandedResources.has(id)) {
+  private _blockHeight(id: string): number {
+    const rows = this._resourceRows(id)
+    if (!rows.length) {
       return NODE_HEIGHT
     }
-    return NODE_HEIGHT + 16 + this._resourceRows(id).reduce((height, row) =>
-      height + Math.ceil(row.items.length / this._resourceColumns(id)) * RESOURCE_ROW_HEIGHT + 8, 0)
+    const count = rows.reduce((sum, row) => sum + Math.ceil(row.items.length / this._resourceColumns(id)), 0)
+    return RESOURCE_CONTENT_Y + (count - 1) * RESOURCE_ROW_HEIGHT + RESOURCE_HEIGHT
   }
 
   /** Композиции одного уровня стоят в общей колонке; их содержимое образует компактные группы. */
@@ -259,12 +263,13 @@ export class ProjectWorkflow {
           height: children.reduce((sum, child) => sum + blocks.get(child)!.height + ROW_GAP, -ROW_GAP),
         })
       }
-      const width = this._nodeWidth(id)
+      const width = this._blockWidth(id)
       const storeWidth = Math.min(stores.length, STORE_COLUMNS) * (NODE_WIDTH + ROW_GAP) - ROW_GAP
-      const left = Math.max(0, (storeWidth - width) / 2)
+      const footprint = Math.max(width, storeWidth)
+      const left = (footprint - NODE_WIDTH) / 2
       const level = levels[depth] ?? { left: 0, right: 0, x: 0 }
-      levels[depth] = { ...level, left: Math.max(level.left, left), right: Math.max(level.right, width + left) }
-      const ownerHeight = this._nodeHeight(id) + Math.ceil(stores.length / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP)
+      levels[depth] = { ...level, left: Math.max(level.left, left), right: Math.max(level.right, NODE_WIDTH + left) }
+      const ownerHeight = this._blockHeight(id) + Math.ceil(stores.length / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP)
       const groupHeights = branches.map(child => blocks.get(child)!.height)
       if (columns.length) {
         groupHeights.push(Math.max(...columns.map(column => column.height)))
@@ -280,17 +285,46 @@ export class ProjectWorkflow {
     const addNode = (id: string, x: number, y: number): void => {
       const data = graph.nodes.get(id)!
       const position = { ...(this._layout?.positions[id] ?? { x: x + this._layoutShift.x, y: y + this._layoutShift.y }) }
-      nodes.push({ id, position, data: { ...data, resourceRows: this._resourceRows(id), resourcesExpanded: this._expandedResources.has(id), resourceColumns: this._resourceColumns(id), width: this._nodeWidth(id) } })
+      const rows = this._resourceRows(id)
+      nodes.push({ id, position, data: { ...data, width: NODE_WIDTH } })
+      if (!rows.length) {
+        return
+      }
+      const expanded = this._expandedResources.has(id)
+      nodes.push({
+        id: `resources-toggle:${id}`,
+        parentId: id,
+        role: 'resource-toggle',
+        position: { x: 0, y: RESOURCE_TOGGLE_Y },
+        data: { ...data, resourceRows: rows, resourcesExpanded: expanded, width: NODE_WIDTH },
+      })
+      const columns = this._resourceColumns(id)
+      const width = columns * RESOURCE_WIDTH + (columns - 1) * RESOURCE_GAP
+      let rowIndex = 0
+      for (const row of rows) {
+        row.items.forEach((item, index) => nodes.push({
+          id: item.id,
+          parentId: id,
+          role: 'compact-resource',
+          hidden: !expanded,
+          position: {
+            x: (NODE_WIDTH - width) / 2 + (index % columns) * (RESOURCE_WIDTH + RESOURCE_GAP),
+            y: RESOURCE_CONTENT_Y + (rowIndex + Math.floor(index / columns)) * RESOURCE_ROW_HEIGHT,
+          },
+          data: { ...item, width: RESOURCE_WIDTH },
+        }))
+        rowIndex += Math.ceil(row.items.length / columns)
+      }
     }
     const place = (id: string, top: number): void => {
       const block = blocks.get(id)!
       const ownX = levels[block.depth]!.x
       const ownerTop = top + (block.height - block.ownerHeight) / 2
-      addNode(id, ownX, ownerTop + block.ownerHeight - this._nodeHeight(id))
+      addNode(id, ownX, ownerTop + block.ownerHeight - this._blockHeight(id))
       block.stores.forEach((store, index) => {
         const columnCount = Math.min(STORE_COLUMNS, block.stores.length - Math.floor(index / STORE_COLUMNS) * STORE_COLUMNS)
         const rowWidth = columnCount * (NODE_WIDTH + ROW_GAP) - ROW_GAP
-        addNode(store, ownX + (this._nodeWidth(id) - rowWidth) / 2 + (index % STORE_COLUMNS) * (NODE_WIDTH + ROW_GAP), ownerTop + Math.floor(index / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP))
+        addNode(store, ownX + (NODE_WIDTH - rowWidth) / 2 + (index % STORE_COLUMNS) * (NODE_WIDTH + ROW_GAP), ownerTop + Math.floor(index / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP))
         edges.push({ id: `${store}->${id}`, source: store, target: id, resource: true, logicalSource: id, logicalTarget: store, sourceHandle: 'bottom' })
       })
       const connect = (child: string): void => {

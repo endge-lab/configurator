@@ -9,8 +9,10 @@ import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
+import WorkflowCompactResource from './WorkflowCompactResource.vue'
 import WorkflowEdge from './WorkflowEdge.vue'
 import WorkflowNode from './WorkflowNode.vue'
+import WorkflowResourceToggle from './WorkflowResourceToggle.vue'
 
 const props = defineProps<{ workflow: ProjectWorkflow }>()
 const emit = defineEmits<{
@@ -26,8 +28,7 @@ let currentGestureDragged = false
 let previousGestureDragged = false
 const selectionMode = shallowRef(false)
 const selectedNodes = computed(() => flow.value?.getSelectedNodes.value ?? [])
-const selectedResources = shallowRef(new Set<string>())
-const selectedIds = computed(() => new Set([...selectedNodes.value.map(node => node.id), ...selectedResources.value]))
+const selectedIds = computed(() => new Set(selectedNodes.value.map(node => node.id)))
 watch([() => props.workflow, selectedIds], ([workflow, ids], previous) => {
   if (previous?.[0] && previous[0] !== workflow) {
     previous[0].setSelection(new Set())
@@ -41,7 +42,11 @@ const snapGrid: [number, number] = [16, 16]
 // При обновлении проекции сохраняем ту же привязку, что Vue Flow применяет при первом показе.
 const nodes = computed(() => scene.value.nodes.map(node => ({
   ...node,
-  type: 'workflow',
+  type: node.role ?? 'workflow',
+  parentNode: node.parentId,
+  expandParent: false,
+  draggable: node.parentId ? false : undefined,
+  selectable: node.role !== 'resource-toggle',
   position: {
     x: Math.round(node.position.x / snapGrid[0]) * snapGrid[0],
     y: Math.round(node.position.y / snapGrid[1]) * snapGrid[1],
@@ -75,30 +80,24 @@ function nodeOpacity(data: WorkflowNodeData): number {
   if (!selectedIds.value.size) {
     return 1
   }
-  return Math.max(focus.value.get(data.id) ?? 0.22, ...(data.resourceRows?.flatMap(row => row.items.map(item => focus.value.get(item.id) ?? 0.22)) ?? []))
+  return focus.value.get(data.id) ?? 0.22
 }
 
 function selectResource(id: string, additive: boolean): void {
-  if (!additive && flow.value) {
-    flow.value.removeSelectedNodes(flow.value.getSelectedNodes.value)
+  const instance = flow.value
+  const node = instance?.findNode(id)
+  if (!instance || !node) {
+    return
   }
-  const next = additive ? new Set(selectedResources.value) : new Set<string>()
-  if (next.has(id)) {
-    next.delete(id)
+  const selected = node.selected
+  if (!additive) {
+    instance.removeSelectedNodes(instance.getSelectedNodes.value)
+  }
+  if (selected) {
+    instance.removeSelectedNodes([node])
   }
   else {
-    next.add(id)
-  }
-  selectedResources.value = next
-}
-
-function clearResourceSelection(): void {
-  selectedResources.value = new Set()
-}
-
-function selectNode(event: MouseEvent | TouchEvent): void {
-  if (!event.metaKey && !event.ctrlKey) {
-    clearResourceSelection()
+    instance.addSelectedNodes([node])
   }
 }
 
@@ -119,10 +118,8 @@ function suppressDragDoubleClick(event: MouseEvent): void {
   }
 }
 
-async function toggleResources(id: string): Promise<void> {
+function toggleResources(id: string): void {
   emit('toggleResources', id)
-  await nextTick()
-  flow.value?.updateNodeInternals([id])
 }
 
 async function fit(): Promise<void> {
@@ -134,7 +131,10 @@ async function focusRoot(): Promise<void> {
   await nextTick()
   const root = nodes.value[0]
   if (root) {
-    const resources = scene.value.edges.filter(edge => edge.resource && edge.target === root.id).map(edge => edge.source)
+    const resources = [
+      ...scene.value.edges.filter(edge => edge.resource && edge.target === root.id).map(edge => edge.source),
+      ...scene.value.nodes.filter(node => node.parentId === root.id && !node.hidden).map(node => node.id),
+    ]
     await flow.value?.fitView({ nodes: [root.id, ...resources], padding: 0.15, maxZoom: 0.7, duration: 200 })
   }
 }
@@ -209,8 +209,6 @@ function openDocument(data: WorkflowNodeData): void {
       @node-drag-stop="workflow.moveNodes($event.nodes)"
       @viewport-change-end="emit('viewportChange', $event)"
       @node-double-click="openDocument($event.node.data)"
-      @node-click="selectNode($event.event)"
-      @pane-click="clearResourceSelection"
     >
       <Background :variant="BackgroundVariant.Lines" :gap="32" :line-width="0.5" color="color-mix(in srgb, var(--border) 25%, transparent)" />
       <p v-if="!workflow.layoutEditable" role="status" class="workflow-layout-notice">
@@ -220,11 +218,24 @@ function openDocument(data: WorkflowNodeData): void {
         <WorkflowNode
           :data="nodeProps.data"
           :selected="nodeProps.selected"
-          :selected-ids="selectedIds"
-          :focus="focus"
           :opacity="nodeOpacity(nodeProps.data)"
           @open-document="openDocument"
+        />
+      </template>
+      <template #node-resource-toggle="nodeProps">
+        <WorkflowResourceToggle
+          :data="nodeProps.data"
+          :selected-ids="selectedIds"
+          :focus="focus"
           @toggle-resources="toggleResources"
+        />
+      </template>
+      <template #node-compact-resource="nodeProps">
+        <WorkflowCompactResource
+          :data="nodeProps.data"
+          :selected="nodeProps.selected"
+          :opacity="nodeOpacity(nodeProps.data)"
+          @open-document="openDocument"
           @select-resource="selectResource"
         />
       </template>
