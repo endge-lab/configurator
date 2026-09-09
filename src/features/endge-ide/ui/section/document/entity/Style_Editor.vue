@@ -3,7 +3,7 @@ import type { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEd
 
 import { compileEndgeCSS } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
-import { Code2, Loader2, Save, Settings2 } from 'lucide-vue-next'
+import { Code2, FileCode2, Loader2, Save, Settings2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -30,6 +30,7 @@ const props = defineProps<{ tabContext?: { editor?: RStyleEditor } }>()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const splitRatio = ref(0.68)
+const cssPreviewVisible = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compilation = computed(() => compileEndgeCSS(editor.value?.source ?? '', {
   identity: editor.value?.identity || 'draft-style',
@@ -78,9 +79,29 @@ async function save(): Promise<void> {
     </template>
 
     <template #right>
-      <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
-        <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
-      </div>
+      <TooltipProvider v-if="activeTab === 'source'">
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="cssPreviewVisible ? 'bg-editor-control text-foreground shadow-sm' : 'text-muted-foreground'"
+                :aria-pressed="cssPreviewVisible"
+                :aria-label="cssPreviewVisible ? $t('styleEditor.hideCSSPreview') : $t('styleEditor.showCSSPreview')"
+                @click="cssPreviewVisible = !cssPreviewVisible"
+              >
+                <FileCode2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {{ cssPreviewVisible ? $t('styleEditor.hideCSSPreview') : $t('styleEditor.showCSSPreview') }}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </template>
 
     <template #center>
@@ -144,7 +165,7 @@ async function save(): Promise<void> {
     </div>
 
     <div v-else class="flex min-h-0 flex-1 flex-col">
-      <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="true" separator-label="Изменить ширину EndgeCSS и CSS preview">
+      <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="cssPreviewVisible" separator-label="Изменить ширину EndgeCSS и CSS preview">
         <template #editor>
           <EndgeStyleSourceEditor ref="sourceEditorRef" :model-value="editor.source" @update:model-value="applySourceText" />
         </template>

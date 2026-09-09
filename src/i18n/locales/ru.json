@@ -17,6 +17,10 @@
     "description": "Выберите среду, с которой хотите работать. Выбор сохранится в этом браузере.",
     "title": "Выберите среду"
   },
+  "styleEditor": {
+    "hideCSSPreview": "Скрыть производный CSS",
+    "showCSSPreview": "Показать производный CSS"
+  },
   "workspaceTree": {
     "active": "Активный"
   },

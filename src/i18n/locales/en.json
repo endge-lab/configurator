@@ -17,6 +17,10 @@
     "description": "Select the environment you want to work with. Your choice will be saved in this browser.",
     "title": "Select an environment"
   },
+  "styleEditor": {
+    "hideCSSPreview": "Hide generated CSS",
+    "showCSSPreview": "Show generated CSS"
+  },
   "workspaceTree": {
     "active": "Active"
   },
