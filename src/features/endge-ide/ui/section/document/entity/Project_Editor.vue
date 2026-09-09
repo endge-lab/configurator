@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { buildWorkflowDependencyTree } from '@/features/endge-ide/tools/workflow-dependency-tree'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
@@ -56,6 +57,13 @@ const activeTab = useSmartTabSelection(
   'general',
   ['general', 'composition', 'workflow', 'configuration', 'artifact', 'diagnostics'] as const,
 )
+const workflowDependencies = computed(() => activeTab.value === 'workflow' && editor.value
+  ? buildWorkflowDependencyTree(editor.value.workflow.selection, {
+      selection: t('projectWorkflow.selectedElements'),
+      usages: t('projectWorkflow.usedBy'),
+      dependencies: t('uiText.dependencies898afdf0'),
+    })
+  : null)
 const launchLoading = ref(false)
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
 const artifactJson = computed(() => JSON.stringify(
@@ -136,6 +144,7 @@ async function launchRuntimePreview(): Promise<void> {
     document-type="project"
     :dependency-source="editor.source"
     :dependency-draft="editor"
+    :dependency-tree="workflowDependencies"
   >
     <template #center>
       <TooltipProvider>
@@ -249,6 +258,8 @@ async function launchRuntimePreview(): Promise<void> {
           v-else-if="activeTab === 'workflow' && editor.workflow"
           :workflow="editor.workflow"
           @open-document="openWorkflowDocument"
+          @toggle-resources="EndgeIDE.tabs.toggleProjectWorkflowResources(editor, $event)"
+          @viewport-change="EndgeIDE.tabs.setProjectWorkflowViewport(editor, $event)"
         />
         <ScrollArea v-else-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">

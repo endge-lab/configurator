@@ -3,6 +3,8 @@ import type {
   CompositionRuntimeDescriptor,
   CompositionSourceDocument,
   DomainDocumentType,
+  FilterProgramPayload,
+  QueryProgramPayload,
   RComposition,
 } from '@endge/core'
 import type {
@@ -12,14 +14,23 @@ import type {
   DocumentDependencyTreeResult,
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
-import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
+import { compileComponentSFC, ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 
-export type CompositionDependencyNode = DocumentDependencyNode
-export type CompositionDependencyTreeResult = DocumentDependencyTreeResult
+export interface CompositionDependencyNode extends DocumentDependencyNode {
+  dataSource?: CompositionProgramPayload['data'][number]
+  resourceSource?: CompositionProgramPayload['resources'][number]
+  dataBindings?: Record<string, string>
+  dataDependencies?: string[]
+  vocabReferences?: { alias?: string, identity?: string }[]
+  children: CompositionDependencyNode[]
+}
+export interface CompositionDependencyTreeResult extends DocumentDependencyTreeResult {
+  root: CompositionDependencyNode | null
+}
 export type CompositionDependencyDiagnostic = DocumentDependencyDiagnostic
 
 export interface CompositionDependencyTreeInput {
@@ -300,23 +311,7 @@ function buildCompositionContents(
   occurrenceId: string,
   ancestors: Set<string>,
 ): CompositionDependencyNode[] {
-  const result = payload.data.map(data =>
-    makeDocumentNode({
-      id: `${occurrenceId}/data:${data.name}`,
-      kind: 'data',
-      identity: data.identity,
-      alias: data.name,
-      documentType: data.kind === 'store' ? 'store' : 'vocabs',
-      exists:
-        data.kind === 'store'
-          ? Boolean(Endge.domain.getStore(data.identity))
-          : Boolean(Endge.domain.getVocab(data.identity)),
-    }),
-  )
-
-  result.push(
-    ...buildScopeContents(payload, 'scope_default', occurrenceId, ancestors),
-  )
+  const result = buildScopeContents(payload, 'scope_default', occurrenceId, ancestors)
   for (const scope of payload.scopes.filter(
     item => item.parentPath === 'scope_default',
   )) {
@@ -363,11 +358,26 @@ function buildScopeContents(
   occurrenceId: string,
   ancestors: Set<string>,
 ): CompositionDependencyNode[] {
-  const result = payload.resources
+  const result: CompositionDependencyNode[] = payload.data
+    .filter(data => (data.scopePath ?? 'scope_default') === scopePath)
+    .map(data => ({
+      ...makeDocumentNode({
+        id: `${occurrenceId}/data:${data.path ?? data.name}`,
+        kind: 'data',
+        identity: data.identity,
+        alias: data.name,
+        documentType: data.kind === 'store' ? 'store' : 'vocabs',
+        exists: data.kind === 'store'
+          ? Boolean(Endge.domain.getStore(data.identity))
+          : Boolean(Endge.domain.getVocab(data.identity)),
+      }),
+      dataSource: data,
+    }))
+  result.push(...payload.resources
     .filter((item): item is Extract<typeof item, { identity: string }> =>
       item.scopePath === scopePath && 'identity' in item)
-    .map(resource =>
-      makeDocumentNode({
+    .map(resource => ({
+      ...makeDocumentNode({
         id: `${occurrenceId}/resource:${resource.path}`,
         kind: 'resource',
         identity: resource.identity,
@@ -377,7 +387,8 @@ function buildScopeContents(
           ? Boolean(Endge.domain.getI18nBundle(resource.identity))
           : Boolean(Endge.domain.getStyle(resource.identity)),
       }),
-    )
+      resourceSource: resource,
+    })))
 
   for (const runtime of payload.runtimes.filter(
     item => item.scopePath === scopePath,
@@ -408,6 +419,7 @@ function buildNestedComposition(
     activationMode: runtime.effectiveActivation.mode,
     presentationKind: String(model?.kind ?? 'library'),
   })
+  node.dataBindings = runtime.dataBindings
   if (!model) {
     return node
   }
@@ -449,7 +461,7 @@ function buildRuntimeNode(
   occurrenceId: string,
 ): CompositionDependencyNode {
   const target = runtimeDocumentTarget(payload, runtime)
-  return makeDocumentNode({
+  const node = makeDocumentNode({
     id: `${occurrenceId}/runtime:${runtime.path}`,
     kind: 'runtime',
     identity: target.identity,
@@ -458,6 +470,33 @@ function buildRuntimeNode(
     exists: target.exists,
     activationMode: runtime.effectiveActivation.mode,
   })
+  node.dataDependencies = [...new Set([
+    ...Object.values(runtime.props).flatMap(binding => binding.kind === 'data' || binding.kind === 'data-view' ? [binding.data] : []),
+    ...runtime.storeTo.map(publication => publication.data),
+    ...(runtime.dispatchTo ?? []),
+  ])]
+  if (target.documentType === ComponentType.SFC) {
+    const component = Endge.domain.getComponentSFC(target.identity)
+    if (component) {
+      const result = compileComponentSFC(component.source, { identity: component.identity })
+      node.vocabReferences = [...new Set(result.runtimeDependencies.vocabs?.map(item => item.alias) ?? [])].map(alias => ({ alias }))
+    }
+  }
+  else if (runtime.kind === 'filter' || runtime.kind === 'filter-view') {
+    const filter = Endge.domain.getFilter(target.identity)
+    if (filter) {
+      const payload = Endge.source.compile('filter', filter.source).artifact as FilterProgramPayload | null
+      node.vocabReferences = [...new Set(payload?.fields.flatMap(field => field.vocab ? [field.vocab.identity] : []) ?? [])].map(identity => ({ identity }))
+    }
+  }
+  else if (runtime.kind === 'query') {
+    const query = Endge.domain.getQuery(target.identity)
+    if (query) {
+      const payload = Endge.source.compile('query', query.source).artifact as QueryProgramPayload | null
+      node.vocabReferences = [...new Set(payload?.props.flatMap(prop => prop.vocab ? [prop.vocab.identity] : []) ?? [])].map(identity => ({ identity }))
+    }
+  }
+  return node
 }
 
 function runtimeDocumentTarget(

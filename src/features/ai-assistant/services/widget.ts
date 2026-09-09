@@ -14,5 +14,5 @@ export const AI_AGENT_WIDGET_DEFINITION: WidgetDefinition = {
   singleton: true,
   defaultPosition: 'right',
   allowedPositions: ['left', 'right', 'floating'],
-  floatingConstraints: { minWidth: 320, maxWidth: 600, minHeight: 400, maxHeight: 800, defaultWidth: 420, defaultHeight: 560 },
+  floatingConstraints: { minWidth: 320, maxWidth: 1200, minHeight: 400, maxHeight: 1600, defaultWidth: 420, defaultHeight: 560 },
 }

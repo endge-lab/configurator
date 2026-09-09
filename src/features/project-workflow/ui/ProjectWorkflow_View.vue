@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { VueFlowStore } from '@vue-flow/core'
-import type { ProjectWorkflow, WorkflowNodeData } from '../domain/ProjectWorkflow'
+import type { ProjectWorkflow, WorkflowNodeData, WorkflowViewport } from '../domain/ProjectWorkflow'
 
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { MarkerType, SelectionMode, VueFlow } from '@vue-flow/core'
 import { LayoutGrid, Maximize, Minus, Plus, SquareDashedMousePointer, Workflow } from 'lucide-vue-next'
-import { computed, nextTick, shallowRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -15,14 +15,27 @@ import WorkflowNode from './WorkflowNode.vue'
 const props = defineProps<{ workflow: ProjectWorkflow }>()
 const emit = defineEmits<{
   openDocument: [data: WorkflowNodeData]
+  toggleResources: [id: string]
+  viewportChange: [viewport: WorkflowViewport]
 }>()
 const { t } = useI18n()
 const flow = shallowRef<VueFlowStore>()
 let initialFitPending = props.workflow.viewport === null
 let nodesMeasured = false
+let currentGestureDragged = false
+let previousGestureDragged = false
 const selectionMode = shallowRef(false)
 const selectedNodes = computed(() => flow.value?.getSelectedNodes.value ?? [])
-const selectedIds = computed(() => new Set(selectedNodes.value.map(node => node.id)))
+const selectedResources = shallowRef(new Set<string>())
+const selectedIds = computed(() => new Set([...selectedNodes.value.map(node => node.id), ...selectedResources.value]))
+watch([() => props.workflow, selectedIds], ([workflow, ids], previous) => {
+  if (previous?.[0] && previous[0] !== workflow) {
+    previous[0].setSelection(new Set())
+  }
+  workflow.setSelection(ids)
+}, { immediate: true })
+onBeforeUnmount(() => props.workflow.setSelection(new Set()))
+const focus = computed(() => props.workflow.focus)
 const scene = computed(() => props.workflow.scene)
 const snapGrid: [number, number] = [16, 16]
 // При обновлении проекции сохраняем ту же привязку, что Vue Flow применяет при первом показе.
@@ -34,24 +47,83 @@ const nodes = computed(() => scene.value.nodes.map(node => ({
     y: Math.round(node.position.y / snapGrid[1]) * snapGrid[1],
   },
 })))
-const edges = computed(() => scene.value.edges.map(edge => ({
-  ...edge,
-  type: 'workflow',
-  data: { route: edge.route },
-  sourceHandle: edge.resource ? 'bottom' : 'right',
-  targetHandle: edge.resource ? 'top' : 'left',
-  label: selectedIds.value.has(edge.source) || selectedIds.value.has(edge.target)
-    ? (edge.resource ? t('projectWorkflow.connectedResource') : t('projectWorkflow.includes'))
-    : undefined,
-  markerEnd: MarkerType.ArrowClosed,
-  class: selectedNodes.value.find(node => node.id === edge.source || node.id === edge.target)?.data.colorClass ?? 'text-muted-foreground',
-  style: {
-    stroke: 'currentColor',
-    strokeWidth: 2.2,
-    opacity: selectedIds.value.size > 0 && !selectedIds.value.has(edge.source) && !selectedIds.value.has(edge.target) ? 0.25 : 0.85,
-    strokeDasharray: edge.resource ? '5 4' : undefined,
-  },
-})))
+const edges = computed(() => scene.value.edges
+  .map(edge => ({
+    ...edge,
+    type: 'workflow',
+    data: { resource: edge.resource },
+    sourceHandle: edge.sourceHandle,
+    targetHandle: edge.resource ? 'top' : 'left',
+    label: selectedIds.value.has(edge.logicalSource) || selectedIds.value.has(edge.logicalTarget)
+      ? (edge.resource ? t('projectWorkflow.connectedResource') : t('projectWorkflow.includes'))
+      : undefined,
+    markerEnd: MarkerType.ArrowClosed,
+    class: selectedIds.value.size && focus.value.has(edge.logicalSource) && focus.value.has(edge.logicalTarget)
+      ? 'text-primary'
+      : 'text-muted-foreground',
+    style: {
+      stroke: 'currentColor',
+      strokeWidth: 2.2,
+      opacity: selectedIds.value.size
+        ? (focus.value.has(edge.logicalSource) && focus.value.has(edge.logicalTarget) ? 0.85 : 0.12)
+        : 0.85,
+      strokeDasharray: edge.resource ? '5 4' : undefined,
+    },
+  })))
+
+function nodeOpacity(data: WorkflowNodeData): number {
+  if (!selectedIds.value.size) {
+    return 1
+  }
+  return Math.max(focus.value.get(data.id) ?? 0.22, ...(data.resourceRows?.flatMap(row => row.items.map(item => focus.value.get(item.id) ?? 0.22)) ?? []))
+}
+
+function selectResource(id: string, additive: boolean): void {
+  if (!additive && flow.value) {
+    flow.value.removeSelectedNodes(flow.value.getSelectedNodes.value)
+  }
+  const next = additive ? new Set(selectedResources.value) : new Set<string>()
+  if (next.has(id)) {
+    next.delete(id)
+  }
+  else {
+    next.add(id)
+  }
+  selectedResources.value = next
+}
+
+function clearResourceSelection(): void {
+  selectedResources.value = new Set()
+}
+
+function selectNode(event: MouseEvent | TouchEvent): void {
+  if (!event.metaKey && !event.ctrlKey) {
+    clearResourceSelection()
+  }
+}
+
+function beginPointerGesture(): void {
+  previousGestureDragged = currentGestureDragged
+  currentGestureDragged = false
+}
+
+function markNodeDrag(): void {
+  currentGestureDragged = true
+}
+
+function suppressDragDoubleClick(event: MouseEvent): void {
+  // Drag не может быть ни первым, ни вторым нажатием двойного клика.
+  if (currentGestureDragged || previousGestureDragged) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+}
+
+async function toggleResources(id: string): Promise<void> {
+  emit('toggleResources', id)
+  await nextTick()
+  flow.value?.updateNodeInternals([id])
+}
 
 async function fit(): Promise<void> {
   await nextTick()
@@ -97,7 +169,12 @@ function openDocument(data: WorkflowNodeData): void {
 </script>
 
 <template>
-  <section class="project-workflow" :aria-label="t('projectWorkflow.title')">
+  <section
+    class="project-workflow"
+    :aria-label="t('projectWorkflow.title')"
+    @pointerdown.capture="beginPointerGesture"
+    @dblclick.capture="suppressDragDoubleClick"
+  >
     <div v-if="!nodes.length" class="workflow-empty">
       <Workflow class="mb-4 size-8 text-violet-400" />
       <h3 class="text-sm font-medium">
@@ -128,16 +205,28 @@ function openDocument(data: WorkflowNodeData): void {
       :snap-grid="snapGrid"
       @init="initialize"
       @nodes-initialized="nodesInitialized"
+      @node-drag-start="markNodeDrag"
       @node-drag-stop="workflow.moveNodes($event.nodes)"
-      @viewport-change-end="workflow.setViewport($event)"
+      @viewport-change-end="emit('viewportChange', $event)"
       @node-double-click="openDocument($event.node.data)"
+      @node-click="selectNode($event.event)"
+      @pane-click="clearResourceSelection"
     >
       <Background :variant="BackgroundVariant.Lines" :gap="32" :line-width="0.5" color="color-mix(in srgb, var(--border) 25%, transparent)" />
       <p v-if="!workflow.layoutEditable" role="status" class="workflow-layout-notice">
         {{ t('projectWorkflow.layoutUnavailable') }}
       </p>
       <template #node-workflow="nodeProps">
-        <WorkflowNode :data="nodeProps.data" :selected="nodeProps.selected" @open-document="openDocument" />
+        <WorkflowNode
+          :data="nodeProps.data"
+          :selected="nodeProps.selected"
+          :selected-ids="selectedIds"
+          :focus="focus"
+          :opacity="nodeOpacity(nodeProps.data)"
+          @open-document="openDocument"
+          @toggle-resources="toggleResources"
+          @select-resource="selectResource"
+        />
       </template>
       <template #edge-workflow="edgeProps">
         <WorkflowEdge v-bind="edgeProps" />

@@ -88,6 +88,7 @@ interface PersistedState {
     }
   }
   definitionPositions: Record<string, WidgetPosition>
+  hiddenDefinitions: Record<string, boolean>
 }
 
 function createDefaultPersistedAreaState(size = 250, expanded = false): PersistedAreaState {
@@ -110,6 +111,7 @@ const defaultPersistedState: PersistedState = {
     },
   },
   definitionPositions: {},
+  hiddenDefinitions: {},
 }
 
 const activeLayoutScope = ref(DEFAULT_LAYOUT_SCOPE)
@@ -134,6 +136,7 @@ function createPersistedState(scope: string): Ref<PersistedState> {
           },
         },
         definitionPositions: { ...defaults.definitionPositions, ...s.definitionPositions },
+        hiddenDefinitions: { ...defaults.hiddenDefinitions, ...s.hiddenDefinitions },
       }
     },
   })
@@ -322,6 +325,7 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
       },
     },
     definitionPositions: { ...current.definitionPositions },
+    hiddenDefinitions: { ...current.hiddenDefinitions },
   }
   for (const position of ['left', 'right', 'bottom'] as const) {
     const area = state.areas[position]
@@ -337,6 +341,10 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
   if (state.definitionPositions[previous]) {
     state.definitionPositions[next] ??= state.definitionPositions[previous]
     delete state.definitionPositions[previous]
+  }
+  if (state.hiddenDefinitions[previous]) {
+    state.hiddenDefinitions[next] ??= state.hiddenDefinitions[previous]
+    delete state.hiddenDefinitions[previous]
   }
   persistedState.value = state
 }
@@ -360,6 +368,7 @@ export function removePersistedWidgetId(widgetId: string): void {
       },
     },
     definitionPositions: { ...current.definitionPositions },
+    hiddenDefinitions: { ...current.hiddenDefinitions },
   }
 
   for (const position of ['left', 'right', 'bottom'] as const) {
@@ -376,6 +385,7 @@ export function removePersistedWidgetId(widgetId: string): void {
   delete state.areas.floating.order[id]
   delete state.areas.floating.states[id]
   delete state.definitionPositions[id]
+  delete state.hiddenDefinitions[id]
   persistedState.value = state
 }
 
@@ -567,6 +577,7 @@ export function registerWidget(definition: WidgetDefinition): void {
     ...definition,
     position,
     minimized: false,
+    hidden: persistedState.value.hiddenDefinitions[definition.id] === true,
   }
 
   layoutState.widgets.definitions[definition.id] = definitionWithState
@@ -589,10 +600,10 @@ export function registerWidget(definition: WidgetDefinition): void {
     }
 
     const persistedActive: string | null = persistedArea?.activeWidget ?? null
-    if (persistedActive === definition.id) {
+    if (!definitionWithState.hidden && persistedActive === definition.id) {
       syncActiveWidget(position, definition.id)
     }
-    else if (!persistedActive && !layoutState.widgets.areas[position].activeWidget) {
+    else if (!definitionWithState.hidden && !persistedActive && !layoutState.widgets.areas[position].activeWidget) {
       // Только если в persisted вообще ничего не выбрано
       syncActiveWidget(position, definition.id)
     }
@@ -650,7 +661,7 @@ export function unregisterWidget(definitionId: string): void {
     const area = layoutState.widgets.areas[position]
     if (area.activeWidget === definitionId) {
       const otherWidgetsInArea = Object.values(layoutState.widgets.definitions)
-        .filter(d => d.position === position && !d.minimized)
+        .filter(d => d.position === position && !d.minimized && !d.hidden)
         .filter(d => getWidgetInstances(d.id).length > 0)
       syncActiveWidget(position, otherWidgetsInArea[0]?.id ?? null)
     }
@@ -726,7 +737,7 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
   if (oldPosition === 'left' || oldPosition === 'right' || oldPosition === 'bottom') {
     if (layoutState.widgets.areas[oldPosition].activeWidget === definitionId) {
       const otherWidgetsInArea = Object.values(layoutState.widgets.definitions)
-        .filter(d => d.id !== definitionId && d.position === oldPosition)
+        .filter(d => d.id !== definitionId && d.position === oldPosition && !d.hidden)
         .filter(d => getWidgetInstances(d.id).length > 0)
       syncActiveWidget(oldPosition, otherWidgetsInArea[0]?.id ?? null)
     }
@@ -823,12 +834,36 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
   }
 }
 
+/** Меняет наличие виджета на панели, не выбирая вкладку и не уничтожая экземпляры. */
+export function setWidgetVisibility(definitionId: string, visible: boolean): void {
+  const definition = layoutState.widgets.definitions[definitionId]
+  if (!definition) {
+    return
+  }
+
+  definition.hidden = !visible
+  if (visible) {
+    delete persistedState.value.hiddenDefinitions[definitionId]
+  }
+  else {
+    persistedState.value.hiddenDefinitions[definitionId] = true
+    const position = definition.position
+    if (position === 'left' || position === 'right' || position === 'bottom') {
+      if (layoutState.widgets.areas[position].activeWidget === definitionId) {
+        syncActiveWidget(position, null)
+        syncExpanded(position, false)
+      }
+    }
+  }
+}
+
 export function showWidget(definitionId: string): void {
   const definition = layoutState.widgets.definitions[definitionId]
   if (!definition) {
     return
   }
 
+  setWidgetVisibility(definitionId, true)
   definition.minimized = false
   const position = definition.position
 
@@ -884,6 +919,8 @@ export function toggleWidget(definitionId: string): void {
   if (!definition) {
     return
   }
+
+  setWidgetVisibility(definitionId, true)
 
   const position = definition.position
 
@@ -1002,7 +1039,7 @@ export function destroyWidgetInstance(instanceId: string): void {
       const area = layoutState.widgets.areas[position]
       if (area.activeWidget === definitionId) {
         const otherWidgetsInArea = Object.values(layoutState.widgets.definitions)
-          .filter(d => d.id !== definitionId && d.position === position && !d.minimized)
+          .filter(d => d.id !== definitionId && d.position === position && !d.minimized && !d.hidden)
           .filter(d => getWidgetInstances(d.id).length > 0)
         syncActiveWidget(position, otherWidgetsInArea[0]?.id ?? null)
       }
@@ -1026,7 +1063,7 @@ export function destroyAllWidgetInstances(definitionId: string): void {
       const area = layoutState.widgets.areas[position]
       if (area.activeWidget === definitionId) {
         const otherWidgetsInArea = Object.values(layoutState.widgets.definitions)
-          .filter(d => d.id !== definitionId && d.position === position && !d.minimized)
+          .filter(d => d.id !== definitionId && d.position === position && !d.minimized && !d.hidden)
           .filter(d => getWidgetInstances(d.id).length > 0)
         syncActiveWidget(position, otherWidgetsInArea[0]?.id ?? null)
       }

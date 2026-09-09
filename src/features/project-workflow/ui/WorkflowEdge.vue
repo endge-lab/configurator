@@ -1,31 +1,22 @@
 <script setup lang="ts">
 import type { EdgeProps } from '@vue-flow/core'
-import type { WorkflowEdge } from '../domain/ProjectWorkflow'
-
-import { BaseEdge } from '@vue-flow/core'
+import { BaseEdge, useVueFlow } from '@vue-flow/core'
 import { computed } from 'vue'
 
-const props = defineProps<EdgeProps<{ route: WorkflowEdge['route'] }>>()
+import { routeWorkflowEdge } from '../tools/workflow-edge-route'
+
+const props = defineProps<EdgeProps<{ resource: boolean }>>()
+const { getNodes } = useVueFlow()
 const path = computed(() => {
   const { sourceX, sourceY, targetX, targetY } = props
-  const route = props.data.route
-  const points = route.kind === 'resource'
-    ? [
-        { x: sourceX, y: sourceY },
-        { x: sourceX, y: route.exitY },
-        { x: route.x, y: route.exitY },
-        { x: route.x, y: route.entryY },
-        { x: targetX, y: route.entryY },
-        { x: targetX, y: targetY },
-      ]
-    : [
-        { x: sourceX, y: sourceY },
-        { x: route.exitX, y: sourceY },
-        { x: route.exitX, y: route.y },
-        { x: route.entryX, y: route.y },
-        { x: route.entryX, y: targetY },
-        { x: targetX, y: targetY },
-      ]
+  const points = routeWorkflowEdge(
+    { x: sourceX, y: sourceY },
+    { x: targetX, y: targetY },
+    props.source,
+    props.target,
+    props.data.resource,
+    getNodes.value.filter(node => !node.hidden).map(node => ({ id: node.id, ...node.computedPosition, ...node.dimensions })),
+  )
   let result = `M ${sourceX} ${sourceY}`
   for (let index = 1; index < points.length - 1; index++) {
     const previous = points[index - 1]

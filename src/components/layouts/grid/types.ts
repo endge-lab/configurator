@@ -57,6 +57,7 @@ export type WidgetDefinition = WidgetDefinitionComponent | WidgetDefinitionIfram
 export interface WidgetDefinitionState {
   position: WidgetPosition
   minimized: boolean
+  hidden: boolean
 }
 
 export interface WidgetInstanceBase {

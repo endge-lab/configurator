@@ -23,7 +23,7 @@ import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEB
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
 
-import type { WorkflowDependency } from '@/features/project-workflow/domain/ProjectWorkflow'
+import type { WorkflowDependency, WorkflowViewport } from '@/features/project-workflow/domain/ProjectWorkflow'
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
@@ -271,6 +271,7 @@ export class EndgeIDETabs_Module {
     if (editor.workflow.initialized && !refresh) {
       return
     }
+    const restoreView = !editor.workflow.initialized
     const result = buildCompositionDependencyTree({
       documentType: 'project',
       identity: editor.identity,
@@ -294,6 +295,25 @@ export class EndgeIDETabs_Module {
       diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
     }
     editor.workflow.replaceRoots([root])
+    if (restoreView && editor.id != null) {
+      editor.workflow.restoreViewState(this._uiState.read(`configurator.workflow.${editor.id}`, null))
+    }
+  }
+
+  /** Сохраняет личное раскрытие панелей отдельно от Source и metadata редактируемого проекта. */
+  public toggleProjectWorkflowResources(editor: RProjectEditor, occurrenceId: string): void {
+    editor.workflow.toggleResources(occurrenceId)
+    if (editor.id != null) {
+      this._uiState.write(`configurator.workflow.${editor.id}`, editor.workflow.viewState)
+    }
+  }
+
+  /** Запоминает кадр Workflow в личном Context после завершения перемещения или масштабирования. */
+  public setProjectWorkflowViewport(editor: RProjectEditor, viewport: WorkflowViewport): void {
+    editor.workflow.setViewport(viewport)
+    if (editor.id != null) {
+      this._uiState.write(`configurator.workflow.${editor.id}`, editor.workflow.viewState)
+    }
   }
 
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }

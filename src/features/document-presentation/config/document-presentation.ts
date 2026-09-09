@@ -118,6 +118,7 @@ export const DOCUMENT_ICON_SIZES = {
   tab: 'size-4',
   workflowNode: 'size-4',
   workflowResource: 'size-16',
+  workflowCompactResource: 'size-6',
   picker: 'size-5',
   pagePreview: 'size-3.5',
 } as const

@@ -701,6 +701,8 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getDataView(identity)
     case 'store':
       return Endge.domain.getStore(identity)
+    case 'stream':
+      return Endge.domain.getStream(identity)
     case 'filter':
       return Endge.domain.getFilter(identity)
     case 'composition':
@@ -709,6 +711,8 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getSimulation(identity)
     case 'style':
       return Endge.domain.getStyle(identity)
+    case 'i18n-bundles':
+      return Endge.domain.getI18nBundle(identity)
     case 'configuration':
       return Endge.domain.getConfiguration(identity)
     case 'mock':

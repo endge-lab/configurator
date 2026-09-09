@@ -10,6 +10,7 @@ import { Configurator } from '@/app/Configurator'
 import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -37,6 +38,7 @@ const tabs = EndgeIDE.tabs
 const context = useEndgeIDEContext()
 const { t } = useI18n()
 const configuratorMenuItems = EndgeIDE.integrations.menuItems
+const widgetVisibilityItems = EndgeIDE.widgets.visibilityItems
 const isBusy = computed(() => EndgeIDE.busy.value)
 const canImportWorkspaceSnapshot = computed(() => Configurator.context.workspaceRole === 'admin')
 const canImportDocuments = computed(() => Endge.domainRepository.capabilities.mutations)
@@ -203,6 +205,29 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             <Bot class="size-3.5 text-fuchsia-500" />
             {{ t('endgeIde.headerMenu.file.aiSettings') }}
           </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Видимость виджетов -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('endgeIde.headerMenu.view.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-64" align="start" side="bottom" :side-offset="4">
+          <DropdownMenuCheckboxItem
+            v-for="widget in widgetVisibilityItems"
+            :key="widget.id"
+            :model-value="widget.visible"
+            @select.prevent="EndgeIDE.widgets.toggleVisibility(widget.id)"
+          >
+            <component :is="getIconComponent(widget.icon)" class="size-3.5" :class="widget.iconClass" />
+            {{ widget.title }}
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

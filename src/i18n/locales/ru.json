@@ -141,6 +141,9 @@
         "importWorkspaceAdmin": "Импорт доступен только Workspace Admin",
         "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "Файл"
+      },
+      "view": {
+        "title": "Вид"
       }
     },
     "documentImport": {
@@ -1064,10 +1067,8 @@
     "showDependencies8239edf7": "Показать зависимости",
     "showInputFieldsDocumentation831031d4": "Показать документацию по входным полям",
     "showMoreb53ec8fb": "Показать ещё",
-    "showOnlyDependencies65559b87": "Показать только зависимости",
     "showOutputc073c478": "Показать output",
     "showWhen348f6be8": "Показывать, когда",
-    "showWhereTheDocumentIsUsedAndItsDependenciesa18791d9": "Показать, где используется документ, и его зависимости",
     "side14dbfb1b": "Сторона",
     "signInAgain38da8ba3": "Войти снова",
     "slugURLfd185dc1": "Slug (URL)",
@@ -1256,6 +1257,22 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
   },
   "projectWorkflow": {
+    "selectedElements": "Выбранные элементы",
+    "usedBy": "Используется в",
+    "resources": "Состав",
+    "styles": "Стили",
+    "translations": "Переводы",
+    "vocabs": "Словари",
+    "streams": "Потоки",
+    "expandResources": "Раскрыть состав: {name}",
+    "collapseResources": "Свернуть состав: {name}",
+    "relatedResources": "{count} из {total}",
+    "resourceProblems": "Элементы с ошибками: {count}",
+    "selectResource": "Показать связи элемента: {name}",
+    "isolatedStore": "Отдельный экземпляр",
+    "explicitProviderInvalid": "Некорректная ссылка на Store",
+    "ambiguousProvider": "Неоднозначный Store у предка",
+    "missingProvider": "Не найден обязательный Store у предков",
     "title": "Workflow проекта",
     "layoutUnavailable": "Сохранённый формат раскладки не поддерживается. Диаграмма доступна только для просмотра.",
     "emptyTitle": "У проекта пока нет композиций",

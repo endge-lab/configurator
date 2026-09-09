@@ -33,7 +33,7 @@ const style = computed(() => {
     width: `${props.state.width}px`,
     height: `${props.state.height}px`,
     zIndex: props.state.zIndex,
-    display: props.state.minimized ? 'none' : 'flex',
+    display: props.definition.hidden || props.state.minimized ? 'none' : 'flex',
     userSelect: (isDragging.value || isResizing.value) ? 'none' as const : undefined,
   }
 })

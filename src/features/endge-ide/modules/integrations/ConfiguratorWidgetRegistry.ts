@@ -53,9 +53,9 @@ export class ConfiguratorWidgetRegistry {
       allowedPositions: ['floating'],
       floatingConstraints: {
         minWidth: 260,
-        maxWidth: 520,
+        maxWidth: 1040,
         minHeight: 140,
-        maxHeight: 420,
+        maxHeight: 840,
         defaultWidth: 340,
         defaultHeight: 190,
       },

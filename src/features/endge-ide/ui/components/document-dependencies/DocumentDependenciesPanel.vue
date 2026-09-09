@@ -6,29 +6,18 @@ import type {
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
 import { Endge } from '@endge/core'
-import { GitFork, Network, TriangleAlert } from 'lucide-vue-next'
+import { TriangleAlert } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
 
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   buildCompositionDependencyHierarchy,
-  buildCompositionDependencyTree,
 } from '@/features/endge-ide/services/composition-dependencies/composition-dependency-tree'
 import {
   buildDocumentDependencyHierarchy,
-  buildDocumentDependencyTree,
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
-import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
-import { useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{
   documentType: DomainDocumentType
@@ -37,17 +26,11 @@ const props = defineProps<{
   displayName?: string | null
   source?: string | null
   draft?: unknown
+  tree?: DocumentDependencyTreeResult | null
 }>()
 
-const fullHierarchyVisible = useSmartTabViewState<boolean>(
-  'document.dependencies.full-hierarchy',
-  {
-    defaultValue: () => false,
-    validate: value => typeof value === 'boolean',
-  },
-)
-const result = shallowRef<DocumentDependencyTreeResult>(buildTree())
-const dependencyCount = computed(() => countDocumentDependencies(result.value.root))
+const documentResult = shallowRef<DocumentDependencyTreeResult>(props.tree ?? buildTree())
+const result = computed(() => props.tree ?? documentResult.value)
 const errorCount = computed(
   () => result.value.diagnostics.filter(item => item.severity === 'error').length,
 )
@@ -60,6 +43,16 @@ watch(
   () => scheduleRefresh(),
   { deep: true },
 )
+
+watch(() => props.tree, (tree) => {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+  if (!tree) {
+    documentResult.value = buildTree()
+  }
+})
 
 onBeforeUnmount(() => {
   unsubscribeDomain()
@@ -76,9 +69,7 @@ function buildTree(): DocumentDependencyTreeResult {
       displayName: props.displayName,
       source: props.source ?? '',
     }
-    return fullHierarchyVisible.value
-      ? buildCompositionDependencyHierarchy(input)
-      : buildCompositionDependencyTree(input)
+    return buildCompositionDependencyHierarchy(input)
   }
 
   const input = {
@@ -89,24 +80,21 @@ function buildTree(): DocumentDependencyTreeResult {
     source: props.source,
     draft: props.draft,
   }
-  return fullHierarchyVisible.value
-    ? buildDocumentDependencyHierarchy(input)
-    : buildDocumentDependencyTree(input)
+  return buildDocumentDependencyHierarchy(input)
 }
 
 function scheduleRefresh(): void {
   if (refreshTimer) {
     clearTimeout(refreshTimer)
   }
+  if (props.tree) {
+    refreshTimer = null
+    return
+  }
   refreshTimer = setTimeout(() => {
     refreshTimer = null
-    result.value = buildTree()
+    documentResult.value = buildTree()
   }, 140)
-}
-
-function toggleFullHierarchy(): void {
-  fullHierarchyVisible.value = !fullHierarchyVisible.value
-  result.value = buildTree()
 }
 
 function openDocument(node: DocumentDependencyNode): void {
@@ -122,53 +110,6 @@ function openDocument(node: DocumentDependencyNode): void {
     class="flex h-full min-h-0 flex-col border-l border-border/55 bg-background"
     aria-label="Зависимости документа"
   >
-    <header class="flex h-10 shrink-0 items-center gap-2 border-b border-border/65 px-3">
-      <GitFork class="size-3.5 text-sky-400" stroke-width="1.8" />
-      <span class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        {{ $t('uiText.dependencies898afdf0') }}
-      </span>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="ml-auto h-6 w-6"
-              :class="
-                fullHierarchyVisible
-                  ? 'bg-fuchsia-400/10 text-fuchsia-300 shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              "
-              :aria-pressed="fullHierarchyVisible"
-              :aria-label="
-                fullHierarchyVisible
-                  ? 'Показать только зависимости документа'
-                  : 'Показать использования и зависимости документа'
-              "
-              @click="toggleFullHierarchy"
-            >
-              <Network class="size-3.5" stroke-width="1.8" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {{
-              fullHierarchyVisible
-                ? $t('uiText.showOnlyDependencies65559b87')
-                : $t('uiText.showWhereTheDocumentIsUsedAndItsDependenciesa18791d9')
-            }}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      <span
-        v-if="result.root"
-        class="rounded-sm border border-border/70 bg-muted/35 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground"
-      >
-        {{ dependencyCount }}
-      </span>
-    </header>
-
     <div
       v-if="result.status === 'compile-error' && !result.root"
       class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center"
@@ -193,6 +134,7 @@ function openDocument(node: DocumentDependencyNode): void {
         </div>
         <DocumentDependencyTreeNode
           v-if="result.root"
+          :key="result.root.id"
           :node="result.root"
           :depth="0"
           root

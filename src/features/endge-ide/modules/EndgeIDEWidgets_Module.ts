@@ -1,8 +1,12 @@
+import { computed } from 'vue'
+
 import {
   createWidgetInstance,
   getAreaActiveWidget,
   getAreaExpanded,
+  getLayoutState,
   getWidget,
+  getWidgetInstances,
   getWidgetOrder,
   migratePersistedWidgetId,
   registerWidget,
@@ -10,6 +14,7 @@ import {
   reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,
+  setWidgetVisibility,
   unregisterAllWidgets,
 } from '@/components/layouts/grid/layout'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
@@ -34,6 +39,38 @@ type DockablePosition = 'left' | 'right' | 'bottom'
 export class EndgeIDEWidgets_Module {
   private _widgetDefinitions = endgeIDEWidgetsConfig
   private _isInitialized = false
+
+  /** Проекция видимости зарегистрированных виджетов из состояния layout. */
+  private readonly _layoutWidgets = getLayoutState().widgets
+  private readonly _visibilityItems = computed(() => {
+    const state = this._layoutWidgets.value
+    return Object.values(state.definitions).map(widget => ({
+      id: widget.id,
+      title: widget.title,
+      icon: widget.icon,
+      iconClass: widget.iconClass,
+      visible: !widget.hidden && getWidgetInstances(widget.id).length > 0,
+    } as const))
+  })
+
+  /** Возвращает реактивные пункты меню без отдельного состояния видимости. */
+  public get visibilityItems() {
+    return this._visibilityItems
+  }
+
+  /** Показывает или скрывает кнопку виджета без переключения активной вкладки. */
+  public toggleVisibility(definitionId: string): void {
+    const widget = getWidget(definitionId)
+    if (!widget) {
+      return
+    }
+    if (getWidgetInstances(definitionId).length === 0) {
+      createWidgetInstance(definitionId, {}, { activate: false })
+      setWidgetVisibility(definitionId, true)
+      return
+    }
+    setWidgetVisibility(definitionId, widget.hidden)
+  }
 
   /**
    * LIFECYCLE
@@ -74,6 +111,11 @@ export class EndgeIDEWidgets_Module {
 
       const widget = getWidget(def.id)
       const position = (widget?.position ?? def.defaultPosition ?? 'left')
+
+      if (widget?.hidden) {
+        createWidgetInstance(def.id, {}, { activate: false })
+        return
+      }
 
       if (position === 'floating' || position === 'popup') {
         // Для floating/popup expanded не применим - создаём как обычно

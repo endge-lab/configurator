@@ -33,10 +33,10 @@ const { isLoading, widgets, isDraggingWidget, draggingWidgetId } = getLayoutStat
 const { height: windowHeight, width: windowWidth } = useWindowSize()
 const headerRef = ref<HTMLElement>()
 
-const leftWidgets = computed(() => getWidgetsByPosition('left'))
-const rightWidgets = computed(() => getWidgetsByPosition('right'))
-const bottomWidgets = computed(() => getWidgetsByPosition('bottom'))
-const floatingWidgets = computed(() => getWidgetsByPosition('floating'))
+const leftWidgets = computed(() => getWidgetsByPosition('left').filter(widget => !widget.hidden))
+const rightWidgets = computed(() => getWidgetsByPosition('right').filter(widget => !widget.hidden))
+const bottomWidgets = computed(() => getWidgetsByPosition('bottom').filter(widget => !widget.hidden))
+const floatingWidgets = computed(() => getWidgetsByPosition('floating').filter(widget => !widget.hidden))
 
 const hasLeftWidgets = computed(() => leftWidgets.value.some(d =>
   Object.values(widgets.value.instances).some(i => i.definitionId === d.id),

@@ -141,6 +141,9 @@
         "importWorkspaceAdmin": "Import is available only to Workspace Admin",
         "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "File"
+      },
+      "view": {
+        "title": "View"
       }
     },
     "documentImport": {
@@ -1064,10 +1067,8 @@
     "showDependencies8239edf7": "Show dependencies",
     "showInputFieldsDocumentation831031d4": "Show input fields documentation",
     "showMoreb53ec8fb": "Show more",
-    "showOnlyDependencies65559b87": "Show only dependencies",
     "showOutputc073c478": "Show output",
     "showWhen348f6be8": "Show when",
-    "showWhereTheDocumentIsUsedAndItsDependenciesa18791d9": "Show where the document is used and its dependencies",
     "side14dbfb1b": "Side",
     "signInAgain38da8ba3": "Sign in again",
     "slugURLfd185dc1": "Slug (URL)",
@@ -1256,6 +1257,22 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
   },
   "projectWorkflow": {
+    "selectedElements": "Selected elements",
+    "usedBy": "Used by",
+    "resources": "Contents",
+    "styles": "Styles",
+    "translations": "Translations",
+    "vocabs": "Vocabs",
+    "streams": "Streams",
+    "expandResources": "Expand contents: {name}",
+    "collapseResources": "Collapse contents: {name}",
+    "relatedResources": "{count} of {total}",
+    "resourceProblems": "Items with errors: {count}",
+    "selectResource": "Show item connections: {name}",
+    "isolatedStore": "Separate instance",
+    "explicitProviderInvalid": "Invalid Store binding",
+    "ambiguousProvider": "Ambiguous ancestor Store",
+    "missingProvider": "Required ancestor Store is missing",
     "title": "Project workflow",
     "layoutUnavailable": "The saved layout format is not supported. The diagram is read-only.",
     "emptyTitle": "This project has no compositions yet",

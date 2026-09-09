@@ -1,4 +1,7 @@
-import type { DomainDocumentType } from '@endge/core'
+import type { CompositionProgramPayload, DomainDocumentType } from '@endge/core'
+import type { WorkflowGraph, WorkflowSelection } from '../tools/workflow-graph'
+
+import { buildWorkflowGraph, getWorkflowFocus, getWorkflowSelection } from '../tools/workflow-graph'
 
 /** Независимая от IDE проекция документа и конкретного места его использования. */
 export interface WorkflowDependency {
@@ -15,6 +18,12 @@ export interface WorkflowDependency {
   status: 'valid' | 'missing' | 'compile-error' | 'cycle'
   diagnosticCount: number
   inactive?: boolean
+  dataSource?: CompositionProgramPayload['data'][number]
+  resourceSource?: CompositionProgramPayload['resources'][number]
+  dataBindings?: Record<string, string>
+  dataDependencies?: string[]
+  vocabReferences?: { alias?: string, identity?: string }[]
+  bindingIssue?: 'explicit-provider' | 'ambiguous-provider' | 'missing-provider'
   children: WorkflowDependency[]
 }
 
@@ -24,7 +33,19 @@ export interface WorkflowLayout {
   positions: Record<string, WorkflowPoint>
 }
 export interface WorkflowViewport extends WorkflowPoint { zoom: number }
-export type WorkflowNodeData = Omit<WorkflowDependency, 'children'>
+export interface WorkflowViewState {
+  version: 1
+  expandedResourceIds: string[]
+  viewport?: WorkflowViewport
+  layoutShift?: WorkflowPoint
+}
+export interface WorkflowResourceRow { type: string, items: WorkflowNodeData[] }
+export type WorkflowNodeData = Omit<WorkflowDependency, 'children'> & {
+  resourceRows?: WorkflowResourceRow[]
+  resourcesExpanded?: boolean
+  resourceColumns?: number
+  width?: number
+}
 export interface WorkflowNode {
   id: string
   position: WorkflowPoint
@@ -35,23 +56,29 @@ export interface WorkflowEdge {
   source: string
   target: string
   resource: boolean
-  route: { kind: 'resource', x: number, exitY: number, entryY: number }
-    | { kind: 'branch', exitX: number, entryX: number, y: number }
+  logicalSource: string
+  logicalTarget: string
+  sourceHandle: string
 }
 
 const NODE_WIDTH = 248
 const NODE_HEIGHT = 176
 const ROW_GAP = 32
 const COLUMN_GAP = 112
-const RESOURCE_COLUMNS = 4
-const BRANCH_ROWS = 2
-const BRANCH_ROUTE_GAP = 64
+const STORE_COLUMNS = 4
+const RESOURCE_COLUMNS = 6
+const RESOURCE_ROW_HEIGHT = 64
+const CONTENT_ROWS = 2
+const BRANCH_GAP = 80
 
 /** Черновик раскладки и временное полотно editor-сессии; transport принадлежит IDE. */
 export class ProjectWorkflow {
   private _roots: WorkflowDependency[] | null = null
   private readonly _layout: WorkflowLayout | null
-  private _nodeIds = new Set<string>()
+  private _graph: WorkflowGraph = buildWorkflowGraph([])
+  private _selectedIds = new Set<string>()
+  private _expandedResources = new Set<string>()
+  private _layoutShift: WorkflowPoint = { x: 0, y: 0 }
   private _viewport: WorkflowViewport | null = null
 
   /**
@@ -67,13 +94,9 @@ export class ProjectWorkflow {
   /** Обновляет структуру, сохраняя раскладку существующих мест использования. */
   public replaceRoots(roots: WorkflowDependency[]): void {
     this._roots = roots
-    const ids = new Set<string>()
-    const visit = (node: WorkflowDependency): void => {
-      ids.add(node.id)
-      node.children.forEach(visit)
-    }
-    roots.forEach(visit)
-    this._nodeIds = ids
+    this._graph = buildWorkflowGraph(roots)
+    this.setSelection(this._selectedIds)
+    this._expandedResources = new Set([...this._expandedResources].filter(id => this._graph.resources.has(id)))
   }
 
   /** Перенос меняет только визуальные координаты, а не scope или зависимости. */
@@ -82,20 +105,92 @@ export class ProjectWorkflow {
       return
     }
     for (const node of nodes) {
-      if (this._nodeIds.has(node.id) && Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
+      if (this._graph.nodes.has(node.id) && Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
         this._layout.positions[node.id] = { ...node.position }
       }
     }
   }
 
   public setViewport(viewport: WorkflowViewport): void {
-    this._viewport = { ...viewport }
+    if (Number.isFinite(viewport.x) && Number.isFinite(viewport.y) && Number.isFinite(viewport.zoom) && viewport.zoom > 0) {
+      this._viewport = { ...viewport }
+    }
   }
 
   public resetLayout(): void {
     if (this._layout) {
       this._layout.positions = {}
+      this._layoutShift = { x: 0, y: 0 }
     }
+  }
+
+  /** Восстанавливает только поддержанный UI snapshot; документы и координаты не меняются. */
+  public restoreViewState(value: unknown): void {
+    this._viewport = null
+    this._layoutShift = { x: 0, y: 0 }
+    if (!value || typeof value !== 'object' || !('version' in value) || value.version !== 1
+      || !('expandedResourceIds' in value) || !Array.isArray(value.expandedResourceIds)) {
+      this._expandedResources = new Set()
+      return
+    }
+    this._expandedResources = new Set(value.expandedResourceIds.filter((id): id is string =>
+      typeof id === 'string' && this._graph.resources.has(id)))
+    if ('viewport' in value && value.viewport && typeof value.viewport === 'object') {
+      const viewport = value.viewport
+      if ('x' in viewport && typeof viewport.x === 'number'
+        && 'y' in viewport && typeof viewport.y === 'number'
+        && 'zoom' in viewport && typeof viewport.zoom === 'number') {
+        this.setViewport({ x: viewport.x, y: viewport.y, zoom: viewport.zoom })
+      }
+    }
+    if ('layoutShift' in value && value.layoutShift && typeof value.layoutShift === 'object') {
+      const shift = value.layoutShift
+      if ('x' in shift && typeof shift.x === 'number' && Number.isFinite(shift.x)
+        && 'y' in shift && typeof shift.y === 'number' && Number.isFinite(shift.y)) {
+        this._layoutShift = { x: shift.x, y: shift.y }
+      }
+    }
+  }
+
+  /** Раскрывает панель, удерживая владельца на месте и не меняя сохранённую раскладку. */
+  public toggleResources(id: string): void {
+    if (!this._graph.resources.has(id)) {
+      return
+    }
+    const before = this.scene.nodes.find(node => node.id === id)?.position
+    const expanded = new Set(this._expandedResources)
+    if (expanded.has(id)) {
+      expanded.delete(id)
+    }
+    else {
+      expanded.add(id)
+    }
+    this._expandedResources = expanded
+    const after = this.scene.nodes.find(node => node.id === id)?.position
+    if (before && after) {
+      this._layoutShift = {
+        x: this._layoutShift.x + before.x - after.x,
+        y: this._layoutShift.y + before.y - after.y,
+      }
+    }
+  }
+
+  /** Transient selection принадлежит проекции и не входит в persisted layout/view state. */
+  public setSelection(ids: ReadonlySet<string>): void {
+    this._selectedIds = new Set([...ids].filter(id => this._graph.nodes.has(id)))
+  }
+
+  public get selection(): WorkflowSelection[] {
+    return getWorkflowSelection(this._graph, this._selectedIds)
+  }
+
+  public get focus(): Map<string, number> {
+    return getWorkflowFocus(this._graph, this._selectedIds)
+  }
+
+  /** Возвращает выразительность логических узлов независимо от раскрытия панелей. */
+  public getFocus(selected: ReadonlySet<string>): Map<string, number> {
+    return getWorkflowFocus(this._graph, selected)
   }
 
   /**
@@ -104,102 +199,123 @@ export class ProjectWorkflow {
    * ----------------------------------------
    */
 
-  private _isResource(node: WorkflowDependency): boolean {
-    return node.kind === 'data' || node.kind === 'resource'
+  private _resourceRows(id: string): WorkflowResourceRow[] {
+    const rows = new Map<string, WorkflowNodeData[]>()
+    for (const resourceId of this._graph.resources.get(id) ?? []) {
+      const resource = this._graph.nodes.get(resourceId)!
+      const type = resource.documentType ?? resource.kind
+      const items = rows.get(type) ?? []
+      items.push(resource)
+      rows.set(type, items)
+    }
+    const order = ['style', 'i18n-bundles', 'vocabs', 'stream']
+    return [...rows].sort(([a], [b]) => order.indexOf(a) - order.indexOf(b)).map(([type, items]) => ({ type, items }))
   }
 
-  /** Горизонтальные группы ветвей; data и ресурсы занимают место над владельцем. */
+  private _resourceColumns(id: string): number {
+    return Math.min(RESOURCE_COLUMNS, Math.max(3, ...this._resourceRows(id).map(row => row.items.length)))
+  }
+
+  private _nodeWidth(id: string): number {
+    return this._expandedResources.has(id) ? Math.max(NODE_WIDTH, 48 + this._resourceColumns(id) * 68) : NODE_WIDTH
+  }
+
+  private _nodeHeight(id: string): number {
+    if (!this._expandedResources.has(id)) {
+      return NODE_HEIGHT
+    }
+    return NODE_HEIGHT + 16 + this._resourceRows(id).reduce((height, row) =>
+      height + Math.ceil(row.items.length / this._resourceColumns(id)) * RESOURCE_ROW_HEIGHT + 8, 0)
+  }
+
+  /** Композиции одного уровня стоят в общей колонке; их содержимое образует компактные группы. */
   private _buildScene(): { nodes: WorkflowNode[], edges: WorkflowEdge[] } {
     const nodes: WorkflowNode[] = []
     const edges: WorkflowEdge[] = []
+    const graph = this._graph
+    const levels: { left: number, right: number, x: number }[] = []
     const blocks = new Map<string, {
-      width: number
+      depth: number
       height: number
-      ownerWidth: number
       ownerHeight: number
-      columns: { children: WorkflowDependency[], width: number, height: number }[]
+      childrenHeight: number
+      branches: string[]
+      stores: string[]
+      columns: { children: string[], height: number }[]
     }>()
-    const measure = (node: WorkflowDependency): void => {
-      const resources = node.children.filter(child => this._isResource(child))
-      const branches = node.children.filter(child => !this._isResource(child))
-      branches.forEach(measure)
-      const ownerWidth = Math.max(NODE_WIDTH, Math.min(resources.length, RESOURCE_COLUMNS) * (NODE_WIDTH + ROW_GAP) - ROW_GAP)
-      const ownerHeight = NODE_HEIGHT + Math.ceil(resources.length / RESOURCE_COLUMNS) * (NODE_HEIGHT + ROW_GAP)
+    const measure = (id: string, depth: number): void => {
+      const children = graph.children.get(id) ?? []
+      const stores = children.filter(child => graph.nodes.get(child)?.documentType === 'store')
+      const branches = children.filter(child => !stores.includes(child)
+        && (graph.nodes.get(child)?.kind === 'composition' || graph.nodes.get(child)?.kind === 'scope' || graph.children.get(child)?.length))
+      const contents = children.filter(child => !stores.includes(child) && !branches.includes(child))
+      branches.forEach(child => measure(child, depth + 1))
       const columns = []
-      for (let index = 0; index < branches.length; index += BRANCH_ROWS) {
-        const children = branches.slice(index, index + BRANCH_ROWS)
+      for (let index = 0; index < contents.length; index += CONTENT_ROWS) {
+        const children = contents.slice(index, index + CONTENT_ROWS)
+        children.forEach(child => measure(child, depth + 1 + index / CONTENT_ROWS))
         columns.push({
           children,
-          width: Math.max(...children.map(child => blocks.get(child.id)!.width)),
-          height: children.reduce((sum, child) => sum + blocks.get(child.id)!.height + ROW_GAP, -ROW_GAP),
+          height: children.reduce((sum, child) => sum + blocks.get(child)!.height + ROW_GAP, -ROW_GAP),
         })
       }
-      blocks.set(node.id, {
-        ownerWidth,
-        ownerHeight,
-        columns,
-        width: ownerWidth + columns.reduce((sum, column) => sum + COLUMN_GAP + column.width, 0),
-        height: Math.max(ownerHeight, ...columns.map(column => column.height + BRANCH_ROUTE_GAP)),
-      })
+      const width = this._nodeWidth(id)
+      const storeWidth = Math.min(stores.length, STORE_COLUMNS) * (NODE_WIDTH + ROW_GAP) - ROW_GAP
+      const left = Math.max(0, (storeWidth - width) / 2)
+      const level = levels[depth] ?? { left: 0, right: 0, x: 0 }
+      levels[depth] = { ...level, left: Math.max(level.left, left), right: Math.max(level.right, width + left) }
+      const ownerHeight = this._nodeHeight(id) + Math.ceil(stores.length / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP)
+      const groupHeights = branches.map(child => blocks.get(child)!.height)
+      if (columns.length) {
+        groupHeights.push(Math.max(...columns.map(column => column.height)))
+      }
+      const childrenHeight = groupHeights.reduce((sum, height) => sum + height, 0) + Math.max(0, groupHeights.length - 1) * BRANCH_GAP
+      blocks.set(id, { depth, stores, branches, columns, ownerHeight, childrenHeight, height: Math.max(ownerHeight, childrenHeight) })
     }
-    this._roots?.forEach(measure)
-    const addNode = (node: WorkflowDependency, x: number, y: number): WorkflowPoint => {
-      const { children, ...data } = node
-      const position = { ...(this._layout?.positions[node.id] ?? { x, y }) }
-      nodes.push({ id: node.id, position, data })
-      return position
+    graph.roots.forEach(root => measure(root, 0))
+    levels.forEach((level, depth) => {
+      const previous = levels[depth - 1]
+      level.x = previous ? previous.x + previous.right + COLUMN_GAP + level.left : level.left
+    })
+    const addNode = (id: string, x: number, y: number): void => {
+      const data = graph.nodes.get(id)!
+      const position = { ...(this._layout?.positions[id] ?? { x: x + this._layoutShift.x, y: y + this._layoutShift.y }) }
+      nodes.push({ id, position, data: { ...data, resourceRows: this._resourceRows(id), resourcesExpanded: this._expandedResources.has(id), resourceColumns: this._resourceColumns(id), width: this._nodeWidth(id) } })
     }
-    const place = (node: WorkflowDependency, left: number, top: number): WorkflowPoint => {
-      const resources = node.children.filter(child => this._isResource(child))
-      const block = blocks.get(node.id)!
+    const place = (id: string, top: number): void => {
+      const block = blocks.get(id)!
+      const ownX = levels[block.depth]!.x
       const ownerTop = top + (block.height - block.ownerHeight) / 2
-      const ownX = left + (block.ownerWidth - NODE_WIDTH) / 2
-      const ownY = ownerTop + block.ownerHeight - NODE_HEIGHT
-      const ownPosition = addNode(node, ownX, ownY)
-      resources.forEach((resource, index) => {
-        const columnCount = Math.min(RESOURCE_COLUMNS, resources.length - Math.floor(index / RESOURCE_COLUMNS) * RESOURCE_COLUMNS)
+      addNode(id, ownX, ownerTop + block.ownerHeight - this._nodeHeight(id))
+      block.stores.forEach((store, index) => {
+        const columnCount = Math.min(STORE_COLUMNS, block.stores.length - Math.floor(index / STORE_COLUMNS) * STORE_COLUMNS)
         const rowWidth = columnCount * (NODE_WIDTH + ROW_GAP) - ROW_GAP
-        const resourcePosition = addNode(resource, left + (block.ownerWidth - rowWidth) / 2 + (index % RESOURCE_COLUMNS) * (NODE_WIDTH + ROW_GAP), ownerTop + Math.floor(index / RESOURCE_COLUMNS) * (NODE_HEIGHT + ROW_GAP))
-        edges.push({
-          id: `${resource.id}->${node.id}`,
-          source: resource.id,
-          target: node.id,
-          resource: true,
-          route: {
-            kind: 'resource',
-            x: resourcePosition.x + NODE_WIDTH + ROW_GAP / 2,
-            exitY: resourcePosition.y + NODE_HEIGHT + ROW_GAP / 2,
-            entryY: ownPosition.y - ROW_GAP / 2,
-          },
-        })
+        addNode(store, ownX + (this._nodeWidth(id) - rowWidth) / 2 + (index % STORE_COLUMNS) * (NODE_WIDTH + ROW_GAP), ownerTop + Math.floor(index / STORE_COLUMNS) * (NODE_HEIGHT + ROW_GAP))
+        edges.push({ id: `${store}->${id}`, source: store, target: id, resource: true, logicalSource: id, logicalTarget: store, sourceHandle: 'bottom' })
       })
-      let childLeft = left + block.ownerWidth + COLUMN_GAP
-      for (const column of block.columns) {
-        let childTop = top + BRANCH_ROUTE_GAP + (block.height - BRANCH_ROUTE_GAP - column.height) / 2
-        for (const child of column.children) {
-          const childPosition = place(child, childLeft, childTop)
-          edges.push({
-            id: `${node.id}->${child.id}`,
-            source: node.id,
-            target: child.id,
-            resource: false,
-            route: {
-              kind: 'branch',
-              exitX: Math.max(left + block.ownerWidth, ownPosition.x + NODE_WIDTH) + ROW_GAP,
-              entryX: Math.min(childLeft, childPosition.x) - ROW_GAP,
-              y: Math.min(top + ROW_GAP / 2, ownPosition.y - ROW_GAP, childPosition.y - ROW_GAP),
-            },
-          })
-          childTop += blocks.get(child.id)!.height + ROW_GAP
-        }
-        childLeft += column.width + COLUMN_GAP
+      const connect = (child: string): void => {
+        edges.push({ id: `${id}->${child}`, source: id, target: child, resource: false, logicalSource: id, logicalTarget: child, sourceHandle: 'right' })
       }
-      return ownPosition
+      let childTop = top + (block.height - block.childrenHeight) / 2
+      for (const child of block.branches) {
+        place(child, childTop)
+        connect(child)
+        childTop += blocks.get(child)!.height + BRANCH_GAP
+      }
+      const contentsHeight = Math.max(0, ...block.columns.map(column => column.height))
+      for (const column of block.columns) {
+        let rowTop = childTop + (contentsHeight - column.height) / 2
+        for (const child of column.children) {
+          place(child, rowTop)
+          connect(child)
+          rowTop += blocks.get(child)!.height + ROW_GAP
+        }
+      }
     }
-    let left = 0
-    for (const root of this._roots ?? []) {
-      place(root, left, 0)
-      left += blocks.get(root.id)!.width + COLUMN_GAP
+    let top = 0
+    for (const root of graph.roots) {
+      place(root, top)
+      top += blocks.get(root)!.height + BRANCH_GAP
     }
     return { nodes, edges }
   }
@@ -212,6 +328,16 @@ export class ProjectWorkflow {
 
   public get scene(): { nodes: WorkflowNode[], edges: WorkflowEdge[] } {
     return this._buildScene()
+  }
+
+  /** Личный UI snapshot не входит в metadata и dirty-state проекта. */
+  public get viewState(): WorkflowViewState {
+    return {
+      version: 1,
+      expandedResourceIds: [...this._expandedResources],
+      ...(this._viewport ? { viewport: { ...this._viewport } } : {}),
+      layoutShift: { ...this._layoutShift },
+    }
   }
 
   public get viewport(): Readonly<WorkflowViewport> | null {

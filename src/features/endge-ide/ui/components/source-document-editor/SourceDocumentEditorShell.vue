@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DomainDocumentType } from '@endge/core'
+import type { DocumentDependencyTreeResult } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import DocumentDependenciesPanel from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesPanel.vue'
@@ -14,6 +15,7 @@ defineProps<{
   documentType?: DomainDocumentType | null
   dependencySource?: string | null
   dependencyDraft?: unknown
+  dependencyTree?: DocumentDependencyTreeResult | null
 }>()
 
 const dependenciesVisible = useSmartTabViewState<boolean>(
@@ -76,6 +78,7 @@ const dependencySplitRatio = useSmartTabViewState<number>(
             :display-name="displayName"
             :source="dependencySource"
             :draft="dependencyDraft"
+            :tree="dependencyTree"
           />
         </template>
       </SourceEditorSplitView>

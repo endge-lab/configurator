@@ -32,7 +32,7 @@ export class RProjectEditor {
   source: string = ''
   sourceVersion: number = 1
   configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
-  /** Раскладка сохраняется в meta; структура и камера остаются в editor-сессии. */
+  /** Раскладка сохраняется в meta; личную камеру и раскрытие IDE сохраняет через Context. */
   workflow = new ProjectWorkflow()
 
   fillFromSource(source: RProject): void {
