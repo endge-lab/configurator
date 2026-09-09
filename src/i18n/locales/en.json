@@ -13,6 +13,13 @@
     "description": "Endge configuration environment",
     "title": "Configurator"
   },
+  "backendSelection": {
+    "description": "Select the environment you want to work with. Your choice will be saved in this browser.",
+    "title": "Select an environment"
+  },
+  "workspaceTree": {
+    "active": "Active"
+  },
   "common": {
     "delete": "Delete",
     "pleaseWait": "Please wait",
@@ -1252,6 +1259,7 @@
   },
   "projectWorkflow": {
     "title": "Project workflow",
+    "layoutUnavailable": "The saved layout format is not supported. The diagram is read-only.",
     "emptyTitle": "This project has no compositions yet",
     "emptyDescription": "Compositions assigned to this project and their dependencies will appear here.",
     "openDocument": "Open document: {name}",
@@ -1270,5 +1278,12 @@
     "zoomOut": "Zoom out",
     "fit": "Fit diagram",
     "arrange": "Arrange nodes"
+  },
+  "simulation": {
+    "folder": "Simulations",
+    "label": "Simulation",
+    "description": "Request override declarations for a selected composition.",
+    "defaultName": "New simulation",
+    "group": "Infrastructure"
   }
 }

@@ -39,6 +39,7 @@ async function mountApplication(): Promise<void> {
     if (!Configurator.isReady
       && !isOidcPopupCallback
       && Configurator.status !== 'authentication-required'
+      && Configurator.status !== 'backend-selection-required'
       && Configurator.status !== 'workspace-selection-required'
       && Configurator.status !== 'backend-connection-failed') {
       return

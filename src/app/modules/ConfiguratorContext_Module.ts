@@ -174,6 +174,8 @@ export class ConfiguratorContext_Module {
         SENTRY_RELEASE: import.meta.env.VITE_SENTRY_RELEASE,
       },
       ui: {
+        defaultLocale: String(import.meta.env.VITE_DEFAULT_LOCALE || 'ru'),
+        defaultTheme: 'dark',
         adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
       },
       auth: {

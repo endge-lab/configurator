@@ -41,16 +41,17 @@ describe('подключения к backend', () => {
 
   afterEach(() => vi.unstubAllGlobals())
 
-  it('нормализует URL и заменяет отсутствующий или повреждённый активный backend основным', () => {
+  it('нормализует URL и оставляет отсутствующий или повреждённый активный backend невыбранным', () => {
     expect(normalizeBackendURL(' https://Backend.Test/// ')).toBe('https://backend.test')
     expect(() => normalizeBackendURL('https://backend.test?')).toThrow()
     expect(() => normalizeBackendURL('https://@backend.test')).toThrow()
     const storage = new BackendConnectionStorage()
-    expect(storage.readActiveBackend('https://primary.test/')).toBe('https://primary.test')
-    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://primary.test')
+    expect(storage.readActiveBackend()).toBeNull()
+    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBeNull()
 
     localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'broken')
-    expect(storage.readActiveBackend('https://primary.test')).toBe('https://primary.test')
+    expect(storage.readActiveBackend()).toBeNull()
+    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('broken')
   })
 
   it('хранит отдельный identity Workspace для каждого нормализованного URL backend', () => {

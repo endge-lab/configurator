@@ -10,6 +10,7 @@ import { normalizeDomainWorkingSetEntityType } from '@/features/endge-ide/tools/
 
 const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
   'type',
+  'simulation',
   'component-sfc',
   'computation',
   'action',

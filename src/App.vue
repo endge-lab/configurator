@@ -10,6 +10,7 @@ import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
 import AuthenticationRequiredGate from '@/features/backend-connections/ui/AuthenticationRequiredGate.vue'
 import BackendConnectionFailureGate from '@/features/backend-connections/ui/BackendConnectionFailureGate.vue'
+import BackendSelectionGate from '@/features/backend-connections/ui/BackendSelectionGate.vue'
 import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceSelectionGate.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
@@ -18,6 +19,7 @@ import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import 'vue-sonner/style.css'
 
 const workspaceSelectionRequired = Configurator.status === 'workspace-selection-required'
+const backendSelectionRequired = Configurator.status === 'backend-selection-required'
 const backendConnectionFailed = Configurator.status === 'backend-connection-failed'
 const authenticationRequired = Configurator.status === 'authentication-required'
 
@@ -90,6 +92,7 @@ onErrorCaptured((err, instance, info) => {
   <RouterView v-if="isOidcPopupCallback" />
   <AuthenticationRequiredGate v-else-if="authenticationRequired" />
   <BackendConnectionFailureGate v-else-if="backendConnectionFailed" />
+  <BackendSelectionGate v-else-if="backendSelectionRequired" />
   <WorkspaceSelectionGate v-else-if="workspaceSelectionRequired" />
   <div v-else-if="isContextSwitching" class="fixed inset-0 z-[220] flex flex-col items-center justify-center gap-4 bg-slate-50/70 backdrop-blur-sm">
     <div class="size-14 animate-spin rounded-full border-[3px] border-slate-300 border-r-sky-400 border-t-sky-500" />

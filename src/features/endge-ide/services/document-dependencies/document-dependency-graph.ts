@@ -49,6 +49,7 @@ interface DraftDependencies {
 
 const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
   'type',
+  'simulation',
   'component-sfc',
   'computation',
   'action',
@@ -63,6 +64,7 @@ const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
 
 const SOURCE_DOCUMENT_TYPES = new Set([
   'type',
+  'simulation',
   'store',
   'query',
   'vocab',
@@ -370,7 +372,7 @@ function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDepe
   }
 
   return {
-    dependencies: documentType === 'action'
+    dependencies: (documentType === 'action' || documentType === 'simulation')
       ? dedupeDependencies(result.dependencies ?? [])
       : extractArtifactDependencies(documentType, result.artifact, input.draft),
     diagnostics,
@@ -686,6 +688,8 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getFilter(identity)
     case 'composition':
       return Endge.domain.getComposition(identity)
+    case 'simulation':
+      return Endge.domain.getSimulation(identity)
     case 'style':
       return Endge.domain.getStyle(identity)
     case 'configuration':

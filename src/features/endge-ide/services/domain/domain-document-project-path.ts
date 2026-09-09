@@ -1,9 +1,10 @@
 import type { DomainDocumentType } from '@endge/core'
-
 import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
 
 import { resolveEndgeIDEDocument } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
+
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
+import { i18n } from '@/i18n/index'
 
 interface DomainDocumentLocation {
   identity?: unknown
@@ -28,6 +29,7 @@ const ROOT_IDENTITY_BY_DOCUMENT_TYPE: ReadonlyMap<string, string> = new Map([
   ['type', 'root-types'],
   ['data-view', 'root-data-views'],
   ['composition', 'root-compositions'],
+  ['simulation', 'root-simulations'],
   ['store', 'root-stores'],
   ['stream', 'root-queries'],
   ['update', 'root-stores'],
@@ -85,6 +87,9 @@ const ROOT_LABEL_BY_IDENTITY: ReadonlyMap<string, string> = new Map([
 ])
 
 function getFolderLabel(folder: { displayName?: unknown, name?: unknown, identity?: unknown }): string {
+  if (folder.identity === 'root-simulations') {
+    return i18n.global.t('simulation.folder')
+  }
   return String(folder.displayName ?? '').trim()
     || String(folder.name ?? '').trim()
     || String(folder.identity ?? '').trim()
@@ -111,7 +116,7 @@ function getFolderPath(
     const folder = Endge.domain.getFolder(currentFolderId)
     if (!folder) {
       if (fallbackRootIdentity && lookupKey === fallbackRootIdentity) {
-        const fallbackRootLabel = ROOT_LABEL_BY_IDENTITY.get(fallbackRootIdentity)
+        const fallbackRootLabel = fallbackRootIdentity === 'root-simulations' ? i18n.global.t('simulation.folder') : ROOT_LABEL_BY_IDENTITY.get(fallbackRootIdentity)
         if (fallbackRootLabel) {
           segments.unshift(fallbackRootLabel)
         }

@@ -12,12 +12,12 @@ export class EndgeBackendConfigurationError extends Error {
   }
 }
 
-/** Читает обязательный primary URL и локально выбранный target. */
+/** До явного выбора transport направлен на primary для bootstrap session/catalog. */
 export function getEndgeBackendConfig(): EndgeBackendConfig {
   const primaryBackendURL = normalizeHTTPURL(
     requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
   )
-  const activeBackendURL = new BackendConnectionStorage().readActiveBackend(primaryBackendURL)
+  const activeBackendURL = new BackendConnectionStorage().readActiveBackend() ?? primaryBackendURL
   return {
     serviceBackendURL: activeBackendURL,
     primaryBackendURL,

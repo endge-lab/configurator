@@ -1,8 +1,9 @@
 import type { DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
-
 import { ComponentType, DomainSectionType, FilterType, QueryType } from '@endge/core'
 
 import { QUERY_COMPOSITION_CREATE_KIND } from '@/features/endge-ide/services/domain/query-composition-presentation'
+
+import { i18n } from '@/i18n/index'
 
 /** Source нового Table Component: тот же SFC-документ, но сразу с визуально редактируемым Table root. */
 export const COMPONENT_TABLE_SFC_DEFAULT_SOURCE = `<script setup lang="ts">
@@ -17,6 +18,17 @@ export const COMPONENT_TABLE_SFC_DEFAULT_SOURCE = `<script setup lang="ts">
 `
 
 export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
+  {
+    type: 'simulation',
+    get label() { return i18n.global.t('simulation.label') },
+    get description() { return i18n.global.t('simulation.description') },
+    keywords: ['simulation', 'query', 'mock', 'симуляция'],
+    get defaultName() { return i18n.global.t('simulation.defaultName') },
+    section: DomainSectionType.Simulation,
+    get group() { return i18n.global.t('simulation.group') },
+    supportsFolder: true,
+    supportsDescription: true,
+  },
   {
     type: ComponentType.SFC,
     label: 'Компонент',

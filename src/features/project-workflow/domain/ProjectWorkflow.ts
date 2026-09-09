@@ -19,6 +19,10 @@ export interface WorkflowDependency {
 }
 
 export interface WorkflowPoint { x: number, y: number }
+export interface WorkflowLayout {
+  schemaVersion: 1
+  positions: Record<string, WorkflowPoint>
+}
 export interface WorkflowViewport extends WorkflowPoint { zoom: number }
 export type WorkflowNodeData = Omit<WorkflowDependency, 'children'>
 export interface WorkflowNode {
@@ -43,11 +47,11 @@ const RESOURCE_COLUMNS = 4
 const BRANCH_ROWS = 2
 const BRANCH_ROUTE_GAP = 64
 
-/** Состояние полотна одной editor-сессии; не содержит операций записи в Domain. */
+/** Черновик раскладки и временное полотно editor-сессии; transport принадлежит IDE. */
 export class ProjectWorkflow {
-  /** Дерево — снимок структуры, координаты и камера живут только вместе с редактором. */
-  private _roots: WorkflowDependency[] = []
-  private _positions: Record<string, WorkflowPoint> = {}
+  private _roots: WorkflowDependency[] | null = null
+  private readonly _layout: WorkflowLayout | null
+  private _nodeIds = new Set<string>()
   private _viewport: WorkflowViewport | null = null
 
   /**
@@ -56,8 +60,8 @@ export class ProjectWorkflow {
    * ----------------------------------------
    */
 
-  public constructor(roots: WorkflowDependency[]) {
-    this.replaceRoots(roots)
+  public constructor(layout: WorkflowLayout | null = { schemaVersion: 1, positions: {} }) {
+    this._layout = layout
   }
 
   /** Обновляет структуру, сохраняя раскладку существующих мест использования. */
@@ -69,14 +73,17 @@ export class ProjectWorkflow {
       node.children.forEach(visit)
     }
     roots.forEach(visit)
-    this._positions = Object.fromEntries(Object.entries(this._positions).filter(([id]) => ids.has(id)))
+    this._nodeIds = ids
   }
 
   /** Перенос меняет только визуальные координаты, а не scope или зависимости. */
   public moveNodes(nodes: { id: string, position: WorkflowPoint }[]): void {
+    if (!this._layout) {
+      return
+    }
     for (const node of nodes) {
-      if (Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
-        this._positions[node.id] = { ...node.position }
+      if (this._nodeIds.has(node.id) && Number.isFinite(node.position.x) && Number.isFinite(node.position.y)) {
+        this._layout.positions[node.id] = { ...node.position }
       }
     }
   }
@@ -86,7 +93,9 @@ export class ProjectWorkflow {
   }
 
   public resetLayout(): void {
-    this._positions = {}
+    if (this._layout) {
+      this._layout.positions = {}
+    }
   }
 
   /**
@@ -133,10 +142,10 @@ export class ProjectWorkflow {
         height: Math.max(ownerHeight, ...columns.map(column => column.height + BRANCH_ROUTE_GAP)),
       })
     }
-    this._roots.forEach(measure)
+    this._roots?.forEach(measure)
     const addNode = (node: WorkflowDependency, x: number, y: number): WorkflowPoint => {
       const { children, ...data } = node
-      const position = { ...(this._positions[node.id] ?? { x, y }) }
+      const position = { ...(this._layout?.positions[node.id] ?? { x, y }) }
       nodes.push({ id: node.id, position, data })
       return position
     }
@@ -188,7 +197,7 @@ export class ProjectWorkflow {
       return ownPosition
     }
     let left = 0
-    for (const root of this._roots) {
+    for (const root of this._roots ?? []) {
       place(root, left, 0)
       left += blocks.get(root.id)!.width + COLUMN_GAP
     }
@@ -210,6 +219,22 @@ export class ProjectWorkflow {
   }
 
   public get compositionCount(): number {
-    return this._roots.length
+    return this._roots?.length ?? 0
+  }
+
+  public get initialized(): boolean {
+    return this._roots !== null
+  }
+
+  public get layoutEditable(): boolean {
+    return this._layout !== null
+  }
+
+  /** Только сохраняемые данные; камера, выделение и дерево не входят в snapshot. */
+  public get layout(): WorkflowLayout | null {
+    return this._layout && {
+      schemaVersion: 1,
+      positions: Object.fromEntries(Object.entries(this._layout.positions).map(([id, point]) => [id, { ...point }])),
+    }
   }
 }

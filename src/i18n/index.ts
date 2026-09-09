@@ -12,7 +12,7 @@ export type Locale = string
 
 // Этот модуль импортируется до initial navigation и Endge boot. Актуальные
 // Workspace locale/fallback применяются явной инициализацией после router barrier.
-const initialLocale = String(import.meta.env.VITE_DEFAULT_LOCALE || 'en')
+const initialLocale = String(import.meta.env.VITE_DEFAULT_LOCALE || 'ru')
 
 const i18nOptions: I18nOptions<{ message: MessageSchema }, Locale> = {
   legacy: false,

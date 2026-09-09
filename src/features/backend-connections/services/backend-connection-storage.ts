@@ -28,20 +28,16 @@ export function workspaceStorageKey(backendURL: string): string {
 
 /** Browser persistence repository. Повреждённые значения никогда не восстанавливаются. */
 export class BackendConnectionStorage {
-  public readActiveBackend(primaryBackendURL: string): string {
-    const primary = normalizeBackendURL(primaryBackendURL)
+  public readActiveBackend(): string | null {
     if (typeof window === 'undefined') {
-      return primary
+      return null
     }
     try {
       const stored = window.localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)
-      const active = stored ? normalizeBackendURL(stored) : primary
-      window.localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, active)
-      return active
+      return stored ? normalizeBackendURL(stored) : null
     }
     catch {
-      this.writeActiveBackend(primary)
-      return primary
+      return null
     }
   }
 
@@ -53,7 +49,7 @@ export class BackendConnectionStorage {
       window.localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, normalizeBackendURL(backendURL))
     }
     catch {
-      // Bootstrap продолжит работу с in-memory primary, если storage недоступен.
+      // После reload выбор снова потребуется, если storage недоступен.
     }
   }
 
@@ -87,8 +83,7 @@ export class BackendConnectionStorage {
 export function currentTargetStorageNamespace(workspaceIdentity?: string): string {
   let backend = 'detached'
   try {
-    const primary = normalizeBackendURL(import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL)
-    backend = new BackendConnectionStorage().readActiveBackend(primary)
+    backend = new BackendConnectionStorage().readActiveBackend() ?? 'detached'
   }
   catch {
     // Build/test окружение без backend env получает изолированный detached namespace.

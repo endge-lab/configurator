@@ -1,3 +1,5 @@
+import type { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
+
 import { toRaw } from 'vue'
 
 // Внутренняя поддержка snapshot принадлежит модулю tabs.
@@ -23,6 +25,7 @@ const DEFAULT_EDITOR_NAMES = [
   'RComponentSFCEditor',
   'RComponentTableEditor',
   'RCompositionEditor',
+  'RSimulationEditor',
   'RConfigurationEditor',
   'RComputationEditor',
   'RConverterEditor',
@@ -52,7 +55,10 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
 }
 
 function captureProjectEditorState(editor: Record<string, unknown>): unknown {
-  return Object.fromEntries(Object.entries(editor).filter(([key]) => key !== 'workflow'))
+  return {
+    ...Object.fromEntries(Object.entries(editor).filter(([key]) => key !== 'workflow')),
+    workflowLayout: (editor.workflow as ProjectWorkflow).layout,
+  }
 }
 
 /** Явный реестр покрытия для каждого семейства редакторов сохраняемых документов. */

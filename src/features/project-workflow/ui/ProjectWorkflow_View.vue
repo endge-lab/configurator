@@ -116,6 +116,7 @@ function openDocument(data: WorkflowNodeData): void {
       :min-zoom="0.02"
       :max-zoom="1.8"
       :nodes-connectable="false"
+      :nodes-draggable="workflow.layoutEditable"
       :edges-updatable="false"
       :connect-on-click="false"
       :delete-key-code="null"
@@ -132,6 +133,9 @@ function openDocument(data: WorkflowNodeData): void {
       @node-double-click="openDocument($event.node.data)"
     >
       <Background :variant="BackgroundVariant.Lines" :gap="32" :line-width="0.5" color="color-mix(in srgb, var(--border) 25%, transparent)" />
+      <p v-if="!workflow.layoutEditable" role="status" class="workflow-layout-notice">
+        {{ t('projectWorkflow.layoutUnavailable') }}
+      </p>
       <template #node-workflow="nodeProps">
         <WorkflowNode :data="nodeProps.data" :selected="nodeProps.selected" @open-document="openDocument" />
       </template>
@@ -160,7 +164,7 @@ function openDocument(data: WorkflowNodeData): void {
         <Button variant="ghost" size="icon" :aria-label="t('projectWorkflow.fit')" :title="t('projectWorkflow.fit')" @click="fit">
           <Maximize class="size-4" />
         </Button>
-        <Button variant="ghost" size="icon" :aria-label="t('projectWorkflow.arrange')" :title="t('projectWorkflow.arrange')" @click="arrange">
+        <Button variant="ghost" size="icon" :disabled="!workflow.layoutEditable" :aria-label="t('projectWorkflow.arrange')" :title="t('projectWorkflow.arrange')" @click="arrange">
           <LayoutGrid class="size-4" />
         </Button>
       </div>
@@ -172,6 +176,7 @@ function openDocument(data: WorkflowNodeData): void {
 .project-workflow { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--background); }
 .workflow-canvas { flex: 1; min-height: 0; }
 .workflow-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.workflow-layout-notice { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 5; width: fit-content; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--muted-foreground); font-size: 12px; }
 .workflow-controls { position: absolute; bottom: 20px; right: 20px; z-index: 5; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--border); border-radius: 9px; padding: 3px; background: var(--card); box-shadow: 0 4px 20px #00000012; }
 .workflow-canvas :deep(.vue-flow__selection),
 .workflow-canvas :deep(.vue-flow__nodesselection-rect) { border: 1px dashed var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); border-radius: 4px; }

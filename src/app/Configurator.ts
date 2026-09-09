@@ -270,6 +270,9 @@ export class Configurator {
       clearConfiguratorLoginRedirectGuard(backendConfig.primaryBackendURL)
       try {
         const catalog = await this._modules.connections.load()
+        if (!this._modules.connections.hasActiveBackend) {
+          return 'backend-selection-required'
+        }
         if (!this._modules.connections.hasActiveConnection(catalog)) {
           this._modules.connections.fallbackToPrimary()
           return 'redirecting'

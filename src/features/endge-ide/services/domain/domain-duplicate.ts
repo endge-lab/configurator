@@ -39,6 +39,8 @@ export function getEntityByDocType(
       return (domain as any).getDataView?.(id)
     case 'composition':
       return domain.getComposition(id)
+    case 'simulation':
+      return domain.getSimulation(id)
     case 'store':
       return domain.getStore(id)
     case 'action':

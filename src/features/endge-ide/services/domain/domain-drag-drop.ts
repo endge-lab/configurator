@@ -105,6 +105,7 @@ const BASE_DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   QueryType.Custom,
   'data-view',
   'composition',
+  'simulation',
   'store',
   'stream',
   'update',
@@ -667,6 +668,9 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
   }
   if (sectionType === DomainSectionType.DataView) {
     return (numId != null ? (Endge.domain as any).getDataViewById?.(numId) : null) ?? (Endge.domain as any).getDataView?.(id)
+  }
+  if (sectionType === DomainSectionType.Simulation) {
+    return Endge.domain.getSimulation(id)
   }
   if (sectionType === DomainSectionType.Composition) {
     return (numId != null ? Endge.domain.getCompositionById(numId) : null) ?? Endge.domain.getComposition(id)

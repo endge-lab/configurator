@@ -47,6 +47,10 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
     const dataView = Endge.domain.getDataView(id)
     return dataView?.displayName ?? dataView?.name ?? id
   }
+  if (key === 'simulation') {
+    const simulation = Endge.domain.getSimulation(id)
+    return simulation?.displayName ?? simulation?.name ?? id
+  }
   if (key === 'composition') {
     const composition = Endge.domain.getComposition(id)
     return composition?.displayName ?? composition?.name ?? id

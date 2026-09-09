@@ -23,6 +23,7 @@ const SNAPSHOT_DOCUMENT_KEYS = [
   'queries',
   'data-views',
   'compositions',
+  'simulations',
   'stores',
   'streams',
   'updates',
@@ -90,6 +91,13 @@ export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
       workspaceIdentity: request.workspaceIdentity,
       signal: request.signal,
     })
+    if (isRecord(response.payload.documents)) {
+      for (const key of SNAPSHOT_DOCUMENT_KEYS) {
+        if (response.payload.documents[key] === undefined) {
+          response.payload.documents[key] = []
+        }
+      }
+    }
     if (!isLiveSnapshot(response.payload, request.workspaceIdentity)) {
       throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an incompatible workspace snapshot', response.status)
     }

@@ -65,7 +65,7 @@ const tabButtons = computed(() => [
 
 watch([activeTab, editor], ([tab, model]) => {
   if (tab === 'workflow' && model) {
-    EndgeIDE.tabs.prepareProjectWorkflow(model)
+    EndgeIDE.tabs.prepareProjectWorkflow(model, true)
   }
 }, { immediate: true })
 

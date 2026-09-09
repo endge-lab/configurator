@@ -46,6 +46,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
   [DomainSectionType.Composition]: 'root-compositions',
+  [DomainSectionType.Simulation]: 'root-simulations',
   [DomainSectionType.Store]: 'root-stores',
   [DomainSectionType.Mock]: 'root-mocks',
   [DomainSectionType.Type]: 'root-types',
@@ -77,6 +78,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Query]: 'queries',
   [DomainSectionType.DataView]: 'data-views',
   [DomainSectionType.Composition]: 'compositions',
+  [DomainSectionType.Simulation]: 'simulations',
   [DomainSectionType.Store]: 'stores',
   [DomainSectionType.Mock]: 'mocks',
   [DomainSectionType.Type]: 'types',
@@ -386,6 +388,15 @@ function buildPayloadTemplate(): Record<string, unknown> {
     return {
       ...base,
       source: Endge.source.createDefault('stream'),
+      sourceVersion: 1,
+      meta: {},
+    }
+  }
+
+  if (activeType.value === 'simulation') {
+    return {
+      ...base,
+      source: Endge.source.createDefault('simulation'),
       sourceVersion: 1,
       meta: {},
     }

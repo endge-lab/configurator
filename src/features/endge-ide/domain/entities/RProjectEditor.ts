@@ -1,5 +1,7 @@
 import type { EndgeConfigurationContribution, RProject } from '@endge/core'
-import type { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
+
+import { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
+import { readWorkflowLayout, writeWorkflowLayout } from '@/features/project-workflow/tools/workflow-layout'
 
 function normalizeRelationId(value: unknown): number | null {
   if (value == null) {
@@ -29,8 +31,8 @@ export class RProjectEditor {
   navigationId: number | null = null
   allowedEnvironmentIds: number[] = []
   configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
-  /** Временное полотно editor-сессии; не участвует в updateSource и dirty snapshot. */
-  workflow: ProjectWorkflow | null = null
+  /** Раскладка сохраняется в meta; структура и камера остаются в editor-сессии. */
+  workflow = new ProjectWorkflow()
 
   fillFromSource(source: RProject): void {
     this.id = source.id
@@ -44,6 +46,7 @@ export class RProjectEditor {
       ? source.allowedEnvironmentIds.map(id => normalizeRelationId(id)).filter((id): id is number => id != null)
       : []
     this.configuration = clone(source.configuration)
+    this.workflow = new ProjectWorkflow(readWorkflowLayout(source.meta))
   }
 
   updateSource(source: RProject): void {
@@ -57,6 +60,7 @@ export class RProjectEditor {
     source.navigationId = this.navigationId ?? null
     source.allowedEnvironmentIds = Array.from(new Set(this.allowedEnvironmentIds))
     source.configuration = clone(this.configuration)
+    source.meta = writeWorkflowLayout(source.meta, this.workflow.layout)
   }
 }
 

@@ -10,7 +10,7 @@ import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backen
 /** Владелец primary/active target, каталога и per-backend Workspace. */
 export class BackendConnections_Module {
   public readonly primaryBackendURL: string
-  private _activeBackendURL: string
+  private _activeBackendURL: string | null
   private _state: BackendConnectionCatalogState = { status: 'idle' }
   private _loadPromise: Promise<BackendConnectionCatalog> | null = null
   private readonly _listeners = new Set<() => void>()
@@ -22,11 +22,16 @@ export class BackendConnections_Module {
     private readonly _reload: () => void = () => undefined,
   ) {
     this.primaryBackendURL = normalizeBackendURL(primaryBackendURL)
-    this._activeBackendURL = this._storage.readActiveBackend(this.primaryBackendURL)
+    this._activeBackendURL = this._storage.readActiveBackend()
   }
 
+  /** До выбора primary используется только как transport для session/catalog. */
   public get activeBackendURL(): string {
-    return this._activeBackendURL
+    return this._activeBackendURL ?? this.primaryBackendURL
+  }
+
+  public get hasActiveBackend(): boolean {
+    return this._activeBackendURL !== null
   }
 
   public get isPrimaryActive(): boolean {
@@ -83,7 +88,7 @@ export class BackendConnections_Module {
   }
 
   public hasActiveConnection(catalog: BackendConnectionCatalog): boolean {
-    return catalog.items.some(item => item.baseUrl === this.activeBackendURL)
+    return catalog.items.some(item => item.baseUrl === this._activeBackendURL)
   }
 
   public switchBackend(backendURL: string): void {

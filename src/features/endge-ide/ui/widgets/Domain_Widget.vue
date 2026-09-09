@@ -257,7 +257,7 @@ const filteredExpandedKeys = useConfiguratorState<Record<string, boolean>>(
 
 const legacyShowRootHierarchyBackgrounds = useConfiguratorState(
   'configurator.domain-tree.legacy-root-backgrounds',
-  true,
+  false,
   { legacyKeys: ['endge-editor-domain-tree-root-backgrounds'] },
 )
 
@@ -580,6 +580,7 @@ const ROOT_TO_SECTION = computed(() => {
       section: DomainSectionType.Composition,
       items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
     },
+    'root-simulations': { section: DomainSectionType.Simulation, items: () => withoutDeleted(Endge.domain.getSimulations()) },
     'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
@@ -1014,6 +1015,7 @@ const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-mocks': getDomainSectionPresentation(DomainSectionType.Mock),
   'root-i18n-bundles': getDomainSectionPresentation(DomainSectionType.I18nBundles),
   'root-auth-profiles': getDomainSectionPresentation(DomainSectionType.AuthProfile),
+  'root-simulations': getDomainSectionPresentation(DomainSectionType.Simulation),
   'root-projects': getDomainSectionPresentation(DomainSectionType.Project),
 }
 
@@ -1023,6 +1025,7 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   QueryType.REST,
   'data-view',
   'composition',
+  'simulation',
   'store',
   'mock',
   'action',
@@ -1058,6 +1061,9 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
 }
 
 function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentation {
+  if (node.workspaceIdentity) {
+    return WORKSPACE_PRESENTATION
+  }
   if (node.isTableColumn) {
     return DOCUMENT_AUXILIARY_PRESENTATION.tableColumn
   }
@@ -1677,13 +1683,16 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     }
 
     const contextNodes = getContextFileNodes(fileNode)
-    items.push({
-      label: contextNodes.length > 1
-        ? `Запустить в Runtime (${contextNodes.length})`
-        : 'Запустить в Runtime',
-      icon: Play,
-      action: { type: 'launch-runtime-previews', nodes: contextNodes },
-    })
+    const runtimeNodes = contextNodes.filter(item => item.docType !== 'simulation')
+    if (runtimeNodes.length > 0) {
+      items.push({
+        label: runtimeNodes.length > 1
+          ? `Запустить в Runtime (${runtimeNodes.length})`
+          : 'Запустить в Runtime',
+        icon: Play,
+        action: { type: 'launch-runtime-previews', nodes: runtimeNodes },
+      })
+    }
 
     const isContextFileSelected = selectedFileKeys.value.has(getFileSelectionKey(fileNode))
     const isSingleSelectedFile = isContextFileSelected
@@ -1870,7 +1879,6 @@ function rowClasses(item: FlatFsItem): string {
       ? 'text-slate-600'
       : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
-    item.node.activeWorkspace ? 'bg-orange-500/15 text-orange-950 ring-1 ring-orange-500/50 dark:text-orange-100' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
   ].filter(Boolean).join(' ')
 }
@@ -2096,6 +2104,10 @@ function rowClasses(item: FlatFsItem): string {
                   v-if="it.node.managedBy === 'integration'"
                   class="shrink-0 rounded border border-violet-300/60 bg-violet-500/10 px-1 text-[9px] leading-4 text-violet-700 dark:text-violet-300"
                 >{{ $t('uiText.integration06eff510') }}</span>
+                <span
+                  v-if="it.node.activeWorkspace"
+                  class="shrink-0 rounded border border-orange-400/40 bg-orange-500/10 px-1.5 text-[9px] leading-4 text-orange-700 dark:text-orange-300"
+                >{{ $t('workspaceTree.active') }}</span>
               </div>
             </div>
           </div>

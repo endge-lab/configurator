@@ -1,11 +1,10 @@
+import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor, TypeProgramCatalogEntry } from '@endge/core'
 /**
  * Логика построения дерева сущностей домена для виджета Domain_Widget.
  * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
  */
 
-import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor, TypeProgramCatalogEntry } from '@endge/core'
 import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
-
 import {
   ComponentType,
   DomainSectionType,
@@ -13,6 +12,8 @@ import {
   FilterType,
   ParameterType,
 } from '@endge/core'
+
+import { i18n } from '@/i18n/index'
 
 export type CompositionPresentationKind = RCompositionKind | typeof QUERY_COMPOSITION_PRESENTATION_KIND
 
@@ -162,6 +163,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-queries': 'Обмен данными',
   'root-data-views': 'Представления',
   'root-compositions': 'Композиции',
+  get 'root-simulations'() { return i18n.global.t('simulation.folder') },
   'root-stores': 'Хранилища',
   'root-components': 'Компоненты',
   'root-actions': 'Действия',
@@ -235,6 +237,7 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     rootIds: [
       'root-i18n-bundles',
       'root-auth-profiles',
+      'root-simulations',
     ],
   },
   {
@@ -288,6 +291,9 @@ export function normalizeDocType(
   }
   if (sectionType === DomainSectionType.DataView) {
     return 'data-view' as DomainDocumentType
+  }
+  if (sectionType === DomainSectionType.Simulation) {
+    return 'simulation'
   }
   if (sectionType === DomainSectionType.Composition) {
     return 'composition' as DomainDocumentType

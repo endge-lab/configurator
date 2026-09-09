@@ -21,6 +21,7 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   [String(QueryType.Custom), documentId => Endge.domain.getQuery(documentId)],
   ['data-view', documentId => Endge.domain.getDataView(documentId)],
   ['composition', documentId => Endge.domain.getComposition(documentId)],
+  ['simulation', documentId => Endge.domain.getSimulation(documentId)],
   ['store', documentId => Endge.domain.getStore(documentId)],
   ['stream', documentId => Endge.domain.getStream(documentId)],
   ['update', documentId => Endge.domain.getUpdate(documentId)],

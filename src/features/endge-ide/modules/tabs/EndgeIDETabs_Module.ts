@@ -10,6 +10,7 @@ import type {
   RDataView,
   RMock,
   RQuery,
+  RSimulation,
   RStore,
   RStream,
   RTenant,
@@ -54,6 +55,7 @@ import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParamete
 import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
 import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
+import { RSimulationEditor } from '@/features/endge-ide/domain/entities/RSimulationEditor.ts'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
 import { RStreamEditor } from '@/features/endge-ide/domain/entities/RStreamEditor.ts'
 import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
@@ -74,7 +76,6 @@ import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/dom
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
 import { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs'
-import { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
 const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))
@@ -85,6 +86,7 @@ const FiltersPanel_Editor = defineAsyncComponent(() => import('@/features/endge-
 const Query_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'))
 const DataView_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'))
 const Composition_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'))
+const Simulation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Simulation_Editor.vue'))
 const Store_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'))
 const Stream_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Stream_Editor.vue'))
 const Update_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Update_Editor.vue'))
@@ -266,7 +268,7 @@ export class EndgeIDETabs_Module {
 
   /** Лениво создаёт снимок связей проекта без запуска runtime и записи документов. */
   public prepareProjectWorkflow(editor: RProjectEditor, refresh = false): void {
-    if (editor.workflow && !refresh) {
+    if (editor.workflow.initialized && !refresh) {
       return
     }
     const identity = Endge.domain.getProject(editor.id)?.identity ?? editor.identity
@@ -296,12 +298,7 @@ export class EndgeIDETabs_Module {
         diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
       }
     })
-    if (editor.workflow) {
-      editor.workflow.replaceRoots(roots)
-    }
-    else {
-      editor.workflow = new ProjectWorkflow(roots)
-    }
+    editor.workflow.replaceRoots(roots)
   }
 
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
@@ -421,6 +418,7 @@ export class EndgeIDETabs_Module {
         session?.syncBeforeSave?.()
       }
       const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
+      const savingSnapshot = session?.editor ? createDocumentEditorSnapshot(session.editor) : undefined
       await Endge.domainRepository.saveDocument(saveDocumentId, documentType, {
         model: session?.model ?? session?.editor ?? null,
         previousIdentity: session?.persistedIdentity,
@@ -439,8 +437,8 @@ export class EndgeIDETabs_Module {
         }
       }
       const label = this.getDocumentLabel(effectiveDocumentId, documentType)
-      if (session?.editor) {
-        session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
+      if (session && savingSnapshot !== undefined) {
+        session.savedSnapshot = savingSnapshot
       }
       toast.success('Сохранено', { description: label })
     }
@@ -768,6 +766,7 @@ export class EndgeIDETabs_Module {
     [String(QueryType.Custom), documentId => this._resolveQuery(documentId)],
     ['data-view', documentId => this._resolveDataView(documentId)],
     ['composition', documentId => this._resolveComposition(documentId)],
+    ['simulation', documentId => this._resolveSimulation(documentId)],
     ['store', documentId => this._resolveStore(documentId)],
     ['stream', documentId => this._resolveStream(documentId)],
     ['update', documentId => this._resolveUpdate(documentId)],
@@ -937,6 +936,22 @@ export class EndgeIDETabs_Module {
       editor,
       model: composition,
       syncBeforeSave: () => editor.updateSource(composition),
+    }
+  }
+
+  private _resolveSimulation(documentId: string): EditorSession | null {
+    const simulation = Endge.domain.getSimulation(documentId) as RSimulation | null
+    if (!simulation) {
+      return null
+    }
+    const rawEditor = new RSimulationEditor()
+    rawEditor.fillFromSource(simulation)
+    const editor = reactive(rawEditor as object) as RSimulationEditor
+    return {
+      view: { component: markRaw(Simulation_Editor), props: { tabContext: { editor } } },
+      editor,
+      model: simulation,
+      syncBeforeSave: () => editor.updateSource(simulation),
     }
   }
 

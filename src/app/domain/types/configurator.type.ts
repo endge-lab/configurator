@@ -13,6 +13,7 @@ import type { DomainVersions_Module } from '@/features/domain-version/DomainVers
 export type ConfiguratorStatus
   = | 'authentication-required'
     | 'backend-connection-failed'
+    | 'backend-selection-required'
     | 'ready'
     | 'redirecting'
     | 'workspace-selection-required'
