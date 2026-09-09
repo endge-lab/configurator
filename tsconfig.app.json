@@ -12,8 +12,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./src/*"],
-      "@endge/integration-api": ["../../packages/egorkozelskij-integration-api/src/index.ts"]
+      "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
     "strict": true,

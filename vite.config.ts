@@ -69,9 +69,6 @@ export default defineConfig(({ mode, command }) => {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),
-        '@endge/integration-api': fileURLToPath(
-          new URL('../../packages/egorkozelskij-integration-api/src/index.ts', import.meta.url),
-        ),
       },
     },
     define: {
