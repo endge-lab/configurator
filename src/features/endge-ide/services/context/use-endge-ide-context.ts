@@ -1,4 +1,5 @@
 import type { EndgeExecutionContext } from '@endge/core'
+import { Endge } from '@endge/core'
 
 import { onScopeDispose, ref } from 'vue'
 
@@ -10,26 +11,30 @@ export function useEndgeIDEContext() {
   const off = Configurator.context.subscribe(() => {
     version.value += 1
   })
+  const offCore = Endge.context.subscribe(() => {
+    version.value += 1
+  })
   onScopeDispose(off)
+  onScopeDispose(offCore)
 
   return {
     version,
     currentContext: () => {
       void version.value
-      return Configurator.context.currentContext
+      return Endge.context.getExecutionContext()
     },
     switchContext: (next: Partial<EndgeExecutionContext>) => Configurator.context.switchContext(next),
     reloadCurrentContext: () => Configurator.context.reloadCurrentContext(),
     isMockEnabled: () => {
       void version.value
-      return Configurator.context.isMockEnabled
+      return Endge.context.isMockEnabled
     },
     isDataModeOverridden: () => {
       void version.value
-      return Configurator.context.isDataModeOverridden
+      return Endge.context.isDataModeOverridden
     },
-    setMockEnabled: (enabled: boolean) => Configurator.context.setMockEnabled(enabled),
-    clearDataModeOverride: () => Configurator.context.clearDataModeOverride(),
+    setMockEnabled: (enabled: boolean) => Endge.commands.execute({ type: 'context:set-data-mode', payload: { dataMode: enabled ? 'mock' : 'live' } }),
+    clearDataModeOverride: () => Endge.commands.execute({ type: 'context:set-data-mode', payload: { dataMode: null } }),
     isSwitching: () => {
       void version.value
       return Configurator.context.isSwitchingContext

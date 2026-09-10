@@ -261,6 +261,17 @@ export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
     supportsDescription: false,
   },
   {
+    type: 'project',
+    get label() { return i18n.global.t('documentCreate.project.label') },
+    get description() { return i18n.global.t('documentCreate.project.description') },
+    keywords: ['project', 'проект'],
+    get defaultName() { return i18n.global.t('documentCreate.project.defaultName') },
+    section: DomainSectionType.Project,
+    get group() { return i18n.global.t('documentCreate.project.group') },
+    supportsFolder: true,
+    supportsDescription: true,
+  },
+  {
     type: 'tenant',
     label: 'Тенант',
     description: 'Tenant-level configuration и стабильный code организации.',

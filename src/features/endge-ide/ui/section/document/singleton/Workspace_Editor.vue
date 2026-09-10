@@ -33,12 +33,16 @@ const offWorkspace = Endge.workspace.subscribe(() => {
 onScopeDispose(offWorkspace)
 
 async function save(): Promise<void> {
+  const displayName = workspaceDisplayName.value.trim()
+  if (!displayName || EndgeIDE.busy.value) {
+    return
+  }
   try {
     const previousEffectiveDataMode = Endge.context.dataMode
     await EndgeIDE.runBusy(Endge.domainRepository.saveDocument(Endge.workspace.current.identity, 'workspace', {
       model: {
         identity: Endge.workspace.current.identity,
-        displayName: Endge.workspace.current.displayName,
+        displayName,
         dataMode: dataMode.value,
         configuration: configuration.value,
       },
@@ -83,7 +87,7 @@ function resolveWorkspaceDocumentId(): string | null {
                 variant="ghost"
                 class="h-7 w-7"
                 aria-label="Сохранить"
-                :disabled="EndgeIDE.busy.value"
+                :disabled="EndgeIDE.busy.value || !workspaceDisplayName.trim()"
                 @click="save"
               >
                 <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
@@ -108,7 +112,7 @@ function resolveWorkspaceDocumentId(): string | null {
               </div>
               <div class="space-y-2">
                 <Label for="workspace-display-name">{{ $t('uiText.name3de49828') }}</Label>
-                <Input id="workspace-display-name" :model-value="workspaceDisplayName" disabled />
+                <Input id="workspace-display-name" v-model="workspaceDisplayName" :disabled="EndgeIDE.busy.value" />
               </div>
             </div>
             <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">

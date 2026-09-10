@@ -3,12 +3,14 @@ import { Endge } from '@endge/core'
 import { useCurrentTimezone } from '@endge/ui-vue'
 import { ChevronsUpDown, Clock3 } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const props = defineProps<{ readonly?: boolean, value?: string | null }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+const readOnly = computed(() => props.readonly === true)
+const pending = ref(false)
 
 const { current, setCurrent } = useCurrentTimezone()
 const workspaceVersion = ref(0)
@@ -19,17 +21,30 @@ onScopeDispose(offWorkspace)
 
 const availableTimezones = computed(() => {
   void workspaceVersion.value
-  return Endge.workspace.timezones
+  return Endge.workspace.isLoaded ? Endge.workspace.timezones : []
 })
 const currentTimezone = computed(() => {
   void workspaceVersion.value
+  if (!Endge.workspace.isLoaded) {
+    return ''
+  }
   return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTimezone(current.value)
 })
 const currentLabel = computed(() => currentTimezone.value ? Endge.workspace.getTimezoneLabel(currentTimezone.value) : '')
 /** Изменяет временную зону только в интерактивном представлении. */
-function select(timezone: string): void {
-  if (!readOnly.value) {
-    setCurrent(timezone)
+async function select(timezone: string): Promise<void> {
+  if (readOnly.value || pending.value) {
+    return
+  }
+  pending.value = true
+  try {
+    await setCurrent(timezone)
+  }
+  catch (error) {
+    toast.error('Не удалось изменить контекст', { description: error instanceof Error ? error.message : String(error) })
+  }
+  finally {
+    pending.value = false
   }
 }
 </script>
@@ -40,7 +55,7 @@ function select(timezone: string): void {
     <span>{{ currentLabel || '—' }}</span>
   </Button>
   <DropdownMenu v-else :modal="false">
-    <DropdownMenuTrigger as-child>
+    <DropdownMenuTrigger as-child :disabled="pending">
       <Button variant="ghost" size="sm" class="gap-2 px-2">
         <Clock3 class="size-4 text-muted-foreground" />
         <span class="font-medium">{{ currentLabel }}</span>

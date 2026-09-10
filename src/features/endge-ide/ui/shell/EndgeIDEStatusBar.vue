@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { EndgeContextSnapshot } from '@endge/core'
 import { Endge } from '@endge/core'
 import { AppBus } from '@endge/utils'
 import { BellDot, DatabaseZap, RefreshCcw } from 'lucide-vue-next'
@@ -9,7 +8,6 @@ import { toast } from 'vue-sonner'
 import { Configurator } from '@/app/Configurator'
 import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
 import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
@@ -18,22 +16,18 @@ import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.vue'
 
-const props = defineProps<{ readonly?: boolean, contextSnapshot?: Readonly<Partial<EndgeContextSnapshot>> }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
-
-/** Передаёт значения наблюдаемого снимка, не подменяя локальный Context. */
-function observedValue(key: keyof EndgeContextSnapshot): string | null | undefined {
-  return readOnly.value && props.contextSnapshot ? props.contextSnapshot[key] ?? null : undefined
-}
+const props = defineProps<{ readonly?: boolean }>()
+const readOnly = computed(() => props.readonly === true)
+const isDebugger = Endge.mode === 'debugger'
 
 const context = useEndgeIDEContext()
 const { state: domainVersionState, refresh: refreshDomainVersion } = useDomainVersions()
 const isMockEnabled = computed(() => context.isMockEnabled())
-const isDataModeOverridden = computed(() => context.isDataModeOverridden())
+const isDataModeOverridden = computed(() => !isDebugger && context.isDataModeOverridden())
 const isChangingDataMode = ref(false)
 const mockLabel = 'mock'
 const mockModeTitle = computed(() => {
-  const source = isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
+  const source = isDebugger ? 'Client context' : isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
   return isMockEnabled.value
     ? `Mock data enabled (${source}). External queries are not executed.`
     : `Live data enabled (${source}). Queries may call real services.`
@@ -48,7 +42,7 @@ const activeDomainTarget = computed(() => {
 const activeDomainVersionState = computed(() => domainVersionState(activeDomainTarget.value))
 
 function updateDomainVersion(force = false): void {
-  if (!readOnly.value && activeDomainTarget.value) {
+  if (!isDebugger && !readOnly.value && activeDomainTarget.value) {
     void refreshDomainVersion(activeDomainTarget.value, force)
   }
 }
@@ -58,7 +52,7 @@ function handleDomainChanged(): void {
 }
 
 async function reloadDomain(): Promise<void> {
-  if (readOnly.value) {
+  if (isDebugger || readOnly.value) {
     return
   }
   try {
@@ -77,23 +71,23 @@ async function toggleMockMode(): Promise<void> {
   }
 
   isChangingDataMode.value = true
-  if (isDataModeOverridden.value) {
-    context.clearDataModeOverride()
-  }
-  else {
-    context.setMockEnabled(!isMockEnabled.value)
-  }
-  const enabled = context.isMockEnabled()
   try {
-    await EndgeIDE.runtimePreview.restartForDataModeChange()
-    toast.success(enabled ? 'Mock-данные включены' : 'Live-данные включены', {
-      description: isDataModeOverridden.value
-        ? 'Используется локальное переопределение конфигуратора.'
-        : 'Восстановлен режим данных из Workspace.',
+    if (isDataModeOverridden.value) {
+      await context.clearDataModeOverride()
+    }
+    else {
+      await context.setMockEnabled(!isMockEnabled.value)
+    }
+    toast.success(context.isMockEnabled() ? 'Mock-данные включены' : 'Live-данные включены', {
+      description: isDebugger
+        ? 'Команда выполнена на клиенте.'
+        : context.isDataModeOverridden()
+          ? 'Используется локальное переопределение конфигуратора.'
+          : 'Восстановлен режим данных из Workspace.',
     })
   }
   catch (error) {
-    toast.error('Режим данных изменён, но preview не удалось перезапустить', {
+    toast.error('Не удалось выполнить смену режима данных', {
       description: String(error instanceof Error ? error.message : error),
     })
   }
@@ -103,7 +97,7 @@ async function toggleMockMode(): Promise<void> {
 }
 
 onMounted(() => {
-  if (readOnly.value) {
+  if (isDebugger || readOnly.value) {
     return
   }
   AppBus.onCustom('domainChanged', handleDomainChanged)
@@ -119,12 +113,12 @@ onBeforeUnmount(() => {
   <footer class="flex h-8 shrink-0 items-center justify-between px-3 text-xs font-medium text-muted-foreground" :aria-label="readOnly ? $t('remoteDebugger.contextReadonly') : undefined">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div class="footer-context-switchers flex shrink-0 items-center gap-1.5">
-        <TenantSwitcher :readonly="readOnly" :value="observedValue('tenant')" />
-        <ProjectSwitcher :readonly="readOnly" :value="observedValue('project')" />
-        <EnvironmentSwitcher :readonly="readOnly" :value="observedValue('environment')" />
-        <LocaleSwitcher :readonly="readOnly" :value="observedValue('locale')" />
-        <ThemeSwitcher :readonly="readOnly" :value="observedValue('theme')" />
-        <TimezoneSwitcher :readonly="readOnly" :value="observedValue('timezone')" />
+        <TenantSwitcher :readonly="readOnly" />
+        <ProjectSwitcher :readonly="readOnly" />
+        <EnvironmentSwitcher :readonly="readOnly" />
+        <LocaleSwitcher :readonly="readOnly" />
+        <ThemeSwitcher :readonly="readOnly" />
+        <TimezoneSwitcher :readonly="readOnly" />
       </div>
     </div>
 
@@ -141,11 +135,11 @@ onBeforeUnmount(() => {
         <DatabaseZap class="size-3.5 shrink-0" />
         <span>{{ mockLabel }}</span>
       </button>
-      <DomainVersionBadge :state="activeDomainVersionState" prefix />
-      <button type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
+      <DomainVersionBadge v-if="!isDebugger" :state="activeDomainVersionState" prefix />
+      <button v-if="!isDebugger" type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
         <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
       </button>
-      <BellDot class="size-3.5 mx-1" />
+      <BellDot v-if="!isDebugger" class="size-3.5 mx-1" />
     </div>
   </footer>
 </template>

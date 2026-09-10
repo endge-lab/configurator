@@ -10,7 +10,7 @@ import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const { t } = useI18n()
 const debuggerSession = Configurator.remoteDebugger
-const { clients, selected, status, context } = debuggerSession
+const { clients, selected, status, canControl } = debuggerSession
 function close(): void {
   Configurator.closeDebugger()
 }
@@ -53,7 +53,7 @@ onBeforeUnmount(() => {
       <EditorView class="min-h-0 flex-1" />
     </div>
     <template #status-bar>
-      <EndgeIDEStatusBar :context-snapshot="context" />
+      <EndgeIDEStatusBar :readonly="!canControl" />
     </template>
   </Grid>
 </template>

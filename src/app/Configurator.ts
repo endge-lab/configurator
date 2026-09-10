@@ -9,6 +9,7 @@ import type {
   ConfiguratorStatus,
 } from '@/app/domain/types/configurator.type'
 import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
+import type { WorkspaceCreateInput } from '@/features/backend-connections/domain/types/backend-connection.type'
 import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
 import type { App } from 'vue'
 import type { Router } from 'vue-router'
@@ -45,7 +46,10 @@ export class ConfiguratorBootstrapError extends Error {
 
 /** Федерация уровня приложения и единственный владелец запуска Configurator. */
 export class Configurator {
-  private static readonly _modules: ConfiguratorModules = createConfiguratorModules(() => EndgeIDE.reset())
+  private static readonly _modules: ConfiguratorModules = createConfiguratorModules(
+    () => EndgeIDE.reset(),
+    { send: command => Configurator._remoteDebugger.execute(command) },
+  )
   private static _initialization: Promise<ConfiguratorStatus> | null = null
   private static _status: 'idle' | ConfiguratorStatus = 'idle'
   private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
@@ -86,6 +90,22 @@ export class Configurator {
     return state.status === 'authenticated'
       ? state.session.workspaces.filter(workspace => workspace.active)
       : []
+  }
+
+  /** После создания обновляет серверный список Workspace без переключения контекста. */
+  public static async createWorkspace(input: WorkspaceCreateInput): Promise<boolean> {
+    const state = this.session.state
+    if (state.status !== 'authenticated' || !state.session.platformAdmin) {
+      throw new Error('workspace_creation_forbidden')
+    }
+    await this.connections.createWorkspace(input)
+    // Создание уже завершено: ошибка обновления списка не должна предлагать повторить POST.
+    try {
+      return (await this.session.check()).status === 'authenticated'
+    }
+    catch {
+      return false
+    }
   }
 
   public static get backendConnectionFailure(): ConfiguratorBackendConnectionFailure | null {

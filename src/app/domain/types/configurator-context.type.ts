@@ -4,6 +4,7 @@ import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge
 export interface ConfiguratorContextSurfaceLifecycle {
   beforeContextReset?: () => Promise<void> | void
   afterContextBoot?: () => Promise<void> | void
+  afterDataModeChange?: () => Promise<void> | void
 }
 
 export interface ConfiguratorContextInitOptions {

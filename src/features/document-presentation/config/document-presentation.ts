@@ -59,6 +59,7 @@ export const FALLBACK_PRESENTATION: DomainDocumentPresentation = {
 }
 
 export const DOCUMENT_AUXILIARY_PRESENTATION = {
+  filterView: { icon: 'SlidersHorizontal', colorClass: DOCUMENT_COLORS.blue },
   scope: { icon: 'Layers3', colorClass: DOCUMENT_COLORS.slate },
   workspace: { icon: 'Building2', colorClass: DOCUMENT_COLORS.orange },
   tableColumn: { icon: 'Columns', colorClass: DOCUMENT_COLORS.sky },

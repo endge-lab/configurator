@@ -21,6 +21,7 @@ export interface EndgeIDEContextPort {
   registerSurface: (id: string, lifecycle: {
     beforeContextReset?: () => Promise<void> | void
     afterContextBoot?: () => Promise<void> | void
+    afterDataModeChange?: () => Promise<void> | void
   }) => () => void
 }
 

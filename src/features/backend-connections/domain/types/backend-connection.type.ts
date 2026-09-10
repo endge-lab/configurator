@@ -36,3 +36,10 @@ export interface BackendConnectionsService {
   create: (name: string, baseURL: string) => Promise<void>
   delete: (id: string) => Promise<void>
 }
+
+/** Минимальные данные нового рабочего пространства выбранного backend. */
+export interface WorkspaceCreateInput {
+  identity: string
+  displayName: string
+  description?: string
+}

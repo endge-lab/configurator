@@ -43,6 +43,7 @@ import {
   X,
 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { toast } from 'vue-sonner'
 import { Configurator } from '@/app/Configurator'
@@ -53,6 +54,8 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import CreateWorkspace_Dialog from '@/features/backend-connections/ui/CreateWorkspace_Dialog.vue'
+import { useConfiguratorSession } from '@/features/configurator-session/ui/configurator-session-context'
 import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_COLORS } from '@/features/document-presentation/config/document-presentation'
 import {
   getDomainDocumentPresentation,
@@ -103,6 +106,8 @@ const tabs = EndgeIDE.tabs
 
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
+    | { type: 'create-workspace' }
+    | { type: 'delete-workspace' }
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
@@ -116,6 +121,9 @@ type MenuAction
     | { type: 'generate-vocab-mock' }
 
 const domainStore = useDomainStore()
+const { t } = useI18n()
+const { state: sessionState } = useConfiguratorSession()
+const createWorkspaceOpen = ref(false)
 const debuggerMode = Endge.mode === 'debugger'
 const vocabMockDialog = ref({
   open: false,
@@ -566,7 +574,7 @@ const selectedFileKeys = ref<Set<string>>(new Set())
 
 /** Маппинг: identity корневой папки — секция и активные документы домена. */
 const ROOT_TO_SECTION = computed(() => {
-  const compositions = withoutDeleted<any>((Endge.domain as any).getCompositions?.() ?? [])
+  const compositions = withoutDeleted(domainStore.compositions)
   return {
     ...(debuggerMode
       ? { 'root-configurations': { section: DomainSectionType.Configuration, items: () => Endge.domain.getConfigurations() } }
@@ -661,11 +669,12 @@ const fsTree = computed<FsNode[]>(() => {
   else { tree.push(eventRoot) }
 
   const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
-  const sessionState = Configurator.session.state
-  if (workspaceRoot?.type === 'folder' && sessionState.status === 'authenticated') {
+  if (workspaceRoot?.type === 'folder' && sessionState.value.status === 'authenticated') {
     workspaceRoot.virtual = true
     workspaceRoot.children = buildWorkspaceTreeNodes(
-      sessionState.session.workspaces,
+      sessionState.value.session.workspaces.map(workspace => workspace.identity === Endge.workspace.current.identity
+        ? { ...workspace, displayName: Endge.workspace.current.displayName }
+        : workspace),
       Endge.workspace.current.identity,
       Endge.domain.getConfigurations(),
     )
@@ -1631,6 +1640,12 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
   if (debuggerMode) {
     return items
   }
+  if (node.type === 'folder' && node.id === 'root-workspaces') {
+    if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
+      items.push({ label: t('workspaceTree.create'), icon: Plus, action: { type: 'create-workspace' } })
+    }
+    return items
+  }
   if (node.workspaceIdentity) {
     if (node.activeWorkspace && Endge.domainRepository.capabilities.mutations) {
       items.push({
@@ -1646,6 +1661,12 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
         action: { type: 'switch-workspace', workspaceIdentity: node.workspaceIdentity },
       })
     }
+    items.push({
+      label: t('common.delete'),
+      icon: Trash2,
+      action: { type: 'delete-workspace' },
+      destructive: true,
+    })
     return items
   }
   if (node.virtual) {
@@ -1693,7 +1714,13 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
     items.push({
-      label: 'Добавить сущность',
+      label: node.sectionType === DomainSectionType.Tenant
+        ? t('documentCreate.createTenant')
+        : node.sectionType === DomainSectionType.Project
+          ? t('documentCreate.createProject')
+          : node.sectionType === DomainSectionType.Environment
+            ? t('documentCreate.createEnvironment')
+            : 'Добавить сущность',
       icon: Plus,
       action: { type: 'create-doc', node },
     })
@@ -1764,6 +1791,15 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
 }
 
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
+  if (a.type === 'create-workspace') {
+    closeContextMenu()
+    createWorkspaceOpen.value = true
+    return
+  }
+  if (a.type === 'delete-workspace') {
+    toast.error(t('workspaceTree.deletionForbidden'))
+    return
+  }
   if (a.type === 'switch-workspace') {
     Configurator.connections.selectWorkspace(a.workspaceIdentity)
     return
@@ -1806,6 +1842,13 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     closeContextMenu()
     EndgeIDE.modals.openCreateDocument({
       sectionType: a.node.sectionType,
+      documentType: a.node.sectionType === DomainSectionType.Tenant
+        ? 'tenant'
+        : a.node.sectionType === DomainSectionType.Project
+          ? 'project'
+          : a.node.sectionType === DomainSectionType.Environment
+            ? 'environment'
+            : undefined,
       folderId: a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
     })
     return
@@ -2141,6 +2184,8 @@ function rowClasses(item: FlatFsItem): string {
         </button>
       </div>
     </Teleport>
+
+    <CreateWorkspace_Dialog v-model:open="createWorkspaceOpen" />
 
     <Dialog v-model:open="vocabMockDialog.open">
       <DialogContent class="sm:max-w-xl" @escape-key-down="closeVocabMockGenerator">

@@ -10,6 +10,7 @@ export interface WorkflowRelation {
 
 export interface WorkflowGraph {
   nodes: Map<string, WorkflowNodeData>
+  /** Иерархия размещения; семантика ownership и dependencies хранится в relations. */
   children: Map<string, string[]>
   resources: Map<string, string[]>
   resourceOwners: Map<string, string>
@@ -183,6 +184,22 @@ export function buildWorkflowGraph(roots: WorkflowDependency[]): WorkflowGraph {
   for (const root of roots) {
     visitComposition(root, [], new Map(), new Map(), new Map())
     graph.roots.push(root.id)
+  }
+  // Представление размещается после своего Filter occurrence, но остаётся
+  // включённым в Composition/Scope; source Filter является его зависимостью.
+  for (const node of graph.nodes.values()) {
+    const sourceId = node.filterView?.sourceId
+    if (!sourceId || !graph.nodes.has(sourceId)) {
+      continue
+    }
+    for (const [owner, children] of graph.children) {
+      if (children.includes(node.id)) {
+        graph.children.set(owner, children.filter(id => id !== node.id))
+        break
+      }
+    }
+    graph.children.get(sourceId)!.push(node.id)
+    graph.relations.push({ source: node.id, target: sourceId, kind: 'uses' })
   }
   return graph
 }

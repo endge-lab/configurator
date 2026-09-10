@@ -61,7 +61,7 @@ const edges = computed(() => scene.value.edges
     sourceHandle: edge.sourceHandle,
     targetHandle: edge.resource ? 'top' : 'left',
     label: selectedIds.value.has(edge.logicalSource) || selectedIds.value.has(edge.logicalTarget)
-      ? (edge.resource ? t('projectWorkflow.connectedResource') : t('projectWorkflow.includes'))
+      ? (edge.filterView ? t('projectWorkflow.filterRepresentation') : edge.resource ? t('projectWorkflow.connectedResource') : t('projectWorkflow.includes'))
       : undefined,
     markerEnd: MarkerType.ArrowClosed,
     class: selectedIds.value.size && focus.value.has(edge.logicalSource) && focus.value.has(edge.logicalTarget)

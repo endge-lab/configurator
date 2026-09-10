@@ -5,6 +5,7 @@ import type { CreateDocumentKind, DocumentCreateDescriptor } from '@/features/en
 import { ComponentType, createNewDomainDocument, DomainSectionType, Endge, ENDGE_STYLE_DEFAULT_SOURCE, FilterType, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -102,6 +103,7 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
 }
 
 const domainStore = useDomainStore()
+const { t } = useI18n()
 const ROOT_FOLDER_VALUE = '__section_root__'
 
 const activeType = ref<CreateDocumentKind>(ComponentType.SFC)
@@ -136,6 +138,17 @@ const activeOption = computed<DocumentCreateDescriptor>(() =>
 
 const createContext = computed(() => EndgeIDE.modals.createDocumentContext.value)
 const lockedDocumentType = computed(() => createContext.value?.documentType ?? null)
+const hasSupportedSelection = computed(() => {
+  const descriptor = DOCUMENT_CREATE_DESCRIPTORS.find(item => item.type === activeType.value)
+  if (!descriptor) {
+    return false
+  }
+  if (lockedDocumentType.value) {
+    return descriptor.type === lockedDocumentType.value
+  }
+  return !createContext.value?.sectionType || showAllTypes.value
+    || descriptor.section === createContext.value.sectionType
+})
 const updateOwnerStoreIdentity = computed(() =>
   activeType.value === 'update' ? createContext.value?.updateOwnerStoreIdentity ?? null : null,
 )
@@ -244,6 +257,7 @@ const folderOptions = computed(() => {
 
 watch(() => props.open, (v) => {
   if (v) {
+    activeType.value = ComponentType.SFC
     const ctx = EndgeIDE.modals.createDocumentContext?.value ?? null
     if (ctx?.documentType != null) {
       const requestedType = DOCUMENT_CREATE_DESCRIPTORS.find(d => d.type === ctx.documentType)
@@ -585,6 +599,13 @@ function applyFormFields(draft: RDocument): void {
 }
 
 async function onSubmit(): Promise<void> {
+  if (loading.value) {
+    return
+  }
+  if (!hasSupportedSelection.value) {
+    toast.error(t('documentCreate.unsupportedType'))
+    return
+  }
   loading.value = true
   try {
     if (createMode.value === 'json') {
@@ -783,7 +804,7 @@ function onCancel(): void {
         </div>
 
         <!-- Справа: данные для создания -->
-        <div class="flex min-h-0 flex-col gap-3">
+        <div v-if="hasSupportedSelection" class="flex min-h-0 flex-col gap-3">
           <div class="rounded-lg border bg-muted/20 p-3">
             <div class="flex items-start gap-3">
               <DocumentIcon
@@ -891,6 +912,9 @@ function onCancel(): void {
             </TabsContent>
           </Tabs>
         </div>
+        <p v-else role="alert" class="text-sm text-muted-foreground">
+          {{ t('documentCreate.unsupportedType') }}
+        </p>
       </div>
 
       <DialogFooter class="gap-2">
@@ -898,7 +922,7 @@ function onCancel(): void {
           {{ $t('uiText.cancel555ad1c0') }}
         </Button>
         <Button
-          :disabled="loading || identityChecking || (createMode === 'form' && !!formError)"
+          :disabled="!hasSupportedSelection || loading || identityChecking || (createMode === 'form' && !!formError)"
           @click="onSubmit"
         >
           {{ loading ? $t('uiText.creating573e3eda') : $t('uiText.create84370a20') }}

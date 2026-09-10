@@ -2,7 +2,7 @@
 import { Endge } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { ChevronsUpDown } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -15,13 +15,14 @@ import {
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 
 const props = defineProps<{ readonly?: boolean, value?: string | null }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+const readOnly = computed(() => props.readonly === true)
+const pending = ref(false)
 
 const domainStore = useDomainStore()
 const context = useEndgeIDEContext()
-const currentEnv = computed(() => props.value !== undefined ? props.value : context.currentContext().environmentIdentity ?? Endge.context.getCurrentEnvironment())
+const currentEnv = computed(() => props.value !== undefined ? props.value : context.currentContext().environmentIdentity)
 const environments = computed(() => {
-  const projectIdentity = context.currentContext().projectIdentity ?? Endge.context.getCurrentProject()
+  const projectIdentity = context.currentContext().projectIdentity
   const project = Endge.domain.getProject(projectIdentity)
   if (!project?.allowedEnvironmentIds.length) {
     return domainStore.environments
@@ -36,14 +37,18 @@ const environmentLabel = computed(() => {
 })
 
 async function select(identity: string): Promise<void> {
-  if (readOnly.value) {
+  if (readOnly.value || pending.value) {
     return
   }
+  pending.value = true
   try {
-    await context.switchContext({ environmentIdentity: identity })
+    await Endge.commands.execute({ type: 'context:set-environment', payload: { environment: identity } })
   }
   catch (error: any) {
     toast.error('Не удалось переключить окружение', { description: String(error?.message ?? error) })
+  }
+  finally {
+    pending.value = false
   }
 }
 </script>
@@ -57,7 +62,7 @@ async function select(identity: string): Promise<void> {
       <Button
         variant="ghost"
         size="sm"
-        :disabled="context.isSwitching()"
+        :disabled="pending || context.isSwitching()"
         class="gap-2 px-2 hover:bg-muted-foreground/10 dark:hover:bg-muted-foreground/20 hover:text-card-foreground"
       >
         <span class="font-medium">{{ environmentLabel }}</span>

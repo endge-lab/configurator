@@ -1,7 +1,10 @@
 import type {
   EndgeBootContext,
+  EndgeCommandExecutor,
+  EndgeDataMode,
   EndgeDomainProvider,
   EndgeExecutionContext,
+  EndgeRemoteCommandTransport,
 } from '@endge/core'
 import type {
   ConfiguratorContextInitOptions,
@@ -11,6 +14,7 @@ import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
 import {
+  createContextCommandExecutor,
   Endge,
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
@@ -40,7 +44,10 @@ export class ConfiguratorContext_Module {
   private readonly _listeners = new Set<() => void>()
   private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
 
-  public constructor(private readonly _events: Pick<ConfiguratorEvents_Module, 'start' | 'stop'>) {}
+  public constructor(
+    private readonly _events: Pick<ConfiguratorEvents_Module, 'start' | 'stop'>,
+    private readonly _remoteCommands?: EndgeRemoteCommandTransport,
+  ) {}
 
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
@@ -70,6 +77,7 @@ export class ConfiguratorContext_Module {
           vars: {},
           scope: { workspaceIdentity: this.workspaceIdentity },
           bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: true, label: 'Configurator debugger' },
+          commands: { remote: this._remoteCommands },
         }
       : this._createBootContext(options.context, backendConfig, domainProvider)
 
@@ -210,9 +218,38 @@ export class ConfiguratorContext_Module {
 
     return {
       ...commonContext,
+      commands: { local: this._createCommandExecutor() },
       dataProvider: 'default',
       domainProvider,
     }
+  }
+
+  /** Привязывает команды к штатным операциям приложения; сами setters не отправляют команды обратно. */
+  private _createCommandExecutor(): EndgeCommandExecutor {
+    const context = Endge.context
+    return createContextCommandExecutor({
+      setCurrentWorkspace: workspace => context.setCurrentWorkspace(workspace),
+      setCurrentTenant: tenant => this.switchContext({ tenantIdentity: tenant }),
+      setCurrentProject: project => this.switchContext({ projectIdentity: project }),
+      setCurrentEnvironment: environment => this.switchContext({ environmentIdentity: environment }),
+      setCurrentUser: user => context.setCurrentUser(user),
+      setCurrentLocale: locale => context.setCurrentLocale(locale),
+      setCurrentTheme: theme => context.setCurrentTheme(theme),
+      setCurrentTimezone: timezone => context.setCurrentTimezone(timezone),
+      setDataMode: mode => this._changeDataMode(mode),
+      clearDataModeOverride: () => this._changeDataMode(null),
+    })
+  }
+
+  /** Одинаково обновляет режим и живые preview после локальной или полученной от дебагера команды. */
+  private async _changeDataMode(mode: EndgeDataMode | null): Promise<void> {
+    if (mode === null) {
+      this.clearDataModeOverride()
+    }
+    else {
+      this.setMockEnabled(mode === 'mock')
+    }
+    await this._runSurfaceHook('afterDataModeChange')
   }
 
   private async _performContextSwitch(

@@ -21,6 +21,7 @@ export interface WorkflowDependency {
   dataSource?: CompositionProgramPayload['data'][number]
   resourceSource?: CompositionProgramPayload['resources'][number]
   dataBindings?: Record<string, string>
+  filterView?: { sourceId: string | null, fields: { key: string, label?: string }[] }
   dataDependencies?: string[]
   vocabReferences?: { alias?: string, identity?: string }[]
   bindingIssue?: 'explicit-provider' | 'ambiguous-provider' | 'missing-provider'
@@ -58,6 +59,7 @@ export interface WorkflowEdge {
   source: string
   target: string
   resource: boolean
+  filterView?: boolean
   logicalSource: string
   logicalTarget: string
   sourceHandle: string
@@ -223,13 +225,19 @@ export class ProjectWorkflow {
       : NODE_WIDTH
   }
 
+  /** Строки по 34px дополняют укороченную на 42px шапку карточки FilterView. */
+  private _filterViewHeightDelta(id: string): number {
+    const count = this._graph.nodes.get(id)?.filterView?.fields.length ?? 0
+    return count ? count * 34 + 14 - 42 : 0
+  }
+
   private _blockHeight(id: string): number {
     const rows = this._resourceRows(id)
     if (!rows.length) {
-      return NODE_HEIGHT
+      return NODE_HEIGHT + this._filterViewHeightDelta(id)
     }
     const count = rows.reduce((sum, row) => sum + Math.ceil(row.items.length / this._resourceColumns(id)), 0)
-    return RESOURCE_CONTENT_Y + (count - 1) * RESOURCE_ROW_HEIGHT + RESOURCE_HEIGHT
+    return this._filterViewHeightDelta(id) + RESOURCE_CONTENT_Y + (count - 1) * RESOURCE_ROW_HEIGHT + RESOURCE_HEIGHT
   }
 
   /** Композиции одного уровня стоят в общей колонке; их содержимое образует компактные группы. */
@@ -295,7 +303,7 @@ export class ProjectWorkflow {
         id: `resources-toggle:${id}`,
         parentId: id,
         role: 'resource-toggle',
-        position: { x: 0, y: RESOURCE_TOGGLE_Y },
+        position: { x: 0, y: this._filterViewHeightDelta(id) + RESOURCE_TOGGLE_Y },
         data: { ...data, resourceRows: rows, resourcesExpanded: expanded, width: NODE_WIDTH },
       })
       const columns = this._resourceColumns(id)
@@ -309,7 +317,7 @@ export class ProjectWorkflow {
           hidden: !expanded,
           position: {
             x: (NODE_WIDTH - width) / 2 + (index % columns) * (RESOURCE_WIDTH + RESOURCE_GAP),
-            y: RESOURCE_CONTENT_Y + (rowIndex + Math.floor(index / columns)) * RESOURCE_ROW_HEIGHT,
+            y: this._filterViewHeightDelta(id) + RESOURCE_CONTENT_Y + (rowIndex + Math.floor(index / columns)) * RESOURCE_ROW_HEIGHT,
           },
           data: { ...item, width: RESOURCE_WIDTH },
         }))
@@ -328,7 +336,8 @@ export class ProjectWorkflow {
         edges.push({ id: `${store}->${id}`, source: store, target: id, resource: true, logicalSource: id, logicalTarget: store, sourceHandle: 'bottom' })
       })
       const connect = (child: string): void => {
-        edges.push({ id: `${id}->${child}`, source: id, target: child, resource: false, logicalSource: id, logicalTarget: child, sourceHandle: 'right' })
+        const filterView = graph.nodes.get(child)?.filterView?.sourceId === id
+        edges.push({ id: `${id}->${child}`, source: id, target: child, resource: false, filterView, logicalSource: filterView ? child : id, logicalTarget: filterView ? id : child, sourceHandle: 'right' })
       }
       let childTop = top + (block.height - block.childrenHeight) / 2
       for (const child of block.branches) {

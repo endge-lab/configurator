@@ -22,7 +22,29 @@
     "showCSSPreview": "Show generated CSS"
   },
   "workspaceTree": {
-    "active": "Active"
+    "active": "Active",
+    "create": "Create workspace",
+    "created": "Workspace created",
+    "createFailed": "Could not create the workspace",
+    "creationForbidden": "Platform administrator permissions are required to create a workspace",
+    "deletionForbidden": "This operation is forbidden",
+    "description": "Description",
+    "displayName": "Name",
+    "identity": "Identifier",
+    "identityConflict": "A workspace with this identifier already exists",
+    "refreshFailed": "The workspace was created, but the list could not be refreshed. Reload the page."
+  },
+  "documentCreate": {
+    "createTenant": "Create tenant",
+    "createProject": "Create project",
+    "createEnvironment": "Create environment",
+    "unsupportedType": "Select a supported document type",
+    "project": {
+      "label": "Project",
+      "description": "Project configuration, environments and root execution graph.",
+      "defaultName": "New project",
+      "group": "System"
+    }
   },
   "common": {
     "delete": "Delete",
@@ -1263,6 +1285,7 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
   },
   "projectWorkflow": {
+    "filterRepresentation": "Filter representation",
     "selectedElements": "Selected elements",
     "usedBy": "Used by",
     "resources": "Contents",

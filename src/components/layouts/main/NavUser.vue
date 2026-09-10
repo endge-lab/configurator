@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
-import { useUI } from '@endge/ui-vue'
+import { useCurrentLocale, useCurrentTheme, useUI } from '@endge/ui-vue'
 import {
   Languages,
   SunMoon,
@@ -41,6 +41,8 @@ defineProps<{
 const { isMobile } = useSidebar()
 const { t } = useI18n()
 const ui = useUI()
+const { setCurrent: setCurrentLocale } = useCurrentLocale()
+const { setCurrent: setCurrentTheme } = useCurrentTheme()
 </script>
 
 <template>
@@ -104,7 +106,7 @@ const ui = useUI()
                     v-for="locale in Configurator.i18n.availableLocales.value"
                     :key="locale.value"
                     :model-value="locale.value === $i18n.locale"
-                    @click="$i18n.locale = locale.value"
+                    @click="setCurrentLocale(locale.value)"
                   >
                     {{ locale.label }}
                   </DropdownMenuCheckboxItem>
@@ -123,7 +125,7 @@ const ui = useUI()
                     v-for="theme in ui.availableThemes"
                     :key="theme"
                     :model-value="ui.theme === theme"
-                    @click="ui.setTheme(theme)"
+                    @click="setCurrentTheme(theme)"
                   >
                     {{ Endge.workspace.getThemeLabel(theme) }}
                   </DropdownMenuCheckboxItem>

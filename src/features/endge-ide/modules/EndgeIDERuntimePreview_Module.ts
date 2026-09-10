@@ -68,6 +68,7 @@ export class EndgeIDERuntimePreview_Module {
     this._surfaceOff = this._context.registerSurface('endge-ide-runtime-preview', {
       beforeContextReset: () => this.disposeAll(),
       afterContextBoot: () => this._restoreRememberedEntries(),
+      afterDataModeChange: () => this.restartForDataModeChange(),
     })
     this._authInteractionOff = Endge.auth.onInteractionRequired(error => this._handleInteractionRequired(error))
     this._restoreRememberedEntries()

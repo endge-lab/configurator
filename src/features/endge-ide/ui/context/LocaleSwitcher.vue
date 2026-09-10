@@ -3,6 +3,7 @@ import { Endge } from '@endge/core'
 import { useCurrentLocale } from '@endge/ui-vue'
 import { ChevronsUpDown } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -13,7 +14,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const props = defineProps<{ readonly?: boolean, value?: string | null }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+const readOnly = computed(() => props.readonly === true)
+const pending = ref(false)
 
 const { current, setCurrent } = useCurrentLocale()
 const workspaceVersion = ref(0)
@@ -24,10 +26,13 @@ onScopeDispose(offWorkspace)
 
 const availableLocales = computed(() => {
   void workspaceVersion.value
-  return Endge.workspace.locales
+  return Endge.workspace.isLoaded ? Endge.workspace.locales : []
 })
 const currentLabel = computed(() => {
   void workspaceVersion.value
+  if (!Endge.workspace.isLoaded) {
+    return ''
+  }
   const c = props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeLocale(current.value)
   return getLocaleDisplayLabel(c)
 })
@@ -40,9 +45,19 @@ function getLocaleDisplayLabel(localeCode: string): string {
   return String(locale?.displayName || locale?.shortLabel || localeCode)
 }
 /** Изменяет локаль только в интерактивном представлении. */
-function select(locale: string): void {
-  if (!readOnly.value) {
-    setCurrent(locale)
+async function select(locale: string): Promise<void> {
+  if (readOnly.value || pending.value) {
+    return
+  }
+  pending.value = true
+  try {
+    await setCurrent(locale)
+  }
+  catch (error) {
+    toast.error('Не удалось изменить контекст', { description: error instanceof Error ? error.message : String(error) })
+  }
+  finally {
+    pending.value = false
   }
 }
 </script>
@@ -52,7 +67,7 @@ function select(locale: string): void {
     <span>{{ currentLabel || '—' }}</span>
   </Button>
   <DropdownMenu v-else :modal="false">
-    <DropdownMenuTrigger as-child>
+    <DropdownMenuTrigger as-child :disabled="pending">
       <Button
         variant="ghost"
         size="sm"

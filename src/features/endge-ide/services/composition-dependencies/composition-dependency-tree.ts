@@ -24,6 +24,7 @@ export interface CompositionDependencyNode extends DocumentDependencyNode {
   dataSource?: CompositionProgramPayload['data'][number]
   resourceSource?: CompositionProgramPayload['resources'][number]
   dataBindings?: Record<string, string>
+  filterView?: { sourceId: string | null, fields: { key: string, label?: string }[] }
   dataDependencies?: string[]
   vocabReferences?: { alias?: string, identity?: string }[]
   children: CompositionDependencyNode[]
@@ -470,6 +471,31 @@ function buildRuntimeNode(
     exists: target.exists,
     activationMode: runtime.effectiveActivation.mode,
   })
+  if (runtime.kind === 'filter-view') {
+    const source = payload.runtimes.find(item => item.name === runtime.identity && item.kind === 'filter')
+    const filter = source && Endge.domain.getFilter(source.identity)
+    const compilation = filter ? Endge.source.compile('filter', filter.source) : null
+    const artifact = compilation?.artifact as FilterProgramPayload | null
+    const fields = artifact?.fields.filter(field => !runtime.fields?.length || runtime.fields.includes(field.key)) ?? []
+    const labelsBinding = runtime.props.labels
+    const labels = labelsBinding?.kind === 'literal' && labelsBinding.value && typeof labelsBinding.value === 'object'
+      ? labelsBinding.value as Record<string, unknown>
+      : {}
+    node.filterView = {
+      sourceId: source ? `${occurrenceId}/runtime:${source.path}` : null,
+      fields: fields.map((field) => {
+        const label = labels[field.key]
+        return { key: field.key, ...(typeof label === 'string' ? { label } : {}) }
+      }),
+    }
+    Object.assign(node, DOCUMENT_AUXILIARY_PRESENTATION.filterView, { badgeIcon: null })
+    if (!filter) {
+      node.status = 'missing'
+    }
+    else if (!artifact || runtime.fields?.some(key => !artifact.fields.some(field => field.key === key))) {
+      node.status = 'compile-error'
+    }
+  }
   node.dataDependencies = [...new Set([
     ...Object.values(runtime.props).flatMap(binding => binding.kind === 'data' || binding.kind === 'data-view' ? [binding.data] : []),
     ...runtime.storeTo.map(publication => publication.data),
@@ -486,7 +512,7 @@ function buildRuntimeNode(
     const filter = Endge.domain.getFilter(target.identity)
     if (filter) {
       const payload = Endge.source.compile('filter', filter.source).artifact as FilterProgramPayload | null
-      node.vocabReferences = [...new Set(payload?.fields.flatMap(field => field.vocab ? [field.vocab.identity] : []) ?? [])].map(identity => ({ identity }))
+      node.vocabReferences = [...new Set(payload?.fields.filter(field => !node.filterView || node.filterView.fields.some(selected => selected.key === field.key)).flatMap(field => field.vocab ? [field.vocab.identity] : []) ?? [])].map(identity => ({ identity }))
     }
   }
   else if (runtime.kind === 'query') {

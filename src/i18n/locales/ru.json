@@ -22,7 +22,29 @@
     "showCSSPreview": "Показать производный CSS"
   },
   "workspaceTree": {
-    "active": "Активный"
+    "active": "Активный",
+    "create": "Создать рабочее пространство",
+    "created": "Рабочее пространство создано",
+    "createFailed": "Не удалось создать рабочее пространство",
+    "creationForbidden": "Для создания рабочего пространства нужны права администратора платформы",
+    "deletionForbidden": "Данная операция запрещена",
+    "description": "Описание",
+    "displayName": "Название",
+    "identity": "Идентификатор",
+    "identityConflict": "Рабочее пространство с таким идентификатором уже существует",
+    "refreshFailed": "Пространство создано, но список не обновился. Перезагрузите страницу."
+  },
+  "documentCreate": {
+    "createTenant": "Создать тенант",
+    "createProject": "Создать проект",
+    "createEnvironment": "Создать окружение",
+    "unsupportedType": "Выберите поддерживаемый тип документа",
+    "project": {
+      "label": "Проект",
+      "description": "Конфигурация проекта, его окружения и корневой граф выполнения.",
+      "defaultName": "Новый проект",
+      "group": "Система"
+    }
   },
   "common": {
     "delete": "Удалить",
@@ -1263,6 +1285,7 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
   },
   "projectWorkflow": {
+    "filterRepresentation": "Представление фильтра",
     "selectedElements": "Выбранные элементы",
     "usedBy": "Используется в",
     "resources": "Состав",

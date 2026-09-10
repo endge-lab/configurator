@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
-import { useUI } from '@endge/ui-vue'
+import { useCurrentTheme } from '@endge/ui-vue'
 import { ChevronsUpDown, Palette } from 'lucide-vue-next'
 import { computed, onScopeDispose, ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 const props = defineProps<{ readonly?: boolean, value?: string | null }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+const readOnly = computed(() => props.readonly === true)
+const pending = ref(false)
 
-const ui = useUI()
+const { current, setCurrent } = useCurrentTheme()
 const workspaceVersion = ref(0)
 const offWorkspace = Endge.workspace.subscribe(() => {
   workspaceVersion.value += 1
@@ -19,17 +21,30 @@ onScopeDispose(offWorkspace)
 
 const availableThemes = computed(() => {
   void workspaceVersion.value
-  return Endge.workspace.themes
+  return Endge.workspace.isLoaded ? Endge.workspace.themes : []
 })
 const currentTheme = computed(() => {
   void workspaceVersion.value
-  return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTheme(ui.value.theme)
+  if (!Endge.workspace.isLoaded) {
+    return ''
+  }
+  return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTheme(current.value)
 })
 const currentLabel = computed(() => currentTheme.value ? Endge.workspace.getThemeLabel(currentTheme.value) : '')
 /** Изменяет тему только в интерактивном представлении. */
-function select(theme: string): void {
-  if (!readOnly.value) {
-    ui.value.setTheme(theme)
+async function select(theme: string): Promise<void> {
+  if (readOnly.value || pending.value) {
+    return
+  }
+  pending.value = true
+  try {
+    await setCurrent(theme)
+  }
+  catch (error) {
+    toast.error('Не удалось изменить контекст', { description: error instanceof Error ? error.message : String(error) })
+  }
+  finally {
+    pending.value = false
   }
 }
 </script>
@@ -40,7 +55,7 @@ function select(theme: string): void {
     <span>{{ currentLabel || '—' }}</span>
   </Button>
   <DropdownMenu v-else :modal="false">
-    <DropdownMenuTrigger as-child>
+    <DropdownMenuTrigger as-child :disabled="pending">
       <Button variant="ghost" size="sm" class="gap-2 px-2">
         <Palette class="size-4 text-muted-foreground" />
         <span class="font-medium">{{ currentLabel }}</span>

@@ -2,7 +2,7 @@
 import { Endge } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import { Building2, ChevronsUpDown, Loader2 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -10,23 +10,28 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 
 const props = defineProps<{ readonly?: boolean, value?: string | null }>()
-const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+const readOnly = computed(() => props.readonly === true)
+const pending = ref(false)
 
 const domain = useDomainStore()
 const context = useEndgeIDEContext()
-const current = computed(() => props.value !== undefined ? props.value : context.currentContext().tenantIdentity ?? Endge.context.getCurrentTenant())
+const current = computed(() => props.value !== undefined ? props.value : context.currentContext().tenantIdentity)
 const currentLabel = computed(() => domain.tenants.find((item: any) => item.identity === current.value)?.displayName ?? current.value)
-const disabled = computed(() => context.isSwitching() || Endge.context.isTenantLockedBySession)
+const disabled = computed(() => pending.value || context.isSwitching() || Endge.context.isTenantLockedBySession)
 
 async function select(identity: string): Promise<void> {
-  if (readOnly.value) {
+  if (readOnly.value || pending.value) {
     return
   }
+  pending.value = true
   try {
-    await context.switchContext({ tenantIdentity: identity })
+    await Endge.commands.execute({ type: 'context:set-tenant', payload: { tenant: identity } })
   }
   catch (error: any) {
     toast.error('Не удалось переключить тенант', { description: String(error?.message ?? error) })
+  }
+  finally {
+    pending.value = false
   }
 }
 </script>

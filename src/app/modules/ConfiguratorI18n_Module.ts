@@ -1,5 +1,5 @@
 import { Endge } from '@endge/core'
-import { shallowRef, watch } from 'vue'
+import { shallowRef } from 'vue'
 
 import { i18n } from '@/i18n'
 import en from '@/i18n/locales/en.json'
@@ -26,9 +26,6 @@ export class ConfiguratorI18n_Module {
 
     this._syncWorkspace()
     this._stopHandles.push(
-      watch(() => i18n.global.locale.value, (newLocale) => {
-        Endge.context.setCurrentLocale(newLocale)
-      }),
       Endge.context.subscribe(() => {
         if (!Endge.workspace.isLoaded) {
           return

@@ -1,3 +1,4 @@
+import type { EndgeRemoteCommandTransport } from '@endge/core'
 import type { ConfiguratorModules } from '@/app/domain/types/configurator.type'
 
 import { BrowserNavigation_Adapter } from '@/app/adapters/BrowserNavigation_Adapter'
@@ -24,7 +25,7 @@ import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 
 /** Создаёт единый граф модулей уровня приложения. */
-export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>): ConfiguratorModules {
+export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, remoteCommands?: EndgeRemoteCommandTransport): ConfiguratorModules {
   const backendConfig = getEndgeBackendConfig()
   const connections = new BackendConnections_Module(
     backendConfig.primaryBackendURL,
@@ -42,7 +43,7 @@ export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>): C
     session: new ConfiguratorSession_Module(
       new ConfiguratorSessionHttp_Adapter(connections.activeBackendURL),
     ),
-    context: new ConfiguratorContext_Module(events),
+    context: new ConfiguratorContext_Module(events, remoteCommands),
     diagnostics: new ConfiguratorDiagnostics_Module(
       CONFIGURATOR_DIAGNOSTICS_CONFIG,
       () => {

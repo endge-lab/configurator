@@ -24,6 +24,9 @@ const bindingLabels = computed(() => ({
   'missing-provider': t('projectWorkflow.missingProvider'),
 }))
 const kindLabel = computed(() => {
+  if (props.data.filterView) {
+    return 'FilterView'
+  }
   if (props.data.kind === 'project') {
     return 'Project'
   }
@@ -96,7 +99,7 @@ const canOpen = computed(() => props.data.documentType !== null && props.data.st
   <article
     v-else
     class="workflow-node"
-    :class="[data.colorClass, { 'is-selected': selected, 'is-invalid': statusLabel }]"
+    :class="[data.colorClass, { 'is-selected': selected, 'is-invalid': statusLabel, 'has-fields': data.filterView?.fields.length }]"
     :style="{ opacity, width: `${data.width ?? 248}px` }"
     :data-workflow-id="data.id"
   >
@@ -135,6 +138,16 @@ const canOpen = computed(() => props.data.documentType !== null && props.data.st
       </div>
       <Handle id="right" type="source" :position="Position.Right" :connectable="false" />
     </div>
+    <dl v-if="data.filterView?.fields.length" class="workflow-filter-fields">
+      <div v-for="field in data.filterView.fields" :key="field.key" class="workflow-filter-field">
+        <dt :title="field.key">
+          {{ field.key }}
+        </dt>
+        <dd v-if="field.label" :title="field.label">
+          {{ field.label }}
+        </dd>
+      </div>
+    </dl>
   </article>
 </template>
 
@@ -161,6 +174,12 @@ button.workflow-resource-title { cursor: pointer; border-radius: 4px; }
 button.workflow-resource-title:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .workflow-resource.is-selected { border: none; box-shadow: none; }
 .workflow-resource.is-selected .workflow-resource-icon { filter: drop-shadow(0 0 7px currentColor); transform: scale(1.06); }
+.workflow-node.has-fields .workflow-node-main { min-height: 132px; }
+.workflow-filter-fields { padding: 0 14px 14px; color: var(--card-foreground); }
+.workflow-filter-field { height: 34px; border-top: 1px solid var(--border); padding-top: 2px; }
+.workflow-filter-field dt { font: 10px/14px var(--font-mono, monospace); }
+.workflow-filter-field dd { font-size: 10px; line-height: 14px; color: var(--muted-foreground); }
+.workflow-filter-field dt, .workflow-filter-field dd { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workflow-node-main { position: relative; display: flex; flex-direction: column; min-height: 174px; }
 .workflow-node-main > :deep(.vue-flow__handle-left),
 .workflow-node-main > :deep(.vue-flow__handle-right) { top: 86px; }

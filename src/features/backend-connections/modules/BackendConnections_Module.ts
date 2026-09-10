@@ -3,6 +3,7 @@ import type {
   BackendConnectionCatalog,
   BackendConnectionCatalogState,
   BackendConnectionsService,
+  WorkspaceCreateInput,
 } from '@/features/backend-connections/domain/types/backend-connection.type'
 
 import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
@@ -75,6 +76,27 @@ export class BackendConnections_Module {
   public async create(name: string, baseURL: string): Promise<void> {
     await this._service.create(name.trim(), normalizeBackendURL(baseURL))
     await this.load()
+  }
+
+  /** Создаёт Workspace в выбранном backend, сохраняя текущий выбор пространства. */
+  public async createWorkspace(input: WorkspaceCreateInput): Promise<void> {
+    const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        identity: input.identity.trim(),
+        displayName: input.displayName.trim(),
+        description: input.description?.trim() || undefined,
+      }),
+    })
+    if (!response.ok) {
+      throw new Error(response.status === 409
+        ? 'workspace_identity_conflict'
+        : response.status === 403
+          ? 'workspace_creation_forbidden'
+          : 'workspace_creation_failed')
+    }
   }
 
   public async delete(id: string): Promise<void> {
