@@ -22,13 +22,13 @@ import type { Component, ShallowRef } from 'vue'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
-
 import type { WorkflowDependency, WorkflowViewport } from '@/features/project-workflow/domain/ProjectWorkflow'
-import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType } from '@endge/core'
+import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
+
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-
 import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
+
 import { DOCUMENT_ICON_BADGE_SIZE, DOCUMENT_ICON_SIZES } from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
@@ -75,6 +75,7 @@ import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/doma
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
+import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
 import { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs'
 
 const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
@@ -397,6 +398,7 @@ export class EndgeIDETabs_Module {
   private async _doSave(activeTab: SmartTabRef): Promise<void> {
     const viewId = activeTab.viewId as SupportedViewId
     try {
+      Endge.assertWritable()
       if (viewId !== VIEW_ID_DOCUMENT) {
         return
       }
@@ -451,6 +453,9 @@ export class EndgeIDETabs_Module {
       toast.success('Сохранено', { description: label })
     }
     catch (e) {
+      if (warnDebuggerReadOnly(e)) {
+        return
+      }
       console.error(`[EndgeIDETabs] save failed: ${e instanceof Error ? e.message : String(e)}`)
       toast.error('Ошибка сохранения', { description: String(e) })
     }
@@ -722,6 +727,10 @@ export class EndgeIDETabs_Module {
     if (session.model && typeof session.model === 'object') {
       const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
       session.persistedIdentity = identity || documentId
+    }
+    if (Endge.mode === 'debugger' && session.editor) {
+      session.editor = readOnlyDocument(session.editor as object, ['workflow'])
+      session.view.props.tabContext = { editor: session.editor }
     }
     if (session.editor) {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)

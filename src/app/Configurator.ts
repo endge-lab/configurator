@@ -14,6 +14,7 @@ import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
 import { Endge } from '@endge/core'
+import type { EndgeBootMode } from '@endge/core'
 import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session/adapters/ConfiguratorSessionHttp_Adapter'
 import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
 import {
@@ -31,6 +32,7 @@ import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releas
 import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
 import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
+import { RemoteDebugger_Module } from '@/features/remote-debugger/RemoteDebugger_Module'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 /* eslint-enable perfectionist/sort-imports */
 
@@ -51,6 +53,7 @@ export class Configurator {
   private static _errorBoundary: VueErrorBoundary_Adapter | null = null
   private static _accessControl: AccessControl_Module | null = null
   private static _releases: ConfiguratorReleases_Module | null = null
+  private static readonly _remoteDebugger = new RemoteDebugger_Module()
 
   private constructor() {}
 
@@ -97,12 +100,29 @@ export class Configurator {
     return this._modules.context
   }
 
+  public static get events() {
+    return this._modules.events
+  }
+
   public static get diagnostics() {
     return this._modules.diagnostics
   }
 
   public static get i18n() {
     return this._modules.i18n
+  }
+
+  public static get remoteDebugger() { return this._remoteDebugger }
+
+  public static async activateDebugger(): Promise<void> {
+    await EndgeIDE.init()
+    this._remoteDebugger.init()
+  }
+
+  public static closeDebugger(): void {
+    this._remoteDebugger.dispose()
+    Endge.bridge.reset()
+    window.close()
   }
 
   public static get chromeBridge() {
@@ -152,13 +172,13 @@ export class Configurator {
   }
 
   /** Проверяет сессию и однократно запускает Endge при первой навигации router. */
-  public static async init(): Promise<ConfiguratorStatus> {
+  public static async init(mode: EndgeBootMode = 'application'): Promise<ConfiguratorStatus> {
     if (this._status !== 'idle') {
       return this._status
     }
 
     if (!this._initialization) {
-      this._initialization = this._initialize()
+      this._initialization = this._initialize(mode)
         .then((status) => {
           this._status = status
           return status
@@ -209,6 +229,7 @@ export class Configurator {
     await this.deactivateIDE()
     this._modules.i18n.reset()
     await this._modules.context.reset()
+    this._modules.events.reset()
     this._modules.session.reset()
     this._modules.diagnostics.reset()
     this._modules.questions.reset()
@@ -245,11 +266,12 @@ export class Configurator {
 
   /** Освобождает route-scoped feature owners в обратном порядке. */
   public static async deactivateIDE(): Promise<void> {
+    this._remoteDebugger.dispose()
     AIWorkbench.reset()
     await EndgeIDE.reset()
   }
 
-  private static async _initialize(): Promise<ConfiguratorStatus> {
+  private static async _initialize(mode: EndgeBootMode): Promise<ConfiguratorStatus> {
     this._authenticationRequirement = null
     this._backendConnectionFailure = null
     const backendConfig = getEndgeBackendConfig()
@@ -345,8 +367,9 @@ export class Configurator {
       role !== 'viewer',
     )
     await this._modules.context.init({
+      mode,
       backendConfig,
-      domainProvider,
+      domainProvider: mode === 'debugger' ? undefined : domainProvider,
       workspaceRole: role,
       workspaceIdentity,
       userIdentity: sessionState.session.developer.subject,

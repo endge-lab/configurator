@@ -1,6 +1,7 @@
 import type { ConfiguratorChromeBridge_Module } from '@/app/modules/ConfiguratorChromeBridge_Module'
 import type { ConfiguratorContext_Module } from '@/app/modules/ConfiguratorContext_Module'
 import type { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
+import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
 import type { ConfiguratorI18n_Module } from '@/app/modules/ConfiguratorI18n_Module'
 import type { Layout_Module } from '@/app/modules/Layout_Module'
 import type { OidcDiscovery_Module } from '@/app/modules/OidcDiscovery_Module'
@@ -30,6 +31,7 @@ export interface ConfiguratorBackendConnectionFailure {
 }
 
 export interface ConfiguratorModules {
+  events: ConfiguratorEvents_Module
   session: ConfiguratorSession_Module
   connections: BackendConnections_Module
   backendVersions: BackendVersions_Module

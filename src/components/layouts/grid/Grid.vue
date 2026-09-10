@@ -10,14 +10,12 @@ import WidgetArea from '@/components/layouts/grid/WidgetArea.vue'
 import WidgetPanel from '@/components/layouts/grid/WidgetPanel.vue'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { useBackendConnections } from '@/features/backend-connections'
 
 // Инициализация канала виджетов для обмена с popup
 initWidgetChannel()
 
 const route = useRoute()
 setLayoutScope(String(route.meta.layoutScope ?? 'endge-ide'))
-const { isPrimaryActive } = useBackendConnections()
 
 // Закрытие неотделяемых popup при смене маршрута
 watch(() => route.fullPath, () => {
@@ -225,10 +223,11 @@ function handleGlobalDrop(event: DragEvent) {
     >
       <header
         ref="headerRef"
-        class="flex h-12 shrink-0 items-center gap-2 border-b px-1.5 transition-colors"
-        :class="isPrimaryActive ? 'border-transparent' : 'border-orange-500/70 bg-orange-500/15'"
+        class="flex h-12 shrink-0 items-center gap-2 border-b border-transparent px-1.5 transition-colors"
       >
-        <GridHeader />
+        <slot name="header">
+          <GridHeader />
+        </slot>
       </header>
 
       <div class="flex flex-1 min-h-0 px-0.5 pb-0.5 gap-0.5">
@@ -298,7 +297,9 @@ function handleGlobalDrop(event: DragEvent) {
         />
       </div>
 
-      <div data-target="grid-layout-status-bar" />
+      <div data-target="grid-layout-status-bar">
+        <slot name="status-bar" />
+      </div>
 
       <FloatingWidgets />
 

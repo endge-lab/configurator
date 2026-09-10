@@ -1,6 +1,7 @@
 import type { App, ComponentPublicInstance } from 'vue'
 import type { Router } from 'vue-router'
 import type { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
+import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
 
 /** Подключает границы ошибок Vue и браузера к диагностике Configurator. */
 export class VueErrorBoundary_Adapter {
@@ -37,6 +38,9 @@ export class VueErrorBoundary_Adapter {
   }
 
   private readonly _handleVueError: NonNullable<App['config']['errorHandler']> = (err, instance, info) => {
+    if (warnDebuggerReadOnly(err)) {
+      return
+    }
     this._diagnostics.capture({
       err,
       errorInfo: String(info ?? ''),
@@ -49,6 +53,10 @@ export class VueErrorBoundary_Adapter {
   }
 
   private readonly _handleWindowError = (event: ErrorEvent): void => {
+    if (warnDebuggerReadOnly(event.error)) {
+      event.preventDefault()
+      return
+    }
     if (this._isIgnorableBrowserError(event.message) || this._isIgnorableBrowserError(event.error?.message)) {
       event.preventDefault()
       return
@@ -64,6 +72,10 @@ export class VueErrorBoundary_Adapter {
   }
 
   private readonly _handleUnhandledRejection = (event: PromiseRejectionEvent): void => {
+    if (warnDebuggerReadOnly(event.reason)) {
+      event.preventDefault()
+      return
+    }
     const reasonMessage = event.reason instanceof Error ? event.reason.message : event.reason
     if (this._isIgnorableBrowserError(reasonMessage)) {
       event.preventDefault()

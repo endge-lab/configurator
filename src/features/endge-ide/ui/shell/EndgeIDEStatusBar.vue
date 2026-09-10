@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EndgeContextSnapshot } from '@endge/core'
 import { Endge } from '@endge/core'
 import { AppBus } from '@endge/utils'
 import { BellDot, DatabaseZap, RefreshCcw } from 'lucide-vue-next'
@@ -16,6 +17,14 @@ import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue
 import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.vue'
+
+const props = defineProps<{ readonly?: boolean, contextSnapshot?: Readonly<Partial<EndgeContextSnapshot>> }>()
+const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+
+/** Передаёт значения наблюдаемого снимка, не подменяя локальный Context. */
+function observedValue(key: keyof EndgeContextSnapshot): string | null | undefined {
+  return readOnly.value && props.contextSnapshot ? props.contextSnapshot[key] ?? null : undefined
+}
 
 const context = useEndgeIDEContext()
 const { state: domainVersionState, refresh: refreshDomainVersion } = useDomainVersions()
@@ -39,7 +48,7 @@ const activeDomainTarget = computed(() => {
 const activeDomainVersionState = computed(() => domainVersionState(activeDomainTarget.value))
 
 function updateDomainVersion(force = false): void {
-  if (activeDomainTarget.value) {
+  if (!readOnly.value && activeDomainTarget.value) {
     void refreshDomainVersion(activeDomainTarget.value, force)
   }
 }
@@ -49,6 +58,9 @@ function handleDomainChanged(): void {
 }
 
 async function reloadDomain(): Promise<void> {
+  if (readOnly.value) {
+    return
+  }
   try {
     await context.reloadCurrentContext()
     updateDomainVersion(true)
@@ -60,7 +72,7 @@ async function reloadDomain(): Promise<void> {
 }
 
 async function toggleMockMode(): Promise<void> {
-  if (isChangingDataMode.value || context.isSwitching()) {
+  if (readOnly.value || isChangingDataMode.value || context.isSwitching()) {
     return
   }
 
@@ -91,6 +103,9 @@ async function toggleMockMode(): Promise<void> {
 }
 
 onMounted(() => {
+  if (readOnly.value) {
+    return
+  }
   AppBus.onCustom('domainChanged', handleDomainChanged)
   updateDomainVersion()
 })
@@ -101,19 +116,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-8 shrink-0 items-center justify-between px-3 text-xs font-medium text-muted-foreground">
+  <footer class="flex h-8 shrink-0 items-center justify-between px-3 text-xs font-medium text-muted-foreground" :aria-label="readOnly ? $t('remoteDebugger.contextReadonly') : undefined">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div class="footer-context-switchers flex shrink-0 items-center gap-1.5">
-        <TenantSwitcher />
-        <ProjectSwitcher />
-        <EnvironmentSwitcher />
-        <LocaleSwitcher />
-        <ThemeSwitcher />
-        <TimezoneSwitcher />
+        <TenantSwitcher :readonly="readOnly" :value="observedValue('tenant')" />
+        <ProjectSwitcher :readonly="readOnly" :value="observedValue('project')" />
+        <EnvironmentSwitcher :readonly="readOnly" :value="observedValue('environment')" />
+        <LocaleSwitcher :readonly="readOnly" :value="observedValue('locale')" />
+        <ThemeSwitcher :readonly="readOnly" :value="observedValue('theme')" />
+        <TimezoneSwitcher :readonly="readOnly" :value="observedValue('timezone')" />
       </div>
     </div>
 
-    <div class="flex shrink-0 items-center gap-1">
+    <div v-if="!readOnly" class="flex shrink-0 items-center gap-1">
       <button
         type="button"
         class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
@@ -132,7 +147,7 @@ onBeforeUnmount(() => {
       </button>
       <BellDot class="size-3.5 mx-1" />
     </div>
-  </div>
+  </footer>
 </template>
 
 <style scoped>

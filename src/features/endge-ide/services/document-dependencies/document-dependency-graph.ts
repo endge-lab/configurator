@@ -369,6 +369,14 @@ function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDepe
   }
 
   if (documentType === 'project') {
+    if (Endge.mode === 'debugger') {
+      const result = Endge.source.compile('composition', input.source)
+      return {
+        dependencies: result.artifact ? extractArtifactDependencies('composition', result.artifact, input.draft) : [],
+        diagnostics: (result.diagnostics ?? []) as DocumentDependencyDiagnostic[],
+        compilable: result.artifact != null,
+      }
+    }
     const persisted = Endge.domain.getProject(input.id ?? input.identity)
     const draft = RProject.fromPlain({
       ...persisted?.toPlain(),

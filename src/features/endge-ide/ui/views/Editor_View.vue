@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SmartTabRef } from '@/features/endge-ide/ui/smart-tabs'
 
+import { Endge } from '@endge/core'
 import { Box, Loader2 } from 'lucide-vue-next'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -151,8 +152,9 @@ onMounted(() => {
       </div>
     </div>
 
-    <CreateDocument_Modal v-model:open="createDocumentOpen" />
+    <CreateDocument_Modal v-if="Endge.mode !== 'debugger'" v-model:open="createDocumentOpen" />
     <DuplicateDocument_Modal
+      v-if="Endge.mode !== 'debugger'"
       v-model:open="duplicateDocumentOpen"
       :source="duplicateSourceNode"
     />
@@ -162,6 +164,6 @@ onMounted(() => {
       :data="modals.vocabJsonPreviewData.value"
     />
     <SourceEditorDialogHost />
-    <RuntimePreviewOccurrenceDialog />
+    <RuntimePreviewOccurrenceDialog v-if="Endge.mode !== 'debugger'" />
   </div>
 </template>

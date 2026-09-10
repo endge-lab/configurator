@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 
 import { Endge } from '@endge/core'
+import { ref } from 'vue'
 
 interface ConfiguratorStateOptions<T> {
   legacyKeys?: readonly string[]
@@ -13,6 +14,9 @@ export function useConfiguratorState<T>(
   initialValue: T,
   options: ConfiguratorStateOptions<T> = {},
 ): Ref<T> {
+  if (Endge.mode === 'debugger') {
+    return ref(structuredClone(initialValue)) as Ref<T>
+  }
   migrateLegacyState(key, options.legacyKeys ?? [])
 
   const stored = Endge.context.getState<T>(key)

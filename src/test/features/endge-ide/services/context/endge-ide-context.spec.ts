@@ -82,7 +82,7 @@ describe('контекст EndgeIDE', () => {
   }
 
   beforeEach(async () => {
-    context = new ConfiguratorContext_Module()
+    context = new ConfiguratorContext_Module({ start: vi.fn(), stop: vi.fn() })
     vi.stubEnv('VITE_ENDGE_SERVICE_BACKEND_URL', 'https://backend.test')
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace')
     vi.stubEnv('VITE_ENDGE_TENANT_IDENTITY', 'tenant')

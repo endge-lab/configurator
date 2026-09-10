@@ -156,6 +156,15 @@ export class EndgeIDE {
 
     this._hasActiveModules = true
     try {
+      if (Endge.mode === 'debugger') {
+        modules.widgets.init()
+        modules.tabs.init()
+        modules.hotkeys.setSaveHandler(() => modules.tabs.save())
+        modules.hotkeys.setCloseTabHandler(() => modules.tabs.closeActiveTabFromHotkey())
+        modules.hotkeys.init()
+        this._initialized = true
+        return
+      }
       this._raphDebugLease = Raph.debug.acquire()
       this._destroyedSnapshotsLease = Endge.runtime.acquireDestroyedHostSnapshots(50)
       modules.demonstration.init()

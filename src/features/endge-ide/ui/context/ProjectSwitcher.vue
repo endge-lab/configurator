@@ -9,12 +9,18 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 
+const props = defineProps<{ readonly?: boolean, value?: string | null }>()
+const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+
 const domain = useDomainStore()
 const context = useEndgeIDEContext()
-const current = computed(() => context.currentContext().projectIdentity ?? Endge.context.getCurrentProject())
+const current = computed(() => props.value !== undefined ? props.value : context.currentContext().projectIdentity ?? Endge.context.getCurrentProject())
 const currentLabel = computed(() => domain.projects.find((item: any) => item.identity === current.value)?.displayName ?? current.value)
 
 async function select(identity: string): Promise<void> {
+  if (readOnly.value) {
+    return
+  }
   try {
     await context.switchContext({ projectIdentity: identity })
   }
@@ -25,7 +31,11 @@ async function select(identity: string): Promise<void> {
 </script>
 
 <template>
-  <DropdownMenu :modal="false">
+  <Button v-if="readOnly" as="span" variant="ghost" size="sm" class="pointer-events-none gap-2 px-2">
+    <Briefcase class="size-4" />
+    <span>{{ currentLabel || '—' }}</span>
+  </Button>
+  <DropdownMenu v-else :modal="false">
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="sm" class="gap-2" :disabled="context.isSwitching()">
         <Loader2 v-if="context.isSwitching()" class="size-4 animate-spin" /><Briefcase v-else class="size-4" />

@@ -21,6 +21,7 @@ import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-ed
 import { formatSource } from '@/features/endge-ide/tools/format-source'
 import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 import { usePersistedMonacoViewState } from '@/features/endge-ide/tools/source-editor/use-persisted-monaco-view-state'
+import { warnDebuggerEditAttempt } from '@/features/endge-ide/tools/warn-debugger-read-only'
 
 interface EndgeSourceDiagnostic {
   severity?: string
@@ -270,9 +271,10 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       formatOnType: true,
       scrollBeyondLastLine: true,
       padding: { bottom: 10 },
-      readOnly: options.readOnly === true,
+      readOnly: Endge.mode === 'debugger' || options.readOnly === true,
     })
     viewState.attach(editor.value)
+    editor.value.onDidAttemptReadOnlyEdit(warnDebuggerEditAttempt)
     semanticHighlights = editor.value.createDecorationsCollection()
     inlineHints = editor.value.createDecorationsCollection()
     refreshTriggerDisposables = (options.refreshTriggers ?? []).flatMap((trigger) => {

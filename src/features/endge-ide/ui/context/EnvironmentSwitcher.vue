@@ -14,9 +14,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 
+const props = defineProps<{ readonly?: boolean, value?: string | null }>()
+const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+
 const domainStore = useDomainStore()
 const context = useEndgeIDEContext()
-const currentEnv = computed(() => context.currentContext().environmentIdentity ?? Endge.context.getCurrentEnvironment())
+const currentEnv = computed(() => props.value !== undefined ? props.value : context.currentContext().environmentIdentity ?? Endge.context.getCurrentEnvironment())
 const environments = computed(() => {
   const projectIdentity = context.currentContext().projectIdentity ?? Endge.context.getCurrentProject()
   const project = Endge.domain.getProject(projectIdentity)
@@ -33,6 +36,9 @@ const environmentLabel = computed(() => {
 })
 
 async function select(identity: string): Promise<void> {
+  if (readOnly.value) {
+    return
+  }
   try {
     await context.switchContext({ environmentIdentity: identity })
   }
@@ -43,7 +49,10 @@ async function select(identity: string): Promise<void> {
 </script>
 
 <template>
-  <DropdownMenu :modal="false">
+  <Button v-if="readOnly" as="span" variant="ghost" size="sm" class="pointer-events-none gap-2 px-2">
+    <span>{{ environmentLabel || '—' }}</span>
+  </Button>
+  <DropdownMenu v-else :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"

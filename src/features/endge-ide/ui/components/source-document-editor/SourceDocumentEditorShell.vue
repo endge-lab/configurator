@@ -2,6 +2,7 @@
 import type { DomainDocumentType } from '@endge/core'
 import type { DocumentDependencyTreeResult } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 
+import { Endge } from '@endge/core'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import DocumentDependenciesPanel from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesPanel.vue'
 import DocumentDependenciesToggle from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependenciesToggle.vue'
@@ -48,7 +49,7 @@ const dependencySplitRatio = useSmartTabViewState<number>(
       </div>
 
       <div class="source-document-editor-shell__right">
-        <slot name="right" />
+        <slot v-if="Endge.mode !== 'debugger'" name="right" />
         <TooltipProvider v-if="documentType">
           <div class="ml-2 flex items-center rounded-md border bg-muted/40 p-0.5">
             <DocumentDependenciesToggle

@@ -1,5 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { Endge } from '@endge/core'
 
+import { createRouter, createWebHistory } from 'vue-router'
 import { Configurator } from '@/app/Configurator'
 import { getCanonicalLocalhostURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 import { routes } from '@/router/routes.ts'
@@ -23,9 +24,17 @@ router.beforeEach(async (to) => {
     }
     return true
   }
-  const status = await Configurator.init()
+  const mode = to.name === 'debugger' ? 'debugger' : 'application'
+  if (Configurator.isReady && Endge.mode !== mode) {
+    window.location.assign(to.fullPath)
+    return false
+  }
+  const status = await Configurator.init(mode)
   if (status === 'ready') {
-    if (to.meta.layoutScope === 'endge-ide') {
+    if (to.name === 'debugger') {
+      await Configurator.activateDebugger()
+    }
+    else if (to.meta.layoutScope === 'endge-ide') {
       await Configurator.activateIDE()
     }
     else {

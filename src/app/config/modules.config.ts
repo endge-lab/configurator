@@ -8,6 +8,7 @@ import { CONFIGURATOR_DIAGNOSTICS_CONFIG } from '@/app/config/diagnostics.config
 import { ConfiguratorChromeBridge_Module } from '@/app/modules/ConfiguratorChromeBridge_Module'
 import { ConfiguratorContext_Module } from '@/app/modules/ConfiguratorContext_Module'
 import { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
+import { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
 import { ConfiguratorI18n_Module } from '@/app/modules/ConfiguratorI18n_Module'
 import { Layout_Module } from '@/app/modules/Layout_Module'
 import { OidcDiscovery_Module } from '@/app/modules/OidcDiscovery_Module'
@@ -32,14 +33,16 @@ export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>): C
     () => new BrowserNavigation_Adapter().reload(),
   )
 
+  const events = new ConfiguratorEvents_Module()
   return {
+    events,
     connections,
     backendVersions: new BackendVersions_Module(new BackendVersionHttp_Adapter()),
     domainVersions: new DomainVersions_Module(new DomainVersionHttp_Adapter()),
     session: new ConfiguratorSession_Module(
       new ConfiguratorSessionHttp_Adapter(connections.activeBackendURL),
     ),
-    context: new ConfiguratorContext_Module(),
+    context: new ConfiguratorContext_Module(events),
     diagnostics: new ConfiguratorDiagnostics_Module(
       CONFIGURATOR_DIAGNOSTICS_CONFIG,
       () => {

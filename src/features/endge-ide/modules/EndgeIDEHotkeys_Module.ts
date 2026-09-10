@@ -1,4 +1,5 @@
 import type { HotkeyManager } from '@endge/utils'
+import { Endge } from '@endge/core'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
 
 /** Один пункт горячих клавиш: описание и комбинации для UI и регистрации */
@@ -87,7 +88,9 @@ export class EndgeIDEHotkeys_Module {
 
   /** Все зарегистрированные горячие клавиши с описаниями (для документирования в UI). */
   public getAllHotkeys(): readonly EndgeIDEHotkeyItem[] {
-    return REGISTERED_HOTKEYS
+    return Endge.mode === 'debugger'
+      ? REGISTERED_HOTKEYS.filter(item => item.action === 'save' || item.action === 'closeTab')
+      : REGISTERED_HOTKEYS
   }
 
   /** Регистрирует hotkeys и browser listeners на lifecycle IDE. */
@@ -97,7 +100,7 @@ export class EndgeIDEHotkeys_Module {
     }
     this._manager = this._browser.createManager()
 
-    for (const item of REGISTERED_HOTKEYS) {
+    for (const item of this.getAllHotkeys()) {
       const keys = Array.isArray(item.keys) ? item.keys : [item.keys]
       if (item.action === 'save') {
         this._manager.on(keys, (e) => {
@@ -137,6 +140,9 @@ export class EndgeIDEHotkeys_Module {
 
     // Capture-фаза: перехватываем Cmd+N/Ctrl+N до браузера (новое окно)
     this._createDocumentCaptureBound = (e: KeyboardEvent) => {
+      if (Endge.mode === 'debugger') {
+        return
+      }
       if (e.key !== 'n' && e.key !== 'N') {
         return
       }

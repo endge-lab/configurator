@@ -27,6 +27,9 @@ export interface CompositionI18nContextInput {
 export function resolveCompositionI18nContext(
   input: CompositionI18nContextInput,
 ): SourceLanguageI18nContext | undefined {
+  if (Endge.mode === 'debugger') {
+    return undefined
+  }
   try {
     const documentType = input.documentType ?? 'composition'
     const id = input.documentId ?? String(input.identity ?? '').trim()

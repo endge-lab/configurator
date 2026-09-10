@@ -7,6 +7,9 @@ import { computed, onScopeDispose, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
+const props = defineProps<{ readonly?: boolean, value?: string | null }>()
+const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+
 const { current, setCurrent } = useCurrentTimezone()
 const workspaceVersion = ref(0)
 const offWorkspace = Endge.workspace.subscribe(() => {
@@ -20,13 +23,23 @@ const availableTimezones = computed(() => {
 })
 const currentTimezone = computed(() => {
   void workspaceVersion.value
-  return Endge.workspace.normalizeTimezone(current.value)
+  return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTimezone(current.value)
 })
-const currentLabel = computed(() => Endge.workspace.getTimezoneLabel(currentTimezone.value))
+const currentLabel = computed(() => currentTimezone.value ? Endge.workspace.getTimezoneLabel(currentTimezone.value) : '')
+/** Изменяет временную зону только в интерактивном представлении. */
+function select(timezone: string): void {
+  if (!readOnly.value) {
+    setCurrent(timezone)
+  }
+}
 </script>
 
 <template>
-  <DropdownMenu :modal="false">
+  <Button v-if="readOnly" as="span" variant="ghost" size="sm" class="pointer-events-none gap-2 px-2">
+    <Clock3 class="size-4" />
+    <span>{{ currentLabel || '—' }}</span>
+  </Button>
+  <DropdownMenu v-else :modal="false">
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="sm" class="gap-2 px-2">
         <Clock3 class="size-4 text-muted-foreground" />
@@ -39,7 +52,7 @@ const currentLabel = computed(() => Endge.workspace.getTimezoneLabel(currentTime
         v-for="timezone in availableTimezones"
         :key="timezone.identity"
         :class="{ 'bg-accent': currentTimezone === timezone.identity }"
-        @select="setCurrent(timezone.identity)"
+        @select="select(timezone.identity)"
       >
         {{ timezone.displayName || timezone.identity }}
       </DropdownMenuItem>

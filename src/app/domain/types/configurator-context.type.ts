@@ -1,4 +1,4 @@
-import type { EndgeDomainProvider, EndgeExecutionContext } from '@endge/core'
+import type { EndgeBootMode, EndgeDomainProvider, EndgeExecutionContext } from '@endge/core'
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
 export interface ConfiguratorContextSurfaceLifecycle {
@@ -7,6 +7,7 @@ export interface ConfiguratorContextSurfaceLifecycle {
 }
 
 export interface ConfiguratorContextInitOptions {
+  mode?: EndgeBootMode
   context?: Partial<EndgeExecutionContext>
   backendConfig?: EndgeBackendConfig
   domainProvider?: EndgeDomainProvider

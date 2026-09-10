@@ -593,6 +593,7 @@ function attachStoreUpdates(
   }
   for (const update of updates) {
     const owner = findStore(root.children ?? [], String(update.storeIdentity ?? ''))
+      ?? (Endge.mode === 'debugger' ? root : null)
     if (!owner) {
       continue
     }

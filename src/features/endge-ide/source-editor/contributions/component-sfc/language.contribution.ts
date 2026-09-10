@@ -429,6 +429,9 @@ function findDataMetaReference(source: string, offset: number): { start: number,
 }
 
 function contextConfigurationCompletions(monaco: typeof Monaco, model: Monaco.editor.ITextModel, offset: number) {
+  if (Endge.mode === 'debugger') {
+    return null
+  }
   const before = model.getValue().slice(0, offset)
   const match = /\$context\.config(?:\.[A-Za-z_$][\w$]*)*\.?$/.exec(before)
   if (!match) {
@@ -460,6 +463,9 @@ function contextConfigurationCompletions(monaco: typeof Monaco, model: Monaco.ed
 }
 
 function validateContextConfigurationPaths(source: string): Array<{ code: string, message: string, start: number, end: number }> {
+  if (Endge.mode === 'debugger') {
+    return []
+  }
   const categories = new Map(Endge.configurationSchema.list().filter(item => item.document).map(item => [item.identity, item]))
   const publicConfigurationKeys = new Set(
     Object.keys(Endge.context.runtimeSnapshot().config).filter(key => !categories.has(key)),

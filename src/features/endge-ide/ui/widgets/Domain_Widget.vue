@@ -116,6 +116,7 @@ type MenuAction
     | { type: 'generate-vocab-mock' }
 
 const domainStore = useDomainStore()
+const debuggerMode = Endge.mode === 'debugger'
 const vocabMockDialog = ref({
   open: false,
   mode: 'existing' as 'existing' | 'new',
@@ -536,6 +537,9 @@ const draggedFolder = ref<{ path: string, rootId: string } | null>(null)
 const dragOverPath = ref<string | null>(null)
 
 function canDragTreeItem(item: FlatFsItem): boolean {
+  if (debuggerMode) {
+    return false
+  }
   if (item.node.virtual) {
     return canCopyVirtualAction(item.node)
   }
@@ -564,8 +568,10 @@ const selectedFileKeys = ref<Set<string>>(new Set())
 const ROOT_TO_SECTION = computed(() => {
   const compositions = withoutDeleted<any>((Endge.domain as any).getCompositions?.() ?? [])
   return {
-    'root-workspaces': { section: DomainSectionType.Project, items: () => [] },
-    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted(domainStore.typesComplex ?? []) },
+    ...(debuggerMode
+      ? { 'root-configurations': { section: DomainSectionType.Configuration, items: () => Endge.domain.getConfigurations() } }
+      : { 'root-workspaces': { section: DomainSectionType.Project, items: () => [] } }),
+    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted((debuggerMode ? domainStore.types : domainStore.typesComplex) ?? []) },
     'root-queries': {
       section: DomainSectionType.Query,
       items: () => withoutDeleted([
@@ -582,7 +588,7 @@ const ROOT_TO_SECTION = computed(() => {
     'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
     'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
     'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
-    'root-events': { section: DomainSectionType.Event, items: () => [] },
+    ...(!debuggerMode ? { 'root-events': { section: DomainSectionType.Event, items: () => [] } } : {}),
     'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters) },
     'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
     'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
@@ -613,7 +619,7 @@ const fsTree = computed<FsNode[]>(() => {
   const tree = buildDomainTree({
     rootToSection: ROOT_TO_SECTION.value,
     rootOrder: ROOT_FOLDER_ORDER.value,
-    rootLabels: ROOT_FOLDER_LABELS,
+    rootLabels: { ...ROOT_FOLDER_LABELS, 'root-configurations': 'Конфигурации' },
     allFolders,
     contextualCompositions: withoutDeleted<any>(
       (Endge.domain as any).getCompositions?.() ?? [],
@@ -630,6 +636,10 @@ const fsTree = computed<FsNode[]>(() => {
       (Endge.domain as any).getUpdates?.() ?? [],
     ),
   })
+
+  if (debuggerMode) {
+    return tree
+  }
 
   attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
   attachResolvedActionTree(tree, Endge.actions.listResolved())
@@ -982,7 +992,18 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
     }
   }
 }
-const ROOT_BLOCKS = computed(() => getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value))
+const ROOT_BLOCKS = computed(() => {
+  const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value)
+  if (!debuggerMode) {
+    return blocks
+  }
+  const grouped = new Set(blocks.flatMap(block => block.rootIds))
+  const remaining = ROOT_FOLDER_ORDER.value.filter(id => !grouped.has(id))
+  return remaining.length ? [...blocks, { id: 'other-documents', title: 'Прочие документы', rootIds: remaining }] : blocks
+})
+
+/** Дополнительная группа сохранена в модели, но скрыта как в основном Configurator. */
+const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => block.id !== 'other-documents'))
 
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
 const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
@@ -1129,13 +1150,13 @@ const groupedFlatFs = computed(() => {
   if (workingSetFilterEnabled.value) {
     return groupDomainWorkingSetItems(
       flatFs.value,
-      ROOT_BLOCKS.value,
+      VISIBLE_ROOT_BLOCKS.value,
       ROOT_FOLDER_ORDER.value,
       DEPENDENCY_FILTER_PROJECTION,
     )
   }
 
-  const groups = ROOT_BLOCKS.value
+  const groups = VISIBLE_ROOT_BLOCKS.value
     .map(block => ({
       ...block,
       roots: block.rootIds
@@ -1607,6 +1628,9 @@ function getContextFileNodes(node: FsFileNode): FsFileNode[] {
 /** Формирует контекстные действия для узла дерева домена. */
 function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
+  if (debuggerMode) {
+    return items
+  }
   if (node.workspaceIdentity) {
     if (node.activeWorkspace && Endge.domainRepository.capabilities.mutations) {
       items.push({
@@ -1864,7 +1888,7 @@ function rowClasses(item: FlatFsItem): string {
           <div class="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" @click="downloadDomain">
+                <Button v-if="!debuggerMode" size="icon" variant="ghost" class="size-7" @click="downloadDomain">
                   <Download class="size-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -1873,7 +1897,7 @@ function rowClasses(item: FlatFsItem): string {
 
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" :disabled="EndgeIDE.busy.value" @click="save">
+                <Button v-if="!debuggerMode" size="icon" variant="ghost" class="size-7" :disabled="EndgeIDE.busy.value" @click="save">
                   <Loader2 v-if="EndgeIDE.busy.value" class="size-3.5 animate-spin" />
                   <Save v-else class="size-3.5" />
                 </Button>
@@ -1904,6 +1928,7 @@ function rowClasses(item: FlatFsItem): string {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
+                  v-if="!debuggerMode"
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm transition-colors"
@@ -1965,6 +1990,7 @@ function rowClasses(item: FlatFsItem): string {
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
+                  v-if="!debuggerMode"
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm"

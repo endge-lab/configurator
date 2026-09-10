@@ -8,6 +8,7 @@ import type {
   SmartTabViewStateSlice,
 } from './types'
 
+import { Endge } from '@endge/core'
 import { computed, reactive, watch } from 'vue'
 
 import { SmartTabViewRegistry } from './SmartTabViewRegistry'
@@ -78,7 +79,7 @@ function sanitizeInitial(raw: SmartTabsPersistedState | null | undefined): Smart
 export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const viewRegistry = new SmartTabViewRegistry()
   const persistence = options.persistence
-  const persist = options.persist !== false && persistence != null
+  const persist = options.persist !== false && persistence != null && Endge.mode !== 'debugger'
   const maxTabs = options.maxTabs ?? 40
 
   const initial = persist && persistence
@@ -94,7 +95,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   const volatileViewStateByTabId: Record<SmartTabId, SmartTabViewState> = {}
 
   function persistNow(): void {
-    if (!persist || !persistence) {
+    if (!persist || !persistence || Endge.mode === 'debugger') {
       return
     }
     const openTabs = state.openTabs.filter(tab => tab.ephemeral !== true)
@@ -410,7 +411,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
   }
 
   function clearStorage(): void {
-    if (persistence) {
+    if (persist && persistence && Endge.mode !== 'debugger') {
       clearSmartTabs(persistence, options.storageKey)
     }
   }

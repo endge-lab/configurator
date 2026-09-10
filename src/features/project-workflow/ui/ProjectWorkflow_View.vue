@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { VueFlowStore } from '@vue-flow/core'
 import type { ProjectWorkflow, WorkflowNodeData, WorkflowViewport } from '../domain/ProjectWorkflow'
+import { Endge } from '@endge/core'
 
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { MarkerType, SelectionMode, VueFlow } from '@vue-flow/core'
@@ -157,6 +158,7 @@ function fitInitially(): void {
 }
 
 async function arrange(): Promise<void> {
+  Endge.assertWritable()
   props.workflow.resetLayout()
   await fit()
 }
@@ -193,7 +195,7 @@ function openDocument(data: WorkflowNodeData): void {
       :min-zoom="0.02"
       :max-zoom="1.8"
       :nodes-connectable="false"
-      :nodes-draggable="workflow.layoutEditable"
+      :nodes-draggable="Endge.mode !== 'debugger' && workflow.layoutEditable"
       :edges-updatable="false"
       :connect-on-click="false"
       :delete-key-code="null"
@@ -264,7 +266,7 @@ function openDocument(data: WorkflowNodeData): void {
         <Button variant="ghost" size="icon" :aria-label="t('projectWorkflow.fit')" :title="t('projectWorkflow.fit')" @click="fit">
           <Maximize class="size-4" />
         </Button>
-        <Button variant="ghost" size="icon" :disabled="!workflow.layoutEditable" :aria-label="t('projectWorkflow.arrange')" :title="t('projectWorkflow.arrange')" @click="arrange">
+        <Button variant="ghost" size="icon" :disabled="Endge.mode === 'debugger' || !workflow.layoutEditable" :aria-label="t('projectWorkflow.arrange')" :title="t('projectWorkflow.arrange')" @click="arrange">
           <LayoutGrid class="size-4" />
         </Button>
       </div>

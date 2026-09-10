@@ -132,7 +132,8 @@
       "debug": {
         "problems": "Find problems",
         "projectCompilation": "Project compilation",
-        "title": "Debug"
+        "title": "Debug",
+        "remoteDebug": "Remote debug"
       },
       "file": {
         "access": "Access management",
@@ -606,6 +607,7 @@
     "errors57004359": "errors",
     "escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78": "Escape returns to Project. Selecting an entity opens its problems on the right.",
     "eventBb92633b": "Event",
+    "eventJournalCount": "Event journal: {count} of {limit}",
     "eventCacheEndge95e061e6": "Event Cache (Endge (",
     "eventHandlers00fc86d8": "Event handlers",
     "eventRecordingEcf33cb2": "event recording",
@@ -1304,5 +1306,14 @@
     "description": "Request override declarations for a selected composition.",
     "defaultName": "New simulation",
     "group": "Infrastructure"
+  },
+  "remoteDebugger": {
+    "selectApplication": "Select an application",
+    "application": "Application",
+    "noApplications": "No available applications",
+    "endSession": "End session",
+    "project": "Project",
+    "contextReadonly": "Application context — read only",
+    "selectLabel": "Application for remote debugging"
   }
 }

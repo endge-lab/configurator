@@ -2,6 +2,12 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const routes: RouteRecordRaw[] = [
   {
+    path: '/debugger',
+    name: 'debugger',
+    component: () => import('@/features/remote-debugger/ui/Debugger_Page.vue'),
+    meta: { layout: 'empty', layoutScope: 'debugger' },
+  },
+  {
     path: '/auth/oidc/popup-callback',
     name: 'oidc-popup-callback',
     component: () => import('@/features/endge-ide/ui/pages/OidcPopupCallback_Page.vue'),

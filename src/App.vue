@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { Endge } from '@endge/core'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
-
 import { useRoute } from 'vue-router'
-import { Configurator } from '@/app/Configurator'
 
+import { Configurator } from '@/app/Configurator'
 import layouts from '@/components/layouts'
+
 import { Empty } from '@/components/layouts/empty'
 import Questions from '@/components/Questions.vue'
 import { Toaster } from '@/components/ui/sonner'
@@ -14,6 +15,7 @@ import BackendSelectionGate from '@/features/backend-connections/ui/BackendSelec
 import WorkspaceSelectionGate from '@/features/backend-connections/ui/WorkspaceSelectionGate.vue'
 import { isIDEPlainMode } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
+import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import 'vue-sonner/style.css'
@@ -55,6 +57,9 @@ watch(() => route.fullPath, () => {
 
 // Перехват ошибок дочерних компонентов
 onErrorCaptured((err, instance, info) => {
+  if (warnDebuggerReadOnly(err)) {
+    return false
+  }
   // Поиск компонента страницы проходом вверх по дереву
   let current = instance
   let componentName = 'Unknown'
@@ -100,6 +105,15 @@ onErrorCaptured((err, instance, info) => {
       {{ appLoadingText }}
     </p>
   </div>
+  <template v-else-if="Endge.mode === 'debugger'">
+    <EndgeIDEErrorView
+      v-if="fatalRenderGuard || error"
+      :error="fatalRenderGuard?.error ?? error"
+      :error-info="fatalRenderGuard?.errorInfo ?? errorInfo"
+      :component-name="fatalRenderGuard?.componentName ?? errorComponentName"
+    />
+    <RouterView v-else />
+  </template>
   <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>

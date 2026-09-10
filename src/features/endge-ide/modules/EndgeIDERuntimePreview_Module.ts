@@ -105,6 +105,7 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   private async _launch(rawTarget: RuntimePreviewLaunchRequest, revealTree: boolean): Promise<boolean> {
+    Endge.assertWritable()
     const identity = String(rawTarget.identity ?? '').trim()
     if (!identity) {
       toast.error('Невозможно запустить Runtime Preview', { description: 'У документа отсутствует identity.' })

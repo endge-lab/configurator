@@ -2,13 +2,15 @@
 import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
 import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
 
+import { Endge } from '@endge/core'
 import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-
 import { formatSource } from '@/features/endge-ide/tools/format-source'
+
 import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 import { usePersistedMonacoViewState } from '@/features/endge-ide/tools/source-editor/use-persisted-monaco-view-state'
+import { warnDebuggerEditAttempt } from '@/features/endge-ide/tools/warn-debugger-read-only'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 
 type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
@@ -54,6 +56,7 @@ const editorMinHeight = computed(() => {
   return props.minHeight
 })
 async function formatDocument(): Promise<void> {
+  Endge.assertWritable()
   if (!editor) {
     return
   }
@@ -112,7 +115,7 @@ onMounted(() => {
       fontSize: 14,
       tabSize: 2,
       insertSpaces: true,
-      readOnly: props.readOnly,
+      readOnly: Endge.mode === 'debugger' || props.readOnly,
       formatOnPaste: true,
       formatOnType: true,
       autoClosingBrackets: 'always',
@@ -126,6 +129,7 @@ onMounted(() => {
       wordWrap: 'on',
     })
     viewState.attach(editor)
+    editor.onDidAttemptReadOnlyEdit(warnDebuggerEditAttempt)
 
     editor.onDidChangeModelContent(() => {
       emit('update:modelValue', editor!.getValue())
@@ -182,7 +186,7 @@ watch(
 watch(
   () => props.readOnly,
   (readOnly) => {
-    editor?.updateOptions({ readOnly })
+    editor?.updateOptions({ readOnly: Endge.mode === 'debugger' || readOnly })
   },
 )
 
@@ -204,7 +208,7 @@ onBeforeUnmount(() => {
   >
     <div v-if="showToolbar" class="editor-toolbar">
       <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
-        <SourceFormatButton :disabled="readOnly" @click="formatDocument" />
+        <SourceFormatButton :disabled="Endge.mode === 'debugger' || readOnly" @click="formatDocument" />
       </div>
     </div>
     <div ref="container" class="editor" />

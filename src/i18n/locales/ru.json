@@ -132,7 +132,8 @@
       "debug": {
         "problems": "Поиск проблем",
         "projectCompilation": "Компиляция проекта",
-        "title": "Отладка"
+        "title": "Отладка",
+        "remoteDebug": "Удалённая отладка"
       },
       "file": {
         "access": "Управление доступом",
@@ -606,6 +607,7 @@
     "errors57004359": "ошибки",
     "escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78": "Escape возвращает к Project. Выбор сущности открывает её problems справа.",
     "eventBb92633b": "Событие",
+    "eventJournalCount": "Журнал событий: {count} из {limit}",
     "eventCacheEndge95e061e6": "Кеш событий Endge (",
     "eventHandlers00fc86d8": "Обработчики событий",
     "eventRecordingEcf33cb2": "запись событий",
@@ -1304,5 +1306,14 @@
     "description": "Описание подмен запросов выбранной композиции.",
     "defaultName": "Новая симуляция",
     "group": "Инфраструктура"
+  },
+  "remoteDebugger": {
+    "selectApplication": "Выберите приложение",
+    "application": "Приложение",
+    "noApplications": "Нет доступных приложений",
+    "endSession": "Завершить сеанс",
+    "project": "Проект",
+    "contextReadonly": "Контекст приложения — только чтение",
+    "selectLabel": "Приложение для удалённой отладки"
   }
 }

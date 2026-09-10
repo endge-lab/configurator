@@ -99,6 +99,10 @@ function openServiceVersions(): void {
   serviceVersionsDialog.value?.open()
 }
 
+function openRemoteDebugger(): void {
+  window.open(new URL('/debugger', window.location.origin).href, '_blank', 'noopener')
+}
+
 function openDSLPlayground(): void {
   tabs.openDSLPlayground()
 }
@@ -247,6 +251,9 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
+          <DropdownMenuItem @select="openRemoteDebugger">
+            {{ t('endgeIde.headerMenu.debug.remoteDebug') }}
+          </DropdownMenuItem>
           <DropdownMenuItem @click="toggleProblems">
             {{ t('endgeIde.headerMenu.debug.problems') }}
           </DropdownMenuItem>

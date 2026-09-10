@@ -12,6 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+const props = defineProps<{ readonly?: boolean, value?: string | null }>()
+const readOnly = computed(() => props.readonly || Endge.mode === 'debugger')
+
 const { current, setCurrent } = useCurrentLocale()
 const workspaceVersion = ref(0)
 const offWorkspace = Endge.workspace.subscribe(() => {
@@ -25,18 +28,30 @@ const availableLocales = computed(() => {
 })
 const currentLabel = computed(() => {
   void workspaceVersion.value
-  const c = Endge.workspace.normalizeLocale(current.value)
+  const c = props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeLocale(current.value)
   return getLocaleDisplayLabel(c)
 })
 
 function getLocaleDisplayLabel(localeCode: string): string {
+  if (!localeCode) {
+    return ''
+  }
   const locale = Endge.workspace.locales.find(item => item.code === localeCode)
   return String(locale?.displayName || locale?.shortLabel || localeCode)
+}
+/** Изменяет локаль только в интерактивном представлении. */
+function select(locale: string): void {
+  if (!readOnly.value) {
+    setCurrent(locale)
+  }
 }
 </script>
 
 <template>
-  <DropdownMenu :modal="false">
+  <Button v-if="readOnly" as="span" variant="ghost" size="sm" class="pointer-events-none gap-2 px-2">
+    <span>{{ currentLabel || '—' }}</span>
+  </Button>
+  <DropdownMenu v-else :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"
@@ -57,7 +72,7 @@ function getLocaleDisplayLabel(localeCode: string): string {
         v-for="loc in availableLocales"
         :key="loc.code"
         :class="{ 'bg-accent': Endge.workspace.normalizeLocale(current) === loc.code }"
-        @select="setCurrent(loc.code)"
+        @select="select(loc.code)"
       >
         {{ getLocaleDisplayLabel(loc.code) }}
       </DropdownMenuItem>

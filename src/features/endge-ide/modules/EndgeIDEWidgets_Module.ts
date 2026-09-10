@@ -1,3 +1,4 @@
+import { Endge } from '@endge/core'
 import { computed } from 'vue'
 
 import {
@@ -14,6 +15,7 @@ import {
   reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,
+  setLayoutScope,
   setWidgetVisibility,
   unregisterAllWidgets,
 } from '@/components/layouts/grid/layout'
@@ -80,15 +82,26 @@ export class EndgeIDEWidgets_Module {
       return
     }
 
-    migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
-    removePersistedWidgetId('help')
-    removePersistedWidgetId('inspector')
-    removePersistedWidgetId('errors')
-    removePersistedWidgetId('pulse')
+    const debuggerMode = Endge.mode === 'debugger'
+    if (debuggerMode) {
+      setLayoutScope('debugger')
+    }
+    else {
+      migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+      removePersistedWidgetId('help')
+      removePersistedWidgetId('inspector')
+      removePersistedWidgetId('errors')
+      removePersistedWidgetId('pulse')
+    }
+    const definitions = debuggerMode
+      ? this._widgetDefinitions.filter(def => def.id === 'project').map(def => ({ ...def, allowedPositions: ['left' as const], floatingConstraints: undefined, permanent: true }))
+      : this._widgetDefinitions
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
-    this._widgetDefinitions.forEach(def => registerWidget(def))
-    this._ensureWorkspaceDefaultOrder()
+    definitions.forEach(def => registerWidget(def))
+    if (!debuggerMode) {
+      this._ensureWorkspaceDefaultOrder()
+    }
 
     // 2) Снимаем persisted-состояния ДО создания инстансов
     const persistedActive: Record<DockablePosition, string | null> = {
@@ -104,7 +117,7 @@ export class EndgeIDEWidgets_Module {
     }
 
     // 3) Создаём singleton-инстансы без “насильного открытия” областей
-    this._widgetDefinitions.forEach((def) => {
+    definitions.forEach((def) => {
       if (!def.singleton) {
         return
       }
@@ -149,6 +162,10 @@ export class EndgeIDEWidgets_Module {
     setAreaExpanded('right', persistedExpanded.right)
     setAreaExpanded('bottom', persistedExpanded.bottom)
 
+    if (debuggerMode) {
+      setAreaActiveWidget('left', 'project')
+      setAreaExpanded('left', true)
+    }
     this._isInitialized = true
   }
 

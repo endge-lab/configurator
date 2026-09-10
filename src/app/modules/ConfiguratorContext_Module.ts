@@ -7,6 +7,7 @@ import type {
   ConfiguratorContextInitOptions,
   ConfiguratorContextSurfaceLifecycle,
 } from '@/app/domain/types/configurator-context.type'
+import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
 import {
@@ -39,6 +40,8 @@ export class ConfiguratorContext_Module {
   private readonly _listeners = new Set<() => void>()
   private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
 
+  public constructor(private readonly _events: Pick<ConfiguratorEvents_Module, 'start' | 'stop'>) {}
+
   /**
    * Одноразово запускает прикладное ядро конфигуратора.
    * Передает boot-контекст в `Endge.boot()` и проверяет выбранный renderer adapter.
@@ -50,7 +53,7 @@ export class ConfiguratorContext_Module {
 
     const backendConfig = this._backendConfig ?? options.backendConfig ?? getEndgeBackendConfig()
     const domainProvider = this._domainProvider ?? options.domainProvider ?? null
-    if (!domainProvider) {
+    if (!domainProvider && options.mode !== 'debugger') {
       throw new Error('[EndgeIDE] domainProvider is required')
     }
 
@@ -61,25 +64,40 @@ export class ConfiguratorContext_Module {
     if (options.userIdentity !== undefined) {
       this._userIdentity = String(options.userIdentity ?? '').trim() || null
     }
-    if (this._userIdentity) {
-      Endge.context.setCurrentUser(this._userIdentity)
-    }
-    const ctx = this._createBootContext(options.context, backendConfig, domainProvider)
+    const ctx: EndgeBootContext = options.mode === 'debugger'
+      ? {
+          mode: 'debugger',
+          vars: {},
+          scope: { workspaceIdentity: this.workspaceIdentity },
+          bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: true, label: 'Configurator debugger' },
+        }
+      : this._createBootContext(options.context, backendConfig, domainProvider)
 
-    registerEndgeMockProviders()
+    if (options.mode !== 'debugger') {
+      registerEndgeMockProviders()
+    }
     let bootCompleted = false
     try {
+      if (options.mode !== 'debugger') {
+        this._events.start()
+        if (this._userIdentity) {
+          Endge.context.setCurrentUser(this._userIdentity)
+        }
+      }
       await Endge.boot(ctx)
       bootCompleted = true
-      if (this._userIdentity) {
+      if (this._userIdentity && Endge.mode !== 'debugger') {
         Endge.context.setSessionIdentityProvider({
           getCurrentIdentity: () => ({ userId: this._userIdentity }),
         })
       }
-      this._restoreDataModeOverride()
-      this._assertWorkspaceRendererReady()
+      if (Endge.mode !== 'debugger') {
+        this._restoreDataModeOverride()
+        this._assertWorkspaceRendererReady()
+      }
     }
     catch (cause) {
+      this._events.stop()
       this._isInitialized = false
       this._currentContext = {}
       this._requestedContext = {}
@@ -107,6 +125,7 @@ export class ConfiguratorContext_Module {
 
   /** Полностью перезапускает Endge под новым immutable structural context. */
   public async switchContext(next: Partial<EndgeExecutionContext>): Promise<void> {
+    Endge.assertWritable()
     const requested = { ...this._requestedContext, ...next }
     if (
       next.projectIdentity != null
@@ -127,6 +146,7 @@ export class ConfiguratorContext_Module {
    * контекста: setup -> load from provider -> build -> start.
    */
   public async reloadCurrentContext(): Promise<void> {
+    Endge.assertWritable()
     const requested = { ...this._requestedContext }
     this._switchQueue = this._switchQueue
       .catch(() => undefined)
@@ -141,6 +161,7 @@ export class ConfiguratorContext_Module {
   public async reset(): Promise<void> {
     this._isInitialized = false
     this._notify()
+    this._events.stop()
     await Endge.reset()
   }
 

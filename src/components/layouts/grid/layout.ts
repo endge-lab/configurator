@@ -12,6 +12,7 @@ import type {
 } from '@/components/layouts/grid/types.ts'
 import type { WidgetChannelMessage, WidgetPopupState } from '@/components/layouts/grid/widget-channel.ts'
 
+import { Endge } from '@endge/core'
 import { computed, isRef, onBeforeUnmount, reactive, ref, toValue, watch } from 'vue'
 
 import {
@@ -1454,7 +1455,7 @@ function schedulePopupCloseCheck(instanceId: string) {
 let channelInitialized = false
 
 export function initWidgetChannel() {
-  if (channelInitialized) {
+  if (Endge.mode === 'debugger' || channelInitialized) {
     return
   }
 
@@ -1493,6 +1494,9 @@ export function handleHostWindowClose() {
 }
 
 export function closeNonDetachablePopups() {
+  if (Endge.mode === 'debugger') {
+    return
+  }
   const channel = getHostWidgetChannel()
   Object.values(layoutState.widgets.instances).forEach((instance) => {
     const definition = layoutState.widgets.definitions[instance.definitionId]
