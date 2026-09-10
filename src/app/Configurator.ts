@@ -50,6 +50,7 @@ export class Configurator {
     () => EndgeIDE.reset(),
     { send: command => Configurator._remoteDebugger.execute(command) },
   )
+
   private static _initialization: Promise<ConfiguratorStatus> | null = null
   private static _status: 'idle' | ConfiguratorStatus = 'idle'
   private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
