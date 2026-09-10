@@ -9,6 +9,7 @@ import type { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/modules
 import type { EndgeIDEHotkeys_Module } from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 import type { EndgeIDEModals_Module } from '@/features/endge-ide/modules/EndgeIDEModals_Module'
 import type { EndgeIDEProblems_Module } from '@/features/endge-ide/modules/EndgeIDEProblems_Module'
+import type { EndgeIDERuntimeInspection_Module } from '@/features/endge-ide/modules/EndgeIDERuntimeInspection_Module'
 import type { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWidgets_Module } from '@/features/endge-ide/modules/EndgeIDEWidgets_Module'
@@ -41,6 +42,7 @@ export interface EndgeIDEModules {
   widgets: EndgeIDEWidgets_Module
   hotkeys: EndgeIDEHotkeys_Module
   runtimePreview: EndgeIDERuntimePreview_Module
+  runtimeInspection: EndgeIDERuntimeInspection_Module
   problems: EndgeIDEProblems_Module
   sourceEditorDialogs: SourceEditorDialogs_Module
   authProfileEditors: AuthProfileEditorRegistry_Module

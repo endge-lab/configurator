@@ -16,6 +16,7 @@ import { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/modules/Endg
 import { EndgeIDEHotkeys_Module } from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 import { EndgeIDEModals_Module } from '@/features/endge-ide/modules/EndgeIDEModals_Module'
 import { EndgeIDEProblems_Module } from '@/features/endge-ide/modules/EndgeIDEProblems_Module'
+import { EndgeIDERuntimeInspection_Module } from '@/features/endge-ide/modules/EndgeIDERuntimeInspection_Module'
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
 import { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import { EndgeIDEWidgets_Module } from '@/features/endge-ide/modules/EndgeIDEWidgets_Module'
@@ -55,6 +56,7 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     widgets: new EndgeIDEWidgets_Module(),
     hotkeys: new EndgeIDEHotkeys_Module(new EndgeIDEHotkeysBrowser_Adapter()),
     runtimePreview,
+    runtimeInspection: new EndgeIDERuntimeInspection_Module(),
     problems: new EndgeIDEProblems_Module(),
     sourceEditorDialogs: new SourceEditorDialogs_Module(),
     authProfileEditors: new AuthProfileEditorRegistry_Module(),

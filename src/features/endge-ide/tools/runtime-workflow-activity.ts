@@ -1,3 +1,4 @@
+import type { EndgeExecutionContext } from '@endge/core'
 import type { RuntimePreviewLifecycleState, RuntimePreviewTreeNode } from '../domain/types/runtime-preview.types'
 import type { WorkflowDependency } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 
@@ -5,6 +6,7 @@ import type { WorkflowDependency } from '@/features/workspace-workflow/domain/Wo
 export function collectRuntimeWorkflowActivity(
   roots: readonly WorkflowDependency[],
   entries: readonly { tree: { value: RuntimePreviewTreeNode[] }, lifecycleState: (node: RuntimePreviewTreeNode) => RuntimePreviewLifecycleState }[],
+  context: EndgeExecutionContext | null = null,
 ): Set<string> {
   const active = new Set<string>()
   const key = (type: string | null, identity: string, owner: string) => JSON.stringify([
@@ -23,6 +25,16 @@ export function collectRuntimeWorkflowActivity(
       node.children.forEach(child => visit(child, currentOwner))
     }
     entry.tree.value.forEach(node => visit(node, ''))
+  }
+  if (context) {
+    for (const root of roots) {
+      if (root.kind === 'workspace') {
+        active.add(key('workspace', root.identity, ''))
+      }
+    }
+    active.add(key('tenant', context.tenantIdentity, ''))
+    active.add(key('project', context.projectIdentity, ''))
+    active.add(key('environment', context.environmentIdentity, ''))
   }
   const ids = new Set<string>()
   const visit = (node: WorkflowDependency, owner: string): void => {

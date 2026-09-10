@@ -2,7 +2,7 @@
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Preview",
-    "activeOnly": "Only active nodes across all Runtime Preview instances are highlighted."
+    "activeOnly": "The current Workspace, Tenant, Project and Environment and active nodes across all Runtime Preview instances are highlighted."
   },
   "aiWorkbench": {
     "widget": {
@@ -1348,5 +1348,27 @@
     "project": "Project",
     "contextReadonly": "Application context — read only",
     "selectLabel": "Application for remote debugging"
+  },
+  "runtimeInspection": {
+    "previewReadonly": "Client application preview. Data updates arrive as snapshots; actions in this preview are disabled.",
+    "selectPreview": "Select a component, filter, or a containing branch in Runtime Tree.",
+    "noRenderables": "This branch has no components to display.",
+    "activeOnly": "The current Workspace, Tenant, Project and Environment and active client runtime nodes are highlighted.",
+    "tree": "Client Runtime",
+    "tabs": "Runtime inspection",
+    "data": "Data",
+    "details": "Details",
+    "interval": "Data refresh interval",
+    "manual": "Manual",
+    "every": "Every {seconds} s",
+    "refresh": "Refresh",
+    "allData": "All client data",
+    "capturedAt": "Captured: {time}",
+    "noData": "No data snapshot received yet",
+    "snapshotValue": "Snapshot value",
+    "emptyTree": "No Runtime in the client snapshot",
+    "selectHint": "Select an instance to inspect it. Controls execute commands in the client application.",
+    "commandFailed": "Could not control client Runtime",
+    "refreshFailed": "Could not refresh snapshot"
   }
 }

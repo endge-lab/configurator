@@ -17,6 +17,15 @@ function entry(node: RuntimePreviewTreeNode, state: RuntimePreviewLifecycleState
 }
 
 describe('активность Workspace Workflow', () => {
+  /** Текущий контекст не зависит от lifecycle исполняемых узлов. */
+  it('сохраняет контекст при паузе и переносит подсветку на нового тенанта', () => {
+    const roots = [diagram('tenant-a', 'tenant', 'a'), diagram('tenant-b', 'tenant', 'b'), diagram('project', 'project', 'app'), diagram('environment', 'environment', 'dev'), diagram('composition', 'composition', 'page')]
+    const entries = [entry(runtime('composition', 'page'), 'paused')]
+    const context = { tenantIdentity: 'a', projectIdentity: 'app', environmentIdentity: 'dev' }
+    expect([...collectRuntimeWorkflowActivity(roots, entries, context)]).toEqual(['tenant-a', 'project', 'environment'])
+    expect([...collectRuntimeWorkflowActivity(roots, entries, { ...context, tenantIdentity: 'b' })]).toEqual(['tenant-b', 'project', 'environment'])
+  })
+
   /** Последний active экземпляр определяет подсветку независимо от остальных запусков. */
   it('объединяет дубликаты и снимает подсветку только после остановки последнего активного экземпляра', () => {
     const roots = [diagram('workspace/composition', 'composition', 'page')]

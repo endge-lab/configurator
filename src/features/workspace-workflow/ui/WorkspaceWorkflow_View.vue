@@ -54,7 +54,7 @@ const nodes = computed(() => scene.value.nodes.map(node => ({
   parentNode: node.parentId,
   expandParent: false,
   draggable: node.parentId ? false : undefined,
-  selectable: !observingRuntime.value && node.role !== 'resource-toggle',
+  selectable: !observingRuntime.value && node.role !== 'resource-toggle' && node.id === node.data.id,
   position: {
     x: Math.round(node.position.x / snapGrid[0]) * snapGrid[0],
     y: Math.round(node.position.y / snapGrid[1]) * snapGrid[1],
@@ -271,7 +271,7 @@ function openDocument(data: WorkflowNodeData): void {
       <template #node-compact-resource="nodeProps">
         <WorkflowCompactResource
           :data="nodeProps.data"
-          :selected="observingRuntime ? selectedIds.has(nodeProps.id) : nodeProps.selected"
+          :selected="selectedIds.has(nodeProps.data.id)"
           :interactive="!observingRuntime"
           :opacity="nodeOpacity(nodeProps.data)"
           @open-document="openDocument"

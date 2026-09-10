@@ -212,7 +212,7 @@ export class WorkspaceWorkflow {
       items.push(resource)
       rows.set(type, items)
     }
-    const order = ['style', 'i18n-bundles', 'vocabs', 'stream']
+    const order = ['tenant', 'project', 'environment', 'configuration', 'style', 'i18n-bundles', 'vocabs', 'stream']
     return [...rows].sort(([a], [b]) => order.indexOf(a) - order.indexOf(b)).map(([type, items]) => ({ type, items }))
   }
 
@@ -314,7 +314,7 @@ export class WorkspaceWorkflow {
       let rowIndex = 0
       for (const row of rows) {
         row.items.forEach((item, index) => nodes.push({
-          id: item.id,
+          id: data.kind === 'workspace' && item.kind === 'project' ? `catalog:${item.id}` : item.id,
           parentId: id,
           role: 'compact-resource',
           hidden: !expanded,

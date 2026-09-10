@@ -2,7 +2,7 @@
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Предпросмотр",
-    "activeOnly": "Подсвечены только активные узлы всех запусков Runtime Preview."
+    "activeOnly": "Подсвечены текущие Workspace, Tenant, Project и Environment, а также активные узлы всех запусков Runtime Preview."
   },
   "aiWorkbench": {
     "widget": {
@@ -1348,5 +1348,27 @@
     "project": "Проект",
     "contextReadonly": "Контекст приложения — только чтение",
     "selectLabel": "Приложение для удалённой отладки"
+  },
+  "runtimeInspection": {
+    "previewReadonly": "Визуальное состояние приложения клиента. Данные обновляются снимками; действия в этом превью не выполняются.",
+    "selectPreview": "Выберите компонент, фильтр или содержащую их ветку Runtime Tree.",
+    "noRenderables": "В выбранной ветке нет компонентов для отображения.",
+    "activeOnly": "Подсвечены текущие Workspace, Tenant, Project и Environment и активные runtime-узлы клиента.",
+    "tree": "Runtime клиента",
+    "tabs": "Просмотр Runtime",
+    "data": "Данные",
+    "details": "Сведения",
+    "interval": "Частота обновления данных",
+    "manual": "Вручную",
+    "every": "Каждые {seconds} с",
+    "refresh": "Обновить",
+    "allData": "Все данные клиента",
+    "capturedAt": "Снимок: {time}",
+    "noData": "Снимок данных ещё не получен",
+    "snapshotValue": "Значение в снимке",
+    "emptyTree": "В снимке клиента нет Runtime",
+    "selectHint": "Выбор показывает состояние экземпляра. Кнопки управления выполняют команды в приложении клиента.",
+    "commandFailed": "Не удалось изменить Runtime клиента",
+    "refreshFailed": "Не удалось обновить снимок"
   }
 }

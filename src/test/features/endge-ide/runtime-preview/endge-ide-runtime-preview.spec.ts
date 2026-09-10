@@ -46,6 +46,7 @@ vi.mock('@endge/core', () => ({
     },
     context: {
       get isMockEnabled() { return mocks.mockMode },
+      getExecutionContext: () => ({ tenantIdentity: null, projectIdentity: null, environmentIdentity: null }),
     },
     auth: {
       createOidcSessionSource: vi.fn(() => mocks.oidcSource),
@@ -171,7 +172,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     const manager = createManager()
     manager.init()
     manager.init()
-    expect(mocks.eventListeners.size).toBe(3)
+    expect(mocks.eventListeners.size).toBe(6)
     const first = mocks.instances[0]
     mocks.eventListeners.get('runtime:host-status-changed')?.()
     expect(first.refresh).toHaveBeenCalledTimes(1)
@@ -179,7 +180,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     expect(mocks.eventListeners.size).toBe(0)
     mocks.eventListeners.clear()
     await mocks.surfaceLifecycle?.afterContextBoot?.()
-    expect(mocks.eventListeners.size).toBe(3)
+    expect(mocks.eventListeners.size).toBe(6)
     const restored = mocks.instances.at(-1)
     mocks.eventListeners.get('runtime:scopes-changed')?.()
     expect(restored.refresh).toHaveBeenCalledTimes(1)

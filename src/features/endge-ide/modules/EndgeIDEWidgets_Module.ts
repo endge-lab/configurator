@@ -1,5 +1,5 @@
 import { Endge } from '@endge/core'
-import { computed } from 'vue'
+import { computed, defineAsyncComponent, markRaw } from 'vue'
 
 import {
   createWidgetInstance,
@@ -94,7 +94,13 @@ export class EndgeIDEWidgets_Module {
       removePersistedWidgetId('pulse')
     }
     const definitions = debuggerMode
-      ? this._widgetDefinitions.filter(def => def.id === 'project').map(def => ({ ...def, allowedPositions: ['left' as const], floatingConstraints: undefined, permanent: true }))
+      ? this._widgetDefinitions.filter(def => def.id === 'project' || def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID).map(def => ({
+          ...def,
+          ...(def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID ? { defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/RuntimeInspection_Widget.vue'))) } : {}),
+          allowedPositions: ['left' as const],
+          floatingConstraints: undefined,
+          permanent: true,
+        }))
       : this._widgetDefinitions
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)

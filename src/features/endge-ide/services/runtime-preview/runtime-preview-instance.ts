@@ -10,6 +10,7 @@ import type {
   ProjectRuntimeSession,
   RuntimeArtifactReader,
   RuntimeHost,
+  SimulationGenerator,
   SimulationRuntimeSession,
   SimulationSourceArtifact,
   StoreRuntimeHost,
@@ -84,7 +85,7 @@ export class RuntimePreviewInstance {
   private _generation = 0
   private _queue: Promise<void> = Promise.resolve()
 
-  public constructor(target: RuntimePreviewTarget) {
+  public constructor(target: RuntimePreviewTarget, private readonly _generator?: SimulationGenerator) {
     this.target = target
     this.key = runtimePreviewKey(target)
     this.tree.value = buildRuntimePreviewTree(target)
@@ -139,6 +140,7 @@ export class RuntimePreviewInstance {
         const composition = this._artifactReader.getArtifact<CompositionProgramPayload>(target.entityType, target.identity)
         this._simulation = await Endge.runtime.simulation.mount(this.target.identity, {
           artifactReader: this._artifactReader,
+          generator: this._generator,
           forceMock: this._previewForcesMock,
           props: materializeCompositionPreviewProps(
             composition?.payload.previewProps,

@@ -1,4 +1,4 @@
-import type { BridgeDebugClient, BridgeDebugSession, DiagnosticsSnapshot, EndgeCommand } from '@endge/core'
+import type { BridgeDebugClient, BridgeDebugSession, EndgeCommand } from '@endge/core'
 import { Endge } from '@endge/core'
 import { readonly, shallowRef } from 'vue'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
@@ -8,7 +8,9 @@ export class RemoteDebugger_Module {
   public readonly clients = shallowRef<readonly BridgeDebugClient[]>([])
   public readonly selected = shallowRef<BridgeDebugClient | null>(null)
   public readonly status = shallowRef('Выберите приложение')
-  public readonly snapshot = shallowRef<DiagnosticsSnapshot | null>(null)
+  private _hasSnapshot = false
+  public readonly inspectionInterval = shallowRef(0)
+  public readonly inspectionBusy = shallowRef(false)
   private readonly _canControl = shallowRef(false)
   public readonly canControl = readonly(this._canControl)
   private _session: BridgeDebugSession | null = null
@@ -30,8 +32,12 @@ export class RemoteDebugger_Module {
     const previous = this._session
     this._session = null
     this.selected.value = client
-    this.snapshot.value = null
+    this._hasSnapshot = false
     this._canControl.value = false
+    this.inspectionInterval.value = 0
+    this.inspectionBusy.value = false
+    Endge.runtime.clearInspection()
+    EndgeIDE.runtimeInspection.clearSelection()
     EndgeIDE.tabs.closeAll()
     EndgeIDE.uiState.clearDebuggerState()
     Endge.domain.replaceFromPlain({})
@@ -61,7 +67,7 @@ export class RemoteDebugger_Module {
       Endge.replaceDebuggerSnapshot(snapshot)
       Endge.bridge.debug.activateContextSync(session.sessionId, initial.sequence)
       this._canControl.value = true
-      this.snapshot.value = snapshot
+      this._hasSnapshot = true
       this.status.value = 'Контекст синхронизирован · управление клиентом доступно'
     }
     catch (error) {
@@ -91,10 +97,42 @@ export class RemoteDebugger_Module {
     }
   }
 
+  /** Bridge владеет частотой; этот модуль хранит только подтверждённое значение UI. */
+  public async setInspectionInterval(intervalMs: number): Promise<void> {
+    await this._inspect(async (session) => {
+      await Endge.bridge.debug.setInspectionInterval(session.sessionId, intervalMs)
+      if (this._session === session) {
+        this.inspectionInterval.value = intervalMs
+      }
+    })
+  }
+
+  public async refreshInspection(): Promise<void> {
+    await this._inspect(session => Endge.bridge.debug.refreshInspection(session.sessionId))
+  }
+
+  private async _inspect(operation: (session: BridgeDebugSession) => Promise<void>): Promise<void> {
+    const session = this._session
+    if (!session || !this._canControl.value || this.inspectionBusy.value) {
+      return
+    }
+    this.inspectionBusy.value = true
+    try {
+      await operation(session)
+    }
+    finally {
+      if (this._session === session) {
+        this.inspectionBusy.value = false
+      }
+    }
+  }
+
   /** Releases selection listeners; the Core Bridge owner closes the transport. */
   public dispose(): void {
     ++this._generation
     this._canControl.value = false
+    this.inspectionInterval.value = 0
+    this.inspectionBusy.value = false
     this._unsubscribe?.()
     this._unsubscribeBridge?.()
     this._unsubscribe = null
@@ -109,12 +147,16 @@ export class RemoteDebugger_Module {
       ++this._generation
       this._session = null
       this._canControl.value = false
-      this.status.value = this.snapshot.value ? 'Приложение отключено · показан последний снимок' : 'Приложение отключено'
+      this.inspectionInterval.value = 0
+      this.inspectionBusy.value = false
+      this.status.value = this._hasSnapshot ? 'Приложение отключено · показан последний снимок' : 'Приложение отключено'
     }
     else if (this._session && !Endge.bridge.debug.sessions.some(session => session.sessionId === this._session?.sessionId)) {
       ++this._generation
       this._session = null
       this._canControl.value = false
+      this.inspectionInterval.value = 0
+      this.inspectionBusy.value = false
       this.status.value = 'Сеанс завершён · показан последний снимок'
     }
     else if (!selected) {

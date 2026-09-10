@@ -72,6 +72,10 @@ export class EndgeIDE {
     return this._requireModules().runtimePreview
   }
 
+  public static get runtimeInspection() {
+    return this._requireModules().runtimeInspection
+  }
+
   public static get problems() {
     return this._requireModules().problems
   }
@@ -132,6 +136,7 @@ export class EndgeIDE {
       modules.sourceEditorDialogs.reset()
       modules.authProfileEditors.reset()
       modules.runtimePreview.reset()
+      modules.runtimeInspection.reset()
       modules.hotkeys.reset()
       modules.tabs.reset()
       modules.workspace.reset()
@@ -162,6 +167,7 @@ export class EndgeIDE {
     this._hasActiveModules = true
     try {
       if (Endge.mode === 'debugger') {
+        modules.runtimeInspection.init()
         modules.widgets.init()
         modules.tabs.init()
         modules.hotkeys.setSaveHandler(() => modules.tabs.save())

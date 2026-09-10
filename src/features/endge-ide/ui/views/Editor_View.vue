@@ -19,6 +19,7 @@ import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_
 import DuplicateDocument_Modal from '@/features/endge-ide/ui/modals/DuplicateDocument_Modal.vue'
 import VocabJsonPreview_Modal from '@/features/endge-ide/ui/modals/VocabJsonPreview_Modal.vue'
 import Problems_View from '@/features/endge-ide/ui/section/problems/Problems_View.vue'
+import RuntimeInspectionView from '@/features/endge-ide/ui/section/runtime-preview/RuntimeInspection_View.vue'
 import RuntimePreview_View from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreview_View.vue'
 import RuntimePreviewOccurrenceDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewOccurrenceDialog.vue'
 import { SmartTabsHost } from '@/features/endge-ide/ui/smart-tabs'
@@ -100,7 +101,8 @@ onMounted(() => {
 
 <template>
   <div class="h-full min-h-0 flex flex-col relative">
-    <RuntimePreview_View v-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
+    <RuntimeInspectionView v-if="isRuntimePreviewActive && Endge.mode === 'debugger'" class="min-h-0 flex-1" />
+    <RuntimePreview_View v-else-if="isRuntimePreviewActive" class="min-h-0 flex-1" />
     <Problems_View v-else-if="isProblemsActive" class="min-h-0 flex-1" />
     <UIEditorDemo_Singleton v-else-if="isUIEditorActive" class="min-h-0 flex-1" />
 

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import type { RuntimePreviewLifecycleState, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Braces, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { getIconComponent } from '@/components/layouts/grid/icons'
-import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { runtimeTreeNodeExpansionKey } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 
@@ -18,21 +17,23 @@ const props = defineProps<{
   node: RuntimePreviewTreeNode
   depth?: number
   expandedNodeKeys: ReadonlySet<string>
+  selectedEntryKey: string | null
+  selectedNodeId: string | null
+  lifecycleState: (entryKey: string, node: RuntimePreviewTreeNode) => RuntimePreviewLifecycleState
 }>()
 
 const emit = defineEmits<{
   contextmenu: [payload: { entryKey: string, node: RuntimePreviewTreeNode, x: number, y: number }]
   toggleExpanded: [nodeKey: string, expanded: boolean]
+  select: [entryKey: string, node: RuntimePreviewTreeNode]
 }>()
 
 const { t } = useI18n()
-const preview = EndgeIDE.runtimePreview
 const nodeKey = computed(() => runtimeTreeNodeExpansionKey(props.entryKey, props.node.id))
 const expanded = computed(() => props.expandedNodeKeys.has(nodeKey.value))
 const isGroup = computed(() => props.node.kind === 'group')
-const selected = computed(() => preview.selectedEntryKey.value === props.entryKey
-  && preview.selectedNode.value?.id === props.node.id)
-const state = computed(() => preview.lifecycleState(props.entryKey, props.node))
+const selected = computed(() => props.selectedEntryKey === props.entryKey && props.selectedNodeId === props.node.id)
+const state = computed(() => props.lifecycleState(props.entryKey, props.node))
 const hasChildren = computed(() => props.node.children.length > 0)
 const leftPadding = computed(() => `${Math.max(0, props.depth ?? 0) * 14 + 8}px`)
 const nodeIcon = computed<Component>(() => getIconComponent(
@@ -49,7 +50,7 @@ function select(): void {
     toggleExpanded()
     return
   }
-  void preview.select(props.entryKey, props.node.id)
+  emit('select', props.entryKey, props.node)
 }
 
 function toggleExpanded(): void {
@@ -133,6 +134,10 @@ function openContextMenu(event: MouseEvent): void {
         :node="child"
         :depth="(depth ?? 0) + 1"
         :expanded-node-keys="expandedNodeKeys"
+        :selected-entry-key="selectedEntryKey"
+        :selected-node-id="selectedNodeId"
+        :lifecycle-state="lifecycleState"
+        @select="(entry, selectedNode) => emit('select', entry, selectedNode)"
         @contextmenu="emit('contextmenu', $event)"
         @toggle-expanded="forwardToggleExpanded"
       />

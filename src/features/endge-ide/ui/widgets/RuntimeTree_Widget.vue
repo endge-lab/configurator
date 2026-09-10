@@ -402,6 +402,10 @@ onBeforeUnmount(closeContextMenu)
           :node="node"
           :depth="0"
           :expanded-node-keys="expandedNodeKeys"
+          :selected-entry-key="preview.selectedEntryKey.value"
+          :selected-node-id="preview.selectedNode.value?.id ?? null"
+          :lifecycle-state="(key, item) => preview.lifecycleState(key, item)"
+          @select="(key, item) => preview.select(key, item.id)"
           @contextmenu="openContextMenu"
           @toggle-expanded="toggleExpanded"
         />

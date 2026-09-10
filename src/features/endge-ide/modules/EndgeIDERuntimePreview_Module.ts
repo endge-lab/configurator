@@ -1,4 +1,4 @@
-import type { AuthProfileSchema, OidcBrowserSession_Adapter } from '@endge/core'
+import type { AuthProfileSchema, EndgeExecutionContext, OidcBrowserSession_Adapter } from '@endge/core'
 import type { Ref, ShallowRef } from 'vue'
 import type { EndgeIDEContextPort } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type {
@@ -8,14 +8,16 @@ import type {
   RuntimePreviewOccurrencePrompt,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
-
 import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
 import type { WorkflowDependency } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
+
 import { AuthInteractionRequiredError, Endge } from '@endge/core'
 import { computed, reactive, ref, shallowRef } from 'vue'
-
 import { toast } from 'vue-sonner'
 import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
+
+import { ServiceBackendMockGenerator_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendMockGenerator_Adapter'
+import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/services/runtime-preview/runtime-preview-auth'
@@ -59,7 +61,8 @@ export class EndgeIDERuntimePreview_Module {
   private _contextResetting = false
   private readonly _workflowRoots = shallowRef<WorkflowDependency[]>([])
   public readonly workflow = shallowRef<WorkspaceWorkflow | null>(null)
-  public readonly activeWorkflowIds = computed(() => collectRuntimeWorkflowActivity(this._workflowRoots.value, this.entries.value))
+  private readonly _workflowContext = shallowRef<EndgeExecutionContext | null>(null)
+  public readonly activeWorkflowIds = computed(() => collectRuntimeWorkflowActivity(this._workflowRoots.value, this.entries.value, this._workflowContext.value))
   private _surfaceOff: (() => void) | null = null
   private _authInteractionOff: (() => void) | null = null
   private _initialized = false
@@ -195,7 +198,7 @@ export class EndgeIDERuntimePreview_Module {
     const key = runtimePreviewKey(target)
     let instance = this._instances.get(key)
     if (!instance) {
-      instance = new RuntimePreviewInstance(target)
+      instance = new RuntimePreviewInstance(target, new ServiceBackendMockGenerator_Adapter(getEndgeBackendConfig().serviceBackendURL, Endge.workspace.current.identity))
       this._instances.set(key, instance)
       this._syncEntries()
       this._persistEntries()
@@ -519,13 +522,23 @@ export class EndgeIDERuntimePreview_Module {
       Endge.events.onEvent('runtime:registry-changed', () => this._refresh()),
       Endge.events.onEvent('runtime:scopes-changed', () => this._refresh()),
       Endge.events.onEvent('runtime:host-status-changed', () => this._refresh()),
+      Endge.events.onEvent('context:tenant-changed', () => this._syncWorkflowContext()),
+      Endge.events.onEvent('context:project-changed', () => this._syncWorkflowContext()),
+      Endge.events.onEvent('context:environment-changed', () => this._syncWorkflowContext()),
     ]
+    this._syncWorkflowContext()
     this._refresh()
+  }
+
+  /** Текущие координаты читаются у Context; Events только инвалидирует проекцию. */
+  private _syncWorkflowContext(): void {
+    this._workflowContext.value = Endge.context.getExecutionContext()
   }
 
   private _unsubscribeRuntime(): void {
     this._runtimeOff.forEach(off => off())
     this._runtimeOff = []
+    this._workflowContext.value = null
   }
 
   private _resetWorkflow(): void {
@@ -550,7 +563,7 @@ export class EndgeIDERuntimePreview_Module {
       return
     }
     for (const target of readRuntimePreviewHistory()) {
-      const instance = new RuntimePreviewInstance(target)
+      const instance = new RuntimePreviewInstance(target, new ServiceBackendMockGenerator_Adapter(getEndgeBackendConfig().serviceBackendURL, Endge.workspace.current.identity))
       this._instances.set(instance.key, instance)
     }
     this._syncEntries()

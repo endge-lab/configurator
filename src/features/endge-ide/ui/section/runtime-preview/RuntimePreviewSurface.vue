@@ -13,9 +13,8 @@ import { SFCRenderInspectionController } from '@/features/endge-ide/services/run
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import SourceJsonTreeControls from '@/features/endge-ide/ui/components/SourceJsonTreeControls.vue'
 import SourceOutputPanel from '@/features/endge-ide/ui/components/SourceOutputPanel.vue'
-import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
+import RuntimePreviewRenderableView from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewRenderable.vue'
 import SFCRenderTreePanel from '@/features/endge-ide/ui/section/runtime-preview/SFCRenderTreePanel.vue'
-import StoreRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/StoreRuntimePreview.vue'
 import RuntimeLifecycleStatusIcon from '@/features/endge-ide/ui/widgets/components/RuntimeLifecycleStatusIcon.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
@@ -579,22 +578,7 @@ onBeforeUnmount(() => {
             :key="item.key"
             class="runtime-preview-surface__renderable border-b border-border/70 pb-5 last:border-b-0 last:pb-0"
           >
-            <EndgeAdapterRoot
-              v-if="item.kind === 'filter-view'"
-              root-key="filter-view"
-              :runtime="item.runtime"
-            />
-            <EndgeAdapterRoot
-              v-else-if="item.kind === 'component-sfc'"
-              root-key="sfc-runtime"
-              :host="item.runtime"
-              :input="item.input"
-              :inspection="hierarchyPanelVisible ? renderInspection.session : null"
-            />
-            <StoreRuntimePreview v-else-if="item.kind === 'store'" :runtime="item.runtime" />
-            <div v-else class="rounded-md border border-dashed p-4 text-xs text-muted-foreground">
-              {{ $t('uiText.runtimec4740e4c') }} <code>{{ item.runtime.entityIdentity }}</code> {{ $t('uiText.hasRenderableCapabilityButDoesNotHaveASeparatePreviecad8e5d0') }}
-            </div>
+            <RuntimePreviewRenderableView :item="item" :inspection="hierarchyPanelVisible ? renderInspection.session : null" />
           </section>
         </div>
 
