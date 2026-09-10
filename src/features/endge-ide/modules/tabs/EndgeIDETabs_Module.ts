@@ -21,6 +21,7 @@ import type {
 import type { Component, ShallowRef } from 'vue'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
+import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
 import type { WorkflowDependency, WorkflowViewport } from '@/features/project-workflow/domain/ProjectWorkflow'
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
@@ -178,6 +179,7 @@ export class EndgeIDETabs_Module {
   public constructor(
     private readonly _busy: EndgeIDEBusy_Module,
     private readonly _uiState: EndgeIDEUIState_Module,
+    private readonly _workspace?: EndgeIDEWorkspace_Module,
   ) {
     this._tabsApi = this._createTabsApi(false)
   }
@@ -325,6 +327,9 @@ export class EndgeIDETabs_Module {
 
   /** Возвращает true, когда активный редактор отличается от последнего успешного сохранения. */
   public isTabDirty(id: string): boolean {
+    if (id === 'workspace-settings') {
+      return this._workspace?.editor.value?.dirty ?? false
+    }
     const session = this._sessionByTabId.get(id)
     if (!session?.editor || session.savedSnapshot == null) {
       return false
@@ -374,6 +379,21 @@ export class EndgeIDETabs_Module {
   public async save(): Promise<void> {
     const activeTab = this.activeTab.value
     if (!activeTab) {
+      return
+    }
+    if (activeTab.viewId === VIEW_ID_WORKSPACE_SETTINGS) {
+      if (this._busy.value || !this._workspace?.editor.value?.displayName.trim()) {
+        return
+      }
+      try {
+        await this._workspace.save()
+        toast.success('Рабочее пространство сохранено')
+      }
+      catch (error) {
+        if (!warnDebuggerReadOnly(error)) {
+          toast.error('Не удалось сохранить рабочее пространство', { description: error instanceof Error ? error.message : String(error) })
+        }
+      }
       return
     }
     await this._busy.run(this._doSave(activeTab))

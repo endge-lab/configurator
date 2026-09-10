@@ -1284,6 +1284,12 @@
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
   },
+  "workspaceWorkflow": {
+    "title": "Workspace Workflow",
+    "sections": "Workspace sections",
+    "general": "Workspace settings",
+    "unsaved": "Unsaved changes"
+  },
   "projectWorkflow": {
     "filterRepresentation": "Filter representation",
     "selectedElements": "Selected elements",

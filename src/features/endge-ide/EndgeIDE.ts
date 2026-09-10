@@ -52,6 +52,10 @@ export class EndgeIDE {
     return this._requireModules().tabs
   }
 
+  public static get workspace() {
+    return this._requireModules().workspace
+  }
+
   public static get uiState() {
     return this._requireModules().uiState
   }
@@ -130,6 +134,7 @@ export class EndgeIDE {
       modules.runtimePreview.reset()
       modules.hotkeys.reset()
       modules.tabs.reset()
+      modules.workspace.reset()
       if (!isIDEWidgetsDisabled()) {
         modules.widgets.reset()
       }

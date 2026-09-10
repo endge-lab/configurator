@@ -19,6 +19,7 @@ import { EndgeIDEProblems_Module } from '@/features/endge-ide/modules/EndgeIDEPr
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
 import { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import { EndgeIDEWidgets_Module } from '@/features/endge-ide/modules/EndgeIDEWidgets_Module'
+import { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
 import { EndgeIDEIntegrations_Module } from '@/features/endge-ide/modules/integrations/EndgeIDEIntegrations_Module'
 import { SourceEditorDialogs_Module } from '@/features/endge-ide/modules/SourceEditorDialogs_Module'
 import { EndgeIDETabs_Module } from '@/features/endge-ide/modules/tabs/EndgeIDETabs_Module'
@@ -35,6 +36,8 @@ async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
 export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEModules {
   const busy = new EndgeIDEBusy_Module()
   const uiState = new EndgeIDEUIState_Module()
+  const runtimePreview = new EndgeIDERuntimePreview_Module(context)
+  const workspace = new EndgeIDEWorkspace_Module(busy, uiState, () => runtimePreview.restartForDataModeChange())
   return {
     uiEditor: createUIEditorModule(new UIEditorStorage_Adapter()),
     busy,
@@ -46,11 +49,12 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     ),
     documentImport: new EndgeIDEDocumentImport_Module(),
     modals: new EndgeIDEModals_Module(),
-    tabs: new EndgeIDETabs_Module(busy, uiState),
+    tabs: new EndgeIDETabs_Module(busy, uiState, workspace),
+    workspace,
     uiState,
     widgets: new EndgeIDEWidgets_Module(),
     hotkeys: new EndgeIDEHotkeys_Module(new EndgeIDEHotkeysBrowser_Adapter()),
-    runtimePreview: new EndgeIDERuntimePreview_Module(context),
+    runtimePreview,
     problems: new EndgeIDEProblems_Module(),
     sourceEditorDialogs: new SourceEditorDialogs_Module(),
     authProfileEditors: new AuthProfileEditorRegistry_Module(),

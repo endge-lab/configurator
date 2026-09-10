@@ -1284,6 +1284,12 @@
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
   },
+  "workspaceWorkflow": {
+    "title": "Workflow рабочего пространства",
+    "sections": "Разделы рабочего пространства",
+    "general": "Настройки рабочего пространства",
+    "unsaved": "Есть несохранённые изменения"
+  },
   "projectWorkflow": {
     "filterRepresentation": "Представление фильтра",
     "selectedElements": "Выбранные элементы",
