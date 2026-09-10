@@ -3,7 +3,7 @@ import type { SFCRenderInspectionTreeNode } from '@endge/core'
 import type { RuntimePreviewRenderable, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import { Raph } from '@endge/raph'
-import { Boxes, Braces, CircleAlert, ListTree, LoaderCircle, Pause, Play, RefreshCw, Square, SquareStack } from 'lucide-vue-next'
+import { Boxes, Braces, CircleAlert, ListTree, LoaderCircle, Play } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
@@ -36,31 +36,12 @@ const preview = EndgeIDE.runtimePreview
 const busy = ref(false)
 const instance = computed(() => preview.selectedEntry.value)
 const selected = computed(() => preview.selectedNode.value)
-const state = computed(() => {
-  const entry = instance.value
-  const node = selected.value
-  return entry && node ? entry.lifecycleState(node) : 'inactive'
-})
 const renderables = computed(() => instance.value?.renderables.value ?? [])
 const componentRenderables = computed<ComponentRenderable[]>(() => renderables.value
   .filter((item): item is ComponentRenderable => item.kind === 'component-sfc'))
 const inactiveRenderables = computed(() => instance.value?.inactiveRenderableChildren.value ?? [])
 const nestedCompositions = computed(() => selected.value ? collectCompositionChildren(selected.value) : [])
 const dependencySelected = computed(() => selected.value?.kind === 'data' || selected.value?.kind === 'resource')
-const canControl = computed(() => {
-  const entry = instance.value
-  const node = selected.value
-  if (!entry || !node || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
-    return false
-  }
-  if (node.parentId == null) {
-    return true
-  }
-  return entry.status.value !== 'stopped'
-    && entry.status.value !== 'error'
-    && entry.status.value !== 'preparing'
-    && entry.status.value !== 'disposed'
-})
 const body = ref<HTMLElement | null>(null)
 const propsTree = ref<SourceJsonTreeHandle | null>(null)
 const propsRevision = ref(0)
@@ -476,7 +457,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex h-full min-h-0 flex-col bg-background" data-endge-runtime-preview-surface>
-    <header v-if="instance" class="flex min-h-11 shrink-0 items-center justify-end gap-1 border-b px-3">
+    <header v-if="instance && componentRenderables.length" class="flex min-h-11 shrink-0 items-center justify-end gap-1 border-b px-3">
       <Button
         v-if="componentRenderables.length"
         type="button"
@@ -502,56 +483,6 @@ onBeforeUnmount(() => {
         @click="propsPanelVisible = !propsPanelVisible"
       >
         <Braces class="size-4" />
-      </Button>
-      <Button
-        v-if="canControl && state === 'active'"
-        variant="ghost"
-        size="icon"
-        title="Поставить на паузу"
-        :disabled="busy"
-        @click="run(() => preview.pauseSelected())"
-      >
-        <Pause class="size-4" />
-      </Button>
-      <Button
-        v-else-if="canControl && state === 'paused'"
-        variant="ghost"
-        size="icon"
-        title="Продолжить"
-        :disabled="busy"
-        @click="run(() => preview.resumeSelected())"
-      >
-        <Play class="size-4" />
-      </Button>
-      <Button
-        v-if="canControl"
-        variant="ghost"
-        size="icon"
-        title="Остановить"
-        :disabled="busy || state === 'stopped' || state === 'disposed' || state === 'inactive'"
-        @click="run(() => preview.stopSelected())"
-      >
-        <Square class="size-4" />
-      </Button>
-      <Button
-        v-if="canControl"
-        variant="ghost"
-        size="icon"
-        title="Перезапустить"
-        :disabled="busy"
-        @click="run(() => preview.restartSelected())"
-      >
-        <RefreshCw class="size-4" />
-      </Button>
-      <div class="mx-1 h-5 w-px bg-border" />
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Остановить все runtime instances"
-        :disabled="busy || !preview.entries.value.length"
-        @click="run(() => preview.stopAll())"
-      >
-        <SquareStack class="size-4" />
       </Button>
     </header>
 

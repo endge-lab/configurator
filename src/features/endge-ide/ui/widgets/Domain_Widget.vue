@@ -25,7 +25,6 @@ import {
   ChevronsDown,
   ChevronsUp,
   Copy,
-  Download,
   FolderPlus,
   FolderRoot,
   Layers3,
@@ -35,7 +34,6 @@ import {
   Pencil,
   Play,
   Plus,
-  Save,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -1443,10 +1441,6 @@ function isSelected(item: FlatFsItem): boolean {
 }
 
 // ---------- actions ----------
-async function save(): Promise<void> {
-  await EndgeIDE.tabs.save()
-}
-
 /** Закрывает вкладку документа, если она открыта. */
 function closeDocumentTabIfOpen(id: string, docType: DomainDocumentType): void {
   tabs.closeTab(`${docType}-${id}`)
@@ -1601,21 +1595,6 @@ async function confirmRename(): Promise<void> {
     toast.error('Не удалось переименовать папку', { description: (e as Error)?.message })
   }
   Endge.domain.notify()
-}
-
-async function downloadDomain(): Promise<void> {
-  try {
-    const workspaceIdentity = String(Endge.workspace.current.identity ?? '').trim()
-    if (!workspaceIdentity) {
-      throw new Error('Не выбрано рабочее пространство')
-    }
-    await EndgeIDE.domainTransfer.downloadExport(workspaceIdentity)
-    toast.success('Экспорт домена сформирован backend')
-  }
-  catch (error) {
-    console.error(`[Domain_Widget] Не удалось скачать домен: ${error instanceof Error ? error.message : String(error)}`)
-    toast.error('Не удалось скачать домен', { description: error instanceof Error ? error.message : String(error) })
-  }
 }
 
 async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void> {
@@ -1929,25 +1908,6 @@ function rowClasses(item: FlatFsItem): string {
       <div class="px-2 py-1 flex items-center justify-between gap-1">
         <TooltipProvider :delay-duration="150">
           <div class="flex items-center gap-0.5">
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button v-if="!debuggerMode" size="icon" variant="ghost" class="size-7" @click="downloadDomain">
-                  <Download class="size-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{{ $t('uiText.downloadJson2007ff2d') }}</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button v-if="!debuggerMode" size="icon" variant="ghost" class="size-7" :disabled="EndgeIDE.busy.value" @click="save">
-                  <Loader2 v-if="EndgeIDE.busy.value" class="size-3.5 animate-spin" />
-                  <Save v-else class="size-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
-            </Tooltip>
-
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button size="icon" variant="ghost" class="size-7" @click="expandAll">
