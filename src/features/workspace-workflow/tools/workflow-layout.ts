@@ -1,4 +1,4 @@
-import type { WorkflowLayout, WorkflowPoint } from '../domain/ProjectWorkflow'
+import type { WorkflowLayout, WorkflowPoint } from '../domain/WorkspaceWorkflow'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)

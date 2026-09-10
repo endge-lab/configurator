@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkflowNodeData } from '@/features/project-workflow/domain/ProjectWorkflow'
+import type { WorkflowNodeData } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { Endge } from '@endge/core'
 import { CircleHelp, Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, watch } from 'vue'
@@ -16,14 +16,16 @@ import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/conf
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
-import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const WorkspaceWorkflow_View = defineAsyncComponent(() => import('@/features/workspace-workflow/ui/WorkspaceWorkflow_View.vue'))
 const { t } = useI18n()
 const workspace = EndgeIDE.workspace
 workspace.open()
 const editor = workspace.editor
-const activeTab = useSmartTabSelection('workspace.active-tab', 'general', ['general', 'workflow'] as const)
+const activeTab = computed<'general' | 'workflow'>({
+  get: () => EndgeIDE.tabs.getTabViewState('workspace-settings', 'workspace.active-tab')?.value === 'workflow' ? 'workflow' : 'general',
+  set: value => EndgeIDE.tabs.setTabViewState('workspace-settings', 'workspace.active-tab', { version: 1, value }),
+})
 const workspaceDocumentId = computed(() => {
   void editor.value?.identity
   return Endge.domainRepository.getLoadedSnapshot()?.workspace.state.id ?? null
@@ -35,8 +37,8 @@ const workflowDependencies = computed(() => {
   const root = workspace.root.value
   const selection = editor.value.workflow.selection
   return buildWorkflowDependencyTree(selection.length ? selection : [{ node: root, usages: [], dependencies: root.children }], {
-    selection: t('projectWorkflow.selectedElements'),
-    usages: t('projectWorkflow.usedBy'),
+    selection: t('workspaceWorkflow.selectedElements'),
+    usages: t('workspaceWorkflow.usedBy'),
     dependencies: t('uiText.dependencies898afdf0'),
   })
 })
@@ -124,6 +126,7 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
       @open-document="openWorkflowDocument"
       @toggle-resources="workspace.toggleResources($event)"
       @viewport-change="workspace.setViewport($event)"
+      @arrange="workspace.arrange()"
     />
     <div v-else class="min-h-0 flex-1 overflow-hidden p-4">
       <ConfigurationSettingsEditor v-model="editor.configuration" variant="root">

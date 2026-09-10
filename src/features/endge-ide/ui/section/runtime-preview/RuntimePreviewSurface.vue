@@ -392,7 +392,7 @@ function collectCompositionChildren(node: RuntimePreviewTreeNode): RuntimePrevie
   const result: RuntimePreviewTreeNode[] = []
   const visit = (children: RuntimePreviewTreeNode[]) => {
     for (const child of children) {
-      if (child.kind === 'composition') {
+      if (child.kind === 'composition' || child.kind === 'project') {
         result.push(child)
       }
       else if (child.kind === 'scope') {
@@ -650,7 +650,7 @@ onBeforeUnmount(() => {
 
         <div v-if="nestedCompositions.length" class="border-t p-4">
           <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {{ $t('uiText.nestedCompositions4b2ce876') }}
+            {{ selected?.kind === 'simulation' ? $t('uiText.simulationTarget') : $t('uiText.nestedCompositions4b2ce876') }}
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <button

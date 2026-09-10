@@ -193,7 +193,8 @@ function shouldExpandNode(
     return false
   }
   return (
-    node.kind === 'project'
+    node.kind === 'simulation'
+    || node.kind === 'project'
     || (node.kind === 'composition' && node.parentId == null)
   )
 }

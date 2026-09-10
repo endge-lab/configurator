@@ -7,6 +7,7 @@ import {
   Code2,
   FileJson,
   Loader2,
+  Play,
   RotateCcw,
   Save,
   Settings2,
@@ -70,6 +71,20 @@ const diagnosticsEntityRef = computed(() =>
 function updateSource(value: string): void {
   editor.value?.applySourceText(value)
 }
+const launchLoading = ref(false)
+async function launchPreview(): Promise<void> {
+  if (!editor.value) {
+    return
+  }
+  launchLoading.value = true
+  try {
+    editor.value.refreshDiagnostics()
+    await EndgeIDE.runtimePreview.launchEditor(editor.value)
+  }
+  finally {
+    launchLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -127,6 +142,22 @@ function updateSource(value: string): void {
 
         <Separator orientation="vertical" class="mx-0.5 h-5" />
         <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="launchLoading"
+                aria-label="Запустить preview симуляции"
+                @click="launchPreview"
+              >
+                <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button

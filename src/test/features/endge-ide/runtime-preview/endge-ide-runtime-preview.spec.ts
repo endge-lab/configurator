@@ -4,6 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
 
 const mocks = vi.hoisted(() => ({
+  eventListeners: new Map<string, () => void>(),
   valid: true,
   mockMode: false,
   showWidget: vi.fn(),
@@ -32,6 +33,17 @@ vi.mock('@endge/core', () => ({
     public constructor(public readonly profileIdentity: string) { super('Authentication required') }
   },
   Endge: {
+    assertWritable: vi.fn(),
+    events: {
+      onEvent: (name: string, listener: () => void) => {
+        mocks.eventListeners.set(name, listener)
+        return () => {
+          if (mocks.eventListeners.get(name) === listener) {
+            mocks.eventListeners.delete(name)
+          }
+        }
+      },
+    },
     context: {
       get isMockEnabled() { return mocks.mockMode },
     },
@@ -53,6 +65,10 @@ vi.mock('@endge/core', () => ({
       scopes: { subscribe: vi.fn(() => vi.fn()) },
     },
   },
+}))
+
+vi.mock('@/features/endge-ide/services/workspace-workflow/workspace-workflow-tree', () => ({
+  buildWorkspaceWorkflowTree: vi.fn(),
 }))
 
 vi.mock('@/features/endge-ide/services/runtime-preview/runtime-preview-auth', () => ({
@@ -123,6 +139,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
       origin: 'http://localhost:5173',
       href: 'http://localhost:5173/',
     })
+    mocks.eventListeners.clear()
     mocks.valid = true
     mocks.mockMode = false
     mocks.showWidget.mockReset()
@@ -146,6 +163,29 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  /** Переключение контекста не оставляет Preview на очищенной шине Events. */
+  it('повторно подписывается на Runtime Events после boot и освобождает подписки при reset', async () => {
+    mocks.rememberedTargets = [{ entityType: 'composition', identity: 'entry' }]
+    const manager = createManager()
+    manager.init()
+    manager.init()
+    expect(mocks.eventListeners.size).toBe(3)
+    const first = mocks.instances[0]
+    mocks.eventListeners.get('runtime:host-status-changed')?.()
+    expect(first.refresh).toHaveBeenCalledTimes(1)
+    await mocks.surfaceLifecycle?.beforeContextReset?.()
+    expect(mocks.eventListeners.size).toBe(0)
+    mocks.eventListeners.clear()
+    await mocks.surfaceLifecycle?.afterContextBoot?.()
+    expect(mocks.eventListeners.size).toBe(3)
+    const restored = mocks.instances.at(-1)
+    mocks.eventListeners.get('runtime:scopes-changed')?.()
+    expect(restored.refresh).toHaveBeenCalledTimes(1)
+    expect(first.refresh).toHaveBeenCalledTimes(1)
+    manager.reset()
+    expect(mocks.eventListeners.size).toBe(0)
   })
 
   it('передаёт текущий черновик редактора в стабильную запись runtime', async () => {

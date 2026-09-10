@@ -23,14 +23,13 @@ import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEB
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
-import type { WorkflowDependency, WorkflowViewport } from '@/features/project-workflow/domain/ProjectWorkflow'
 import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
 
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
 
-import { DOCUMENT_ICON_BADGE_SIZE, DOCUMENT_ICON_SIZES } from '@/features/document-presentation/config/document-presentation'
+import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_ICON_BADGE_SIZE, DOCUMENT_ICON_SIZES } from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
 import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
@@ -70,7 +69,6 @@ import {
   getMissingDocumentTabIds,
   resolveEndgeIDEDocumentIdentity,
 } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
-import { buildCompositionDependencyTree } from '@/features/endge-ide/services/composition-dependencies/composition-dependency-tree'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
 import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/domain/domain-document-project-path'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
@@ -261,56 +259,6 @@ export class EndgeIDETabs_Module {
   public closeOthers(id: string): void { this._tabsApi.closeOthers(id) }
   public closeAllToLeft(id: string): void { this._tabsApi.closeAllToLeft(id) }
   public closeAllToRight(id: string): void { this._tabsApi.closeAllToRight(id) }
-
-  /** Лениво создаёт снимок связей проекта без запуска runtime и записи документов. */
-  public prepareProjectWorkflow(editor: RProjectEditor, refresh = false): void {
-    if (editor.workflow.initialized && !refresh) {
-      return
-    }
-    const restoreView = !editor.workflow.initialized
-    const result = buildCompositionDependencyTree({
-      documentType: 'project',
-      identity: editor.identity,
-      displayName: editor.displayName,
-      source: editor.source,
-    })
-    const root: WorkflowDependency = {
-      ...(result.root ?? {
-        id: `project:${editor.identity}`,
-        kind: 'project',
-        identity: editor.identity,
-        title: editor.displayName || editor.identity,
-        alias: null,
-        activationMode: null,
-        status: 'compile-error' as const,
-        children: [],
-      }),
-      ...getDomainDocumentPresentation('project'),
-      kind: 'project',
-      documentType: 'project',
-      diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
-    }
-    editor.workflow.replaceRoots([root])
-    if (restoreView && editor.id != null) {
-      editor.workflow.restoreViewState(this._uiState.read(`configurator.workflow.${editor.id}`, null))
-    }
-  }
-
-  /** Сохраняет личное раскрытие панелей отдельно от Source и metadata редактируемого проекта. */
-  public toggleProjectWorkflowResources(editor: RProjectEditor, occurrenceId: string): void {
-    editor.workflow.toggleResources(occurrenceId)
-    if (editor.id != null) {
-      this._uiState.write(`configurator.workflow.${editor.id}`, editor.workflow.viewState)
-    }
-  }
-
-  /** Запоминает кадр Workflow в личном Context после завершения перемещения или масштабирования. */
-  public setProjectWorkflowViewport(editor: RProjectEditor, viewport: WorkflowViewport): void {
-    editor.workflow.setViewport(viewport)
-    if (editor.id != null) {
-      this._uiState.write(`configurator.workflow.${editor.id}`, editor.workflow.viewState)
-    }
-  }
 
   public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
   public getTabViewState(tabId: string, key: string) { return this._tabsApi.getTabViewState(tabId, key) }
@@ -561,7 +509,7 @@ export class EndgeIDETabs_Module {
       payload: {},
       closable: true,
       singleton: true,
-      meta: { icon: 'ti ti-world text-sky-500 text-xl' },
+      meta: this._workspaceTabMeta(),
     }
     this.openTab(tabRef)
     showWidget('project')
@@ -632,8 +580,23 @@ export class EndgeIDETabs_Module {
   }
 
   /** Синхронизирует представление восстановленных document-вкладок с загруженным доменом. */
+  /** Открывает ту же Workspace-сессию сразу на Workflow, в том числе из её настроек. */
+  public openWorkspaceWorkflow(): void {
+    this.openWorkspaceSettings()
+    this._tabsApi.setTabViewState('workspace-settings', 'workspace.active-tab', { version: 1, value: 'workflow' })
+  }
+
+  private _workspaceTabMeta(): Record<string, unknown> {
+    const presentation = DOCUMENT_AUXILIARY_PRESENTATION.workspace
+    return { icon: presentation.icon, iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}` }
+  }
+
   private _refreshPersistedDocumentTabs(): void {
     for (const tab of this.openTabs.value) {
+      if (tab.viewId === VIEW_ID_WORKSPACE_SETTINGS) {
+        tab.meta = this._workspaceTabMeta()
+        continue
+      }
       if (tab.viewId !== VIEW_ID_DOCUMENT) {
         continue
       }
@@ -749,7 +712,7 @@ export class EndgeIDETabs_Module {
       session.persistedIdentity = identity || documentId
     }
     if (Endge.mode === 'debugger' && session.editor) {
-      session.editor = readOnlyDocument(session.editor as object, ['workflow'])
+      session.editor = readOnlyDocument(session.editor as object)
       session.view.props.tabContext = { editor: session.editor }
     }
     if (session.editor) {

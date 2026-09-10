@@ -1,4 +1,4 @@
-import type { WorkflowDependency, WorkflowNodeData } from '../domain/ProjectWorkflow'
+import type { WorkflowDependency, WorkflowNodeData } from '../domain/WorkspaceWorkflow'
 
 export interface WorkflowRelation {
   source: string
@@ -159,7 +159,7 @@ export function buildWorkflowGraph(roots: WorkflowDependency[]): WorkflowGraph {
         if (child.kind === 'data' || child.kind === 'resource') {
           continue
         }
-        if (child.kind === 'composition') {
+        if (child.kind === 'composition' || child.kind === 'project') {
           visitComposition(child, [providers, ...ancestorProviders], aliases, resources, vocabAliases)
         }
         else {

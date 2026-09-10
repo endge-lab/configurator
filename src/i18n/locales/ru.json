@@ -1,4 +1,9 @@
 {
+  "runtimeWorkflow": {
+    "tabs": "Runtime Preview",
+    "preview": "Предпросмотр",
+    "activeOnly": "Подсвечены только активные узлы всех запусков Runtime Preview."
+  },
   "aiWorkbench": {
     "widget": {
       "messagePlaceholder": "Сообщение ассистенту…",
@@ -830,6 +835,7 @@
     "name3de49828": "Название",
     "nameAee78fe8": "Имя",
     "navigationE3782498": "Навигация",
+    "simulationTarget": "Целевой граф",
     "nestedCompositions4b2ce876": "Вложенные compositions",
     "nestedFolders283c1c2c": "Вложенных папок:",
     "newFolderName5b5225d5": "Новое название папки:",
@@ -1049,7 +1055,7 @@
     "runtimePreviewAuthorization54e41ed8": "Авторизация Runtime Preview",
     "runtimeTargets69bfee86": "Цели runtime",
     "runtimeTreeIsEmptyc273285d": "Runtime Tree пуст.",
-    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree пуст. Запустите Project, Composition, Component SFC или Store через Debug Preview.",
+    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree пуст. Запустите Simulation, Project, Composition, Component SFC или Store через Debug Preview.",
     "save4864057d": "Сохранить",
     "saveForwarda8daa4f8": "Сохранить forward",
     "saveRefreshTokenF71fbe79": "Сохранять refresh token",
@@ -1285,12 +1291,6 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
   },
   "workspaceWorkflow": {
-    "title": "Workflow рабочего пространства",
-    "sections": "Разделы рабочего пространства",
-    "general": "Настройки рабочего пространства",
-    "unsaved": "Есть несохранённые изменения"
-  },
-  "projectWorkflow": {
     "filterRepresentation": "Представление фильтра",
     "selectedElements": "Выбранные элементы",
     "usedBy": "Используется в",
@@ -1308,10 +1308,10 @@
     "explicitProviderInvalid": "Некорректная ссылка на Store",
     "ambiguousProvider": "Неоднозначный Store у предка",
     "missingProvider": "Не найден обязательный Store у предков",
-    "title": "Workflow проекта",
+    "title": "Workflow рабочего пространства",
     "layoutUnavailable": "Сохранённый формат раскладки не поддерживается. Диаграмма доступна только для просмотра.",
-    "emptyTitle": "У проекта пока нет композиций",
-    "emptyDescription": "Здесь появятся композиции, привязанные к этому проекту, и их зависимости.",
+    "emptyTitle": "В рабочем пространстве пока нет документов",
+    "emptyDescription": "Документы рабочего пространства и их зависимости появятся здесь.",
     "openDocument": "Открыть документ: {name}",
     "expand": "Раскрыть: {name}",
     "collapse": "Свернуть: {name}",
@@ -1327,7 +1327,11 @@
     "zoomIn": "Приблизить",
     "zoomOut": "Отдалить",
     "fit": "Показать всю схему",
-    "arrange": "Упорядочить блоки"
+    "arrange": "Упорядочить блоки",
+    "sections": "Разделы рабочего пространства",
+    "general": "Настройки рабочего пространства",
+    "unsaved": "Есть несохранённые изменения",
+    "openCurrent": "Открыть Workflow текущего рабочего пространства"
   },
   "simulation": {
     "folder": "Симуляции",

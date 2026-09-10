@@ -19,11 +19,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import { ENDGE_IDE_DOCUMENTATION_URL, ENDGE_IDE_GOVERNANCE_PORTAL_URL } from '@/features/endge-ide/config/documentation.config'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
@@ -378,6 +381,22 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         <Loader2 v-if="isLaunchingProjectRuntime" class="size-4 animate-spin" />
         <Play v-else class="size-4 text-emerald-500" />
       </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-md border bg-background transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+              :disabled="context.isSwitching()"
+              :aria-label="t('workspaceWorkflow.openCurrent')"
+              @click="tabs.openWorkspaceWorkflow()"
+            >
+              <DocumentIcon :presentation="{ ...DOCUMENT_AUXILIARY_PRESENTATION.workspace, icon: 'Workflow' }" size="tab" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('workspaceWorkflow.openCurrent') }}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   </Teleport>
 

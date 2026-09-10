@@ -3,6 +3,7 @@ import type {
   CompositionRuntimeDescriptor,
   DomainDocumentType,
   RuntimeArtifactReader,
+  SimulationSourceArtifact,
 } from '@endge/core'
 import type {
   RuntimePreviewCompositionAddress,
@@ -18,6 +19,31 @@ export function buildRuntimePreviewTree(
   target: RuntimePreviewTarget,
   artifacts: RuntimeArtifactReader = Endge.program,
 ): RuntimePreviewTreeNode[] {
+  if (target.entityType === 'simulation') {
+    const root = makeNode({
+      id: `simulation:${target.identity}`,
+      kind: 'simulation',
+      entityType: 'simulation',
+      identity: target.identity,
+      ...domainNodeFields('simulation', target.identity),
+    })
+    const artifact = artifacts.getArtifact<SimulationSourceArtifact>('simulation', target.identity)
+    if (!artifact || artifact.status === 'error') {
+      root.subtitle = 'artifact unavailable'
+      return [root]
+    }
+    const child = buildRuntimePreviewTree(artifact.payload.target, artifacts)[0]
+    if (child) {
+      const prefix = (node: RuntimePreviewTreeNode, parentId: string): void => {
+        node.id = `${root.id}/${node.id}`
+        node.parentId = parentId
+        node.children.forEach(item => prefix(item, node.id))
+      }
+      prefix(child, root.id)
+      root.children = [child]
+    }
+    return [root]
+  }
   if (target.entityType === 'project') {
     return [buildProjectNode(target.identity, artifacts)]
   }
@@ -227,11 +253,12 @@ function buildScopeContents(
       ))
       continue
     }
-    const target = runtimeDocumentTarget(runtime)
+    const target = runtimeDocumentTarget(payload, runtime)
     const runtimeNode = makeNode({
       id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
       parentId: runtime.kind === 'stream' ? dependencyGroupId : parentId,
       kind: 'runtime',
+      runtimeKind: runtime.kind,
       entityType: String(target.documentType),
       identity: target.identity,
       ...domainNodeFields(target.documentType, target.identity, runtime.name),
@@ -315,7 +342,7 @@ function domainNodeFields(
   }
 }
 
-function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
+function runtimeDocumentTarget(payload: CompositionProgramPayload, runtime: CompositionRuntimeDescriptor): {
   documentType: DomainDocumentType
   identity: string
 } {
@@ -326,6 +353,9 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
     const query = Endge.domain.getQuery(runtime.identity)
     return { documentType: query?.type ?? QueryType.REST, identity: runtime.identity }
   }
+  if (runtime.kind === 'stream') {
+    return { documentType: 'stream', identity: runtime.identity }
+  }
   if (runtime.kind === 'filter') {
     const filter = Endge.domain.getFilter(runtime.identity)
     return { documentType: filter?.type ?? FilterType.DefaultFilter, identity: runtime.identity }
@@ -333,5 +363,8 @@ function runtimeDocumentTarget(runtime: CompositionRuntimeDescriptor): {
   if (runtime.kind === 'filter-view' && runtime.componentIdentity) {
     return { documentType: ComponentType.SFC, identity: runtime.componentIdentity }
   }
-  return { documentType: FilterType.DefaultFilter, identity: runtime.identity }
+  const source = payload.runtimes.find(item => item.name === runtime.identity && item.kind === 'filter')
+  const identity = source?.identity ?? runtime.identity
+  const filter = Endge.domain.getFilter(identity)
+  return { documentType: filter?.type ?? FilterType.DefaultFilter, identity }
 }

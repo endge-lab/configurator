@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkflowNodeData } from '../domain/ProjectWorkflow'
+import type { WorkflowNodeData } from '../domain/WorkspaceWorkflow'
 
 import { ChevronDown, ChevronRight, Folder, TriangleAlert } from 'lucide-vue-next'
 import { computed } from 'vue'
@@ -23,18 +23,18 @@ const problems = computed(() => resources.value.filter(item => item.status !== '
     class="workflow-resources-toggle nodrag nopan"
     :style="{ width: `${data.width}px` }"
     :aria-expanded="data.resourcesExpanded"
-    :aria-label="data.resourcesExpanded ? t('projectWorkflow.collapseResources', { name: data.title }) : t('projectWorkflow.expandResources', { name: data.title })"
+    :aria-label="data.resourcesExpanded ? t('workspaceWorkflow.collapseResources', { name: data.title }) : t('workspaceWorkflow.expandResources', { name: data.title })"
     @click.stop="emit('toggleResources', data.id)"
     @dblclick.stop
   >
     <component :is="data.resourcesExpanded ? ChevronDown : ChevronRight" class="size-3.5" />
     <Folder class="size-3.5" />
-    <span>{{ t('projectWorkflow.resources') }}</span>
+    <span>{{ t('workspaceWorkflow.resources') }}</span>
     <span class="tabular-nums">{{ resources.length }}</span>
     <span v-if="selectedIds.size && relatedCount" class="ml-auto text-primary">
-      {{ t('projectWorkflow.relatedResources', { count: relatedCount, total: resources.length }) }}
+      {{ t('workspaceWorkflow.relatedResources', { count: relatedCount, total: resources.length }) }}
     </span>
-    <TriangleAlert v-if="problems" class="size-3.5 text-destructive" :aria-label="t('projectWorkflow.resourceProblems', { count: problems })" />
+    <TriangleAlert v-if="problems" class="size-3.5 text-destructive" :aria-label="t('workspaceWorkflow.resourceProblems', { count: problems })" />
   </button>
 </template>
 

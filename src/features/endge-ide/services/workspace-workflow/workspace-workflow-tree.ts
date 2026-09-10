@@ -1,5 +1,5 @@
 import type { DomainDocumentType, EndgeWorkspaceDefinition } from '@endge/core'
-import type { WorkflowDependency } from '@/features/project-workflow/domain/ProjectWorkflow'
+import type { WorkflowDependency } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { Endge } from '@endge/core'
 import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'

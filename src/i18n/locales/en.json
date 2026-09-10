@@ -1,4 +1,9 @@
 {
+  "runtimeWorkflow": {
+    "tabs": "Runtime Preview",
+    "preview": "Preview",
+    "activeOnly": "Only active nodes across all Runtime Preview instances are highlighted."
+  },
   "aiWorkbench": {
     "widget": {
       "messagePlaceholder": "Message the assistant…",
@@ -830,6 +835,7 @@
     "name3de49828": "Name",
     "nameAee78fe8": "Name",
     "navigationE3782498": "Navigation",
+    "simulationTarget": "Target graph",
     "nestedCompositions4b2ce876": "Nested compositions",
     "nestedFolders283c1c2c": "Nested Folders:",
     "newFolderName5b5225d5": "New folder name:",
@@ -1049,7 +1055,7 @@
     "runtimePreviewAuthorization54e41ed8": "Runtime Preview Authorization",
     "runtimeTargets69bfee86": "Runtime targets",
     "runtimeTreeIsEmptyc273285d": "Runtime Tree is empty.",
-    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree is empty. Start Project, Composition, Component SFC, or Store via Debug Preview.",
+    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree is empty. Start Simulation, Project, Composition, Component SFC, or Store via Debug Preview.",
     "save4864057d": "Save",
     "saveForwarda8daa4f8": "Save forward",
     "saveRefreshTokenF71fbe79": "Save refresh token",
@@ -1285,12 +1291,6 @@
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
   },
   "workspaceWorkflow": {
-    "title": "Workspace Workflow",
-    "sections": "Workspace sections",
-    "general": "Workspace settings",
-    "unsaved": "Unsaved changes"
-  },
-  "projectWorkflow": {
     "filterRepresentation": "Filter representation",
     "selectedElements": "Selected elements",
     "usedBy": "Used by",
@@ -1308,10 +1308,10 @@
     "explicitProviderInvalid": "Invalid Store binding",
     "ambiguousProvider": "Ambiguous ancestor Store",
     "missingProvider": "Required ancestor Store is missing",
-    "title": "Project workflow",
+    "title": "Workspace Workflow",
     "layoutUnavailable": "The saved layout format is not supported. The diagram is read-only.",
-    "emptyTitle": "This project has no compositions yet",
-    "emptyDescription": "Compositions assigned to this project and their dependencies will appear here.",
+    "emptyTitle": "This workspace has no documents yet",
+    "emptyDescription": "Workspace documents and their dependencies will appear here.",
     "openDocument": "Open document: {name}",
     "expand": "Expand: {name}",
     "collapse": "Collapse: {name}",
@@ -1327,7 +1327,11 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "fit": "Fit diagram",
-    "arrange": "Arrange nodes"
+    "arrange": "Arrange nodes",
+    "sections": "Workspace sections",
+    "general": "Workspace settings",
+    "unsaved": "Unsaved changes",
+    "openCurrent": "Open current workspace workflow"
   },
   "simulation": {
     "folder": "Simulations",

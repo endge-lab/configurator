@@ -1732,7 +1732,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     }
 
     const contextNodes = getContextFileNodes(fileNode)
-    const runtimeNodes = contextNodes.filter(item => item.docType !== 'simulation')
+    const runtimeNodes = contextNodes
     if (runtimeNodes.length > 0) {
       items.push({
         label: runtimeNodes.length > 1

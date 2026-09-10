@@ -10,10 +10,11 @@ import type {
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
 import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
+import type { WorkflowDependency } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { AuthInteractionRequiredError, Endge } from '@endge/core'
-import { computed, ref, shallowRef } from 'vue'
-import { toast } from 'vue-sonner'
+import { computed, reactive, ref, shallowRef } from 'vue'
 
+import { toast } from 'vue-sonner'
 import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
@@ -22,7 +23,12 @@ import { validateRuntimePreviewContext } from '@/features/endge-ide/services/run
 import { readRuntimePreviewHistory, writeRuntimePreviewHistory } from '@/features/endge-ide/services/runtime-preview/runtime-preview-history'
 import { RuntimePreviewInstance } from '@/features/endge-ide/services/runtime-preview/runtime-preview-instance'
 import { createRuntimePreviewLaunchRequest } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
+
 import { findRuntimePreviewOccurrences } from '@/features/endge-ide/services/runtime-preview/runtime-preview-occurrence'
+import { buildWorkspaceWorkflowTree } from '@/features/endge-ide/services/workspace-workflow/workspace-workflow-tree'
+import { collectRuntimeWorkflowActivity } from '@/features/endge-ide/tools/runtime-workflow-activity'
+import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
+import { readWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
 /** Постоянное многоуровневое рабочее пространство Runtime Preview, принадлежащее EndgeIDE. */
 export class EndgeIDERuntimePreview_Module {
@@ -47,8 +53,13 @@ export class EndgeIDERuntimePreview_Module {
   } | null>> = this._treeExpansionRequest
 
   private readonly _instances = new Map<string, RuntimePreviewInstance>()
-  private _runtimeOff: (() => void) | null = null
-  private _scopeOff: (() => void) | null = null
+  private _runtimeOff: (() => void)[] = []
+  private _workflowOff: (() => void)[] = []
+  private _workflowRequested = false
+  private _contextResetting = false
+  private readonly _workflowRoots = shallowRef<WorkflowDependency[]>([])
+  public readonly workflow = shallowRef<WorkspaceWorkflow | null>(null)
+  public readonly activeWorkflowIds = computed(() => collectRuntimeWorkflowActivity(this._workflowRoots.value, this.entries.value))
   private _surfaceOff: (() => void) | null = null
   private _authInteractionOff: (() => void) | null = null
   private _initialized = false
@@ -63,11 +74,22 @@ export class EndgeIDERuntimePreview_Module {
     if (this._initialized) {
       return
     }
-    this._runtimeOff = Endge.runtime.subscribe(() => this._refresh())
-    this._scopeOff = Endge.runtime.scopes.subscribe(() => this._refresh())
+    this._subscribeRuntime()
     this._surfaceOff = this._context.registerSurface('endge-ide-runtime-preview', {
-      beforeContextReset: () => this.disposeAll(),
-      afterContextBoot: () => this._restoreRememberedEntries(),
+      beforeContextReset: () => {
+        this._contextResetting = true
+        this._unsubscribeRuntime()
+        this._resetWorkflow()
+        return this.disposeAll()
+      },
+      afterContextBoot: () => {
+        this._contextResetting = false
+        this._subscribeRuntime()
+        this._restoreRememberedEntries()
+        if (this._workflowRequested) {
+          this.prepareWorkflow()
+        }
+      },
       afterDataModeChange: () => this.restartForDataModeChange(),
     })
     this._authInteractionOff = Endge.auth.onInteractionRequired(error => this._handleInteractionRequired(error))
@@ -76,16 +98,45 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   public reset(): void {
-    this._runtimeOff?.()
-    this._scopeOff?.()
+    this._initialized = false
+    this._workflowRequested = false
+    this._contextResetting = false
+    this._unsubscribeRuntime()
+    this._resetWorkflow()
     this._surfaceOff?.()
     this._authInteractionOff?.()
-    this._runtimeOff = null
-    this._scopeOff = null
     this._surfaceOff = null
     this._authInteractionOff = null
-    this._initialized = false
     void this.disposeAll()
+  }
+
+  /** Создаёт отдельную наблюдаемую диаграмму без editor dirty-state и записи metadata. */
+  public prepareWorkflow(): void {
+    if (!this._initialized || this._contextResetting || !Endge.workspace.isLoaded) {
+      return
+    }
+    this._workflowRequested = true
+    const root = buildWorkspaceWorkflowTree(Endge.workspace.current)
+    this._workflowRoots.value = [root]
+    if (!this.workflow.value) {
+      this.workflow.value = reactive(new WorkspaceWorkflow(readWorkflowLayout(Endge.workspace.current.meta ?? {}))) as WorkspaceWorkflow
+    }
+    this.workflow.value.replaceRoots([root])
+    if (!this._workflowOff.length) {
+      this._workflowOff = [
+        Endge.domain.subscribe(() => this.prepareWorkflow()),
+        Endge.workspace.subscribe(() => {
+          if (!Endge.workspace.isLoaded) {
+            this._resetWorkflow()
+            return
+          }
+          const state = this.workflow.value?.viewState
+          this.workflow.value = reactive(new WorkspaceWorkflow(readWorkflowLayout(Endge.workspace.current.meta ?? {}))) as WorkspaceWorkflow
+          this.prepareWorkflow()
+          this.workflow.value.restoreViewState(state)
+        }),
+      ]
+    }
   }
 
   public async launch(rawTarget: RuntimePreviewLaunchRequest): Promise<boolean> {
@@ -113,7 +164,7 @@ export class EndgeIDERuntimePreview_Module {
       return false
     }
     const target = { entityType: rawTarget.entityType, identity } as const
-    const validation = validateRuntimePreviewContext(target, this._context.isSwitchingContext)
+    const validation = validateRuntimePreviewContext({ ...rawTarget, identity }, this._context.isSwitchingContext)
     if (!validation.valid) {
       toast.error(validation.message ?? 'Runtime Preview недоступен', { description: validation.description })
       return false
@@ -459,6 +510,29 @@ export class EndgeIDERuntimePreview_Module {
     this._entries.value = []
     this._selectedEntryKey.value = null
     await Promise.all(instances.map(instance => instance.dispose()))
+  }
+
+  /** Events очищается при Core reset, поэтому каждый boot получает новые подписки. */
+  private _subscribeRuntime(): void {
+    this._unsubscribeRuntime()
+    this._runtimeOff = [
+      Endge.events.onEvent('runtime:registry-changed', () => this._refresh()),
+      Endge.events.onEvent('runtime:scopes-changed', () => this._refresh()),
+      Endge.events.onEvent('runtime:host-status-changed', () => this._refresh()),
+    ]
+    this._refresh()
+  }
+
+  private _unsubscribeRuntime(): void {
+    this._runtimeOff.forEach(off => off())
+    this._runtimeOff = []
+  }
+
+  private _resetWorkflow(): void {
+    this._workflowOff.forEach(off => off())
+    this._workflowOff = []
+    this.workflow.value = null
+    this._workflowRoots.value = []
   }
 
   private _refresh(): void {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkflowNodeData } from '../domain/ProjectWorkflow'
+import type { WorkflowNodeData } from '../domain/WorkspaceWorkflow'
 
 import { Handle, Position } from '@vue-flow/core'
 import { ExternalLink, TriangleAlert } from 'lucide-vue-next'
@@ -10,18 +10,19 @@ import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 
 const props = withDefaults(defineProps<{
   data: WorkflowNodeData
+  interactive?: boolean
   selected?: boolean
   opacity?: number
-}>(), { opacity: 1 })
+}>(), { opacity: 1, interactive: true })
 const emit = defineEmits<{
   openDocument: [data: WorkflowNodeData]
 }>()
 const { t } = useI18n()
 const isResource = computed(() => props.data.documentType === 'store' && props.data.kind === 'data')
 const bindingLabels = computed(() => ({
-  'explicit-provider': t('projectWorkflow.explicitProviderInvalid'),
-  'ambiguous-provider': t('projectWorkflow.ambiguousProvider'),
-  'missing-provider': t('projectWorkflow.missingProvider'),
+  'explicit-provider': t('workspaceWorkflow.explicitProviderInvalid'),
+  'ambiguous-provider': t('workspaceWorkflow.ambiguousProvider'),
+  'missing-provider': t('workspaceWorkflow.missingProvider'),
 }))
 const kindLabel = computed(() => {
   if (props.data.filterView) {
@@ -55,17 +56,17 @@ const statusLabel = computed(() => {
     return bindingLabels.value[props.data.bindingIssue]
   }
   if (props.data.status === 'missing') {
-    return t('projectWorkflow.missing')
+    return t('workspaceWorkflow.missing')
   }
   if (props.data.status === 'cycle') {
-    return t('projectWorkflow.cycle')
+    return t('workspaceWorkflow.cycle')
   }
   if (props.data.status === 'compile-error' || props.data.diagnosticCount > 0) {
-    return t('projectWorkflow.invalid')
+    return t('workspaceWorkflow.invalid')
   }
   return null
 })
-const canOpen = computed(() => props.data.documentType !== null && props.data.status !== 'missing')
+const canOpen = computed(() => props.interactive && props.data.documentType !== null && props.data.status !== 'missing')
 </script>
 
 <template>
@@ -82,7 +83,7 @@ const canOpen = computed(() => props.data.documentType !== null && props.data.st
       v-if="canOpen"
       type="button"
       class="nodrag nopan workflow-resource-title"
-      :aria-label="t('projectWorkflow.openDocument', { name: data.title })"
+      :aria-label="t('workspaceWorkflow.openDocument', { name: data.title })"
       @click.stop="emit('openDocument', data)"
       @dblclick.stop
     >
@@ -90,7 +91,7 @@ const canOpen = computed(() => props.data.documentType !== null && props.data.st
     </button>
     <span v-else class="workflow-resource-title">{{ data.title }}</span>
     <span v-if="data.dataSource?.slot" class="workflow-store-slot">{{ data.dataSource.slot }}</span>
-    <span v-if="data.dataSource?.resolution === 'isolated'" class="workflow-store-slot">{{ t('projectWorkflow.isolatedStore') }}</span>
+    <span v-if="data.dataSource?.resolution === 'isolated'" class="workflow-store-slot">{{ t('workspaceWorkflow.isolatedStore') }}</span>
     <div v-if="statusLabel" class="workflow-node-status">
       <TriangleAlert class="size-3.5" />{{ statusLabel }}
     </div>
@@ -109,13 +110,13 @@ const canOpen = computed(() => props.data.documentType !== null && props.data.st
       <header class="workflow-node-heading">
         <DocumentIcon :presentation="data" size="workflowNode" />
         <span class="workflow-node-kind">{{ kindLabel }}</span>
-        <span v-if="data.inactive || data.activationMode" class="workflow-node-activation">{{ data.inactive ? t('projectWorkflow.inactive') : data.activationMode }}</span>
+        <span v-if="data.inactive || data.activationMode" class="workflow-node-activation">{{ data.inactive ? t('workspaceWorkflow.inactive') : data.activationMode }}</span>
         <button
           v-if="canOpen"
           type="button"
           class="nodrag nopan workflow-node-open"
-          :aria-label="t('projectWorkflow.openDocument', { name: data.title })"
-          :title="t('projectWorkflow.openDocument', { name: data.title })"
+          :aria-label="t('workspaceWorkflow.openDocument', { name: data.title })"
+          :title="t('workspaceWorkflow.openDocument', { name: data.title })"
           @click.stop="emit('openDocument', data)"
           @dblclick.stop
         >

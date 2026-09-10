@@ -10,6 +10,8 @@ import type {
   ProjectRuntimeSession,
   RuntimeArtifactReader,
   RuntimeHost,
+  SimulationRuntimeSession,
+  SimulationSourceArtifact,
   StoreRuntimeHost,
 } from '@endge/core'
 import type {
@@ -23,7 +25,7 @@ import type {
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { ComponentPreviewContext } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 
-import { Endge, materializeCompositionPreviewProps, RComponentSFC, RProject } from '@endge/core'
+import { Endge, materializeCompositionPreviewProps, RComponentSFC, RProject, RSimulation } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -68,6 +70,7 @@ export class RuntimePreviewInstance {
     return selected ? this._collectInactiveRenderableChildren(selected) : []
   })
 
+  private _simulation: SimulationRuntimeSession | null = null
   private _project: ProjectRuntimeSession<ProjectRuntimeHost> | null = null
   private _composition: CompositionSession<CompositionRuntimeHost> | null = null
   private _component: ComponentSFCRuntimeHost | null = null
@@ -127,7 +130,23 @@ export class RuntimePreviewInstance {
       this.tree.value = buildRuntimePreviewTree(this.target, this._artifactReader)
       this.selectedNodeId.value = this.tree.value[0]?.id ?? null
       this.contextualFocusComponentIdentity.value = null
-      if (this.target.entityType === 'project') {
+      if (this.target.entityType === 'simulation') {
+        const artifact = this._artifactReader.getArtifact<SimulationSourceArtifact>('simulation', this.target.identity)
+        if (!artifact || artifact.status === 'error') {
+          throw new Error('[RuntimePreview] Simulation artifact недоступен.')
+        }
+        const target = artifact.payload.target
+        const composition = this._artifactReader.getArtifact<CompositionProgramPayload>(target.entityType, target.identity)
+        this._simulation = await Endge.runtime.simulation.mount(this.target.identity, {
+          artifactReader: this._artifactReader,
+          forceMock: this._previewForcesMock,
+          props: materializeCompositionPreviewProps(
+            composition?.payload.previewProps,
+            this._previewForcesMock ? 'mock' : artifact.payload.dataMode ?? composition?.payload.dataMode ?? Endge.context.dataMode,
+          ),
+        })
+      }
+      else if (this.target.entityType === 'project') {
         this._project = await Endge.runtime.project.mount(this.target.identity, {
           autoActivate: 'none',
           artifactReader: this._artifactReader,
@@ -220,7 +239,7 @@ export class RuntimePreviewInstance {
       if (!node.composition) {
         return 'inactive'
       }
-      if (node.kind === 'composition') {
+      if (node.kind === 'composition' || node.kind === 'project') {
         return this._compositionState(node.composition)
       }
       const composition = this._resolveComposition(node.composition)
@@ -242,7 +261,10 @@ export class RuntimePreviewInstance {
     if (this.status.value !== 'active') {
       return
     }
-    if (this._project) {
+    if (this._simulation) {
+      await this._simulation.pause()
+    }
+    else if (this._project) {
       if (this._project.composition.state === 'active') {
         await this._project.composition.pause()
       }
@@ -265,7 +287,10 @@ export class RuntimePreviewInstance {
     if (this.status.value !== 'paused') {
       return
     }
-    if (this._project) {
+    if (this._simulation) {
+      await this._simulation.resume()
+    }
+    else if (this._project) {
       if (this._project.composition.state === 'paused') {
         await this._project.composition.resume()
       }
@@ -444,6 +469,19 @@ export class RuntimePreviewInstance {
   }
 
   private _prepareArtifactReader(): RuntimeArtifactReader {
+    if (this.target.entityType === 'simulation' && this._draft) {
+      const model = Object.assign(new RSimulation(), {
+        ...Endge.domain.getSimulation(this.target.identity),
+        ...this._draft,
+        identity: this.target.identity,
+      })
+      const artifact = Endge.compiler.compileSimulationArtifact(model)
+      if (artifact.status === 'error') {
+        throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
+          ?? 'Simulation source содержит ошибки.')
+      }
+      return createOverlayArtifactReader(artifact)
+    }
     if (this.target.entityType === 'project' && this._draft && !this._contextual) {
       const persisted = Endge.domain.getProject(this.target.identity)
       if (!persisted) {
@@ -616,7 +654,7 @@ export class RuntimePreviewInstance {
       return
     }
     const composition = await this._resolveCompositionAsync(node.composition)
-    if (node.kind === 'composition') {
+    if (node.kind === 'composition' || node.kind === 'project') {
       await composition.getScope('scope_default')?.activate()
     }
     else if (node.kind === 'scope' || node.kind === 'data' || node.kind === 'resource') {
@@ -629,6 +667,14 @@ export class RuntimePreviewInstance {
 
   private async _controlNode(node: RuntimePreviewTreeNode, operation: 'pause' | 'deactivate'): Promise<void> {
     if (!node.composition || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
+      return
+    }
+    if ((node.kind === 'composition' || node.kind === 'project') && node.composition.invocationPath.length === 0 && this._simulation) {
+      if (operation === 'pause') {
+        await this._simulation.host.target?.getScope('scope_default')?.pause()
+      }
+      else { await this._simulation.host.deactivateTarget() }
+      this.refresh()
       return
     }
     if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._composition) {
@@ -673,7 +719,13 @@ export class RuntimePreviewInstance {
 
   private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost<'composition' | 'project'>> {
     let host: CompositionRuntimeHost<'composition' | 'project'>
-    if (this._project) {
+    if (this._simulation) {
+      host = await this._simulation.host.activateTarget()
+      if (host.entityIdentity !== address.rootIdentity) {
+        throw new Error(`[RuntimePreview] Target "${address.rootIdentity}" belongs to another simulation.`)
+      }
+    }
+    else if (this._project) {
       if (address.rootIdentity !== this._project.composition.identity) {
         throw new Error(`[RuntimePreview] Project "${address.rootIdentity}" belongs to another session.`)
       }
@@ -694,7 +746,8 @@ export class RuntimePreviewInstance {
   }
 
   private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost<'composition' | 'project'> | null {
-    let host = (this._project?.composition.identity === address.rootIdentity ? this._project.composition.host : null)
+    let host = (this._simulation?.host.target?.entityIdentity === address.rootIdentity ? this._simulation.host.target : null)
+      ?? (this._project?.composition.identity === address.rootIdentity ? this._project.composition.host : null)
       ?? (this._composition?.host.entityIdentity === address.rootIdentity ? this._composition.host : null)
     if (!host) {
       return null
@@ -711,6 +764,9 @@ export class RuntimePreviewInstance {
 
   private _compositionState(address: RuntimePreviewCompositionAddress): RuntimePreviewLifecycleState {
     if (!address.invocationPath.length) {
+      if (this._simulation) {
+        return scopeState(this._simulation.host.target?.getScope('scope_default') ?? null)
+      }
       if (this._project) {
         return handleState(this._project.composition.identity === address.rootIdentity ? this._project.composition.state : undefined)
       }
@@ -727,7 +783,10 @@ export class RuntimePreviewInstance {
       return
     }
     const runtimes: RuntimeHost<any, any>[] = []
-    if (selected.kind === 'project') {
+    if (selected.kind === 'simulation' && this._simulation?.host.target) {
+      runtimes.push(...this._renderableChildren(this._simulation.host.target))
+    }
+    else if (selected.kind === 'project' && this._project) {
       const handle = this._project?.composition
       if (handle?.state === 'active' && handle.host) {
         runtimes.push(...this._renderableChildren(handle.host))
@@ -748,7 +807,7 @@ export class RuntimePreviewInstance {
             runtimes.push(runtime)
           }
         }
-        else if (selected.kind === 'composition') {
+        else if (selected.kind === 'composition' || selected.kind === 'project') {
           runtimes.push(...this._renderableChildren(composition))
         }
         else if (selected.kind === 'scope') {
@@ -809,11 +868,13 @@ export class RuntimePreviewInstance {
   }
 
   private async _disposeRuntime(): Promise<void> {
+    const simulation = this._simulation
     const project = this._project
     const composition = this._composition
     const component = this._component
     const componentContext = this._componentContext
     const store = this._store
+    this._simulation = null
     this._project = null
     this._composition = null
     this._component = null
@@ -824,6 +885,9 @@ export class RuntimePreviewInstance {
     this._artifactReader = Endge.program
     this.contextualFocusComponentIdentity.value = null
     this.renderables.value = []
+    if (simulation) {
+      await simulation.unmount()
+    }
     if (project) {
       await project.unmount().catch(() => {})
     }

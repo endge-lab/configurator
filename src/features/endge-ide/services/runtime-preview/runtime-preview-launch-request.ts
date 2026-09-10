@@ -4,6 +4,7 @@ import type { RuntimePreviewLaunchRequest } from '@/features/endge-ide/domain/ty
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
 import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
+import { RSimulationEditor } from '@/features/endge-ide/domain/entities/RSimulationEditor'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
 
 export interface RuntimePreviewDocumentReference {
@@ -29,6 +30,8 @@ export function createRuntimePreviewLaunchRequestFromDocument(
       return { entityType: 'component-sfc', identity }
     case 'store':
       return { entityType: 'store', identity }
+    case 'simulation':
+      return { entityType: 'simulation', identity }
     default:
       return null
   }
@@ -36,6 +39,20 @@ export function createRuntimePreviewLaunchRequestFromDocument(
 
 /** Преобразует в запрос запуска только документы с исполняемым runtime-контрактом. */
 export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePreviewLaunchRequest | null {
+  if (editor instanceof RSimulationEditor) {
+    return {
+      entityType: 'simulation',
+      identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        name: editor.name,
+        displayName: editor.name,
+        source: editor.source,
+        sourceVersion: editor.sourceVersion,
+      },
+    }
+  }
   if (editor instanceof RProjectEditor) {
     return {
       entityType: 'project',

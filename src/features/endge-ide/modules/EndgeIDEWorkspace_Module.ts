@@ -1,6 +1,6 @@
 import type { EndgeIDEBusy_Module } from './EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from './EndgeIDEUIState_Module'
-import type { WorkflowDependency, WorkflowViewport } from '@/features/project-workflow/domain/ProjectWorkflow'
+import type { WorkflowDependency, WorkflowViewport } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { Endge } from '@endge/core'
 import { reactive, shallowRef } from 'vue'
 import { RWorkspaceEditor } from '@/features/endge-ide/domain/entities/RWorkspaceEditor'
@@ -64,6 +64,15 @@ export class EndgeIDEWorkspace_Module {
     const workflow = this.editor.value?.workflow
     if (workflow) {
       workflow.toggleResources(id)
+      this._uiState.write(this._viewKey(), workflow.viewState)
+    }
+  }
+
+  public arrange(): void {
+    Endge.assertWritable()
+    const workflow = this.editor.value?.workflow
+    if (workflow) {
+      workflow.resetLayout()
       this._uiState.write(this._viewKey(), workflow.viewState)
     }
   }

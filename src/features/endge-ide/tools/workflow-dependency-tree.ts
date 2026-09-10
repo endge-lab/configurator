@@ -1,6 +1,6 @@
 import type { DocumentDependencyNode, DocumentDependencyTreeResult } from '../services/document-dependencies/document-dependency-types'
-import type { WorkflowDependency, WorkflowNodeData } from '@/features/project-workflow/domain/ProjectWorkflow'
-import type { WorkflowSelection } from '@/features/project-workflow/tools/workflow-graph'
+import type { WorkflowDependency, WorkflowNodeData } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
+import type { WorkflowSelection } from '@/features/workspace-workflow/tools/workflow-graph'
 
 /** Только presentation mapping: разрешение providers и обход принадлежат Workflow. */
 export function buildWorkflowDependencyTree(

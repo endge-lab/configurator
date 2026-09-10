@@ -1,8 +1,5 @@
 import type { EndgeConfigurationContribution, RProject } from '@endge/core'
 
-import { ProjectWorkflow } from '@/features/project-workflow/domain/ProjectWorkflow'
-import { readWorkflowLayout, writeWorkflowLayout } from '@/features/project-workflow/tools/workflow-layout'
-
 function normalizeRelationId(value: unknown): number | null {
   if (value == null) {
     return null
@@ -32,8 +29,6 @@ export class RProjectEditor {
   source: string = ''
   sourceVersion: number = 1
   configuration: EndgeConfigurationContribution = { mode: 'inherit', patch: {} }
-  /** Раскладка сохраняется в meta; личную камеру и раскрытие IDE сохраняет через Context. */
-  workflow = new ProjectWorkflow()
 
   fillFromSource(source: RProject): void {
     this.id = source.id
@@ -48,7 +43,6 @@ export class RProjectEditor {
     this.source = source.source
     this.sourceVersion = source.sourceVersion
     this.configuration = clone(source.configuration)
-    this.workflow = new ProjectWorkflow(readWorkflowLayout(source.meta))
   }
 
   updateSource(source: RProject): void {
@@ -63,7 +57,6 @@ export class RProjectEditor {
     source.source = this.source
     source.sourceVersion = this.sourceVersion
     source.configuration = clone(this.configuration)
-    source.meta = writeWorkflowLayout(source.meta, this.workflow.layout)
   }
 }
 

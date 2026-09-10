@@ -5,6 +5,11 @@ import { Endge, RProject } from '@endge/core'
 
 /** Собирает только auth profiles Query, достижимых из запускаемого preview graph. */
 export function collectRuntimePreviewAuthProfiles(request: RuntimePreviewLaunchRequest): AuthProfileSchema[] {
+  // Simulation выбирает overrides по occurrence. Реальные Query запрашивают auth
+  // при выполнении через штатный onInteractionRequired; mocked Query не требуют сессии.
+  if (request.entityType === 'simulation') {
+    return []
+  }
   const projectDraft = request.entityType === 'project' && request.draft && !request.contextual
     ? Endge.compiler.compileProjectArtifact(RProject.fromPlain({
         ...Endge.domain.getProject(request.identity)?.toPlain(),

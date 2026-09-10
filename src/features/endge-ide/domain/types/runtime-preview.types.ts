@@ -19,8 +19,8 @@ export interface RuntimePreviewAuthPrompt {
 export const ENDGE_IDE_RUNTIME_TREE_WIDGET_ID = 'runtime-tree'
 export const LEGACY_ENDGE_PREVIEW_WIDGET_ID = 'preview-runtime-tree'
 
-export type RuntimePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store'
-export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'group' | 'runtime' | 'data' | 'resource' | 'component-sfc'
+export type RuntimePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store' | 'simulation'
+export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'group' | 'runtime' | 'data' | 'resource' | 'component-sfc' | 'simulation'
 export type RuntimePreviewLifecycleState
   = | 'inactive'
     | 'preparing'
@@ -98,6 +98,7 @@ export interface RuntimePreviewTreeNode {
   id: string
   parentId: string | null
   kind: RuntimePreviewTreeNodeKind
+  runtimeKind?: 'composition' | 'component' | 'filter' | 'filter-view' | 'query' | 'stream'
   title: string
   subtitle: string | null
   entityType: string

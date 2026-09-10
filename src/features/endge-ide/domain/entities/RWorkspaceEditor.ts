@@ -1,6 +1,6 @@
 import type { EndgeConfiguration, EndgeDataMode, EndgeWorkspaceDefinition } from '@endge/core'
-import { readWorkflowLayout, writeWorkflowLayout } from '@/features/project-workflow/tools/workflow-layout'
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
+import { readWorkflowLayout, writeWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
 /** Черновик настроек и раскладки Workspace; project metadata не изменяется. */
 export class RWorkspaceEditor {

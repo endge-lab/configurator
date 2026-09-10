@@ -1,4 +1,4 @@
-import type { WorkflowPoint } from '../domain/ProjectWorkflow'
+import type { WorkflowPoint } from '../domain/WorkspaceWorkflow'
 
 export interface WorkflowObstacle extends WorkflowPoint { id: string, width: number, height: number }
 

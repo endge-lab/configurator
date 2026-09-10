@@ -6,7 +6,7 @@ import { currentActiveBackendURL } from '@/features/backend-connections/services
 
 const STORAGE_KEY_PREFIX = 'endge:runtime-preview:history:v2'
 const STATE_KEY = 'configurator.runtime-preview.history'
-const ENTITY_TYPES = new Set<RuntimePreviewEntityType>(['project', 'composition', 'component-sfc', 'store'])
+const ENTITY_TYPES = new Set<RuntimePreviewEntityType>(['project', 'composition', 'component-sfc', 'store', 'simulation'])
 
 interface PersistedRuntimePreviewHistory {
   version: 1

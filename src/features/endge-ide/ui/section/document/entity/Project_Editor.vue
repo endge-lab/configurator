@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EndgeConfigurationContribution } from '@endge/core'
 import type { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
-import type { WorkflowNodeData } from '@/features/project-workflow/domain/ProjectWorkflow'
 
 import { Endge } from '@endge/core'
 import {
@@ -13,9 +12,8 @@ import {
   Settings2,
   SlidersHorizontal,
   TriangleAlert,
-  Workflow,
 } from 'lucide-vue-next'
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -32,7 +30,6 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
-import { buildWorkflowDependencyTree } from '@/features/endge-ide/tools/workflow-dependency-tree'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
@@ -46,7 +43,6 @@ const props = defineProps<{
   tabContext?: { editor?: RProjectEditor }
 }>()
 
-const ProjectWorkflow_View = defineAsyncComponent(() => import('@/features/project-workflow/ui/ProjectWorkflow_View.vue'))
 const { t } = useI18n()
 
 const editor = computed<RProjectEditor | null>(
@@ -55,15 +51,8 @@ const editor = computed<RProjectEditor | null>(
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'general',
-  ['general', 'composition', 'workflow', 'configuration', 'artifact', 'diagnostics'] as const,
+  ['general', 'composition', 'configuration', 'artifact', 'diagnostics'] as const,
 )
-const workflowDependencies = computed(() => activeTab.value === 'workflow' && editor.value
-  ? buildWorkflowDependencyTree(editor.value.workflow.selection, {
-      selection: t('projectWorkflow.selectedElements'),
-      usages: t('projectWorkflow.usedBy'),
-      dependencies: t('uiText.dependencies898afdf0'),
-    })
-  : null)
 const launchLoading = ref(false)
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
 const artifactJson = computed(() => JSON.stringify(
@@ -78,7 +67,6 @@ const tabGroups = computed(() => [
     items: [
       { value: 'general', icon: Settings2, label: 'Основное' },
       { value: 'composition', icon: Code2, label: 'Композиция' },
-      { value: 'workflow', icon: Workflow, label: t('projectWorkflow.title') },
     ],
   },
   {
@@ -91,20 +79,6 @@ const runtimeTabs = computed(() => [
   { value: 'artifact', icon: FileJson, label: t('uiText.artifactA171cb33') },
 ] as const)
 
-watch([activeTab, editor], ([tab, model]) => {
-  if (tab === 'workflow' && model) {
-    EndgeIDE.tabs.prepareProjectWorkflow(model, true)
-  }
-}, { immediate: true })
-
-function openWorkflowDocument(data: WorkflowNodeData): void {
-  if (data.documentType === 'project' && data.identity === editor.value?.identity) {
-    activeTab.value = 'composition'
-  }
-  else if (data.documentType) {
-    EndgeIDE.tabs.openDocument(data.identity, data.documentType)
-  }
-}
 const configuration = computed<EndgeConfigurationContribution>({
   get: () => editor.value?.configuration ?? { mode: 'inherit', patch: {} },
   set: (value) => {
@@ -144,7 +118,6 @@ async function launchRuntimePreview(): Promise<void> {
     document-type="project"
     :dependency-source="editor.source"
     :dependency-draft="editor"
-    :dependency-tree="workflowDependencies"
   >
     <template #center>
       <TooltipProvider>
@@ -241,8 +214,8 @@ async function launchRuntimePreview(): Promise<void> {
       <SourceFormatButton v-if="activeTab === 'composition'" @click="sourceEditorRef?.formatDocument()" />
     </template>
 
-    <div class="min-h-0 flex-1" :class="['workflow', 'composition'].includes(activeTab) ? '' : 'bg-muted/25 p-4'">
-      <div class="h-full w-full overflow-hidden" :class="['workflow', 'composition'].includes(activeTab) ? '' : 'rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface'">
+    <div class="min-h-0 flex-1" :class="activeTab === 'composition' ? '' : 'bg-muted/25 p-4'">
+      <div class="h-full w-full overflow-hidden" :class="activeTab === 'composition' ? '' : 'rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface'">
         <CompositionSourceEditor
           v-if="activeTab === 'composition'"
           ref="sourceEditorRef"
@@ -254,13 +227,6 @@ async function launchRuntimePreview(): Promise<void> {
         />
         <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto p-4 text-xs">{{ artifactJson }}</pre>
         <EntityProblemsPanel v-else-if="activeTab === 'diagnostics' && diagnosticsEntityRef" :entity-ref="diagnosticsEntityRef" />
-        <ProjectWorkflow_View
-          v-else-if="activeTab === 'workflow' && editor.workflow"
-          :workflow="editor.workflow"
-          @open-document="openWorkflowDocument"
-          @toggle-resources="EndgeIDE.tabs.toggleProjectWorkflowResources(editor, $event)"
-          @viewport-change="EndgeIDE.tabs.setProjectWorkflowViewport(editor, $event)"
-        />
         <ScrollArea v-else-if="activeTab === 'general'" class="h-full">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
