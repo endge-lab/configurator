@@ -5,6 +5,7 @@ import { ref } from 'vue'
 export interface CreateDocumentContext {
   sectionType?: DomainSectionType
   folderId?: string | number | null
+  workspaceFolderId?: string | number | null
   documentType?: DomainDocumentType
   updateOwnerStoreIdentity?: string
 }

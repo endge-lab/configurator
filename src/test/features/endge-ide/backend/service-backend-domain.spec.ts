@@ -141,6 +141,7 @@ describe('сервис домена через backend', () => {
     const result = await service.moveDocuments({
       workspaceIdentity: 'workspace-a',
       folderIdentity: 'schedule',
+      placement: 'frontend',
       documents: [
         { collection: 'actions', identity: 'action-a', expectedRevision: 3 },
         { collection: 'actions', identity: 'action-b', expectedRevision: 5 },
@@ -157,10 +158,76 @@ describe('сервис домена через backend', () => {
           { collection: 'actions', identity: 'action-b', expectedRevision: 5 },
         ],
         folderIdentity: 'schedule',
+        placement: 'frontend',
       }),
     }))
     expect(result.moved).toBe(2)
     expect(result.documents.map(item => item.document.state.revision)).toEqual([4, 6])
+  })
+
+  it('адресует одноимённый документ парой facet identity и document identity', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      facetIdentity: 'sales eu',
+      identity: 'default profile',
+      displayName: 'Default',
+      configuration: { mode: 'inherit', patch: {} },
+      meta: {},
+      active: true,
+      id: 'facet-document-id',
+      revision: 4,
+      deletedAt: null,
+    }), { status: 200, headers: { 'Content-Type': 'application/json', 'ETag': '"4"' } }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn(), true)
+
+    await service.updateFacetDocument({
+      workspaceIdentity: 'workspace-a',
+      facetIdentity: 'sales eu',
+      identity: 'default profile',
+      expectedRevision: 3,
+      document: { displayName: 'Default' },
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://backend.test/api/v1/facets/sales%20eu/documents/default%20profile',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({ 'If-Match': '"3"', 'X-Endge-Workspace': 'workspace-a' }),
+      }),
+    )
+  })
+
+  it('передаёт полный optimistic-порядок фасетов одним запросом', async () => {
+    const payload = {
+      items: [
+        { identity: 'region', displayName: 'Region', icon: 'MapPin', color: '#2563eb', position: 0, id: 'region-id', revision: 3 },
+        { identity: 'brand', displayName: 'Brand', icon: 'Tag', color: '#16a34a', position: 1, id: 'brand-id', revision: 5 },
+      ],
+      total: 2,
+    }
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainHttp_Adapter('https://backend.test', vi.fn(), true)
+
+    const result = await service.reorderFacets({
+      workspaceIdentity: 'workspace-a',
+      items: [
+        { identity: 'region', expectedRevision: 2 },
+        { identity: 'brand', expectedRevision: 4 },
+      ],
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/facets/reorder', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ items: [
+        { identity: 'region', expectedRevision: 2 },
+        { identity: 'brand', expectedRevision: 4 },
+      ] }),
+    }))
+    expect(result.documents.map(document => document.identity)).toEqual(['region', 'brand'])
   })
 
   it('не перезапускает вход при запрещённом доступе к Workspace', async () => {

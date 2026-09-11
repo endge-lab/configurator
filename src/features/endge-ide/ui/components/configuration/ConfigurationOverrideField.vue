@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { Ref } from 'vue'
 import { GitBranchPlus, RotateCcw } from 'lucide-vue-next'
+import { inject } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -15,6 +17,7 @@ const emit = defineEmits<{
   enable: []
   reset: []
 }>()
+const contributionOnly = inject<Ref<boolean>>('endge-configuration-contribution-only', { value: false } as Ref<boolean>)
 </script>
 
 <template>
@@ -36,12 +39,19 @@ const emit = defineEmits<{
         <GitBranchPlus v-else class="size-4" />
       </Button>
     </div>
+    <div
+      v-if="contributionOnly && usesParentValue && !overridden"
+      class="flex min-h-9 items-center rounded-md border border-dashed bg-muted/30 px-3 text-sm text-muted-foreground"
+    >
+      {{ $t('facets.notSet') }}
+    </div>
     <slot
+      v-else
       :disabled="usesParentValue && !overridden"
       parent-value-placeholder="Значение определяется контекстом"
     />
     <p v-if="usesParentValue && !overridden" class="text-xs text-muted-foreground">
-      {{ $t('uiText.inheritedFromPreviousConfigurationLaye07e8f674') }}
+      {{ contributionOnly ? $t('facets.localOverrideMissing') : $t('uiText.inheritedFromPreviousConfigurationLaye07e8f674') }}
     </p>
   </div>
 </template>

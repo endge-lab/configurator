@@ -20,6 +20,7 @@ import {
   RFolder,
 } from '@endge/core'
 import { randomString } from '@endge/utils'
+import { WORKSPACE_ROOT_FOLDER_IDENTITY } from './domain-tree'
 
 import {
   COMPOSITION_ROOT_IDENTITY,
@@ -172,8 +173,11 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
 
   const parentId = resolveParentIdForNewFolder(targetFolder)
   const parentFolder = parentId == null ? null : Endge.domain.getFolder(parentId)
-  const entityType = String(parentFolder?.entityType ?? '').trim()
-  if (!entityType) {
+  const scope = targetFolder.scope === 'workspace' || parentFolder?.scope === 'workspace'
+    ? 'workspace'
+    : 'collection'
+  const entityType = scope === 'workspace' ? null : String(parentFolder?.entityType ?? '').trim()
+  if (scope === 'collection' && !entityType) {
     throw new Error('Не удалось определить тип сущностей для новой папки')
   }
 
@@ -187,6 +191,7 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
     identity: newId,
     name: folderName,
     displayName: folderName,
+    scope,
     entityType,
     parent: parentId,
   })
@@ -341,6 +346,7 @@ export function setEntityFolderInDomain(
   sectionType: DomainSectionType,
   folderId: string | number | null,
   docType?: DomainDocumentType,
+  placement: 'frontend' | 'workspace' = 'frontend',
 ): boolean {
   const entity = getEntityBySection(id, sectionType, docType)
   if (!entity) {
@@ -348,6 +354,10 @@ export function setEntityFolderInDomain(
   }
 
   const mutable = entity as any
+  if (placement === 'workspace') {
+    mutable.workspaceFolderId = folderId
+    return true
+  }
   mutable.folderId = folderId
   if (sectionType === DomainSectionType.Component) {
     mutable.group = folderId
@@ -483,6 +493,9 @@ async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): 
   if (targetFolder && isFolderInsideBranch(targetFolder, folder)) {
     throw new Error('нельзя переместить папку в саму себя или в её подпапку')
   }
+  if (targetFolder && targetFolder.scope !== folder.scope) {
+    throw new Error('папки разных проекций нельзя смешивать')
+  }
 
   const targetParent = targetFolder?.id ?? targetFolder?.identity ?? dropTarget.targetRootId
   if (String(folder.parent ?? '') === String(targetParent ?? '')) {
@@ -577,16 +590,22 @@ async function changeEntityFolder(
   dropFolderId: string | number | null,
 ): Promise<void> {
   const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
+  const placement = getTargetPlacement(targetRootId, dropFolderId)
   const entity = getEntityBySection(id, sectionType, docType) as any
-  const prevFolderId = entity?.folderId ?? entity?.folder ?? entity?.group ?? null
-  if (!setEntityFolderInDomain(id, sectionType, dropFolderId, docType)) {
+  const prevFolderId = placement === 'workspace'
+    ? entity?.workspaceFolderId ?? null
+    : entity?.folderId ?? entity?.folder ?? entity?.group ?? null
+  const targetFolderId = dropFolderId ?? (placement === 'workspace'
+    ? Endge.domain.getFolderByIdentity(WORKSPACE_ROOT_FOLDER_IDENTITY)?.id ?? WORKSPACE_ROOT_FOLDER_IDENTITY
+    : null)
+  if (!setEntityFolderInDomain(id, sectionType, targetFolderId, docType, placement)) {
     throw new Error('не удалось обновить папку в домене')
   }
   try {
-    await Endge.domainRepository.changeDocumentFolder(id, docType, folderIdentity)
+    await Endge.domainRepository.changeDocumentFolder(id, docType, folderIdentity, placement)
   }
   catch (err) {
-    setEntityFolderInDomain(id, sectionType, prevFolderId, docType)
+    setEntityFolderInDomain(id, sectionType, prevFolderId, docType, placement)
     throw err
   }
 }
@@ -598,13 +617,25 @@ async function changeEntitiesFolder(
   dropFolderId: string | number | null,
 ): Promise<number> {
   const folderIdentity = getFolderIdentityForApi(targetRootId, dropFolderId)
+  const placement = getTargetPlacement(targetRootId, dropFolderId)
   if (!folderIdentity) {
     throw new Error('не удалось определить папку назначения')
   }
   return Endge.domainRepository.changeDocumentsFolder(items.map(item => ({
     documentId: item.id,
     documentType: item.docType,
-  })), folderIdentity)
+  })), folderIdentity, placement)
+}
+
+function getTargetPlacement(
+  targetRootId: string,
+  dropFolderId: string | number | null,
+): 'frontend' | 'workspace' {
+  if (targetRootId === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return 'workspace'
+  }
+  const folder = dropFolderId == null ? null : Endge.domain.getFolder(dropFolderId)
+  return folder?.scope === 'workspace' ? 'workspace' : 'frontend'
 }
 
 /**

@@ -645,6 +645,11 @@ async function onSubmit(): Promise<void> {
         }
         parsed.storeIdentity = owner.identity
       }
+      const workspaceFolderId = createContext.value?.workspaceFolderId
+      if (workspaceFolderId != null) {
+        const workspaceFolder = Endge.domain.getFolder(workspaceFolderId)
+        parsed.workspaceFolderIdentity = String(workspaceFolder?.identity ?? workspaceFolderId)
+      }
 
       const createdIdentity = String(parsed.identity ?? '').trim()
       if (!createdIdentity) {
@@ -685,6 +690,9 @@ async function onSubmit(): Promise<void> {
         ? selectedFolderId.value
         : rootFolderId ?? undefined,
     })
+    if (createContext.value?.workspaceFolderId != null) {
+      draft.workspaceFolderId = createContext.value.workspaceFolderId
+    }
     if (activeType.value === ComponentType.Table) {
       ;(draft as RComponentSFC).source = COMPONENT_TABLE_SFC_DEFAULT_SOURCE
     }

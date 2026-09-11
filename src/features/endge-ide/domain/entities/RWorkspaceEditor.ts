@@ -1,4 +1,4 @@
-import type { EndgeConfiguration, EndgeDataMode, EndgeWorkspaceDefinition } from '@endge/core'
+import type { EndgeConfiguration, EndgeDataMode, EndgeWorkspaceDefinition, EndgeWorkspaceDocumentStructure } from '@endge/core'
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { readWorkflowLayout, writeWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
@@ -7,6 +7,7 @@ export class RWorkspaceEditor {
   public readonly identity: string
   public displayName: string
   public dataMode: EndgeDataMode
+  public documentStructure: EndgeWorkspaceDocumentStructure
   public configuration: EndgeConfiguration
   public meta: Record<string, unknown>
   public readonly workflow: WorkspaceWorkflow
@@ -16,6 +17,7 @@ export class RWorkspaceEditor {
     this.identity = workspace.identity
     this.displayName = workspace.displayName
     this.dataMode = workspace.dataMode
+    this.documentStructure = workspace.documentStructure ?? 'frontend'
     this.configuration = JSON.parse(JSON.stringify(workspace.configuration)) as EndgeConfiguration
     this.meta = JSON.parse(JSON.stringify(workspace.meta ?? {})) as Record<string, unknown>
     this.workflow = new WorkspaceWorkflow(readWorkflowLayout(workspace.meta ?? {}))
@@ -28,6 +30,7 @@ export class RWorkspaceEditor {
       ...workspace,
       displayName: this.displayName.trim(),
       dataMode: this.dataMode,
+      documentStructure: this.documentStructure,
       configuration: this.configuration,
       meta: writeWorkflowLayout(this.meta, this.workflow.layout),
     })) as EndgeWorkspaceDefinition
@@ -37,6 +40,7 @@ export class RWorkspaceEditor {
     return JSON.stringify({
       displayName: this.displayName,
       dataMode: this.dataMode,
+      documentStructure: this.documentStructure,
       configuration: this.configuration,
       meta: this.meta,
       layout: this.workflow.layout,

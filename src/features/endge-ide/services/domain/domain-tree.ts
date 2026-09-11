@@ -26,6 +26,11 @@ export interface FsNodeBase {
   /** Проекция Workspace только для frontend; она никогда не принадлежит Endge Domain. */
   workspaceIdentity?: string
   activeWorkspace?: boolean
+  /** Dynamic facet ownership; these nodes are authoring-only and bypass generic document routes. */
+  facetIdentity?: string
+  facetColor?: string
+  facetIcon?: string
+  facetDeleted?: boolean
 }
 
 export interface FsFolderNode extends FsNodeBase {
@@ -39,6 +44,9 @@ export interface FsFolderNode extends FsNodeBase {
   managedBy?: ManagedBy
   managedById?: string | null
   folderId?: string | number
+  scope?: 'collection' | 'workspace'
+  icon?: string | null
+  color?: string | null
   children?: FsNode[]
 }
 
@@ -50,6 +58,7 @@ export interface FsFileNode extends FsNodeBase {
   sectionType: DomainSectionType
   managedBy?: ManagedBy
   managedById?: string | null
+  workspaceFolderId?: string | number | null
   children?: FsNode[]
   isTableColumn?: boolean
   parentComponentId?: string
@@ -183,7 +192,10 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Профили аутентификации',
   'root-projects': 'Проекты',
+  'root-workspace-files': 'Рабочее пространство',
 }
+
+export const WORKSPACE_ROOT_FOLDER_IDENTITY = 'root-workspace-files'
 
 export interface DomainTreeRootBlock {
   id: string
@@ -390,6 +402,7 @@ export interface BuildDomainTreeParams {
     kind?: RCompositionKind
     kindIdentity?: string | null
     folderId?: string | number | null
+    workspaceFolderId?: string | number | null
   }>
   /** Updates, принадлежащие Store, отображаются только среди дочерних элементов своего Store. */
   storeUpdates?: Array<{
@@ -398,6 +411,7 @@ export interface BuildDomainTreeParams {
     name?: string
     displayName?: string
     storeIdentity?: string
+    workspaceFolderId?: string | number | null
   }>
 }
 
@@ -412,7 +426,16 @@ function getFolderTraversalKey(folder: { id?: string | number, identity?: string
 }
 
 function createFolderTreeNode(
-  folder: { id: string | number, name?: string, identity?: string, managedBy?: ManagedBy, managedById?: string | null },
+  folder: {
+    id: string | number
+    name?: string
+    identity?: string
+    managedBy?: ManagedBy
+    managedById?: string | null
+    scope?: 'collection' | 'workspace'
+    icon?: string | null
+    color?: string | null
+  },
   sectionType: DomainSectionType,
   folderId: string | number,
   folderIdentity: string,
@@ -430,14 +453,26 @@ function createFolderTreeNode(
     managedBy: folder.managedBy ?? 'user',
     managedById: folder.managedBy === 'integration' ? folder.managedById ?? null : null,
     folderId: isRoot ? undefined : folderId,
+    scope: folder.scope ?? 'collection',
+    icon: folder.icon ?? null,
+    color: folder.color ?? null,
     children,
   }
 }
 
 function buildFolderNode(
-  folder: { id: string | number, name?: string, identity?: string, managedBy?: ManagedBy, managedById?: string | null },
+  folder: {
+    id: string | number
+    name?: string
+    identity?: string
+    managedBy?: ManagedBy
+    managedById?: string | null
+    scope?: 'collection' | 'workspace'
+    icon?: string | null
+    color?: string | null
+  },
   sectionType: DomainSectionType,
-  allSectionItems: { id: string, name: string, folderId?: string | number | null, folder?: string | number | null, group?: string | number | null, type?: DomainDocumentType, managedBy?: ManagedBy, managedById?: string | null }[],
+  allSectionItems: { id: string, name: string, folderId?: string | number | null, workspaceFolderId?: string | number | null, folder?: string | number | null, group?: string | number | null, type?: DomainDocumentType, managedBy?: ManagedBy, managedById?: string | null }[],
   allFolders: any[],
   isRoot = true,
   isVirtualRoot = false,
@@ -504,6 +539,7 @@ function buildFolderNode(
         sectionType: itemSectionType,
         managedBy: (c as { managedBy?: ManagedBy }).managedBy ?? 'user',
         managedById: (c as { managedById?: string | null }).managedById ?? null,
+        workspaceFolderId: (c as { workspaceFolderId?: string | number | null }).workspaceFolderId ?? null,
         ...((c as { presentationKind?: unknown }).presentationKind != null
           && { presentationKind: String((c as { presentationKind?: unknown }).presentationKind) as CompositionPresentationKind }),
       }
@@ -553,6 +589,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
       id: string
       name: string
       folderId?: string | number | null
+      workspaceFolderId?: string | number | null
       folder?: string | number | null
       group?: string | number | null
       type?: DomainDocumentType
@@ -564,6 +601,119 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   attachContextualCompositions(tree, params.contextualCompositions ?? [])
   attachStoreUpdates(tree, params.storeUpdates ?? [])
   return tree
+}
+
+function collectWorkspaceProjectionDocuments(
+  nodes: readonly FsNode[],
+  result: Map<string, FsFileNode>,
+): void {
+  for (const node of nodes) {
+    const retainedContextDocument = node.type === 'file'
+      && ['project', 'tenant', 'environment', 'configuration'].includes(String(node.docType))
+    if (
+      node.type === 'file'
+      && !node.virtual
+      && !node.isTableColumn
+      && !node.facetIdentity
+      && !retainedContextDocument
+    ) {
+      const key = `${String(node.docType)}:${String(node.id)}`
+      if (!result.has(key)) {
+        const auxiliaryChildren = (node.children ?? []).filter(child =>
+          child.virtual || (child.type === 'file' && child.isTableColumn),
+        )
+        result.set(key, {
+          ...node,
+          children: auxiliaryChildren.length ? auxiliaryChildren : undefined,
+        })
+      }
+    }
+    collectWorkspaceProjectionDocuments(node.children ?? [], result)
+  }
+}
+
+function buildWorkspaceProjectionFolder(
+  folder: any,
+  documents: readonly FsFileNode[],
+  folders: readonly any[],
+  isRoot: boolean,
+  visited: Set<string> = new Set(),
+): FsFolderNode {
+  const folderId = folder.id ?? folder.identity
+  const identity = String(folder.identity ?? folderId)
+  const key = String(folderId)
+  if (visited.has(key)) {
+    console.warn(`[DomainTree] Skipping cyclic Workspace folder branch: folder=${key}, identity=${identity}`)
+    return createFolderTreeNode(
+      folder,
+      DomainSectionType.Project,
+      folderId,
+      identity,
+      folder.displayName ?? folder.name ?? identity,
+      isRoot,
+      [],
+    )
+  }
+
+  const nextVisited = new Set(visited)
+  nextVisited.add(key)
+  const sameId = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '')
+  const childFolders = folders.filter(candidate => sameId(getFolderParent(candidate), folderId))
+  const items = documents.filter(document => {
+    const placement = document.workspaceFolderId
+    return sameId(placement, folderId)
+      || (isRoot && (placement == null || placement === '' || sameId(placement, WORKSPACE_ROOT_FOLDER_IDENTITY)))
+  })
+  const children: FsNode[] = [
+    ...childFolders.map(child => buildWorkspaceProjectionFolder(child, documents, folders, false, nextVisited)),
+    ...items,
+  ]
+  return createFolderTreeNode(
+    { ...folder, scope: 'workspace' },
+    DomainSectionType.Project,
+    folderId,
+    identity,
+    folder.displayName ?? folder.name ?? identity,
+    isRoot,
+    children,
+  )
+}
+
+/**
+ * Places generic persisted documents by their independent Workspace-folder
+ * reference. The caller keeps the returned system root as an interaction target
+ * and hides only its visual row.
+ */
+export function buildCustomWorkspaceProjection(
+  frontendTree: readonly FsNode[],
+  allFolders: readonly any[],
+  contextRootIds: ReadonlySet<string>,
+  sourceRootIds: ReadonlySet<string>,
+): FsNode[] {
+  const contextRoots = frontendTree.filter(node => node.type === 'folder' && contextRootIds.has(node.id))
+  const documents = new Map<string, FsFileNode>()
+  for (const root of frontendTree) {
+    if (root.type === 'folder' && sourceRootIds.has(root.id)) {
+      collectWorkspaceProjectionDocuments(root.children ?? [], documents)
+    }
+  }
+
+  const workspaceFolders = allFolders.filter(folder => folder?.scope === 'workspace')
+  const persistedRoot = workspaceFolders.find(folder =>
+    String(folder.identity ?? folder.id) === WORKSPACE_ROOT_FOLDER_IDENTITY,
+  )
+  const root = persistedRoot ?? {
+    id: WORKSPACE_ROOT_FOLDER_IDENTITY,
+    identity: WORKSPACE_ROOT_FOLDER_IDENTITY,
+    displayName: ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY],
+    managedBy: 'system',
+    scope: 'workspace',
+  }
+  const workspaceRoot = buildWorkspaceProjectionFolder(root, [...documents.values()], workspaceFolders, true)
+  workspaceRoot.name = ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
+  workspaceRoot.managedBy = 'system'
+  workspaceRoot.scope = 'workspace'
+  return [...contextRoots, workspaceRoot]
 }
 
 function attachStoreUpdates(
@@ -601,6 +751,7 @@ function attachStoreUpdates(
       type: 'file',
       docType: 'update',
       sectionType: DomainSectionType.Store,
+      workspaceFolderId: update.workspaceFolderId ?? null,
     })
   }
 }
@@ -953,6 +1104,7 @@ function attachContextualCompositions(
       docType: 'composition',
       sectionType: DomainSectionType.Composition,
       presentationKind: kind,
+      workspaceFolderId: composition.workspaceFolderId ?? null,
     }
 
     const folder = !kindIdentity && composition.folderId != null

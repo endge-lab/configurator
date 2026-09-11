@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind } from '@endge/core'
+import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind, RFacetDocument } from '@endge/core'
 import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
 import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type {
@@ -19,6 +19,7 @@ import type { PreparedVocabMockGeneration } from '@/features/endge-ide/services/
 import { DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
 import {
+  ArchiveRestore,
   ArrowLeftRight,
   ChevronDown,
   ChevronRight,
@@ -51,6 +52,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import CreateWorkspace_Dialog from '@/features/backend-connections/ui/CreateWorkspace_Dialog.vue'
 import { useConfiguratorSession } from '@/features/configurator-session/ui/configurator-session-context'
@@ -61,6 +63,7 @@ import {
 } from '@/features/document-presentation/tools/resolve-document-presentation'
 import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
 import {
@@ -76,12 +79,14 @@ import { buildEventCatalogRoot } from '@/features/endge-ide/services/domain/doma
 import {
   attachResolvedActionTree,
   attachResolvedTypeTree,
+  buildCustomWorkspaceProjection,
   buildDomainTree,
   buildWorkspaceTreeNodes,
   flattenTree,
   getDomainTreeRootBlocks,
   getRootFolderOrder,
   ROOT_FOLDER_LABELS,
+  WORKSPACE_ROOT_FOLDER_IDENTITY,
   withoutDeleted,
 } from '@/features/endge-ide/services/domain/domain-tree'
 import {
@@ -100,6 +105,10 @@ import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
+function facetRootId(identity: string): string {
+  return `root-facet:${encodeURIComponent(identity)}`
+}
+
 const tabs = EndgeIDE.tabs
 
 type MenuAction
@@ -109,6 +118,7 @@ type MenuAction
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
+    | { type: 'edit-folder-appearance', node: FsFolderNode }
     | { type: 'create-folder', node: FsFolderNode }
     | { type: 'create-doc', node: FsFolderNode }
     | { type: 'create-store-update', node: FsFileNode }
@@ -117,12 +127,23 @@ type MenuAction
     | { type: 'filter-dependencies', node: FsFileNode }
     | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
     | { type: 'generate-vocab-mock' }
+    | { type: 'create-facet-document', facetIdentity: string }
+    | { type: 'show-deleted-facet-documents', facetIdentity: string }
+    | { type: 'remove-facet-document', facetIdentity: string, documentIdentity: string }
+    | { type: 'restore-facet-document', facetIdentity: string, documentIdentity: string }
 
 const domainStore = useDomainStore()
 const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
 const createWorkspaceOpen = ref(false)
+const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
+const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
+const facetRegistryVersion = ref(0)
+const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
+  facetRegistryVersion.value += 1
+})
 const debuggerMode = Endge.mode === 'debugger'
+const activeDocumentStructure = computed(() => Endge.workspace.current.documentStructure ?? 'frontend')
 const vocabMockDialog = ref({
   open: false,
   mode: 'existing' as 'existing' | 'new',
@@ -438,6 +459,15 @@ const renameDialog = ref<{
   newName: '',
 })
 
+const folderAppearanceDialog = ref({
+  open: false,
+  loading: false,
+  folderId: '',
+  icon: 'Folder',
+  color: '#64748b',
+  customized: false,
+})
+
 const folderDeletionDialog = ref<{
   open: boolean
   loading: boolean
@@ -452,6 +482,7 @@ const folderDeletionEntityCount = computed(() => folderDeletionDialog.value.plan
 const folderDeletionNestedFolderCount = computed(() =>
   Math.max(0, (folderDeletionDialog.value.plan?.folders.length ?? 1) - 1),
 )
+const folderDeletionIsWorkspaceProjection = computed(() => folderDeletionDialog.value.plan?.root.scope === 'workspace')
 
 // ---------- context menu (single instance) ----------
 const contextMenuRef = ref<HTMLElement | null>(null)
@@ -528,6 +559,7 @@ watch(() => contextMenu.value.open, (open) => {
 })
 onBeforeUnmount(() => {
   unsubscribeActions()
+  unsubscribeDomainFacets()
   window.removeEventListener('keydown', onIdentityModifierKeydown)
   window.removeEventListener('keyup', onIdentityModifierKeyup)
   window.removeEventListener('blur', resetIdentityLabels)
@@ -548,6 +580,9 @@ function canDragTreeItem(item: FlatFsItem): boolean {
   }
   if (item.node.virtual) {
     return canCopyVirtualAction(item.node)
+  }
+  if (item.node.facetIdentity) {
+    return false
   }
   if (item.node.type === 'file') {
     return !(item.node as FsFileNode).isTableColumn
@@ -572,7 +607,12 @@ const selectedFileKeys = ref<Set<string>>(new Set())
 
 /** Маппинг: identity корневой папки — секция и активные документы домена. */
 const ROOT_TO_SECTION = computed(() => {
+  void facetRegistryVersion.value
   const compositions = withoutDeleted(domainStore.compositions)
+  const facetRoots = Object.fromEntries(Endge.domain.getFacets().map(facet => [
+    facetRootId(facet.identity),
+    { section: DomainSectionType.Configuration, items: () => Endge.domain.getFacetDocuments(facet.identity) },
+  ]))
   return {
     ...(debuggerMode
       ? { 'root-configurations': { section: DomainSectionType.Configuration, items: () => Endge.domain.getConfigurations() } }
@@ -611,11 +651,18 @@ const ROOT_TO_SECTION = computed(() => {
     'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
     'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
     'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects) },
+    ...facetRoots,
   }
 })
 
 /** Порядок корневых папок. */
-const ROOT_FOLDER_ORDER = computed(() => getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)))
+const ROOT_FOLDER_ORDER = computed(() => {
+  const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
+  const base = getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)).filter(id => !facetIds.includes(id))
+  const index = base.indexOf('root-environments')
+  base.splice(index >= 0 ? index + 1 : base.length, 0, ...facetIds)
+  return base
+})
 
 // ---------- дерево ----------
 const fsTree = computed<FsNode[]>(() => {
@@ -624,7 +671,11 @@ const fsTree = computed<FsNode[]>(() => {
   const tree = buildDomainTree({
     rootToSection: ROOT_TO_SECTION.value,
     rootOrder: ROOT_FOLDER_ORDER.value,
-    rootLabels: { ...ROOT_FOLDER_LABELS, 'root-configurations': 'Конфигурации' },
+    rootLabels: {
+      ...ROOT_FOLDER_LABELS,
+      'root-configurations': 'Конфигурации',
+      ...Object.fromEntries(Endge.domain.getFacets().map(facet => [facetRootId(facet.identity), facet.displayName])),
+    },
     allFolders,
     contextualCompositions: withoutDeleted<any>(
       (Endge.domain as any).getCompositions?.() ?? [],
@@ -644,6 +695,17 @@ const fsTree = computed<FsNode[]>(() => {
 
   if (debuggerMode) {
     return tree
+  }
+
+  for (const facet of Endge.domain.getFacets()) {
+    const root = tree.find(node => node.type === 'folder' && node.id === facetRootId(facet.identity))
+    if (!root || root.type !== 'folder') {
+      continue
+    }
+    Object.assign(root, { facetIdentity: facet.identity, facetColor: facet.color, facetIcon: facet.icon })
+    for (const child of root.children ?? []) {
+      Object.assign(child, { facetIdentity: facet.identity, facetColor: facet.color, facetIcon: facet.icon })
+    }
   }
 
   attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
@@ -677,6 +739,16 @@ const fsTree = computed<FsNode[]>(() => {
     )
   }
 
+  if (activeDocumentStructure.value === 'custom') {
+    const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value)
+    const contextRootIds = new Set([
+      ...(blocks.find(block => block.id === 'context')?.rootIds ?? []),
+      ...Endge.domain.getFacets().map(facet => facetRootId(facet.identity)),
+    ])
+    const sourceRootIds = new Set(blocks.flatMap(block => block.rootIds))
+    return buildCustomWorkspaceProjection(tree, allFolders, contextRootIds, sourceRootIds)
+  }
+
   return tree
 })
 
@@ -686,11 +758,30 @@ const workingSetResult = computed(() => {
   return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
 })
 
+function hideCustomWorkspaceRoot(items: FlatFsItem[]): FlatFsItem[] {
+  if (activeDocumentStructure.value !== 'custom') {
+    return items
+  }
+  return items
+    .filter(item => !(item.node.type === 'folder' && item.node.id === WORKSPACE_ROOT_FOLDER_IDENTITY))
+    .map(item => item.rootId === WORKSPACE_ROOT_FOLDER_IDENTITY
+      ? { ...item, depth: Math.max(0, item.depth - 1) }
+      : item)
+}
+
+function withExpandedWorkspaceRoot(source: ReadonlySet<string>): Set<string> {
+  const result = new Set(source)
+  if (activeDocumentStructure.value === 'custom') {
+    result.add(ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!)
+  }
+  return result
+}
+
 const flatFs = computed<FlatFsItem[]>(() => {
   if (workingSetFilterEnabled.value) {
     const expandedPaths = searchFilteringEnabled.value
       ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
-      : workingSetExpandedFolders.value
+      : withExpandedWorkspaceRoot(workingSetExpandedFolders.value)
     const projectedItems = projectDomainWorkingSetItems(
       fsTree.value,
       workingSetResult.value,
@@ -705,25 +796,25 @@ const flatFs = computed<FlatFsItem[]>(() => {
           .map(item => item.rootId),
       )
 
-      return projectedItems.filter(item => item.node.type === 'file'
+      return hideCustomWorkspaceRoot(projectedItems.filter(item => item.node.type === 'file'
         ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
         : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
           || matchedRootIds.has(item.rootId)
-          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
+          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders))
     }
 
-    return projectedItems
+    return hideCustomWorkspaceRoot(projectedItems)
   }
 
   if (searchFilteringEnabled.value) {
-    return projectDomainSearchItems(
+    return hideCustomWorkspaceRoot(projectDomainSearchItems(
       fsTree.value,
       normalizedSearchQuery.value,
       PROJECT_SEARCH_FILTER_OPTIONS,
-    ).items
+    ).items)
   }
 
-  return flattenTree(fsTree.value, expandedFolders.value)
+  return hideCustomWorkspaceRoot(flattenTree(fsTree.value, withExpandedWorkspaceRoot(expandedFolders.value)))
 })
 
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
@@ -904,6 +995,12 @@ function onDragOver(e: DragEvent, item: FlatFsItem): void {
   if (folderNode.sectionType === DomainSectionType.Integration) {
     return
   }
+  if (folderNode.facetIdentity) {
+    clearDragSources()
+    dragOverPath.value = null
+    toast.info('Документы нельзя переносить между фасетами')
+    return
+  }
   if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
     return
   }
@@ -999,7 +1096,21 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   }
 }
 const ROOT_BLOCKS = computed(() => {
-  const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value)
+  const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
+  const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value).map(block => block.id === 'context'
+    ? { ...block, rootIds: [...block.rootIds, ...facetIds] }
+    : block)
+  if (!debuggerMode && activeDocumentStructure.value === 'custom') {
+    const context = blocks.find(block => block.id === 'context')
+    return [
+      ...(context ? [context] : []),
+      {
+        id: 'workspace-files',
+        title: ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!,
+        rootIds: [WORKSPACE_ROOT_FOLDER_IDENTITY],
+      },
+    ]
+  }
   if (!debuggerMode) {
     return blocks
   }
@@ -1073,8 +1184,14 @@ function isManagedTypeFolder(node: FsFolderNode): boolean {
 }
 
 function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
+  if (node.facetIdentity) {
+    return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
+  }
   if (node.workspaceIdentity) {
     return WORKSPACE_PRESENTATION
+  }
+  if (node.scope === 'workspace') {
+    return { icon: node.icon || 'Folder', colorClass: 'text-slate-500 dark:text-slate-400' }
   }
   if (node.isRoot && node.id in ROOT_FOLDER_PRESENTATION) {
     return ROOT_FOLDER_PRESENTATION[node.id]
@@ -1084,7 +1201,20 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
     : DOCUMENT_AUXILIARY_PRESENTATION.folder
 }
 
+function getTreeIconStyle(node: FsNode): Record<string, string> | undefined {
+  if (node.facetColor) {
+    return { color: node.facetColor }
+  }
+  if (node.type === 'folder' && node.scope === 'workspace' && node.color) {
+    return { color: node.color }
+  }
+  return undefined
+}
+
 function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentation {
+  if (node.facetIdentity) {
+    return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
+  }
   if (node.workspaceIdentity) {
     return WORKSPACE_PRESENTATION
   }
@@ -1169,15 +1299,53 @@ const groupedFlatFs = computed(() => {
           rootId,
           items: flatFs.value.filter(item => item.rootId === rootId),
         }))
-        .filter(root => root.items.length > 0),
+        .filter(root => root.items.length > 0 || root.rootId === WORKSPACE_ROOT_FOLDER_IDENTITY),
     }))
 
   if (searchFilteringEnabled.value && PROJECT_SEARCH_FILTER_OPTIONS.showEmptyGroups) {
     return groups
   }
 
-  return groups.filter(block => block.roots.length > 0)
+  return groups.filter(block => block.roots.length > 0 || block.id === 'workspace-files')
 })
+
+function getWorkspaceBlockRootItem(blockId: string): FlatFsItem | null {
+  if (blockId !== 'workspace-files' || activeDocumentStructure.value !== 'custom') {
+    return null
+  }
+  const node = fsTree.value.find(item => item.type === 'folder' && item.id === WORKSPACE_ROOT_FOLDER_IDENTITY)
+  return node?.type === 'folder'
+    ? { node, path: node.name, depth: 0, rootId: WORKSPACE_ROOT_FOLDER_IDENTITY }
+    : null
+}
+
+function openBlockContextMenu(event: MouseEvent, blockId: string): void {
+  const root = getWorkspaceBlockRootItem(blockId)
+  if (root) {
+    openContextMenu(event, root.node, root.path)
+  }
+}
+
+function onBlockDragOver(event: DragEvent, blockId: string): void {
+  const root = getWorkspaceBlockRootItem(blockId)
+  if (root) {
+    onDragOver(event, root)
+  }
+}
+
+function onBlockDragLeave(blockId: string): void {
+  const root = getWorkspaceBlockRootItem(blockId)
+  if (root) {
+    onDragLeave(root)
+  }
+}
+
+async function onBlockDrop(event: DragEvent, blockId: string): Promise<void> {
+  const root = getWorkspaceBlockRootItem(blockId)
+  if (root) {
+    await onDrop(event, root)
+  }
+}
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
   const out: string[] = []
@@ -1365,6 +1533,10 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   }
 
   const node = item.node as FsFileNode
+  if (node.facetIdentity) {
+    EndgeIDE.tabs.openFacetDocument(node.facetIdentity, node.identity ?? node.id)
+    return
+  }
   if (node.virtual) {
     if (node.sourceDocument) {
       const { identity, docType } = node.sourceDocument
@@ -1595,12 +1767,92 @@ async function confirmRename(): Promise<void> {
   Endge.domain.notify()
 }
 
+function openFolderAppearanceDialog(node: FsFolderNode): void {
+  if (!node.folderId || node.scope !== 'workspace' || node.managedBy !== 'user') {
+    return
+  }
+  folderAppearanceDialog.value = {
+    open: true,
+    loading: false,
+    folderId: String(node.folderId),
+    icon: node.icon || 'Folder',
+    color: node.color || '#64748b',
+    customized: Boolean(node.icon || node.color),
+  }
+}
+
+function setFolderAppearanceIcon(icon: string): void {
+  folderAppearanceDialog.value.icon = icon
+  folderAppearanceDialog.value.customized = true
+}
+
+function setFolderAppearanceColor(color: string): void {
+  folderAppearanceDialog.value.color = color
+  folderAppearanceDialog.value.customized = true
+}
+
+function resetFolderAppearance(): void {
+  folderAppearanceDialog.value.icon = 'Folder'
+  folderAppearanceDialog.value.color = '#64748b'
+  folderAppearanceDialog.value.customized = false
+}
+
+async function saveFolderAppearance(): Promise<void> {
+  const state = folderAppearanceDialog.value
+  const folder = Endge.domain.getFolder(state.folderId)
+  if (!folder || folder.scope !== 'workspace' || folder.managedBy !== 'user') {
+    return
+  }
+  const previous = { icon: folder.icon, color: folder.color }
+  folder.icon = state.customized ? state.icon : null
+  folder.color = state.customized ? state.color.toLowerCase() : null
+  state.loading = true
+  try {
+    await Endge.domainRepository.saveFolder(state.folderId)
+    state.open = false
+    toast.success('Оформление папки сохранено')
+  }
+  catch (error) {
+    folder.icon = previous.icon
+    folder.color = previous.color
+    toast.error('Не удалось сохранить оформление', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    state.loading = false
+    Endge.domain.notify()
+  }
+}
+
 async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void> {
   const requests = nodes
     .map(node => createRuntimePreviewLaunchRequestFromDocument(node))
     .filter(request => request != null)
 
   await EndgeIDE.runtimePreview.launchAll(requests)
+}
+
+async function createFacetDocument(): Promise<void> {
+  const state = facetDocumentDialog.value
+  state.loading = true
+  try {
+    const document = await Endge.domainRepository.createFacetDocument(state.facetIdentity, {
+      identity: state.identity.trim(),
+      displayName: state.displayName.trim(),
+      description: state.description.trim() || null,
+      configuration: { mode: 'inherit', patch: {} },
+      meta: {},
+      active: true,
+    })
+    state.open = false
+    EndgeIDE.tabs.openFacetDocument(state.facetIdentity, document.identity)
+    toast.success('Документ фасета создан')
+  }
+  catch (error) {
+    toast.error('Не удалось создать документ', { description: error instanceof Error ? error.message : String(error) })
+  }
+  finally { state.loading = false }
 }
 
 function getContextFileNodes(node: FsFileNode): FsFileNode[] {
@@ -1646,6 +1898,24 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
     })
     return items
   }
+  if (node.facetIdentity) {
+    if (!Endge.domainRepository.capabilities.mutations) {
+      return items
+    }
+    if (node.type === 'folder') {
+      items.push({ label: 'Создать документ', icon: Plus, action: { type: 'create-facet-document', facetIdentity: node.facetIdentity } })
+      items.push({ label: 'Показать удалённые', icon: ArchiveRestore, action: { type: 'show-deleted-facet-documents', facetIdentity: node.facetIdentity } })
+    }
+    else {
+      items.push({
+        label: 'Удалить',
+        icon: Trash2,
+        destructive: true,
+        action: { type: 'remove-facet-document', facetIdentity: node.facetIdentity, documentIdentity: node.identity ?? node.id },
+      })
+    }
+    return items
+  }
   if (node.virtual) {
     return items
   }
@@ -1681,6 +1951,13 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
         icon: Pencil,
         action: { type: 'rename-folder', node },
       })
+      if (node.scope === 'workspace' && node.managedBy === 'user') {
+        items.push({
+          label: 'Оформление',
+          icon: Palette,
+          action: { type: 'edit-folder-appearance', node },
+        })
+      }
     }
 
     if (supportsFolders) {
@@ -1768,6 +2045,44 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
 }
 
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
+  if (a.type === 'create-facet-document') {
+    facetDocumentDialog.value = { open: true, facetIdentity: a.facetIdentity, identity: '', displayName: '', description: '', loading: false }
+    return
+  }
+  if (a.type === 'show-deleted-facet-documents') {
+    deletedFacetDocumentsDialog.value = { open: true, facetIdentity: a.facetIdentity, loading: true, items: [] }
+    try {
+      const values = await Endge.domainRepository.listFacetDocuments(a.facetIdentity, true)
+      deletedFacetDocumentsDialog.value.items = values.filter(document => document.deletedAt != null)
+    }
+    catch (error) {
+      toast.error('Не удалось загрузить удалённые документы', { description: error instanceof Error ? error.message : String(error) })
+    }
+    finally { deletedFacetDocumentsDialog.value.loading = false }
+    return
+  }
+  if (a.type === 'remove-facet-document') {
+    try {
+      await Endge.domainRepository.deleteFacetDocument(a.facetIdentity, a.documentIdentity)
+      tabs.closeTab(`facet-document:${encodeURIComponent(a.facetIdentity)}:${encodeURIComponent(a.documentIdentity)}`)
+      toast.success('Документ перемещён в удалённые')
+    }
+    catch (error) {
+      toast.error('Не удалось удалить документ', { description: error instanceof Error ? error.message : String(error) })
+    }
+    return
+  }
+  if (a.type === 'restore-facet-document') {
+    try {
+      await Endge.domainRepository.restoreFacetDocument(a.facetIdentity, a.documentIdentity)
+      deletedFacetDocumentsDialog.value.items = deletedFacetDocumentsDialog.value.items.filter(item => item.identity !== a.documentIdentity)
+      toast.success('Документ восстановлен')
+    }
+    catch (error) {
+      toast.error('Не удалось восстановить документ', { description: error instanceof Error ? error.message : String(error) })
+    }
+    return
+  }
   if (a.type === 'create-workspace') {
     closeContextMenu()
     createWorkspaceOpen.value = true
@@ -1807,6 +2122,11 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
 
+  if (a.type === 'edit-folder-appearance') {
+    openFolderAppearanceDialog(a.node)
+    return
+  }
+
   if (a.type === 'create-folder') {
     if (!ctxPath) {
       return
@@ -1817,16 +2137,22 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
 
   if (a.type === 'create-doc') {
     closeContextMenu()
+    const workspaceFolderId = a.node.scope === 'workspace'
+      ? a.node.folderId ?? Endge.domain.getFolderByIdentity(WORKSPACE_ROOT_FOLDER_IDENTITY)?.id ?? WORKSPACE_ROOT_FOLDER_IDENTITY
+      : undefined
     EndgeIDE.modals.openCreateDocument({
-      sectionType: a.node.sectionType,
-      documentType: a.node.sectionType === DomainSectionType.Tenant
+      sectionType: a.node.scope === 'workspace' ? undefined : a.node.sectionType,
+      documentType: a.node.scope === 'workspace'
+        ? undefined
+        : a.node.sectionType === DomainSectionType.Tenant
         ? 'tenant'
         : a.node.sectionType === DomainSectionType.Project
           ? 'project'
           : a.node.sectionType === DomainSectionType.Environment
             ? 'environment'
             : undefined,
-      folderId: a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
+      folderId: a.node.scope === 'workspace' || a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
+      workspaceFolderId,
     })
     return
   }
@@ -2045,7 +2371,14 @@ function rowClasses(item: FlatFsItem): string {
           >
             <div
               v-if="block.showTitle !== false"
-              class="mb-1 px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80"
+              class="mb-1 rounded px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80"
+              :class="block.id === 'workspace-files' && dragOverPath === ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]
+                ? 'bg-primary/20 ring-1 ring-primary/60'
+                : ''"
+              @contextmenu="(event: MouseEvent) => openBlockContextMenu(event, block.id)"
+              @dragover="(event: DragEvent) => onBlockDragOver(event, block.id)"
+              @dragleave="() => onBlockDragLeave(block.id)"
+              @drop="(event: DragEvent) => onBlockDrop(event, block.id)"
             >
               {{ block.title }}
             </div>
@@ -2090,6 +2423,7 @@ function rowClasses(item: FlatFsItem): string {
                 <DocumentIcon
                   :presentation="it.node.type === 'folder' ? getFolderPresentation(it.node) : getTreeDocumentPresentation(it.node)"
                   size="tree"
+                  :style="getTreeIconStyle(it.node)"
                 />
 
                 <span class="truncate">{{ getNodeLabel(it.node) }}</span>
@@ -2144,6 +2478,58 @@ function rowClasses(item: FlatFsItem): string {
     </Teleport>
 
     <CreateWorkspace_Dialog v-model:open="createWorkspaceOpen" />
+
+    <Dialog v-model:open="facetDocumentDialog.open">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader><DialogTitle>{{ $t('facets.newDocument') }}</DialogTitle></DialogHeader>
+        <div class="space-y-4 py-2">
+          <div class="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {{ $t('facets.facet') }} <code>{{ facetDocumentDialog.facetIdentity }}</code>
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-identity">{{ $t('facets.identity') }}</Label><Input id="new-facet-document-identity" v-model="facetDocumentDialog.identity" placeholder="moscow" />
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-name">{{ $t('facets.name') }}</Label><Input id="new-facet-document-name" v-model="facetDocumentDialog.displayName" placeholder="Москва" />
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-description">{{ $t('facets.description') }}</Label><Textarea id="new-facet-document-description" v-model="facetDocumentDialog.description" :rows="3" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" :disabled="facetDocumentDialog.loading" @click="facetDocumentDialog.open = false">
+            {{ $t('facets.cancel') }}
+          </Button>
+          <Button :disabled="facetDocumentDialog.loading || !facetDocumentDialog.identity.trim() || !facetDocumentDialog.displayName.trim()" @click="createFacetDocument">
+            <Loader2 v-if="facetDocumentDialog.loading" class="mr-2 size-4 animate-spin" />{{ $t('facets.create') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="deletedFacetDocumentsDialog.open">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader><DialogTitle>{{ $t('facets.deletedDocuments', { facet: deletedFacetDocumentsDialog.facetIdentity }) }}</DialogTitle></DialogHeader>
+        <div class="max-h-80 space-y-2 overflow-y-auto py-2">
+          <div v-if="deletedFacetDocumentsDialog.loading" class="flex items-center justify-center py-8 text-sm text-muted-foreground">
+            <Loader2 class="mr-2 size-4 animate-spin" />{{ $t('facets.loading') }}
+          </div>
+          <p v-else-if="!deletedFacetDocumentsDialog.items.length" class="py-8 text-center text-sm text-muted-foreground">
+            {{ $t('facets.noDeletedDocuments') }}
+          </p>
+          <div v-for="document in deletedFacetDocumentsDialog.items" v-else :key="document.id" class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+            <div class="min-w-0">
+              <div class="truncate text-sm font-medium">
+                {{ document.displayName }}
+              </div><code class="text-[11px] text-muted-foreground">{{ document.identity }}</code>
+            </div>
+            <Button size="sm" variant="outline" class="gap-2" @click="runMenuAction({ type: 'restore-facet-document', facetIdentity: document.facetIdentity, documentIdentity: document.identity }, null)">
+              <ArchiveRestore class="size-4" />{{ $t('facets.restore') }}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <Dialog v-model:open="vocabMockDialog.open">
       <DialogContent class="sm:max-w-xl" @escape-key-down="closeVocabMockGenerator">
@@ -2293,6 +2679,9 @@ function rowClasses(item: FlatFsItem): string {
           <p class="text-muted-foreground">
             {{ $t('uiText.theFolderAndAllItsContentsWillBeDe8ad26432') }}
           </p>
+          <p v-if="folderDeletionIsWorkspaceProjection" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
+            Документы будут удалены из домена и исчезнут из обеих проекций, а не только из этой папки.
+          </p>
           <div class="rounded-md border bg-muted/40 px-3 py-2">
             <div>{{ $t('uiText.willBeRemovedEntitiesA87d81b1') }} <strong>{{ folderDeletionEntityCount }}</strong></div>
             <div>{{ $t('uiText.nestedFolders283c1c2c') }} <strong>{{ folderDeletionNestedFolderCount }}</strong></div>
@@ -2335,6 +2724,41 @@ function rowClasses(item: FlatFsItem): string {
           <Button @click="() => EndgeIDE.runBusy(confirmRename())">
             {{ $t('uiText.save4864057d') }}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="folderAppearanceDialog.open">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Оформление папки</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-2 py-2">
+          <Label>Иконка и цвет</Label>
+          <LucideAppearancePicker
+            :icon="folderAppearanceDialog.icon"
+            :color="folderAppearanceDialog.color"
+            :disabled="folderAppearanceDialog.loading"
+            @update:icon="setFolderAppearanceIcon"
+            @update:color="setFolderAppearanceColor"
+          />
+          <p class="text-xs text-muted-foreground">
+            Оформление меняет только глиф папки в свободной проекции.
+          </p>
+        </div>
+        <DialogFooter class="gap-2 sm:justify-between">
+          <Button variant="ghost" :disabled="folderAppearanceDialog.loading" @click="resetFolderAppearance">
+            Сбросить
+          </Button>
+          <div class="flex gap-2">
+            <Button variant="outline" :disabled="folderAppearanceDialog.loading" @click="folderAppearanceDialog.open = false">
+              {{ $t('uiText.cancel555ad1c0') }}
+            </Button>
+            <Button :disabled="folderAppearanceDialog.loading" @click="saveFolderAppearance">
+              <Loader2 v-if="folderAppearanceDialog.loading" class="mr-2 size-4 animate-spin" />
+              {{ $t('uiText.save4864057d') }}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

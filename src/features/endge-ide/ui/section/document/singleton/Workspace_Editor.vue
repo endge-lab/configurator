@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import type { WorkflowNodeData } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { Endge } from '@endge/core'
-import { CircleHelp, Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
-import { computed, defineAsyncComponent, watch } from 'vue'
+import { CircleHelp, Layers3, Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { buildWorkflowDependencyTree } from '@/features/endge-ide/tools/workflow-dependency-tree'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
-import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 
 const WorkspaceWorkflow_View = defineAsyncComponent(() => import('@/features/workspace-workflow/ui/WorkspaceWorkflow_View.vue'))
+const WorkspaceFacetsPanel = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/facets/WorkspaceFacetsPanel.vue'))
 const { t } = useI18n()
 const workspace = EndgeIDE.workspace
 workspace.open()
@@ -27,6 +28,8 @@ const activeTab = computed<'general' | 'workflow'>({
   get: () => EndgeIDE.tabs.getTabViewState('workspace-settings', 'workspace.active-tab')?.value === 'workflow' ? 'workflow' : 'general',
   set: value => EndgeIDE.tabs.setTabViewState('workspace-settings', 'workspace.active-tab', { version: 1, value }),
 })
+const workspaceSettingsSection = ref('general')
+const facetSettingsActive = computed(() => activeTab.value === 'general' && workspaceSettingsSection.value === 'additional:workspace-facets')
 const workspaceDocumentId = computed(() => {
   void editor.value?.identity
   return Endge.domainRepository.getLoadedSnapshot()?.workspace.state.id ?? null
@@ -100,7 +103,7 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
             <TooltipContent>{{ item.label }}</TooltipContent>
           </Tooltip>
         </div>
-        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <div v-if="!facetSettingsActive" class="flex items-center rounded-md border bg-muted/40 p-0.5">
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -118,7 +121,7 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
             <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
-        <span v-if="workspaceDirty" class="mx-1 size-1.5 rounded-full bg-amber-500" role="status" :aria-label="t('workspaceWorkflow.unsaved')" :title="t('workspaceWorkflow.unsaved')" />
+        <span v-if="!facetSettingsActive && workspaceDirty" class="mx-1 size-1.5 rounded-full bg-amber-500" role="status" :aria-label="t('workspaceWorkflow.unsaved')" :title="t('workspaceWorkflow.unsaved')" />
       </TooltipProvider>
     </template>
 
@@ -130,8 +133,15 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
       @viewport-change="workspace.setViewport($event)"
       @arrange="workspace.arrange()"
     />
-    <DocumentGeneralSettingsPanel v-else :session="workspace.metadataSession.value" content-class="p-4">
-      <ConfigurationSettingsEditor v-model="editor.configuration" variant="root">
+    <div v-else class="min-h-0 flex-1 bg-muted/25 p-4">
+      <ConfigurationSettingsEditor
+        v-model="editor.configuration"
+        variant="root"
+        document-metadata
+        :metadata-session="workspace.metadataSession.value"
+        :after-general-section="{ identity: 'workspace-facets', label: t('facets.navigation'), icon: Layers3 }"
+        @section-change="workspaceSettingsSection = $event"
+      >
         <template #general>
           <div class="max-w-2xl space-y-4">
             <DocumentIdField :document-id="workspaceDocumentId" />
@@ -144,6 +154,22 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
                 <Label for="workspace-display-name">{{ $t('uiText.name3de49828') }}</Label>
                 <Input id="workspace-display-name" v-model="editor.displayName" :disabled="EndgeIDE.busy.value" />
               </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="workspace-document-structure">{{ t('workspaceWorkflow.metamodel.label') }}</Label>
+              <Select v-model="editor.documentStructure" :disabled="EndgeIDE.busy.value">
+                <SelectTrigger id="workspace-document-structure" class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="frontend">
+                    {{ t('workspaceWorkflow.metamodel.frontend') }}
+                  </SelectItem>
+                  <SelectItem value="custom">
+                    {{ t('workspaceWorkflow.metamodel.custom') }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">
               <div class="flex min-w-0 items-center gap-1.5">
@@ -177,7 +203,10 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
             </section>
           </div>
         </template>
+        <template #after-general>
+          <WorkspaceFacetsPanel />
+        </template>
       </ConfigurationSettingsEditor>
-    </DocumentGeneralSettingsPanel>
+    </div>
   </SourceDocumentEditorShell>
 </template>

@@ -45,6 +45,7 @@ import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConf
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
 import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
+import { FacetDocumentMetadataSession, RFacetDocumentEditor } from '@/features/endge-ide/domain/entities/RFacetDocumentEditor.ts'
 import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
 import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
@@ -108,6 +109,7 @@ const Page_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/s
 const Navigation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'))
 const Project_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'))
 const Filter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'))
+const FacetDocument_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/FacetDocument_Editor.vue'))
 const Workspace_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'))
 const DSL_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'))
 const SFC_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'))
@@ -116,6 +118,7 @@ const DemonstrationTab_View = defineAsyncComponent(() => import('@/features/endg
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
+const VIEW_ID_FACET_DOCUMENT = 'endge-facet-document' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
@@ -134,7 +137,12 @@ interface DocumentSourceNavigationRequest {
   token: number
 }
 
-type SupportedViewId = typeof VIEW_ID_DOCUMENT
+interface FacetDocumentTabPayload {
+  facetIdentity: string
+  documentIdentity: string
+}
+
+type SupportedViewId = typeof VIEW_ID_DOCUMENT | typeof VIEW_ID_FACET_DOCUMENT
 
 interface ResolvedView {
   component: Component
@@ -325,6 +333,9 @@ export class EndgeIDETabs_Module {
     if (viewId === VIEW_ID_DOCUMENT) {
       return this._resolveDocumentTab(tab)
     }
+    if (viewId === VIEW_ID_FACET_DOCUMENT) {
+      return this._resolveFacetDocumentTab(tab)
+    }
     return null
   }
 
@@ -346,6 +357,10 @@ export class EndgeIDETabs_Module {
           toast.error('Не удалось сохранить рабочее пространство', { description: error instanceof Error ? error.message : String(error) })
         }
       }
+      return
+    }
+    if (activeTab.viewId === VIEW_ID_FACET_DOCUMENT) {
+      await this._busy.run(this._saveFacetDocument(activeTab))
       return
     }
     await this._busy.run(this._doSave(activeTab))
@@ -465,6 +480,25 @@ export class EndgeIDETabs_Module {
         token: ++this._sourceNavigationToken,
       }
     }
+  }
+
+  /** Открывает вложенный документ по составному ключу фасета и документа. */
+  public openFacetDocument(facetIdentity: string, documentIdentity: string): void {
+    const facet = Endge.domain.getFacet(facetIdentity)
+    const document = Endge.domain.getFacetDocument(facetIdentity, documentIdentity)
+    if (!facet || !document) {
+      toast.warning('Документ фасета не найден')
+      return
+    }
+    const tabRef: SmartTabRef = {
+      id: `facet-document:${encodeURIComponent(facetIdentity)}:${encodeURIComponent(documentIdentity)}`,
+      label: document.displayName || document.identity,
+      viewId: VIEW_ID_FACET_DOCUMENT,
+      payload: { facetIdentity, documentIdentity } satisfies FacetDocumentTabPayload,
+      closable: true,
+      meta: { icon: facet.icon, iconClass: DOCUMENT_ICON_SIZES.tab, iconColor: facet.color },
+    }
+    this.openTab(tabRef)
   }
 
   /** Разрешает diagnostics entity reference и открывает исходный authoring document. */
@@ -681,6 +715,7 @@ export class EndgeIDETabs_Module {
       props: { tab },
     })
     this._tabsApi.viewRegistry.register(VIEW_ID_DOCUMENT, wrap)
+    this._tabsApi.viewRegistry.register(VIEW_ID_FACET_DOCUMENT, wrap)
     this._tabsApi.viewRegistry.register(VIEW_ID_WORKSPACE_SETTINGS, (): SmartTabViewResolved => ({
       component: markRaw(Workspace_Editor),
       props: {},
@@ -738,6 +773,64 @@ export class EndgeIDETabs_Module {
     this._sessionByTabId.set(tab.id, session)
     this._setCurrentFromSession(session)
     return session.view
+  }
+
+  private _resolveFacetDocumentTab(tab: SmartTabRef): SmartTabViewResolved | null {
+    const cached = this._sessionByTabId.get(tab.id)
+    if (cached) {
+      this._setCurrentFromSession(cached)
+      return cached.view
+    }
+    const payload = this._getPayload<FacetDocumentTabPayload>(tab.payload)
+    if (!payload) {
+      return null
+    }
+    const document = Endge.domain.getFacetDocument(payload.facetIdentity, payload.documentIdentity)
+    if (!document) {
+      return null
+    }
+    const rawEditor = new RFacetDocumentEditor()
+    rawEditor.fillFromSource(document)
+    const editor = reactive(rawEditor as object) as RFacetDocumentEditor
+    const metadata = reactive(new FacetDocumentMetadataSession(editor)) as unknown as DocumentMetadataSession
+    const session: EditorSession = {
+      view: { component: markRaw(FacetDocument_Editor), props: {} },
+      editor,
+      model: document,
+      persistedIdentity: document.identity,
+      metadata,
+      savedSnapshot: createDocumentEditorSnapshot(editor),
+    }
+    this._sessionByTabId.set(tab.id, session)
+    this._setCurrentFromSession(session)
+    return session.view
+  }
+
+  private async _saveFacetDocument(tab: SmartTabRef): Promise<void> {
+    try {
+      const payload = this._getPayload<FacetDocumentTabPayload>(tab.payload)
+      const session = this._sessionByTabId.get(tab.id)
+      const editor = session?.editor as RFacetDocumentEditor | null
+      if (!payload || !session || !editor) {
+        return
+      }
+      if (session.metadata && !session.metadata.prepareBeforeSave()) {
+        toast.error('Метаданные не сохранены', { description: session.metadata.error ?? 'Исправьте JSON metadata.' })
+        return
+      }
+      const previousIdentity = session.persistedIdentity ?? payload.documentIdentity
+      const next = await Endge.domainRepository.updateFacetDocument(payload.facetIdentity, previousIdentity, editor.toMutation())
+      session.model = next
+      session.persistedIdentity = next.identity
+      payload.documentIdentity = next.identity
+      tab.label = next.displayName || next.identity
+      session.savedSnapshot = createDocumentEditorSnapshot(editor)
+      session.metadata?.acceptSaved()
+      toast.success('Сохранено', { description: `${payload.facetIdentity} / ${next.identity}` })
+    }
+    catch (error) {
+      toast.error('Ошибка сохранения', { description: error instanceof Error ? error.message : String(error) })
+    }
   }
 
   private _getDocResolver(docType: DomainDocumentType): DocResolver | null {

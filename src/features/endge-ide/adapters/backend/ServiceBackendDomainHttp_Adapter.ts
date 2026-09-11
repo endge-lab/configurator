@@ -5,6 +5,13 @@ import type {
   EndgeDocumentsMoveResult,
   EndgeDomainLoadRequest,
   EndgeDomainProvider,
+  EndgeFacetDocumentListRequest,
+  EndgeFacetDocumentMutationRequest,
+  EndgeFacetListRequest,
+  EndgeFacetMutationRequest,
+  EndgeFacetMutationResult,
+  EndgeFacetReorderRequest,
+  EndgeFacetReorderResult,
   EndgeLiveDomainDocument,
   EndgeLiveDomainSnapshot,
   EndgeWorkspaceMutationRequest,
@@ -15,6 +22,8 @@ import type {
 type UnknownRecord = Record<string, unknown>
 
 const SNAPSHOT_DOCUMENT_KEYS = [
+  'facets',
+  'facet-documents',
   'projects',
   'tenants',
   'environments',
@@ -131,6 +140,7 @@ export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
       body: {
         documents: request.documents,
         folderIdentity: request.folderIdentity,
+        placement: request.placement,
       },
       signal: request.signal,
     })
@@ -178,8 +188,104 @@ export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
     return { workspace, etag: response.etag }
   }
 
+  public async listFacets(request: EndgeFacetListRequest): Promise<EndgeLiveDomainDocument[]> {
+    return this._listFacetDocuments(
+      `/api/v1/facets?includeDeleted=${request.includeDeleted === true}`,
+      request,
+    )
+  }
+
+  public async createFacet(request: EndgeFacetMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'POST', '/api/v1/facets')
+  }
+
+  public async updateFacet(request: EndgeFacetMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'PATCH', this._facetPath(request.identity))
+  }
+
+  public async softDeleteFacet(request: EndgeFacetMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'DELETE', this._facetPath(request.identity))
+  }
+
+  public async restoreFacet(request: EndgeFacetMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'POST', `${this._facetPath(request.identity)}/restore`)
+  }
+
+  public async reorderFacets(request: EndgeFacetReorderRequest): Promise<EndgeFacetReorderResult> {
+    const response = await this._fetch('/api/v1/facets/reorder', {
+      method: 'POST',
+      workspaceIdentity: request.workspaceIdentity,
+      body: { items: request.items },
+      signal: request.signal,
+    })
+    const documents = normalizeDocumentList(response.payload)
+    return { documents, etag: response.etag }
+  }
+
+  public async listFacetDocuments(request: EndgeFacetDocumentListRequest): Promise<EndgeLiveDomainDocument[]> {
+    return this._listFacetDocuments(
+      `${this._facetPath(request.facetIdentity)}/documents?includeDeleted=${request.includeDeleted === true}&limit=500`,
+      request,
+    )
+  }
+
+  public async createFacetDocument(request: EndgeFacetDocumentMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'POST', `${this._facetPath(request.facetIdentity)}/documents`)
+  }
+
+  public async updateFacetDocument(request: EndgeFacetDocumentMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'PATCH', this._facetDocumentPath(request.facetIdentity, request.identity))
+  }
+
+  public async softDeleteFacetDocument(request: EndgeFacetDocumentMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'DELETE', this._facetDocumentPath(request.facetIdentity, request.identity))
+  }
+
+  public async restoreFacetDocument(request: EndgeFacetDocumentMutationRequest): Promise<EndgeFacetMutationResult> {
+    return this._mutateFacet(request, 'POST', `${this._facetDocumentPath(request.facetIdentity, request.identity)}/restore`)
+  }
+
   private _documentPath(request: EndgeDocumentMutationRequest): string {
     return `/api/v1/${request.collection}/${encodeURIComponent(request.identity)}`
+  }
+
+  private _facetPath(identity: string): string {
+    return `/api/v1/facets/${encodeURIComponent(identity)}`
+  }
+
+  private _facetDocumentPath(facetIdentity: string, identity: string): string {
+    return `${this._facetPath(facetIdentity)}/documents/${encodeURIComponent(identity)}`
+  }
+
+  private async _listFacetDocuments(
+    path: string,
+    request: EndgeFacetListRequest,
+  ): Promise<EndgeLiveDomainDocument[]> {
+    const response = await this._fetch(path, {
+      method: 'GET',
+      workspaceIdentity: request.workspaceIdentity,
+      signal: request.signal,
+    })
+    return normalizeDocumentList(response.payload)
+  }
+
+  private async _mutateFacet(
+    request: EndgeFacetMutationRequest,
+    method: 'POST' | 'PATCH' | 'DELETE',
+    path: string,
+  ): Promise<EndgeFacetMutationResult> {
+    const response = await this._fetch(path, {
+      method,
+      workspaceIdentity: request.workspaceIdentity,
+      body: request.document,
+      expectedRevision: request.expectedRevision,
+      signal: request.signal,
+    })
+    const document = normalizeDocument(response.payload)
+    if (!document) {
+      throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid facet response', response.status)
+    }
+    return { document, etag: response.etag }
   }
 
   private async _mutateDocument(
@@ -287,6 +393,17 @@ function normalizeDocument(value: UnknownRecord): EndgeLiveDomainDocument | null
       ...(typeof updatedAt === 'string' ? { updatedAt } : {}),
     },
   }
+}
+
+function normalizeDocumentList(value: UnknownRecord): EndgeLiveDomainDocument[] {
+  if (!Array.isArray(value.items)) {
+    throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid facet list response')
+  }
+  const documents = value.items.map(item => isRecord(item) ? normalizeDocument(item) : null)
+  if (documents.some(item => item == null)) {
+    throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid facet list item')
+  }
+  return documents as EndgeLiveDomainDocument[]
 }
 
 function normalizeWorkspace(value: UnknownRecord, generation: string): EndgeWorkspaceMutationResult['workspace'] | null {

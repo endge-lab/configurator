@@ -11,10 +11,12 @@ import type {
   EndgeJSONValue,
   EndgeTooltipConfiguration,
 } from '@endge/core'
+import type { Component } from 'vue'
 import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 
 import {
   applyEndgeConfigurationContribution,
+  createDefaultEndgeConfiguration,
   Endge,
   validateConfigurationValue,
 } from '@endge/core'
@@ -34,7 +36,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-vue-next'
-import { computed, watchEffect } from 'vue'
+import { computed, provide, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -87,7 +89,7 @@ type SystemConfigurationSection
     | 'timezones'
     | 'diagnostics'
 type ConfigurationSection
-  = SystemConfigurationSection | `configuration:${string}` | 'metadata'
+  = SystemConfigurationSection | `configuration:${string}` | `additional:${string}` | 'metadata'
 type ExpandableNavigationGroup = 'editing' | 'tooltips' | 'diagnostics'
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
@@ -106,14 +108,21 @@ interface ConfigurationValueIssue {
   kind: 'stale' | 'invalid'
   message: string
 }
+interface AdditionalConfigurationSection {
+  identity: string
+  label: string
+  icon: Component
+}
 
 const props = withDefaults(defineProps<{
   variant: 'root' | 'contribution'
   modelValue: ConfigurationModel
   upstream?: EndgeConfiguration
   disabled?: boolean
-  contributionMode?: 'select' | 'inherit-only'
+  contributionMode?: 'select' | 'inherit-only' | 'contribution-only'
   documentMetadata?: boolean
+  metadataSession?: DocumentMetadataSession | null
+  afterGeneralSection?: AdditionalConfigurationSection
 }>(), {
   contributionMode: 'select',
   documentMetadata: false,
@@ -121,12 +130,20 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: ConfigurationModel]
+  'sectionChange': [value: ConfigurationSection]
 }>()
 
 const { t } = useI18n()
+const contributionOnly = computed(() => props.contributionMode === 'contribution-only')
+const localPreviewUpstream = createDefaultEndgeConfiguration()
+const contributionUpstream = computed(() => contributionOnly.value ? localPreviewUpstream : props.upstream!)
+provide('endge-configuration-contribution-only', contributionOnly)
 
 const EXCLUDED_VALUE_LABEL = 'Исключено из наследования'
 const excludedRowDrafts = new WeakMap<object, unknown>()
+const afterGeneralSectionId = props.afterGeneralSection
+  ? `additional:${props.afterGeneralSection.identity}` as const
+  : null
 const activeSection = useSmartTabSelection<ConfigurationSection>(
   'configuration.active-section',
   'general',
@@ -142,11 +159,13 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
     'timezones',
     'diagnostics',
     'metadata',
+    ...(afterGeneralSectionId ? [afterGeneralSectionId] : []),
     ...Endge.configurationSchema
       .list()
       .map(item => `configuration:${item.identity}` as const),
   ],
 )
+watch(activeSection, value => emit('sectionChange', value), { immediate: true })
 const navigationWidth = useSmartTabViewState<number>(
   'configuration.navigation-width',
   {
@@ -251,13 +270,25 @@ const configurationCategories = computed(() =>
       } => entry.document != null,
     ),
 )
+const afterGeneralSection = computed(() => props.afterGeneralSection && afterGeneralSectionId
+  ? {
+      id: afterGeneralSectionId,
+      label: props.afterGeneralSection.label,
+      icon: props.afterGeneralSection.icon,
+    }
+  : null)
+const systemSectionCount = computed(() => systemSections.length + (afterGeneralSection.value ? 1 : 0))
 const metadataSession = computed<DocumentMetadataSession | null>(() =>
   props.documentMetadata
-    ? EndgeIDE.tabs.documentMetadataSession.value
+    ? props.metadataSession !== undefined
+      ? props.metadataSession
+      : EndgeIDE.tabs.documentMetadataSession.value
     : null,
 )
 const sections = computed(() => [
-  ...systemSections,
+  systemSections[0],
+  ...(afterGeneralSection.value ? [afterGeneralSection.value] : []),
+  ...systemSections.slice(1),
   ...configurationCategories.value.map(category => ({
     id: `configuration:${category.identity}` as const,
     label: category.displayName,
@@ -298,7 +329,7 @@ const editableConfiguration = computed(() =>
     ? (props.modelValue as EndgeConfiguration)
     : contribution.value?.mode === 'replace'
       ? contribution.value.value
-      : props.upstream!,
+      : contributionUpstream.value,
 )
 
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
@@ -406,7 +437,7 @@ const effective = computed(() => {
     return props.modelValue as EndgeConfiguration
   }
   return applyEndgeConfigurationContribution(
-    props.upstream!,
+    contributionUpstream.value,
     props.modelValue as EndgeConfigurationContribution,
   )
 })
@@ -440,7 +471,7 @@ function toggleNavigationGroup(group: ExpandableNavigationGroup): void {
 
 function setContributionMode(mode: string): void {
   if (mode === 'replace') {
-    const replacement = clone(props.upstream!)
+    const replacement = clone(contributionUpstream.value)
     replacement.values = Endge.configurationSchema.resolveValues({})
     emit('update:modelValue', {
       mode: 'replace',
@@ -511,7 +542,7 @@ function enableConfigurationValueOverride(
   key: string,
   fallback: EndgeJSONValue,
 ): void {
-  const inherited = props.upstream?.values?.[identity]?.[key] ?? fallback
+  const inherited = contributionUpstream.value.values?.[identity]?.[key] ?? fallback
   setConfigurationValue(identity, key, inherited)
 }
 
@@ -554,7 +585,7 @@ function setScalar(name: ScalarName, value: string): void {
 }
 
 function enableScalar(name: ScalarName): void {
-  setScalar(name, String(props.upstream?.[name] ?? ''))
+  setScalar(name, String(contributionUpstream.value[name] ?? ''))
 }
 
 function resetScalar(name: ScalarName): void {
@@ -585,7 +616,7 @@ function enableSFCEditingOverride(name: SFCEditingField): void {
   target.sfcEditing ??= {}
   target.sfcEditing[name] = {
     op: 'set',
-    value: clone(props.upstream!.sfcEditing[name]),
+    value: clone(contributionUpstream.value.sfcEditing[name]),
   }
   notifyRootMutation()
 }
@@ -661,8 +692,8 @@ function enableTooltipOverride(name: TooltipField): void {
     op: 'set',
     value:
       name === 'keyboard'
-        ? clone(props.upstream!.tooltips.keyboard ?? {})
-        : clone(props.upstream!.tooltips[name]),
+        ? clone(contributionUpstream.value.tooltips.keyboard ?? {})
+        : clone(contributionUpstream.value.tooltips[name]),
   }
   notifyRootMutation()
 }
@@ -859,7 +890,7 @@ function setDiagnosticsConfiguration(
 ): void {
   if (isInherit.value) {
     const diagnosticsPatch = createDiagnosticsPatch(
-      props.upstream!.diagnostics,
+      contributionUpstream.value.diagnostics,
       value,
     )
     if (diagnosticsPatch) {
@@ -1120,6 +1151,13 @@ function isEqual(left: unknown, right: unknown): boolean {
     </section>
 
     <section
+      v-if="contributionOnly"
+      class="shrink-0 rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-3 text-xs leading-5 text-muted-foreground"
+    >
+      {{ $t('facets.contributionOnlyHint') }}
+    </section>
+
+    <section
       v-if="configurationValueIssues.length"
       class="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3"
     >
@@ -1167,7 +1205,7 @@ function isEqual(left: unknown, right: unknown): boolean {
         >
           <template v-for="(section, index) in sections" :key="section.id">
             <div
-              v-if="index === systemSections.length || section.id === 'metadata'"
+              v-if="index === systemSectionCount || section.id === 'metadata'"
               class="my-1 border-t border-border/70"
               aria-hidden="true"
             />
@@ -1272,7 +1310,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             </SelectTrigger>
             <SelectContent>
               <template v-for="(section, index) in sections" :key="section.id">
-                <SelectSeparator v-if="index === systemSections.length || section.id === 'metadata'" />
+                <SelectSeparator v-if="index === systemSectionCount || section.id === 'metadata'" />
                 <SelectItem :value="section.id">
                   {{ section.label }}
                 </SelectItem>
@@ -1338,6 +1376,14 @@ function isEqual(left: unknown, right: unknown): boolean {
         <div v-show="activeSection !== 'metadata'" class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
             <slot name="general" />
+          </TabsContent>
+
+          <TabsContent
+            v-if="afterGeneralSection"
+            :value="afterGeneralSection.id"
+            class="m-0 h-full min-h-0 outline-none"
+          >
+            <slot name="after-general" />
           </TabsContent>
 
           <TabsContent
