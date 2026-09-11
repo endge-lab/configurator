@@ -8,6 +8,7 @@ export class RWorkspaceEditor {
   public displayName: string
   public dataMode: EndgeDataMode
   public configuration: EndgeConfiguration
+  public meta: Record<string, unknown>
   public readonly workflow: WorkspaceWorkflow
   private _savedSnapshot: string
 
@@ -16,6 +17,7 @@ export class RWorkspaceEditor {
     this.displayName = workspace.displayName
     this.dataMode = workspace.dataMode
     this.configuration = JSON.parse(JSON.stringify(workspace.configuration)) as EndgeConfiguration
+    this.meta = JSON.parse(JSON.stringify(workspace.meta ?? {})) as Record<string, unknown>
     this.workflow = new WorkspaceWorkflow(readWorkflowLayout(workspace.meta ?? {}))
     this._savedSnapshot = this.snapshot()
   }
@@ -27,7 +29,7 @@ export class RWorkspaceEditor {
       displayName: this.displayName.trim(),
       dataMode: this.dataMode,
       configuration: this.configuration,
-      meta: writeWorkflowLayout(workspace.meta ?? {}, this.workflow.layout),
+      meta: writeWorkflowLayout(this.meta, this.workflow.layout),
     })) as EndgeWorkspaceDefinition
   }
 
@@ -36,6 +38,7 @@ export class RWorkspaceEditor {
       displayName: this.displayName,
       dataMode: this.dataMode,
       configuration: this.configuration,
+      meta: this.meta,
       layout: this.workflow.layout,
     })
   }

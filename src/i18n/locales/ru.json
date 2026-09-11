@@ -18,6 +18,11 @@
     "description": "Среда конфигурации Endge",
     "title": "Конфигуратор"
   },
+  "documentMetadata": {
+    "general": "Основное",
+    "metadata": "Метаданные",
+    "resizeNavigation": "Изменить ширину меню документа"
+  },
   "backendSelection": {
     "description": "Выберите среду, с которой хотите работать. Выбор сохранится в этом браузере.",
     "title": "Выберите среду"

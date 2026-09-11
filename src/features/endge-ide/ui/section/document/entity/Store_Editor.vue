@@ -28,6 +28,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -253,7 +254,7 @@ async function launchPreview(): Promise<void> {
     </template>
 
     <div class="min-h-0 flex-1 overflow-hidden">
-      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+      <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
         <div class="max-w-xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="space-y-2">
@@ -277,7 +278,7 @@ async function launchPreview(): Promise<void> {
             </p>
           </div>
         </div>
-      </div>
+      </DocumentGeneralSettingsPanel>
       <StoreSourceEditor
         v-else-if="activeTab === 'source'"
         ref="sourceEditorRef"

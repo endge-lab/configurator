@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import EndgeStyleSourceEditor from '@/features/endge-ide/ui/components/EndgeStyleSourceEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -137,7 +138,7 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-auto p-6">
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
       <div class="max-w-2xl space-y-5">
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
@@ -162,7 +163,7 @@ async function save(): Promise<void> {
           {{ $t('uiText.payloadStoresOnlySourceASTSemanticArtifactAndDOMCSSAef38cdad') }}
         </p>
       </div>
-    </div>
+    </DocumentGeneralSettingsPanel>
 
     <div v-else class="flex min-h-0 flex-1 flex-col">
       <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="cssPreviewVisible" separator-label="Изменить ширину EndgeCSS и CSS preview">

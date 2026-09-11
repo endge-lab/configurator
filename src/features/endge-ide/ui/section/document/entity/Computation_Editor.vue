@@ -30,6 +30,7 @@ import {
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -245,7 +246,7 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-auto p-6">
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
       <div class="max-w-2xl space-y-5">
         <DocumentIdField :document-id="editor.id" />
         <div class="grid grid-cols-2 gap-4">
@@ -268,7 +269,7 @@ async function save(): Promise<void> {
           </div>
         </div>
       </div>
-    </div>
+    </DocumentGeneralSettingsPanel>
 
     <div v-else-if="activeTab === 'implementation'" class="flex min-h-0 flex-1 flex-col">
       <ComputationSourceEditor

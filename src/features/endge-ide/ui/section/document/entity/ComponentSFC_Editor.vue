@@ -35,6 +35,7 @@ import { createSFCLanguageContribution } from '@/features/endge-ide/source-edito
 import { createExtractTypeContribution } from '@/features/endge-ide/source-editor/contributions/types/extract-type'
 import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -445,7 +446,7 @@ async function launchPreview(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
       <div class="max-w-2xl space-y-5">
         <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 sm:grid-cols-2">
@@ -488,7 +489,7 @@ async function launchPreview(): Promise<void> {
           <div>{{ $t('uiText.sourced0192309') }} {{ String(editor.source ?? '').length }} {{ $t('uiText.chars76a91d6c') }}</div>
         </div>
       </div>
-    </div>
+    </DocumentGeneralSettingsPanel>
 
     <ComponentSFCTableVisualEditor
       v-else-if="activeTab === 'visual' && tableVisualProjection"

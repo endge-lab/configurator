@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import NavigationEditorTreeNode from '@/features/endge-ide/ui/components/NavigationEditorTreeNode.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -509,7 +510,7 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </template>
 
-    <div v-if="activeTab === 'general'" class="min-h-0 flex-1 overflow-y-auto p-6">
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
       <div class="mx-auto max-w-3xl space-y-4">
         <DocumentIdField :document-id="editor.id" />
         <div class="grid gap-4 md:grid-cols-2">
@@ -527,7 +528,7 @@ async function save(): Promise<void> {
           <Textarea v-model="editor.description" :disabled="externallyManaged" :rows="2" />
         </div>
       </div>
-    </div>
+    </DocumentGeneralSettingsPanel>
 
     <div v-else class="min-h-0 flex-1 overflow-y-auto p-3">
       <div class="mb-3 flex flex-wrap gap-2">

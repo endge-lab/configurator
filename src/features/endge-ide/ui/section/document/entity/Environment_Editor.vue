@@ -8,7 +8,6 @@ import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
   Tooltip,
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -129,7 +129,7 @@ async function save(): Promise<void> {
 
     <div class="min-h-0 flex-1 bg-muted/25 p-4">
       <div class="h-full w-full overflow-hidden rounded-xl border border-border/80 bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
-        <ScrollArea v-if="activeTab === 'general'" class="h-full">
+        <DocumentGeneralSettingsPanel v-if="activeTab === 'general'" content-class="p-0">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
               <DocumentIdField :document-id="editor.id" />
@@ -153,7 +153,7 @@ async function save(): Promise<void> {
               </div>
             </section>
           </div>
-        </ScrollArea>
+        </DocumentGeneralSettingsPanel>
 
         <div v-else class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor

@@ -1,15 +1,17 @@
 import type { EndgeIDEBusy_Module } from './EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from './EndgeIDEUIState_Module'
 import type { WorkflowDependency, WorkflowViewport } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
-import { Endge } from '@endge/core'
+import { Endge, isExternallyManaged } from '@endge/core'
 import { reactive, shallowRef } from 'vue'
 import { RWorkspaceEditor } from '@/features/endge-ide/domain/entities/RWorkspaceEditor'
+import { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 import { buildWorkspaceWorkflowTree } from '@/features/endge-ide/services/workspace-workflow/workspace-workflow-tree'
 
 /** Владеет workspace editor-сессией, её persistence и отдельным Workflow. */
 export class EndgeIDEWorkspace_Module {
   public readonly editor = shallowRef<RWorkspaceEditor | null>(null)
   public readonly root = shallowRef<WorkflowDependency | null>(null)
+  public readonly metadataSession = shallowRef<DocumentMetadataSession | null>(null)
   private _offWorkspace: (() => void) | null = null
   private _offDomain: (() => void) | null = null
   private _saving = false
@@ -96,6 +98,9 @@ export class EndgeIDEWorkspace_Module {
     }
     const generation = this._generation
     const previousDataMode = Endge.context.dataMode
+    if (this.metadataSession.value && !this.metadataSession.value.prepareBeforeSave()) {
+      throw new Error(this.metadataSession.value.error ?? 'Исправьте JSON metadata.')
+    }
     const document = editor.toDocument(Endge.workspace.current)
     const snapshot = editor.snapshot()
     this._saving = true
@@ -103,6 +108,7 @@ export class EndgeIDEWorkspace_Module {
       await this._busy.run(Endge.domainRepository.saveDocument(editor.identity, 'workspace', { model: document }))
       if (generation === this._generation && this.editor.value === editor) {
         editor.acceptSaved(snapshot)
+        this.metadataSession.value?.acceptSaved()
         if (previousDataMode !== Endge.context.dataMode) {
           await this._onDataModeChange()
         }
@@ -123,11 +129,18 @@ export class EndgeIDEWorkspace_Module {
     this._offWorkspace = null
     this._saving = false
     this.editor.value = null
+    this.metadataSession.value = null
     this.root.value = null
   }
 
   private _createEditor(): void {
     this.editor.value = reactive(new RWorkspaceEditor(Endge.workspace.current)) as RWorkspaceEditor
+    this.metadataSession.value = reactive(new DocumentMetadataSession(
+      'workspace',
+      this.editor.value,
+      this.editor.value,
+      Endge.mode === 'debugger' || isExternallyManaged(Endge.workspace.current),
+    )) as DocumentMetadataSession
   }
 
   private _viewKey(): string {

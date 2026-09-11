@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { buildWorkflowDependencyTree } from '@/features/endge-ide/tools/workflow-dependency-tree'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -30,6 +31,7 @@ const workspaceDocumentId = computed(() => {
   void editor.value?.identity
   return Endge.domainRepository.getLoadedSnapshot()?.workspace.state.id ?? null
 })
+const workspaceDirty = computed(() => editor.value?.dirty === true || workspace.metadataSession.value?.dirty === true)
 const workflowDependencies = computed(() => {
   if (activeTab.value !== 'workflow' || !editor.value || !workspace.root.value) {
     return null
@@ -116,7 +118,7 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
             <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
           </Tooltip>
         </div>
-        <span v-if="editor.dirty" class="mx-1 size-1.5 rounded-full bg-amber-500" role="status" :aria-label="t('workspaceWorkflow.unsaved')" :title="t('workspaceWorkflow.unsaved')" />
+        <span v-if="workspaceDirty" class="mx-1 size-1.5 rounded-full bg-amber-500" role="status" :aria-label="t('workspaceWorkflow.unsaved')" :title="t('workspaceWorkflow.unsaved')" />
       </TooltipProvider>
     </template>
 
@@ -128,7 +130,7 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
       @viewport-change="workspace.setViewport($event)"
       @arrange="workspace.arrange()"
     />
-    <div v-else class="min-h-0 flex-1 overflow-hidden p-4">
+    <DocumentGeneralSettingsPanel v-else :session="workspace.metadataSession.value" content-class="p-4">
       <ConfigurationSettingsEditor v-model="editor.configuration" variant="root">
         <template #general>
           <div class="max-w-2xl space-y-4">
@@ -176,6 +178,6 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
           </div>
         </template>
       </ConfigurationSettingsEditor>
-    </div>
+    </DocumentGeneralSettingsPanel>
   </SourceDocumentEditorShell>
 </template>

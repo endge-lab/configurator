@@ -18,6 +18,11 @@
     "description": "Endge configuration environment",
     "title": "Configurator"
   },
+  "documentMetadata": {
+    "general": "General",
+    "metadata": "Metadata",
+    "resizeNavigation": "Resize document navigation"
+  },
   "backendSelection": {
     "description": "Select the environment you want to work with. Your choice will be saved in this browser.",
     "title": "Select an environment"

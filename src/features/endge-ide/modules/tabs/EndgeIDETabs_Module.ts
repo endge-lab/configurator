@@ -22,8 +22,9 @@ import type { Component, ShallowRef } from 'vue'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
+import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
-import { ComponentType, Endge, FilterType, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
+import { ComponentType, Endge, FilterType, getDomainDocumentDescriptor, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
 
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
@@ -70,6 +71,7 @@ import {
   resolveEndgeIDEDocumentIdentity,
 } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
+import { DocumentMetadataSession as DocumentMetadataEditorSession } from '@/features/endge-ide/services/document-metadata-session'
 import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/domain/domain-document-project-path'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
@@ -150,6 +152,7 @@ interface EditorSession {
   prepareBeforeSave?: () => boolean | Promise<boolean>
   syncBeforeSave?: () => void
   syncSystemBeforeSave?: () => void
+  metadata?: DocumentMetadataSession
 }
 
 type DocResolver = (documentId: string) => EditorSession | null
@@ -167,11 +170,13 @@ export class EndgeIDETabs_Module {
   private _sourceNavigationToken = 0
   private readonly _documentEditorModel = shallowRef<unknown | null>(null)
   private readonly _documentModel = shallowRef<unknown | null>(null)
+  private readonly _documentMetadataSession = shallowRef<DocumentMetadataSession | null>(null)
   private readonly _sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
   /** Readonly reactive views текущего editor, model и одноразовой Source navigation. */
   public readonly documentEditorModel: Readonly<ShallowRef<unknown | null>> = this._documentEditorModel
   public readonly documentModel: Readonly<ShallowRef<unknown | null>> = this._documentModel
+  public readonly documentMetadataSession: Readonly<ShallowRef<DocumentMetadataSession | null>> = this._documentMetadataSession
   public readonly sourceNavigationRequest: Readonly<ShallowRef<DocumentSourceNavigationRequest | null>> = this._sourceNavigationRequest
 
   public constructor(
@@ -233,6 +238,7 @@ export class EndgeIDETabs_Module {
     this._sessionByTabId.clear()
     this._documentEditorModel.value = null
     this._documentModel.value = null
+    this._documentMetadataSession.value = null
   }
 
   private _createTabsApi(persist: boolean): SmartTabsApi {
@@ -276,13 +282,13 @@ export class EndgeIDETabs_Module {
   /** Возвращает true, когда активный редактор отличается от последнего успешного сохранения. */
   public isTabDirty(id: string): boolean {
     if (id === 'workspace-settings') {
-      return this._workspace?.editor.value?.dirty ?? false
+      return (this._workspace?.editor.value?.dirty ?? false) || this._workspace?.metadataSession.value?.dirty === true
     }
     const session = this._sessionByTabId.get(id)
     if (!session?.editor || session.savedSnapshot == null) {
       return false
     }
-    return createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot
+    return createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot || session.metadata?.dirty === true
   }
 
   /** Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку. */
@@ -390,6 +396,10 @@ export class EndgeIDETabs_Module {
         }
       }
       else {
+        if (session?.metadata && !session.metadata.prepareBeforeSave()) {
+          toast.error('Метаданные не сохранены', { description: session.metadata.error ?? 'Исправьте JSON metadata.' })
+          return
+        }
         if (session?.prepareBeforeSave && !await session.prepareBeforeSave()) {
           return
         }
@@ -417,6 +427,7 @@ export class EndgeIDETabs_Module {
       const label = this.getDocumentLabel(effectiveDocumentId, documentType)
       if (session && savingSnapshot !== undefined) {
         session.savedSnapshot = savingSnapshot
+        session.metadata?.acceptSaved()
       }
       toast.success('Сохранено', { description: label })
     }
@@ -714,6 +725,14 @@ export class EndgeIDETabs_Module {
     if (Endge.mode === 'debugger' && session.editor) {
       session.editor = readOnlyDocument(session.editor as object)
       session.view.props.tabContext = { editor: session.editor }
+    }
+    if (getDomainDocumentDescriptor(documentType).capabilities.metadata && session.editor && session.model && typeof session.editor === 'object' && typeof session.model === 'object') {
+      session.metadata = reactive(new DocumentMetadataEditorSession(
+        documentType,
+        session.editor as Record<string, unknown>,
+        session.model as Record<string, unknown>,
+        Endge.mode === 'debugger' || isExternallyManaged(session.model as { managedBy?: 'system' | 'integration' | 'user' }),
+      )) as DocumentMetadataSession
     }
     if (session.editor) {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
@@ -1311,6 +1330,7 @@ export class EndgeIDETabs_Module {
   private _setCurrentFromSession(session: EditorSession): void {
     this._documentEditorModel.value = session.editor != null ? reactive(session.editor as object) : null
     this._documentModel.value = session.model ?? null
+    this._documentMetadataSession.value = session.metadata ?? null
   }
 
   /** Синхронизирует контекст инспектора с сессией вкладки (чтобы инспектор отображал данные активной вкладки). */

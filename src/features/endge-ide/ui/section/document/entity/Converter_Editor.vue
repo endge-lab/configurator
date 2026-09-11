@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 
 const tabs = EndgeIDE.tabs
@@ -56,7 +56,7 @@ async function save(): Promise<void> {
       </TooltipProvider>
     </div>
 
-    <ScrollArea class="flex-1">
+    <DocumentGeneralSettingsPanel content-class="p-0">
       <div class="p-4 space-y-4">
         <div class="text-sm font-semibold">
           {{ $t('uiText.basic127492c2') }}
@@ -80,6 +80,6 @@ async function save(): Promise<void> {
           />
         </div>
       </div>
-    </ScrollArea>
+    </DocumentGeneralSettingsPanel>
   </div>
 </template>

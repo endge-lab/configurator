@@ -19,7 +19,6 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -33,6 +32,7 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -227,7 +227,7 @@ async function launchRuntimePreview(): Promise<void> {
         />
         <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto p-4 text-xs">{{ artifactJson }}</pre>
         <EntityProblemsPanel v-else-if="activeTab === 'diagnostics' && diagnosticsEntityRef" :entity-ref="diagnosticsEntityRef" />
-        <ScrollArea v-else-if="activeTab === 'general'" class="h-full">
+        <DocumentGeneralSettingsPanel v-else-if="activeTab === 'general'" content-class="p-0">
           <div class="w-full p-6 lg:p-8">
             <section class="max-w-2xl space-y-4">
               <DocumentIdField :document-id="editor.id" />
@@ -285,7 +285,7 @@ async function launchRuntimePreview(): Promise<void> {
               </div>
             </section>
           </div>
-        </ScrollArea>
+        </DocumentGeneralSettingsPanel>
 
         <div v-else-if="activeTab === 'configuration'" class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor

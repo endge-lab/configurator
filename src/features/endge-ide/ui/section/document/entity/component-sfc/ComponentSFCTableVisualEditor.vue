@@ -10,7 +10,6 @@ import type {
   ComponentSFCTableVisualProjection,
   ComponentSFCVisualSourceValue,
   EndgeSFCEditingConfiguration,
-  ProgramMetadataMap,
   RComponentContractInput,
 } from '@endge/core'
 import type {
@@ -32,13 +31,10 @@ import {
   ENDGE_SFC_TABLE_SELECTION_TRIGGERS,
   ENDGE_SFC_TABLE_SORT_COMPARATORS,
   getComponentSFCTagInputContract,
-  inspectComponentSFCMetadata,
-  patchComponentSFCMetadataSource,
   patchComponentSFCTableSource,
   readComponentSFCTranslationFallback,
 } from '@endge/core'
 import {
-  AlertCircle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -101,6 +97,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import {
   parseTableDefaultPin,
   updateTableDefaultPin,
@@ -124,7 +121,7 @@ import {
   visualSchemaLayoutKey,
 } from '@/features/endge-ide/services/visual-schema-workspace-state'
 import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
-import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentMetadataEditor from '@/features/endge-ide/ui/components/DocumentMetadataEditor.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
 import { useSmartTabSelection, useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
@@ -336,8 +333,6 @@ const cellBindingDrafts = ref<Record<string, string>>({})
 const cellBindingKinds = ref<Record<string, TableCellBindingValueKind>>({})
 const cellBindingErrors = ref<Record<string, string>>({})
 const sortPathDrafts = ref<string[]>([])
-const metadataDraft = ref('{}')
-const metadataError = ref<string | null>(null)
 const pendingEditingColumnId = ref<string | null>(null)
 const portsVisualEditorRef = ref<PendingEditsHandle | null>(null)
 const tableMenuEditorRefs = ref<PendingEditsHandle[]>([])
@@ -414,7 +409,23 @@ const contextMenuColumn = computed(() => {
   const index = columnContextMenu.value?.columnIndex
   return index == null ? null : columns.value[index] ?? null
 })
-const metadataProjection = computed(() => inspectComponentSFCMetadata(props.source))
+const metadataSession = computed(() => EndgeIDE.tabs.documentMetadataSession.value)
+watch(() => props.source, () => metadataSession.value?.refreshFromDocument(), { immediate: true })
+
+function updateMetadataDraft(value: string): void {
+  metadataSession.value?.updateDraft(value)
+}
+
+function updateMetadataValidation(error: string | null): void {
+  if (metadataSession.value) {
+    metadataSession.value.error = error
+  }
+}
+
+function commitMetadata(): void {
+  metadataSession.value?.prepareBeforeSave()
+}
+
 const selectionModeValue = computed(() => {
   const value = props.projection.selectionMode
   if (value?.kind === 'expression') {
@@ -529,15 +540,6 @@ watch(
     if (selectedColumnIndex.value == null || selectedColumnIndex.value >= nextColumns.length) {
       selectedColumnIndex.value = Math.min(selectedColumnIndex.value ?? 0, nextColumns.length - 1)
     }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.source,
-  () => {
-    metadataDraft.value = metadataProjection.value.json
-    metadataError.value = null
   },
   { immediate: true },
 )
@@ -884,48 +886,6 @@ function openMenuSource(kind: ComponentSFCTableVisualMenuKind, item?: ComponentS
   emit('openSource', item?.sourceRange.start ?? menuProjection(kind, columnIndex)?.sourceRange?.start ?? props.projection.sourceRange.start)
 }
 
-function updateMetadataDraft(value: string): void {
-  metadataDraft.value = value
-  metadataError.value = validateMetadataJSON(value)
-}
-
-function commitMetadata(): void {
-  if (!metadataProjection.value.editable) {
-    return
-  }
-
-  const validationError = validateMetadataJSON(metadataDraft.value)
-  if (validationError) {
-    metadataError.value = validationError
-    return
-  }
-
-  const metadata = JSON.parse(metadataDraft.value) as ProgramMetadataMap
-  const result = patchComponentSFCMetadataSource(props.source, metadata)
-  if (!result.ok) {
-    metadataError.value = result.message ?? 'Не удалось обновить defineMetadata.'
-    return
-  }
-
-  metadataError.value = null
-  metadataDraft.value = result.projection.json
-  if (result.changed) {
-    emit('update:source', result.source)
-  }
-}
-
-function validateMetadataJSON(value: string): string | null {
-  try {
-    const parsed = JSON.parse(value)
-    return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? null
-      : 'Metadata должна быть JSON-объектом верхнего уровня.'
-  }
-  catch (error) {
-    return error instanceof Error ? error.message : 'Некорректный JSON.'
-  }
-}
-
 function updateInputPanelSizes(sizes: number[]): void {
   inputWorkspaceState.value.layouts[inputLayoutKey.value] = [...sizes]
 }
@@ -1265,7 +1225,7 @@ function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
 
 /** Применяет локальные черновики вложенных визуальных редакторов перед persistence. */
 async function flushPendingEdits(): Promise<boolean> {
-  if (metadataError.value || Object.keys(cellBindingErrors.value).length) {
+  if (metadataSession.value?.error || Object.keys(cellBindingErrors.value).length) {
     return false
   }
 
@@ -1286,7 +1246,7 @@ async function flushPendingEdits(): Promise<boolean> {
     }
     await nextTick()
   }
-  return !metadataError.value && Object.keys(cellBindingErrors.value).length === 0
+  return !metadataSession.value?.error && Object.keys(cellBindingErrors.value).length === 0
 }
 
 defineExpose({ flushPendingEdits })
@@ -2485,37 +2445,17 @@ onBeforeUnmount(() => {
               />
             </section>
 
-            <section v-else-if="tableSection === 'metadata'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div
-                v-if="metadataProjection.message"
-                class="flex shrink-0 items-start gap-2 border-b border-amber-500/25 bg-amber-500/5 px-4 py-2 text-[11px] text-amber-700 dark:text-amber-300"
-              >
-                <AlertCircle class="mt-0.5 size-3.5 shrink-0" />
-                <span>{{ metadataProjection.message }}</span>
-              </div>
-
-              <ScriptEditor
-                :model-value="metadataDraft"
-                view-state-key="component-sfc.table-metadata"
-                language="json"
-                format-language="json"
-                show-toolbar
-                class="min-h-0 flex-1"
-                min-height="100%"
-                :read-only="!metadataProjection.editable"
-                @update:model-value="updateMetadataDraft"
-                @blur="commitMetadata"
-                @format="commitMetadata"
-              />
-
-              <div
-                v-if="metadataError"
-                class="flex shrink-0 items-start gap-2 border-t border-destructive/25 bg-destructive/5 px-4 py-2 text-[11px] text-destructive"
-              >
-                <AlertCircle class="mt-0.5 size-3.5 shrink-0" />
-                <span>{{ metadataError }}</span>
-              </div>
-            </section>
+            <DocumentMetadataEditor
+              v-else-if="tableSection === 'metadata' && metadataSession"
+              :model-value="metadataSession.draft"
+              view-state-key="component-sfc.table-metadata"
+              :read-only="metadataSession.readOnly || !metadataSession.projection.editable"
+              :message="metadataSession.projection.message"
+              :external-error="metadataSession.error"
+              @update:model-value="updateMetadataDraft"
+              @validation="updateMetadataValidation"
+              @commit="commitMetadata"
+            />
 
             <ScrollArea v-else class="min-h-0 flex-1">
               <TooltipProvider :delay-duration="120">

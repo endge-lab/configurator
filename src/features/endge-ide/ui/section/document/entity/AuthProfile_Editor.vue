@@ -17,7 +17,6 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
@@ -25,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -295,7 +295,7 @@ function normalizeErrorMessage(error: unknown): string {
       </TooltipProvider>
     </template>
 
-    <ScrollArea class="min-h-0 flex-1">
+    <DocumentGeneralSettingsPanel content-class="p-0">
       <div class="grid min-h-full w-full gap-4 bg-muted/20 p-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card class="min-w-0 space-y-5 p-4">
           <div class="flex items-start justify-between gap-3">
@@ -406,6 +406,6 @@ function normalizeErrorMessage(error: unknown): string {
           </div>
         </Card>
       </div>
-    </ScrollArea>
+    </DocumentGeneralSettingsPanel>
   </SourceDocumentEditorShell>
 </template>

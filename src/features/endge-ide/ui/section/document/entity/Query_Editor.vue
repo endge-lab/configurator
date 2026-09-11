@@ -28,6 +28,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -282,7 +283,7 @@ async function buildQueryArtifact(
     </template>
 
     <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div v-if="activeTab === 'general'" class="h-full overflow-auto p-6">
+      <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
         <div class="max-w-2xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
           <div class="grid grid-cols-2 gap-4">
@@ -309,7 +310,7 @@ async function buildQueryArtifact(
             />
           </div>
         </div>
-      </div>
+      </DocumentGeneralSettingsPanel>
       <div
         v-else-if="activeTab === 'source'"
         class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0"

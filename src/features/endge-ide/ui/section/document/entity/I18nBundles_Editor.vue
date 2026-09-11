@@ -19,7 +19,6 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -38,6 +37,7 @@ import {
 } from '@/components/ui/tooltip'
 import defaultI18nLocales from '@/features/endge-ide/domain/defaults/i18n-default-locales.json'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -444,7 +444,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
       />
     </div>
 
-    <ScrollArea v-else class="flex-1 px-4 py-3">
+    <DocumentGeneralSettingsPanel v-else content-class="px-4 py-3">
       <div class="max-w-3xl space-y-6">
         <Card class="p-4 space-y-4">
           <div class="font-semibold">
@@ -592,6 +592,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
           </Tabs>
         </Card>
       </div>
-    </ScrollArea>
+    </DocumentGeneralSettingsPanel>
   </SourceDocumentEditorShell>
 </template>
