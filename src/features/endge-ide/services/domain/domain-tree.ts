@@ -664,9 +664,14 @@ function buildWorkspaceProjectionFolder(
     return sameId(placement, folderId)
       || (isRoot && (placement == null || placement === '' || sameId(placement, WORKSPACE_ROOT_FOLDER_IDENTITY)))
   })
+  const compareByName = (left: FsNode, right: FsNode) =>
+    left.name.localeCompare(right.name)
+    || String(left.identity ?? left.id).localeCompare(String(right.identity ?? right.id))
   const children: FsNode[] = [
-    ...childFolders.map(child => buildWorkspaceProjectionFolder(child, documents, folders, false, nextVisited)),
-    ...items,
+    ...childFolders
+      .map(child => buildWorkspaceProjectionFolder(child, documents, folders, false, nextVisited))
+      .sort(compareByName),
+    ...[...items].sort(compareByName),
   ]
   return createFolderTreeNode(
     { ...folder, scope: 'workspace' },
@@ -681,8 +686,7 @@ function buildWorkspaceProjectionFolder(
 
 /**
  * Places generic persisted documents by their independent Workspace-folder
- * reference. The caller keeps the returned system root as an interaction target
- * and hides only its visual row.
+ * reference under a visible system root that behaves like a regular folder.
  */
 export function buildCustomWorkspaceProjection(
   frontendTree: readonly FsNode[],

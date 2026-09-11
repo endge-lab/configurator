@@ -180,17 +180,9 @@ function message(error: unknown): string {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col bg-muted/25 p-4">
-    <div class="mx-auto flex h-full w-full max-w-4xl min-h-0 flex-col overflow-hidden rounded-xl border bg-card/90 shadow-sm">
-      <header class="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div>
-          <h2 class="text-sm font-semibold">
-            {{ $t('facets.title') }}
-          </h2>
-          <p class="text-xs text-muted-foreground">
-            {{ $t('facets.orderDescription') }}
-          </p>
-        </div>
+  <div class="flex min-h-0 flex-1 flex-col">
+    <div class="mx-auto flex h-full w-full max-w-4xl min-h-0 flex-col">
+      <header class="flex shrink-0 items-center justify-end gap-3 pb-3">
         <div class="flex items-center gap-3">
           <label class="flex items-center gap-2 text-xs text-muted-foreground">
             <Switch v-model:checked="includeDeleted" />{{ $t('facets.deleted') }}
@@ -213,7 +205,7 @@ function message(error: unknown): string {
           {{ $t('facets.emptyHint') }}
         </p>
       </div>
-      <div v-else class="min-h-0 flex-1 overflow-y-auto p-3">
+      <div v-else class="min-h-0 flex-1 overflow-y-auto">
         <div
           v-for="facet in visibleFacets"
           :key="facet.id"
@@ -267,13 +259,13 @@ function message(error: unknown): string {
         <div class="space-y-4 py-2">
           <div class="space-y-2">
             <Label for="facet-identity">{{ $t('facets.identity') }}</Label>
-            <Input id="facet-identity" v-model="dialog.identity" :disabled="dialog.documentCount > 0" placeholder="region" />
+            <Input id="facet-identity" v-model="dialog.identity" :disabled="dialog.documentCount > 0" :placeholder="$t('facets.identityPlaceholder')" />
             <p v-if="dialog.documentCount > 0" class="text-xs text-muted-foreground">
               {{ $t('facets.identityLocked', { count: dialog.documentCount }) }}
             </p>
           </div>
           <div class="space-y-2">
-            <Label for="facet-display-name">{{ $t('facets.name') }}</Label><Input id="facet-display-name" v-model="dialog.displayName" placeholder="Регион" />
+            <Label for="facet-display-name">{{ $t('facets.name') }}</Label><Input id="facet-display-name" v-model="dialog.displayName" :placeholder="$t('facets.namePlaceholder')" />
           </div>
           <div class="space-y-2">
             <Label>{{ $t('facets.appearance') }}</Label><LucideAppearancePicker v-model:icon="dialog.icon" v-model:color="dialog.color" />

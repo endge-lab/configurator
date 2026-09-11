@@ -46,6 +46,12 @@ watch(() => props.color, (color) => {
   value.value = hsv.v
 }, { immediate: true })
 
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    advanced.value = false
+  }
+})
+
 function chooseIcon(name: string): void {
   emit('update:icon', name)
 }
@@ -156,34 +162,62 @@ function hexToHsv(value: string): { h: number, s: number, v: number } | null {
                 <component :is="iconComponent" class="size-4" :style="{ color }" />
               </button>
             </div>
-            <Button type="button" size="sm" variant="ghost" class="justify-start gap-2" @click="advanced = !advanced">
-              <Palette class="size-4" />{{ $t('facets.advancedColor') }}
-            </Button>
-            <div v-if="advanced" class="grid grid-cols-[10rem_minmax(0,1fr)] gap-3 rounded-md border p-3">
-              <div
-                class="relative h-28 cursor-crosshair rounded border"
-                :style="{ backgroundColor: `hsl(${hue} 100% 50%)`, backgroundImage: 'linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent)' }"
-                @pointerdown="updateSaturationValue"
-                @pointermove.left="updateSaturationValue"
-              >
-                <span class="absolute size-2.5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-white shadow" :style="{ left: `${saturation}%`, bottom: `${value}%` }" />
-              </div>
-              <div class="space-y-2">
-                <label class="text-xs text-muted-foreground">{{ $t('facets.hex') }}</label>
-                <Input :model-value="color" class="h-8 font-mono text-xs" @change="updateHex(($event.target as HTMLInputElement).value)" />
-                <div class="h-8 rounded border" :style="{ backgroundColor: color }" />
-              </div>
-            </div>
           </div>
-          <input
-            :value="hue"
-            type="range"
-            min="0"
-            max="359"
-            aria-label="Hue"
-            class="h-full w-9 cursor-pointer appearance-none rounded border [background:linear-gradient(to_bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)] [writing-mode:vertical-lr]"
-            @input="updateHue(Number(($event.target as HTMLInputElement).value))"
-          >
+          <div class="flex min-h-0 flex-col items-center gap-2">
+            <input
+              :value="hue"
+              type="range"
+              min="0"
+              max="359"
+              aria-label="Hue"
+              class="min-h-0 w-9 flex-1 cursor-pointer appearance-none rounded border [background:linear-gradient(to_bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)] [writing-mode:vertical-lr]"
+              @input="updateHue(Number(($event.target as HTMLInputElement).value))"
+            >
+            <PopoverRoot v-model:open="advanced">
+              <PopoverTrigger as-child>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  class="size-9 shrink-0"
+                  :aria-label="$t('facets.advancedColor')"
+                  :aria-pressed="advanced"
+                  :title="$t('facets.advancedColor')"
+                >
+                  <Palette class="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverPortal>
+                <PopoverContent
+                  side="right"
+                  align="end"
+                  :side-offset="8"
+                  :collision-padding="12"
+                  class="z-[10000] w-64 rounded-lg border bg-background p-3 shadow-md outline-none"
+                >
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-xs font-medium">
+                      <Palette class="size-4 text-muted-foreground" />
+                      <span>{{ $t('facets.advancedColor') }}</span>
+                    </div>
+                    <div
+                      class="relative h-36 cursor-crosshair rounded border"
+                      :style="{ backgroundColor: `hsl(${hue} 100% 50%)`, backgroundImage: 'linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent)' }"
+                      @pointerdown="updateSaturationValue"
+                      @pointermove.left="updateSaturationValue"
+                    >
+                      <span class="absolute size-2.5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-white shadow" :style="{ left: `${saturation}%`, bottom: `${value}%` }" />
+                    </div>
+                    <div class="space-y-2">
+                      <label class="text-xs text-muted-foreground">{{ $t('facets.hex') }}</label>
+                      <Input :model-value="color" class="h-8 font-mono text-xs" @change="updateHex(($event.target as HTMLInputElement).value)" />
+                      <div class="h-8 rounded border" :style="{ backgroundColor: color }" />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </PopoverPortal>
+            </PopoverRoot>
+          </div>
         </div>
       </PopoverContent>
     </PopoverPortal>

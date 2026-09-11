@@ -251,7 +251,16 @@ function resetIdentityLabels(): void {
   showIdentityLabels.value = false
 }
 
+function getWorkspaceRootLabel(): string {
+  return Endge.workspace.current.displayName?.trim()
+    || Endge.workspace.current.identity?.trim()
+    || ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
+}
+
 function getNodeLabel(node: FsNode): string {
+  if (node.type === 'folder' && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return getWorkspaceRootLabel()
+  }
   if (!showIdentityLabels.value || node.type !== 'file') {
     return node.name
   }
@@ -758,30 +767,11 @@ const workingSetResult = computed(() => {
   return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
 })
 
-function hideCustomWorkspaceRoot(items: FlatFsItem[]): FlatFsItem[] {
-  if (activeDocumentStructure.value !== 'custom') {
-    return items
-  }
-  return items
-    .filter(item => !(item.node.type === 'folder' && item.node.id === WORKSPACE_ROOT_FOLDER_IDENTITY))
-    .map(item => item.rootId === WORKSPACE_ROOT_FOLDER_IDENTITY
-      ? { ...item, depth: Math.max(0, item.depth - 1) }
-      : item)
-}
-
-function withExpandedWorkspaceRoot(source: ReadonlySet<string>): Set<string> {
-  const result = new Set(source)
-  if (activeDocumentStructure.value === 'custom') {
-    result.add(ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!)
-  }
-  return result
-}
-
 const flatFs = computed<FlatFsItem[]>(() => {
   if (workingSetFilterEnabled.value) {
     const expandedPaths = searchFilteringEnabled.value
       ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
-      : withExpandedWorkspaceRoot(workingSetExpandedFolders.value)
+      : workingSetExpandedFolders.value
     const projectedItems = projectDomainWorkingSetItems(
       fsTree.value,
       workingSetResult.value,
@@ -796,25 +786,25 @@ const flatFs = computed<FlatFsItem[]>(() => {
           .map(item => item.rootId),
       )
 
-      return hideCustomWorkspaceRoot(projectedItems.filter(item => item.node.type === 'file'
+      return projectedItems.filter(item => item.node.type === 'file'
         ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
         : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
           || matchedRootIds.has(item.rootId)
-          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders))
+          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
     }
 
-    return hideCustomWorkspaceRoot(projectedItems)
+    return projectedItems
   }
 
   if (searchFilteringEnabled.value) {
-    return hideCustomWorkspaceRoot(projectDomainSearchItems(
+    return projectDomainSearchItems(
       fsTree.value,
       normalizedSearchQuery.value,
       PROJECT_SEARCH_FILTER_OPTIONS,
-    ).items)
+    ).items
   }
 
-  return hideCustomWorkspaceRoot(flattenTree(fsTree.value, withExpandedWorkspaceRoot(expandedFolders.value)))
+  return flattenTree(fsTree.value, expandedFolders.value)
 })
 
 function onDragStart(e: DragEvent, item: FlatFsItem): void {
@@ -1190,6 +1180,9 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
   if (node.workspaceIdentity) {
     return WORKSPACE_PRESENTATION
   }
+  if (node.isRoot && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return WORKSPACE_PRESENTATION
+  }
   if (node.scope === 'workspace') {
     return { icon: node.icon || 'Folder', colorClass: 'text-slate-500 dark:text-slate-400' }
   }
@@ -1204,6 +1197,9 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
 function getTreeIconStyle(node: FsNode): Record<string, string> | undefined {
   if (node.facetColor) {
     return { color: node.facetColor }
+  }
+  if (node.type === 'folder' && node.isRoot && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return undefined
   }
   if (node.type === 'folder' && node.scope === 'workspace' && node.color) {
     return { color: node.color }
@@ -1233,7 +1229,10 @@ interface DomainSearchProjection {
 }
 
 function nodeMatchesSearch(node: FsNode, query: string): boolean {
-  return [node.name, node.identity]
+  const workspaceRootLabel = node.type === 'folder' && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY
+    ? getWorkspaceRootLabel()
+    : undefined
+  return [node.name, node.identity, workspaceRootLabel]
     .some(value => value?.toLocaleLowerCase().includes(query))
 }
 
@@ -1299,53 +1298,15 @@ const groupedFlatFs = computed(() => {
           rootId,
           items: flatFs.value.filter(item => item.rootId === rootId),
         }))
-        .filter(root => root.items.length > 0 || root.rootId === WORKSPACE_ROOT_FOLDER_IDENTITY),
+        .filter(root => root.items.length > 0),
     }))
 
   if (searchFilteringEnabled.value && PROJECT_SEARCH_FILTER_OPTIONS.showEmptyGroups) {
     return groups
   }
 
-  return groups.filter(block => block.roots.length > 0 || block.id === 'workspace-files')
+  return groups.filter(block => block.roots.length > 0)
 })
-
-function getWorkspaceBlockRootItem(blockId: string): FlatFsItem | null {
-  if (blockId !== 'workspace-files' || activeDocumentStructure.value !== 'custom') {
-    return null
-  }
-  const node = fsTree.value.find(item => item.type === 'folder' && item.id === WORKSPACE_ROOT_FOLDER_IDENTITY)
-  return node?.type === 'folder'
-    ? { node, path: node.name, depth: 0, rootId: WORKSPACE_ROOT_FOLDER_IDENTITY }
-    : null
-}
-
-function openBlockContextMenu(event: MouseEvent, blockId: string): void {
-  const root = getWorkspaceBlockRootItem(blockId)
-  if (root) {
-    openContextMenu(event, root.node, root.path)
-  }
-}
-
-function onBlockDragOver(event: DragEvent, blockId: string): void {
-  const root = getWorkspaceBlockRootItem(blockId)
-  if (root) {
-    onDragOver(event, root)
-  }
-}
-
-function onBlockDragLeave(blockId: string): void {
-  const root = getWorkspaceBlockRootItem(blockId)
-  if (root) {
-    onDragLeave(root)
-  }
-}
-
-async function onBlockDrop(event: DragEvent, blockId: string): Promise<void> {
-  const root = getWorkspaceBlockRootItem(blockId)
-  if (root) {
-    await onDrop(event, root)
-  }
-}
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
   const out: string[] = []
@@ -2372,13 +2333,6 @@ function rowClasses(item: FlatFsItem): string {
             <div
               v-if="block.showTitle !== false"
               class="mb-1 rounded px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80"
-              :class="block.id === 'workspace-files' && dragOverPath === ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]
-                ? 'bg-primary/20 ring-1 ring-primary/60'
-                : ''"
-              @contextmenu="(event: MouseEvent) => openBlockContextMenu(event, block.id)"
-              @dragover="(event: DragEvent) => onBlockDragOver(event, block.id)"
-              @dragleave="() => onBlockDragLeave(block.id)"
-              @drop="(event: DragEvent) => onBlockDrop(event, block.id)"
             >
               {{ block.title }}
             </div>
