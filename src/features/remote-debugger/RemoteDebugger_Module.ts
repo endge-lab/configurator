@@ -11,6 +11,8 @@ export class RemoteDebugger_Module {
   private _hasSnapshot = false
   public readonly inspectionInterval = shallowRef(0)
   public readonly inspectionBusy = shallowRef(false)
+  private readonly _skipData = shallowRef(true)
+  public readonly skipData = readonly(this._skipData)
   private readonly _canControl = shallowRef(false)
   public readonly canControl = readonly(this._canControl)
   private _session: BridgeDebugSession | null = null
@@ -35,7 +37,7 @@ export class RemoteDebugger_Module {
     this._hasSnapshot = false
     this._canControl.value = false
     this.inspectionInterval.value = 0
-    this.inspectionBusy.value = false
+    this.inspectionBusy.value = true
     Endge.runtime.clearInspection()
     EndgeIDE.runtimeInspection.clearSelection()
     EndgeIDE.tabs.closeAll()
@@ -56,7 +58,7 @@ export class RemoteDebugger_Module {
       }
       this._session = session
       this.status.value = 'Получение снимка…'
-      const initial = await Endge.bridge.debug.startContextSync(session.sessionId)
+      const initial = await Endge.bridge.debug.startContextSync(session.sessionId, { includeData: !this._skipData.value })
       const snapshot = initial.snapshot
       if (generation !== this._generation || this._session !== session) {
         return
@@ -82,6 +84,50 @@ export class RemoteDebugger_Module {
         void Endge.bridge.debug.endSession(session.sessionId).catch(() => undefined)
       }
     }
+    finally {
+      if (generation === this._generation) {
+        this.inspectionBusy.value = false
+      }
+    }
+  }
+
+  /** Меняет объём передачи и переснимает текущий сеанс без повторного согласия клиента. */
+  public async setSkipData(value: boolean): Promise<void> {
+    if (this.inspectionBusy.value || value === this._skipData.value) {
+      return
+    }
+    this._skipData.value = value
+    const session = this._session
+    const generation = this._generation
+    if (!session || !this._canControl.value) {
+      return
+    }
+    this.inspectionBusy.value = true
+    this._canControl.value = false
+    this.inspectionInterval.value = 0
+    try {
+      const initial = await Endge.bridge.debug.startContextSync(session.sessionId, { includeData: !value })
+      if (generation !== this._generation || this._session !== session) {
+        return
+      }
+      Endge.runtime.clearInspection()
+      Endge.replaceDebuggerSnapshot(initial.snapshot)
+      Endge.bridge.debug.activateContextSync(session.sessionId, initial.sequence)
+      this._canControl.value = true
+    }
+    catch (error) {
+      if (generation !== this._generation || this._session !== session) {
+        return
+      }
+      this.status.value = error instanceof Error ? error.message : String(error)
+      this._session = null
+      void Endge.bridge.debug.endSession(session.sessionId).catch(() => undefined)
+    }
+    finally {
+      if (generation === this._generation) {
+        this.inspectionBusy.value = false
+      }
+    }
   }
 
   /** Передаёт пользовательскую команду текущему клиенту; снимки и события этот метод не вызывают. */
@@ -99,6 +145,9 @@ export class RemoteDebugger_Module {
 
   /** Bridge владеет частотой; этот модуль хранит только подтверждённое значение UI. */
   public async setInspectionInterval(intervalMs: number): Promise<void> {
+    if (this._skipData.value) {
+      return
+    }
     await this._inspect(async (session) => {
       await Endge.bridge.debug.setInspectionInterval(session.sessionId, intervalMs)
       if (this._session === session) {

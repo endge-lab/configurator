@@ -75,7 +75,7 @@ function report(error: unknown): void {
         </Button>
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <select class="h-8 rounded-md border bg-background px-2 text-xs" :aria-label="t('runtimeInspection.interval')" :value="session.inspectionInterval.value" :disabled="!session.canControl.value || session.inspectionBusy.value" @change="interval">
+        <select class="h-8 rounded-md border bg-background px-2 text-xs" :aria-label="t('runtimeInspection.interval')" :value="session.inspectionInterval.value" :disabled="!session.canControl.value || session.inspectionBusy.value || session.skipData.value" @change="interval">
           <option :value="0">
             {{ t('runtimeInspection.manual') }}
           </option>

@@ -16,6 +16,7 @@ import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import StreamSourceEditor from '@/features/endge-ide/ui/components/StreamSourceEditor.vue'
 import UpdateSourceEditor from '@/features/endge-ide/ui/components/UpdateSourceEditor.vue'
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
@@ -100,9 +101,7 @@ async function save(): Promise<void> {
     </template>
     <template #right>
       <div class="flex items-center gap-1">
-        <Button v-if="activeTab === 'source'" size="sm" variant="ghost" class="h-7" @click="sourceEditorRef?.formatDocument()">
-          {{ $t('uiText.format64a03c67') }}
-        </Button>
+        <SourceFormatButton v-if="activeTab === 'source'" @click="sourceEditorRef?.formatDocument()" />
         <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сбросить source" @click="resetSource">
           <RotateCcw class="size-4" />
         </Button>

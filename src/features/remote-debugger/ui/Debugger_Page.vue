@@ -4,13 +4,14 @@ import { onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Configurator } from '@/app/Configurator'
 import { Grid } from '@/components/layouts/grid'
+import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 
 const { t } = useI18n()
 const debuggerSession = Configurator.remoteDebugger
-const { clients, selected, status, canControl } = debuggerSession
+const { clients, selected, status, canControl, skipData, inspectionBusy } = debuggerSession
 function close(): void {
   Configurator.closeDebugger()
 }
@@ -22,6 +23,10 @@ onBeforeUnmount(() => {
 <template>
   <Grid>
     <template #header>
+      <label class="flex shrink-0 items-center gap-2 px-2 text-xs" :title="t('remoteDebugger.skipDataHint')">
+        <Checkbox :model-value="skipData" :disabled="inspectionBusy" @update:model-value="debuggerSession.setSkipData($event === true)" />
+        {{ t('remoteDebugger.skipData') }}
+      </label>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button type="button" class="flex max-w-md items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent" :aria-label="t('remoteDebugger.selectLabel')">
