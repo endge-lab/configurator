@@ -9,7 +9,6 @@ import {
   duplicateComponent,
   Endge,
   FilterType,
-  ParameterType,
   QueryType,
 } from '@endge/core'
 
@@ -75,8 +74,6 @@ export function getEntityByDocType(
       return domain.getMock(id)
     case FilterType.DefaultFilter:
       return domain.getFilter(id)
-    case ParameterType.DefaultParameter:
-      return domain.getParameter(id)
     case 'converter':
       return domain.getConverter(id)
     default:

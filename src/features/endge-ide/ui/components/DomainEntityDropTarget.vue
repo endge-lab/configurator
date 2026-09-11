@@ -41,7 +41,6 @@ const SECTION_LABELS: Record<string, string> = {
   [DomainSectionType.Query]: 'запрос',
   [DomainSectionType.Type]: 'тип',
   [DomainSectionType.Integration]: 'интеграция',
-  [DomainSectionType.Parameters]: 'параметр',
   [DomainSectionType.PageTemplate]: 'шаблон страницы',
   [DomainSectionType.Page]: 'страница',
   [DomainSectionType.Navigation]: 'навигация',

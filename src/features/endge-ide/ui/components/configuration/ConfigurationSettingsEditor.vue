@@ -11,6 +11,7 @@ import type {
   EndgeJSONValue,
   EndgeTooltipConfiguration,
 } from '@endge/core'
+import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 
 import {
   applyEndgeConfigurationContribution,
@@ -21,6 +22,7 @@ import {
   Braces,
   ChevronRight,
   Clock3,
+  FileJson2,
   HeartPulse,
   Languages,
   MessageSquareText,
@@ -32,7 +34,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,6 +50,7 @@ import {
 } from '@/components/ui/select'
 import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentMetadataEditor from '@/features/endge-ide/ui/components/DocumentMetadataEditor.vue'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
 import ComponentSFCInteractionBindingEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCInteractionBindingEditor.vue'
 import {
@@ -83,7 +87,7 @@ type SystemConfigurationSection
     | 'timezones'
     | 'diagnostics'
 type ConfigurationSection
-  = SystemConfigurationSection | `configuration:${string}`
+  = SystemConfigurationSection | `configuration:${string}` | 'metadata'
 type ExpandableNavigationGroup = 'editing' | 'tooltips' | 'diagnostics'
 type TooltipSection = 'ui' | 'trigger'
 type SFCEditingField = 'cancelOn' | 'commitOn'
@@ -103,16 +107,23 @@ interface ConfigurationValueIssue {
   message: string
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   variant: 'root' | 'contribution'
   modelValue: ConfigurationModel
   upstream?: EndgeConfiguration
   disabled?: boolean
-}>()
+  contributionMode?: 'select' | 'inherit-only'
+  documentMetadata?: boolean
+}>(), {
+  contributionMode: 'select',
+  documentMetadata: false,
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: ConfigurationModel]
 }>()
+
+const { t } = useI18n()
 
 const EXCLUDED_VALUE_LABEL = 'Исключено из наследования'
 const excludedRowDrafts = new WeakMap<object, unknown>()
@@ -130,6 +141,7 @@ const activeSection = useSmartTabSelection<ConfigurationSection>(
     'themes',
     'timezones',
     'diagnostics',
+    'metadata',
     ...Endge.configurationSchema
       .list()
       .map(item => `configuration:${item.identity}` as const),
@@ -239,6 +251,11 @@ const configurationCategories = computed(() =>
       } => entry.document != null,
     ),
 )
+const metadataSession = computed<DocumentMetadataSession | null>(() =>
+  props.documentMetadata
+    ? EndgeIDE.tabs.documentMetadataSession.value
+    : null,
+)
 const sections = computed(() => [
   ...systemSections,
   ...configurationCategories.value.map(category => ({
@@ -246,7 +263,16 @@ const sections = computed(() => [
     label: category.displayName,
     icon: SlidersHorizontal,
   })),
+  ...(metadataSession.value
+    ? [{
+        id: 'metadata' as const,
+        label: t('documentMetadata.metadata'),
+        icon: FileJson2,
+      }]
+    : []),
 ])
+
+watchEffect(() => metadataSession.value?.refreshFromDocument())
 
 const contribution = computed(() =>
   props.variant === 'contribution'
@@ -423,6 +449,20 @@ function setContributionMode(mode: string): void {
     return
   }
   emit('update:modelValue', { mode: 'inherit', patch: {} })
+}
+
+function updateMetadataDraft(value: string): void {
+  metadataSession.value?.updateDraft(value)
+}
+
+function updateMetadataValidation(error: string | null): void {
+  if (metadataSession.value) {
+    metadataSession.value.error = error
+  }
+}
+
+function commitMetadata(): void {
+  metadataSession.value?.prepareBeforeSave()
 }
 
 function notifyRootMutation(): void {
@@ -1045,7 +1085,7 @@ function isEqual(left: unknown, right: unknown): boolean {
 <template>
   <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
     <section
-      v-if="variant === 'contribution'"
+      v-if="variant === 'contribution' && (contributionMode === 'select' || !isInherit)"
       class="grid shrink-0 gap-3 rounded-lg border border-border/80 bg-card/80 px-4 py-3 shadow-xs md:grid-cols-[minmax(0,1fr)_18rem] md:items-center"
     >
       <div class="min-w-0">
@@ -1127,7 +1167,7 @@ function isEqual(left: unknown, right: unknown): boolean {
         >
           <template v-for="(section, index) in sections" :key="section.id">
             <div
-              v-if="index === systemSections.length"
+              v-if="index === systemSections.length || section.id === 'metadata'"
               class="my-1 border-t border-border/70"
               aria-hidden="true"
             />
@@ -1232,7 +1272,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             </SelectTrigger>
             <SelectContent>
               <template v-for="(section, index) in sections" :key="section.id">
-                <SelectSeparator v-if="index === systemSections.length" />
+                <SelectSeparator v-if="index === systemSections.length || section.id === 'metadata'" />
                 <SelectItem :value="section.id">
                   {{ section.label }}
                 </SelectItem>
@@ -1295,7 +1335,7 @@ function isEqual(left: unknown, right: unknown): boolean {
           </Select>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div v-show="activeSection !== 'metadata'" class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
             <slot name="general" />
           </TabsContent>
@@ -2097,6 +2137,21 @@ function isEqual(left: unknown, right: unknown): boolean {
             />
           </TabsContent>
         </div>
+        <TabsContent
+          v-if="metadataSession"
+          value="metadata"
+          class="m-0 flex min-h-0 flex-1 outline-none"
+        >
+          <DocumentMetadataEditor
+            :model-value="metadataSession.draft"
+            :read-only="metadataSession.readOnly || !metadataSession.projection.editable"
+            :message="metadataSession.projection.message"
+            :external-error="metadataSession.error"
+            @update:model-value="updateMetadataDraft"
+            @validation="updateMetadataValidation"
+            @commit="commitMetadata"
+          />
+        </TabsContent>
       </div>
     </SettingsNavigationPanel>
   </div>

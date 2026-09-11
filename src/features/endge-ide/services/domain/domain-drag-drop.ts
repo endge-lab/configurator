@@ -16,7 +16,6 @@ import {
   Endge,
   FilterType,
   isExternallyManaged,
-  ParameterType,
   QueryType,
   RFolder,
 } from '@endge/core'
@@ -111,7 +110,6 @@ const BASE_DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   'update',
   'mock',
   'computation',
-  ParameterType.DefaultParameter,
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
   'primitive',
@@ -680,9 +678,6 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
   }
   if (sectionType === DomainSectionType.Mock) {
     return (numId != null ? Endge.domain.getMockById(numId) : null) ?? Endge.domain.getMock(id)
-  }
-  if (sectionType === DomainSectionType.Parameters) {
-    return (numId != null ? Endge.domain.getParameterById(numId) : null) ?? Endge.domain.getParameterIdentity(id)
   }
   if (sectionType === DomainSectionType.Filters) {
     return (numId != null ? Endge.domain.getFilterById(numId) : null) ?? Endge.domain.getFilter(id)

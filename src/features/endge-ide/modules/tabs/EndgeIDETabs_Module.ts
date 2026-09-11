@@ -24,7 +24,7 @@ import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeI
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
 import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
-import { ComponentType, Endge, FilterType, getDomainDocumentDescriptor, isExternallyManaged, isSystemManaged, ParameterType, QueryType, readOnlyDocument } from '@endge/core'
+import { ComponentType, Endge, FilterType, getDomainDocumentDescriptor, isExternallyManaged, isSystemManaged, QueryType, readOnlyDocument } from '@endge/core'
 
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
@@ -52,7 +52,6 @@ import { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor.ts
 import { RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigationEditor.ts'
 import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
-import { RParameterEditor } from '@/features/endge-ide/domain/entities/RParameterEditor.ts'
 import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
 import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
@@ -84,7 +83,6 @@ const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-
 const ComponentSFC_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'))
 const ComponentTable_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentTable_Editor.vue'))
 const Action_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Action_Editor.vue'))
-const FiltersPanel_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/FiltersPanel_Editor.vue'))
 const Query_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'))
 const DataView_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'))
 const Composition_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'))
@@ -761,7 +759,6 @@ export class EndgeIDETabs_Module {
     ['update', documentId => this._resolveUpdate(documentId)],
     ['mock', documentId => this._resolveMock(documentId)],
     ['action', documentId => this._resolveAction(documentId)],
-    [String(ParameterType.DefaultParameter), documentId => this._resolveParameter(documentId)],
     [String(FilterType.DefaultFilter), documentId => this._resolveFilter(documentId)],
     ['converter', documentId => this._resolveConverter(documentId)],
     ['computation', documentId => this._resolveComputation(documentId)],
@@ -1005,24 +1002,6 @@ export class EndgeIDETabs_Module {
       editor,
       model: mock,
       syncBeforeSave: () => editor.updateSource(mock),
-    }
-  }
-
-  private _resolveParameter(documentId: string): EditorSession | null {
-    const parameter = Endge.domain.getParameter(documentId)
-    if (!parameter) {
-      return null
-    }
-    const editor = new RParameterEditor()
-    editor.fillFromSource(parameter)
-    return {
-      view: {
-        component: markRaw(FiltersPanel_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: parameter,
-      syncBeforeSave: () => editor.updateSource(parameter),
     }
   }
 

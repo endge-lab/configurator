@@ -1,5 +1,5 @@
 import type { DomainDocumentType } from '@endge/core'
-import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
+import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 import { resolveEndgeIDEDocument } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
 
@@ -23,7 +23,6 @@ const ROOT_IDENTITY_BY_DOCUMENT_TYPE: ReadonlyMap<string, string> = new Map([
   [String(QueryType.REST), 'root-queries'],
   [String(QueryType.GraphQL), 'root-queries'],
   [String(QueryType.Custom), 'root-queries'],
-  [String(ParameterType.DefaultParameter), 'root-parameters'],
   [String(FilterType.DefaultFilter), 'root-filters'],
   ['primitive', 'root-types'],
   ['type', 'root-types'],
@@ -69,7 +68,6 @@ const ROOT_LABEL_BY_IDENTITY: ReadonlyMap<string, string> = new Map([
   ['root-filters', 'Фильтры'],
   ['root-converters', 'Конвертеры'],
   ['root-computations', 'Вычисления'],
-  ['root-parameters', 'Параметры'],
   ['root-integrations', 'Интеграции'],
   ['root-environments', 'Окружения'],
   ['root-tenants', 'Тенанты'],

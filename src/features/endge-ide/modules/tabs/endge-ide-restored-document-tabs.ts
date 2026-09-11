@@ -3,7 +3,7 @@ import type { SmartTabRef } from '@/features/endge-ide/ui/smart-tabs/types'
 
 // Разрешение восстановленных документов является внутренней частью модуля tabs.
 
-import { ComponentType, Endge, FilterType, ParameterType, QueryType } from '@endge/core'
+import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 export const ENDGE_IDE_DOCUMENT_VIEW_ID = 'endge-document-editor' as const
 
@@ -27,7 +27,6 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['update', documentId => Endge.domain.getUpdate(documentId)],
   ['mock', documentId => Endge.domain.getMock(documentId)],
   ['action', documentId => Endge.domain.getAction(documentId)],
-  [String(ParameterType.DefaultParameter), documentId => Endge.domain.getParameter(documentId)],
   [String(FilterType.DefaultFilter), documentId => Endge.domain.getFilter(documentId)],
   ['converter', documentId => Endge.domain.getConverter(documentId)],
   ['computation', documentId => Endge.domain.getComputation(documentId)],

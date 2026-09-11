@@ -36,7 +36,6 @@ const DEFAULT_EDITOR_NAMES = [
   'RNavigationEditor',
   'RPageEditor',
   'RPageTemplateEditor',
-  'RParameterEditor',
   'RPolicyEditor',
   'RQueryEditor',
   'RStoreEditor',

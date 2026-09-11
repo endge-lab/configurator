@@ -1,6 +1,6 @@
 import type { DomainDocumentType } from '@endge/core'
 
-import { ComponentType, Endge, FilterType, ParameterType } from '@endge/core'
+import { ComponentType, Endge, FilterType } from '@endge/core'
 
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 
@@ -77,9 +77,6 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
   if (key === 'action') {
     const action = Endge.domain.getAction(id)
     return action?.displayName ?? action?.name ?? id
-  }
-  if (key === String(ParameterType.DefaultParameter)) {
-    return Endge.domain.getParameter(id)?.displayName ?? id
   }
   if (key === String(FilterType.DefaultFilter)) {
     return Endge.domain.getFilter(id)?.displayName ?? id

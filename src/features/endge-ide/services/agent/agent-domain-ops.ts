@@ -60,7 +60,6 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   queries: DomainSectionType.Query,
   components: DomainSectionType.Component,
   types: DomainSectionType.Type,
-  parameters: DomainSectionType.Parameters,
   filters: DomainSectionType.Filters,
   actions: DomainSectionType.Action,
   converters: DomainSectionType.Converter,
@@ -93,8 +92,6 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getQueryById?.(numId) : null) ?? domain.getQueryByIdentity?.(id) ?? domain.getQuery?.(id)
     case DomainSectionType.Component:
       return domain.getComponentByIdentity?.(id) ?? domain.getComponent?.(id)
-    case DomainSectionType.Parameters:
-      return (numId != null ? domain.getParameterById?.(numId) : null) ?? domain.getParameterIdentity?.(id)
     case DomainSectionType.Filters:
       return (numId != null ? domain.getFilterById?.(numId) : null) ?? domain.getFilter?.(id)
     case DomainSectionType.Type:
@@ -152,9 +149,6 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.Component:
       rem(domain.removeComponent?.bind(domain))
-      break
-    case DomainSectionType.Parameters:
-      rem(domain.removeParameter?.bind(domain))
       break
     case DomainSectionType.Filters:
       rem(domain.removeFilter?.bind(domain))

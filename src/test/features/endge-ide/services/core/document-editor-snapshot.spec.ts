@@ -24,7 +24,6 @@ const EXPECTED_EDITOR_FAMILIES = [
   'RNavigationEditor',
   'RPageEditor',
   'RPageTemplateEditor',
-  'RParameterEditor',
   'RPolicyEditor',
   'RProjectEditor',
   'RQueryEditor',

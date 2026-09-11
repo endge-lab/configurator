@@ -1112,13 +1112,6 @@ watch(
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <Label>{{ $t('uiText.runtimeFiltersPersistedOnlyAa6b8c31') }}</Label>
-                    <Input
-                      :model-value="(editor.runtimeFilters ?? []).join(', ')"
-                      @update:model-value="(value) => editor.runtimeFilters = String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean)"
-                    />
-                  </div>
-                  <div class="space-y-2">
                     <Label>{{ $t('uiText.legacySetupSourceDataOnly5a6ad2e7') }}</Label>
                     <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-table.setup" />
                     <p class="text-xs text-muted-foreground">

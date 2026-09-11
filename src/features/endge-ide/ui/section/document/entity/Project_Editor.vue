@@ -10,7 +10,6 @@ import {
   Play,
   Save,
   Settings2,
-  SlidersHorizontal,
   TriangleAlert,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -32,7 +31,6 @@ import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import ConfigurationSettingsEditor from '@/features/endge-ide/ui/components/configuration/ConfigurationSettingsEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
-import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -50,8 +48,8 @@ const editor = computed<RProjectEditor | null>(
 )
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
-  'general',
-  ['general', 'composition', 'configuration', 'artifact', 'diagnostics'] as const,
+  'settings',
+  ['settings', 'composition', 'artifact', 'diagnostics'] as const,
 )
 const launchLoading = ref(false)
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
@@ -65,13 +63,9 @@ const tabGroups = computed(() => [
   {
     label: 'Разделы проекта',
     items: [
-      { value: 'general', icon: Settings2, label: 'Основное' },
+      { value: 'settings', icon: Settings2, label: 'Настройки' },
       { value: 'composition', icon: Code2, label: 'Композиция' },
     ],
-  },
-  {
-    label: 'Конфигурация проекта',
-    items: [{ value: 'configuration', icon: SlidersHorizontal, label: 'Конфигурация' }],
   },
 ] as const)
 const runtimeTabs = computed(() => [
@@ -227,73 +221,73 @@ async function launchRuntimePreview(): Promise<void> {
         />
         <pre v-else-if="activeTab === 'artifact'" class="h-full overflow-auto p-4 text-xs">{{ artifactJson }}</pre>
         <EntityProblemsPanel v-else-if="activeTab === 'diagnostics' && diagnosticsEntityRef" :entity-ref="diagnosticsEntityRef" />
-        <DocumentGeneralSettingsPanel v-else-if="activeTab === 'general'" content-class="p-0">
-          <div class="w-full p-6 lg:p-8">
-            <section class="max-w-2xl space-y-4">
-              <DocumentIdField :document-id="editor.id" />
-              <div class="space-y-2">
-                <Label for="project-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
-                <DocumentIdentityInput
-                  id="project-identity"
-                  v-model="editor.identity"
-                  placeholder="my-project"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="project-display-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
-                <Input
-                  id="project-display-name"
-                  v-model="editor.displayName"
-                  placeholder="Мой проект"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>{{ $t('uiText.slugURLfd185dc1') }}</Label>
-                <Input
-                  :model-value="editor?.slug ?? ''"
-                  placeholder="my-project"
-                  @update:model-value="
-                    (value) =>
-                      editor && (editor.slug = value == null ? null : String(value))
-                  "
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
-                <Textarea
-                  :model-value="editor.description ?? ''"
-                  :rows="4"
-                  placeholder="Краткое описание проекта"
-                  @update:model-value="
-                    (value) =>
-                      editor && (editor.description = String(value || '') || null)
-                  "
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>{{ $t('uiText.sortOrderf6529d95') }}</Label>
-                <Input
-                  type="number"
-                  :model-value="editor?.order ?? ''"
-                  placeholder="0"
-                  @update:model-value="
-                    (v) =>
-                      editor
-                      && (editor.order = v === '' || v == null ? null : Number(v))
-                  "
-                />
-              </div>
-            </section>
-          </div>
-        </DocumentGeneralSettingsPanel>
-
-        <div v-else-if="activeTab === 'configuration'" class="h-full min-h-0 p-4 lg:p-5">
+        <div v-else-if="activeTab === 'settings'" class="h-full min-h-0 p-4 lg:p-5">
           <ConfigurationSettingsEditor
             v-model="configuration"
             class="min-h-0"
             variant="contribution"
+            contribution-mode="inherit-only"
+            document-metadata
             :upstream="upstreamConfiguration"
-          />
+          >
+            <template #general>
+              <section class="max-w-2xl space-y-4">
+                <DocumentIdField :document-id="editor.id" />
+                <div class="space-y-2">
+                  <Label for="project-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+                  <DocumentIdentityInput
+                    id="project-identity"
+                    v-model="editor.identity"
+                    placeholder="my-project"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label for="project-display-name">{{ $t('uiText.displayNamec7874aaa') }}</Label>
+                  <Input
+                    id="project-display-name"
+                    v-model="editor.displayName"
+                    placeholder="Мой проект"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.slugURLfd185dc1') }}</Label>
+                  <Input
+                    :model-value="editor?.slug ?? ''"
+                    placeholder="my-project"
+                    @update:model-value="
+                      (value) =>
+                        editor && (editor.slug = value == null ? null : String(value))
+                    "
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.descriptionF5441f6a') }}</Label>
+                  <Textarea
+                    :model-value="editor.description ?? ''"
+                    :rows="4"
+                    placeholder="Краткое описание проекта"
+                    @update:model-value="
+                      (value) =>
+                        editor && (editor.description = String(value || '') || null)
+                    "
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.sortOrderf6529d95') }}</Label>
+                  <Input
+                    type="number"
+                    :model-value="editor?.order ?? ''"
+                    placeholder="0"
+                    @update:model-value="
+                      (v) =>
+                        editor
+                        && (editor.order = v === '' || v == null ? null : Number(v))
+                    "
+                  />
+                </div>
+              </section>
+            </template>
+          </ConfigurationSettingsEditor>
         </div>
       </div>
     </div>

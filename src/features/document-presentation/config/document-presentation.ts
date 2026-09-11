@@ -1,6 +1,6 @@
 import type { DomainDocumentPresentation } from '../types/document-presentation'
 
-import { ComponentType, DomainSectionType, FilterType, ParameterType, QueryType } from '@endge/core'
+import { ComponentType, DomainSectionType, FilterType, QueryType } from '@endge/core'
 
 export const DOCUMENT_COLORS = {
   blue: 'text-blue-500',
@@ -34,7 +34,6 @@ export const DOMAIN_SECTION_PRESENTATION: Readonly<Record<DomainSectionType, Dom
   [DomainSectionType.Component]: { icon: 'Puzzle', colorClass: DOCUMENT_COLORS.blue },
   [DomainSectionType.Action]: { icon: 'Zap', colorClass: DOCUMENT_COLORS.amber },
   [DomainSectionType.Event]: { icon: 'Radio', colorClass: DOCUMENT_COLORS.violet },
-  [DomainSectionType.Parameters]: { icon: 'FormInput', colorClass: DOCUMENT_COLORS.slate },
   [DomainSectionType.Converter]: { icon: 'ArrowLeftRight', colorClass: DOCUMENT_COLORS.cyan },
   [DomainSectionType.Computation]: { icon: 'SquareFunction', colorClass: DOCUMENT_COLORS.orange },
   [DomainSectionType.Integration]: { icon: 'Plug', colorClass: DOCUMENT_COLORS.teal },
@@ -109,7 +108,6 @@ export const DOCUMENT_SECTION_BY_TYPE: Readonly<Partial<Record<string, DomainSec
   [QueryType.REST]: DomainSectionType.Query,
   [QueryType.GraphQL]: DomainSectionType.Query,
   [QueryType.Custom]: DomainSectionType.Query,
-  [ParameterType.DefaultParameter]: DomainSectionType.Parameters,
   [FilterType.DefaultFilter]: DomainSectionType.Filters,
 }
 

@@ -1,8 +1,6 @@
 import type { ComponentType, RComponentBase } from '@endge/core'
 
 import { RField } from '@endge/core'
-import { Expose } from 'class-transformer'
-
 import { RFieldEditor } from '@/features/endge-ide/domain/entities/RFieldEditor'
 
 /**
@@ -23,9 +21,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
   /** Сохранённый legacy-source настройки. Он не выполняется. */
   setupScript: string = ''
 
-  @Expose()
-  runtimeFilters: string[] = []
-
   /**
    * Преобразует редактор в доменную сущность
    * @param source Сущность компонента
@@ -36,7 +31,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
     source.name = this.name
     source.type = this.type
     source.setupScript = this.setupScript
-    source.runtimeFilters = this.runtimeFilters
 
     // inputFields - Record<string, RField>
     const record: Record<string, RField> = {}
@@ -59,7 +53,6 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
     this.name = source.name
     this.type = source.type
     this.setupScript = source.setupScript
-    this.runtimeFilters = source.runtimeFilters
 
     // Record<string, RField> - RFieldEditor[]
     this.inputFields = Object.values(source.inputFields || {}).map((field) => {

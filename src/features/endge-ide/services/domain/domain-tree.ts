@@ -10,7 +10,6 @@ import {
   DomainSectionType,
   Endge,
   FilterType,
-  ParameterType,
 } from '@endge/core'
 
 import { i18n } from '@/i18n/index'
@@ -171,7 +170,6 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-filters': 'Фильтры',
   'root-converters': 'Конвертеры',
   'root-computations': 'Вычисления',
-  'root-parameters': 'Параметры',
   'root-integrations': 'Интеграции',
   'root-environments': 'Окружения',
   'root-tenants': 'Тенанты',
@@ -282,9 +280,6 @@ export function normalizeDocType(
   }
   if (sectionType === DomainSectionType.Primitive || sectionType === DomainSectionType.Type) {
     return 'type'
-  }
-  if (sectionType === DomainSectionType.Parameters) {
-    return ParameterType.DefaultParameter
   }
   if (sectionType === DomainSectionType.Filters) {
     return FilterType.DefaultFilter

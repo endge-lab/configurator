@@ -19,7 +19,7 @@ import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const tabs = EndgeIDE.tabs
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
-const tab = useSmartTabSelection('editor.active-tab', 'general', ['general', '0', '2', 'parameters'] as const)
+const tab = useSmartTabSelection('editor.active-tab', 'general', ['general', '0', '2'] as const)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -74,9 +74,6 @@ function addInputField(): void {
               <TabsTrigger value="2">
                 {{ $t('uiText.dataD8e5fd81') }}
               </TabsTrigger>
-              <TabsTrigger value="parameters">
-                {{ $t('uiText.filters67e16da2') }}
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -111,24 +108,6 @@ function addInputField(): void {
                   <ScriptEditor v-model="editor.setupScript" :type="editor.type" view-state-key="component-dsl.setup" />
                   <p class="text-xs text-muted-foreground">
                     {{ $t('uiText.thisFieldIsPreservedInTheDocumentBuEed553e4') }}
-                  </p>
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="parameters" class="flex-1 min-h-0 p-0 m-0">
-            <ScrollArea class="h-full">
-              <div class="p-4 space-y-4">
-                <div class="space-y-2">
-                  <Label class="font-semibold">{{ $t('uiText.runtimeFiltersPersistedOnlyAa6b8c31') }}</Label>
-                  <Input
-                    :model-value="(editor.runtimeFilters ?? []).join(', ')"
-                    placeholder="schedule, telegraph"
-                    @update:model-value="(value) => editor.runtimeFilters = String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean)"
-                  />
-                  <p class="text-xs text-muted-foreground">
-                    {{ $t('uiText.storedForDocumentFidelityThisListNoD3e80248') }}
                   </p>
                 </div>
               </div>
