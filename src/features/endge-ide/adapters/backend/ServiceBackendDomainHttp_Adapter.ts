@@ -24,9 +24,6 @@ type UnknownRecord = Record<string, unknown>
 const SNAPSHOT_DOCUMENT_KEYS = [
   'facets',
   'facet-documents',
-  'projects',
-  'tenants',
-  'environments',
   'folders',
   'types',
   'queries',
@@ -435,6 +432,8 @@ function isLiveSnapshot(value: UnknownRecord, workspaceIdentity: string): value 
     || stringValue(workspace.identity) !== workspaceIdentity
     || !stringValue(workspace.displayName)
     || (workspace.dataMode !== 'development' && workspace.dataMode !== 'production')
+    || !('startupCompositionIdentity' in workspace)
+    || (workspace.startupCompositionIdentity != null && !stringValue(workspace.startupCompositionIdentity))
     || !isRecord(workspace.configuration)
     || !isRecord(workspace.state)
     || !stringValue(workspace.state.id)

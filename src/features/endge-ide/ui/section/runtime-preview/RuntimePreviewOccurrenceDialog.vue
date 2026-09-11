@@ -23,7 +23,7 @@ const targetLabel = computed(() => prompt.value?.target.entityType === 'componen
   : 'Composition')
 const promptDescription = computed(() => (prompt.value?.occurrences.length ?? 0) > 1
   ? `${targetLabel.value} «${prompt.value?.target.identity}» используется в нескольких местах. Выберите ветку runtime, которую нужно активировать.`
-  : `${targetLabel.value} «${prompt.value?.target.identity}» найден в runtime проекта. Подтвердите активацию ветки.`,
+  : `${targetLabel.value} «${prompt.value?.target.identity}» найден в runtime Workspace. Подтвердите активацию ветки.`,
 )
 const hasLiveRisk = computed(() =>
   prompt.value?.liveMode
@@ -44,7 +44,7 @@ function setOpen(value: boolean): void {
         <div class="mb-2 flex size-9 items-center justify-center rounded-md border bg-muted/40">
           <GitBranch class="size-4 text-muted-foreground" />
         </div>
-        <DialogTitle>{{ $t('uiText.runInProjectContextd1462887') }}</DialogTitle>
+        <DialogTitle>{{ $t('uiText.runInCurrentContextd1462887') }}</DialogTitle>
         <DialogDescription>
           {{ promptDescription }}
         </DialogDescription>

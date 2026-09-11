@@ -3,6 +3,7 @@ import type { WidgetDefinition } from '@/components/layouts/grid'
 import { defineAsyncComponent, markRaw } from 'vue'
 
 import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
@@ -17,8 +18,8 @@ const Storage_Widget = defineAsyncComponent(() => import('@/features/endge-ide/u
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {
-    id: 'project',
-    title: 'Проект',
+    id: ENDGE_IDE_DOMAIN_WIDGET_ID,
+    title: 'Домен',
     icon: 'FolderTree',
     iconClass: 'text-teal-600 dark:text-[#89DDFF]',
     content: 'component',

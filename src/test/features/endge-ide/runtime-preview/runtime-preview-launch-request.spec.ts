@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
-import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
 import {
   createRuntimePreviewLaunchRequest,
@@ -40,22 +39,12 @@ describe('запрос запуска Runtime Preview', () => {
     expect(createRuntimePreviewLaunchRequest(store)?.draft?.source).toBe(store.source)
   })
 
-  it('передаёт собственный Source проекта в Preview и отклоняет неподдерживаемые редакторы', () => {
-    const project = Object.assign(new RProjectEditor(), { id: 10, identity: 'operations', displayName: 'Operations', source: 'defineComposition({ runtimes: {} })' })
-
-    expect(createRuntimePreviewLaunchRequest(project)).toEqual({
-      entityType: 'project',
-      identity: 'operations',
-      draft: { id: 10, identity: 'operations', name: 'Operations', displayName: 'Operations', source: project.source, sourceVersion: 1 },
-    })
+  it('отклоняет редакторы без runtime-контракта', () => {
     expect(createRuntimePreviewLaunchRequest({ identity: 'query' })).toBeNull()
   })
 
   it('сопоставляет сохранённые runtime-документы и игнорирует неподдерживаемые либо неопознанные документы', () => {
-    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'project', identity: 'operations' })).toEqual({
-      entityType: 'project',
-      identity: 'operations',
-    })
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'workspace', identity: 'operations' })).toBeNull()
     expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'composition', identity: 'flight-page' })).toEqual({
       entityType: 'composition',
       identity: 'flight-page',

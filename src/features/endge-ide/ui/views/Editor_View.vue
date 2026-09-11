@@ -82,7 +82,7 @@ function getIconClass(tab: { meta?: Record<string, unknown> | undefined }): stri
 }
 
 function getTabTooltip(tab: SmartTabRef): string | null {
-  return tabs.getTabProjectPath(tab)
+  return tabs.getTabDomainPath(tab)
 }
 
 useLayout({

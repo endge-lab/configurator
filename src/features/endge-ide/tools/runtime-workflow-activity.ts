@@ -16,7 +16,7 @@ export function collectRuntimeWorkflowActivity(
   ])
   for (const entry of entries) {
     const visit = (node: RuntimePreviewTreeNode, owner: string): void => {
-      const currentOwner = node.kind === 'composition' || node.kind === 'project'
+      const currentOwner = node.kind === 'composition'
         ? key(node.entityType, node.identity, '')
         : owner
       if (entry.lifecycleState(node) === 'active') {
@@ -32,13 +32,13 @@ export function collectRuntimeWorkflowActivity(
         active.add(key('workspace', root.identity, ''))
       }
     }
-    active.add(key('tenant', context.tenantIdentity, ''))
-    active.add(key('project', context.projectIdentity, ''))
-    active.add(key('environment', context.environmentIdentity, ''))
+    for (const [facet, document] of Object.entries(context.facets)) {
+      active.add(key(`facet-document:${facet}`, document, ''))
+    }
   }
   const ids = new Set<string>()
   const visit = (node: WorkflowDependency, owner: string): void => {
-    const currentOwner = node.kind === 'composition' || node.kind === 'project'
+    const currentOwner = node.kind === 'composition'
       ? key(node.documentType, node.identity, '')
       : owner
     if (active.has(key(node.filterView ? 'filter-view' : node.documentType ?? node.kind, node.identity, currentOwner))) {

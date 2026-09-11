@@ -211,8 +211,8 @@ export class EndgeIDE {
       void modules.runtimePreview.launchEditor(editor)
       return true
     })
-    modules.hotkeys.setReturnToProjectHandler(() => {
-      return modules.problems.returnToProject() || modules.runtimePreview.returnToProject()
+    modules.hotkeys.setReturnToDomainHandler(() => {
+      return modules.problems.returnToDomain() || modules.runtimePreview.returnToDomain()
     })
   }
 

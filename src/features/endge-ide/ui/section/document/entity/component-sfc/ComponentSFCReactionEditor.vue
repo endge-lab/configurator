@@ -312,7 +312,7 @@ function actionGroup(action: { origin: { kind: string }, catalogPath?: string[] 
       ? 'Local'
       : action.origin.kind === 'derived'
         ? 'Provided'
-        : 'Project'
+        : 'External'
   return ['Actions', origin, ...(action.catalogPath ?? [])].join(' / ')
 }
 

@@ -64,21 +64,15 @@ function prepareCompilerContext(): void {
       defaultSfcAdapterId: 'vue-native',
     },
   })
-  Endge.domain.addProject({
+  Endge.domain.addFacet({
     id: 1,
-    identity: 'ui-editor-preview-project',
-    allowedEnvironmentIds: [],
-    configuration: { mode: 'inherit', patch: {} },
+    identity: 'deployment',
+    position: 0,
   } as any)
-  Endge.domain.addEnvironment({
+  Endge.domain.addFacetDocument({
     id: 2,
-    identity: 'ui-editor-preview-environment',
-    configuration: { mode: 'inherit', patch: {} },
-  } as any)
-  Endge.domain.addTenant({
-    id: 3,
-    identity: 'ui-editor-preview-tenant',
-    code: 'ui-editor-preview-tenant',
+    facetIdentity: 'deployment',
+    identity: 'ui-editor-preview',
     configuration: { mode: 'inherit', patch: {} },
   } as any)
   Endge.configuration.build({
@@ -86,9 +80,7 @@ function prepareCompilerContext(): void {
     scope: {},
     vars: {},
     context: {
-      projectIdentity: 'ui-editor-preview-project',
-      environmentIdentity: 'ui-editor-preview-environment',
-      tenantIdentity: 'ui-editor-preview-tenant',
+      facets: { deployment: 'ui-editor-preview' },
     },
   })
 }

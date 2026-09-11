@@ -22,8 +22,8 @@ const warningCount = computed(() => problems.entries.value.reduce((total, entry)
   return total + entry.problems.filter(problem => problem.severity === 'warning').length
 }, 0))
 
-/** Запускает project build, который атомарно обновляет актуальные build problems. */
-async function runProjectAnalysis(): Promise<void> {
+/** Запускает Domain build, который атомарно обновляет актуальные build problems. */
+async function runDomainAnalysis(): Promise<void> {
   if (isAnalyzing.value) {
     return
   }
@@ -83,12 +83,12 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
               size="icon"
               class="size-7"
               :disabled="isAnalyzing"
-              @click="runProjectAnalysis"
+              @click="runDomainAnalysis"
             >
               <RefreshCw class="size-3.5" :class="isAnalyzing && 'animate-spin'" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{{ $t('uiText.reanalyzeProject36a10b6c') }}</TooltipContent>
+          <TooltipContent>{{ $t('uiText.reanalyzeDomain36a10b6c') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
@@ -128,12 +128,12 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
         {{ $t('uiText.noIssuesDetectedae658e4c') }}
       </div>
       <div class="max-w-52 text-[10px] leading-4">
-        {{ $t('uiText.registryIsUpToDateReanalyzeAfterProjectChangesfc0faf0e') }}
+        {{ $t('uiText.registryIsUpToDateReanalyzeAfterDomainChangesfc0faf0e') }}
       </div>
     </div>
 
     <div class="shrink-0 border-t px-3 py-2 text-[10px] leading-4 text-muted-foreground">
-      {{ $t('uiText.escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78') }}
+      {{ $t('uiText.escapeReturnsToDomainSelectingAnEntityOpensItsProbl115d0a78') }}
     </div>
   </div>
 </template>

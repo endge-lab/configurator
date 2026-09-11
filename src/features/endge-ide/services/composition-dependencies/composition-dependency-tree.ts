@@ -35,7 +35,6 @@ export interface CompositionDependencyTreeResult extends DocumentDependencyTreeR
 export type CompositionDependencyDiagnostic = DocumentDependencyDiagnostic
 
 export interface CompositionDependencyTreeInput {
-  documentType?: 'composition' | 'project'
   identity: string
   displayName?: string | null
   source: string
@@ -70,11 +69,10 @@ export function buildCompositionDependencyTree(
 
   const identity
     = String(input.identity || 'draft-composition').trim() || 'draft-composition'
-  const documentType = input.documentType ?? 'composition'
-  const visual = resolveDomainEntityPresentation(documentType, identity)
+  const visual = resolveDomainEntityPresentation('composition', identity)
   const root: CompositionDependencyNode = {
-    id: `${documentType}:${identity}`,
-    kind: documentType === 'project' ? 'document' : 'composition',
+    id: `composition:${identity}`,
+    kind: 'composition',
     identity,
     alias: null,
     title: String(input.displayName || visual.title || identity),
@@ -90,7 +88,7 @@ export function buildCompositionDependencyTree(
   root.children = buildCompositionContents(
     payload,
     root.id,
-    new Set(documentType === 'composition' ? [identity] : []),
+    new Set([identity]),
   )
   return { status: 'valid', root, diagnostics }
 }
@@ -255,15 +253,8 @@ function makeCompositionOwnerNode(
     })
   }
 
-  const ownerType = composition.kind as Extract<
-    DomainDocumentType,
-    'tenant' | 'environment' | 'workspace'
-  >
-  const exists = ownerType === 'tenant'
-    ? Boolean(Endge.domain.getTenant(identity))
-    : ownerType === 'environment'
-      ? Boolean(Endge.domain.getEnvironment(identity))
-      : Endge.workspace.current.identity === identity
+  const ownerType: Extract<DomainDocumentType, 'workspace'> = 'workspace'
+  const exists = Endge.workspace.current.identity === identity
   const node = makeDocumentNode({
     id: `${occurrenceId}/owner:${ownerType}:${identity}`,
     kind: 'runtime',

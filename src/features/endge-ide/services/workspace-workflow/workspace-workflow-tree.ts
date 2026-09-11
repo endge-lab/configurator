@@ -15,7 +15,7 @@ interface WorkflowDocument {
   isTemporary?: boolean
 }
 
-/** Проекция текущего Workspace; ничего не запускает и не меняет документы проектов. */
+/** Проекция текущего Workspace; ничего не запускает и не меняет доменные документы. */
 export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition): WorkflowDependency {
   const rootId = `workspace:${encodeURIComponent(workspace.identity)}`
   const address = (type: string, document: WorkflowDocument) =>
@@ -36,18 +36,17 @@ export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition):
     inactive: document.active === false,
     children: [],
   })
-  const graph = (document: WorkflowDocument & { source: string }, type: 'project' | 'composition'): WorkflowDependency => {
+  const graph = (document: WorkflowDocument & { source: string }): WorkflowDependency => {
     const result = buildCompositionDependencyTree({
-      documentType: type,
       identity: document.identity,
       displayName: document.displayName,
       source: document.source,
     })
     const root = result.root
     if (!root) {
-      return { ...leaf(document, type), status: 'compile-error', diagnosticCount: result.diagnostics.length }
+      return { ...leaf(document, 'composition'), status: 'compile-error', diagnosticCount: result.diagnostics.length }
     }
-    const prefix = address(type, document)
+    const prefix = address('composition', document)
     const remapId = (id: string) => id.startsWith(root.id) ? `${prefix}${id.slice(root.id.length)}` : `${prefix}/${id}`
     const remap = (node: WorkflowDependency): WorkflowDependency => ({
       ...node,
@@ -57,15 +56,33 @@ export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition):
     })
     return {
       ...remap(root),
-      ...getDomainDocumentPresentation(type),
-      kind: type,
-      documentType: type,
+      ...getDomainDocumentPresentation('composition'),
+      kind: 'composition',
+      documentType: 'composition',
       inactive: document.active === false,
       diagnosticCount: result.diagnostics.filter(item => item.severity === 'error').length,
     }
   }
-  const projects = visible(Endge.domain.getProjects()).map(project => graph(project, 'project'))
-  const compositions = visible(Endge.domain.getCompositions()).map(composition => graph(composition, 'composition'))
+  const facetDocuments = Endge.domain.getFacets()
+    .filter(facet => facet.deletedAt == null && facet.active !== false)
+    .sort((left, right) => left.position - right.position || left.identity.localeCompare(right.identity))
+    .flatMap(facet => visible(Endge.domain.getFacetDocuments(facet.identity)).map(document => ({
+      id: address(`facet:${facet.identity}`, document),
+      identity: document.identity,
+      kind: `facet-document:${facet.identity}`,
+      title: document.displayName || document.name || document.identity,
+      documentType: null,
+      icon: facet.icon,
+      colorClass: 'text-primary',
+      alias: facet.displayName || facet.identity,
+      activationMode: null,
+      status: 'valid' as const,
+      diagnosticCount: 0,
+      inactive: document.active === false,
+      children: [],
+    })))
+  const compositions = visible(Endge.domain.getCompositions()).map(composition => graph(composition))
+  const startup = compositions.find(root => root.identity === workspace.startupCompositionIdentity) ?? null
   const referenced = new Set<string>()
   const visit = (nodes: WorkflowDependency[]) => {
     for (const node of nodes) {
@@ -75,11 +92,11 @@ export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition):
       visit(node.children)
     }
   }
-  for (const root of [...projects, ...compositions]) {
+  for (const root of compositions) {
     visit(root.children)
   }
   // Циклические graphs тоже должны оставаться доступными для диагностики.
-  const standalone = compositions.filter(root => !referenced.has(root.identity))
+  const standalone = compositions.filter(root => root !== startup && !referenced.has(root.identity))
   const represented = new Set<string>()
   const mark = (node: WorkflowDependency): void => {
     if (node.documentType === 'composition') {
@@ -87,7 +104,7 @@ export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition):
     }
     node.children.forEach(mark)
   }
-  ;[...projects, ...standalone].forEach(mark)
+  ;[...(startup ? [startup] : []), ...standalone].forEach(mark)
   for (const root of compositions) {
     if (!represented.has(root.identity)) {
       standalone.push(root)
@@ -107,10 +124,9 @@ export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition):
     diagnosticCount: 0,
     children: [
       ...visible(Endge.domain.getConfigurations()).map(configuration => leaf(configuration, 'configuration', 'resource')),
-      ...visible(Endge.domain.getTenants()).map(tenant => leaf(tenant, 'tenant')),
-      ...projects,
+      ...facetDocuments,
+      ...(startup ? [startup] : []),
       ...standalone,
-      ...visible(Endge.domain.getEnvironments()).map(environment => leaf(environment, 'environment')),
     ],
   }
 }

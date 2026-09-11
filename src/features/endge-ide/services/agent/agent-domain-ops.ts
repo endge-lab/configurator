@@ -64,8 +64,6 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   actions: DomainSectionType.Action,
   converters: DomainSectionType.Converter,
   integrations: DomainSectionType.Integration,
-  environments: DomainSectionType.Environment,
-  tenants: DomainSectionType.Tenant,
   policies: DomainSectionType.Policy,
   styles: DomainSectionType.Style,
   configurations: DomainSectionType.Configuration,
@@ -73,7 +71,6 @@ const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   navigations: DomainSectionType.Navigation,
   pageTemplates: DomainSectionType.PageTemplate,
   pages: DomainSectionType.Page,
-  projects: DomainSectionType.Project,
   i18nBundles: DomainSectionType.I18nBundles,
   authProfiles: DomainSectionType.AuthProfile,
   stores: DomainSectionType.Store,
@@ -103,10 +100,6 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getConverterById?.(numId) : null) ?? domain.getConverter?.(id)
     case DomainSectionType.Integration:
       return (numId != null ? domain.getIntegrationById?.(numId) : null) ?? domain.getIntegration?.(id)
-    case DomainSectionType.Environment:
-      return (numId != null ? domain.getEnvironmentById?.(numId) : null) ?? domain.getEnvironment?.(id)
-    case DomainSectionType.Tenant:
-      return (numId != null ? domain.getTenantById?.(numId) : null) ?? domain.getTenant?.(id)
     case DomainSectionType.Policy:
       return (numId != null ? domain.getPolicyById?.(numId) : null) ?? domain.getPolicy?.(id)
     case DomainSectionType.Style:
@@ -125,8 +118,6 @@ function getEntityByMergeKey(type: string, identity: string): unknown {
       return (numId != null ? domain.getI18nBundleById?.(numId) : null) ?? domain.getI18nBundle?.(id)
     case DomainSectionType.AuthProfile:
       return (numId != null ? domain.getAuthProfileById?.(numId) : null) ?? domain.getAuthProfile?.(id)
-    case DomainSectionType.Project:
-      return (numId != null ? domain.getProjectById?.(numId) : null) ?? domain.getProject?.(id)
     case DomainSectionType.Store:
       return (numId != null ? domain.getStoreById?.(numId) : null) ?? domain.getStore?.(id)
     default:
@@ -166,12 +157,6 @@ function removeEntityByMergeKey(type: string, entity: any): void {
     case DomainSectionType.Integration:
       rem(domain.removeIntegration?.bind(domain))
       break
-    case DomainSectionType.Environment:
-      rem(domain.removeEnvironment?.bind(domain))
-      break
-    case DomainSectionType.Tenant:
-      rem(domain.removeTenant?.bind(domain))
-      break
     case DomainSectionType.Policy:
       rem(domain.removePolicy?.bind(domain))
       break
@@ -198,9 +183,6 @@ function removeEntityByMergeKey(type: string, entity: any): void {
       break
     case DomainSectionType.AuthProfile:
       rem(domain.removeAuthProfile?.bind(domain))
-      break
-    case DomainSectionType.Project:
-      rem(domain.removeProject?.bind(domain))
       break
     case DomainSectionType.Store:
       rem(domain.removeStore?.bind(domain))

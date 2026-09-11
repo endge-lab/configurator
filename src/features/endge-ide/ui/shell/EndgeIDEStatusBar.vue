@@ -9,10 +9,8 @@ import { Configurator } from '@/app/Configurator'
 import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
 import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
-import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
+import FacetSwitchers from '@/features/endge-ide/ui/context/FacetSwitchers.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
-import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'
-import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.vue'
 
@@ -113,9 +111,7 @@ onBeforeUnmount(() => {
   <footer class="flex h-8 shrink-0 items-center justify-between px-3 text-xs font-medium text-muted-foreground" :aria-label="readOnly ? $t('remoteDebugger.contextReadonly') : undefined">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div class="footer-context-switchers flex shrink-0 items-center gap-1.5">
-        <TenantSwitcher :readonly="readOnly" />
-        <ProjectSwitcher :readonly="readOnly" />
-        <EnvironmentSwitcher :readonly="readOnly" />
+        <FacetSwitchers :readonly="readOnly" />
         <LocaleSwitcher :readonly="readOnly" />
         <ThemeSwitcher :readonly="readOnly" />
         <TimezoneSwitcher :readonly="readOnly" />

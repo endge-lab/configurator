@@ -6,21 +6,20 @@ import type {
 } from '@endge/core'
 
 import {
+  compositionI18nCatalogs,
   Endge,
-  projectCompositionI18nCatalogs,
   RComposition,
-  RProject,
 } from '@endge/core'
 
 export interface CompositionI18nContextInput {
-  documentType?: 'composition' | 'project'
+  documentType?: 'composition'
   documentId: string | number | undefined
   identity: string | undefined
   source: string
 }
 
 /**
- * Определяет контекст переводов редактора из текущего Project и временного
+ * Определяет контекст переводов редактора из startup Composition и временного
  * артефакта Composition. Ожидаемые ошибки черновика не возвращают подсказок;
  * неожиданные ошибки проекции журналируются и не выходят в lifecycle редактора.
  */
@@ -31,27 +30,25 @@ export function resolveCompositionI18nContext(
     return undefined
   }
   try {
-    const documentType = input.documentType ?? 'composition'
     const id = input.documentId ?? String(input.identity ?? '').trim()
-    const persisted = documentType === 'project' ? Endge.domain.getProject(id) : Endge.domain.getComposition(id)
+    const persisted = Endge.domain.getComposition(id)
     if (!persisted) {
       return undefined
     }
     const plain = { ...persisted, source: input.source }
-    const artifact = documentType === 'project'
-      ? Endge.compiler.compileProjectArtifact(RProject.fromPlain(plain))
-      : Endge.compiler.compileCompositionArtifact(RComposition.fromPlain(plain))
+    const artifact = Endge.compiler.compileCompositionArtifact(RComposition.fromPlain(plain))
     if (artifact.status === 'error') {
       return undefined
     }
 
-    const projectIdentity = documentType === 'project' ? persisted.identity : Endge.context.getCurrentProject()
-    const occurrences = projectCompositionI18nCatalogs({
+    const rootIdentity = Endge.workspace.current.startupCompositionIdentity
+    if (!rootIdentity) {
+      return undefined
+    }
+    const occurrences = compositionI18nCatalogs({
       artifacts: createOverlayArtifactReader(artifact),
-      rootIdentities: [projectIdentity],
-      rootEntityType: 'project',
+      rootIdentities: [rootIdentity],
       targetIdentity: persisted.identity,
-      targetEntityType: documentType,
     })
     if (!occurrences.length) {
       return undefined

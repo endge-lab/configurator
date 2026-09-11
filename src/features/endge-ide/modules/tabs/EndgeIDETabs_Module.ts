@@ -13,7 +13,6 @@ import type {
   RSimulation,
   RStore,
   RStream,
-  RTenant,
   RType,
   RUpdate,
   SourceDocumentReference,
@@ -44,7 +43,6 @@ import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComput
 import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor.ts'
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
-import { REnvironmentEditor } from '@/features/endge-ide/domain/entities/REnvironmentEditor.ts'
 import { FacetDocumentMetadataSession, RFacetDocumentEditor } from '@/features/endge-ide/domain/entities/RFacetDocumentEditor.ts'
 import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
 import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
@@ -54,16 +52,15 @@ import { RNavigationEditor } from '@/features/endge-ide/domain/entities/RNavigat
 import { RPageEditor } from '@/features/endge-ide/domain/entities/RPageEditor.ts'
 import { RPageTemplateEditor } from '@/features/endge-ide/domain/entities/RPageTemplateEditor.ts'
 import { RPolicyEditor } from '@/features/endge-ide/domain/entities/RPolicyEditor.ts'
-import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor.ts'
 import { RQueryEditor } from '@/features/endge-ide/domain/entities/RQueryEditor.ts'
 import { RSimulationEditor } from '@/features/endge-ide/domain/entities/RSimulationEditor.ts'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor.ts'
 import { RStreamEditor } from '@/features/endge-ide/domain/entities/RStreamEditor.ts'
 import { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor.ts'
-import { RTenantEditor } from '@/features/endge-ide/domain/entities/RTenantEditor.ts'
 import { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor.ts'
 import { RUpdateEditor } from '@/features/endge-ide/domain/entities/RUpdateEditor.ts'
 import { RVocabsEditor } from '@/features/endge-ide/domain/entities/RVocabsEditor.ts'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { createDocumentEditorSnapshot } from '@/features/endge-ide/modules/tabs/document-editor-snapshot'
 import {
   ENDGE_IDE_DOCUMENT_VIEW_ID,
@@ -72,7 +69,7 @@ import {
 } from '@/features/endge-ide/modules/tabs/endge-ide-restored-document-tabs'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
 import { DocumentMetadataSession as DocumentMetadataEditorSession } from '@/features/endge-ide/services/document-metadata-session'
-import { getDomainDocumentProjectPath } from '@/features/endge-ide/services/domain/domain-document-project-path'
+import { getDomainDocumentPath } from '@/features/endge-ide/services/domain/domain-document-path'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
 import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
@@ -96,8 +93,6 @@ const Computation_Editor = defineAsyncComponent(() => import('@/features/endge-i
 const Type_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'))
 const Converter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'))
 const Integration_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'))
-const Environment_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Environment_Editor.vue'))
-const Tenant_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Tenant_Editor.vue'))
 const Policy_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Policy_Editor.vue'))
 const Style_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Style_Editor.vue'))
 const Configuration_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Configuration_Editor.vue'))
@@ -107,7 +102,6 @@ const I18nBundles_Editor = defineAsyncComponent(() => import('@/features/endge-i
 const PageTemplate_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/PageTemplate_Editor.vue'))
 const Page_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Page_Editor.vue'))
 const Navigation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'))
-const Project_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Project_Editor.vue'))
 const Filter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'))
 const FacetDocument_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/FacetDocument_Editor.vue'))
 const Workspace_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'))
@@ -536,9 +530,6 @@ export class EndgeIDETabs_Module {
       return false
     }
     this.openDocument(target.documentId, target.documentType)
-    if (target.documentType === 'project') {
-      this._tabsApi.setTabViewState(`project-${target.documentId}`, 'editor.active-tab', { version: 1, value: 'composition' })
-    }
     return true
   }
 
@@ -555,7 +546,7 @@ export class EndgeIDETabs_Module {
       meta: this._workspaceTabMeta(),
     }
     this.openTab(tabRef)
-    showWidget('project')
+    showWidget(ENDGE_IDE_DOMAIN_WIDGET_ID)
 
     const widgets = getLayoutState().widgets.value
     ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS.forEach((widgetId) => {
@@ -611,7 +602,7 @@ export class EndgeIDETabs_Module {
     return getDomainDocumentLabel(id, docType)
   }
 
-  public getTabProjectPath(tab: SmartTabRef): string | null {
+  public getTabDomainPath(tab: SmartTabRef): string | null {
     if (tab.viewId !== VIEW_ID_DOCUMENT) {
       return null
     }
@@ -619,7 +610,7 @@ export class EndgeIDETabs_Module {
     if (!payload?.documentId || !payload.documentType) {
       return null
     }
-    return getDomainDocumentProjectPath(payload.documentId, payload.documentType)
+    return getDomainDocumentPath(payload.documentId, payload.documentType)
   }
 
   /** Синхронизирует представление восстановленных document-вкладок с загруженным доменом. */
@@ -697,7 +688,6 @@ export class EndgeIDETabs_Module {
       'data-view': 'DataView',
       'filter': 'Filter',
       'i18n-bundles': 'Словарь переводов',
-      'project': 'Project',
       'mock': 'Mock',
       'query': 'Query',
       'store': 'Store',
@@ -856,8 +846,6 @@ export class EndgeIDETabs_Module {
     ['converter', documentId => this._resolveConverter(documentId)],
     ['computation', documentId => this._resolveComputation(documentId)],
     ['integration', documentId => this._resolveIntegration(documentId)],
-    ['environment', documentId => this._resolveEnvironment(documentId)],
-    ['tenant', documentId => this._resolveTenant(documentId)],
     ['policy', documentId => this._resolvePolicy(documentId)],
     ['style', documentId => this._resolveStyle(documentId)],
     ['configuration', documentId => this._resolveConfiguration(documentId)],
@@ -867,7 +855,6 @@ export class EndgeIDETabs_Module {
     ['page-template', documentId => this._resolvePageTemplate(documentId)],
     ['page', documentId => this._resolvePage(documentId)],
     ['navigation', documentId => this._resolveNavigation(documentId)],
-    ['project', documentId => this._resolveProject(documentId)],
     ['type', documentId => this._resolveType(documentId)],
   ])
 
@@ -1172,44 +1159,6 @@ export class EndgeIDETabs_Module {
     }
   }
 
-  private _resolveEnvironment(documentId: string): EditorSession | null {
-    const environment = Endge.domain.getEnvironment(documentId)
-    if (!environment) {
-      return null
-    }
-    const editor = new REnvironmentEditor()
-    editor.fillFromSource(environment)
-    return {
-      view: {
-        component: markRaw(Environment_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: environment,
-      syncBeforeSave: () => editor.updateSource(environment),
-      syncSystemBeforeSave: () => editor.updateConfigurationSource(environment),
-    }
-  }
-
-  private _resolveTenant(documentId: string): EditorSession | null {
-    const tenant = Endge.domain.getTenant(documentId) as RTenant | null
-    if (!tenant) {
-      return null
-    }
-    const editor = new RTenantEditor()
-    editor.fillFromSource(tenant)
-    return {
-      view: {
-        component: markRaw(Tenant_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: tenant,
-      syncBeforeSave: () => editor.updateSource(tenant),
-      syncSystemBeforeSave: () => editor.updateConfigurationSource(tenant),
-    }
-  }
-
   private _resolvePolicy(documentId: string): EditorSession | null {
     const policy = Endge.domain.getPolicy(documentId)
     if (!policy) {
@@ -1377,25 +1326,6 @@ export class EndgeIDETabs_Module {
       editor,
       model: nav,
       syncBeforeSave: () => editor.updateSource(nav),
-    }
-  }
-
-  private _resolveProject(documentId: string): EditorSession | null {
-    const project = Endge.domain.getProject(documentId)
-    if (!project) {
-      return null
-    }
-    const rawEditor = new RProjectEditor()
-    rawEditor.fillFromSource(project)
-    const editor = reactive(rawEditor as object) as RProjectEditor
-    return {
-      view: {
-        component: markRaw(Project_Editor),
-        props: { tabContext: { editor } },
-      },
-      editor,
-      model: project,
-      syncBeforeSave: () => editor.updateSource(project),
     }
   }
 

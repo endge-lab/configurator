@@ -11,7 +11,6 @@ vi.mock('@endge/core', async importOriginal => ({
   ...await importOriginal<typeof import('@endge/core')>(),
   Endge: {
     domain: {
-      getProject: (identity: string) => identity === 'airport' ? { identity, displayName: 'Airport' } : null,
       getComponentSFC: (identity: string) => ({ identity, displayName: identity === 'table-sfc' ? 'Flight table' : identity }),
       getStore: (identity: string) => identity === 'flights' ? { identity, displayName: 'Flights' } : null,
       getVocab: (identity: string) => identity === 'airports' ? { identity, displayName: 'Airports' } : null,
@@ -24,7 +23,7 @@ vi.mock('@endge/core', async importOriginal => ({
       getCompositions: () => compositions,
     },
     program: {
-      getArtifact: (type: string, identity: string) => (type === 'composition' || type === 'project') ? artifacts.get(identity) ?? null : null,
+      getArtifact: (type: string, identity: string) => type === 'composition' ? artifacts.get(identity) ?? null : null,
     },
   },
 }))
@@ -37,7 +36,7 @@ describe('построитель дерева Runtime Preview', () => {
 
   it('разворачивает scope_default и сохраняет именованные scopes и вложенные Compositions', () => {
     compositions.push(
-      { identity: 'project-entry', displayName: 'Entry', kind: 'library', kindIdentity: null, active: true },
+      { identity: 'airport', displayName: 'Airport', kind: 'library', kindIdentity: null, active: true },
       { identity: 'child', displayName: 'Child', kind: 'library', active: true },
     )
     artifacts.set('airport', artifact(payload({
@@ -64,18 +63,15 @@ describe('построитель дерева Runtime Preview', () => {
       runtimes: [runtime('filter', 'filter-view', 'scope_default', 'flight-filter')],
     })))
 
-    const [project] = buildRuntimePreviewTree({ entityType: 'project', identity: 'airport' })
-    const entry = project
+    const [entry] = buildRuntimePreviewTree({ entityType: 'composition', identity: 'airport' })
 
-    expect(project).toMatchObject({
+    expect(entry).toMatchObject({
       title: 'Airport',
-      presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
     })
     expect(entry?.children.map(node => node.kind)).toEqual(['group', 'runtime', 'scope'])
     expect(entry).toMatchObject({
-      kind: 'project',
+      kind: 'composition',
       title: 'Airport',
-      presentation: { icon: 'Briefcase', colorClass: 'text-sky-500' },
     })
     const dependencies = entry?.children[0]
     expect(dependencies).toMatchObject({

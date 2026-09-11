@@ -37,8 +37,6 @@ const ROOT_IDENTITY_BY_DOCUMENT_TYPE: ReadonlyMap<string, string> = new Map([
   ['converter', 'root-converters'],
   ['computation', 'root-computations'],
   ['integration', 'root-integrations'],
-  ['environment', 'root-environments'],
-  ['tenant', 'root-tenants'],
   ['policy', 'root-policies'],
   ['style', 'root-styles'],
   ['page-template', 'root-page-templates'],
@@ -47,13 +45,10 @@ const ROOT_IDENTITY_BY_DOCUMENT_TYPE: ReadonlyMap<string, string> = new Map([
   ['vocabs', 'root-vocabs'],
   ['i18n-bundles', 'root-i18n-bundles'],
   ['auth-profile', 'root-auth-profiles'],
-  ['project', 'root-projects'],
 ])
 
 const COMPOSITION_ROOT_BY_KIND: ReadonlyMap<string, string> = new Map([
   ['query', 'root-queries'],
-  ['tenant', 'root-tenants'],
-  ['environment', 'root-environments'],
   ['workspace', 'root-compositions'],
 ])
 
@@ -69,8 +64,6 @@ const ROOT_LABEL_BY_IDENTITY: ReadonlyMap<string, string> = new Map([
   ['root-converters', 'Конвертеры'],
   ['root-computations', 'Вычисления'],
   ['root-integrations', 'Интеграции'],
-  ['root-environments', 'Окружения'],
-  ['root-tenants', 'Тенанты'],
   ['root-policies', 'Политики'],
   ['root-styles', 'Стили'],
   ['root-page-templates', 'Шаблоны страниц'],
@@ -80,7 +73,6 @@ const ROOT_LABEL_BY_IDENTITY: ReadonlyMap<string, string> = new Map([
   ['root-mocks', 'Mock'],
   ['root-i18n-bundles', 'Словари переводов'],
   ['root-auth-profiles', 'Аутентификация'],
-  ['root-projects', 'Проекты'],
 ])
 
 function getFolderLabel(folder: { displayName?: unknown, name?: unknown, identity?: unknown }): string {
@@ -140,14 +132,6 @@ function getContextOwner(
     const document = Endge.domain.getQuery(identity)
     return document ? { document, documentType: document.type } : null
   }
-  if (kind === 'tenant') {
-    const document = Endge.domain.getTenant(identity)
-    return document ? { document, documentType: 'tenant' } : null
-  }
-  if (kind === 'environment') {
-    const document = Endge.domain.getEnvironment(identity)
-    return document ? { document, documentType: 'environment' } : null
-  }
   return null
 }
 
@@ -187,8 +171,8 @@ function getDocumentPath(
   return [...getFolderPath(document.folderId, rootIdentity), label].join('/')
 }
 
-/** Путь документа в той же иерархии, в которой он показан в виджете проекта. */
-export function getDomainDocumentProjectPath(
+/** Путь документа в той же иерархии, в которой он показан в Domain widget. */
+export function getDomainDocumentPath(
   documentId: string,
   documentType: DomainDocumentType,
 ): string | null {

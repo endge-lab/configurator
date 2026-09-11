@@ -1,7 +1,8 @@
-import { DomainSectionType } from '@endge/core'
+import type { FsNode } from '@/features/endge-ide/services/domain/domain-tree'
+import { DomainSectionType, QueryType } from '@endge/core'
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildDomainTree, buildWorkspaceTreeNodes } from '@/features/endge-ide/services/domain/domain-tree'
+import { buildDomainTree, buildWorkspaceTreeNodes, prioritizeStartupComposition } from '@/features/endge-ide/services/domain/domain-tree'
 
 describe('построение дерева домена', () => {
   it('раскрывает только активный Workspace с плоскими дочерними активными Configuration', () => {
@@ -30,7 +31,7 @@ describe('построение дерева домена', () => {
 
   it('размещает Mock сразу после словарей в корневом блоке Data', async () => {
     const { getDomainTreeRootBlocks } = await import('@/features/endge-ide/services/domain/domain-tree')
-    const blocks = getDomainTreeRootBlocks(['root-tenants', 'root-stores', 'root-vocabs', 'root-mocks', 'root-auth-profiles'])
+    const blocks = getDomainTreeRootBlocks(['root-workspaces', 'root-stores', 'root-vocabs', 'root-mocks', 'root-auth-profiles'])
 
     expect(blocks.map(block => block.title)).toEqual(['Контекст', 'Данные', 'Инфраструктура'])
     expect(blocks[1]?.rootIds).toEqual(['root-stores', 'root-vocabs', 'root-mocks'])
@@ -150,42 +151,62 @@ describe('построение дерева домена', () => {
     })
   })
 
-  it('привязывает Composition тенанта к её owner и игнорирует сохранённую папку', () => {
+  it('поднимает startup Composition только среди Composition её реальной папки', () => {
+    const tree: FsNode[] = [{
+      id: 'folder',
+      identity: 'folder',
+      name: 'Folder',
+      type: 'folder' as const,
+      sectionType: DomainSectionType.Composition,
+      children: [
+        { id: 'configuration', identity: 'configuration', name: 'Configuration', type: 'file' as const, docType: 'configuration' as const, sectionType: DomainSectionType.Configuration },
+        { id: 'first', identity: 'first', name: 'First', type: 'file' as const, docType: 'composition' as const, sectionType: DomainSectionType.Composition },
+        { id: 'startup', identity: 'startup', name: 'Startup', type: 'file' as const, docType: 'composition' as const, sectionType: DomainSectionType.Composition },
+      ],
+    }]
+
+    prioritizeStartupComposition(tree, 'startup')
+
+    expect(tree[0]?.children?.map(node => node.identity)).toEqual(['configuration', 'startup', 'first'])
+  })
+
+  it('привязывает query Composition к её owner и игнорирует сохранённую папку', () => {
     const tree = buildDomainTree({
       rootToSection: {
-        'root-tenants': {
-          section: DomainSectionType.Tenant,
+        'root-queries': {
+          section: DomainSectionType.Query,
           items: () => [{
             id: 7,
-            identity: 'tenant-dev',
-            displayName: 'Tenant Dev',
-            folderId: 'root-tenants',
+            identity: 'flights',
+            displayName: 'Flights',
+            type: QueryType.REST,
+            folderId: 'root-queries',
           }],
         },
       },
-      rootOrder: ['root-tenants'],
-      rootLabels: { 'root-tenants': 'Тенанты' },
+      rootOrder: ['root-queries'],
+      rootLabels: { 'root-queries': 'Запросы' },
       allFolders: [
-        { id: 'root-tenants', identity: 'root-tenants', name: 'Tenants', parent: null },
-        { id: 'unrelated', identity: 'unrelated', name: 'Unrelated', parent: 'root-tenants' },
+        { id: 'root-queries', identity: 'root-queries', name: 'Queries', parent: null },
+        { id: 'unrelated', identity: 'unrelated', name: 'Unrelated', parent: 'root-queries' },
       ],
       contextualCompositions: [{
         id: 21,
-        identity: 'tenant-dev-startup',
-        displayName: 'Tenant startup',
-        kind: 'tenant',
-        kindIdentity: 'tenant-dev',
+        identity: 'flights-runtime',
+        displayName: 'Flights runtime',
+        kind: 'query',
+        kindIdentity: 'flights',
         folderId: 'unrelated',
       }],
     })
 
-    const tenant = tree[0]?.children?.find(node => node.type === 'file' && node.identity === 'tenant-dev')
-    expect(tenant?.children).toEqual([
+    const query = tree[0]?.children?.find(node => node.type === 'file' && node.identity === 'flights')
+    expect(query?.children).toEqual([
       expect.objectContaining({
         id: '21',
-        identity: 'tenant-dev-startup',
+        identity: 'flights-runtime',
         docType: 'composition',
-        presentationKind: 'tenant',
+        presentationKind: 'query',
       }),
     ])
   })

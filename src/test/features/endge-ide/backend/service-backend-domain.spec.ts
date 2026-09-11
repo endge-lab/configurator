@@ -9,14 +9,14 @@ import {
 } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
 
 const DOCUMENT_KEYS = [
-  'projects',
-  'tenants',
-  'environments',
+  'facets',
+  'facet-documents',
   'folders',
   'types',
   'queries',
   'data-views',
   'compositions',
+  'simulations',
   'stores',
   'streams',
   'updates',
@@ -41,6 +41,7 @@ function snapshot(): Record<string, unknown> {
     workspace: {
       identity: 'workspace-a',
       displayName: 'Workspace A',
+      startupCompositionIdentity: null,
       dataMode: 'development',
       configuration: {},
       state: {

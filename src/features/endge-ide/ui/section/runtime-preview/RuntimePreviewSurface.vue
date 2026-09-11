@@ -372,7 +372,7 @@ function collectCompositionChildren(node: RuntimePreviewTreeNode): RuntimePrevie
   const result: RuntimePreviewTreeNode[] = []
   const visit = (children: RuntimePreviewTreeNode[]) => {
     for (const child of children) {
-      if (child.kind === 'composition' || child.kind === 'project') {
+      if (child.kind === 'composition') {
         result.push(child)
       }
       else if (child.kind === 'scope') {
@@ -689,7 +689,7 @@ onBeforeUnmount(() => {
     <div v-else class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
       <Boxes class="size-10 opacity-30" stroke-width="1.25" />
       <div class="max-w-sm text-xs leading-5">
-        {{ $t('uiText.runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f') }}
+        {{ $t('uiText.runtimeTreeIsEmptyStartSimulationCompositionComponentSF2e58a46f') }}
       </div>
     </div>
   </div>

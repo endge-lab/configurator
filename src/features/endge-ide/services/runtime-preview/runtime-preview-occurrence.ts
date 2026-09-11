@@ -14,7 +14,7 @@ import type {
 import { Endge } from '@endge/core'
 
 interface TraversalContext {
-  projectIdentity: string
+  rootIdentity: string
   target: RuntimePreviewTarget
   artifacts: RuntimeArtifactReader
   occurrences: RuntimePreviewOccurrence[]
@@ -23,27 +23,27 @@ interface TraversalContext {
 /** Находит сохранённые использования без монтирования Runtime и выполнения пользовательского Source. */
 export function findRuntimePreviewOccurrences(
   target: RuntimePreviewTarget,
-  projectIdentity: string,
+  rootIdentity: string,
   artifacts: RuntimeArtifactReader = Endge.program,
 ): RuntimePreviewOccurrence[] {
   if (target.entityType !== 'composition' && target.entityType !== 'component-sfc') {
     return []
   }
-  const normalizedProject = String(projectIdentity ?? '').trim()
-  if (!normalizedProject || !Endge.domain.getProject(normalizedProject)) {
+  const normalizedRoot = String(rootIdentity ?? '').trim()
+  if (!normalizedRoot || !Endge.domain.getComposition(normalizedRoot)) {
     return []
   }
 
   const context: TraversalContext = {
-    projectIdentity: normalizedProject,
+    rootIdentity: normalizedRoot,
     target,
     artifacts,
     occurrences: [],
   }
-  visitComposition(context, normalizedProject, {
-    rootIdentity: normalizedProject,
+  visitComposition(context, normalizedRoot, {
+    rootIdentity: normalizedRoot,
     invocationPath: [],
-  }, [entityTitle('project', normalizedProject)], new Set(), 'project')
+  }, [entityTitle('composition', normalizedRoot)], new Set())
   return context.occurrences
 }
 
@@ -53,13 +53,12 @@ function visitComposition(
   address: RuntimePreviewCompositionAddress,
   path: string[],
   ancestors: Set<string>,
-  entityType: 'project' | 'composition' = 'composition',
 ): void {
-  const key = `${entityType}:${identity}`
+  const key = `composition:${identity}`
   if (ancestors.has(key)) {
     return
   }
-  const artifact = context.artifacts.getArtifact<CompositionProgramPayload>(entityType, identity)
+  const artifact = context.artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
   if (!artifact || artifact.status === 'error') {
     return
   }
@@ -68,9 +67,8 @@ function visitComposition(
     identity,
     context.artifacts,
     new Set(),
-    entityType,
   )
-  if (entityType === 'composition' && context.target.entityType === 'composition' && identity === context.target.identity) {
+  if (context.target.entityType === 'composition' && identity === context.target.identity) {
     context.occurrences.push(makeOccurrence(context, {
       kind: 'composition',
       address,
@@ -145,7 +143,7 @@ function makeOccurrence(
   return {
     id: `${nodeId}${componentSuffix}`,
     kind: input.kind,
-    projectIdentity: context.projectIdentity,
+    rootIdentity: context.rootIdentity,
     nodeId,
     composition: input.address,
     runtimePath: input.runtimePath,
@@ -200,13 +198,12 @@ function compositionMayExecuteQueries(
   identity: string,
   artifacts: RuntimeArtifactReader,
   ancestors: Set<string>,
-  entityType: 'project' | 'composition' = 'composition',
 ): boolean {
-  const key = `${entityType}:${identity}`
+  const key = `composition:${identity}`
   if (ancestors.has(key)) {
     return false
   }
-  const artifact = artifacts.getArtifact<CompositionProgramPayload>(entityType, identity)
+  const artifact = artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
   if (!artifact || artifact.status === 'error') {
     return false
   }
@@ -229,12 +226,10 @@ function runtimeComponentIdentity(runtime: CompositionRuntimeDescriptor): string
   return null
 }
 
-function entityTitle(entityType: 'project' | 'composition' | 'component-sfc', identity: string): string {
-  const model = entityType === 'project'
-    ? Endge.domain.getProject(identity)
-    : entityType === 'composition'
-      ? Endge.domain.getComposition(identity)
-      : Endge.domain.getComponentSFC(identity)
+function entityTitle(entityType: 'composition' | 'component-sfc', identity: string): string {
+  const model = entityType === 'composition'
+    ? Endge.domain.getComposition(identity)
+    : Endge.domain.getComponentSFC(identity)
   return model?.displayName || model?.name || identity
 }
 

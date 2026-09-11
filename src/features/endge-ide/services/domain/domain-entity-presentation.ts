@@ -91,13 +91,6 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
   if (key === 'integration') {
     return Endge.domain.getIntegration(id)?.name ?? id
   }
-  if (key === 'environment') {
-    return Endge.domain.getEnvironment(id)?.name ?? id
-  }
-  if (key === 'tenant') {
-    const tenant = Endge.domain.getTenant(id)
-    return tenant?.displayName ?? tenant?.name ?? id
-  }
   if (key === 'policy') {
     return Endge.domain.getPolicy(id)?.name ?? id
   }
@@ -129,10 +122,6 @@ export function getDomainDocumentLabel(id: string, docType: DomainDocumentType):
   }
   if (key === 'navigation') {
     return Endge.domain.getNavigation(id)?.name ?? id
-  }
-  if (key === 'project') {
-    const project = Endge.domain.getProject(id)
-    return project?.displayName ?? project?.name ?? id
   }
   return id
 }

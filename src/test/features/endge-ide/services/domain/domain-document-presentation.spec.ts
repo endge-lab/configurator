@@ -45,9 +45,7 @@ describe('представление документа домена', () => {
     expect(getDomainDocumentPresentation('composition')).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', QUERY_COMPOSITION_PRESENTATION_KIND)).toEqual(compositionPresentation)
     expect(getDomainDocumentPresentation('composition', 'query')).toEqual(compositionPresentation)
-    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual(compositionPresentation)
-    expect(getDomainDocumentPresentation('composition', 'tenant')).toEqual(compositionPresentation)
-    expect(getDomainDocumentPresentation('composition', 'environment')).toEqual(compositionPresentation)
+    expect(getDomainDocumentPresentation('composition', 'workspace')).toEqual(compositionPresentation)
   })
 
   it('согласует представления Computation и Filter с их секциями', () => {
@@ -60,9 +58,9 @@ describe('представление документа домена', () => {
   })
 
   it('использует цветовые семейства инфраструктуры и представления', () => {
-    expect(getDomainSectionPresentation(DomainSectionType.Environment)).toEqual({
-      icon: 'ServerCog',
-      colorClass: 'text-lime-500',
+    expect(getDomainSectionPresentation(DomainSectionType.Workspace)).toEqual({
+      icon: 'Orbit',
+      colorClass: 'text-orange-500',
     })
     expect(getDomainSectionPresentation(DomainSectionType.PageTemplate).colorClass).toBe('text-indigo-400')
   })

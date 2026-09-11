@@ -44,9 +44,6 @@ export function buildRuntimePreviewTree(
     }
     return [root]
   }
-  if (target.entityType === 'project') {
-    return [buildProjectNode(target.identity, artifacts)]
-  }
   if (target.entityType === 'composition') {
     return [buildRootCompositionNode(target.identity, artifacts)]
   }
@@ -54,29 +51,6 @@ export function buildRuntimePreviewTree(
     return [buildComponentNode(target.identity)]
   }
   return [buildStoreNode(target.identity)]
-}
-
-function buildProjectNode(identity: string, artifacts: RuntimeArtifactReader): RuntimePreviewTreeNode {
-  const node = makeNode({
-    id: `project:${identity}`,
-    kind: 'project',
-    entityType: 'project',
-    identity,
-    ...domainNodeFields('project', identity),
-  })
-  const artifact = artifacts.getArtifact<CompositionProgramPayload>('project', identity)
-  if (!artifact || artifact.status === 'error') {
-    node.subtitle = 'artifact unavailable'
-    return node
-  }
-  const address: RuntimePreviewCompositionAddress = { rootIdentity: identity, invocationPath: [] }
-  node.composition = address
-  node.activationMode = artifact.payload.activation?.mode ?? 'startup'
-  node.children = buildScopeContents(artifact.payload, 'scope_default', address, node.id, new Set(), artifacts)
-  for (const scope of artifact.payload.scopes.filter(item => item.parentPath === 'scope_default')) {
-    node.children.push(buildScopeNode(artifact.payload, scope.path, address, node.id, new Set(), artifacts))
-  }
-  return node
 }
 
 function buildRootCompositionNode(identity: string, artifacts: RuntimeArtifactReader): RuntimePreviewTreeNode {

@@ -2,14 +2,11 @@ import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/r
 
 import { Endge } from '@endge/core'
 
-import { currentActiveBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
-
-const STORAGE_KEY_PREFIX = 'endge:runtime-tree:view:v2'
 const STATE_KEY = 'configurator.runtime-preview.tree-view'
 
 export type RuntimeTreeExpansionPreset
   = | 'collapsed'
-    | 'project-content'
+    | 'root-content'
     | 'expanded'
 
 export interface RuntimeTreeViewEntry {
@@ -69,7 +66,6 @@ export function readRuntimeTreeViewState(
 ): { structure: string, expanded: Set<string> } | null {
   try {
     const value = Endge.context.getState<unknown>(storageKey)
-      ?? (storageKey === STATE_KEY ? migrateLegacyTreeViewState() : undefined)
     const parsed = parseRuntimeTreeViewState(value)
     return parsed
       ? { structure: parsed.structure, expanded: new Set(parsed.expanded) }
@@ -103,43 +99,6 @@ export function writeRuntimeTreeViewState(
 
 export function runtimeTreeViewStorageKey(): string {
   return STATE_KEY
-}
-
-function legacyRuntimeTreeViewStorageKey(): string {
-  const workspace = Endge.context.getCurrentWorkspace() ?? 'detached'
-  const context = Endge.context.getExecutionContext()
-  return [
-    STORAGE_KEY_PREFIX,
-    currentActiveBackendURL(),
-    workspace,
-    context.tenantIdentity,
-    context.projectIdentity,
-    context.environmentIdentity,
-  ]
-    .map(value => encodeURIComponent(String(value ?? '')))
-    .join(':')
-}
-
-function migrateLegacyTreeViewState(): unknown {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
-  try {
-    const legacyKey = legacyRuntimeTreeViewStorageKey()
-    const raw = window.localStorage.getItem(legacyKey)
-    if (!raw) {
-      return undefined
-    }
-    const value: unknown = JSON.parse(raw)
-    Endge.context.setState(STATE_KEY, value)
-    if (Endge.context.getState(STATE_KEY) !== undefined) {
-      window.localStorage.removeItem(legacyKey)
-    }
-    return value
-  }
-  catch {
-    return undefined
-  }
 }
 
 function appendNodeStructure(
@@ -194,7 +153,6 @@ function shouldExpandNode(
   }
   return (
     node.kind === 'simulation'
-    || node.kind === 'project'
     || (node.kind === 'composition' && node.parentId == null)
   )
 }

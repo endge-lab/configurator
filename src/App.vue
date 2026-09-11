@@ -114,7 +114,7 @@ onErrorCaptured((err, instance, info) => {
     />
     <RouterView v-else />
   </template>
-  <EndgeAdapterRoot v-else root-key="shell" project="configurator" env="dev">
+  <EndgeAdapterRoot v-else root-key="shell">
     <!-- ГЛОБАЛЬНЫЙ СПИННЕР ПРИЛОЖЕНИЯ -->
     <template #spinner>
       <div class="fixed inset-0 z-[220] flex flex-col items-center justify-center gap-4 bg-slate-50/70 backdrop-blur-sm">

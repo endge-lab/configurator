@@ -20,6 +20,10 @@ import {
   unregisterAllWidgets,
 } from '@/components/layouts/grid/layout'
 import { endgeIDEWidgetsConfig } from '@/features/endge-ide/config/widgets.ts'
+import {
+  ENDGE_IDE_DOMAIN_WIDGET_ID,
+  LEGACY_ENDGE_IDE_DOMAIN_WIDGET_ID,
+} from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import {
   ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
@@ -88,13 +92,14 @@ export class EndgeIDEWidgets_Module {
     }
     else {
       migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
+      migratePersistedWidgetId(LEGACY_ENDGE_IDE_DOMAIN_WIDGET_ID, ENDGE_IDE_DOMAIN_WIDGET_ID)
       removePersistedWidgetId('help')
       removePersistedWidgetId('inspector')
       removePersistedWidgetId('errors')
       removePersistedWidgetId('pulse')
     }
     const definitions = debuggerMode
-      ? this._widgetDefinitions.filter(def => def.id === 'project' || def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID).map(def => ({
+      ? this._widgetDefinitions.filter(def => def.id === ENDGE_IDE_DOMAIN_WIDGET_ID || def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID).map(def => ({
           ...def,
           ...(def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID ? { defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/RuntimeInspection_Widget.vue'))) } : {}),
           allowedPositions: ['left' as const],
@@ -169,19 +174,19 @@ export class EndgeIDEWidgets_Module {
     setAreaExpanded('bottom', persistedExpanded.bottom)
 
     if (debuggerMode) {
-      setAreaActiveWidget('left', 'project')
+      setAreaActiveWidget('left', ENDGE_IDE_DOMAIN_WIDGET_ID)
       setAreaExpanded('left', true)
     }
     this._isInitialized = true
   }
 
-  /** Оставляет Runtime Tree рядом с Project, а Problems — последним левым widget. */
+  /** Оставляет Runtime Tree рядом с Domain, а Problems — последним левым widget. */
   private _ensureWorkspaceDefaultOrder(): void {
     const order = getWidgetOrder('left')
-    const projectIndex = order.indexOf('project')
+    const domainIndex = order.indexOf(ENDGE_IDE_DOMAIN_WIDGET_ID)
     const previewIndex = order.indexOf(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
-    if (projectIndex >= 0 && previewIndex !== projectIndex + 1 && previewIndex === order.length - 1) {
-      const nextWidgetId = order[projectIndex + 1]
+    if (domainIndex >= 0 && previewIndex !== domainIndex + 1 && previewIndex === order.length - 1) {
+      const nextWidgetId = order[domainIndex + 1]
       if (nextWidgetId) {
         reorderWidget(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, nextWidgetId, 'left')
       }

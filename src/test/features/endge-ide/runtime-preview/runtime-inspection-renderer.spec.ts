@@ -12,7 +12,7 @@ beforeEach(async () => {
   vi.spyOn(Endge.bridge, 'start').mockImplementation(() => {})
   await Endge.boot({ mode: 'debugger', scope: { workspaceIdentity: 'inspection' }, vars: {}, bridge: { role: 'configurator', serverUrl: 'http://localhost:8080', debug: true } })
   const configuration = createDefaultEndgeConfiguration()
-  Endge.workspace.applyInspection({ identity: 'inspection', displayName: 'Inspection', configuration, managedBy: 'user', managedById: null, dataMode: 'live', installedIntegrations: [] })
+  Endge.workspace.applyInspection({ identity: 'inspection', displayName: 'Inspection', startupCompositionIdentity: null, configuration, managedBy: 'user', managedById: null, dataMode: 'live', installedIntegrations: [] })
   Endge.configuration.applyInspection(configuration)
   Endge.domain.replaceFromPlain({ componentSFCs: [{ id: 'client-table', identity: 'client-table', source: '<script setup lang="ts">defineProps<{ rows: Array<{ id: number }> }>()</script><template><Table :rows="rows" row-key="id"><Column key="id" /></Table></template>' }] })
 })

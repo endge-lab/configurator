@@ -45,10 +45,10 @@ const widgetVisibilityItems = EndgeIDE.widgets.visibilityItems
 const isBusy = computed(() => EndgeIDE.busy.value)
 const canImportWorkspaceSnapshot = computed(() => Configurator.context.workspaceRole === 'admin')
 const canImportDocuments = computed(() => Endge.domainRepository.capabilities.mutations)
-const currentProjectIdentity = computed(() =>
-  String(context.currentContext().projectIdentity ?? '').trim(),
+const startupCompositionIdentity = computed(() =>
+  String(Endge.workspace.current.startupCompositionIdentity ?? '').trim(),
 )
-const isLaunchingProjectRuntime = ref(false)
+const isLaunchingStartupRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
@@ -68,10 +68,10 @@ const canManageAccess = computed(() => {
     Configurator.context.workspaceRole ?? '',
   )
 })
-const launchProjectRuntimeTitle = computed(() =>
-  currentProjectIdentity.value
-    ? `Запустить Runtime Preview проекта «${currentProjectIdentity.value}»`
-    : 'Выберите проект в нижней панели',
+const launchStartupRuntimeTitle = computed(() =>
+  startupCompositionIdentity.value
+    ? `Запустить Runtime Preview стартовой Composition «${startupCompositionIdentity.value}»`
+    : 'В Workspace не выбрана стартовая Composition',
 )
 
 async function exportCurrentDomain(): Promise<void> {
@@ -118,24 +118,24 @@ function toggleProblems(): void {
   toggleWidget(ENDGE_IDE_PROBLEMS_WIDGET_ID)
 }
 
-async function launchCurrentProjectRuntime(): Promise<void> {
-  const identity = currentProjectIdentity.value
-  if (!identity || context.isSwitching() || isLaunchingProjectRuntime.value) {
+async function launchStartupRuntime(): Promise<void> {
+  const identity = startupCompositionIdentity.value
+  if (!identity || context.isSwitching() || isLaunchingStartupRuntime.value) {
     return
   }
 
-  isLaunchingProjectRuntime.value = true
+  isLaunchingStartupRuntime.value = true
   try {
     const launched = await EndgeIDE.runtimePreview.launch({
-      entityType: 'project',
+      entityType: 'composition',
       identity,
     })
     if (launched) {
-      EndgeIDE.runtimePreview.requestTreeExpansion('project-content')
+      EndgeIDE.runtimePreview.requestTreeExpansion('root-content')
     }
   }
   finally {
-    isLaunchingProjectRuntime.value = false
+    isLaunchingStartupRuntime.value = false
   }
 }
 
@@ -261,7 +261,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             {{ t('endgeIde.headerMenu.debug.problems') }}
           </DropdownMenuItem>
           <DropdownMenuItem disabled>
-            {{ t('endgeIde.headerMenu.debug.projectCompilation') }}
+            {{ t('endgeIde.headerMenu.debug.domainBuild') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -373,12 +373,12 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
       <button
         type="button"
         class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
-        :disabled="!currentProjectIdentity || context.isSwitching() || isLaunchingProjectRuntime"
-        :title="launchProjectRuntimeTitle"
-        aria-label="Запустить Runtime Preview текущего проекта"
-        @click="launchCurrentProjectRuntime"
+        :disabled="!startupCompositionIdentity || context.isSwitching() || isLaunchingStartupRuntime"
+        :title="launchStartupRuntimeTitle"
+        aria-label="Запустить Runtime Preview стартовой Composition"
+        @click="launchStartupRuntime"
       >
-        <Loader2 v-if="isLaunchingProjectRuntime" class="size-4 animate-spin" />
+        <Loader2 v-if="isLaunchingStartupRuntime" class="size-4 animate-spin" />
         <Play v-else class="size-4 text-emerald-500" />
       </button>
       <TooltipProvider>

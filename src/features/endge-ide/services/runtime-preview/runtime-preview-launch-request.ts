@@ -3,7 +3,6 @@ import type { RuntimePreviewLaunchRequest } from '@/features/endge-ide/domain/ty
 
 import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
 import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
-import { RProjectEditor } from '@/features/endge-ide/domain/entities/RProjectEditor'
 import { RSimulationEditor } from '@/features/endge-ide/domain/entities/RSimulationEditor'
 import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
 
@@ -12,7 +11,7 @@ export interface RuntimePreviewDocumentReference {
   identity?: string | null
 }
 
-/** Сопоставляет сохранённый документ дерева проекта с той же runtime-целью, которую использует его редактор. */
+/** Сопоставляет сохранённый документ Domain tree с той же runtime-целью, которую использует его редактор. */
 export function createRuntimePreviewLaunchRequestFromDocument(
   document: RuntimePreviewDocumentReference,
 ): RuntimePreviewLaunchRequest | null {
@@ -22,8 +21,6 @@ export function createRuntimePreviewLaunchRequestFromDocument(
   }
 
   switch (document.docType) {
-    case 'project':
-      return { entityType: 'project', identity }
     case 'composition':
       return { entityType: 'composition', identity }
     case 'component-sfc':
@@ -53,21 +50,6 @@ export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePrevi
       },
     }
   }
-  if (editor instanceof RProjectEditor) {
-    return {
-      entityType: 'project',
-      identity: editor.identity,
-      draft: {
-        id: editor.id,
-        identity: editor.identity,
-        name: editor.displayName,
-        displayName: editor.displayName,
-        source: editor.source,
-        sourceVersion: editor.sourceVersion,
-      },
-    }
-  }
-
   if (editor instanceof RComponentSFCEditor) {
     return {
       entityType: 'component-sfc',

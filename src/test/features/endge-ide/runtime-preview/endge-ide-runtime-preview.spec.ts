@@ -46,7 +46,10 @@ vi.mock('@endge/core', () => ({
     },
     context: {
       get isMockEnabled() { return mocks.mockMode },
-      getExecutionContext: () => ({ tenantIdentity: null, projectIdentity: null, environmentIdentity: null }),
+      getExecutionContext: () => ({ facets: {} }),
+    },
+    workspace: {
+      current: { identity: 'workspace-test' },
     },
     auth: {
       createOidcSessionSource: vi.fn(() => mocks.oidcSource),
@@ -198,13 +201,13 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     expect(mocks.instances[0].launch).toHaveBeenCalledWith(draft, undefined, false)
   })
 
-  it('возвращает из Runtime Tree к Project без освобождения runtimes', async () => {
+  it('возвращает из Runtime Tree к Domain без освобождения runtimes', async () => {
     const manager = createManager()
     await manager.launch({ entityType: 'store', identity: 'flights' })
     mocks.showWidget.mockClear()
 
-    expect(manager.returnToProject()).toBe(true)
-    expect(mocks.showWidget).toHaveBeenCalledWith('project')
+    expect(manager.returnToDomain()).toBe(true)
+    expect(mocks.showWidget).toHaveBeenCalledWith('domain')
     expect(mocks.instances[0].dispose).not.toHaveBeenCalled()
   })
 
@@ -305,7 +308,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     await manager.launch({ entityType: 'store', identity: 'flights' })
     mocks.valid = false
 
-    expect(await manager.launch({ entityType: 'project', identity: 'other' })).toBe(false)
+    expect(await manager.launch({ entityType: 'composition', identity: 'other' })).toBe(false)
     expect(manager.entries.value.map(item => item.key)).toEqual(['store:flights'])
     expect(mocks.toastError).toHaveBeenCalledOnce()
   })

@@ -268,15 +268,15 @@ onBeforeUnmount(closeContextMenu)
                 variant="ghost"
                 size="icon"
                 class="size-7"
-                :aria-label="$t('uiText.collapseToProjectContent')"
+                :aria-label="$t('uiText.collapseToRootContent')"
                 :disabled="!hasEntries"
-                @click="setExpansion('project-content')"
+                @click="setExpansion('root-content')"
               >
                 <ListCollapse class="size-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {{ $t('uiText.collapseToProjectContent') }}
+              {{ $t('uiText.collapseToRootContent') }}
             </TooltipContent>
           </Tooltip>
 

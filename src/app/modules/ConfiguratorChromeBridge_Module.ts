@@ -110,8 +110,7 @@ export class ConfiguratorChromeBridge_Module {
       version: BRIDGE_VERSION,
       exportedAt: new Date().toISOString(),
       sourceUrl: this._browser.page().url,
-      projectId: Endge.context.getCurrentProject(),
-      environment: Endge.context.getCurrentEnvironment(),
+      facets: Endge.context.getFacetSelections(),
       domain: Endge.domain.toPlain(),
     }
   }
@@ -123,8 +122,7 @@ export class ConfiguratorChromeBridge_Module {
       version: BRIDGE_VERSION,
       url: this._browser.page().url,
       title: this._browser.page().title,
-      projectId: Endge.context.getCurrentProject(),
-      environment: Endge.context.getCurrentEnvironment(),
+      facets: Endge.context.getFacetSelections(),
     }
   }
 

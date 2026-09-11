@@ -31,8 +31,6 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['converter', documentId => Endge.domain.getConverter(documentId)],
   ['computation', documentId => Endge.domain.getComputation(documentId)],
   ['integration', documentId => Endge.domain.getIntegration(documentId)],
-  ['environment', documentId => Endge.domain.getEnvironment(documentId)],
-  ['tenant', documentId => Endge.domain.getTenant(documentId)],
   ['policy', documentId => Endge.domain.getPolicy(documentId)],
   ['style', documentId => Endge.domain.getStyle(documentId)],
   ['configuration', documentId => Endge.domain.getConfiguration(documentId)],
@@ -42,7 +40,6 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['page-template', documentId => Endge.domain.getPageTemplate(documentId)],
   ['page', documentId => Endge.domain.getPage(documentId)],
   ['navigation', documentId => Endge.domain.getNavigation(documentId)],
-  ['project', documentId => Endge.domain.getProject(documentId)],
   ['type', documentId => Endge.domain.getType(documentId)],
 ])
 

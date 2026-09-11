@@ -23,6 +23,7 @@ export const DOCUMENT_COLORS = {
 } as const
 
 export const DOMAIN_SECTION_PRESENTATION: Readonly<Record<DomainSectionType, DomainDocumentPresentation>> = {
+  [DomainSectionType.Workspace]: { icon: 'Orbit', colorClass: DOCUMENT_COLORS.orange },
   [DomainSectionType.Primitive]: { icon: 'Type', colorClass: DOCUMENT_COLORS.blue },
   [DomainSectionType.Type]: { icon: 'Type', colorClass: DOCUMENT_COLORS.blue },
   [DomainSectionType.Query]: { icon: 'Send', colorClass: DOCUMENT_COLORS.orange },
@@ -38,8 +39,6 @@ export const DOMAIN_SECTION_PRESENTATION: Readonly<Record<DomainSectionType, Dom
   [DomainSectionType.Computation]: { icon: 'SquareFunction', colorClass: DOCUMENT_COLORS.orange },
   [DomainSectionType.Integration]: { icon: 'Plug', colorClass: DOCUMENT_COLORS.teal },
   [DomainSectionType.Filters]: { icon: 'Filter', colorClass: DOCUMENT_COLORS.rose },
-  [DomainSectionType.Environment]: { icon: 'ServerCog', colorClass: DOCUMENT_COLORS.lime },
-  [DomainSectionType.Tenant]: { icon: 'Building2', colorClass: DOCUMENT_COLORS.emerald },
   [DomainSectionType.Policy]: { icon: 'Shield', colorClass: DOCUMENT_COLORS.sky },
   [DomainSectionType.Style]: { icon: 'Palette', colorClass: DOCUMENT_COLORS.fuchsia },
   [DomainSectionType.Configuration]: { icon: 'SlidersHorizontal', colorClass: DOCUMENT_COLORS.slate },
@@ -49,7 +48,6 @@ export const DOMAIN_SECTION_PRESENTATION: Readonly<Record<DomainSectionType, Dom
   [DomainSectionType.Vocabs]: { icon: 'BookOpen', colorClass: DOCUMENT_COLORS.teal },
   [DomainSectionType.I18nBundles]: { icon: 'Languages', colorClass: DOCUMENT_COLORS.amber },
   [DomainSectionType.AuthProfile]: { icon: 'KeyRound', colorClass: DOCUMENT_COLORS.sky },
-  [DomainSectionType.Project]: { icon: 'Briefcase', colorClass: DOCUMENT_COLORS.sky },
 }
 
 export const FALLBACK_PRESENTATION: DomainDocumentPresentation = {
@@ -60,7 +58,7 @@ export const FALLBACK_PRESENTATION: DomainDocumentPresentation = {
 export const DOCUMENT_AUXILIARY_PRESENTATION = {
   filterView: { icon: 'SlidersHorizontal', colorClass: DOCUMENT_COLORS.blue },
   scope: { icon: 'Layers3', colorClass: DOCUMENT_COLORS.slate },
-  workspace: { icon: 'Building2', colorClass: DOCUMENT_COLORS.orange },
+  workspace: { icon: 'Orbit', colorClass: DOCUMENT_COLORS.orange },
   tableColumn: { icon: 'Columns', colorClass: DOCUMENT_COLORS.sky },
   folder: { icon: 'Folder', colorClass: 'fill-current text-yellow-500 dark:text-slate-400' },
   derivedFolder: { icon: 'Folder', colorClass: 'fill-sky-500/30 text-sky-600 dark:text-sky-400' },
@@ -89,8 +87,6 @@ export const DOCUMENT_SECTION_BY_TYPE: Readonly<Partial<Record<string, DomainSec
   'converter': DomainSectionType.Converter,
   'computation': DomainSectionType.Computation,
   'integration': DomainSectionType.Integration,
-  'environment': DomainSectionType.Environment,
-  'tenant': DomainSectionType.Tenant,
   'policy': DomainSectionType.Policy,
   'style': DomainSectionType.Style,
   'configuration': DomainSectionType.Configuration,
@@ -100,7 +96,7 @@ export const DOCUMENT_SECTION_BY_TYPE: Readonly<Partial<Record<string, DomainSec
   'vocabs': DomainSectionType.Vocabs,
   'i18n-bundles': DomainSectionType.I18nBundles,
   'auth-profile': DomainSectionType.AuthProfile,
-  'project': DomainSectionType.Project,
+  'workspace': DomainSectionType.Workspace,
   [ComponentType.Component]: DomainSectionType.Component,
   [ComponentType.DSL]: DomainSectionType.Component,
   [ComponentType.Table]: DomainSectionType.Component,

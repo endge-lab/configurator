@@ -20,8 +20,7 @@ export interface EndgeAdminBridgeBundle {
   version: string
   exportedAt: string
   sourceUrl: string
-  projectId: string | null
-  environment: string | null
+  facets: Readonly<Record<string, string>>
   domain: EndgeDomainPlain
 }
 
@@ -33,8 +32,7 @@ export interface EndgeAdminBridgeApi {
     version: string
     url: string
     title: string
-    projectId: string | null
-    environment: string | null
+    facets: Readonly<Record<string, string>>
   }
   exportDomainBundle: () => EndgeAdminBridgeBundle
 }

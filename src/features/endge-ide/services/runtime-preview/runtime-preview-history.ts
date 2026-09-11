@@ -2,11 +2,8 @@ import type { RuntimePreviewEntityType, RuntimePreviewTarget } from '@/features/
 
 import { Endge } from '@endge/core'
 
-import { currentActiveBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
-
-const STORAGE_KEY_PREFIX = 'endge:runtime-preview:history:v2'
 const STATE_KEY = 'configurator.runtime-preview.history'
-const ENTITY_TYPES = new Set<RuntimePreviewEntityType>(['project', 'composition', 'component-sfc', 'store', 'simulation'])
+const ENTITY_TYPES = new Set<RuntimePreviewEntityType>(['composition', 'component-sfc', 'store', 'simulation'])
 
 interface PersistedRuntimePreviewHistory {
   version: 1
@@ -16,7 +13,7 @@ interface PersistedRuntimePreviewHistory {
 /** Читает только корни preview IDE. Runtime-hosts и состояние lifecycle никогда не сохраняются. */
 export function readRuntimePreviewHistory(): RuntimePreviewTarget[] {
   try {
-    const payload = Endge.context.getState<unknown>(STATE_KEY) ?? migrateLegacyHistory()
+    const payload = Endge.context.getState<unknown>(STATE_KEY)
     return parseRuntimePreviewHistory(payload)
   }
   catch {
@@ -51,41 +48,6 @@ export function parseRuntimePreviewHistory(value: unknown): RuntimePreviewTarget
 
 export function runtimePreviewHistoryStorageKey(): string {
   return STATE_KEY
-}
-
-function legacyRuntimePreviewHistoryStorageKey(): string {
-  const workspace = Endge.context.getCurrentWorkspace() ?? 'detached'
-  const context = Endge.context.getExecutionContext()
-  return [
-    STORAGE_KEY_PREFIX,
-    currentActiveBackendURL(),
-    workspace,
-    context.tenantIdentity,
-    context.projectIdentity,
-    context.environmentIdentity,
-  ].map(value => encodeURIComponent(String(value ?? ''))).join(':')
-}
-
-function migrateLegacyHistory(): unknown {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
-  try {
-    const legacyKey = legacyRuntimePreviewHistoryStorageKey()
-    const raw = window.localStorage.getItem(legacyKey)
-    if (!raw) {
-      return undefined
-    }
-    const value: unknown = JSON.parse(raw)
-    Endge.context.setState(STATE_KEY, value)
-    if (Endge.context.getState(STATE_KEY) !== undefined) {
-      window.localStorage.removeItem(legacyKey)
-    }
-    return value
-  }
-  catch {
-    return undefined
-  }
 }
 
 function normalizeTargets(values: readonly unknown[]): RuntimePreviewTarget[] {

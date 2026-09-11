@@ -54,7 +54,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import CreateWorkspace_Dialog from '@/features/backend-connections/ui/CreateWorkspace_Dialog.vue'
 import { useConfiguratorSession } from '@/features/configurator-session/ui/configurator-session-context'
 import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_COLORS } from '@/features/document-presentation/config/document-presentation'
 import {
@@ -84,6 +83,7 @@ import {
   flattenTree,
   getDomainTreeRootBlocks,
   getRootFolderOrder,
+  prioritizeStartupComposition,
   ROOT_FOLDER_LABELS,
   withoutDeleted,
   WORKSPACE_ROOT_FOLDER_IDENTITY,
@@ -134,7 +134,6 @@ type MenuAction
 const domainStore = useDomainStore()
 const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
-const createWorkspaceOpen = ref(false)
 const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
 const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
 const facetRegistryVersion = ref(0)
@@ -268,7 +267,20 @@ function getNodeLabel(node: FsNode): string {
 }
 
 function getVisibleNodeBadges(node: FsNode): string[] {
-  return (node.badges ?? []).filter(badge => badge !== 'system')
+  const badges = (node.badges ?? []).filter(badge => badge !== 'system')
+  return isStartupComposition(node) ? ['Startup', ...badges] : badges
+}
+
+function isStartupComposition(node: FsNode): boolean {
+  return node.type === 'file'
+    && node.docType === 'composition'
+    && node.identity === Endge.workspace.current.startupCompositionIdentity
+}
+
+function badgeClasses(badge: string): string {
+  return badge === 'Startup'
+    ? 'border-red-400/60 bg-red-500/10 text-red-700 dark:text-red-300'
+    : 'border-sky-300/60 bg-sky-500/10 text-sky-700 dark:text-sky-300'
 }
 
 onMounted(() => {
@@ -339,7 +351,7 @@ const searchQuery = computed({
 })
 const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase())
 const searchFilteringEnabled = computed(() => searchOpen.value && normalizedSearchQuery.value.length > 0)
-const searchToggleTooltip = computed(() => searchOpen.value ? 'Скрыть поиск' : 'Поиск по проекту')
+const searchToggleTooltip = computed(() => searchOpen.value ? 'Скрыть поиск' : 'Поиск по домену')
 
 interface DomainTreeFilterOptions {
   preserveAncestors: boolean
@@ -624,7 +636,7 @@ const ROOT_TO_SECTION = computed(() => {
   return {
     ...(debuggerMode
       ? { 'root-configurations': { section: DomainSectionType.Configuration, items: () => Endge.domain.getConfigurations() } }
-      : { 'root-workspaces': { section: DomainSectionType.Project, items: () => [] } }),
+      : { 'root-workspaces': { section: DomainSectionType.Workspace, items: () => [] } }),
     'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted((debuggerMode ? domainStore.types : domainStore.typesComplex) ?? []) },
     'root-queries': {
       section: DomainSectionType.Query,
@@ -647,8 +659,6 @@ const ROOT_TO_SECTION = computed(() => {
     'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
     'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
     'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations) },
-    'root-environments': { section: DomainSectionType.Environment, items: () => withoutDeleted(domainStore.environments) },
-    'root-tenants': { section: DomainSectionType.Tenant, items: () => withoutDeleted(domainStore.tenants) },
     'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies) },
     'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles) },
     'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates) },
@@ -658,7 +668,6 @@ const ROOT_TO_SECTION = computed(() => {
     'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks) },
     'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
     'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
-    'root-projects': { section: DomainSectionType.Project, items: () => withoutDeleted(domainStore.projects) },
     ...facetRoots,
   }
 })
@@ -667,7 +676,7 @@ const ROOT_TO_SECTION = computed(() => {
 const ROOT_FOLDER_ORDER = computed(() => {
   const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
   const base = getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)).filter(id => !facetIds.includes(id))
-  const index = base.indexOf('root-environments')
+  const index = base.indexOf('root-workspaces')
   base.splice(index >= 0 ? index + 1 : base.length, 0, ...facetIds)
   return base
 })
@@ -754,10 +763,13 @@ const fsTree = computed<FsNode[]>(() => {
       ...Endge.domain.getFacets().map(facet => facetRootId(facet.identity)),
     ])
     const sourceRootIds = new Set(blocks.flatMap(block => block.rootIds))
-    return buildCustomWorkspaceProjection(tree, allFolders, contextRootIds, sourceRootIds)
+    return prioritizeStartupComposition(
+      buildCustomWorkspaceProjection(tree, allFolders, contextRootIds, sourceRootIds),
+      Endge.workspace.current.startupCompositionIdentity,
+    )
   }
 
-  return tree
+  return prioritizeStartupComposition(tree, Endge.workspace.current.startupCompositionIdentity)
 })
 
 const workingSetResult = computed(() => {
@@ -1128,8 +1140,6 @@ const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-computations': getDomainSectionPresentation(DomainSectionType.Computation),
   'root-integrations': getDomainSectionPresentation(DomainSectionType.Integration),
   'root-filters': getDomainSectionPresentation(DomainSectionType.Filters),
-  'root-environments': getDomainSectionPresentation(DomainSectionType.Environment),
-  'root-tenants': getDomainSectionPresentation(DomainSectionType.Tenant),
   'root-policies': getDomainSectionPresentation(DomainSectionType.Policy),
   'root-styles': getDomainSectionPresentation(DomainSectionType.Style),
   'root-page-templates': getDomainSectionPresentation(DomainSectionType.PageTemplate),
@@ -1140,7 +1150,6 @@ const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-i18n-bundles': getDomainSectionPresentation(DomainSectionType.I18nBundles),
   'root-auth-profiles': getDomainSectionPresentation(DomainSectionType.AuthProfile),
   'root-simulations': getDomainSectionPresentation(DomainSectionType.Simulation),
-  'root-projects': getDomainSectionPresentation(DomainSectionType.Project),
 }
 
 /** Типы документов, которые можно дублировать (те же, что в «Создать»). */
@@ -1155,8 +1164,6 @@ const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   'action',
   'computation',
   'integration',
-  'environment',
-  'tenant',
   'policy',
   'style',
   'configuration',
@@ -1220,6 +1227,9 @@ function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentati
     return DOCUMENT_AUXILIARY_PRESENTATION.tableColumn
   }
   const presentation = getDomainDocumentPresentation(node.docType, node.presentationKind)
+  if (isStartupComposition(node)) {
+    return { ...presentation, colorClass: 'text-red-500 dark:text-red-400' }
+  }
   return node.origin?.kind === 'derived'
     ? { ...presentation, colorClass: DOCUMENT_COLORS.sky }
     : presentation
@@ -1560,10 +1570,6 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   const targetId = node.isTableColumn && node.parentComponentId ? node.parentComponentId : node.id
   if (targetId == null || String(targetId).trim() === '') {
     toast.warning('Нет идентификатора документа')
-    return
-  }
-  if (node.sectionType === DomainSectionType.Project) {
-    EndgeIDE.tabs.openDocument(String(targetId), 'project')
     return
   }
   EndgeIDE.tabs.openDocument(targetId, node.docType)
@@ -1931,13 +1937,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
       })
     }
     items.push({
-      label: node.sectionType === DomainSectionType.Tenant
-        ? t('documentCreate.createTenant')
-        : node.sectionType === DomainSectionType.Project
-          ? t('documentCreate.createProject')
-          : node.sectionType === DomainSectionType.Environment
-            ? t('documentCreate.createEnvironment')
-            : 'Добавить сущность',
+      label: 'Добавить сущность',
       icon: Plus,
       action: { type: 'create-doc', node },
     })
@@ -2048,7 +2048,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   }
   if (a.type === 'create-workspace') {
     closeContextMenu()
-    createWorkspaceOpen.value = true
+    EndgeIDE.modals.openCreateDocument({ documentType: 'workspace' })
     return
   }
   if (a.type === 'delete-workspace') {
@@ -2105,15 +2105,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
       : undefined
     EndgeIDE.modals.openCreateDocument({
       sectionType: a.node.scope === 'workspace' ? undefined : a.node.sectionType,
-      documentType: a.node.scope === 'workspace'
-        ? undefined
-        : a.node.sectionType === DomainSectionType.Tenant
-          ? 'tenant'
-          : a.node.sectionType === DomainSectionType.Project
-            ? 'project'
-            : a.node.sectionType === DomainSectionType.Environment
-              ? 'environment'
-              : undefined,
+      documentType: undefined,
       folderId: a.node.scope === 'workspace' || a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
       workspaceFolderId,
     })
@@ -2302,8 +2294,8 @@ function rowClasses(item: FlatFsItem): string {
             v-model="searchQuery"
             autofocus
             autocomplete="off"
-            aria-label="Поиск по проекту"
-            placeholder="Поиск по проекту"
+            aria-label="Поиск по домену"
+            placeholder="Поиск по домену"
             class="h-8 w-full pr-8 text-xs"
             @keydown.esc="searchOpen = false"
           />
@@ -2386,7 +2378,8 @@ function rowClasses(item: FlatFsItem): string {
                 <span
                   v-for="badge in getVisibleNodeBadges(it.node)"
                   :key="badge"
-                  class="shrink-0 rounded border border-sky-300/60 bg-sky-500/10 px-1 text-[9px] leading-4 text-sky-700 dark:text-sky-300"
+                  class="shrink-0 rounded border px-1 text-[9px] leading-4"
+                  :class="badgeClasses(badge)"
                 >{{ badge }}</span>
                 <span
                   v-if="it.node.managedBy === 'integration'"
@@ -2432,8 +2425,6 @@ function rowClasses(item: FlatFsItem): string {
         </button>
       </div>
     </Teleport>
-
-    <CreateWorkspace_Dialog v-model:open="createWorkspaceOpen" />
 
     <Dialog v-model:open="facetDocumentDialog.open">
       <DialogContent class="sm:max-w-md">

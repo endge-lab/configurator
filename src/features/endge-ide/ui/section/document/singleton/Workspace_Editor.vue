@@ -1,22 +1,10 @@
 <script setup lang="ts">
 import type { WorkflowNodeData } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
-import { Endge } from '@endge/core'
-import { CircleHelp, FolderSync, Layers3, Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
+import { DomainSectionType, Endge } from '@endge/core'
+import { CircleHelp, Layers3, Loader2, Save, Settings2, Workflow } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
 
-import { Configurator } from '@/app/Configurator'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,15 +29,24 @@ const activeTab = computed<'general' | 'workflow'>({
   set: value => EndgeIDE.tabs.setTabViewState('workspace-settings', 'workspace.active-tab', { version: 1, value }),
 })
 const workspaceSettingsSection = ref('general')
-const rebuildDialogOpen = ref(false)
+const startupDropActive = ref(false)
 const facetSettingsActive = computed(() => activeTab.value === 'general' && workspaceSettingsSection.value === 'additional:workspace-facets')
 const workspaceDocumentId = computed(() => {
   void editor.value?.identity
   return Endge.domainRepository.getLoadedSnapshot()?.workspace.state.id ?? null
 })
 const workspaceDirty = computed(() => editor.value?.dirty === true || workspace.metadataSession.value?.dirty === true)
-const canRebuildWorkspaceFolders = computed(() => editor.value?.documentStructure === 'custom'
-  && Configurator.context.workspaceRole === 'admin')
+const activeCompositions = computed(() => Endge.domain.getCompositions()
+  .filter(item => item.active !== false && !item.deletedAt)
+  .sort((left, right) => (left.displayName || left.identity).localeCompare(right.displayName || right.identity)))
+const startupSelection = computed({
+  get: () => editor.value?.startupCompositionIdentity ?? '__none__',
+  set: (value: string) => {
+    if (editor.value) {
+      editor.value.startupCompositionIdentity = value === '__none__' ? null : value
+    }
+  },
+})
 const workflowDependencies = computed(() => {
   if (activeTab.value !== 'workflow' || !editor.value || !workspace.root.value) {
     return null
@@ -72,20 +69,47 @@ async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
-async function rebuildWorkspaceFolders(): Promise<void> {
-  try {
-    await workspace.rebuildWorkspaceFoldersFromFrontend()
-  }
-  catch (error) {
-    toast.error(t('workspaceWorkflow.metamodel.rebuild.error'), {
-      description: error instanceof Error ? error.message : String(error),
-    })
-  }
-}
-
 function setWorkspaceMockMode(enabled: boolean): void {
   if (editor.value) {
     editor.value.dataMode = enabled ? 'mock' : 'live'
+  }
+}
+
+function readCompositionDrop(event: DragEvent): string | null {
+  try {
+    const raw = event.dataTransfer?.getData('application/x-endge-domain-entity')
+      || event.dataTransfer?.getData('text/plain')
+    const items = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(items) || items.length !== 1) {
+      return null
+    }
+    const item = items[0] as Record<string, unknown>
+    return item.sectionType === DomainSectionType.Composition && item.docType === 'composition'
+      ? String(item.identity ?? '').trim() || null
+      : null
+  }
+  catch {
+    return null
+  }
+}
+
+function onStartupDragOver(event: DragEvent): void {
+  const identity = readCompositionDrop(event)
+  startupDropActive.value = Boolean(identity)
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = identity ? 'copy' : 'none'
+  }
+  if (identity) {
+    event.preventDefault()
+  }
+}
+
+function onStartupDrop(event: DragEvent): void {
+  event.preventDefault()
+  const identity = readCompositionDrop(event)
+  startupDropActive.value = false
+  if (identity && editor.value && activeCompositions.value.some(item => item.identity === identity)) {
+    editor.value.startupCompositionIdentity = identity
   }
 }
 
@@ -183,41 +207,44 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
             </div>
             <div class="space-y-2">
               <Label for="workspace-document-structure">{{ t('workspaceWorkflow.metamodel.label') }}</Label>
-              <div class="flex items-center gap-2">
-                <Select v-model="editor.documentStructure" :disabled="EndgeIDE.busy.value">
-                  <SelectTrigger id="workspace-document-structure" class="min-w-0 flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="frontend">
-                      {{ t('workspaceWorkflow.metamodel.frontend') }}
-                    </SelectItem>
-                    <SelectItem value="custom">
-                      {{ t('workspaceWorkflow.metamodel.custom') }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <TooltipProvider v-if="canRebuildWorkspaceFolders" :delay-duration="200">
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        class="shrink-0"
-                        :aria-label="t('workspaceWorkflow.metamodel.rebuild.action')"
-                        :disabled="EndgeIDE.busy.value || workspaceDirty"
-                        @click="rebuildDialogOpen = true"
-                      >
-                        <FolderSync class="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {{ workspaceDirty ? t('workspaceWorkflow.metamodel.rebuild.saveFirst') : t('workspaceWorkflow.metamodel.rebuild.action') }}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <Select v-model="editor.documentStructure" :disabled="EndgeIDE.busy.value">
+                <SelectTrigger id="workspace-document-structure">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="frontend">
+                    {{ t('workspaceWorkflow.metamodel.frontend') }}
+                  </SelectItem>
+                  <SelectItem value="custom">
+                    {{ t('workspaceWorkflow.metamodel.custom') }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div
+              class="space-y-2 rounded-lg border border-border/80 bg-card/70 p-4 transition-colors"
+              :class="startupDropActive ? 'border-red-500 bg-red-500/5' : ''"
+              @dragover="onStartupDragOver"
+              @dragleave="startupDropActive = false"
+              @drop="onStartupDrop"
+            >
+              <Label for="workspace-startup-composition">{{ t('workspaceWorkflow.startup.label') }}</Label>
+              <Select v-model="startupSelection" :disabled="EndgeIDE.busy.value">
+                <SelectTrigger id="workspace-startup-composition">
+                  <SelectValue :placeholder="t('workspaceWorkflow.startup.none')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    {{ t('workspaceWorkflow.startup.none') }}
+                  </SelectItem>
+                  <SelectItem v-for="composition in activeCompositions" :key="composition.identity" :value="composition.identity">
+                    {{ composition.displayName || composition.identity }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p class="text-xs text-muted-foreground">
+                {{ t('workspaceWorkflow.startup.dropHint') }}
+              </p>
             </div>
             <section class="flex items-center justify-between gap-4 rounded-lg border border-border/80 bg-card/70 px-4 py-3">
               <div class="flex min-w-0 items-center gap-1.5">
@@ -257,29 +284,4 @@ function openWorkflowDocument(data: WorkflowNodeData): void {
       </ConfigurationSettingsEditor>
     </div>
   </SourceDocumentEditorShell>
-
-  <AlertDialog v-if="editor" v-model:open="rebuildDialogOpen">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ t('workspaceWorkflow.metamodel.rebuild.title') }}</AlertDialogTitle>
-        <AlertDialogDescription class="space-y-3">
-          <span class="block">{{ t('workspaceWorkflow.metamodel.rebuild.warning') }}</span>
-          <span class="block">{{ t('workspaceWorkflow.metamodel.rebuild.preserved') }}</span>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel :disabled="EndgeIDE.busy.value">
-          {{ t('workspaceWorkflow.metamodel.rebuild.cancel') }}
-        </AlertDialogCancel>
-        <AlertDialogAction
-          class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          :disabled="EndgeIDE.busy.value"
-          @click.prevent="rebuildWorkspaceFolders"
-        >
-          <Loader2 v-if="EndgeIDE.busy.value" class="mr-2 size-4 animate-spin" />
-          {{ EndgeIDE.busy.value ? t('workspaceWorkflow.metamodel.rebuild.processing') : t('workspaceWorkflow.metamodel.rebuild.confirm') }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
 </template>

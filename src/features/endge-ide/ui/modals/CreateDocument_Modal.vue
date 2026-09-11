@@ -8,6 +8,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
+import { Configurator } from '@/app/Configurator'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import {
@@ -43,6 +45,7 @@ const emit = defineEmits<{
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const ROOT_IDS: Record<DomainSectionType, string> = {
+  [DomainSectionType.Workspace]: 'root-workspaces',
   [DomainSectionType.Component]: 'root-components',
   [DomainSectionType.Query]: 'root-queries',
   [DomainSectionType.DataView]: 'root-data-views',
@@ -58,8 +61,6 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Computation]: 'root-computations',
   [DomainSectionType.Integration]: 'root-integrations',
   [DomainSectionType.Filters]: 'root-filters',
-  [DomainSectionType.Environment]: 'root-environments',
-  [DomainSectionType.Tenant]: 'root-tenants',
   [DomainSectionType.Policy]: 'root-policies',
   [DomainSectionType.Style]: 'root-styles',
   [DomainSectionType.Configuration]: 'root-workspaces',
@@ -69,7 +70,6 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.Vocabs]: 'root-vocabs',
   [DomainSectionType.I18nBundles]: 'root-i18n-bundles',
   [DomainSectionType.AuthProfile]: 'root-auth-profiles',
-  [DomainSectionType.Project]: 'root-projects',
 }
 
 /** entityType папок в Payload — только папки этой секции показываем в выборе. */
@@ -87,8 +87,6 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Computation]: 'computations',
   [DomainSectionType.Integration]: 'integrations',
   [DomainSectionType.Filters]: 'filters',
-  [DomainSectionType.Environment]: 'environments',
-  [DomainSectionType.Tenant]: 'tenants',
   [DomainSectionType.Policy]: 'policies',
   [DomainSectionType.Style]: 'styles',
   [DomainSectionType.PageTemplate]: 'page-templates',
@@ -97,7 +95,6 @@ const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Vocabs]: 'vocabs',
   [DomainSectionType.I18nBundles]: 'i18n-bundles',
   [DomainSectionType.AuthProfile]: 'auth-profiles',
-  [DomainSectionType.Project]: 'projects',
 }
 
 const domainStore = useDomainStore()
@@ -136,6 +133,11 @@ const activeOption = computed<DocumentCreateDescriptor>(() =>
 
 const createContext = computed(() => EndgeIDE.modals.createDocumentContext.value)
 const lockedDocumentType = computed(() => createContext.value?.documentType ?? null)
+const isWorkspaceSelected = computed(() => activeType.value === 'workspace')
+const canCreateWorkspace = computed(() => {
+  const state = Configurator.session.state
+  return state.status === 'authenticated' && state.session.platformAdmin
+})
 const hasSupportedSelection = computed(() => {
   const descriptor = DOCUMENT_CREATE_DESCRIPTORS.find(item => item.type === activeType.value)
   if (!descriptor) {
@@ -143,6 +145,10 @@ const hasSupportedSelection = computed(() => {
   }
   if (lockedDocumentType.value) {
     return descriptor.type === lockedDocumentType.value
+      && (descriptor.type !== 'workspace' || canCreateWorkspace.value)
+  }
+  if (descriptor.type === 'workspace') {
+    return canCreateWorkspace.value && !createContext.value?.sectionType
   }
   return !createContext.value?.sectionType || showAllTypes.value
     || descriptor.section === createContext.value.sectionType
@@ -150,7 +156,9 @@ const hasSupportedSelection = computed(() => {
 const updateOwnerStoreIdentity = computed(() =>
   activeType.value === 'update' ? createContext.value?.updateOwnerStoreIdentity ?? null : null,
 )
-const dialogTitle = computed(() => lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
+const dialogTitle = computed(() => isWorkspaceSelected.value
+  ? t('workspaceTree.create')
+  : lockedDocumentType.value === 'composition' ? 'Создать композицию' : 'Создать документ')
 const documentType = computed<DomainDocumentType>(() =>
   activeType.value === QUERY_COMPOSITION_CREATE_KIND
     ? 'composition'
@@ -159,10 +167,13 @@ const documentType = computed<DomainDocumentType>(() =>
       : activeType.value as DomainDocumentType,
 )
 
-const filteredTypeGroups = computed(() => {
+const filteredTypes = computed(() => {
   const contextualSection = createContext.value?.sectionType ?? null
   const query = typeSearch.value.trim().toLowerCase()
-  const descriptors = DOCUMENT_CREATE_DESCRIPTORS.filter((descriptor) => {
+  return DOCUMENT_CREATE_DESCRIPTORS.filter((descriptor) => {
+    if (descriptor.type === 'workspace' && (!canCreateWorkspace.value || contextualSection)) {
+      return false
+    }
     if (descriptor.type === 'update' && !createContext.value?.updateOwnerStoreIdentity) {
       return false
     }
@@ -175,13 +186,6 @@ const filteredTypeGroups = computed(() => {
     return [descriptor.label, descriptor.description, descriptor.type, ...descriptor.keywords]
       .some(value => String(value).toLowerCase().includes(query))
   })
-  const groups = new Map<string, DocumentCreateDescriptor[]>()
-  for (const descriptor of descriptors) {
-    const items = groups.get(descriptor.group) ?? []
-    items.push(descriptor)
-    groups.set(descriptor.group, items)
-  }
-  return [...groups].map(([label, items]) => ({ label, items }))
 })
 
 const pageTemplateOptions = computed(() =>
@@ -195,10 +199,12 @@ const pageTemplateOptions = computed(() =>
 
 const identityError = computed(() => {
   if (!identity.value.trim()) {
-    return 'Identity обязателен'
+    return isWorkspaceSelected.value ? t('workspaceTree.identityRequired') : 'Identity обязателен'
   }
   if (identityConflict.value) {
-    return `Документ «${identity.value.trim()}» уже существует`
+    return isWorkspaceSelected.value
+      ? t('workspaceTree.identityConflict')
+      : `Документ «${identity.value.trim()}» уже существует`
   }
   return null
 })
@@ -206,6 +212,9 @@ const identityError = computed(() => {
 const formError = computed(() => {
   if (identityError.value) {
     return identityError.value
+  }
+  if (isWorkspaceSelected.value && !name.value.trim()) {
+    return t('workspaceTree.displayNameRequired')
   }
   if (activeType.value === 'page' && !selectedPageTemplateId.value) {
     return 'Для страницы выберите шаблон'
@@ -541,13 +550,6 @@ function buildPayloadTemplate(): Record<string, unknown> {
     }
   }
 
-  if (activeType.value === 'tenant') {
-    return {
-      ...base,
-      code: id,
-    }
-  }
-
   return base
 }
 
@@ -565,6 +567,9 @@ async function validateIdentityAvailability(): Promise<boolean> {
   const normalizedIdentity = identity.value.trim()
   if (!normalizedIdentity) {
     return false
+  }
+  if (isWorkspaceSelected.value) {
+    return true
   }
 
   const requestId = ++identityValidationRequest
@@ -606,6 +611,24 @@ async function onSubmit(): Promise<void> {
   }
   loading.value = true
   try {
+    if (isWorkspaceSelected.value) {
+      if (formError.value) {
+        toast.error(formError.value)
+        return
+      }
+      const refreshed = await Configurator.createWorkspace({
+        identity: identity.value.trim(),
+        displayName: name.value.trim(),
+        description: description.value.trim(),
+      })
+      toast.success(t('workspaceTree.created'), { description: name.value.trim() })
+      if (!refreshed) {
+        toast.warning(t('workspaceTree.refreshFailed'))
+      }
+      openModel.value = false
+      return
+    }
+
     if (createMode.value === 'json') {
       let parsed: Record<string, unknown>
       try {
@@ -727,6 +750,18 @@ async function onSubmit(): Promise<void> {
     openModel.value = false
   }
   catch (e: any) {
+    if (isWorkspaceSelected.value) {
+      const code = e instanceof Error ? e.message : ''
+      if (code === 'workspace_identity_conflict') {
+        identityConflict.value = true
+      }
+      toast.error(code === 'workspace_identity_conflict'
+        ? t('workspaceTree.identityConflict')
+        : code === 'workspace_creation_forbidden'
+          ? t('workspaceTree.creationForbidden')
+          : t('workspaceTree.createFailed'))
+      return
+    }
     if (String(e?.message ?? '').includes('уже существует')) {
       identityConflict.value = true
     }
@@ -775,33 +810,26 @@ function onCancel(): void {
             autocomplete="off"
           />
           <ScrollArea class="h-[500px] rounded-md border p-1">
-            <div v-if="filteredTypeGroups.length" class="flex flex-col gap-2">
-              <section v-for="group in filteredTypeGroups" :key="group.label">
-                <div class="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  {{ group.label }}
-                </div>
-                <button
-                  v-for="doc in group.items"
-                  :key="doc.type"
-                  type="button"
-                  class="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-                  :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
-                  @click="activeType = doc.type"
-                >
-                  <DocumentIcon
-                    :presentation="getDomainDocumentPresentation(
+            <div v-if="filteredTypes.length" class="flex flex-col gap-0.5">
+              <button
+                v-for="doc in filteredTypes"
+                :key="doc.type"
+                type="button"
+                class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/60"
+                :class="activeType === doc.type ? 'bg-primary/10 ring-1 ring-primary/30' : ''"
+                @click="activeType = doc.type"
+              >
+                <DocumentIcon
+                  :presentation="doc.type === 'workspace'
+                    ? DOCUMENT_AUXILIARY_PRESENTATION.workspace
+                    : getDomainDocumentPresentation(
                       doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
                       doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
                     )"
-                    size="picker"
-                    class="mt-0.5"
-                  />
-                  <span class="min-w-0">
-                    <span class="block text-sm font-medium">{{ doc.label }}</span>
-                    <span class="mt-0.5 line-clamp-2 block text-xs leading-4 text-muted-foreground">{{ doc.description }}</span>
-                  </span>
-                </button>
-              </section>
+                  size="picker"
+                />
+                <span class="min-w-0 truncate text-sm font-medium">{{ doc.label }}</span>
+              </button>
             </div>
             <div v-else class="px-3 py-8 text-center text-sm text-muted-foreground">
               {{ $t('uiText.noMatchingTypesFound8929cdab') }}
@@ -811,28 +839,41 @@ function onCancel(): void {
 
         <!-- Справа: данные для создания -->
         <div v-if="hasSupportedSelection" class="flex min-h-0 flex-col gap-3">
-          <div class="rounded-lg border bg-muted/20 p-3">
-            <div class="flex items-start gap-3">
-              <DocumentIcon
-                :presentation="getDomainDocumentPresentation(
-                  activeType === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : activeType,
-                  activeType === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
-                )"
-                size="picker"
-                class="mt-0.5"
+          <div v-if="isWorkspaceSelected" class="space-y-3 rounded-md border p-3">
+            <div class="grid gap-2">
+              <Label for="create-workspace-name">{{ t('workspaceTree.displayName') }}</Label>
+              <Input
+                id="create-workspace-name"
+                v-model="name"
+                :disabled="loading"
+                @keydown.enter.prevent="onSubmit"
               />
-              <div>
-                <div class="font-medium">
-                  {{ activeOption.label }}
-                </div>
-                <div class="mt-1 text-sm leading-5 text-muted-foreground">
-                  {{ activeOption.description }}
-                </div>
-              </div>
+            </div>
+            <div class="grid gap-2">
+              <Label for="create-workspace-identity">{{ t('workspaceTree.identity') }}</Label>
+              <Input
+                id="create-workspace-identity"
+                v-model="identity"
+                :disabled="loading"
+                :maxlength="160"
+                :aria-invalid="identityError ? 'true' : undefined"
+                @input="onIdentityInput"
+                @keydown.enter.prevent="onSubmit"
+              />
+              <span v-if="identityError" class="text-xs text-destructive">{{ identityError }}</span>
+            </div>
+            <div class="grid gap-2">
+              <Label for="create-workspace-description">{{ t('workspaceTree.description') }}</Label>
+              <Textarea
+                id="create-workspace-description"
+                v-model="description"
+                :disabled="loading"
+                :rows="3"
+              />
             </div>
           </div>
 
-          <Tabs v-model="createMode" class="flex min-h-0 flex-1 flex-col">
+          <Tabs v-else v-model="createMode" class="flex min-h-0 flex-1 flex-col">
             <TabsList class="grid w-full grid-cols-2">
               <TabsTrigger value="form">
                 {{ $t('uiText.form22af8f93') }}
@@ -928,7 +969,7 @@ function onCancel(): void {
           {{ $t('uiText.cancel555ad1c0') }}
         </Button>
         <Button
-          :disabled="!hasSupportedSelection || loading || identityChecking || (createMode === 'form' && !!formError)"
+          :disabled="!hasSupportedSelection || loading || identityChecking || ((isWorkspaceSelected || createMode === 'form') && !!formError)"
           @click="onSubmit"
         >
           {{ loading ? $t('uiText.creating573e3eda') : $t('uiText.create84370a20') }}

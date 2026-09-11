@@ -19,8 +19,8 @@ export interface RuntimePreviewAuthPrompt {
 export const ENDGE_IDE_RUNTIME_TREE_WIDGET_ID = 'runtime-tree'
 export const LEGACY_ENDGE_PREVIEW_WIDGET_ID = 'preview-runtime-tree'
 
-export type RuntimePreviewEntityType = 'project' | 'composition' | 'component-sfc' | 'store' | 'simulation'
-export type RuntimePreviewTreeNodeKind = 'project' | 'composition' | 'scope' | 'group' | 'runtime' | 'data' | 'resource' | 'component-sfc' | 'simulation'
+export type RuntimePreviewEntityType = 'composition' | 'component-sfc' | 'store' | 'simulation'
+export type RuntimePreviewTreeNodeKind = 'composition' | 'scope' | 'group' | 'runtime' | 'data' | 'resource' | 'component-sfc' | 'simulation'
 export type RuntimePreviewLifecycleState
   = | 'inactive'
     | 'preparing'
@@ -39,11 +39,11 @@ export interface RuntimePreviewTarget {
 
 export type RuntimePreviewOccurrenceKind = 'composition' | 'component-runtime'
 
-/** Статический адрес одного использования цели внутри программы текущего Project. */
+/** Статический адрес одного использования цели внутри startup Composition. */
 export interface RuntimePreviewOccurrence {
   id: string
   kind: RuntimePreviewOccurrenceKind
-  projectIdentity: string
+  rootIdentity: string
   nodeId: string
   composition: RuntimePreviewCompositionAddress
   runtimePath: string | null

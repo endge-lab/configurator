@@ -3,6 +3,7 @@ import { Endge } from '@endge/core'
 import { computed, ref } from 'vue'
 
 import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { buildProblemsEntityEntries, buildProblemsSeverityGroups } from '@/features/endge-ide/services/diagnostics/problems-workspace-presentation'
 
@@ -50,13 +51,13 @@ export class EndgeIDEProblems_Module {
     }
   }
 
-  /** Возвращает пользователя из Problems workspace к Project widget. */
-  public returnToProject(): boolean {
+  /** Возвращает пользователя из Problems workspace к Domain widget. */
+  public returnToDomain(): boolean {
     const area = getLayoutState().widgets.value.areas.left
     if (!area.expanded || area.activeWidget !== ENDGE_IDE_PROBLEMS_WIDGET_ID) {
       return false
     }
-    showWidget('project')
+    showWidget(ENDGE_IDE_DOMAIN_WIDGET_ID)
     return true
   }
 

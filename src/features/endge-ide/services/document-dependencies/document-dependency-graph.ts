@@ -23,7 +23,6 @@ import {
   Endge,
   FilterType,
   QueryType,
-  RProject,
 } from '@endge/core'
 
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
@@ -60,12 +59,10 @@ const PROGRAM_ENTITY_TYPES = new Set<ProgramEntityType>([
   'store',
   'filter',
   'composition',
-  'project',
   'style',
 ])
 
 const SOURCE_DOCUMENT_TYPES = new Set([
-  'project',
   'type',
   'simulation',
   'store',
@@ -366,28 +363,6 @@ function resolveDraftDependencies(input: DocumentDependencyTreeInput): DraftDepe
       hasComponentIdentity: identity => Endge.domain.getComponentSFC(identity) != null,
     })
     return dependenciesFromSFC(result, input.source)
-  }
-
-  if (documentType === 'project') {
-    if (Endge.mode === 'debugger') {
-      const result = Endge.source.compile('composition', input.source)
-      return {
-        dependencies: result.artifact ? extractArtifactDependencies('composition', result.artifact, input.draft) : [],
-        diagnostics: (result.diagnostics ?? []) as DocumentDependencyDiagnostic[],
-        compilable: result.artifact != null,
-      }
-    }
-    const persisted = Endge.domain.getProject(input.id ?? input.identity)
-    const draft = RProject.fromPlain({
-      ...persisted?.toPlain(),
-      id: input.id ?? persisted?.id ?? input.identity,
-      identity: input.identity,
-      displayName: input.displayName,
-      source: input.source,
-      sourceVersion: (input.draft as { sourceVersion?: number } | undefined)?.sourceVersion ?? 1,
-    })
-    const artifact = Endge.compiler.compileProjectArtifact(draft)
-    return { dependencies: artifact.dependencies, diagnostics: artifact.diagnostics, compilable: artifact.status !== 'error' }
   }
 
   const result = Endge.source.compile(documentType, input.source)
@@ -729,12 +704,6 @@ function resolveDomainDocument(entityType: string, identity: string): unknown {
       return Endge.domain.getVocab(identity)
     case 'auth-profile':
       return Endge.domain.getAuthProfile(identity)
-    case 'project':
-      return Endge.domain.getProject(identity)
-    case 'tenant':
-      return Endge.domain.getTenant(identity)
-    case 'environment':
-      return Endge.domain.getEnvironment(identity)
     default:
       return null
   }

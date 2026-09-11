@@ -36,26 +36,26 @@ describe('разрешение рабочего набора домена', () =
   })
 
   it('добавляет цепочку owner как контекст без раскрытия зависимостей owner', () => {
-    const composition = ref('composition', 'project-composition')
-    const project = ref('project', 'schedule-project')
-    const tenant = ref('tenant', 'main-tenant')
+    const composition = ref('composition', 'owned-composition')
+    const owner = ref('owner', 'schedule-owner')
+    const parentOwner = ref('owner-group', 'main-owner-group')
     const unrelated = ref('composition', 'unrelated-composition')
 
     const result = resolveDomainWorkingSet([composition], {
-      dependenciesOf: source => source.entityType === 'project' ? [unrelated] : [],
+      dependenciesOf: source => source.entityType === 'owner' ? [unrelated] : [],
       ownerOf: (source) => {
         if (source.entityType === 'composition') {
-          return project
+          return owner
         }
-        if (source.entityType === 'project') {
-          return tenant
+        if (source.entityType === 'owner') {
+          return parentOwner
         }
         return null
       },
     })
 
-    expect(result.members.get('project:schedule-project')?.role).toBe('context')
-    expect(result.members.get('tenant:main-tenant')?.role).toBe('context')
+    expect(result.members.get('owner:schedule-owner')?.role).toBe('context')
+    expect(result.members.get('owner-group:main-owner-group')?.role).toBe('context')
     expect(result.members.has('composition:unrelated-composition')).toBe(false)
   })
 

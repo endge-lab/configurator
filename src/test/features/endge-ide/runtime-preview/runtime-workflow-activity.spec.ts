@@ -18,12 +18,22 @@ function entry(node: RuntimePreviewTreeNode, state: RuntimePreviewLifecycleState
 
 describe('активность Workspace Workflow', () => {
   /** Текущий контекст не зависит от lifecycle исполняемых узлов. */
-  it('сохраняет контекст при паузе и переносит подсветку на нового тенанта', () => {
-    const roots = [diagram('tenant-a', 'tenant', 'a'), diagram('tenant-b', 'tenant', 'b'), diagram('project', 'project', 'app'), diagram('environment', 'environment', 'dev'), diagram('composition', 'composition', 'page')]
+  it('сохраняет контекст при паузе и переносит подсветку на новый документ фасета', () => {
+    const facetDocument = (id: string, facet: string, document: string): WorkflowDependency => ({
+      ...diagram(id, null, document),
+      kind: `facet-document:${facet}`,
+    })
+    const roots = [
+      facetDocument('region-a', 'region', 'a'),
+      facetDocument('region-b', 'region', 'b'),
+      facetDocument('application', 'application', 'app'),
+      facetDocument('deployment', 'deployment', 'dev'),
+      diagram('composition', 'composition', 'page'),
+    ]
     const entries = [entry(runtime('composition', 'page'), 'paused')]
-    const context = { tenantIdentity: 'a', projectIdentity: 'app', environmentIdentity: 'dev' }
-    expect([...collectRuntimeWorkflowActivity(roots, entries, context)]).toEqual(['tenant-a', 'project', 'environment'])
-    expect([...collectRuntimeWorkflowActivity(roots, entries, { ...context, tenantIdentity: 'b' })]).toEqual(['tenant-b', 'project', 'environment'])
+    const context = { facets: { region: 'a', application: 'app', deployment: 'dev' } }
+    expect([...collectRuntimeWorkflowActivity(roots, entries, context)]).toEqual(['region-a', 'application', 'deployment'])
+    expect([...collectRuntimeWorkflowActivity(roots, entries, { facets: { ...context.facets, region: 'b' } })]).toEqual(['region-b', 'application', 'deployment'])
   })
 
   /** Последний active экземпляр определяет подсветку независимо от остальных запусков. */

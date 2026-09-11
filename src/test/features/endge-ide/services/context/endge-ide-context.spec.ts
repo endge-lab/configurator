@@ -85,9 +85,7 @@ describe('контекст EndgeIDE', () => {
     context = new ConfiguratorContext_Module({ start: vi.fn(), stop: vi.fn() })
     vi.stubEnv('VITE_ENDGE_SERVICE_BACKEND_URL', 'https://backend.test')
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace')
-    vi.stubEnv('VITE_ENDGE_TENANT_IDENTITY', 'tenant')
-    vi.stubEnv('VITE_ENDGE_PROJECT_IDENTITY', 'project')
-    vi.stubEnv('VITE_ENDGE_ENVIRONMENT_IDENTITY', 'dev')
+    vi.stubEnv('VITE_ENDGE_FACETS', '{"organization":"acme","application":"portal","deployment":"local"}')
     vi.stubEnv('VITE_SENTRY_DSN', 'http://public@sentry.test/2')
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'local')
     vi.stubEnv('VITE_SENTRY_RELEASE', 'endge-local@1')
@@ -125,9 +123,7 @@ describe('контекст EndgeIDE', () => {
       dataProvider: 'default',
       scope: { workspaceIdentity: 'workspace' },
       context: {
-        tenantIdentity: 'tenant',
-        projectIdentity: 'project',
-        environmentIdentity: 'dev',
+        facets: { organization: 'acme', application: 'portal', deployment: 'local' },
       },
       domainProvider,
       vars: {
@@ -165,49 +161,55 @@ describe('контекст EndgeIDE', () => {
     expect(context.isInitialized).toBe(true)
   })
 
-  it('освобождает зарегистрированные surfaces перед перезапуском контекста проекта', async () => {
+  it('освобождает зарегистрированные surfaces перед перезапуском контекста фасетов', async () => {
     const beforeContextReset = vi.fn()
     const unregister = context.registerSurface('test-surface', { beforeContextReset })
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
     mocks.boot.mockClear()
 
-    await context.switchContext({ projectIdentity: 'next-project' })
+    await context.switchContext({ facets: { organization: 'acme', application: 'mobile', deployment: 'local' } })
 
     expect(beforeContextReset).toHaveBeenCalledOnce()
     expect(mocks.reset).toHaveBeenCalledOnce()
     expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({
       context: expect.objectContaining({
-        projectIdentity: 'next-project',
-        environmentIdentity: undefined,
+        facets: { organization: 'acme', application: 'mobile', deployment: 'local' },
       }),
     }))
     unregister()
+  })
+
+  it('при reload не превращает сохранённые selections в обязательный explicit context', async () => {
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
+    vi.stubEnv('VITE_ENDGE_FACETS', '')
+    mocks.boot.mockClear()
+
+    await context.reloadCurrentContext()
+
+    expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({ context: {} }))
   })
 
   it('возвращается к предыдущему контексту после неудачного перезапуска', async () => {
     await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
     mocks.boot.mockClear()
     mocks.boot.mockImplementation(async (ctx: { context: Record<string, unknown> }) => {
-      if (ctx.context.projectIdentity === 'broken') {
+      if ((ctx.context.facets as Record<string, string> | undefined)?.application === 'broken') {
         throw new Error('boot failed')
       }
       mocks.executionContext = { ...ctx.context }
     })
 
     await expect(context.switchContext({
-      projectIdentity: 'broken',
-      environmentIdentity: 'broken-env',
+      facets: { organization: 'acme', application: 'broken', deployment: 'broken-stage' },
     })).rejects.toThrow('boot failed')
 
     expect(mocks.boot).toHaveBeenLastCalledWith(expect.objectContaining({
       context: expect.objectContaining({
-        projectIdentity: 'project',
-        environmentIdentity: 'dev',
+        facets: { organization: 'acme', application: 'portal', deployment: 'local' },
       }),
     }))
     expect(context.currentContext).toMatchObject({
-      projectIdentity: 'project',
-      environmentIdentity: 'dev',
+      facets: { organization: 'acme', application: 'portal', deployment: 'local' },
     })
   })
 

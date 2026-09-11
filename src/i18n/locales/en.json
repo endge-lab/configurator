@@ -2,7 +2,7 @@
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Preview",
-    "activeOnly": "The current Workspace, Tenant, Project and Environment and active nodes across all Runtime Preview instances are highlighted."
+    "activeOnly": "The current Workspace, selected facet documents, and active nodes across all Runtime Preview instances are highlighted."
   },
   "aiWorkbench": {
     "widget": {
@@ -24,8 +24,8 @@
     "resizeNavigation": "Resize document navigation"
   },
   "backendSelection": {
-    "description": "Select the environment you want to work with. Your choice will be saved in this browser.",
-    "title": "Select an environment"
+    "description": "Select the backend service you want to work with. Your choice will be saved in this browser.",
+    "title": "Select a backend"
   },
   "styleEditor": {
     "hideCSSPreview": "Hide generated CSS",
@@ -33,6 +33,8 @@
   },
   "workspaceTree": {
     "active": "Active",
+    "label": "Workspace",
+    "model": "Model",
     "create": "Create workspace",
     "created": "Workspace created",
     "createFailed": "Could not create the workspace",
@@ -40,7 +42,9 @@
     "deletionForbidden": "This operation is forbidden",
     "description": "Description",
     "displayName": "Name",
+    "displayNameRequired": "Name is required",
     "identity": "Identifier",
+    "identityRequired": "Identifier is required",
     "identityConflict": "A workspace with this identifier already exists",
     "refreshFailed": "The workspace was created, but the list could not be refreshed. Reload the page.",
     "workspaceFolderDeletionWarning": "Documents will be deleted from the domain and disappear from both projections, not only from this folder.",
@@ -50,16 +54,7 @@
     "folderAppearanceReset": "Reset"
   },
   "documentCreate": {
-    "createTenant": "Create tenant",
-    "createProject": "Create project",
-    "createEnvironment": "Create environment",
-    "unsupportedType": "Select a supported document type",
-    "project": {
-      "label": "Project",
-      "description": "Project configuration, environments and root execution graph.",
-      "defaultName": "New project",
-      "group": "System"
-    }
+    "unsupportedType": "Select a supported document type"
   },
   "common": {
     "delete": "Delete",
@@ -168,7 +163,7 @@
       },
       "debug": {
         "problems": "Find problems",
-        "projectCompilation": "Project compilation",
+        "domainBuild": "Domain build",
         "title": "Debug",
         "remoteDebug": "Remote debug"
       },
@@ -433,7 +428,7 @@
     "availableTimeZonesA11abca9": "Available time zones",
     "backendIsCheckingTheSnapshotAndBuildingThePlan3d5a4c8d": "Backend is checking the snapshot and building the plan…",
     "basic127492c2": "Basic",
-    "collapseToProjectContent": "Collapse to project content",
+    "collapseToRootContent": "Collapse to root Composition content",
     "booleanE8fbe226": "Boolean",
     "bothfc39b18f": "both",
     "bottomFa188130": "Bottom",
@@ -642,7 +637,7 @@
     "errorc394f7f8": "error",
     "errors200f99bf": "errors",
     "errors57004359": "errors",
-    "escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78": "Escape returns to Project. Selecting an entity opens its problems on the right.",
+    "escapeReturnsToDomainSelectingAnEntityOpensItsProbl115d0a78": "Escape returns to Domain. Selecting an entity opens its problems on the right.",
     "eventBb92633b": "Event",
     "eventJournalCount": "Event journal: {count} of {limit}",
     "eventCacheEndge95e061e6": "Event Cache (Endge (",
@@ -983,9 +978,6 @@
     "processesWithStartEndAndDurationCompilationQueriesAnc504b9e0": "Processes with start, end, and duration: compilation, queries, and runtime execution. Help assess the time and outcome of the operation.",
     "profileEb0b9b0d": "Profile",
     "profileUtilityPropertiesA8894f18": "Profile utility properties",
-    "projectBindingb8d0866f": "Project binding:",
-    "projectCompositions373faff7": "Project compositions",
-    "projectsB90d9f72": "Projects",
     "propsaa609687": "props",
     "providede93470b0": "Provided",
     "provider5f3a1461": "· provider:",
@@ -998,7 +990,7 @@
     "range92b69b2b": "Range:",
     "reactionf996ddc3": "Reaction",
     "reactionIsControlledBySource7dc58447": "Reaction is controlled by Source",
-    "reanalyzeProject36a10b6c": "Reanalyze Project",
+    "reanalyzeDomain36a10b6c": "Reanalyze Domain",
     "record4be73032": "Record",
     "recordCombinationa6cc1078": "Record combination",
     "recordFields829af3a9": "Record fields",
@@ -1011,7 +1003,7 @@
     "recursive594a4346": "recursive",
     "referenceC497de39": "Reference",
     "refreshAll29b7dd60": "Refresh All",
-    "registryIsUpToDateReanalyzeAfterProjectChangesfc0faf0e": "Registry is up to date. Reanalyze after project changes.",
+    "registryIsUpToDateReanalyzeAfterDomainChangesfc0faf0e": "Registry is up to date. Reanalyze after Domain changes.",
     "released41f56ce": "Release",
     "releases56f8a21b": "Releases",
     "releasesOfThisCommit282df137": "Releases of this commit",
@@ -1054,9 +1046,8 @@
     "rtype12d6baba": "RType",
     "rulesNotConfigured0c795e3b": "Rules not configured.",
     "runAnalysisF0789caf": "Run analysis",
-    "runInProjectContextd1462887": "Run in project context",
+    "runInCurrentContextd1462887": "Run in the current context",
     "runPreview1aa4c89a": "Run preview",
-    "runProjectRuntimePreviewCtrlEnter64161c9b": "Run Project Runtime Preview (⌘/Ctrl+Enter)",
     "runRuntimePreviewCtrlEnterF142bef6": "Run Runtime Preview (⌘/Ctrl+Enter)",
     "runStandalone7b1861a4": "Run standalone",
     "runtimec4740e4c": "Runtime",
@@ -1064,7 +1055,7 @@
     "runtimePreviewAuthorization54e41ed8": "Runtime Preview Authorization",
     "runtimeTargets69bfee86": "Runtime targets",
     "runtimeTreeIsEmptyc273285d": "Runtime Tree is empty.",
-    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree is empty. Start Simulation, Project, Composition, Component SFC, or Store via Debug Preview.",
+    "runtimeTreeIsEmptyStartSimulationCompositionComponentSF2e58a46f": "Runtime Tree is empty. Start Simulation, Composition, Component SFC, or Store via Debug Preview.",
     "save4864057d": "Save",
     "saveForwarda8daa4f8": "Save forward",
     "saveRefreshTokenF71fbe79": "Save refresh token",
@@ -1338,24 +1329,18 @@
     "arrange": "Arrange nodes",
     "sections": "Workspace sections",
     "general": "Workspace settings",
+    "startup": {
+      "label": "Startup Composition",
+      "none": "Not selected",
+      "dropHint": "Drag one Composition here from the tree. Other document types are not accepted."
+    },
     "metamodel": {
       "label": "Metamodel",
-      "description": "Defines how documents are organized in the Project widget.",
+      "description": "Defines how documents are organized in the Domain widget.",
       "frontend": "Frontend",
       "frontendDescription": "Documents are grouped into typed system sections.",
       "custom": "Workspace",
-      "customDescription": "Documents use a free-form user-defined hierarchy.",
-      "rebuild": {
-        "action": "Copy the Frontend folder structure",
-        "saveFirst": "Save the metamodel selection first",
-        "title": "Rebuild the Workspace folder structure?",
-        "warning": "All current folders in the Workspace dimension will be deleted. The Frontend folder structure will then be recreated and documents will be linked to the corresponding new folders.",
-        "preserved": "The documents themselves and their placement in the Frontend dimension are not deleted or changed. Configurator reloads after completion.",
-        "cancel": "Cancel",
-        "confirm": "Delete and rebuild",
-        "processing": "Rebuilding…",
-        "error": "Failed to rebuild folders"
-      }
+      "customDescription": "Documents use a free-form user-defined hierarchy."
     },
     "unsaved": "Unsaved changes",
     "openCurrent": "Open current workspace workflow"
@@ -1374,30 +1359,29 @@
     "application": "Application",
     "noApplications": "No available applications",
     "endSession": "End session",
-    "project": "Project",
     "contextReadonly": "Application context — read only",
     "selectLabel": "Application for remote debugging"
   },
   "facets": {
     "title": "Dynamic facets",
     "navigation": "Facets",
-    "orderDescription": "Top-to-bottom order defines authoring specificity. Runtime integration will be added in stage 2.",
+    "orderDescription": "Top-to-bottom order defines the configuration cascade from general to specific.",
     "deleted": "Deleted",
     "createFacet": "Create facet",
     "loadingFacets": "Loading facets",
     "noDeletedFacets": "No deleted facets",
     "emptyWorkspace": "This Workspace has no facets yet",
-    "emptyHint": "Create the first facet to add a Project section without changing the current runtime context.",
+    "emptyHint": "Create the first facet to add a section to Domain and the runtime context.",
     "documentCount": "{count} documents",
     "restore": "Restore",
     "editFacet": "Edit facet",
     "newFacet": "New facet",
-    "dialogDescription": "Set the stable identity and appearance of the facet section in Project.",
+    "dialogDescription": "Set the stable identity and appearance of the facet section in Domain.",
     "identity": "Identity",
-    "identityPlaceholder": "For example: environment",
+    "identityPlaceholder": "For example: region",
     "identityLocked": "Identity is locked because the facet has {count} active documents.",
     "name": "Name",
-    "namePlaceholder": "For example: Environment",
+    "namePlaceholder": "For example: Region",
     "appearance": "Icon and color",
     "cancel": "Cancel",
     "save": "Save",
@@ -1410,7 +1394,7 @@
     "noDeletedDocuments": "No deleted documents",
     "notSet": "Not set",
     "localOverrideMissing": "No local override operation is set.",
-    "contributionOnlyHint": "Only local override operations are stored here. Upstream values and effective configuration are not resolved; the dynamic cascade will be connected in stage 2.",
+    "contributionOnlyHint": "Only local override operations are stored here. Effective values are resolved through the ordered dynamic facet cascade.",
     "fallback": "fallback",
     "advancedColor": "Advanced color",
     "hex": "HEX"
@@ -1419,7 +1403,7 @@
     "previewReadonly": "Client application preview. Data updates arrive as snapshots; actions in this preview are disabled.",
     "selectPreview": "Select a component, filter, or a containing branch in Runtime Tree.",
     "noRenderables": "This branch has no components to display.",
-    "activeOnly": "The current Workspace, Tenant, Project and Environment and active client runtime nodes are highlighted.",
+    "activeOnly": "The current Workspace, selected facet documents, and active client runtime nodes are highlighted.",
     "tree": "Client Runtime",
     "tabs": "Runtime inspection",
     "data": "Data",

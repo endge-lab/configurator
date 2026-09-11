@@ -2,7 +2,7 @@
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Предпросмотр",
-    "activeOnly": "Подсвечены текущие Workspace, Tenant, Project и Environment, а также активные узлы всех запусков Runtime Preview."
+    "activeOnly": "Подсвечены текущий Workspace, выбранные документы фасетов и активные узлы всех запусков Runtime Preview."
   },
   "aiWorkbench": {
     "widget": {
@@ -24,8 +24,8 @@
     "resizeNavigation": "Изменить ширину меню документа"
   },
   "backendSelection": {
-    "description": "Выберите среду, с которой хотите работать. Выбор сохранится в этом браузере.",
-    "title": "Выберите среду"
+    "description": "Выберите backend-сервис, с которым хотите работать. Выбор сохранится в этом браузере.",
+    "title": "Выберите backend"
   },
   "styleEditor": {
     "hideCSSPreview": "Скрыть производный CSS",
@@ -33,6 +33,8 @@
   },
   "workspaceTree": {
     "active": "Активный",
+    "label": "Рабочее пространство",
+    "model": "Модель",
     "create": "Создать рабочее пространство",
     "created": "Рабочее пространство создано",
     "createFailed": "Не удалось создать рабочее пространство",
@@ -40,7 +42,9 @@
     "deletionForbidden": "Данная операция запрещена",
     "description": "Описание",
     "displayName": "Название",
+    "displayNameRequired": "Название обязательно",
     "identity": "Идентификатор",
+    "identityRequired": "Идентификатор обязателен",
     "identityConflict": "Рабочее пространство с таким идентификатором уже существует",
     "refreshFailed": "Пространство создано, но список не обновился. Перезагрузите страницу.",
     "workspaceFolderDeletionWarning": "Документы будут удалены из домена и исчезнут из обеих проекций, а не только из этой папки.",
@@ -50,16 +54,7 @@
     "folderAppearanceReset": "Сбросить"
   },
   "documentCreate": {
-    "createTenant": "Создать тенант",
-    "createProject": "Создать проект",
-    "createEnvironment": "Создать окружение",
-    "unsupportedType": "Выберите поддерживаемый тип документа",
-    "project": {
-      "label": "Проект",
-      "description": "Конфигурация проекта, его окружения и корневой граф выполнения.",
-      "defaultName": "Новый проект",
-      "group": "Система"
-    }
+    "unsupportedType": "Выберите поддерживаемый тип документа"
   },
   "common": {
     "delete": "Удалить",
@@ -168,7 +163,7 @@
       },
       "debug": {
         "problems": "Поиск проблем",
-        "projectCompilation": "Компиляция проекта",
+        "domainBuild": "Сборка домена",
         "title": "Отладка",
         "remoteDebug": "Удалённая отладка"
       },
@@ -433,7 +428,7 @@
     "availableTimeZonesA11abca9": "Доступные временные зоны",
     "backendIsCheckingTheSnapshotAndBuildingThePlan3d5a4c8d": "Backend проверяет snapshot и строит план…",
     "basic127492c2": "Основное",
-    "collapseToProjectContent": "Сворачивание до содержимого проекта",
+    "collapseToRootContent": "Свернуть до содержимого корневой Composition",
     "booleanE8fbe226": "Булево",
     "bothfc39b18f": "both",
     "bottomFa188130": "Снизу",
@@ -642,7 +637,7 @@
     "errorc394f7f8": "ошибка",
     "errors200f99bf": "ошибок",
     "errors57004359": "ошибки",
-    "escapeReturnsToProjectSelectingAnEntityOpensItsProbl115d0a78": "Escape возвращает к Project. Выбор сущности открывает её problems справа.",
+    "escapeReturnsToDomainSelectingAnEntityOpensItsProbl115d0a78": "Escape возвращает к Domain. Выбор сущности открывает её problems справа.",
     "eventBb92633b": "Событие",
     "eventJournalCount": "Журнал событий: {count} из {limit}",
     "eventCacheEndge95e061e6": "Кеш событий Endge (",
@@ -983,9 +978,6 @@
     "processesWithStartEndAndDurationCompilationQueriesAnc504b9e0": "Процессы с началом, завершением и длительностью: компиляция, запросы и runtime-выполнение. Помогают оценить время и результат операции.",
     "profileEb0b9b0d": "Профиль",
     "profileUtilityPropertiesA8894f18": "Служебные свойства профиля",
-    "projectBindingb8d0866f": "Привязка к проекту:",
-    "projectCompositions373faff7": "Композиции проекта",
-    "projectsB90d9f72": "Проекты",
     "propsaa609687": "props",
     "providede93470b0": "Предоставлено",
     "provider5f3a1461": "· provider:",
@@ -998,7 +990,7 @@
     "range92b69b2b": "Диапазон:",
     "reactionf996ddc3": "Реакция",
     "reactionIsControlledBySource7dc58447": "Reaction управляется Source",
-    "reanalyzeProject36a10b6c": "Повторить анализ проекта",
+    "reanalyzeDomain36a10b6c": "Повторить анализ домена",
     "record4be73032": "Записать",
     "recordCombinationa6cc1078": "Записать комбинацию",
     "recordFields829af3a9": "Поля записи",
@@ -1011,7 +1003,7 @@
     "recursive594a4346": "recursive",
     "referenceC497de39": "Справочник",
     "refreshAll29b7dd60": "Обновить все",
-    "registryIsUpToDateReanalyzeAfterProjectChangesfc0faf0e": "Registry актуален. Повторите анализ после изменения проекта.",
+    "registryIsUpToDateReanalyzeAfterDomainChangesfc0faf0e": "Registry актуален. Повторите анализ после изменения домена.",
     "released41f56ce": "Релиз",
     "releases56f8a21b": "Релизы",
     "releasesOfThisCommit282df137": "Релизы этого коммита",
@@ -1054,9 +1046,8 @@
     "rtype12d6baba": "RType",
     "rulesNotConfigured0c795e3b": "Правила не настроены.",
     "runAnalysisF0789caf": "Запустить анализ",
-    "runInProjectContextd1462887": "Запустить в контексте проекта",
+    "runInCurrentContextd1462887": "Запустить в текущем контексте",
     "runPreview1aa4c89a": "Запустить предпросмотр",
-    "runProjectRuntimePreviewCtrlEnter64161c9b": "Запустить Runtime Preview проекта (⌘/Ctrl+Enter)",
     "runRuntimePreviewCtrlEnterF142bef6": "Запустить Runtime Preview (⌘/Ctrl+Enter)",
     "runStandalone7b1861a4": "Запустить standalone",
     "runtimec4740e4c": "Runtime",
@@ -1064,7 +1055,7 @@
     "runtimePreviewAuthorization54e41ed8": "Авторизация Runtime Preview",
     "runtimeTargets69bfee86": "Цели runtime",
     "runtimeTreeIsEmptyc273285d": "Runtime Tree пуст.",
-    "runtimeTreeIsEmptyStartProjectCompositionComponentSF2e58a46f": "Runtime Tree пуст. Запустите Simulation, Project, Composition, Component SFC или Store через Debug Preview.",
+    "runtimeTreeIsEmptyStartSimulationCompositionComponentSF2e58a46f": "Runtime Tree пуст. Запустите Simulation, Composition, Component SFC или Store через Debug Preview.",
     "save4864057d": "Сохранить",
     "saveForwarda8daa4f8": "Сохранить forward",
     "saveRefreshTokenF71fbe79": "Сохранять refresh token",
@@ -1338,24 +1329,18 @@
     "arrange": "Упорядочить блоки",
     "sections": "Разделы рабочего пространства",
     "general": "Настройки рабочего пространства",
+    "startup": {
+      "label": "Стартовая Composition",
+      "none": "Не выбрана",
+      "dropHint": "Можно перетащить сюда одну Composition из дерева. Другие типы документов не принимаются."
+    },
     "metamodel": {
       "label": "Метамодель",
-      "description": "Определяет, как документы организованы в виджете «Проект».",
+      "description": "Определяет, как документы организованы в виджете Domain.",
       "frontend": "Frontend",
       "frontendDescription": "Документы сгруппированы по типизированным системным разделам.",
       "custom": "Рабочее пространство",
-      "customDescription": "Документы организованы в свободной пользовательской иерархии.",
-      "rebuild": {
-        "action": "Скопировать структуру папок Frontend",
-        "saveFirst": "Сначала сохраните выбор метамодели",
-        "title": "Пересоздать структуру папок рабочего пространства?",
-        "warning": "Все текущие папки в измерении «Рабочее пространство» будут удалены. Затем структура папок Frontend будет создана заново, а документы — привязаны к соответствующим новым папкам.",
-        "preserved": "Сами документы и их размещение в измерении Frontend не удаляются и не изменяются. После завершения Configurator перезагрузится.",
-        "cancel": "Отмена",
-        "confirm": "Удалить и пересоздать",
-        "processing": "Пересоздание…",
-        "error": "Не удалось пересоздать папки"
-      }
+      "customDescription": "Документы организованы в свободной пользовательской иерархии."
     },
     "unsaved": "Есть несохранённые изменения",
     "openCurrent": "Открыть Workflow текущего рабочего пространства"
@@ -1374,30 +1359,29 @@
     "application": "Приложение",
     "noApplications": "Нет доступных приложений",
     "endSession": "Завершить сеанс",
-    "project": "Проект",
     "contextReadonly": "Контекст приложения — только чтение",
     "selectLabel": "Приложение для удалённой отладки"
   },
   "facets": {
     "title": "Динамические фасеты",
     "navigation": "Фасеты",
-    "orderDescription": "Порядок сверху вниз задаёт authoring-специфичность. Runtime подключение появится на этапе 2.",
+    "orderDescription": "Порядок сверху вниз задаёт configuration cascade от общего к частному.",
     "deleted": "Удалённые",
     "createFacet": "Создать фасет",
     "loadingFacets": "Загрузка фасетов",
     "noDeletedFacets": "Удалённых фасетов нет",
     "emptyWorkspace": "В Workspace пока нет фасетов",
-    "emptyHint": "Создайте первый фасет — он появится отдельным разделом в Project без изменения текущего runtime-контекста.",
+    "emptyHint": "Создайте первый фасет — он появится отдельным разделом в Domain и runtime-контексте.",
     "documentCount": "{count} документов",
     "restore": "Восстановить",
     "editFacet": "Изменить фасет",
     "newFacet": "Новый фасет",
-    "dialogDescription": "Задайте стабильный identity и оформление раздела фасета в Project.",
+    "dialogDescription": "Задайте стабильный identity и оформление раздела фасета в Domain.",
     "identity": "Identity",
-    "identityPlaceholder": "Например: environment",
+    "identityPlaceholder": "Например: region",
     "identityLocked": "Identity заблокирован: в фасете {count} активных документов.",
     "name": "Название",
-    "namePlaceholder": "Например: Окружение",
+    "namePlaceholder": "Например: Регион",
     "appearance": "Иконка и цвет",
     "cancel": "Отмена",
     "save": "Сохранить",
@@ -1410,7 +1394,7 @@
     "noDeletedDocuments": "Удалённых документов нет",
     "notSet": "Не задано",
     "localOverrideMissing": "Локальная override-операция отсутствует.",
-    "contributionOnlyHint": "Здесь сохраняются только локальные override-операции. Значения вышестоящего контекста и effective configuration не вычисляются; динамический каскад будет подключён на этапе 2.",
+    "contributionOnlyHint": "Здесь сохраняются только локальные override-операции. Effective values вычисляются через упорядоченный cascade динамических фасетов.",
     "fallback": "fallback",
     "advancedColor": "Расширенный цвет",
     "hex": "HEX"
@@ -1419,7 +1403,7 @@
     "previewReadonly": "Визуальное состояние приложения клиента. Данные обновляются снимками; действия в этом превью не выполняются.",
     "selectPreview": "Выберите компонент, фильтр или содержащую их ветку Runtime Tree.",
     "noRenderables": "В выбранной ветке нет компонентов для отображения.",
-    "activeOnly": "Подсвечены текущие Workspace, Tenant, Project и Environment и активные runtime-узлы клиента.",
+    "activeOnly": "Подсвечены текущий Workspace, выбранные документы фасетов и активные runtime-узлы клиента.",
     "tree": "Runtime клиента",
     "tabs": "Просмотр Runtime",
     "data": "Данные",

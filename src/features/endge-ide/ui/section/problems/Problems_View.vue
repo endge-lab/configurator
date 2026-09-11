@@ -9,6 +9,7 @@ import { showWidget } from '@/components/layouts/grid'
 import { getIconComponent } from '@/components/layouts/grid/icons'
 import { Button } from '@/components/ui/button'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { resolveDiagnosticsDocumentTarget } from '@/features/endge-ide/services/diagnostics/diagnostics-document-target'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
@@ -28,14 +29,14 @@ const entityIcon = computed<Component>(() => {
 })
 const entityIconClass = computed(() => entityPresentation.value?.colorClass ?? 'text-muted-foreground')
 
-/** Открывает persisted entity в Project workspace. */
+/** Открывает persisted entity в Domain workspace. */
 function openSelectedEntity(): void {
   const ref = selectedEntry.value?.entityRef
   if (!ref) {
     return
   }
   if (EndgeIDE.tabs.openDiagnosticsEntity(ref)) {
-    showWidget('project')
+    showWidget(ENDGE_IDE_DOMAIN_WIDGET_ID)
   }
 }
 </script>

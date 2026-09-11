@@ -48,10 +48,6 @@ export function getEntityByDocType(
       return domain.getComputation(id)
     case 'integration':
       return domain.getIntegration(id)
-    case 'environment':
-      return domain.getEnvironment(id)
-    case 'tenant':
-      return domain.getTenant(id)
     case 'policy':
       return domain.getPolicy(id)
     case 'style':

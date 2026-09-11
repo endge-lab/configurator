@@ -2,12 +2,13 @@ import type { EndgeConfiguration, EndgeDataMode, EndgeWorkspaceDefinition, Endge
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { readWorkflowLayout, writeWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
-/** Черновик настроек и раскладки Workspace; project metadata не изменяется. */
+/** Черновик настроек и раскладки Workspace; metadata документов не изменяется. */
 export class RWorkspaceEditor {
   public readonly identity: string
   public displayName: string
   public dataMode: EndgeDataMode
   public documentStructure: EndgeWorkspaceDocumentStructure
+  public startupCompositionIdentity: string | null
   public configuration: EndgeConfiguration
   public meta: Record<string, unknown>
   public readonly workflow: WorkspaceWorkflow
@@ -18,6 +19,7 @@ export class RWorkspaceEditor {
     this.displayName = workspace.displayName
     this.dataMode = workspace.dataMode
     this.documentStructure = workspace.documentStructure ?? 'frontend'
+    this.startupCompositionIdentity = workspace.startupCompositionIdentity
     this.configuration = JSON.parse(JSON.stringify(workspace.configuration)) as EndgeConfiguration
     this.meta = JSON.parse(JSON.stringify(workspace.meta ?? {})) as Record<string, unknown>
     this.workflow = new WorkspaceWorkflow(readWorkflowLayout(workspace.meta ?? {}))
@@ -31,6 +33,7 @@ export class RWorkspaceEditor {
       displayName: this.displayName.trim(),
       dataMode: this.dataMode,
       documentStructure: this.documentStructure,
+      startupCompositionIdentity: this.startupCompositionIdentity,
       configuration: this.configuration,
       meta: writeWorkflowLayout(this.meta, this.workflow.layout),
     })) as EndgeWorkspaceDefinition
@@ -41,6 +44,7 @@ export class RWorkspaceEditor {
       displayName: this.displayName,
       dataMode: this.dataMode,
       documentStructure: this.documentStructure,
+      startupCompositionIdentity: this.startupCompositionIdentity,
       configuration: this.configuration,
       meta: this.meta,
       layout: this.workflow.layout,

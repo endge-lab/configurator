@@ -9,7 +9,6 @@ export interface DocumentCreateDescriptor {
   keywords: string[]
   defaultName: string
   section: DomainSectionType
-  group: string
   supportsFolder: boolean
   supportsDescription: boolean
 }

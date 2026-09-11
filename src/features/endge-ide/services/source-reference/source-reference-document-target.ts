@@ -39,7 +39,6 @@ export function resolveSourceReferenceDocumentTarget(
     'converter': { documentType: 'converter', resolve: () => Endge.domain.getConverter(reference.identity) },
     'data-view': { documentType: 'data-view', resolve: () => Endge.domain.getDataView(reference.identity) },
     'i18n-bundles': { documentType: 'i18n-bundles', resolve: () => Endge.domain.getI18nBundle(reference.identity) },
-    'project': { documentType: 'project', resolve: () => Endge.domain.getProject(reference.identity) },
     'mock': { documentType: 'mock', resolve: () => Endge.domain.getMock(reference.identity) },
     'store': { documentType: 'store', resolve: () => Endge.domain.getStore(reference.identity) },
     'stream': { documentType: 'stream', resolve: () => Endge.domain.getStream(reference.identity) },

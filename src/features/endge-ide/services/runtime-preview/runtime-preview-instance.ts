@@ -6,8 +6,6 @@ import type {
   CompositionSession,
   EndgeStyleSheetArtifact,
   ProgramArtifact,
-  ProjectRuntimeHost,
-  ProjectRuntimeSession,
   RuntimeArtifactReader,
   RuntimeHost,
   SimulationGenerator,
@@ -26,7 +24,7 @@ import type {
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { ComponentPreviewContext } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 
-import { Endge, materializeCompositionPreviewProps, RComponentSFC, RProject, RSimulation } from '@endge/core'
+import { Endge, materializeCompositionPreviewProps, RComponentSFC, RSimulation } from '@endge/core'
 import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -72,7 +70,6 @@ export class RuntimePreviewInstance {
   })
 
   private _simulation: SimulationRuntimeSession | null = null
-  private _project: ProjectRuntimeSession<ProjectRuntimeHost> | null = null
   private _composition: CompositionSession<CompositionRuntimeHost> | null = null
   private _component: ComponentSFCRuntimeHost | null = null
   private _componentContext: ComponentPreviewContext | null = null
@@ -148,12 +145,9 @@ export class RuntimePreviewInstance {
           ),
         })
       }
-      else if (this.target.entityType === 'project') {
-        this._project = await Endge.runtime.project.mount(this.target.identity, {
-          autoActivate: 'none',
-          artifactReader: this._artifactReader,
-        })
+      else if (this.target.entityType === 'composition') {
         if (this._contextual) {
+          this._composition = await this._mountComposition(this.target.identity)
           const occurrence = this._contextual.occurrence
           const composition = await this._resolveCompositionAsync(occurrence.composition)
           if (occurrence.runtimePath) {
@@ -166,12 +160,7 @@ export class RuntimePreviewInstance {
           this.selectedNodeId.value = occurrence.nodeId
           this.contextualFocusComponentIdentity.value = occurrence.renderComponentIdentity
         }
-        else {
-          await this._project.composition.activate()
-        }
-      }
-      else if (this.target.entityType === 'composition') {
-        if (this._draft) {
+        else if (this._draft) {
           this._composition = await this._mountDraftComposition(this._draft)
         }
         else if (this._previewForcesMock) {
@@ -241,7 +230,7 @@ export class RuntimePreviewInstance {
       if (!node.composition) {
         return 'inactive'
       }
-      if (node.kind === 'composition' || node.kind === 'project') {
+      if (node.kind === 'composition') {
         return this._compositionState(node.composition)
       }
       const composition = this._resolveComposition(node.composition)
@@ -266,11 +255,6 @@ export class RuntimePreviewInstance {
     if (this._simulation) {
       await this._simulation.pause()
     }
-    else if (this._project) {
-      if (this._project.composition.state === 'active') {
-        await this._project.composition.pause()
-      }
-    }
     else if (this._composition) {
       await this._composition.host.getScope('scope_default')?.pause()
     }
@@ -291,11 +275,6 @@ export class RuntimePreviewInstance {
     }
     if (this._simulation) {
       await this._simulation.resume()
-    }
-    else if (this._project) {
-      if (this._project.composition.state === 'paused') {
-        await this._project.composition.resume()
-      }
     }
     else if (this._composition) {
       await this._composition.host.getScope('scope_default')?.activate()
@@ -484,19 +463,6 @@ export class RuntimePreviewInstance {
       }
       return createOverlayArtifactReader(artifact)
     }
-    if (this.target.entityType === 'project' && this._draft && !this._contextual) {
-      const persisted = Endge.domain.getProject(this.target.identity)
-      if (!persisted) {
-        throw new Error(`[RuntimePreview] Project "${this.target.identity}" is unavailable.`)
-      }
-      const model = RProject.fromPlain({ ...persisted.toPlain(), ...this._draft })
-      const artifact = Endge.compiler.compileProjectArtifact(model)
-      if (artifact.status === 'error') {
-        throw new Error(artifact.diagnostics.find(item => item.severity === 'error')?.message
-          ?? 'Project source содержит ошибки.')
-      }
-      return createOverlayArtifactReader(artifact)
-    }
     if (!this._contextual || !this._draft) {
       return Endge.program
     }
@@ -656,7 +622,7 @@ export class RuntimePreviewInstance {
       return
     }
     const composition = await this._resolveCompositionAsync(node.composition)
-    if (node.kind === 'composition' || node.kind === 'project') {
+    if (node.kind === 'composition') {
       await composition.getScope('scope_default')?.activate()
     }
     else if (node.kind === 'scope' || node.kind === 'data' || node.kind === 'resource') {
@@ -671,7 +637,7 @@ export class RuntimePreviewInstance {
     if (!node.composition || node.kind === 'group' || node.kind === 'data' || node.kind === 'resource') {
       return
     }
-    if ((node.kind === 'composition' || node.kind === 'project') && node.composition.invocationPath.length === 0 && this._simulation) {
+    if (node.kind === 'composition' && node.composition.invocationPath.length === 0 && this._simulation) {
       if (operation === 'pause') {
         await this._simulation.host.target?.getScope('scope_default')?.pause()
       }
@@ -719,19 +685,13 @@ export class RuntimePreviewInstance {
     this.refresh()
   }
 
-  private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost<'composition' | 'project'>> {
-    let host: CompositionRuntimeHost<'composition' | 'project'>
+  private async _resolveCompositionAsync(address: RuntimePreviewCompositionAddress): Promise<CompositionRuntimeHost> {
+    let host: CompositionRuntimeHost
     if (this._simulation) {
       host = await this._simulation.host.activateTarget()
       if (host.entityIdentity !== address.rootIdentity) {
         throw new Error(`[RuntimePreview] Target "${address.rootIdentity}" belongs to another simulation.`)
       }
-    }
-    else if (this._project) {
-      if (address.rootIdentity !== this._project.composition.identity) {
-        throw new Error(`[RuntimePreview] Project "${address.rootIdentity}" belongs to another session.`)
-      }
-      host = (await this._project.composition.activate()).host
     }
     else if (this._composition?.host.entityIdentity === address.rootIdentity) {
       host = this._composition.host
@@ -747,9 +707,8 @@ export class RuntimePreviewInstance {
     return host
   }
 
-  private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost<'composition' | 'project'> | null {
+  private _resolveComposition(address: RuntimePreviewCompositionAddress): CompositionRuntimeHost | null {
     let host = (this._simulation?.host.target?.entityIdentity === address.rootIdentity ? this._simulation.host.target : null)
-      ?? (this._project?.composition.identity === address.rootIdentity ? this._project.composition.host : null)
       ?? (this._composition?.host.entityIdentity === address.rootIdentity ? this._composition.host : null)
     if (!host) {
       return null
@@ -769,9 +728,6 @@ export class RuntimePreviewInstance {
       if (this._simulation) {
         return scopeState(this._simulation.host.target?.getScope('scope_default') ?? null)
       }
-      if (this._project) {
-        return handleState(this._project.composition.identity === address.rootIdentity ? this._project.composition.state : undefined)
-      }
       return scopeState(this._composition?.host.getScope('scope_default') ?? null)
     }
     const parent = this._resolveComposition({ ...address, invocationPath: address.invocationPath.slice(0, -1) })
@@ -788,12 +744,6 @@ export class RuntimePreviewInstance {
     if (selected.kind === 'simulation' && this._simulation?.host.target) {
       runtimes.push(...this._renderableChildren(this._simulation.host.target))
     }
-    else if (selected.kind === 'project' && this._project) {
-      const handle = this._project?.composition
-      if (handle?.state === 'active' && handle.host) {
-        runtimes.push(...this._renderableChildren(handle.host))
-      }
-    }
     else if (selected.kind === 'component-sfc' && this._component && isPreviewRenderableActive(this._component)) {
       runtimes.push(this._component)
     }
@@ -809,7 +759,7 @@ export class RuntimePreviewInstance {
             runtimes.push(runtime)
           }
         }
-        else if (selected.kind === 'composition' || selected.kind === 'project') {
+        else if (selected.kind === 'composition') {
           runtimes.push(...this._renderableChildren(composition))
         }
         else if (selected.kind === 'scope') {
@@ -820,7 +770,7 @@ export class RuntimePreviewInstance {
     this.renderables.value = runtimes.map((runtime, index) => toRenderable(runtime, index))
   }
 
-  private _renderableChildren(host: CompositionRuntimeHost<'composition' | 'project'>, scopePath?: string | null): RuntimeHost<any, any>[] {
+  private _renderableChildren(host: CompositionRuntimeHost, scopePath?: string | null): RuntimeHost<any, any>[] {
     return host.getChildren()
       .filter(child => child.descriptor.kind !== 'composition')
       .filter(child => !scopePath || child.descriptor.scopePath === scopePath || child.descriptor.scopePath.startsWith(`${scopePath}.`))
@@ -829,7 +779,7 @@ export class RuntimePreviewInstance {
   }
 
   private _collectInactiveRenderableChildren(node: RuntimePreviewTreeNode): RuntimePreviewTreeNode[] {
-    if (node.kind !== 'composition' && node.kind !== 'scope' && node.kind !== 'project') {
+    if (node.kind !== 'composition' && node.kind !== 'scope') {
       return []
     }
     const result: RuntimePreviewTreeNode[] = []
@@ -871,13 +821,11 @@ export class RuntimePreviewInstance {
 
   private async _disposeRuntime(): Promise<void> {
     const simulation = this._simulation
-    const project = this._project
     const composition = this._composition
     const component = this._component
     const componentContext = this._componentContext
     const store = this._store
     this._simulation = null
-    this._project = null
     this._composition = null
     this._component = null
     this._componentContext = null
@@ -889,9 +837,6 @@ export class RuntimePreviewInstance {
     this.renderables.value = []
     if (simulation) {
       await simulation.unmount()
-    }
-    if (project) {
-      await project.unmount().catch(() => {})
     }
     if (composition) {
       await composition.unmount().catch(() => {})

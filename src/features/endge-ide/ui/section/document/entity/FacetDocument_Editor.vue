@@ -2,6 +2,7 @@
 import type { EndgeConfigurationContribution } from '@endge/core'
 import type { RFacetDocumentEditor } from '@/features/endge-ide/domain/entities/RFacetDocumentEditor'
 
+import { Endge } from '@endge/core'
 import { Loader2, Save, Settings2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -26,6 +27,9 @@ const configuration = computed<EndgeConfigurationContribution>({
     }
   },
 })
+const upstreamConfiguration = computed(() =>
+  Endge.configuration.resolveUpstream({ facetIdentity: editor.value?.facetIdentity ?? '' }),
+)
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -60,9 +64,10 @@ async function save(): Promise<void> {
           <ConfigurationSettingsEditor
             v-model="configuration"
             variant="contribution"
-            contribution-mode="contribution-only"
+            contribution-mode="inherit-only"
             document-metadata
             :metadata-session="metadataSession"
+            :upstream="upstreamConfiguration"
           >
             <template #general>
               <section class="max-w-2xl space-y-4">

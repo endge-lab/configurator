@@ -134,13 +134,10 @@ export class ConfiguratorContext_Module {
   /** Полностью перезапускает Endge под новым immutable structural context. */
   public async switchContext(next: Partial<EndgeExecutionContext>): Promise<void> {
     Endge.assertWritable()
-    const requested = { ...this._requestedContext, ...next }
-    if (
-      next.projectIdentity != null
-      && next.projectIdentity !== this._requestedContext.projectIdentity
-      && !Object.hasOwn(next, 'environmentIdentity')
-    ) {
-      requested.environmentIdentity = undefined
+    const requested = {
+      ...this._requestedContext,
+      ...next,
+      facets: next.facets ?? this._requestedContext.facets,
     }
     this._requestedContext = requested
     this._switchQueue = this._switchQueue
@@ -155,10 +152,11 @@ export class ConfiguratorContext_Module {
    */
   public async reloadCurrentContext(): Promise<void> {
     Endge.assertWritable()
-    const requested = { ...this._requestedContext }
     this._switchQueue = this._switchQueue
       .catch(() => undefined)
-      .then(() => this._performContextSwitch(requested, true))
+      // Повторный boot должен согласовать сохранённые selections с новым Domain.
+      // Явные координаты оставляем только для пользовательского switchContext().
+      .then(() => this._performContextSwitch({}, true))
     return this._switchQueue
   }
 
@@ -180,16 +178,12 @@ export class ConfiguratorContext_Module {
     domainProvider: EndgeDomainProvider | null,
   ): EndgeBootContext {
     const workspaceIdentity = this._workspaceIdentity ?? String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
-    const tenantIdentity = String(import.meta.env.VITE_ENDGE_TENANT_IDENTITY || '').trim()
-    const projectIdentity = String(import.meta.env.VITE_ENDGE_PROJECT_IDENTITY || '').trim()
-    const environmentIdentity = String(import.meta.env.VITE_ENDGE_ENVIRONMENT_IDENTITY || '').trim()
+    const facetSelections = readFacetSelections(import.meta.env)
     const authVariables = readAuthVariableRecord(import.meta.env)
     const commonContext = {
       scope: workspaceIdentity ? { workspaceIdentity } : {},
       context: {
-        ...(tenantIdentity ? { tenantIdentity } : {}),
-        ...(projectIdentity ? { projectIdentity } : {}),
-        ...(environmentIdentity ? { environmentIdentity } : {}),
+        ...(Object.keys(facetSelections).length > 0 ? { facets: facetSelections } : {}),
         ...context,
       },
       vars: {
@@ -229,9 +223,9 @@ export class ConfiguratorContext_Module {
     const context = Endge.context
     return createContextCommandExecutor({
       setCurrentWorkspace: workspace => context.setCurrentWorkspace(workspace),
-      setCurrentTenant: tenant => this.switchContext({ tenantIdentity: tenant }),
-      setCurrentProject: project => this.switchContext({ projectIdentity: project }),
-      setCurrentEnvironment: environment => this.switchContext({ environmentIdentity: environment }),
+      setFacetSelection: (facet, document) => this.switchContext({
+        facets: { ...this._requestedContext.facets, [facet]: document },
+      }),
       setCurrentUser: user => context.setCurrentUser(user),
       setCurrentLocale: locale => context.setCurrentLocale(locale),
       setCurrentTheme: theme => context.setCurrentTheme(theme),
@@ -431,7 +425,35 @@ function readAuthVariableRecord(env: ImportMetaEnv): Readonly<Record<string, str
 }
 
 function sameContext(left: Partial<EndgeExecutionContext>, right: Partial<EndgeExecutionContext>): boolean {
-  return left.tenantIdentity === right.tenantIdentity
-    && left.projectIdentity === right.projectIdentity
-    && left.environmentIdentity === right.environmentIdentity
+  const leftFacets = left.facets ?? {}
+  const rightFacets = right.facets ?? {}
+  const keys = new Set([...Object.keys(leftFacets), ...Object.keys(rightFacets)])
+  return [...keys].every(key => leftFacets[key] === rightFacets[key])
+}
+
+/** Reads optional deployment-provided facet selections without fixed facet names. */
+function readFacetSelections(env: ImportMetaEnv): Readonly<Record<string, string>> {
+  const raw = String((env as unknown as Record<string, unknown>).VITE_ENDGE_FACETS ?? '').trim()
+  if (!raw) {
+    return {}
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new TypeError('expected a JSON object')
+    }
+    const selections: Record<string, string> = {}
+    for (const [facet, document] of Object.entries(parsed)) {
+      const normalizedFacet = facet.trim()
+      const normalizedDocument = typeof document === 'string' ? document.trim() : ''
+      if (!normalizedFacet || !normalizedDocument) {
+        throw new TypeError('facet identities and document identities must be non-empty strings')
+      }
+      selections[normalizedFacet] = normalizedDocument
+    }
+    return selections
+  }
+  catch (cause) {
+    throw new Error('[EndgeIDE] VITE_ENDGE_FACETS must be a JSON object of facet selections', { cause })
+  }
 }

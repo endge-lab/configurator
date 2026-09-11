@@ -4,19 +4,11 @@ import { validateRuntimePreviewContext } from '@/features/endge-ide/services/run
 
 const state = vi.hoisted(() => ({
   switching: false,
-  project: 'airport',
-  environment: 'dev',
-  tenant: 'base',
   compositions: new Map<string, any>(),
 }))
 
 vi.mock('@endge/core', () => ({
   Endge: {
-    context: {
-      getCurrentProject: () => state.project,
-      getCurrentEnvironment: () => state.environment,
-      getCurrentTenant: () => state.tenant,
-    },
     domain: {
       getComposition: (identity: string) => state.compositions.get(identity) ?? null,
     },
@@ -26,28 +18,23 @@ vi.mock('@endge/core', () => ({
 describe('защита контекста Runtime Preview', () => {
   beforeEach(() => {
     state.switching = false
-    state.project = 'airport'
-    state.environment = 'dev'
-    state.tenant = 'base'
     state.compositions.clear()
   })
 
-  it('разрешает только корень текущего проекта', () => {
-    expect(validateRuntimePreviewContext({ entityType: 'project', identity: 'airport' }).valid).toBe(true)
-    expect(validateRuntimePreviewContext({ entityType: 'project', identity: 'other' })).toMatchObject({
+  it('отклоняет отсутствующую Composition', () => {
+    expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'other' })).toMatchObject({
       valid: false,
-      message: 'Невозможно запустить проект',
+      message: 'Композиция недоступна',
     })
   })
 
   it.each([
-    ['environment', 'dev', true],
-    ['environment', 'prod', false],
-    ['tenant', 'base', true],
-    ['tenant', 'customer', false],
-  ])('проверяет Compositions, принадлежащие %s', (kind, kindIdentity, expected) => {
+    ['workspace', 'workspace-a'],
+    ['query', 'flights'],
+    ['library', null],
+  ])('разрешает Composition поддерживаемого вида %s', (kind, kindIdentity) => {
     state.compositions.set('entry', { identity: 'entry', kind, kindIdentity })
-    expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'entry' }).valid).toBe(expected)
+    expect(validateRuntimePreviewContext({ entityType: 'composition', identity: 'entry' }).valid).toBe(true)
   })
 
   it('разрешает общие Compositions и блокирует запуск во время переключения контекста', () => {

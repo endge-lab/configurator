@@ -114,15 +114,12 @@ const BASE_DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   FilterType.DefaultFilter as DomainDocumentType,
   'type',
   'primitive',
-  'project',
 ])
 
 const DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   ...BASE_DELETABLE_DOCUMENT_TYPES,
   'action',
   'converter',
-  'environment',
-  'tenant',
   'policy',
   'style',
   'page-template',
@@ -728,12 +725,6 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
   if (sectionType === DomainSectionType.Integration) {
     return (numId != null ? Endge.domain.getIntegrationById(numId) : null) ?? Endge.domain.getIntegration(id)
   }
-  if (sectionType === DomainSectionType.Environment) {
-    return (numId != null ? Endge.domain.getEnvironmentById(numId) : null) ?? Endge.domain.getEnvironment(id)
-  }
-  if (sectionType === DomainSectionType.Tenant) {
-    return (numId != null ? Endge.domain.getTenantById(numId) : null) ?? Endge.domain.getTenant(id)
-  }
   if (sectionType === DomainSectionType.Policy) {
     return (numId != null ? Endge.domain.getPolicyById(numId) : null) ?? Endge.domain.getPolicy(id)
   }
@@ -760,9 +751,6 @@ function getEntityBySection(id: string, sectionType: DomainSectionType, docType?
   }
   if (sectionType === DomainSectionType.AuthProfile) {
     return (numId != null ? Endge.domain.getAuthProfileById(numId) : null) ?? Endge.domain.getAuthProfile(id)
-  }
-  if (sectionType === DomainSectionType.Project) {
-    return (numId != null ? Endge.domain.getProjectById(numId) : null) ?? Endge.domain.getProject(id)
   }
   return null
 }

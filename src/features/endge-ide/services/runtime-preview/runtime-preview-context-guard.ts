@@ -35,10 +35,6 @@ export function validateRuntimePreviewContext(
     return validateRuntimePreviewContext(artifact.payload.target)
   }
 
-  if (target.entityType === 'project') {
-    return validateCoordinate('проект', target.identity, Endge.context.getCurrentProject())
-  }
-
   if (target.entityType !== 'composition') {
     return { valid: true }
   }
@@ -52,27 +48,5 @@ export function validateRuntimePreviewContext(
     }
   }
 
-  if (!composition.kindIdentity) {
-    return { valid: true }
-  }
-
-  switch (composition.kind) {
-    case 'environment':
-      return validateCoordinate('среду', composition.kindIdentity, Endge.context.getCurrentEnvironment())
-    case 'tenant':
-      return validateCoordinate('тенант', composition.kindIdentity, Endge.context.getCurrentTenant())
-    default:
-      return { valid: true }
-  }
-}
-
-function validateCoordinate(label: string, requested: string, current: string): RuntimePreviewContextValidation {
-  if (requested === current) {
-    return { valid: true }
-  }
-  return {
-    valid: false,
-    message: `Невозможно запустить ${label}`,
-    description: `Документ относится к «${requested}», а текущий контекст установлен на «${current}». Сначала смените контекст в нижней панели.`,
-  }
+  return { valid: true }
 }

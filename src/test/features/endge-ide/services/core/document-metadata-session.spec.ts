@@ -59,7 +59,7 @@ describe('document metadata session', () => {
 
   it('does not apply a dirty draft for a read-only document', () => {
     const document = { meta: {} }
-    const session = new DocumentMetadataSession('tenant', document, document, true)
+    const session = new DocumentMetadataSession('workspace', document, document, true)
 
     session.updateDraft('{"owner":"operations"}')
     expect(session.prepareBeforeSave()).toBe(false)

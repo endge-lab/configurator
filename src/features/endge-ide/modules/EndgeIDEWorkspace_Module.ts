@@ -1,6 +1,5 @@
 import type { EndgeIDEBusy_Module } from './EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from './EndgeIDEUIState_Module'
-import type { EndgeIDEPageNavigationAdapter, LegacyWorkspaceFoldersRebuildResult, ServiceBackendLegacyWorkspaceFoldersAdapter } from '@/features/endge-ide/domain/types/legacy-workspace-folders.type'
 import type { WorkflowDependency, WorkflowViewport } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { Endge, isExternallyManaged } from '@endge/core'
 import { reactive, shallowRef } from 'vue'
@@ -22,8 +21,6 @@ export class EndgeIDEWorkspace_Module {
     private readonly _busy: EndgeIDEBusy_Module,
     private readonly _uiState: EndgeIDEUIState_Module,
     private readonly _onDataModeChange: () => Promise<void>,
-    private readonly _legacyWorkspaceFolders: ServiceBackendLegacyWorkspaceFoldersAdapter,
-    private readonly _navigation: EndgeIDEPageNavigationAdapter,
   ) {}
 
   public open(): void {
@@ -122,21 +119,6 @@ export class EndgeIDEWorkspace_Module {
         this._saving = false
       }
     }
-  }
-
-  /** Запускает backend-owned Legacy-миграцию и перезагружает Domain только после успеха. */
-  public async rebuildWorkspaceFoldersFromFrontend(): Promise<LegacyWorkspaceFoldersRebuildResult> {
-    Endge.assertWritable()
-    const workspaceIdentity = String(Endge.workspace.current.identity ?? '').trim()
-    if (!workspaceIdentity) {
-      throw new Error('Workspace identity is required')
-    }
-    const result = await this._busy.run(this._legacyWorkspaceFolders.rebuildFromFrontend({
-      workspaceIdentity,
-      confirmation: workspaceIdentity,
-    }))
-    this._navigation.reload()
-    return result
   }
 
   public reset(): void {

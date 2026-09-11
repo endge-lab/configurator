@@ -28,8 +28,8 @@ const kindLabel = computed(() => {
   if (props.data.filterView) {
     return 'FilterView'
   }
-  if (props.data.kind === 'project') {
-    return 'Project'
+  if (props.data.kind.startsWith('facet-document:')) {
+    return props.data.alias ?? props.data.kind.slice('facet-document:'.length)
   }
   if (props.data.kind === 'composition') {
     return 'Composition'

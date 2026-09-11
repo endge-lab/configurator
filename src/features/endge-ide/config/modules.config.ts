@@ -4,9 +4,7 @@ import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/
 import { UIEditorStorage_Adapter } from '@/features/endge-admin-ui-editor/modules/ui-editor/adapters/UIEditorStorage_Adapter'
 import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
-import { ServiceBackendLegacyWorkspaceFoldersHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendLegacyWorkspaceFoldersHttp_Adapter'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
-import { EndgeIDEPageNavigationBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEPageNavigationBrowser_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { AgentTableActions_Module } from '@/features/endge-ide/modules/AgentTableActions_Module'
 import { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/modules/AuthProfileEditorRegistry_Module'
@@ -44,8 +42,6 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     busy,
     uiState,
     () => runtimePreview.restartForDataModeChange(),
-    new ServiceBackendLegacyWorkspaceFoldersHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
-    new EndgeIDEPageNavigationBrowser_Adapter(),
   )
   return {
     uiEditor: createUIEditorModule(new UIEditorStorage_Adapter()),

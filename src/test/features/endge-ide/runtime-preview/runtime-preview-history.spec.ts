@@ -1,38 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   parseRuntimePreviewHistory,
   runtimePreviewHistoryStorageKey,
 } from '@/features/endge-ide/services/runtime-preview/runtime-preview-history'
 
-const mocks = vi.hoisted(() => ({
-  workspace: 'workspace-a',
-  execution: {
-    tenantIdentity: 'tenant-a',
-    projectIdentity: 'project-a',
-    environmentIdentity: 'dev',
-  },
-}))
-
-vi.mock('@endge/core', () => ({
-  Endge: {
-    context: {
-      getCurrentWorkspace: () => mocks.workspace,
-      getExecutionContext: () => ({ ...mocks.execution }),
-    },
-  },
-}))
-
 describe('история Runtime Preview', () => {
-  beforeEach(() => {
-    mocks.workspace = 'workspace-a'
-    mocks.execution = {
-      tenantIdentity: 'tenant-a',
-      projectIdentity: 'project-a',
-      environmentIdentity: 'dev',
-    }
-  })
-
   it('сохраняет только валидные уникальные цели runtime в исходном порядке', () => {
     expect(parseRuntimePreviewHistory({
       version: 1,
@@ -49,14 +22,7 @@ describe('история Runtime Preview', () => {
     ])
   })
 
-  it('разделяет историю по Workspace и структурному контексту выполнения', () => {
-    const first = runtimePreviewHistoryStorageKey()
-    mocks.execution.projectIdentity = 'project-b'
-    const second = runtimePreviewHistoryStorageKey()
-
-    expect(first).toContain('workspace-a')
-    expect(first).toContain('project-a')
-    expect(second).toContain('project-b')
-    expect(second).not.toBe(first)
+  it('использует логический ключ внутри scoped Context state', () => {
+    expect(runtimePreviewHistoryStorageKey()).toBe('configurator.runtime-preview.history')
   })
 })

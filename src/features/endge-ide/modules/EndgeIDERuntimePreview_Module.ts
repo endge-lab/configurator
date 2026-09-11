@@ -18,6 +18,7 @@ import { getLayoutState, showWidget } from '@/components/layouts/grid/layout'
 
 import { ServiceBackendMockGenerator_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendMockGenerator_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
 import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, runtimePreviewKey } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 import { collectRuntimePreviewAuthProfiles } from '@/features/endge-ide/services/runtime-preview/runtime-preview-auth'
@@ -235,8 +236,8 @@ export class EndgeIDERuntimePreview_Module {
       return this.launch(request)
     }
 
-    const projectIdentity = Endge.context.getExecutionContext().projectIdentity
-    const occurrences = findRuntimePreviewOccurrences(request, projectIdentity)
+    const rootIdentity = Endge.workspace.current.startupCompositionIdentity
+    const occurrences = rootIdentity ? findRuntimePreviewOccurrences(request, rootIdentity) : []
     if (occurrences.length === 0) {
       return this.launch(request)
     }
@@ -263,8 +264,8 @@ export class EndgeIDERuntimePreview_Module {
     }
 
     return this.launch({
-      entityType: 'project',
-      identity: occurrence.projectIdentity,
+      entityType: 'composition',
+      identity: occurrence.rootIdentity,
       draft: request.draft,
       contextual: {
         target: request,
@@ -346,12 +347,12 @@ export class EndgeIDERuntimePreview_Module {
   }
 
   /** Навигация по Escape: закрывает Runtime Preview без остановки его runtime. */
-  public returnToProject(): boolean {
+  public returnToDomain(): boolean {
     const area = getLayoutState().widgets.value.areas.left
     if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) {
       return false
     }
-    showWidget('project')
+    showWidget(ENDGE_IDE_DOMAIN_WIDGET_ID)
     return true
   }
 
@@ -522,9 +523,7 @@ export class EndgeIDERuntimePreview_Module {
       Endge.events.onEvent('runtime:registry-changed', () => this._refresh()),
       Endge.events.onEvent('runtime:scopes-changed', () => this._refresh()),
       Endge.events.onEvent('runtime:host-status-changed', () => this._refresh()),
-      Endge.events.onEvent('context:tenant-changed', () => this._syncWorkflowContext()),
-      Endge.events.onEvent('context:project-changed', () => this._syncWorkflowContext()),
-      Endge.events.onEvent('context:environment-changed', () => this._syncWorkflowContext()),
+      Endge.events.onEvent('context:facets-changed', () => this._syncWorkflowContext()),
     ]
     this._syncWorkflowContext()
     this._refresh()

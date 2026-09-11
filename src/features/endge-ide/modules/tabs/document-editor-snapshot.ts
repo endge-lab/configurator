@@ -28,7 +28,7 @@ const DEFAULT_EDITOR_NAMES = [
   'RComputationEditor',
   'RConverterEditor',
   'RDataViewEditor',
-  'REnvironmentEditor',
+  'RFacetDocumentEditor',
   'RFilterEditor',
   'RI18nBundleEditor',
   'RIntegrationEditor',
@@ -42,7 +42,6 @@ const DEFAULT_EDITOR_NAMES = [
   'RStreamEditor',
   'RUpdateEditor',
   'RStyleEditor',
-  'RTenantEditor',
   'RTypeEditor',
   'RVocabsEditor',
 ] as const
@@ -55,7 +54,6 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
 export const DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS: ReadonlyMap<string, SnapshotAdapter> = new Map([
   ['RActionEditor', captureDefaultEditorState],
   ...DEFAULT_EDITOR_NAMES.map(name => [name, captureDefaultEditorState] as const),
-  ['RProjectEditor', captureDefaultEditorState],
 ])
 
 /** Строит детерминированный snapshot из authoring-полей модели редактора. */

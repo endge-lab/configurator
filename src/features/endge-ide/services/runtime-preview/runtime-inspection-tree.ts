@@ -45,7 +45,7 @@ export function buildRuntimeInspectionTree(
     const id = `host:${host.id}`
     const type = documentType(host)
     const scope = scopes.get(membership.get(host.id) ?? '')
-    const node = make({ id, kind: host.entityType === 'project' || host.entityType === 'composition' || host.entityType === 'simulation' || host.entityType === 'component-sfc' ? host.entityType : 'runtime', title: host.title, identity: host.entityIdentity, entityType: type })
+    const node = make({ id, kind: host.entityType === 'composition' || host.entityType === 'simulation' || host.entityType === 'component-sfc' ? host.entityType : 'runtime', title: host.title, identity: host.entityIdentity, entityType: type })
     node.subtitle = host.id
     node.runtimePath = host.basePath
     node.renderable = host.capabilities.includes('renderable')

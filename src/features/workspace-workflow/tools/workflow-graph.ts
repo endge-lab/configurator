@@ -159,7 +159,7 @@ export function buildWorkflowGraph(roots: WorkflowDependency[]): WorkflowGraph {
         if (child.kind === 'data' || child.kind === 'resource') {
           continue
         }
-        if (child.kind === 'composition' || child.kind === 'project') {
+        if (child.kind === 'composition') {
           visitComposition(child, [providers, ...ancestorProviders], aliases, resources, vocabAliases)
         }
         else {
@@ -185,14 +185,15 @@ export function buildWorkflowGraph(roots: WorkflowDependency[]): WorkflowGraph {
     visitComposition(root, [], new Map(), new Map(), new Map())
     graph.roots.push(root.id)
   }
-  // Контекстные документы входят в Состав Workspace. Project также сохраняет
-  // исполняемую ветку; его компактная иконка — второе представление того же узла.
+  // Configuration и документы динамических фасетов входят в Состав Workspace.
   for (const root of roots.filter(item => item.kind === 'workspace')) {
-    const catalog = root.children.filter(item => ['tenant', 'project', 'environment', 'configuration'].includes(item.documentType ?? ''))
+    const catalog = root.children.filter(item =>
+      item.documentType === 'configuration' || item.kind.startsWith('facet-document:'),
+    )
     if (catalog.length) {
       graph.resources.set(root.id, catalog.map(item => item.id))
     }
-    const compactIds = new Set(catalog.filter(item => item.kind !== 'project').map(item => item.id))
+    const compactIds = new Set(catalog.map(item => item.id))
     graph.children.set(root.id, (graph.children.get(root.id) ?? []).filter(id => !compactIds.has(id)))
     for (const id of compactIds) {
       graph.resourceOwners.set(id, root.id)

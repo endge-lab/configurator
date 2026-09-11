@@ -13,10 +13,10 @@ describe('горячие клавиши Workspace в EndgeIDE', () => {
     document.body.replaceChildren()
   })
 
-  it('регистрирует кроссплатформенные сочетания запуска runtime и возврата к общему проекту', () => {
+  it('регистрирует кроссплатформенные сочетания запуска runtime и возврата к Domain', () => {
     expect(REGISTERED_HOTKEYS).toEqual(expect.arrayContaining([
       expect.objectContaining({ action: 'runRuntime', keys: ['ctrl+enter', 'meta+enter'] }),
-      expect.objectContaining({ action: 'returnToProject', keys: 'escape', label: 'Вернуться к Project' }),
+      expect.objectContaining({ action: 'returnToDomain', keys: 'escape', label: 'Вернуться к Domain' }),
       expect.objectContaining({ action: 'closeTab', keys: ['ctrl+w', 'meta+w'], label: 'Закрыть сохранённую вкладку' }),
     ]))
   })
@@ -29,10 +29,10 @@ describe('горячие клавиши Workspace в EndgeIDE', () => {
     expect(isCloseTabShortcut({ code: 'KeyQ', key: 'w', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe(false)
   })
 
-  it('возвращает к Project только по необработанному Escape', () => {
+  it('возвращает к Domain только по необработанному Escape', () => {
     const hotkeys = new EndgeIDEHotkeys_Module()
-    const returnToProject = vi.fn(() => true)
-    hotkeys.setReturnToProjectHandler(returnToProject)
+    const returnToDomain = vi.fn(() => true)
+    hotkeys.setReturnToDomainHandler(returnToDomain)
     hotkeys.init()
 
     try {
@@ -45,14 +45,14 @@ describe('горячие клавиши Workspace в EndgeIDE', () => {
         bubbles: true,
         cancelable: true,
       }))
-      expect(returnToProject).not.toHaveBeenCalled()
+      expect(returnToDomain).not.toHaveBeenCalled()
 
       window.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'Escape',
         bubbles: true,
         cancelable: true,
       }))
-      expect(returnToProject).toHaveBeenCalledOnce()
+      expect(returnToDomain).toHaveBeenCalledOnce()
     }
     finally {
       hotkeys.reset()

@@ -112,12 +112,12 @@ export function buildWorkspaceTreeNodes(
       activeWorkspace,
     }
     if (!activeWorkspace) {
-      return { ...common, type: 'file', docType: 'project', sectionType: DomainSectionType.Project }
+      return { ...common, type: 'file', docType: 'workspace', sectionType: DomainSectionType.Workspace }
     }
     return {
       ...common,
       type: 'folder',
-      sectionType: DomainSectionType.Configuration,
+      sectionType: DomainSectionType.Workspace,
       children: configurations
         .filter(item => item.deletedAt == null)
         .sort((left, right) => (left.displayName || left.identity).localeCompare(right.displayName || right.identity) || left.identity.localeCompare(right.identity))
@@ -180,8 +180,6 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-converters': 'Конвертеры',
   'root-computations': 'Вычисления',
   'root-integrations': 'Интеграции',
-  'root-environments': 'Окружения',
-  'root-tenants': 'Тенанты',
   'root-policies': 'Политики',
   'root-styles': 'Стили',
   'root-page-templates': 'Шаблоны страниц',
@@ -191,8 +189,7 @@ export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-mocks': 'Тестовые данные',
   'root-i18n-bundles': 'Словари переводов',
   'root-auth-profiles': 'Профили аутентификации',
-  'root-projects': 'Проекты',
-  'root-workspace-files': 'Рабочее пространство',
+  get 'root-workspace-files'() { return i18n.global.t('workspaceTree.model') },
 }
 
 export const WORKSPACE_ROOT_FOLDER_IDENTITY = 'root-workspace-files'
@@ -211,9 +208,6 @@ export const DOMAIN_TREE_ROOT_BLOCKS: DomainTreeRootBlock[] = [
     title: 'Контекст',
     rootIds: [
       'root-workspaces',
-      'root-tenants',
-      'root-projects',
-      'root-environments',
     ],
   },
   {
@@ -323,12 +317,6 @@ export function normalizeDocType(
   if (sectionType === DomainSectionType.Integration) {
     return 'integration'
   }
-  if (sectionType === DomainSectionType.Environment) {
-    return 'environment'
-  }
-  if (sectionType === DomainSectionType.Tenant) {
-    return 'tenant'
-  }
   if (sectionType === DomainSectionType.Policy) {
     return 'policy'
   }
@@ -356,8 +344,8 @@ export function normalizeDocType(
   if (sectionType === DomainSectionType.AuthProfile) {
     return 'auth-profile' as DomainDocumentType
   }
-  if (sectionType === DomainSectionType.Project) {
-    return 'project' as DomainDocumentType
+  if (sectionType === DomainSectionType.Workspace) {
+    return 'workspace' as DomainDocumentType
   }
   return raw
 }
@@ -526,8 +514,7 @@ function buildFolderNode(
       const isPrimitiveType
         = itemSectionType === DomainSectionType.Primitive
           || (itemSectionType === DomainSectionType.Type && (c as { isPrimitive?: boolean }).isPrimitive === true)
-      const useIdentityForId = itemSectionType === DomainSectionType.Project
-      const id = useIdentityForId ? String((c as any).identity ?? c.id ?? '') : String(c.id ?? (c as any).identity ?? c.name ?? '')
+      const id = String(c.id ?? (c as any).identity ?? c.name ?? '')
       const identity = String((c as any).identity ?? '')
       const name = (c as any).displayName ?? c.name ?? id
       const fileNode: FsFileNode = {
@@ -603,13 +590,40 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   return tree
 }
 
+/** Поднимает startup Composition перед соседними Composition только в UI-проекции. */
+export function prioritizeStartupComposition(nodes: FsNode[], identity: string | null | undefined): FsNode[] {
+  const startupIdentity = String(identity ?? '').trim()
+  if (!startupIdentity) {
+    return nodes
+  }
+  const visit = (items: FsNode[]): void => {
+    const targetIndex = items.findIndex(node => node.type === 'file'
+      && node.docType === 'composition'
+      && node.identity === startupIdentity)
+    const firstCompositionIndex = items.findIndex(node => node.type === 'file' && node.docType === 'composition')
+    if (targetIndex >= 0 && firstCompositionIndex >= 0 && targetIndex > firstCompositionIndex) {
+      const [target] = items.splice(targetIndex, 1)
+      if (target) {
+        items.splice(firstCompositionIndex, 0, target)
+      }
+    }
+    for (const node of items) {
+      if (node.children?.length) {
+        visit(node.children)
+      }
+    }
+  }
+  visit(nodes)
+  return nodes
+}
+
 function collectWorkspaceProjectionDocuments(
   nodes: readonly FsNode[],
   result: Map<string, FsFileNode>,
 ): void {
   for (const node of nodes) {
     const retainedContextDocument = node.type === 'file'
-      && ['project', 'tenant', 'environment', 'configuration'].includes(String(node.docType))
+      && node.docType === 'configuration'
     if (
       node.type === 'file'
       && !node.virtual
@@ -654,7 +668,7 @@ function buildWorkspaceProjectionFolder(
     console.warn(`[DomainTree] Skipping cyclic Workspace folder branch: folder=${key}, identity=${identity}`)
     return createFolderTreeNode(
       folder,
-      DomainSectionType.Project,
+      DomainSectionType.Workspace,
       folderId,
       identity,
       folder.displayName ?? folder.name ?? identity,
@@ -683,7 +697,7 @@ function buildWorkspaceProjectionFolder(
   ]
   return createFolderTreeNode(
     { ...folder, scope: 'workspace' },
-    DomainSectionType.Project,
+    DomainSectionType.Workspace,
     folderId,
     identity,
     folder.displayName ?? folder.name ?? identity,
@@ -1028,15 +1042,11 @@ export function attachResolvedTypeTree(
 
 const COMPOSITION_KIND_ROOT: Partial<Record<RCompositionKind, string>> = {
   query: 'root-queries',
-  tenant: 'root-tenants',
-  environment: 'root-environments',
   workspace: 'root-compositions',
 }
 
 const COMPOSITION_KIND_SECTION: Partial<Record<RCompositionKind, DomainSectionType>> = {
   query: DomainSectionType.Query,
-  tenant: DomainSectionType.Tenant,
-  environment: DomainSectionType.Environment,
 }
 
 function findOwnedNode(

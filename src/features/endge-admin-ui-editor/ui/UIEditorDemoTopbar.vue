@@ -12,10 +12,8 @@ import {
 import { toast } from 'vue-sonner'
 
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
-import EnvironmentSwitcher from '@/features/endge-ide/ui/context/EnvironmentSwitcher.vue'
+import FacetSwitchers from '@/features/endge-ide/ui/context/FacetSwitchers.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
-import ProjectSwitcher from '@/features/endge-ide/ui/context/ProjectSwitcher.vue'
-import TenantSwitcher from '@/features/endge-ide/ui/context/TenantSwitcher.vue'
 import ThemeSwitcher from '@/features/endge-ide/ui/context/ThemeSwitcher.vue'
 import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.vue'
 
@@ -98,9 +96,7 @@ async function reloadDomain(): Promise<void> {
   <div class="flex h-8 shrink-0 items-center justify-between border-t border-border/80 bg-background/88 px-3 text-[12px] text-muted-foreground backdrop-blur">
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden">
       <div class="footer-context-switchers flex shrink-0 items-center gap-1.5">
-        <TenantSwitcher />
-        <ProjectSwitcher />
-        <EnvironmentSwitcher />
+        <FacetSwitchers />
         <LocaleSwitcher />
         <ThemeSwitcher />
         <TimezoneSwitcher />

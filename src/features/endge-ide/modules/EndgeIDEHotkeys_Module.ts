@@ -11,7 +11,7 @@ export interface EndgeIDEHotkeyItem {
   /** Отображаемые клавиши в UI: например "Ctrl+S / ⌘ S" */
   keysLabel: string
   /** Привязка к колбэку; без указания - только лог в консоль */
-  action?: 'save' | 'closeTab' | 'createDocument' | 'runRuntime' | 'returnToProject'
+  action?: 'save' | 'closeTab' | 'createDocument' | 'runRuntime' | 'returnToDomain'
 }
 
 /** Единый реестр всех горячих клавиш редактора (источник правды для регистрации и документирования) */
@@ -20,7 +20,7 @@ export const REGISTERED_HOTKEYS: readonly EndgeIDEHotkeyItem[] = [
   { label: 'Закрыть сохранённую вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
   { label: 'Создать документ', keys: ['ctrl+n', 'meta+n'], keysLabel: 'Ctrl+N / ⌘ N', action: 'createDocument' },
   { label: 'Запустить Runtime Preview', keys: ['ctrl+enter', 'meta+enter'], keysLabel: 'Ctrl+Enter / ⌘ Enter', action: 'runRuntime' },
-  { label: 'Вернуться к Project', keys: 'escape', keysLabel: 'Esc', action: 'returnToProject' },
+  { label: 'Вернуться к Domain', keys: 'escape', keysLabel: 'Esc', action: 'returnToDomain' },
 ]
 
 export function isCloseTabShortcut(event: Pick<KeyboardEvent, 'altKey' | 'code' | 'ctrlKey' | 'key' | 'metaKey' | 'shiftKey'>): boolean {
@@ -44,11 +44,11 @@ export class EndgeIDEHotkeys_Module {
   private _onCloseTab: (() => void) | null = null
   private _onCreateDocument: (() => void) | null = null
   private _onRunRuntime: (() => boolean) | null = null
-  private _onReturnToProject: (() => boolean) | null = null
+  private _onReturnToDomain: (() => boolean) | null = null
   private _closeTabCaptureBound: ((e: KeyboardEvent) => void) | null = null
   private _createDocumentCaptureBound: ((e: KeyboardEvent) => void) | null = null
   private _runRuntimeCaptureBound: ((e: KeyboardEvent) => void) | null = null
-  private _returnToProjectBound: ((e: KeyboardEvent) => void) | null = null
+  private _returnToDomainBound: ((e: KeyboardEvent) => void) | null = null
 
   /**
    * ----------------------------------------
@@ -81,9 +81,9 @@ export class EndgeIDEHotkeys_Module {
     this._onRunRuntime = handler
   }
 
-  /** Задаёт handler возврата к текущему Project. */
-  public setReturnToProjectHandler(handler: () => boolean): void {
-    this._onReturnToProject = handler
+  /** Задаёт handler возврата к Domain workspace. */
+  public setReturnToDomainHandler(handler: () => boolean): void {
+    this._onReturnToDomain = handler
   }
 
   /** Все зарегистрированные горячие клавиши с описаниями (для документирования в UI). */
@@ -108,7 +108,7 @@ export class EndgeIDEHotkeys_Module {
           this._onSave?.()
         })
       }
-      else if (item.action === 'closeTab' || item.action === 'returnToProject') {
+      else if (item.action === 'closeTab' || item.action === 'returnToDomain') {
         // Эти сочетания используют отдельные listeners ниже, чтобы сохранить семантику фаз событий.
         continue
       }
@@ -176,15 +176,15 @@ export class EndgeIDEHotkeys_Module {
     this._browser.addKeydown(this._runRuntimeCaptureBound, true)
 
     // Фаза всплытия позволяет диалогам и контекстным меню обработать Escape до навигации рабочего пространства.
-    this._returnToProjectBound = (e: KeyboardEvent) => {
+    this._returnToDomainBound = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) {
         return
       }
-      if (this._onReturnToProject?.()) {
+      if (this._onReturnToDomain?.()) {
         e.preventDefault()
       }
     }
-    this._browser.addKeydown(this._returnToProjectBound)
+    this._browser.addKeydown(this._returnToDomainBound)
   }
 
   /** Освобождает hotkeys и browser listeners. */
@@ -201,15 +201,15 @@ export class EndgeIDEHotkeys_Module {
       this._browser.removeKeydown(this._runRuntimeCaptureBound, true)
       this._runRuntimeCaptureBound = null
     }
-    if (this._returnToProjectBound) {
-      this._browser.removeKeydown(this._returnToProjectBound)
-      this._returnToProjectBound = null
+    if (this._returnToDomainBound) {
+      this._browser.removeKeydown(this._returnToDomainBound)
+      this._returnToDomainBound = null
     }
     this._onSave = null
     this._onCloseTab = null
     this._onCreateDocument = null
     this._onRunRuntime = null
-    this._onReturnToProject = null
+    this._onReturnToDomain = null
     if (this._manager) {
       this._manager.destroy()
       this._manager = null

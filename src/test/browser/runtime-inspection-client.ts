@@ -4,11 +4,10 @@ import { createDefaultEndgeConfiguration, Endge } from '@endge/core'
 /** Ручной browser integration fixture: реальные Core/Bridge и локальный backend, только данные в памяти. */
 export async function startRuntimeInspectionClient(workspaceIdentity: string, serverUrl: string): Promise<void> {
   Endge.context.configurePersistence({ context: 'disabled' })
-  const keys = ['projects', 'tenants', 'environments', 'folders', 'types', 'queries', 'data-views', 'compositions', 'stores', 'streams', 'simulations', 'updates', 'mocks', 'components', 'actions', 'filters', 'converters', 'computations', 'vocabs', 'i18n-bundles', 'auth-profiles', 'navigations', 'styles', 'configurations']
+  const keys = ['facets', 'facet-documents', 'folders', 'types', 'queries', 'data-views', 'compositions', 'stores', 'streams', 'simulations', 'updates', 'mocks', 'components', 'actions', 'filters', 'converters', 'computations', 'vocabs', 'i18n-bundles', 'auth-profiles', 'navigations', 'styles', 'configurations']
   const documents = Object.fromEntries(keys.map(key => [key, []])) as unknown as EndgeDomainBundle['documents']
-  documents.projects = [{ identity: 'inspection-project', displayName: 'Inspection Project', active: true }]
-  documents.tenants = [{ identity: 'inspection-tenant', displayName: 'Inspection Tenant', active: true }]
-  documents.environments = [{ identity: 'inspection-dev', displayName: 'Inspection Dev', active: true }]
+  documents.facets = [{ identity: 'deployment', displayName: 'Deployment', icon: 'Layers3', color: '#2563eb', position: 0, active: true }]
+  documents['facet-documents'] = [{ facetIdentity: 'deployment', identity: 'inspection-dev', displayName: 'Inspection Dev', configuration: { mode: 'inherit', patch: {} }, active: true }]
   documents.stores = [{ identity: 'inspection-store', displayName: 'Inspection Store', source: 'defineStore({ data: { count: value(0), rows: value([{ id: 1, label: "Sample" }]) } })', sourceVersion: 1 }]
   documents.filters = [{ identity: 'inspection-filter', displayName: 'Inspection Filter', source: 'defineFilter({ fields: { search: field("String").default("Client filter") }, outputs: {} })', sourceVersion: 1, active: true }]
   documents.components = [{ identity: 'inspection-table', displayName: 'Inspection Table', kind: 'component-sfc', type: 'component-sfc', source: `<script setup lang="ts">
@@ -31,11 +30,11 @@ defineProps<{ rows: Array<{ id: number, label: string }>, count: number }>()
   const bundle: EndgeDomainBundle = {
     kind: 'workspace-snapshot',
     schemaVersion: 5,
-    workspace: { identity: workspaceIdentity, displayName: 'Runtime inspection fixture', dataMode: 'development', managedBy: 'user', managedById: null, meta: {}, configuration: createDefaultEndgeConfiguration() },
+    workspace: { identity: workspaceIdentity, displayName: 'Runtime inspection fixture', startupCompositionIdentity: 'inspection-graph', dataMode: 'development', managedBy: 'user', managedById: null, meta: {}, configuration: createDefaultEndgeConfiguration() },
     installedIntegrations: [],
     documents,
   }
-  await Endge.boot({ dataProvider: 'bundle', bundleSource: bundle, scope: { workspaceIdentity }, vars: {}, bridge: { role: 'client', allowedServers: [serverUrl], debug: true, label: 'Runtime inspection fixture' } })
+  await Endge.boot({ dataProvider: 'bundle', bundleSource: bundle, scope: { workspaceIdentity }, context: { facets: { deployment: 'inspection-dev' } }, vars: {}, bridge: { role: 'client', allowedServers: [serverUrl], debug: true, label: 'Runtime inspection fixture' } })
   const graph = Endge.program.getArtifact('composition', 'inspection-graph')
   if (graph?.status === 'error') {
     throw new Error(JSON.stringify(graph.diagnostics))
