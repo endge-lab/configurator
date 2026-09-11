@@ -42,7 +42,12 @@
     "displayName": "Название",
     "identity": "Идентификатор",
     "identityConflict": "Рабочее пространство с таким идентификатором уже существует",
-    "refreshFailed": "Пространство создано, но список не обновился. Перезагрузите страницу."
+    "refreshFailed": "Пространство создано, но список не обновился. Перезагрузите страницу.",
+    "workspaceFolderDeletionWarning": "Документы будут удалены из домена и исчезнут из обеих проекций, а не только из этой папки.",
+    "folderAppearanceTitle": "Оформление папки",
+    "folderAppearanceLabel": "Иконка и цвет",
+    "folderAppearanceHint": "Оформление меняет только глиф папки в свободной проекции.",
+    "folderAppearanceReset": "Сбросить"
   },
   "documentCreate": {
     "createTenant": "Создать тенант",

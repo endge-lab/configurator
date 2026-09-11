@@ -42,7 +42,12 @@
     "displayName": "Name",
     "identity": "Identifier",
     "identityConflict": "A workspace with this identifier already exists",
-    "refreshFailed": "The workspace was created, but the list could not be refreshed. Reload the page."
+    "refreshFailed": "The workspace was created, but the list could not be refreshed. Reload the page.",
+    "workspaceFolderDeletionWarning": "Documents will be deleted from the domain and disappear from both projections, not only from this folder.",
+    "folderAppearanceTitle": "Folder appearance",
+    "folderAppearanceLabel": "Icon and color",
+    "folderAppearanceHint": "Appearance changes only the folder glyph in the free-form projection.",
+    "folderAppearanceReset": "Reset"
   },
   "documentCreate": {
     "createTenant": "Create tenant",

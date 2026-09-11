@@ -616,19 +616,27 @@ function collectWorkspaceProjectionDocuments(
       && !node.isTableColumn
       && !node.facetIdentity
       && !retainedContextDocument
+      && node.docType !== 'update'
     ) {
       const key = `${String(node.docType)}:${String(node.id)}`
       if (!result.has(key)) {
         const auxiliaryChildren = (node.children ?? []).filter(child =>
           child.virtual || (child.type === 'file' && child.isTableColumn),
         )
+        const storeUpdates = node.docType === 'store'
+          ? (node.children ?? []).filter(child => child.type === 'file' && child.docType === 'update')
+          : []
+        const retainedChildren = [...auxiliaryChildren, ...storeUpdates]
         result.set(key, {
           ...node,
-          children: auxiliaryChildren.length ? auxiliaryChildren : undefined,
+          children: retainedChildren.length ? retainedChildren : undefined,
         })
       }
     }
-    collectWorkspaceProjectionDocuments(node.children ?? [], result)
+    const descendants = node.type === 'file' && node.docType === 'store'
+      ? (node.children ?? []).filter(child => child.type !== 'file' || child.docType !== 'update')
+      : node.children ?? []
+    collectWorkspaceProjectionDocuments(descendants, result)
   }
 }
 
@@ -659,7 +667,7 @@ function buildWorkspaceProjectionFolder(
   nextVisited.add(key)
   const sameId = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '')
   const childFolders = folders.filter(candidate => sameId(getFolderParent(candidate), folderId))
-  const items = documents.filter(document => {
+  const items = documents.filter((document) => {
     const placement = document.workspaceFolderId
     return sameId(placement, folderId)
       || (isRoot && (placement == null || placement === '' || sameId(placement, WORKSPACE_ROOT_FOLDER_IDENTITY)))

@@ -63,7 +63,6 @@ import {
 } from '@/features/document-presentation/tools/resolve-document-presentation'
 import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
-import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
 import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
 import {
@@ -86,8 +85,8 @@ import {
   getDomainTreeRootBlocks,
   getRootFolderOrder,
   ROOT_FOLDER_LABELS,
-  WORKSPACE_ROOT_FOLDER_IDENTITY,
   withoutDeleted,
+  WORKSPACE_ROOT_FOLDER_IDENTITY,
 } from '@/features/endge-ide/services/domain/domain-tree'
 import {
   domainFileNodeToWorkingSetRef,
@@ -97,10 +96,10 @@ import {
 import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 import {
   commitVocabMockGeneration,
-
   prepareVocabMockGeneration,
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
+import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
@@ -1184,7 +1183,10 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
     return WORKSPACE_PRESENTATION
   }
   if (node.scope === 'workspace') {
-    return { icon: node.icon || 'Folder', colorClass: 'text-slate-500 dark:text-slate-400' }
+    return {
+      icon: node.icon || 'Folder',
+      colorClass: node.color ? 'text-current' : 'text-slate-500 dark:text-slate-400',
+    }
   }
   if (node.isRoot && node.id in ROOT_FOLDER_PRESENTATION) {
     return ROOT_FOLDER_PRESENTATION[node.id]
@@ -2106,12 +2108,12 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
       documentType: a.node.scope === 'workspace'
         ? undefined
         : a.node.sectionType === DomainSectionType.Tenant
-        ? 'tenant'
-        : a.node.sectionType === DomainSectionType.Project
-          ? 'project'
-          : a.node.sectionType === DomainSectionType.Environment
-            ? 'environment'
-            : undefined,
+          ? 'tenant'
+          : a.node.sectionType === DomainSectionType.Project
+            ? 'project'
+            : a.node.sectionType === DomainSectionType.Environment
+              ? 'environment'
+              : undefined,
       folderId: a.node.scope === 'workspace' || a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
       workspaceFolderId,
     })
@@ -2634,7 +2636,7 @@ function rowClasses(item: FlatFsItem): string {
             {{ $t('uiText.theFolderAndAllItsContentsWillBeDe8ad26432') }}
           </p>
           <p v-if="folderDeletionIsWorkspaceProjection" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
-            Документы будут удалены из домена и исчезнут из обеих проекций, а не только из этой папки.
+            {{ $t('workspaceTree.workspaceFolderDeletionWarning') }}
           </p>
           <div class="rounded-md border bg-muted/40 px-3 py-2">
             <div>{{ $t('uiText.willBeRemovedEntitiesA87d81b1') }} <strong>{{ folderDeletionEntityCount }}</strong></div>
@@ -2685,10 +2687,10 @@ function rowClasses(item: FlatFsItem): string {
     <Dialog v-model:open="folderAppearanceDialog.open">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Оформление папки</DialogTitle>
+          <DialogTitle>{{ $t('workspaceTree.folderAppearanceTitle') }}</DialogTitle>
         </DialogHeader>
         <div class="space-y-2 py-2">
-          <Label>Иконка и цвет</Label>
+          <Label>{{ $t('workspaceTree.folderAppearanceLabel') }}</Label>
           <LucideAppearancePicker
             :icon="folderAppearanceDialog.icon"
             :color="folderAppearanceDialog.color"
@@ -2697,12 +2699,12 @@ function rowClasses(item: FlatFsItem): string {
             @update:color="setFolderAppearanceColor"
           />
           <p class="text-xs text-muted-foreground">
-            Оформление меняет только глиф папки в свободной проекции.
+            {{ $t('workspaceTree.folderAppearanceHint') }}
           </p>
         </div>
         <DialogFooter class="gap-2 sm:justify-between">
           <Button variant="ghost" :disabled="folderAppearanceDialog.loading" @click="resetFolderAppearance">
-            Сбросить
+            {{ $t('workspaceTree.folderAppearanceReset') }}
           </Button>
           <div class="flex gap-2">
             <Button variant="outline" :disabled="folderAppearanceDialog.loading" @click="folderAppearanceDialog.open = false">
