@@ -1339,7 +1339,18 @@
       "frontend": "Frontend",
       "frontendDescription": "Documents are grouped into typed system sections.",
       "custom": "Workspace",
-      "customDescription": "Documents use a free-form user-defined hierarchy."
+      "customDescription": "Documents use a free-form user-defined hierarchy.",
+      "rebuild": {
+        "action": "Copy the Frontend folder structure",
+        "saveFirst": "Save the metamodel selection first",
+        "title": "Rebuild the Workspace folder structure?",
+        "warning": "All current folders in the Workspace dimension will be deleted. The Frontend folder structure will then be recreated and documents will be linked to the corresponding new folders.",
+        "preserved": "The documents themselves and their placement in the Frontend dimension are not deleted or changed. Configurator reloads after completion.",
+        "cancel": "Cancel",
+        "confirm": "Delete and rebuild",
+        "processing": "Rebuilding…",
+        "error": "Failed to rebuild folders"
+      }
     },
     "unsaved": "Unsaved changes",
     "openCurrent": "Open current workspace workflow"
