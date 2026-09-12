@@ -1289,6 +1289,16 @@
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace will transition to the selected state for all users. History will be preserved: backend will create a new restore commit."
   },
+  "statusBar": {
+    "liveEnabled": "Live data is enabled ({source}). Queries may call real services.",
+    "mockEnabled": "Mock data is enabled ({source}). External queries are not executed.",
+    "reloadDomain": "Fully reload the domain",
+    "showFrontendStructure": "Return to the Frontend structure in Configurator only",
+    "showWorkspaceStructure": "Show the Workspace structure in Configurator only",
+    "sourceClientContext": "client context",
+    "sourceConfiguratorOverride": "local Configurator override",
+    "sourceWorkspaceDefault": "Workspace default"
+  },
   "workspaceWorkflow": {
     "filterRepresentation": "Filter representation",
     "selectedElements": "Selected elements",

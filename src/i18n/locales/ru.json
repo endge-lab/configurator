@@ -1289,6 +1289,16 @@
     "workspace4ca0a75c": "Workspace",
     "workspaceWillTransitionToTheSelectedStateForAllUsers29153112": "Workspace перейдёт к выбранному состоянию для всех пользователей. История сохранится: backend создаст новый коммит восстановления."
   },
+  "statusBar": {
+    "liveEnabled": "Live-данные включены ({source}). Запросы могут обращаться к реальным сервисам.",
+    "mockEnabled": "Mock-данные включены ({source}). Внешние запросы не выполняются.",
+    "reloadDomain": "Полностью перезагрузить домен",
+    "showFrontendStructure": "Вернуть структуру «Frontend» только в Конфигураторе",
+    "showWorkspaceStructure": "Показать структуру «Рабочее пространство» только в Конфигураторе",
+    "sourceClientContext": "контекст клиента",
+    "sourceConfiguratorOverride": "локальное переопределение Конфигуратора",
+    "sourceWorkspaceDefault": "значение Workspace по умолчанию"
+  },
   "workspaceWorkflow": {
     "filterRepresentation": "Представление фильтра",
     "selectedElements": "Выбранные элементы",

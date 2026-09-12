@@ -140,6 +140,7 @@ export class EndgeIDE {
       modules.hotkeys.reset()
       modules.tabs.reset()
       modules.workspace.reset()
+      modules.uiState.reset()
       if (!isIDEWidgetsDisabled()) {
         modules.widgets.reset()
       }
@@ -166,6 +167,7 @@ export class EndgeIDE {
 
     this._hasActiveModules = true
     try {
+      modules.uiState.init()
       if (Endge.mode === 'debugger') {
         modules.runtimeInspection.init()
         modules.widgets.init()

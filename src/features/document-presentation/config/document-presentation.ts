@@ -66,6 +66,7 @@ export const DOCUMENT_AUXILIARY_PRESENTATION = {
 
 export const DOCUMENT_TYPE_PRESENTATION: Readonly<Record<string, DomainDocumentPresentation>> = {
   stream: { icon: 'RadioTower', colorClass: DOCUMENT_COLORS.orange },
+  update: { icon: 'Minus', colorClass: DOCUMENT_COLORS.emerald },
 }
 
 export const DOCUMENT_BADGE_ICONS: Readonly<Record<string, string>> = {

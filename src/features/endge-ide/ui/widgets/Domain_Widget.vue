@@ -141,7 +141,7 @@ const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
 })
 const debuggerMode = Endge.mode === 'debugger'
-const activeDocumentStructure = computed(() => Endge.workspace.current.documentStructure ?? 'frontend')
+const activeDocumentStructure = EndgeIDE.uiState.documentStructure
 const vocabMockDialog = ref({
   open: false,
   mode: 'existing' as 'existing' | 'new',
@@ -1125,6 +1125,14 @@ const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => blo
 
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
 const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
+const INACTIVE_WORKSPACE_PRESENTATION: DomainDocumentPresentation = {
+  ...WORKSPACE_PRESENTATION,
+  colorClass: DOCUMENT_COLORS.slate,
+}
+
+function getWorkspaceTreePresentation(node: FsNode): DomainDocumentPresentation {
+  return node.activeWorkspace ? WORKSPACE_PRESENTATION : INACTIVE_WORKSPACE_PRESENTATION
+}
 
 const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-workspaces': WORKSPACE_PRESENTATION,
@@ -1184,7 +1192,7 @@ function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
     return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
   }
   if (node.workspaceIdentity) {
-    return WORKSPACE_PRESENTATION
+    return getWorkspaceTreePresentation(node)
   }
   if (node.isRoot && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
     return WORKSPACE_PRESENTATION
@@ -1221,7 +1229,7 @@ function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentati
     return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
   }
   if (node.workspaceIdentity) {
-    return WORKSPACE_PRESENTATION
+    return getWorkspaceTreePresentation(node)
   }
   if (node.isTableColumn) {
     return DOCUMENT_AUXILIARY_PRESENTATION.tableColumn

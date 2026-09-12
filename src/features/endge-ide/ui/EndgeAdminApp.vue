@@ -391,7 +391,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
               :aria-label="t('workspaceWorkflow.openCurrent')"
               @click="tabs.openWorkspaceWorkflow()"
             >
-              <DocumentIcon :presentation="{ ...DOCUMENT_AUXILIARY_PRESENTATION.workspace, icon: 'Workflow' }" size="tab" />
+              <DocumentIcon :presentation="DOCUMENT_AUXILIARY_PRESENTATION.workspace" size="tab" />
             </button>
           </TooltipTrigger>
           <TooltipContent>{{ t('workspaceWorkflow.openCurrent') }}</TooltipContent>

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
 import { AppBus } from '@endge/utils'
-import { BellDot, DatabaseZap, RefreshCcw } from 'lucide-vue-next'
+import { DatabaseZap, FolderTree, RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { Configurator } from '@/app/Configurator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import DomainVersionBadge from '@/features/domain-version/ui/DomainVersionBadge.vue'
 import { useDomainVersions } from '@/features/domain-version/ui/use-domain-versions'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import FacetSwitchers from '@/features/endge-ide/ui/context/FacetSwitchers.vue'
 import LocaleSwitcher from '@/features/endge-ide/ui/context/LocaleSwitcher.vue'
@@ -17,6 +20,7 @@ import TimezoneSwitcher from '@/features/endge-ide/ui/context/TimezoneSwitcher.v
 const props = defineProps<{ readonly?: boolean }>()
 const readOnly = computed(() => props.readonly === true)
 const isDebugger = Endge.mode === 'debugger'
+const { t } = useI18n()
 
 const context = useEndgeIDEContext()
 const { state: domainVersionState, refresh: refreshDomainVersion } = useDomainVersions()
@@ -25,11 +29,19 @@ const isDataModeOverridden = computed(() => !isDebugger && context.isDataModeOve
 const isChangingDataMode = ref(false)
 const mockLabel = 'mock'
 const mockModeTitle = computed(() => {
-  const source = isDebugger ? 'Client context' : isDataModeOverridden.value ? 'Configurator override' : 'Workspace default'
+  const source = isDebugger
+    ? t('statusBar.sourceClientContext')
+    : isDataModeOverridden.value
+      ? t('statusBar.sourceConfiguratorOverride')
+      : t('statusBar.sourceWorkspaceDefault')
   return isMockEnabled.value
-    ? `Mock data enabled (${source}). External queries are not executed.`
-    : `Live data enabled (${source}). Queries may call real services.`
+    ? t('statusBar.mockEnabled', { source })
+    : t('statusBar.liveEnabled', { source })
 })
+const activeDocumentStructure = EndgeIDE.uiState.documentStructure
+const documentStructureTitle = computed(() => activeDocumentStructure.value === 'custom'
+  ? t('statusBar.showFrontendStructure')
+  : t('statusBar.showWorkspaceStructure'))
 const activeDomainTarget = computed(() => {
   const workspace = Configurator.connections.readWorkspace()
     ?? String(Endge.workspace.current.identity ?? '').trim()
@@ -94,6 +106,10 @@ async function toggleMockMode(): Promise<void> {
   }
 }
 
+function toggleDocumentStructure(): void {
+  EndgeIDE.uiState.toggleDocumentStructure()
+}
+
 onMounted(() => {
   if (isDebugger || readOnly.value) {
     return
@@ -118,25 +134,63 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="!readOnly" class="flex shrink-0 items-center gap-1">
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
-        :class="isMockEnabled && 'bg-primary/15 text-primary'"
-        :disabled="context.isSwitching() || isChangingDataMode"
-        :aria-pressed="isMockEnabled"
-        :title="mockModeTitle"
-        @click="toggleMockMode"
-      >
-        <DatabaseZap class="size-3.5 shrink-0" />
-        <span>{{ mockLabel }}</span>
-      </button>
-      <DomainVersionBadge v-if="!isDebugger" :state="activeDomainVersionState" prefix />
-      <button v-if="!isDebugger" type="button" class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50" :disabled="context.isSwitching()" title="Полностью перезагрузить домен" @click="reloadDomain">
-        <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
-      </button>
-      <BellDot v-if="!isDebugger" class="size-3.5 mx-1" />
-    </div>
+    <TooltipProvider v-if="!readOnly" :delay-duration="200">
+      <div class="flex shrink-0 items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
+              :class="isMockEnabled && 'bg-primary/15 text-primary'"
+              :disabled="context.isSwitching() || isChangingDataMode"
+              :aria-label="mockModeTitle"
+              :aria-pressed="isMockEnabled"
+              @click="toggleMockMode"
+            >
+              <DatabaseZap class="size-3.5 shrink-0" />
+              <span>{{ mockLabel }}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" class="max-w-80 text-xs leading-5">
+            {{ mockModeTitle }}
+          </TooltipContent>
+        </Tooltip>
+        <DomainVersionBadge v-if="!isDebugger" :state="activeDomainVersionState" prefix />
+        <Tooltip v-if="!isDebugger">
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90 disabled:cursor-wait disabled:opacity-50"
+              :disabled="context.isSwitching()"
+              :aria-label="t('statusBar.reloadDomain')"
+              @click="reloadDomain"
+            >
+              <RefreshCcw class="size-3.5" :class="{ 'animate-spin': context.isSwitching() }" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {{ t('statusBar.reloadDomain') }}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip v-if="!isDebugger">
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md px-1.5 py-0.5 transition hover:bg-muted/90"
+              :class="activeDocumentStructure === 'custom' && 'bg-primary/15 text-primary'"
+              :aria-label="documentStructureTitle"
+              :aria-pressed="activeDocumentStructure === 'custom'"
+              @click="toggleDocumentStructure"
+            >
+              <FolderTree class="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {{ documentStructureTitle }}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   </footer>
 </template>
 
