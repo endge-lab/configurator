@@ -1,4 +1,5 @@
 import type {
+  ServiceBackendDomainExportOptions,
   ServiceBackendDomainImportPlan,
   ServiceBackendDomainImportPlanRequest,
   ServiceBackendDomainImportRequest,
@@ -23,8 +24,8 @@ export class EndgeIDEDomainTransfer_Module {
   }
 
   /** Скачивает portable export текущего workspace. */
-  public downloadExport(workspaceIdentity: string): Promise<void> {
-    return this._adapter.downloadExport(workspaceIdentity)
+  public downloadExport(workspaceIdentity: string, options?: ServiceBackendDomainExportOptions): Promise<void> {
+    return this._adapter.downloadExport(workspaceIdentity, options)
   }
 
   /** Создаёт server-side plan для выбранного snapshot. */

@@ -54,9 +54,44 @@ describe('сервис переноса домена через backend', () => 
         'Content-Type': 'application/json',
         'X-Endge-Workspace': 'workspace-a',
       },
-      body: snapshotJSON,
+      body: JSON.stringify({
+        artifact: JSON.parse(snapshotJSON),
+        password: '',
+      }),
       signal: undefined,
     })
+  })
+
+  it('передаёт encrypted envelope и пароль без преобразования внутреннего artifact', async () => {
+    const encrypted = JSON.stringify({
+      kind: 'endge-encrypted-workspace',
+      version: 1,
+      kdf: { algorithm: 'argon2id' },
+      cipher: { algorithm: 'aes-256-gcm' },
+      ciphertext: 'opaque',
+    })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      valid: true,
+      planId: '550e8400-e29b-41d4-a716-446655440006',
+      targetWorkspace: 'workspace-a',
+      targetETag: '"generation:3"',
+      incoming: { documents: 1, integrations: 0, buildProfiles: 2, aiConnections: 1, aiModels: 1 },
+      warnings: [],
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
+
+    await expect(service.planImport({
+      workspaceIdentity: 'workspace-a',
+      snapshotJSON: encrypted,
+      password: 'secret password',
+    })).resolves.toMatchObject({
+      incoming: { buildProfiles: 2, aiConnections: 1, aiModels: 1 },
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/import/plan', expect.objectContaining({
+      body: JSON.stringify({ artifact: JSON.parse(encrypted), password: 'secret password' }),
+    }))
   })
 
   it('применяет только проверенный план с точным подтверждением и If-Match', async () => {

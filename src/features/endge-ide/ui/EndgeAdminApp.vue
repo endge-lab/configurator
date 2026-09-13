@@ -2,7 +2,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Hammer, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -32,7 +32,9 @@ import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import DocumentImport_Modal from '@/features/endge-ide/modules/document-import/ui/DocumentImport_Modal.vue'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
+import DomainExport_Modal from '@/features/endge-ide/ui/modals/DomainExport_Modal.vue'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
+import ExecutionBundleProfiles_Modal from '@/features/endge-ide/ui/modals/ExecutionBundleProfiles_Modal.vue'
 import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
@@ -50,10 +52,12 @@ const startupCompositionIdentity = computed(() =>
 )
 const isLaunchingStartupRuntime = ref(false)
 const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
+const domainExportModal = ref<InstanceType<typeof DomainExport_Modal> | null>(null)
 const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
 const aiManagementModal = ref<InstanceType<typeof AIManagement_Modal> | null>(null)
 const serviceVersionsDialog = ref<InstanceType<typeof ServiceVersionsDialog> | null>(null)
+const executionBundleProfilesModal = ref<InstanceType<typeof ExecutionBundleProfiles_Modal> | null>(null)
 const canConfigureAI = computed(() => {
   if (Configurator.session.state.status !== 'authenticated') {
     return false
@@ -74,8 +78,8 @@ const launchStartupRuntimeTitle = computed(() =>
     : 'В Workspace не выбрана стартовая Composition',
 )
 
-async function exportCurrentDomain(): Promise<void> {
-  await EndgeIDE.domainTransfer.downloadExport(Endge.workspace.current.identity)
+function exportCurrentDomain(): void {
+  domainExportModal.value?.open()
 }
 
 function openDomainImport(): void {
@@ -100,6 +104,10 @@ function openAIManagement(): void {
 
 function openServiceVersions(): void {
   serviceVersionsDialog.value?.open()
+}
+
+function openExecutionBundleProfiles(): void {
+  executionBundleProfilesModal.value?.open()
 }
 
 function openRemoteDebugger(): void {
@@ -369,10 +377,10 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   </Teleport>
 
   <Teleport to="[data-target='grid-layout-header-actions']" defer>
-    <div class="flex items-center gap-2">
+    <div class="mr-1 flex items-center gap-1">
       <button
         type="button"
-        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
+        class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
         :disabled="!startupCompositionIdentity || context.isSwitching() || isLaunchingStartupRuntime"
         :title="launchStartupRuntimeTitle"
         aria-label="Запустить Runtime Preview стартовой Composition"
@@ -381,12 +389,21 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
         <Loader2 v-if="isLaunchingStartupRuntime" class="size-4 animate-spin" />
         <Play v-else class="size-4 text-emerald-500" />
       </button>
+      <button
+        type="button"
+        class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground"
+        title="Открыть профили сборки"
+        aria-label="Открыть профили сборки Execution Bundle"
+        @click="openExecutionBundleProfiles"
+      >
+        <Hammer class="size-4 text-amber-500" />
+      </button>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger as-child>
             <button
               type="button"
-              class="inline-flex size-8 items-center justify-center rounded-md border bg-background transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+              class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent transition-colors hover:border-border hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
               :disabled="context.isSwitching()"
               :aria-label="t('workspaceWorkflow.openCurrent')"
               @click="tabs.openWorkspaceWorkflow()"
@@ -401,11 +418,13 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   </Teleport>
 
   <EditorView />
+  <DomainExport_Modal ref="domainExportModal" />
   <DomainImport_Modal ref="domainImportModal" />
   <DocumentImport_Modal />
   <BackendConnections_Modal ref="backendConnectionsModal" />
   <AccessControl_Modal ref="accessControlModal" />
   <AIManagement_Modal ref="aiManagementModal" />
   <ServiceVersionsDialog ref="serviceVersionsDialog" />
+  <ExecutionBundleProfiles_Modal ref="executionBundleProfilesModal" />
   <RuntimePreviewAuthDialog />
 </template>

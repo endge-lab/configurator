@@ -51,11 +51,16 @@ describe('модуль переноса домена', () => {
       targetETag: 'etag-1',
     }
 
-    await module.downloadExport('workspace-1')
+    const exportOptions = {
+      privateBuildProfiles: 'own' as const,
+      privateAIConnections: 'none' as const,
+      includePublicAI: false,
+    }
+    await module.downloadExport('workspace-1', exportOptions)
     await expect(module.planImport(planRequest)).resolves.toBe(plan)
     await expect(module.import(importRequest)).resolves.toBe(result)
 
-    expect(adapter.downloadExport).toHaveBeenCalledWith('workspace-1')
+    expect(adapter.downloadExport).toHaveBeenCalledWith('workspace-1', exportOptions)
     expect(adapter.planImport).toHaveBeenCalledWith(planRequest)
     expect(adapter.import).toHaveBeenCalledWith(importRequest)
   })

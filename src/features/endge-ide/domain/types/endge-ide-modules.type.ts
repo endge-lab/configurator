@@ -2,6 +2,7 @@ import type { UIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui
 import type { AgentTableActions_Module } from '@/features/endge-ide/modules/AgentTableActions_Module'
 import type { AuthProfileEditorRegistry_Module } from '@/features/endge-ide/modules/AuthProfileEditorRegistry_Module'
 import type { EndgeIDEDocumentImport_Module } from '@/features/endge-ide/modules/document-import/EndgeIDEDocumentImport_Module'
+import type { EndgeIDEBuildProfiles_Module } from '@/features/endge-ide/modules/EndgeIDEBuildProfiles_Module'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEDemonstration_Module } from '@/features/endge-ide/modules/EndgeIDEDemonstration_Module'
 import type { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/modules/EndgeIDEDomainDrag_Module'
@@ -30,6 +31,7 @@ export interface EndgeIDEContextPort {
 export interface EndgeIDEModules {
   uiEditor: UIEditorModule
   busy: EndgeIDEBusy_Module
+  buildProfiles: EndgeIDEBuildProfiles_Module
   agentTableActions: AgentTableActions_Module
   demonstration: EndgeIDEDemonstration_Module
   domainDrag: EndgeIDEDomainDrag_Module

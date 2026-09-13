@@ -8,6 +8,7 @@ import { Endge } from '@endge/core'
 import {
   ArchiveRestore,
   FileJson2,
+  KeyRound,
   Loader2,
   UploadCloud,
 } from 'lucide-vue-next'
@@ -37,12 +38,27 @@ type ImportState = 'idle' | 'checking' | 'ready' | 'importing' | 'reloading'
 const openModel = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
+const snapshotJSON = ref('')
+const encryptedArtifact = ref(false)
+const password = ref('')
 const plan = ref<ServiceBackendDomainImportPlan | null>(null)
 const confirmation = ref('')
 const importState = ref<ImportState>('idle')
 const errorMessage = ref('')
 const isDragOver = ref(false)
 let planController: AbortController | null = null
+const transferCopy = {
+  encryptedPassword: 'Пароль зашифрованного файла',
+  check: 'Проверить',
+  passwordHint: 'Пароль передаётся только для расшифровки и не сохраняется backend.',
+  buildProfiles: 'Профили сборки:',
+  aiCatalog: 'AI-подключения / модели:',
+  skipped: 'Пропущено из-за владельца:',
+  skippedProfiles: 'профили',
+  skippedAI: 'AI-подключения',
+  separator: '/',
+  listSeparator: ', ',
+}
 
 const workspaceIdentity = computed(() => String(Endge.workspace.current.identity ?? '').trim())
 const isBusy = computed(() => importState.value === 'checking'
@@ -65,6 +81,9 @@ function reset(): void {
   planController?.abort()
   planController = null
   selectedFile.value = null
+  snapshotJSON.value = ''
+  encryptedArtifact.value = false
+  password.value = ''
   plan.value = null
   confirmation.value = ''
   importState.value = 'idle'
@@ -130,18 +149,47 @@ async function onDrop(event: DragEvent): Promise<void> {
 
 async function selectFile(file: File): Promise<void> {
   planController?.abort()
-  const controller = new AbortController()
-  planController = controller
   selectedFile.value = file
   plan.value = null
   confirmation.value = ''
   errorMessage.value = ''
-  importState.value = 'checking'
+  password.value = ''
+  importState.value = 'idle'
 
+  try {
+    snapshotJSON.value = await file.text()
+    const parsed = JSON.parse(snapshotJSON.value) as unknown
+    encryptedArtifact.value = parsed != null
+      && typeof parsed === 'object'
+      && !Array.isArray(parsed)
+      && (parsed as Record<string, unknown>).kind === 'endge-encrypted-workspace'
+    if (encryptedArtifact.value) {
+      return
+    }
+    await checkPlan()
+  }
+  catch (error) {
+    importState.value = 'idle'
+    handleTransferError(error, 'Не удалось прочитать файл импорта')
+  }
+}
+
+async function checkPlan(): Promise<void> {
+  if (!selectedFile.value || !snapshotJSON.value || (encryptedArtifact.value && !password.value)) {
+    return
+  }
+  planController?.abort()
+  const controller = new AbortController()
+  planController = controller
+  plan.value = null
+  confirmation.value = ''
+  errorMessage.value = ''
+  importState.value = 'checking'
   try {
     const nextPlan = await EndgeIDE.domainTransfer.planImport({
       workspaceIdentity: workspaceIdentity.value,
-      snapshotJSON: await file.text(),
+      snapshotJSON: snapshotJSON.value,
+      password: password.value,
       signal: controller.signal,
     })
     if (controller.signal.aborted) {
@@ -158,7 +206,7 @@ async function selectFile(file: File): Promise<void> {
       return
     }
     importState.value = 'idle'
-    handleTransferError(error, 'Не удалось проверить файл импорта')
+    handleTransferError(error, encryptedArtifact.value ? 'Не удалось расшифровать или проверить файл' : 'Не удалось проверить файл импорта')
   }
   finally {
     if (planController === controller) {
@@ -289,6 +337,25 @@ function errorText(error: unknown): string {
           </button>
         </section>
 
+        <section v-if="selectedFile && encryptedArtifact && !plan" class="space-y-3 rounded-md border bg-muted/20 p-4">
+          <div class="flex items-start gap-3">
+            <KeyRound class="mt-0.5 size-4 text-primary" />
+            <div class="min-w-0 flex-1 space-y-2">
+              <Label for="domain-import-password">{{ transferCopy.encryptedPassword }}</Label>
+              <div class="flex gap-2">
+                <Input id="domain-import-password" v-model="password" type="password" autocomplete="current-password" :disabled="isBusy" @keydown.enter.prevent="checkPlan" />
+                <Button variant="outline" :disabled="isBusy || !password" @click="checkPlan">
+                  <Loader2 v-if="importState === 'checking'" class="size-4 animate-spin" />
+                  {{ transferCopy.check }}
+                </Button>
+              </div>
+              <p class="text-xs text-muted-foreground">
+                {{ transferCopy.passwordHint }}
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section v-if="plan" class="overflow-hidden rounded-md border">
           <div class="grid grid-cols-2 divide-x border-b bg-muted/25 sm:grid-cols-4">
             <div class="px-3 py-2.5">
@@ -323,6 +390,20 @@ function errorText(error: unknown): string {
                 {{ plan.deletes }} {{ $t('uiText.documents61c54621') }}
               </div>
             </div>
+          </div>
+
+          <div v-if="(plan.incoming.buildProfiles ?? 0) + (plan.incoming.aiConnections ?? 0) > 0" class="grid grid-cols-2 divide-x border-b bg-muted/10 text-xs">
+            <div class="px-3 py-2.5">
+              <span class="text-muted-foreground">{{ transferCopy.buildProfiles }}</span> <strong>{{ plan.incoming.buildProfiles ?? 0 }}</strong>
+            </div>
+            <div class="px-3 py-2.5">
+              <span class="text-muted-foreground">{{ transferCopy.aiCatalog }}</span> <strong>{{ plan.incoming.aiConnections ?? 0 }} {{ transferCopy.separator }} {{ plan.incoming.aiModels ?? 0 }}</strong>
+            </div>
+          </div>
+          <div v-if="(plan.incoming.skippedBuildProfiles ?? 0) + (plan.incoming.skippedAIConnections ?? 0) > 0" class="border-b bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-800 dark:text-amber-300">
+            {{ transferCopy.skipped }}
+            <strong>{{ plan.incoming.skippedBuildProfiles ?? 0 }}</strong> {{ transferCopy.skippedProfiles }}{{ transferCopy.listSeparator }}
+            <strong>{{ plan.incoming.skippedAIConnections ?? 0 }}</strong> {{ transferCopy.skippedAI }}
           </div>
 
           <div v-if="plan.validationErrors.length" class="space-y-1.5 bg-destructive/[0.04] px-4 py-3 text-xs text-destructive">

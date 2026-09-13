@@ -41,6 +41,10 @@ export class EndgeIDE {
     return this._requireModules().domainTransfer
   }
 
+  public static get buildProfiles() {
+    return this._requireModules().buildProfiles
+  }
+
   public static get documentImport() {
     return this._requireModules().documentImport
   }
@@ -178,6 +182,7 @@ export class EndgeIDE {
       modules.documentImport.reset()
       modules.busy.reset()
       modules.agentTableActions.reset()
+      modules.buildProfiles.reset()
     }
     finally {
       this._raphDebugLease?.release()

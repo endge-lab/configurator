@@ -8,6 +8,11 @@ export interface ServiceBackendDomainImportPlan {
   incoming: {
     documents: number
     integrations: number
+    buildProfiles?: number
+    aiConnections?: number
+    aiModels?: number
+    skippedBuildProfiles?: number
+    skippedAIConnections?: number
   }
   creates: number
   updates: number
@@ -25,6 +30,11 @@ export interface ServiceBackendDomainImportResult {
   imported: {
     documents: number
     integrations: number
+    buildProfiles?: number
+    aiConnections?: number
+    aiModels?: number
+    skippedBuildProfiles?: number
+    skippedAIConnections?: number
   }
   creates: number
   updates: number
@@ -38,7 +48,15 @@ export interface ServiceBackendDomainImportResult {
 export interface ServiceBackendDomainImportPlanRequest {
   workspaceIdentity: string
   snapshotJSON: string
+  password?: string
   signal?: AbortSignal
+}
+
+export interface ServiceBackendDomainExportOptions {
+  privateBuildProfiles: 'none' | 'own' | 'all'
+  privateAIConnections: 'none' | 'own' | 'all'
+  includePublicAI: boolean
+  password?: string
 }
 
 export interface ServiceBackendDomainImportRequest {
@@ -51,7 +69,7 @@ export interface ServiceBackendDomainImportRequest {
 
 /** Контракт внешнего backend transport для export/import домена. */
 export interface ServiceBackendDomainTransferAdapter {
-  downloadExport: (workspaceIdentity: string) => Promise<void>
+  downloadExport: (workspaceIdentity: string, options?: ServiceBackendDomainExportOptions) => Promise<void>
   planImport: (request: ServiceBackendDomainImportPlanRequest) => Promise<ServiceBackendDomainImportPlan>
   import: (request: ServiceBackendDomainImportRequest) => Promise<ServiceBackendDomainImportResult>
 }

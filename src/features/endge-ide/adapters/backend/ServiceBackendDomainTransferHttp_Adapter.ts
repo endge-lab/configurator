@@ -1,4 +1,5 @@
 import type {
+  ServiceBackendDomainExportOptions,
   ServiceBackendDomainImportPlan,
   ServiceBackendDomainImportPlanRequest,
   ServiceBackendDomainImportRequest,
@@ -40,13 +41,19 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
   }
 
   /** Скачивает active-only portable export, сформированный backend. */
-  public async downloadExport(workspaceIdentity: string): Promise<void> {
+  public async downloadExport(workspaceIdentity: string, options?: ServiceBackendDomainExportOptions): Promise<void> {
     const response = await fetch(`${this._baseURL}/api/v1/domain/export?download=true`, {
+      method: options ? 'POST' : 'GET',
       credentials: 'include',
-      headers: { 'X-Endge-Workspace': workspaceIdentity },
+      headers: {
+        'X-Endge-Workspace': workspaceIdentity,
+        ...(options ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: options ? JSON.stringify(options) : undefined,
     })
     if (!response.ok) {
-      throw new ServiceBackendDomainTransferError('import_request_failed', `Не удалось экспортировать домен (${response.status})`, response.status)
+      const payload = await readJSON(response)
+      throw new ServiceBackendDomainTransferError('import_request_failed', stringValue(payload?.message) || `Не удалось экспортировать домен (${response.status})`, response.status)
     }
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)
@@ -62,7 +69,10 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     const response = await this._request('/api/v1/domain/import/plan', {
       method: 'POST',
       workspaceIdentity: request.workspaceIdentity,
-      body: request.snapshotJSON,
+      body: {
+        artifact: parseSnapshot(request.snapshotJSON),
+        password: request.password ?? '',
+      },
       signal: request.signal,
     })
     const plan = normalizeImportPlan(response.payload)
@@ -236,12 +246,28 @@ function normalizeImportResult(value: UnknownRecord): ServiceBackendDomainImport
   }
 }
 
-function normalizeCounts(value: unknown): { documents: number, integrations: number } {
+function normalizeCounts(value: unknown): ServiceBackendDomainImportPlan['incoming'] {
   const source = recordValue(value)
   return {
     documents: nonNegativeNumber(source?.documents),
     integrations: nonNegativeNumber(source?.integrations),
+    buildProfiles: nonNegativeNumber(source?.buildProfiles),
+    aiConnections: nonNegativeNumber(source?.aiConnections),
+    aiModels: nonNegativeNumber(source?.aiModels),
+    skippedBuildProfiles: nonNegativeNumber(source?.skippedBuildProfiles),
+    skippedAIConnections: nonNegativeNumber(source?.skippedAIConnections),
   }
+}
+
+function parseSnapshot(value: string): UnknownRecord {
+  try {
+    const parsed = recordValue(JSON.parse(value))
+    if (parsed) {
+      return parsed
+    }
+  }
+  catch {}
+  throw new ServiceBackendDomainTransferError('import_request_failed', 'Файл не содержит JSON-объект workspace snapshot')
 }
 
 async function readJSON(response: Response): Promise<UnknownRecord | null> {

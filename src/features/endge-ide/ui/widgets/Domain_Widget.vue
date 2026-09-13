@@ -58,6 +58,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useConfiguratorSession } from '@/features/configurator-session/ui/configurator-session-context'
 import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_COLORS } from '@/features/document-presentation/config/document-presentation'
 import {
+  getDomainCollectionPresentation,
   getDomainDocumentPresentation,
   getDomainSectionPresentation,
 } from '@/features/document-presentation/tools/resolve-document-presentation'
@@ -131,6 +132,12 @@ function archiveKey(item: ArchiveEntry): string {
   return `${item.kind === 'document' ? item.type : 'workspace'}:${item.identity}`
 }
 
+function getArchiveEntryPresentation(item: ArchiveEntry): DomainDocumentPresentation {
+  return item.kind === 'workspace'
+    ? DOCUMENT_AUXILIARY_PRESENTATION.workspace
+    : getDomainCollectionPresentation(item.type)
+}
+
 function sortArchiveEntries(items: ArchiveEntry[]): ArchiveEntry[] {
   return [...items].sort((left, right) => right.deletedAt.localeCompare(left.deletedAt)
     || archiveKey(left).localeCompare(archiveKey(right)))
@@ -148,7 +155,9 @@ async function loadArchive(reset = true): Promise<void> {
         : Promise.resolve({ items: [] as EndgeArchivedDocument[], nextCursor: undefined }),
       reset ? Configurator.connections.listArchivedWorkspaces() : Promise.resolve([]),
     ])
-    const documents = documentPage.items.map(item => ({ ...item, kind: 'document' as const }))
+    const documents = documentPage.items
+      .filter(item => item.type !== 'folders')
+      .map(item => ({ ...item, kind: 'document' as const }))
     const workspaceEntries = workspaces.map(item => ({ ...item, kind: 'workspace' as const }))
     archiveEntries.value = sortArchiveEntries(reset
       ? [...workspaceEntries, ...documents]
@@ -215,9 +224,13 @@ function openArchiveContextMenu(event: MouseEvent, item: ArchiveEntry): void {
 
 const selectedArchiveEntries = computed(() => archiveEntries.value.filter(item => selectedArchiveKeys.value.has(archiveKey(item))))
 const canRestoreArchiveSelection = computed(() => selectedArchiveEntries.value.length > 0
-  && selectedArchiveEntries.value.every(item => item.kind === 'document'
-    || item.role === 'admin'
-    || (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)))
+  && selectedArchiveEntries.value.every((item) => {
+    if (item.kind === 'document') {
+      return item.type !== 'folders'
+    }
+    return item.role === 'admin'
+      || (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)
+  }))
 
 async function restoreArchiveSelection(): Promise<void> {
   if (!canRestoreArchiveSelection.value) {
@@ -2593,12 +2606,8 @@ function rowClasses(item: FlatFsItem): string {
             @click.stop="(event: MouseEvent) => onArchiveRowClick(event, item)"
             @contextmenu="(event: MouseEvent) => openArchiveContextMenu(event, item)"
           >
-            <span class="size-4 shrink-0" />
-            <ArchiveRestore class="size-4 shrink-0 text-muted-foreground" />
+            <DocumentIcon :presentation="getArchiveEntryPresentation(item)" size="tree" />
             <span class="min-w-0 flex-1 truncate">{{ item.displayName }}</span>
-            <span class="shrink-0 rounded border px-1 text-[9px] leading-4 text-muted-foreground">
-              {{ item.kind === 'workspace' ? $t('workspaceTree.label') : item.type }}
-            </span>
           </div>
           <Button
             v-if="archiveNextCursor"
