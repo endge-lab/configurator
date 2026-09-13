@@ -20,6 +20,7 @@ const facets = computed(() => {
   void context.version.value
   return Endge.domain.getFacets()
     .filter(facet => facet.deletedAt == null && facet.active !== false)
+    .filter(facet => documents(facet).length > 0)
     .sort((left, right) => left.position - right.position || left.identity.localeCompare(right.identity))
 })
 

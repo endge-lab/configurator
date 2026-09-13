@@ -113,7 +113,7 @@ const tabs = EndgeIDE.tabs
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
     | { type: 'create-workspace' }
-    | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, revision: number, active: boolean }
+    | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, active: boolean }
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
@@ -136,7 +136,7 @@ const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
 const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
 const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
-const workspaceDeletionDialog = ref({ open: false, workspaceIdentity: '', displayName: '', revision: 0, active: false, loading: false })
+const workspaceDeletionDialog = ref({ open: false, workspaceIdentity: '', displayName: '', active: false, loading: false })
 const facetRegistryVersion = ref(0)
 const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
@@ -1838,7 +1838,7 @@ async function confirmWorkspaceDeletion(): Promise<void> {
   const state = workspaceDeletionDialog.value
   state.loading = true
   try {
-    const refreshed = await Configurator.deleteWorkspace(state.workspaceIdentity, state.revision)
+    const refreshed = await Configurator.deleteWorkspace(state.workspaceIdentity)
     state.open = false
     if (refreshed) {
       toast.success(t('workspaceTree.deleted'))
@@ -1892,7 +1892,7 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
         action: { type: 'switch-workspace', workspaceIdentity: node.workspaceIdentity },
       })
     }
-    if (node.workspaceRole === 'admin' && node.workspaceRevision) {
+    if (node.workspaceRole === 'admin') {
       items.push({
         label: t('common.delete'),
         icon: Trash2,
@@ -1900,7 +1900,6 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
           type: 'delete-workspace',
           workspaceIdentity: node.workspaceIdentity,
           displayName: node.name,
-          revision: node.workspaceRevision,
           active: node.activeWorkspace === true,
         },
         destructive: true,
@@ -2094,7 +2093,7 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   }
   if (a.type === 'delete-workspace') {
     closeContextMenu()
-    workspaceDeletionDialog.value = { open: true, workspaceIdentity: a.workspaceIdentity, displayName: a.displayName, revision: a.revision, active: a.active, loading: false }
+    workspaceDeletionDialog.value = { open: true, workspaceIdentity: a.workspaceIdentity, displayName: a.displayName, active: a.active, loading: false }
     return
   }
   if (a.type === 'switch-workspace') {

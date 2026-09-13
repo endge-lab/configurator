@@ -15,7 +15,6 @@ export interface ConfiguratorWorkspaceAccess {
   identity: string
   displayName: string
   active: boolean
-  revision: number
   role: 'viewer' | 'editor' | 'admin'
 }
 

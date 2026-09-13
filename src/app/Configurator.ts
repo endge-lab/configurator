@@ -110,15 +110,17 @@ export class Configurator {
   }
 
   /** Мягко удаляет доступный Workspace и синхронизирует application context. */
-  public static async deleteWorkspace(workspaceIdentity: string, revision: number): Promise<boolean> {
+  public static async deleteWorkspace(workspaceIdentity: string): Promise<boolean> {
     const state = this.session.state
     const session = state.status === 'authenticated' ? state.session : null
     const access = session?.workspaces.find(workspace => workspace.identity === workspaceIdentity)
     if (!access || (access.role !== 'admin' && !session?.platformAdmin)) {
       throw new Error('workspace_deletion_forbidden')
     }
-    await this.connections.deleteWorkspace(workspaceIdentity, revision)
-    if (this.connections.clearSelectedWorkspaceAndReload(workspaceIdentity)) {
+    const isCurrent = Endge.workspace.current.identity === workspaceIdentity
+    await this.connections.deleteWorkspace(workspaceIdentity)
+    if (isCurrent) {
+      this.connections.clearWorkspaceAndReload()
       return true
     }
     return (await this.session.check()).status === 'authenticated'

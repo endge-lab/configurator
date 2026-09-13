@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import type { Component, CSSProperties } from 'vue'
 import type { SmartTabRef, SmartTabsApi, SmartTabsOptions } from '@/features/endge-ide/ui/smart-tabs/types'
 
 import { CircleX, CopyX, PanelLeftClose, PanelRightClose, X } from 'lucide-vue-next'
@@ -120,6 +120,14 @@ function getIconBadgeComponentClass(tab: SmartTabRef): string {
     return iconBadgeClass
   }
   return 'size-2.5'
+}
+
+function getIconStyle(tab: SmartTabRef): CSSProperties | undefined {
+  const iconColor = tab.meta?.iconColor
+  if (typeof iconColor !== 'string' || !iconColor.trim()) {
+    return undefined
+  }
+  return { color: iconColor.trim() }
 }
 
 function getTabTooltip(tab: SmartTabRef): string | null {
@@ -266,17 +274,20 @@ watch(contextMenu, (v) => {
                     <component
                       :is="getIconComponent(tab)"
                       :class="getIconComponentClass(tab)"
+                      :style="getIconStyle(tab)"
                     />
                     <component
                       :is="getIconBadgeComponent(tab)"
                       v-if="getIconBadgeComponent(tab)"
                       :class="getIconBadgeComponentClass(tab)"
+                      :style="getIconStyle(tab)"
                       class="absolute -bottom-1 -right-1 rounded-[2px] bg-background p-px"
                     />
                   </span>
                   <i
                     v-else-if="getIconClass?.(tab) ?? tab.meta?.icon"
                     :class="getIconClass?.(tab) ?? tab.meta?.icon"
+                    :style="getIconStyle(tab)"
                     class="shrink-0"
                   />
 

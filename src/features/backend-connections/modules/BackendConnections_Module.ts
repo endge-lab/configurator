@@ -100,11 +100,20 @@ export class BackendConnections_Module {
   }
 
   /** Мягко удаляет Workspace в выбранном backend с optimistic concurrency. */
-  public async deleteWorkspace(workspaceIdentity: string, revision: number): Promise<void> {
-    const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces/${encodeURIComponent(workspaceIdentity)}`, {
+  public async deleteWorkspace(workspaceIdentity: string): Promise<void> {
+    const url = `${this.activeBackendURL}/api/v1/workspaces/${encodeURIComponent(workspaceIdentity)}`
+    const current = await fetch(url, {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    })
+    const revision = current.headers.get('ETag')
+    if (!current.ok || !revision) {
+      throw new Error(current.status === 403 ? 'workspace_deletion_forbidden' : 'workspace_deletion_failed')
+    }
+    const response = await fetch(url, {
       method: 'DELETE',
       credentials: 'include',
-      headers: { 'Accept': 'application/json', 'If-Match': String(revision) },
+      headers: { 'Accept': 'application/json', 'If-Match': revision },
     })
     if (!response.ok) {
       throw new Error(response.status === 403
@@ -165,13 +174,9 @@ export class BackendConnections_Module {
   }
 
   /** Удаляет сохранённый выбор текущего Workspace и перезапускает bootstrap. */
-  public clearSelectedWorkspaceAndReload(workspaceIdentity: string): boolean {
-    if (this.readWorkspace() !== workspaceIdentity) {
-      return false
-    }
+  public clearWorkspaceAndReload(): void {
     this._storage.removeWorkspace(this.activeBackendURL)
     this._reload()
-    return true
   }
 
   public seedWorkspace(workspaceIdentity: string): void {
