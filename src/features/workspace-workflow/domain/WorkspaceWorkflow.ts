@@ -12,6 +12,7 @@ export interface WorkflowDependency {
   title: string
   icon: string
   colorClass: string
+  iconColor?: string
   badgeIcon?: string | null
   documentType: DomainDocumentType | null
   activationMode: 'startup' | 'manual' | null

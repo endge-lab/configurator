@@ -44,7 +44,6 @@ router.beforeEach(async (to) => {
   }
   return status === 'authentication-required'
     || status === 'backend-selection-required'
-    || status === 'workspace-selection-required'
     || status === 'backend-connection-failed'
 })
 

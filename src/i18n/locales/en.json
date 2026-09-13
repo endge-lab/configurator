@@ -27,6 +27,28 @@
     "description": "Select the backend service you want to work with. Your choice will be saved in this browser.",
     "title": "Select a backend"
   },
+  "detachedWorkspace": {
+    "actionRequired": "Create or select a workspace first",
+    "connections": "Connections",
+    "description": "Create a workspace or select an available one in the Domain widget.",
+    "file": "File",
+    "title": "No workspace selected"
+  },
+  "archive": {
+    "backToDomain": "Back to domain",
+    "empty": "Archive is empty",
+    "loadFailed": "Could not load the archive",
+    "loadMore": "Load more",
+    "loading": "Loading archive…",
+    "open": "Open archive",
+    "restore": "Restore",
+    "restoreFailed": "Could not restore “{item}”",
+    "restoreMany": "Restore ({count})",
+    "restoredMany": "Restored: {count}",
+    "restoredOne": "Item restored",
+    "title": "Archive",
+    "toggle": "Toggle archive mode"
+  },
   "styleEditor": {
     "hideCSSPreview": "Hide generated CSS",
     "showCSSPreview": "Show generated CSS"

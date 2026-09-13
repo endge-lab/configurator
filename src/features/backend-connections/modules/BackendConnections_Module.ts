@@ -1,4 +1,5 @@
 import type {
+  ArchivedWorkspace,
   BackendConnection,
   BackendConnectionCatalog,
   BackendConnectionCatalogState,
@@ -124,6 +125,56 @@ export class BackendConnections_Module {
     }
   }
 
+  /** Возвращает доступные tombstones Workspace независимо от active Workspace. */
+  public async listArchivedWorkspaces(): Promise<ArchivedWorkspace[]> {
+    const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces/archive`, {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    })
+    if (!response.ok) {
+      throw new Error('workspace_archive_failed')
+    }
+    const payload: unknown = await response.json()
+    if (!isRecord(payload) || !Array.isArray(payload.items)) {
+      throw new Error('workspace_archive_invalid')
+    }
+    return payload.items.map((item) => {
+      if (!isRecord(item)
+        || !stringValue(item.identity)
+        || !stringValue(item.displayName)
+        || !stringValue(item.deletedAt)
+        || !Number.isInteger(item.revision)
+        || Number(item.revision) <= 0) {
+        throw new Error('workspace_archive_invalid')
+      }
+      return {
+        type: 'workspace' as const,
+        identity: stringValue(item.identity),
+        displayName: stringValue(item.displayName),
+        ...(stringValue(item.description) ? { description: stringValue(item.description) } : {}),
+        deletedAt: stringValue(item.deletedAt),
+        revision: Number(item.revision),
+        role: stringValue(item.role),
+      }
+    })
+  }
+
+  /** Восстанавливает Workspace tombstone по revision из архива. */
+  public async restoreWorkspace(workspace: ArchivedWorkspace): Promise<void> {
+    const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces/${encodeURIComponent(workspace.identity)}/restore`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json', 'If-Match': `"${workspace.revision}"` },
+    })
+    if (!response.ok) {
+      throw new Error(response.status === 403
+        ? 'workspace_restore_forbidden'
+        : response.status === 409
+          ? 'workspace_revision_conflict'
+          : 'workspace_restore_failed')
+    }
+  }
+
   public async delete(id: string): Promise<void> {
     const active = this.catalog?.items.find(item => item.id === id)?.baseUrl === this.activeBackendURL
     await this._service.delete(id)
@@ -225,4 +276,12 @@ export class BackendConnections_Module {
       listener()
     }
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
 }

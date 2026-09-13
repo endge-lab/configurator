@@ -13,6 +13,7 @@ export class EndgeIDE {
   private static _modules: EndgeIDEModules | null = null
   private static _initialized = false
   private static _hasActiveModules = false
+  private static _detached = false
   private static _initialization: Promise<void> | null = null
   private static _raphDebugLease: RaphDebugLease | null = null
   private static _destroyedSnapshotsLease: RuntimeInspectionLease | null = null
@@ -118,6 +119,25 @@ export class EndgeIDE {
     return this._initialization
   }
 
+  /** Mounts only the Domain widget and creation modal without workspace Core. */
+  public static async initDetached(): Promise<void> {
+    if (this._initialized) {
+      return
+    }
+    const modules = this._requireModules()
+    this._hasActiveModules = true
+    this._detached = true
+    try {
+      modules.modals.init()
+      modules.widgets.initDetached()
+      this._initialized = true
+    }
+    catch (error) {
+      await this._resetModules()
+      throw error
+    }
+  }
+
   public static async reset(): Promise<void> {
     await this._initialization?.catch(() => undefined)
     if (!this._hasActiveModules) {
@@ -129,6 +149,14 @@ export class EndgeIDE {
 
   private static async _resetModules(): Promise<void> {
     const modules = this._requireModules()
+    if (this._detached) {
+      modules.widgets.reset()
+      modules.modals.reset()
+      this._initialized = false
+      this._hasActiveModules = false
+      this._detached = false
+      return
+    }
     try {
       await modules.integrations.reset()
       modules.uiEditor.reset()
@@ -158,6 +186,7 @@ export class EndgeIDE {
       this._destroyedSnapshotsLease = null
       this._initialized = false
       this._hasActiveModules = false
+      this._detached = false
     }
   }
 
@@ -166,6 +195,7 @@ export class EndgeIDE {
     const widgetsDisabled = isIDEWidgetsDisabled()
 
     this._hasActiveModules = true
+    this._detached = false
     try {
       modules.uiState.init()
       if (Endge.mode === 'debugger') {

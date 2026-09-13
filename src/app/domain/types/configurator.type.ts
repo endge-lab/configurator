@@ -17,7 +17,6 @@ export type ConfiguratorStatus
     | 'backend-selection-required'
     | 'ready'
     | 'redirecting'
-    | 'workspace-selection-required'
 
 export interface ConfiguratorAuthenticationRequirement {
   backendURL: string

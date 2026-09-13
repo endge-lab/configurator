@@ -16,3 +16,8 @@ export interface ConfiguratorContextInitOptions {
   workspaceIdentity?: string
   userIdentity?: string
 }
+
+export interface ConfiguratorDetachedContextInitOptions {
+  backendConfig: EndgeBackendConfig
+  userIdentity?: string
+}

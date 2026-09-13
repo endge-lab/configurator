@@ -14,7 +14,7 @@ export function useConfiguratorState<T>(
   initialValue: T,
   options: ConfiguratorStateOptions<T> = {},
 ): Ref<T> {
-  if (Endge.mode === 'debugger') {
+  if (Endge.mode === 'debugger' || !Endge.workspace.isLoaded) {
     return ref(structuredClone(initialValue)) as Ref<T>
   }
   migrateLegacyState(key, options.legacyKeys ?? [])

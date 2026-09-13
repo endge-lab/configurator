@@ -43,3 +43,13 @@ export interface WorkspaceCreateInput {
   displayName: string
   description?: string
 }
+
+export interface ArchivedWorkspace {
+  type: 'workspace'
+  identity: string
+  displayName: string
+  description?: string
+  deletedAt: string
+  revision: number
+  role: string
+}

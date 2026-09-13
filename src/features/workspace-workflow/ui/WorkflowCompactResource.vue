@@ -31,7 +31,11 @@ const { t } = useI18n()
       @click.stop="emit('selectResource', data.id, $event.metaKey || $event.ctrlKey)"
       @dblclick.stop="emit('openDocument', data)"
     >
-      <DocumentIcon :presentation="data" size="workflowCompactResource" />
+      <DocumentIcon
+        :presentation="data"
+        size="workflowCompactResource"
+        :style="data.iconColor ? { color: data.iconColor } : undefined"
+      />
       <TriangleAlert v-if="data.status !== 'valid' || data.diagnosticCount" class="workflow-resource-warning size-3" />
     </button>
     <button

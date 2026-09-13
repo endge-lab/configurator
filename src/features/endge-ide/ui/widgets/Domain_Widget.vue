@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { ComponentSFCProgramPayload, DomainDocumentType, RCompositionKind, RFacetDocument } from '@endge/core'
+import type { ComponentSFCProgramPayload, DomainDocumentType, EndgeArchivedDocument, RCompositionKind, RFacetDocument } from '@endge/core'
+import type { ArchivedWorkspace } from '@/features/backend-connections/domain/types/backend-connection.type'
 import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
 import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type {
@@ -109,6 +110,168 @@ function facetRootId(identity: string): string {
 }
 
 const tabs = EndgeIDE.tabs
+const hasActiveWorkspace = computed(() => Configurator.hasActiveWorkspace)
+const { t } = useI18n()
+const { state: sessionState } = useConfiguratorSession()
+
+type ArchiveEntry
+  = | (EndgeArchivedDocument & { kind: 'document' })
+    | (ArchivedWorkspace & { kind: 'workspace' })
+
+const archiveMode = ref(false)
+const archiveLoading = ref(false)
+const archiveNextCursor = ref<string | null>(null)
+const archiveEntries = ref<ArchiveEntry[]>([])
+const selectedArchiveKeys = ref<Set<string>>(new Set())
+const archiveSelectionAnchor = ref<string | null>(null)
+const archiveContextMenuRef = ref<HTMLElement | null>(null)
+const archiveContextMenu = ref({ open: false, x: 0, y: 0 })
+
+function archiveKey(item: ArchiveEntry): string {
+  return `${item.kind === 'document' ? item.type : 'workspace'}:${item.identity}`
+}
+
+function sortArchiveEntries(items: ArchiveEntry[]): ArchiveEntry[] {
+  return [...items].sort((left, right) => right.deletedAt.localeCompare(left.deletedAt)
+    || archiveKey(left).localeCompare(archiveKey(right)))
+}
+
+async function loadArchive(reset = true): Promise<void> {
+  if (archiveLoading.value) {
+    return
+  }
+  archiveLoading.value = true
+  try {
+    const [documentPage, workspaces] = await Promise.all([
+      hasActiveWorkspace.value
+        ? Endge.domainRepository.listArchivedDocuments(reset ? undefined : archiveNextCursor.value ?? undefined)
+        : Promise.resolve({ items: [] as EndgeArchivedDocument[], nextCursor: undefined }),
+      reset ? Configurator.connections.listArchivedWorkspaces() : Promise.resolve([]),
+    ])
+    const documents = documentPage.items.map(item => ({ ...item, kind: 'document' as const }))
+    const workspaceEntries = workspaces.map(item => ({ ...item, kind: 'workspace' as const }))
+    archiveEntries.value = sortArchiveEntries(reset
+      ? [...workspaceEntries, ...documents]
+      : [...archiveEntries.value, ...documents])
+    archiveNextCursor.value = documentPage.nextCursor ?? null
+    if (reset) {
+      selectedArchiveKeys.value = new Set()
+      archiveSelectionAnchor.value = null
+    }
+  }
+  catch (error) {
+    toast.error(t('archive.loadFailed'), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    archiveLoading.value = false
+  }
+}
+
+async function toggleArchiveMode(): Promise<void> {
+  archiveMode.value = !archiveMode.value
+  closeContextMenu()
+  archiveContextMenu.value.open = false
+  if (archiveMode.value) {
+    await loadArchive(true)
+  }
+}
+
+function onArchiveRowClick(event: MouseEvent, item: ArchiveEntry): void {
+  archiveContextMenu.value.open = false
+  const key = archiveKey(item)
+  if (event.shiftKey && archiveSelectionAnchor.value) {
+    const keys = archiveEntries.value.map(archiveKey)
+    const start = keys.indexOf(archiveSelectionAnchor.value)
+    const end = keys.indexOf(key)
+    if (start >= 0 && end >= 0) {
+      const [low, high] = start <= end ? [start, end] : [end, start]
+      selectedArchiveKeys.value = new Set(keys.slice(low, high + 1))
+      return
+    }
+  }
+  if (event.metaKey || event.ctrlKey) {
+    const next = new Set(selectedArchiveKeys.value)
+    next.has(key) ? next.delete(key) : next.add(key)
+    selectedArchiveKeys.value = next
+  }
+  else {
+    selectedArchiveKeys.value = new Set([key])
+  }
+  archiveSelectionAnchor.value = key
+}
+
+function openArchiveContextMenu(event: MouseEvent, item: ArchiveEntry): void {
+  event.preventDefault()
+  event.stopPropagation()
+  const key = archiveKey(item)
+  if (!selectedArchiveKeys.value.has(key)) {
+    selectedArchiveKeys.value = new Set([key])
+    archiveSelectionAnchor.value = key
+  }
+  archiveContextMenu.value = { open: true, x: event.clientX, y: event.clientY }
+}
+
+const selectedArchiveEntries = computed(() => archiveEntries.value.filter(item => selectedArchiveKeys.value.has(archiveKey(item))))
+const canRestoreArchiveSelection = computed(() => selectedArchiveEntries.value.length > 0
+  && selectedArchiveEntries.value.every(item => item.kind === 'document'
+    || item.role === 'admin'
+    || (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)))
+
+async function restoreArchiveSelection(): Promise<void> {
+  if (!canRestoreArchiveSelection.value) {
+    return
+  }
+  archiveContextMenu.value.open = false
+  const selected = [...selectedArchiveEntries.value]
+  const restored = new Set<string>()
+  let restoredDocuments = false
+  let restoredWorkspaces = false
+  for (const item of selected) {
+    try {
+      if (item.kind === 'document') {
+        await Endge.domainRepository.restoreArchivedDocument(item)
+        restoredDocuments = true
+      }
+      else {
+        await Configurator.connections.restoreWorkspace(item)
+        restoredWorkspaces = true
+      }
+      restored.add(archiveKey(item))
+    }
+    catch (error) {
+      toast.error(t('archive.restoreFailed', { item: item.displayName }), {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+  if (restoredDocuments) {
+    await Configurator.context.reloadCurrentContext()
+  }
+  if (restoredWorkspaces) {
+    await Configurator.session.check()
+  }
+  if (restored.size) {
+    archiveEntries.value = archiveEntries.value.filter(item => !restored.has(archiveKey(item)))
+    selectedArchiveKeys.value = new Set()
+    toast.success(restored.size === 1
+      ? t('archive.restoredOne')
+      : t('archive.restoredMany', { count: restored.size }))
+  }
+}
+
+function openCreateFromToolbar(): void {
+  if (hasActiveWorkspace.value) {
+    EndgeIDE.modals.openCreateDocument()
+    return
+  }
+  if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
+    EndgeIDE.modals.openCreateDocument({ documentType: 'workspace' })
+    return
+  }
+  toast.warning(t('detachedWorkspace.actionRequired'))
+}
 
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
@@ -132,8 +295,6 @@ type MenuAction
     | { type: 'restore-facet-document', facetIdentity: string, documentIdentity: string }
 
 const domainStore = useDomainStore()
-const { t } = useI18n()
-const { state: sessionState } = useConfiguratorSession()
 const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
 const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
 const workspaceDeletionDialog = ref({ open: false, workspaceIdentity: '', displayName: '', active: false, loading: false })
@@ -251,6 +412,9 @@ function resetIdentityLabels(): void {
 }
 
 function getWorkspaceRootLabel(): string {
+  if (!hasActiveWorkspace.value) {
+    return ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
+  }
   return Endge.workspace.current.displayName?.trim()
     || Endge.workspace.current.identity?.trim()
     || ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
@@ -273,7 +437,8 @@ function getVisibleNodeBadges(node: FsNode): string[] {
 }
 
 function isStartupComposition(node: FsNode): boolean {
-  return node.type === 'file'
+  return hasActiveWorkspace.value
+    && node.type === 'file'
     && node.docType === 'composition'
     && node.identity === Endge.workspace.current.startupCompositionIdentity
 }
@@ -546,26 +711,36 @@ function closeContextMenu(): void {
   contextMenu.value.path = null
 }
 
+function closeArchiveContextMenu(): void {
+  archiveContextMenu.value.open = false
+}
+
 // close context menu on global scroll/resize for “nice”
 function onWindowChange(): void {
   if (contextMenu.value.open) {
     closeContextMenu()
   }
+  if (archiveContextMenu.value.open) {
+    closeArchiveContextMenu()
+  }
 }
 function onContextMenuClickOutside(e: MouseEvent): void {
-  if (contextMenuRef.value?.contains(e.target as Node)) {
+  if (contextMenuRef.value?.contains(e.target as Node)
+    || archiveContextMenuRef.value?.contains(e.target as Node)) {
     return
   }
   closeContextMenu()
+  closeArchiveContextMenu()
 }
 
 function onContextMenuKeydown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     closeContextMenu()
+    closeArchiveContextMenu()
   }
 }
 
-watch(() => contextMenu.value.open, (open) => {
+watch(() => contextMenu.value.open || archiveContextMenu.value.open, (open) => {
   if (!open) {
     document.removeEventListener('mousedown', onContextMenuClickOutside)
     document.removeEventListener('keydown', onContextMenuKeydown)
@@ -684,6 +859,18 @@ const ROOT_FOLDER_ORDER = computed(() => {
 
 // ---------- дерево ----------
 const fsTree = computed<FsNode[]>(() => {
+  if (!hasActiveWorkspace.value) {
+    const workspaces = sessionState.value.status === 'authenticated' ? sessionState.value.session.workspaces : []
+    return [{
+      id: 'root-workspaces',
+      name: ROOT_FOLDER_LABELS['root-workspaces']!,
+      type: 'folder',
+      sectionType: DomainSectionType.Workspace,
+      isRoot: true,
+      virtual: true,
+      children: buildWorkspaceTreeNodes(workspaces, null, []),
+    }]
+  }
   void actionRegistryVersion.value
   const allFolders = Array.isArray(domainStore.folders) ? domainStore.folders : []
   const tree = buildDomainTree({
@@ -1098,6 +1285,9 @@ async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
   }
 }
 const ROOT_BLOCKS = computed(() => {
+  if (!hasActiveWorkspace.value) {
+    return [{ id: 'context', title: 'Контекст', rootIds: ['root-workspaces'] }]
+  }
   const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
   const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value).map(block => block.id === 'context'
     ? { ...block, rootIds: [...block.rootIds, ...facetIds] }
@@ -1356,7 +1546,9 @@ const allDomainFileItems = computed(() =>
 )
 
 const availableWorkingSetRefs = computed(() =>
-  allDomainFileItems.value.map(item => domainFileNodeToWorkingSetRef(item.node as FsFileNode)),
+  hasActiveWorkspace.value
+    ? allDomainFileItems.value.map(item => domainFileNodeToWorkingSetRef(item.node as FsFileNode))
+    : [],
 )
 
 function expandAll(): void {
@@ -1502,9 +1694,14 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
       EndgeIDE.tabs.openWorkspaceSettings()
     }
     else {
-      toast.warning('Сначала переключитесь на это рабочее пространство', {
-        description: item.node.name,
-      })
+      if (!hasActiveWorkspace.value) {
+        Configurator.connections.selectWorkspace(item.node.workspaceIdentity)
+      }
+      else {
+        toast.warning('Сначала переключитесь на это рабочее пространство', {
+          description: item.node.name,
+        })
+      }
     }
     return
   }
@@ -2317,13 +2514,31 @@ function rowClasses(item: FlatFsItem): string {
                   size="icon"
                   variant="ghost"
                   class="size-6 rounded-sm"
-                  :disabled="!Endge.domainRepository.capabilities.mutations"
-                  @click="EndgeIDE.modals.openCreateDocument()"
+                  :disabled="hasActiveWorkspace ? !Endge.domainRepository.capabilities.mutations : false"
+                  @click="openCreateFromToolbar"
                 >
                   <Plus class="size-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{{ $t('uiText.create84370a20') }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  v-if="!debuggerMode"
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="archiveMode ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20' : 'text-muted-foreground'"
+                  :aria-label="$t('archive.toggle')"
+                  :aria-pressed="archiveMode"
+                  @click="toggleArchiveMode"
+                >
+                  <ArchiveRestore class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ archiveMode ? $t('archive.backToDomain') : $t('archive.open') }}</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -2356,7 +2571,51 @@ function rowClasses(item: FlatFsItem): string {
     </div>
 
     <!-- дерево -->
-    <div class="flex-1 min-h-0" @click="closeContextMenu">
+    <div v-if="archiveMode" class="flex-1 min-h-0" @click="archiveContextMenu.open = false">
+      <ScrollArea class="h-full">
+        <div class="p-2 text-[13px] leading-5">
+          <div class="mb-1 rounded px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+            {{ $t('archive.title') }}
+          </div>
+          <div v-if="archiveLoading && !archiveEntries.length" class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground">
+            <Loader2 class="size-4 animate-spin" />
+            {{ $t('archive.loading') }}
+          </div>
+          <p v-else-if="!archiveEntries.length" class="py-10 text-center text-xs text-muted-foreground">
+            {{ $t('archive.empty') }}
+          </p>
+          <div
+            v-for="item in archiveEntries"
+            v-else
+            :key="archiveKey(item)"
+            class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-px text-foreground hover:bg-primary/30 dark:text-[oklch(0.89_0_0)]"
+            :class="selectedArchiveKeys.has(archiveKey(item)) ? 'bg-primary/30 ring-1 ring-secondary/70' : ''"
+            @click.stop="(event: MouseEvent) => onArchiveRowClick(event, item)"
+            @contextmenu="(event: MouseEvent) => openArchiveContextMenu(event, item)"
+          >
+            <span class="size-4 shrink-0" />
+            <ArchiveRestore class="size-4 shrink-0 text-muted-foreground" />
+            <span class="min-w-0 flex-1 truncate">{{ item.displayName }}</span>
+            <span class="shrink-0 rounded border px-1 text-[9px] leading-4 text-muted-foreground">
+              {{ item.kind === 'workspace' ? $t('workspaceTree.label') : item.type }}
+            </span>
+          </div>
+          <Button
+            v-if="archiveNextCursor"
+            size="sm"
+            variant="ghost"
+            class="mt-2 w-full text-xs"
+            :disabled="archiveLoading"
+            @click="loadArchive(false)"
+          >
+            <Loader2 v-if="archiveLoading" class="mr-2 size-3.5 animate-spin" />
+            {{ $t('archive.loadMore') }}
+          </Button>
+        </div>
+      </ScrollArea>
+    </div>
+
+    <div v-else class="flex-1 min-h-0" @click="closeContextMenu">
       <ScrollArea class="h-full">
         <div class="p-2 text-[13px] leading-5">
           <div
@@ -2436,6 +2695,30 @@ function rowClasses(item: FlatFsItem): string {
         </div>
       </ScrollArea>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="archiveContextMenu.open"
+        ref="archiveContextMenuRef"
+        role="menu"
+        class="z-50 min-w-[14rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        :style="{ position: 'fixed', left: `${archiveContextMenu.x}px`, top: `${archiveContextMenu.y}px` }"
+        @click.stop
+      >
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+          :disabled="!canRestoreArchiveSelection"
+          @click="restoreArchiveSelection"
+        >
+          <ArchiveRestore class="mr-2 size-4 shrink-0" />
+          {{ selectedArchiveEntries.length > 1
+            ? $t('archive.restoreMany', { count: selectedArchiveEntries.length })
+            : $t('archive.restore') }}
+        </button>
+      </div>
+    </Teleport>
 
     <!-- context menu (fixed по координатам курсора, закрытие по клику снаружи) -->
     <Teleport to="body">

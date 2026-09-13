@@ -99,7 +99,7 @@ export interface ConfigurationTreeProjectionInput {
 /** Проецирует только конфигурации активного Workspace в виде плоских дочерних элементов без папок. */
 export function buildWorkspaceTreeNodes(
   workspaces: readonly WorkspaceTreeProjectionInput[],
-  activeWorkspaceIdentity: string,
+  activeWorkspaceIdentity: string | null,
   configurations: readonly ConfigurationTreeProjectionInput[],
 ): FsNode[] {
   return workspaces.filter(workspace => workspace.active).map((workspace): FsNode => {

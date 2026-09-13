@@ -93,6 +93,14 @@ export class Configurator {
       : []
   }
 
+  public static get activeWorkspaceIdentity(): string | null {
+    return this._modules.context.activeWorkspaceIdentity
+  }
+
+  public static get hasActiveWorkspace(): boolean {
+    return this._modules.context.hasActiveWorkspace
+  }
+
   /** После создания обновляет серверный список Workspace без переключения контекста. */
   public static async createWorkspace(input: WorkspaceCreateInput): Promise<boolean> {
     const state = this.session.state
@@ -117,7 +125,7 @@ export class Configurator {
     if (!access || (access.role !== 'admin' && !session?.platformAdmin)) {
       throw new Error('workspace_deletion_forbidden')
     }
-    const isCurrent = Endge.workspace.current.identity === workspaceIdentity
+    const isCurrent = this.activeWorkspaceIdentity === workspaceIdentity
     await this.connections.deleteWorkspace(workspaceIdentity)
     if (isCurrent) {
       this.connections.clearWorkspaceAndReload()
@@ -288,6 +296,10 @@ export class Configurator {
 
   /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */
   public static async activateIDE(): Promise<void> {
+    if (!this.hasActiveWorkspace) {
+      await EndgeIDE.initDetached()
+      return
+    }
     await EndgeIDE.init()
     try {
       await AIWorkbench.init(
@@ -388,7 +400,12 @@ export class Configurator {
       workspaceSeed,
     )
     if (!workspaceAccess) {
-      return 'workspace-selection-required'
+      this._modules.context.initDetached({
+        backendConfig,
+        userIdentity: sessionState.session.developer.subject,
+      })
+      this._modules.i18n.init()
+      return 'ready'
     }
     if (storedWorkspace !== workspaceAccess.identity) {
       this._modules.connections.seedWorkspace(workspaceAccess.identity)

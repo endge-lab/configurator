@@ -1,4 +1,7 @@
 import type {
+  EndgeArchivedDocument,
+  EndgeArchiveListRequest,
+  EndgeArchivePage,
   EndgeDocumentMutationRequest,
   EndgeDocumentMutationResult,
   EndgeDocumentsMoveRequest,
@@ -127,6 +130,30 @@ export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
 
   public async restoreDocument(request: EndgeDocumentMutationRequest): Promise<EndgeDocumentMutationResult> {
     return this._mutateDocument(request, 'POST', `${this._documentPath(request)}/restore`)
+  }
+
+  public async listArchivedDocuments(request: EndgeArchiveListRequest): Promise<EndgeArchivePage> {
+    const query = new URLSearchParams({ limit: String(request.limit ?? 100) })
+    if (request.cursor) {
+      query.set('cursor', request.cursor)
+    }
+    const response = await this._fetch(`/api/v1/domain/archive?${query}`, {
+      method: 'GET',
+      workspaceIdentity: request.workspaceIdentity,
+      signal: request.signal,
+    })
+    if (!Array.isArray(response.payload.items)) {
+      throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid archive response', response.status)
+    }
+    const items = response.payload.items.map(normalizeArchivedDocument)
+    if (items.some(item => item == null)) {
+      throw new ServiceBackendDomainError('snapshot_invalid', 'Service backend returned an invalid archive item', response.status)
+    }
+    const nextCursor = stringValue(response.payload.nextCursor)
+    return {
+      items: items as EndgeArchivedDocument[],
+      ...(nextCursor ? { nextCursor } : {}),
+    }
   }
 
   /** Атомарно перемещает несколько persisted-документов в одну папку. */
@@ -389,6 +416,27 @@ function normalizeDocument(value: UnknownRecord): EndgeLiveDomainDocument | null
       ...(typeof createdAt === 'string' ? { createdAt } : {}),
       ...(typeof updatedAt === 'string' ? { updatedAt } : {}),
     },
+  }
+}
+
+function normalizeArchivedDocument(value: unknown): EndgeArchivedDocument | null {
+  if (!isRecord(value)
+    || !SNAPSHOT_DOCUMENT_KEYS.includes(value.type as typeof SNAPSHOT_DOCUMENT_KEYS[number])
+    || value.type === 'facets'
+    || value.type === 'facet-documents'
+    || !stringValue(value.identity)
+    || !stringValue(value.displayName)
+    || !stringValue(value.deletedAt)
+    || !isPositiveInteger(value.revision)) {
+    return null
+  }
+  return {
+    type: value.type as EndgeArchivedDocument['type'],
+    identity: stringValue(value.identity),
+    displayName: stringValue(value.displayName),
+    ...(stringValue(value.description) ? { description: stringValue(value.description) } : {}),
+    deletedAt: stringValue(value.deletedAt),
+    revision: Number(value.revision),
   }
 }
 

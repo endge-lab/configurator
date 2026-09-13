@@ -9,6 +9,7 @@ import type {
 import type {
   ConfiguratorContextInitOptions,
   ConfiguratorContextSurfaceLifecycle,
+  ConfiguratorDetachedContextInitOptions,
 } from '@/app/domain/types/configurator-context.type'
 import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
@@ -32,6 +33,7 @@ const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-shadcn', 'vue-native'] as co
  */
 export class ConfiguratorContext_Module {
   private _isInitialized = false
+  private _isCoreInitialized = false
   private _isSwitchingContext = false
   private _switchQueue: Promise<void> = Promise.resolve()
   private _currentContext: Partial<EndgeExecutionContext> = {}
@@ -126,8 +128,26 @@ export class ConfiguratorContext_Module {
     }
 
     this._isInitialized = true
+    this._isCoreInitialized = true
     this._currentContext = { ...Endge.context.getExecutionContext() }
     this._requestedContext = { ...this._currentContext }
+    this._notify()
+  }
+
+  /** Initializes the application shell without booting workspace-bound Core. */
+  public initDetached(options: ConfiguratorDetachedContextInitOptions): void {
+    if (this._isInitialized) {
+      return
+    }
+    this._backendConfig = options.backendConfig
+    this._domainProvider = null
+    this._workspaceRole = null
+    this._workspaceIdentity = null
+    this._userIdentity = String(options.userIdentity ?? '').trim() || null
+    this._currentContext = {}
+    this._requestedContext = {}
+    this._isCoreInitialized = false
+    this._isInitialized = true
     this._notify()
   }
 
@@ -168,7 +188,10 @@ export class ConfiguratorContext_Module {
     this._isInitialized = false
     this._notify()
     this._events.stop()
-    await Endge.reset()
+    if (this._isCoreInitialized) {
+      await Endge.reset()
+    }
+    this._isCoreInitialized = false
   }
 
   /** Собирает boot-контекст из единожды выбранного backend provider. */
@@ -375,7 +398,18 @@ export class ConfiguratorContext_Module {
 
   /** Workspace, выбранный при авторизованном запуске Configurator. */
   public get workspaceIdentity(): string {
-    return this._workspaceIdentity ?? Endge.workspace.current.identity
+    if (!this._workspaceIdentity) {
+      throw new Error('[Configurator] Active workspace is required')
+    }
+    return this._workspaceIdentity
+  }
+
+  public get activeWorkspaceIdentity(): string | null {
+    return this._workspaceIdentity
+  }
+
+  public get hasActiveWorkspace(): boolean {
+    return this._workspaceIdentity !== null
   }
 
   /** Возвращает фактический режим данных для fixtures Store и выполнения Query. */

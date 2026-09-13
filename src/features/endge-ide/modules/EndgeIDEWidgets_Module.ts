@@ -180,6 +180,28 @@ export class EndgeIDEWidgets_Module {
     this._isInitialized = true
   }
 
+  /** Registers only the Domain widget for a shell without an active workspace. */
+  public initDetached(): void {
+    if (this._isInitialized) {
+      return
+    }
+    setLayoutScope('endge-ide')
+    const definition = this._widgetDefinitions.find(def => def.id === ENDGE_IDE_DOMAIN_WIDGET_ID)
+    if (!definition) {
+      throw new Error('[EndgeIDEWidgets] Domain widget definition is missing')
+    }
+    registerWidget({
+      ...definition,
+      permanent: true,
+      allowedPositions: ['left'],
+      floatingConstraints: undefined,
+    })
+    createWidgetInstance(definition.id, {}, { activate: true })
+    setAreaActiveWidget('left', definition.id)
+    setAreaExpanded('left', true)
+    this._isInitialized = true
+  }
+
   /** Оставляет Runtime Tree рядом с Domain, а Problems — последним левым widget. */
   private _ensureWorkspaceDefaultOrder(): void {
     const order = getWidgetOrder('left')

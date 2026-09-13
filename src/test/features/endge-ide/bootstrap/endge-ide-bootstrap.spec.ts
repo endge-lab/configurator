@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   config: vi.fn(),
   init: vi.fn(),
+  initDetached: vi.fn(),
 }))
 
 class MemoryStorage implements Storage {
@@ -29,7 +30,10 @@ vi.mock('@/features/endge-ide/config/endge-backend', () => ({
 vi.mock('@/app/modules/ConfiguratorContext_Module', () => ({
   ConfiguratorContext_Module: class {
     public init = mocks.init
+    public initDetached = mocks.initDetached
     public reset = vi.fn()
+    public activeWorkspaceIdentity = null
+    public hasActiveWorkspace = false
   },
 }))
 vi.mock('@/app/modules/ConfiguratorI18n_Module', () => ({
@@ -48,6 +52,7 @@ describe('инициализация Endge IDE через backend', () => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
     mocks.init.mockReset()
+    mocks.initDetached.mockReset()
     mocks.config.mockReset()
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace-a')
     mocks.config.mockReturnValue({
@@ -203,7 +208,7 @@ describe('инициализация Endge IDE через backend', () => {
     }))
   })
 
-  it('требует выбрать Workspace без запуска Endge, если сохранённое и начальное значения недоступны', async () => {
+  it('запускает detached shell без Core, если Workspace не выбран', async () => {
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', '')
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -218,10 +223,13 @@ describe('инициализация Endge IDE через backend', () => {
       }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
     vi.stubGlobal('window', { sessionStorage: { removeItem: vi.fn() } })
 
-    await expect(Configurator.init()).resolves.toBe('workspace-selection-required')
+    await expect(Configurator.init()).resolves.toBe('ready')
 
     expect(Configurator.workspaceSelection).toHaveLength(1)
     expect(mocks.init).not.toHaveBeenCalled()
+    expect(mocks.initDetached).toHaveBeenCalledWith(expect.objectContaining({
+      userIdentity: 'subject',
+    }))
   })
 
   it('сохраняет выбор недоступного удалённого backend и предоставляет восстанавливаемую ошибку запуска', async () => {
