@@ -74,6 +74,7 @@ describe('инициализация Endge IDE через backend', () => {
         identity: 'workspace-a',
         displayName: 'Workspace A',
         active: true,
+        revision: 1,
         role: 'editor',
       }],
     }), { status: 200, headers: { 'Content-Type': 'application/json' } })).mockResolvedValueOnce(new Response(JSON.stringify({
@@ -179,7 +180,7 @@ describe('инициализация Endge IDE через backend', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({
         user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
         platformAdmin: false,
-        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'viewer' }],
+        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, revision: 1, role: 'viewer' }],
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         items: [],
@@ -209,7 +210,7 @@ describe('инициализация Endge IDE через backend', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({
         user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
         platformAdmin: false,
-        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, role: 'editor' }],
+        workspaces: [{ id: 'workspace-id', identity: 'workspace-a', displayName: 'Workspace A', active: true, revision: 1, role: 'editor' }],
       }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         items: [],

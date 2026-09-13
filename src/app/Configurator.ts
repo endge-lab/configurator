@@ -109,6 +109,21 @@ export class Configurator {
     }
   }
 
+  /** Мягко удаляет доступный Workspace и синхронизирует application context. */
+  public static async deleteWorkspace(workspaceIdentity: string, revision: number): Promise<boolean> {
+    const state = this.session.state
+    const session = state.status === 'authenticated' ? state.session : null
+    const access = session?.workspaces.find(workspace => workspace.identity === workspaceIdentity)
+    if (!access || (access.role !== 'admin' && !session?.platformAdmin)) {
+      throw new Error('workspace_deletion_forbidden')
+    }
+    await this.connections.deleteWorkspace(workspaceIdentity, revision)
+    if (this.connections.clearSelectedWorkspaceAndReload(workspaceIdentity)) {
+      return true
+    }
+    return (await this.session.check()).status === 'authenticated'
+  }
+
   public static get backendConnectionFailure(): ConfiguratorBackendConnectionFailure | null {
     return this._backendConnectionFailure
   }

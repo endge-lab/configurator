@@ -26,6 +26,8 @@ export interface FsNodeBase {
   /** Проекция Workspace только для frontend; она никогда не принадлежит Endge Domain. */
   workspaceIdentity?: string
   activeWorkspace?: boolean
+  workspaceRole?: WorkspaceTreeProjectionInput['role']
+  workspaceRevision?: number
   /** Dynamic facet ownership; these nodes are authoring-only and bypass generic document routes. */
   facetIdentity?: string
   facetColor?: string
@@ -86,6 +88,7 @@ export interface WorkspaceTreeProjectionInput {
   displayName: string
   role: string
   active: boolean
+  revision: number
 }
 
 export interface ConfigurationTreeProjectionInput {
@@ -110,6 +113,8 @@ export function buildWorkspaceTreeNodes(
       virtual: true,
       workspaceIdentity: workspace.identity,
       activeWorkspace,
+      workspaceRole: workspace.role,
+      workspaceRevision: workspace.revision,
     }
     if (!activeWorkspace) {
       return { ...common, type: 'file', docType: 'workspace', sectionType: DomainSectionType.Workspace }

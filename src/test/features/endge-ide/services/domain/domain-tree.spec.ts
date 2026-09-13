@@ -7,8 +7,8 @@ import { buildDomainTree, buildWorkspaceTreeNodes, prioritizeStartupComposition 
 describe('построение дерева домена', () => {
   it('раскрывает только активный Workspace с плоскими дочерними активными Configuration', () => {
     const tree = buildWorkspaceTreeNodes([
-      { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true },
-      { id: 2, identity: 'remote', displayName: 'Remote', role: 'viewer', active: true },
+      { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true, revision: 3 },
+      { id: 2, identity: 'remote', displayName: 'Remote', role: 'viewer', active: true, revision: 2 },
     ], 'default', [
       { id: 12, identity: 'table', displayName: 'Таблица' },
       { id: 11, identity: 'editing', displayName: 'Редактирование' },

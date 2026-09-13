@@ -113,7 +113,7 @@ const tabs = EndgeIDE.tabs
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
     | { type: 'create-workspace' }
-    | { type: 'delete-workspace' }
+    | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, revision: number, active: boolean }
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
     | { type: 'rename-folder', node: FsFolderNode }
@@ -136,6 +136,7 @@ const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
 const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
 const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
+const workspaceDeletionDialog = ref({ open: false, workspaceIdentity: '', displayName: '', revision: 0, active: false, loading: false })
 const facetRegistryVersion = ref(0)
 const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
@@ -1832,6 +1833,30 @@ async function createFacetDocument(): Promise<void> {
   finally { state.loading = false }
 }
 
+/** Подтверждает soft-delete Workspace и обновляет доступный session snapshot. */
+async function confirmWorkspaceDeletion(): Promise<void> {
+  const state = workspaceDeletionDialog.value
+  state.loading = true
+  try {
+    const refreshed = await Configurator.deleteWorkspace(state.workspaceIdentity, state.revision)
+    state.open = false
+    if (refreshed) {
+      toast.success(t('workspaceTree.deleted'))
+    }
+    else {
+      toast.warning(t('workspaceTree.deleteRefreshFailed'))
+    }
+  }
+  catch (error) {
+    toast.error(t('workspaceTree.deleteFailed'), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    state.loading = false
+  }
+}
+
 function getContextFileNodes(node: FsFileNode): FsFileNode[] {
   if (selectedFileKeys.value.has(getFileSelectionKey(node))) {
     return selectedExportNodes.value
@@ -1867,12 +1892,20 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
         action: { type: 'switch-workspace', workspaceIdentity: node.workspaceIdentity },
       })
     }
-    items.push({
-      label: t('common.delete'),
-      icon: Trash2,
-      action: { type: 'delete-workspace' },
-      destructive: true,
-    })
+    if (node.workspaceRole === 'admin' && node.workspaceRevision) {
+      items.push({
+        label: t('common.delete'),
+        icon: Trash2,
+        action: {
+          type: 'delete-workspace',
+          workspaceIdentity: node.workspaceIdentity,
+          displayName: node.name,
+          revision: node.workspaceRevision,
+          active: node.activeWorkspace === true,
+        },
+        destructive: true,
+      })
+    }
     return items
   }
   if (node.facetIdentity) {
@@ -2060,7 +2093,8 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
     return
   }
   if (a.type === 'delete-workspace') {
-    toast.error(t('workspaceTree.deletionForbidden'))
+    closeContextMenu()
+    workspaceDeletionDialog.value = { open: true, workspaceIdentity: a.workspaceIdentity, displayName: a.displayName, revision: a.revision, active: a.active, loading: false }
     return
   }
   if (a.type === 'switch-workspace') {
@@ -2483,6 +2517,29 @@ function rowClasses(item: FlatFsItem): string {
             </Button>
           </div>
         </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="workspaceDeletionDialog.open">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ $t('workspaceTree.deleteTitle', { workspace: workspaceDeletionDialog.displayName }) }}</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-3 py-2 text-sm leading-6 text-muted-foreground">
+          <p>{{ $t('workspaceTree.deleteDescription') }}</p>
+          <p v-if="workspaceDeletionDialog.active" class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-foreground">
+            {{ $t('workspaceTree.deleteActiveDescription') }}
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" :disabled="workspaceDeletionDialog.loading" @click="workspaceDeletionDialog.open = false">
+            {{ $t('workspaceTree.deleteCancel') }}
+          </Button>
+          <Button variant="destructive" :disabled="workspaceDeletionDialog.loading" @click="confirmWorkspaceDeletion">
+            <Loader2 v-if="workspaceDeletionDialog.loading" class="mr-2 size-4 animate-spin" />
+            {{ $t('workspaceTree.deleteConfirm') }}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 

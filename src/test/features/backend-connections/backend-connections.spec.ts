@@ -172,11 +172,32 @@ describe('подключения к backend', () => {
 
   it('предпочитает сохранённый активный Workspace, затем необязательное начальное значение, иначе требует выбора', () => {
     const workspaces = [
-      { id: 'a', identity: 'workspace-a', displayName: 'A', active: true, role: 'editor' as const },
-      { id: 'b', identity: 'workspace-b', displayName: 'B', active: false, role: 'admin' as const },
+      { id: 'a', identity: 'workspace-a', displayName: 'A', active: true, revision: 2, role: 'editor' as const },
+      { id: 'b', identity: 'workspace-b', displayName: 'B', active: false, revision: 4, role: 'admin' as const },
     ]
     expect(resolveConfiguratorWorkspace(workspaces, 'workspace-a', '')?.identity).toBe('workspace-a')
     expect(resolveConfiguratorWorkspace(workspaces, null, 'workspace-a')?.identity).toBe('workspace-a')
     expect(resolveConfiguratorWorkspace(workspaces, 'workspace-b', 'workspace-b')).toBeNull()
+  })
+
+  it('мягко удаляет выбранный Workspace с If-Match и очищает его локальный выбор перед reload', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ deletedAt: '2026-09-13T00:00:00Z' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const storage = new BackendConnectionStorage()
+    storage.writeWorkspace('https://primary.test', 'workspace-a')
+    const reload = vi.fn()
+    const module = new BackendConnections_Module('https://primary.test', new ServiceStub(), storage, reload)
+
+    await module.deleteWorkspace('workspace-a', 7)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://primary.test/api/v1/workspaces/workspace-a',
+      expect.objectContaining({ method: 'DELETE', headers: expect.objectContaining({ 'If-Match': '7' }) }),
+    )
+    expect(module.clearSelectedWorkspaceAndReload('workspace-a')).toBe(true)
+    expect(storage.readWorkspace('https://primary.test')).toBeNull()
+    expect(reload).toHaveBeenCalledOnce()
   })
 })

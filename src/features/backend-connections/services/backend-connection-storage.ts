@@ -77,6 +77,18 @@ export class BackendConnectionStorage {
       // Выбор остаётся доступным в текущем bootstrap, но reload вернёт chooser.
     }
   }
+
+  public removeWorkspace(backendURL: string): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    try {
+      window.localStorage.removeItem(workspaceStorageKey(backendURL))
+    }
+    catch {
+      // При недоступном storage bootstrap всё равно проверит серверный список.
+    }
+  }
 }
 
 /** Возвращает target namespace для browser state без зависимости от application kernel. */

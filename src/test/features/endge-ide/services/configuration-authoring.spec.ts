@@ -41,8 +41,8 @@ describe('реестры редактирования Configuration', () => {
 
   it('вкладывает плоские документы Configuration только в активный Workspace', () => {
     const nodes = buildWorkspaceTreeNodes([
-      { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true },
-      { id: 2, identity: 'other', displayName: 'Other', role: 'viewer', active: true },
+      { id: 1, identity: 'default', displayName: 'Default', role: 'owner', active: true, revision: 3 },
+      { id: 2, identity: 'other', displayName: 'Other', role: 'viewer', active: true, revision: 2 },
     ], 'default', [
       { id: 11, identity: 'zeta', displayName: 'Zeta' },
       { id: 10, identity: 'alpha', displayName: 'Alpha' },
