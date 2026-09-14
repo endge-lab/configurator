@@ -1,9 +1,8 @@
 {
   "configuratorPresence": {
     "button": "Other connections: {count}",
-    "title": "Connected to workspace",
+    "title": "Connected to backend",
     "ownAccount": "Your account",
-    "connectionId": "· {id}",
     "connection": "Connection",
     "unknownUser": "User"
   },

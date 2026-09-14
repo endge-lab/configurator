@@ -17,7 +17,7 @@ onErrorCaptured(() => {
 </script>
 
 <template>
-  <DropdownMenu v-if="count">
+  <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <button
         type="button"
@@ -26,7 +26,7 @@ onErrorCaptured(() => {
         :title="t('configuratorPresence.button', { count })"
       >
         <UsersRound class="size-4 shrink-0" aria-hidden="true" />
-        <span class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] leading-none font-medium text-primary tabular-nums" aria-hidden="true">{{ count }}</span>
+        <span v-if="count" class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] leading-none font-medium text-primary tabular-nums" aria-hidden="true">{{ count }}</span>
       </button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" :side-offset="6" class="w-72">
@@ -46,8 +46,7 @@ onErrorCaptured(() => {
               {{ connection.displayName || t('configuratorPresence.unknownUser') }}
             </div>
             <div class="truncate text-xs text-muted-foreground">
-              {{ connection.isOwnAccount ? t('configuratorPresence.ownAccount') : t('configuratorPresence.connection') }}
-              <span class="font-mono">{{ t('configuratorPresence.connectionId', { id: connection.instanceId.slice(0, 8) }) }}</span>
+              {{ connection.isOwnAccount ? t('configuratorPresence.ownAccount') : (connection.workspaceDisplayName || t('configuratorPresence.connection')) }}
             </div>
           </div>
         </li>

@@ -1,9 +1,8 @@
 {
   "configuratorPresence": {
     "button": "Другие подключения: {count}",
-    "title": "Подключены к workspace",
+    "title": "Подключены к backend",
     "ownAccount": "Ваш аккаунт",
-    "connectionId": "· {id}",
     "connection": "Подключение",
     "unknownUser": "Пользователь"
   },

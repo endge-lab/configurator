@@ -84,7 +84,8 @@ export class ConfiguratorPresence_Module {
             continue
           }
           if (typeof item.instanceId !== 'string' || !item.instanceId || typeof item.userId !== 'string'
-            || typeof item.displayName !== 'string' || typeof item.label !== 'string') {
+            || typeof item.displayName !== 'string' || typeof item.label !== 'string'
+            || (item.workspaceDisplayName !== undefined && typeof item.workspaceDisplayName !== 'string')) {
             throw new TypeError('Invalid configurator presence entry')
           }
           connections.push({
