@@ -83,7 +83,7 @@ async function mountApplication(): Promise<void> {
   }
   catch (error: unknown) {
     applicationLoader?.unmount()
-    if (getCanonicalLocalhostURL()) {
+    if (getCanonicalLocalhostURL() || Configurator.status === 'redirecting') {
       return
     }
     console.error(`[App] Application bootstrap failed: ${error instanceof Error ? error.message : String(error)}`)
