@@ -16,7 +16,7 @@ defineProps<{ rows: Array<{ id: number, label: string }>, count: number }>()
 <template>
   <!-- inspection fixture comment -->
   <Flex direction="column" gap="3">
-    <Text>Client counter: {{ count }}</Text>
+    <Text @click="action({ identity: 'built-in-test-alert' })">Client counter: {{ count }}</Text>
     <Table :rows="rows" row-key="id"><Column key="id" title="ID"><Cell><Text>{{ row.id }}</Text></Cell></Column><Column key="label" title="Label"><Cell><Text>{{ row.label }}</Text></Cell></Column></Table>
   </Flex>
 </template>`, sourceVersion: 1, active: true }]
@@ -31,11 +31,11 @@ defineProps<{ rows: Array<{ id: number, label: string }>, count: number }>()
   const bundle: EndgeDomainBundle = {
     kind: 'workspace-snapshot',
     schemaVersion: 5,
-    workspace: { identity: workspaceIdentity, displayName: 'Runtime inspection fixture', startupCompositionIdentity: 'inspection-graph', dataMode: 'development', managedBy: 'user', managedById: null, meta: {}, configuration: createDefaultEndgeConfiguration() },
+    workspace: { identity: workspaceIdentity, displayName: 'Runtime inspection fixture', startupCompositionIdentity: 'inspection-graph', dataMode: 'development', managedBy: 'user', managedById: null, meta: {}, configuration: { ...createDefaultEndgeConfiguration(), sfcAdapterIds: ['application-only'], defaultSfcAdapterId: 'application-only' } },
     installedIntegrations: [],
     documents,
   }
-  await Endge.boot({ dataProvider: 'bundle', bundleSource: bundle, scope: { workspaceIdentity }, context: { facets: { deployment: 'inspection-dev' } }, vars: {}, bridge: { role: 'client', allowedServers: [serverUrl], debug: true, label: 'Runtime inspection fixture' } })
+  await Endge.boot({ dataProvider: 'bundle', bundleSource: bundle, scope: { workspaceIdentity }, context: { facets: { deployment: 'inspection-dev' } }, vars: {}, ui: { adapterFallbackIds: ['vue-native'] }, bridge: { role: 'client', allowedServers: [serverUrl], debug: true, label: 'Runtime inspection fixture' } })
   const graph = Endge.program.getArtifact('composition', 'inspection-graph')
   if (graph?.status === 'error') {
     throw new Error(JSON.stringify(graph.diagnostics))

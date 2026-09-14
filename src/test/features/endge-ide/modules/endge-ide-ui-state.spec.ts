@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 
 const mocks = vi.hoisted(() => ({
+  mode: 'application',
   workspace: { documentStructure: 'frontend' as 'frontend' | 'custom' },
   workspaceLoaded: true,
   state: undefined as unknown,
@@ -15,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@endge/core', () => ({
   Endge: {
-    mode: 'application',
+    get mode() { return mocks.mode },
     assertWritable: mocks.assertWritable,
     workspace: {
       get isLoaded() {
@@ -41,8 +42,9 @@ vi.mock('@endge/core', () => ({
   },
 }))
 
-describe('endge IDE UI state', () => {
+describe('состояние интерфейса Endge IDE', () => {
   beforeEach(() => {
+    mocks.mode = 'application'
     mocks.workspace.documentStructure = 'frontend'
     mocks.workspaceLoaded = true
     mocks.state = undefined
@@ -99,5 +101,21 @@ describe('endge IDE UI state', () => {
     module.init()
 
     expect(module.documentStructure.value).toBe('custom')
+  })
+  /** Debugger меняет только локальную проекцию и очищает её вместе с сессией. */
+  it('переключает структуру в дебагере без записи Context и проверки authoring-доступа', () => {
+    mocks.mode = 'debugger'
+    const module = new EndgeIDEUIState_Module()
+    module.init()
+    module.toggleDocumentStructure()
+    expect(module.documentStructure.value).toBe('custom')
+    expect(mocks.setState).not.toHaveBeenCalled()
+    expect(mocks.assertWritable).not.toHaveBeenCalled()
+    expect(mocks.workspace.documentStructure).toBe('frontend')
+    module.clearDebuggerState()
+    expect(module.documentStructure.value).toBe('frontend')
+    module.reset()
+    expect(mocks.workspaceListeners.size).toBe(0)
+    expect(mocks.stateListeners.size).toBe(0)
   })
 })

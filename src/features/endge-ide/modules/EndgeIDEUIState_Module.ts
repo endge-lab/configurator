@@ -104,7 +104,6 @@ export class EndgeIDEUIState_Module {
 
   /** Переключает только проекцию дерева Configurator, не изменяя документ Workspace. */
   public toggleDocumentStructure(): void {
-    Endge.assertWritable()
     const next = this.documentStructure.value === 'custom' ? 'frontend' : 'custom'
     const override = next === this._workspaceDocumentStructure.value ? null : next
     this._documentStructureOverride.value = override

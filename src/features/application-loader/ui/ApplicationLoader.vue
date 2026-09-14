@@ -32,29 +32,25 @@ const brandName = 'Endge'
     </div>
 
     <section class="application-loader__content" aria-labelledby="application-loader-title">
-      <div class="application-loader__mark-shell">
-        <span class="application-loader__orbit application-loader__orbit--outer" aria-hidden="true" />
-        <span class="application-loader__orbit application-loader__orbit--inner" aria-hidden="true" />
-        <svg
-          class="application-loader__mark"
-          role="img"
-          :aria-label="brandName"
-          viewBox="0 0 64 64"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <linearGradient id="application-loader-gradient" x1="26" y1="26" x2="58" y2="38" gradientUnits="userSpaceOnUse">
-              <stop stop-color="var(--primary)" />
-              <stop offset="1" stop-color="#9d72ea" />
-            </linearGradient>
-          </defs>
-          <path
-            fill="#FFFFFF"
-            d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
-          />
-          <rect x="26" y="26" width="32" height="12" rx="4" fill="url(#application-loader-gradient)" />
-        </svg>
-      </div>
+      <svg
+        class="application-loader__mark"
+        role="img"
+        :aria-label="brandName"
+        viewBox="0 0 64 64"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="application-loader-gradient" x1="26" y1="26" x2="58" y2="38" gradientUnits="userSpaceOnUse">
+            <stop stop-color="var(--primary)" />
+            <stop offset="1" stop-color="#9d72ea" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="#FFFFFF"
+          d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
+        />
+        <rect x="26" y="26" width="32" height="12" rx="4" fill="url(#application-loader-gradient)" />
+      </svg>
 
       <h1 id="application-loader-title" class="application-loader__title">
         {{ brandName }}
@@ -139,45 +135,12 @@ const brandName = 'Endge'
   animation: application-loader-content-enter 900ms cubic-bezier(0.2, 0.78, 0.24, 1) both;
 }
 
-.application-loader__mark-shell {
-  position: relative;
-  display: grid;
-  width: 154px;
-  height: 154px;
-  margin-bottom: 22px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(69, 72, 122, 0.19), rgba(7, 10, 21, 0.42) 66%, transparent 68%);
-  box-shadow:
-    0 0 50px color-mix(in srgb, var(--primary) 11%, transparent),
-    inset 0 0 40px color-mix(in srgb, var(--primary) 6%, transparent);
-}
-
 .application-loader__mark {
   width: auto;
   height: 96px;
+  margin-bottom: 22px;
   filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.42));
   animation: application-loader-mark 2.6s ease-in-out infinite;
-}
-
-.application-loader__orbit {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.application-loader__orbit--outer {
-  inset: -1px;
-  border-top: 1px solid color-mix(in srgb, var(--primary) 70%, transparent);
-  border-right: 1px solid transparent;
-  animation: application-loader-orbit 8s linear infinite;
-}
-
-.application-loader__orbit--inner {
-  inset: 13px;
-  border-bottom: 1px solid color-mix(in srgb, var(--primary) 38%, transparent);
-  border-left: 1px solid transparent;
-  animation: application-loader-orbit 6s linear infinite reverse;
 }
 
 .application-loader__title {
@@ -252,10 +215,6 @@ const brandName = 'Endge'
   50% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes application-loader-orbit {
-  to { transform: rotate(360deg); }
-}
-
 @keyframes application-loader-status {
   0%, 100% { opacity: 0.38; transform: scale(0.82); }
   50% { opacity: 1; transform: scale(1.2); }
@@ -267,11 +226,6 @@ const brandName = 'Endge'
 }
 
 @media (max-width: 640px) {
-  .application-loader__mark-shell {
-    width: 136px;
-    height: 136px;
-  }
-
   .application-loader__mark {
     height: 82px;
   }

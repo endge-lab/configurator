@@ -52,6 +52,8 @@ export interface FsFolderNode extends FsNodeBase {
 }
 
 export interface FsFileNode extends FsNodeBase {
+  /** Ссылка на readonly-документ каталога Program. */
+  compiledDocumentKey?: string
   type: 'file'
   id: string
   identity?: string
@@ -169,6 +171,7 @@ export function getFolderParent(f: { parent?: string | number | null, parentId?:
 /** Полные русские подписи корневых разделов дерева. */
 export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-workspaces': 'Рабочие пространства',
+  'root-configurations': 'Конфигурации',
   'root-types': 'Типы',
   'root-queries': 'Обмен данными',
   'root-data-views': 'Представления',
@@ -632,7 +635,7 @@ function collectWorkspaceProjectionDocuments(
       && !node.isTableColumn
       && !node.facetIdentity
       && !retainedContextDocument
-      && node.docType !== 'update'
+      && (node.docType !== 'update' || !!node.compiledDocumentKey)
     ) {
       const key = `${String(node.docType)}:${String(node.id)}`
       if (!result.has(key)) {
@@ -1098,7 +1101,7 @@ function findFolderNode(
   return null
 }
 
-function attachContextualCompositions(
+export function attachContextualCompositions(
   tree: FsNode[],
   compositions: NonNullable<BuildDomainTreeParams['contextualCompositions']>,
 ): void {

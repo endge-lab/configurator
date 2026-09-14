@@ -5,6 +5,7 @@ import { Endge, FilterType, QueryType } from '@endge/core'
 import { computed, reactive, shallowRef } from 'vue'
 import { RuntimeInspectionRenderer } from '@/features/endge-ide/services/runtime-preview/runtime-inspection-renderer'
 import { buildRuntimeInspectionTree } from '@/features/endge-ide/services/runtime-preview/runtime-inspection-tree'
+import { buildProgramWorkflowTree } from '@/features/endge-ide/services/workspace-workflow/program-workflow-tree'
 import { buildWorkspaceWorkflowTree } from '@/features/endge-ide/services/workspace-workflow/workspace-workflow-tree'
 import { readRuntimeInspectionData } from '@/features/endge-ide/tools/read-runtime-inspection-data'
 import { collectRuntimeWorkflowActivity } from '@/features/endge-ide/tools/runtime-workflow-activity'
@@ -83,6 +84,7 @@ export class EndgeIDERuntimeInspection_Module {
     }
     this._off = [
       Endge.runtime.subscribe(() => this._sync()),
+      Endge.program.subscribe(() => this._refreshWorkflow()),
       Endge.domain.subscribe(() => this._refreshWorkflow()),
       Endge.workspace.subscribe(() => this._refreshWorkflow()),
       Endge.context.subscribe(() => { this._context.value = Endge.context.getExecutionContext() }),
@@ -103,7 +105,7 @@ export class EndgeIDERuntimeInspection_Module {
     if (!Endge.workspace.isLoaded) {
       return
     }
-    this._workflowRoots.value = [buildWorkspaceWorkflowTree(Endge.workspace.current)]
+    this._workflowRoots.value = [Endge.mode === 'debugger' ? buildProgramWorkflowTree() : buildWorkspaceWorkflowTree(Endge.workspace.current)]
     if (!this.workflow.value) {
       this.workflow.value = reactive(new WorkspaceWorkflow(readWorkflowLayout(Endge.workspace.current.meta ?? {}))) as WorkspaceWorkflow
     }

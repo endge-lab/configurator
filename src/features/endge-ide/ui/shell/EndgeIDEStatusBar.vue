@@ -134,9 +134,9 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <TooltipProvider v-if="!readOnly" :delay-duration="200">
+    <TooltipProvider :delay-duration="200">
       <div class="flex shrink-0 items-center gap-1">
-        <Tooltip>
+        <Tooltip v-if="!readOnly">
           <TooltipTrigger as-child>
             <button
               type="button"
@@ -155,8 +155,8 @@ onBeforeUnmount(() => {
             {{ mockModeTitle }}
           </TooltipContent>
         </Tooltip>
-        <DomainVersionBadge v-if="!isDebugger" :state="activeDomainVersionState" prefix />
-        <Tooltip v-if="!isDebugger">
+        <DomainVersionBadge v-if="!isDebugger && !readOnly" :state="activeDomainVersionState" prefix />
+        <Tooltip v-if="!isDebugger && !readOnly">
           <TooltipTrigger as-child>
             <button
               type="button"
@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
             {{ t('statusBar.reloadDomain') }}
           </TooltipContent>
         </Tooltip>
-        <Tooltip v-if="!isDebugger">
+        <Tooltip>
           <TooltipTrigger as-child>
             <button
               type="button"

@@ -1355,8 +1355,8 @@
     "liveEnabled": "Live-данные включены ({source}). Запросы могут обращаться к реальным сервисам.",
     "mockEnabled": "Mock-данные включены ({source}). Внешние запросы не выполняются.",
     "reloadDomain": "Полностью перезагрузить домен",
-    "showFrontendStructure": "Вернуть структуру «Frontend» только в Конфигураторе",
-    "showWorkspaceStructure": "Показать структуру «Рабочее пространство» только в Конфигураторе",
+    "showFrontendStructure": "Вернуть структуру «Frontend»",
+    "showWorkspaceStructure": "Показать структуру «Рабочее пространство»",
     "sourceClientContext": "контекст клиента",
     "sourceConfiguratorOverride": "локальное переопределение Конфигуратора",
     "sourceWorkspaceDefault": "значение Workspace по умолчанию"
@@ -1425,6 +1425,10 @@
     "group": "Инфраструктура"
   },
   "remoteDebugger": {
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "onlineHint": "Соединение с приложением через сервер отладки установлено. Новые записи поступают независимо от позиции просмотра.",
+    "offlineHint": "Соединение с приложением прервано. Новые записи не поступают; полученная история остаётся доступна.",
     "skipData": "Не передавать данные",
     "skipDataHint": "Передавать структуру домена и Runtime без рабочих данных и состояния отображения.",
     "selectApplication": "Выберите приложение",
@@ -1529,6 +1533,7 @@
     "sizeUnit": "KiB",
     "skipData": "Не передавать данные",
     "requestSnapshot": "Запросить полный снимок",
+    "resizePanels": "Изменить ширину списка событий и деталей",
     "filterHelp": "Фильтр меняет только список; воспроизводятся все необходимые изменения.",
     "previousSessions": "Прежние сеансы:",
     "archiveDownload": "записей · скачать",
@@ -1557,12 +1562,21 @@
     "diagnostics": "Диагностика",
     "exportArtifact": "Скачать артефакт JSON",
     "catalogHelp": "Сведения из каталога сборки · только чтение",
+    "unsupportedAstText": "Текстовый просмотр этого AST не поддерживается. Дерево доступно во вкладке AST.",
+    "sourceUnavailable": "Source недоступен в этом Bundle: AST не включён.",
     "reconstructed": "Восстановлено из AST. Форматирование и номера строк могут отличаться.",
     "noAst": "AST не включён в этот Bundle.",
     "noArtifact": "У документа нет артефакта сборки.",
     "emptyValue": "—",
     "noDocuments": "Документы не найдены",
-    "loadHint": "Загрузите Bundle или подключитесь к приложению"
+    "loadHint": "Загрузите Bundle или подключитесь к приложению",
+    "readOnlyDocument": "Собранный документ · только чтение",
+    "documentName": "Название",
+    "documentIdentity": "Identity",
+    "documentType": "Тип документа",
+    "compiledDocument": "Документ собран",
+    "metadataUnavailable": "Дополнительные метаданные исходного документа не включены в этот Bundle.",
+    "catalogDetails": "Дескриптор сборки"
   },
   "releaseBuild": {
     "ready": "Сборка готова",

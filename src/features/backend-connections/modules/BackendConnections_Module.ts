@@ -27,6 +27,7 @@ export class BackendConnections_Module {
   ) {
     this.defaultBackendURL = defaultBackendURL ? normalizeBackendURL(defaultBackendURL) : null
     this._activeBackendURL = this._storage.readActiveBackend()
+    this._rememberLegacyActiveBackend()
     this._catalog = this._buildCatalog(false)
     this._state = { status: 'ready', catalog: this._catalog }
   }
@@ -211,7 +212,11 @@ export class BackendConnections_Module {
   }
 
   public deleteLocal(baseURL: string): void {
-    this._storage.removeLocalConnection(baseURL)
+    const normalized = normalizeBackendURL(baseURL)
+    if (normalized === this._activeBackendURL) {
+      throw new Error('Current active backend cannot be removed')
+    }
+    this._storage.removeLocalConnection(normalized)
     this._catalog = this._buildCatalog(this._catalog.canManage)
     this._setState({ status: 'ready', catalog: this._catalog })
   }
@@ -226,9 +231,12 @@ export class BackendConnections_Module {
     if (normalized === this._activeBackendURL) {
       return
     }
-    if (!this._catalog.items.some(item => item.baseUrl === normalized)) {
+    const target = this._catalog.items.find(item => item.baseUrl === normalized)
+    if (!target) {
       throw new Error('Backend connection is not present in the available catalogs')
     }
+    this._rememberConnection(this._catalog.items.find(item => item.baseUrl === this._activeBackendURL))
+    this._rememberConnection(target)
     this._storage.writeActiveBackend(normalized)
     this._activeBackendURL = normalized
     this._reload()
@@ -291,6 +299,25 @@ export class BackendConnections_Module {
       }
     }
     return sortConnections([...byURL.values()])
+  }
+
+  /** Сохраняет явно использованный target в личный каталог до смены active URL. */
+  private _rememberConnection(connection: BackendConnection | undefined): void {
+    if (!connection || connection.source === 'default') {
+      return
+    }
+    this._storage.writeLocalConnection({ name: connection.name, baseUrl: connection.baseUrl })
+  }
+
+  /** Старый active URL не должен исчезать из selector после обновления приложения. */
+  private _rememberLegacyActiveBackend(): void {
+    if (!this._activeBackendURL || this._activeBackendURL === this.defaultBackendURL) {
+      return
+    }
+    if (this._storage.readLocalConnections().some(item => item.baseUrl === this._activeBackendURL)) {
+      return
+    }
+    this._storage.writeLocalConnection({ name: this._activeBackendURL, baseUrl: this._activeBackendURL })
   }
 
   private _buildCatalog(canManage: boolean): BackendConnectionCatalog {

@@ -71,6 +71,7 @@ export class RemoteDebugger_Module {
   private _fileController: AbortController | null = null
   private _unsubscribeInspection: (() => void) | null = null
   private _hasSnapshot = false
+  private _selectionError = false
   public readonly inspectionInterval = shallowRef(0)
   public readonly inspectionBusy = shallowRef(false)
   private readonly _skipData = shallowRef(true)
@@ -102,6 +103,7 @@ export class RemoteDebugger_Module {
 
   public async select(client: BridgeDebugClient): Promise<void> {
     this.pause()
+    this._selectionError = false
     const generation = ++this._generation
     const previous = this._session
     this.inspectionBusy.value = true
@@ -154,7 +156,7 @@ export class RemoteDebugger_Module {
       this._hasSnapshot = true
       this._canControl.value
         = Endge.inspection.appliedSequence === Endge.inspection.receivedSequence
-      this.status.value = 'Приём истории активен · пошаговый просмотр'
+      this.status.value = ''
     }
     catch (error) {
       if (candidate && candidate !== this._session) {
@@ -163,6 +165,7 @@ export class RemoteDebugger_Module {
           .catch(() => undefined)
       }
       if (generation === this._generation) {
+        this._selectionError = true
         this.status.value
           = error instanceof Error ? error.message : 'Не удалось подключиться'
       }
@@ -283,6 +286,7 @@ export class RemoteDebugger_Module {
           .catch(() => undefined)
       }
       Endge.installDebuggerBundle(value)
+      this._selectionError = false
       this.source.value = 'file'
       this.selected.value = null
       this.fileName.value = pending.name
@@ -449,7 +453,8 @@ export class RemoteDebugger_Module {
     this.clients.value = Endge.bridge.debug.clients
     const selected = this.selected.value
     if (
-      selected
+      this._session
+      && selected
       && !this.clients.value.some(
         client =>
           client.serverUrl === selected.serverUrl
@@ -482,7 +487,7 @@ export class RemoteDebugger_Module {
       this.inspectionBusy.value = false
       this.status.value = 'Сеанс завершён · показан последний снимок'
     }
-    else if (!selected && this.source.value !== 'file') {
+    else if (!selected && this.source.value !== 'file' && !this.inspectionBusy.value && !this._selectionError) {
       const connection = Endge.bridge.connections[0]
       this.status.value
         = connection?.status === 'connected'

@@ -94,7 +94,51 @@ describe('подключения к backend', () => {
     expect(catalog.environmentItems.map(item => item.name)).toEqual(['Duplicate', 'Production'])
     module.switchBackend('https://remote.test/')
     expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://remote.test')
+    expect(JSON.parse(localStorage.getItem(LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY) ?? '[]')).toEqual([
+      { name: 'Production', baseUrl: 'https://remote.test' },
+    ])
     expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('сохраняет выбранную среду локально, чтобы после reload она остаётся видимой и активной', async () => {
+    localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://primary.test')
+    const primaryService = new ServiceStub()
+    primaryService.response = {
+      canManage: false,
+      total: 1,
+      items: [{ id: 'local', name: 'Локальная', baseUrl: 'https://local.test' }],
+    }
+    const primary = new BackendConnections_Module(
+      'https://primary.test',
+      primaryService,
+      new BackendConnectionStorage(),
+      vi.fn(),
+    )
+    await primary.load()
+    primary.switchBackend('https://local.test')
+
+    const localService = new ServiceStub()
+    localService.response = {
+      canManage: false,
+      total: 1,
+      items: [{ id: 'demo', name: 'Демо', baseUrl: 'https://demo.test' }],
+    }
+    const afterReload = new BackendConnections_Module(
+      'https://panorama.test',
+      localService,
+      new BackendConnectionStorage(),
+      vi.fn(),
+    )
+    const catalog = await afterReload.load()
+
+    expect(afterReload.activeBackendURL).toBe('https://local.test')
+    expect(catalog.localItems).toMatchObject([
+      { name: 'Основной', baseUrl: 'https://panorama.test', source: 'default' },
+      { name: 'Локальная', baseUrl: 'https://local.test', source: 'local' },
+    ])
+    expect(catalog.environmentItems).toMatchObject([
+      { name: 'Демо', baseUrl: 'https://demo.test', source: 'environment' },
+    ])
   })
 
   it('читает каталог из выбранного URL среды', async () => {
@@ -193,6 +237,16 @@ describe('подключения к backend', () => {
     expect(module.activeBackendURL).toBe('https://removed.test')
     expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://removed.test')
     expect(reload).not.toHaveBeenCalled()
+  })
+
+  it('не удаляет активное локальное подключение', () => {
+    const storage = new BackendConnectionStorage()
+    storage.writeLocalConnection({ name: 'Локальная', baseUrl: 'https://local.test' })
+    storage.writeActiveBackend('https://local.test')
+    const module = new BackendConnections_Module(null, new ServiceStub(), storage, vi.fn())
+
+    expect(() => module.deleteLocal('https://local.test')).toThrow('Current active backend cannot be removed')
+    expect(module.catalog.localItems).toMatchObject([{ name: 'Локальная', baseUrl: 'https://local.test' }])
   })
 
   it('предпочитает сохранённый активный Workspace, затем необязательное начальное значение, иначе требует выбора', () => {

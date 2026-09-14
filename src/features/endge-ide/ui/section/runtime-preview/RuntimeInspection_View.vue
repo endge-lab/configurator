@@ -3,6 +3,7 @@ import { Braces, Info, MonitorPlay, Workflow } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import RuntimePreviewRenderable from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewRenderable.vue'
@@ -34,20 +35,40 @@ watch([tab, inspection.workflow], ([value, workflow]) => {
 
 <template>
   <section class="flex h-full min-h-0 flex-col">
-    <div class="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-1">
-      <div class="flex gap-1" role="tablist" :aria-label="t('runtimeInspection.tabs')">
-        <Button id="inspection-preview-tab" role="tab" :aria-selected="tab === 'preview'" aria-controls="inspection-preview" :variant="tab === 'preview' ? 'secondary' : 'ghost'" size="sm" @click="tab = 'preview'">
-          <MonitorPlay class="mr-1.5 size-4" />{{ t('runtimeWorkflow.preview') }}
-        </Button>
-        <Button id="inspection-data-tab" role="tab" :aria-selected="tab === 'data'" aria-controls="inspection-data" :variant="tab === 'data' ? 'secondary' : 'ghost'" size="sm" @click="tab = 'data'">
-          <Braces class="mr-1.5 size-4" />{{ t('runtimeInspection.data') }}
-        </Button>
-        <Button id="inspection-workflow-tab" role="tab" :aria-selected="tab === 'workflow'" aria-controls="inspection-workflow" :variant="tab === 'workflow' ? 'secondary' : 'ghost'" size="sm" @click="tab = 'workflow'">
-          <Workflow class="mr-1.5 size-4" />{{ t('workspaceWorkflow.title') }}
-        </Button>
-        <Button id="inspection-details-tab" role="tab" :aria-selected="tab === 'details'" aria-controls="inspection-details" :variant="tab === 'details' ? 'secondary' : 'ghost'" size="sm" @click="tab = 'details'">
-          <Info class="mr-1.5 size-4" />{{ t('runtimeInspection.details') }}
-        </Button>
+    <div class="flex shrink-0 items-center justify-center border-b px-3 py-1">
+      <div class="flex gap-0.5 rounded-sm border p-0.5" role="tablist" :aria-label="t('runtimeInspection.tabs')">
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button id="inspection-preview-tab" role="tab" :aria-label="t('runtimeWorkflow.preview')" :aria-selected="tab === 'preview'" aria-controls="inspection-preview" variant="ghost" size="icon" class="size-7" :class="tab === 'preview' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="tab = 'preview'">
+              <MonitorPlay class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('runtimeWorkflow.preview') }}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button id="inspection-data-tab" role="tab" :aria-label="t('runtimeInspection.data')" :aria-selected="tab === 'data'" aria-controls="inspection-data" variant="ghost" size="icon" class="size-7" :class="tab === 'data' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="tab = 'data'">
+              <Braces class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('runtimeInspection.data') }}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button id="inspection-workflow-tab" role="tab" :aria-label="t('workspaceWorkflow.title')" :aria-selected="tab === 'workflow'" aria-controls="inspection-workflow" variant="ghost" size="icon" class="size-7" :class="tab === 'workflow' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="tab = 'workflow'">
+              <Workflow class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('workspaceWorkflow.title') }}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button id="inspection-details-tab" role="tab" :aria-label="t('runtimeInspection.details')" :aria-selected="tab === 'details'" aria-controls="inspection-details" variant="ghost" size="icon" class="size-7" :class="tab === 'details' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" @click="tab = 'details'">
+              <Info class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('runtimeInspection.details') }}</TooltipContent>
+        </Tooltip>
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-2 text-xs text-muted-foreground">

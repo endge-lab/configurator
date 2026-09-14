@@ -1355,8 +1355,8 @@
     "liveEnabled": "Live data is enabled ({source}). Queries may call real services.",
     "mockEnabled": "Mock data is enabled ({source}). External queries are not executed.",
     "reloadDomain": "Fully reload the domain",
-    "showFrontendStructure": "Return to the Frontend structure in Configurator only",
-    "showWorkspaceStructure": "Show the Workspace structure in Configurator only",
+    "showFrontendStructure": "Return to the Frontend structure",
+    "showWorkspaceStructure": "Show the Workspace structure",
     "sourceClientContext": "client context",
     "sourceConfiguratorOverride": "local Configurator override",
     "sourceWorkspaceDefault": "Workspace default"
@@ -1425,6 +1425,10 @@
     "group": "Infrastructure"
   },
   "remoteDebugger": {
+    "online": "Online",
+    "offline": "Offline",
+    "onlineHint": "Connected to the application through the debug server. New records arrive independently of the playback position.",
+    "offlineHint": "The application is disconnected. No new records are arriving; the received history remains available.",
     "skipData": "Do not transfer data",
     "skipDataHint": "Transfer Domain and Runtime structure without live data or render state.",
     "selectApplication": "Select an application",
@@ -1529,6 +1533,7 @@
     "sizeUnit": "KiB",
     "skipData": "Do not transmit data",
     "requestSnapshot": "Request full snapshot",
+    "resizePanels": "Resize the event list and details",
     "filterHelp": "Filters only affect the list; playback applies all required changes.",
     "previousSessions": "Previous sessions:",
     "archiveDownload": "records · download",
@@ -1557,12 +1562,21 @@
     "diagnostics": "Diagnostics",
     "exportArtifact": "Download artifact JSON",
     "catalogHelp": "Build catalog details · read only",
+    "unsupportedAstText": "Text view is not supported for this AST. The tree is available in the AST tab.",
+    "sourceUnavailable": "Source is unavailable in this Bundle: AST is not included.",
     "reconstructed": "Reconstructed from AST. Formatting and line numbers may differ.",
     "noAst": "AST is not included in this Bundle.",
     "noArtifact": "This document has no build artifact.",
     "emptyValue": "—",
     "noDocuments": "No documents found",
-    "loadHint": "Load a Bundle or connect to an application"
+    "loadHint": "Load a Bundle or connect to an application",
+    "readOnlyDocument": "Compiled document · read only",
+    "documentName": "Name",
+    "documentIdentity": "Identity",
+    "documentType": "Document type",
+    "compiledDocument": "Document compiled",
+    "metadataUnavailable": "Additional authoring document metadata is not included in this Bundle.",
+    "catalogDetails": "Build descriptor"
   },
   "releaseBuild": {
     "ready": "Build ready",

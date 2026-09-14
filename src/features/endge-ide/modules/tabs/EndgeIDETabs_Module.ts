@@ -37,21 +37,21 @@ import {
   QueryType,
   readOnlyDocument,
 } from '@endge/core'
-
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
+
 import { toast } from 'vue-sonner'
 import {
   getLayoutState,
   hideWidget,
   showWidget,
 } from '@/components/layouts/grid/layout'
-
 import {
   DOCUMENT_AUXILIARY_PRESENTATION,
   DOCUMENT_ICON_BADGE_SIZE,
   DOCUMENT_ICON_SIZES,
 } from '@/features/document-presentation/config/document-presentation'
-import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
+
+import { getDomainDocumentPresentation, getProgramDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
 import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
 import { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor.ts'
@@ -991,6 +991,10 @@ export class EndgeIDETabs_Module {
     }
     this.openTab({
       id: `compiled:${key}`,
+      meta: {
+        icon: getProgramDocumentPresentation(document.entityType).icon,
+        iconClass: `${DOCUMENT_ICON_SIZES.tab} ${getProgramDocumentPresentation(document.entityType).colorClass}`,
+      },
       label: document.displayName,
       viewId: 'program-document',
       payload: { documentKey: key },

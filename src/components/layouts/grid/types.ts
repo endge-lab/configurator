@@ -11,6 +11,19 @@ export interface WidgetHeaderAction {
   readonly onClick?: () => void
 }
 
+export type WidgetHeaderContributionLocation = 'afterTitle' | 'center' | 'right'
+
+export interface WidgetHeaderContribution {
+  readonly id: string
+  readonly component: Component
+  readonly props?: Readonly<Record<string, unknown>>
+}
+
+export type WidgetHeaderContributions = Partial<Record<
+  WidgetHeaderContributionLocation,
+  readonly WidgetHeaderContribution[]
+>>
+
 export interface CreateWidgetInstanceOptions {
   activate?: boolean
 }
@@ -45,6 +58,7 @@ export interface WidgetDefinitionComponent extends WidgetDefinitionBase {
   readonly content: 'component'
   readonly defaultComponent?: Component
   readonly defaultProps?: Reactive<Record<string, unknown>>
+  readonly headerContributions?: WidgetHeaderContributions
 }
 
 export interface WidgetDefinitionIframe extends WidgetDefinitionBase {

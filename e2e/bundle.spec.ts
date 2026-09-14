@@ -58,6 +58,7 @@ for (const format of ['gzip', 'json'] as const) {
       collectErrors(debuggerPage, errors)
       await ready(debuggerPage, 'debugger')
       await openFile(debuggerPage, filename)
+      await debuggerPage.getByRole('button', { name: 'Развернуть все блоки' }).click()
       await debuggerPage
         .getByRole('treeitem', { name: /Inspection Table/ })
         .click()
@@ -67,12 +68,13 @@ for (const format of ['gzip', 'json'] as const) {
       await debuggerPage
         .getByRole('tab', { name: 'Текст', exact: true })
         .click()
-      await expect(
-        debuggerPage.getByText(
-          ast ? 'Восстановлено из AST.' : 'Source недоступен в этом Bundle:',
-          { exact: false },
-        ),
-      ).toBeVisible()
+      if (ast) {
+        await expect(debuggerPage.getByLabel('Восстановлено из AST, только чтение')).toBeVisible()
+        await expect(debuggerPage.getByText('Восстановлено из AST.', { exact: false })).toHaveCount(0)
+      }
+      else {
+        await expect(debuggerPage.getByText('Source недоступен в этом Bundle:', { exact: false })).toBeVisible()
+      }
       await debuggerPage
         .getByRole('tab', { name: 'Артефакт', exact: true })
         .click()
@@ -90,7 +92,7 @@ for (const format of ['gzip', 'json'] as const) {
   }
 }
 
-test('live receive paused → step → snapshot → data policy → file replay', async ({
+test('независимый debugger: consent → host Action Bundle → шаги → snapshot → файл', async ({
   page,
   context,
 }, info) => {
@@ -117,8 +119,10 @@ test('live receive paused → step → snapshot → data policy → file replay'
     .toBe(true)
   await client.getByRole('button', { name: 'Разрешить отладку' }).click()
   await expect(
-    page.getByText('Приём истории активен', { exact: false }),
+    page.getByRole('status').filter({ hasText: /Онлайн/ }),
   ).toBeVisible()
+  expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.program.exportBundle().requirements.hostActions))
+    .toEqual(expect.arrayContaining([expect.objectContaining({ identity: 'built-in-test-alert' })]))
   // Open through the registered layout owner, then all timeline interactions use the real widget.
   await page.evaluate(async () => {
     const { showWidget }
@@ -163,9 +167,7 @@ test('live receive paused → step → snapshot → data policy → file replay'
     () => (window as any).inspectionFixture.Endge.runtime.inspection.data,
   )
   const downloadPromise = page.waitForEvent('download')
-  await page
-    .getByRole('button', { name: 'Скачать программу и историю' })
-    .click()
+  await page.evaluate(() => (window as any).inspectionFixture.Configurator.remoteDebugger.downloadRecording('gzip'))
   const download = await downloadPromise
   const filename = info.outputPath(download.suggestedFilename())
   await download.saveAs(filename)
@@ -284,6 +286,8 @@ test('large artifact, chunk append and failed import preserve the session', asyn
     body: JSON.stringify(responsiveness),
     contentType: 'application/json',
   })
+  await page.getByRole('button', { name: 'Показать структуру «Рабочее пространство»', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'Модель', exact: true }).click()
   await page.getByRole('treeitem', { name: 'Workspace', exact: true }).click()
   await page.getByRole('treeitem', { name: 'Nested', exact: true }).click()
   await page.getByRole('treeitem', { name: 'Bundle 1', exact: true }).click()
@@ -384,15 +388,17 @@ test('large history keeps the panel bounded and seeks through checkpoints', asyn
   const list = panel.getByRole('list', { name: 'Записи инспекции' })
   await expect(list.getByRole('button')).toHaveCount(201)
   const listBounds = await list.boundingBox()
-  const exportBounds = await panel.getByRole('button', { name: 'Скачать программу и историю' }).boundingBox()
+  const panelBounds = await panel.boundingBox()
+  await expect(panel.getByRole('button', { name: 'Скачать программу и историю' })).toHaveCount(0)
+  await expect(panel.getByLabel('Начало диапазона')).toHaveCount(0)
   expect(listBounds!.height).toBeGreaterThan(100)
-  expect(listBounds!.y + listBounds!.height).toBeLessThanOrEqual(exportBounds!.y)
+  expect(listBounds!.y + listBounds!.height).toBeLessThanOrEqual(panelBounds!.y + panelBounds!.height)
   await expect(panel.getByLabel('Не передавать данные')).toHaveCount(0)
   await panel.getByLabel('Тип записи').selectOption('snapshot')
   await expect(list.getByRole('button')).toHaveCount(21)
-  await panel.getByRole('button', { name: 'К последнему', exact: true }).click()
+  await page.getByTestId('inspection-controls').getByRole('button', { name: 'К последнему', exact: true }).click()
   expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.inspection.data.count)).toBe(10000)
-  await panel.getByRole('button', { name: 'Назад', exact: true }).click()
+  await page.getByTestId('inspection-controls').getByRole('button', { name: 'Назад', exact: true }).click()
   expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.inspection.data.count)).toBe(9999)
   await info.attach('large-history-ui', { body: JSON.stringify({ records: records.length, totalImportAndInteractionsMs: Date.now() - started, listHeight: listBounds!.height }), contentType: 'application/json' })
   await info.attach('large-history-panel', { body: await page.screenshot({ path: info.outputPath('large-history-panel.png') }), contentType: 'image/png' })
@@ -417,6 +423,7 @@ test('drop Bundle anywhere or onto the dialog without navigating away', async ({
   const url = page.url()
   await drop('body', bytes, 'content-detected.txt')
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Развернуть все блоки' }).click()
   await expect(page.getByRole('treeitem', { name: 'Bundle 1', exact: true })).toBeVisible()
   const programId = await page.evaluate(() => (window as any).inspectionFixture.Endge.program.programId)
   await page.getByRole('button', { name: 'Приложение для удалённой отладки' }).click()
@@ -467,5 +474,80 @@ test('build result collects description and commit message for release', async (
     signature: [31, 139],
     input: { identity: 'release-fixture', description: 'Комментарий к сборке', commitMessage: 'Сохранить собранную модель', source: { headSequence: 7 }, buildMetadata: { version: 1, fileFormat: 'gzip', runtime: 'ts-browser' } },
   })
+  expect(errors).toEqual([])
+})
+
+test('compiled catalog uses familiar sections and readonly document shell without parsing', async ({ page }, info) => {
+  const errors: string[] = []
+  collectErrors(page, errors)
+  const container = JSON.parse(await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
+  const catalog = container.bundle.catalog
+  const entry = Object.values(catalog.documents).find((value: any) => value.entityType === 'component-sfc') as any
+  catalog.folders = {
+    ...catalog.folders,
+    'root-components': { id: 'root-components', identity: 'root-components', displayName: 'root-components', parentId: null, scope: 'collection', entityType: 'components', position: 0 },
+    'root-actions': { id: 'root-actions', identity: 'root-actions', displayName: 'root-actions', parentId: null, scope: 'collection', entityType: 'actions', position: 1 },
+    'custom': { id: 'custom', identity: 'custom', displayName: 'Мои компоненты', parentId: 'root-components', scope: 'collection', entityType: 'components', position: 0 },
+  }
+  entry.folderId = 'custom'
+  catalog.folders.model = { id: 'model', identity: 'root-workspace-files', displayName: 'Модель', parentId: null, scope: 'workspace', entityType: null, position: 5 }
+  catalog.folders.screens = { id: 'screens', identity: 'screens', displayName: 'Экраны', parentId: 'model', scope: 'workspace', entityType: null, position: 6, icon: 'Monitor', color: '#aabbcc' }
+  entry.workspaceFolderId = 'screens'
+  await ready(page, 'debugger')
+  await page.evaluate(() => {
+    const fixture = (window as any).inspectionFixture
+    fixture.Endge.source.parse = () => {
+      throw new Error('Inspection must not parse Source')
+    }
+    fixture.Endge.build = () => {
+      throw new Error('Inspection must not build')
+    }
+    fixture.Endge.compiler.build = () => {
+      throw new Error('Inspection must not compile')
+    }
+  })
+  await page.getByRole('button', { name: 'Приложение для удалённой отладки' }).click()
+  await page.getByRole('menuitem', { name: 'Загрузить Bundle…' }).click()
+  await page.getByTestId('bundle-file-input').setInputFiles({ name: 'catalog.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(container)) })
+  await expect(page.getByTestId('bundle-summary')).toBeVisible()
+  await page.getByRole('button', { name: 'Открыть инспекцию' }).click()
+  const components = page.getByRole('treeitem', { name: 'Компоненты', exact: true })
+  await expect(components.locator('.text-blue-500').first()).toBeVisible()
+  await expect(page.getByRole('treeitem', { name: 'Действия', exact: true }).locator('.text-amber-500').first()).toBeVisible()
+  await expect(page.getByRole('treeitem', { name: 'root-components', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('treeitem', { name: /^Region/ }).locator('.text-current').first()).toBeVisible()
+  await components.click()
+  await page.getByRole('treeitem', { name: 'Мои компоненты', exact: true }).click()
+  const document = page.getByRole('treeitem', { name: entry.displayName, exact: true })
+  await document.click()
+  await expect(document).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByTestId('compiled-document-settings')).toBeVisible()
+  await expect(page.getByLabel('Название', { exact: true })).toHaveValue(entry.displayName)
+  await expect(page.getByLabel('Название', { exact: true })).toHaveAttribute('readonly', '')
+  await expect(page.getByRole('button', { name: 'Скопировать identity', exact: true })).toBeEnabled()
+  await page.screenshot({ path: info.outputPath('compiled-document-general.png') })
+  await expect(page.getByText('Сущности', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Показать структуру «Рабочее пространство»', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'Модель', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'Экраны', exact: true }).click()
+  await expect(page.getByRole('treeitem', { name: entry.displayName, exact: true })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('treeitem', { name: 'Компоненты', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Поиск по домену', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Поиск по домену', exact: true }).fill(entry.displayName)
+  await expect(page.getByRole('treeitem', { name: entry.displayName, exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Подсветка отключена/ }).click()
+  await expect(page.locator('.domain-root-hierarchy--root-highlighted').first()).toBeVisible()
+  await page.screenshot({ path: info.outputPath('compiled-workspace-tree.png') })
+  await page.getByRole('button', { name: 'Вернуть структуру «Frontend»', exact: true }).click()
+  await expect(page.getByRole('treeitem', { name: 'Мои компоненты', exact: true })).toBeVisible()
+  await expect(page.getByRole('treeitem', { name: entry.displayName, exact: true })).toHaveAttribute('aria-selected', 'true')
+
+  await page.getByRole('tab', { name: 'Текст', exact: true }).click()
+  await expect(page.getByLabel('Восстановлено из AST, только чтение').or(page.getByText('Source недоступен в этом Bundle:', { exact: false }))).toBeVisible()
+  await page.getByRole('tab', { name: 'AST', exact: true }).click()
+  await page.getByRole('tab', { name: 'Артефакт', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Скачать артефакт JSON' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Диагностика', exact: true }).click()
+  expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.getRuntimeHosts().length)).toBe(0)
   expect(errors).toEqual([])
 })

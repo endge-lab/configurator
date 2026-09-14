@@ -15,6 +15,7 @@ import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
+import { ENDGE_MONACO_TEXT_OPTIONS } from '@/features/endge-ide/config/monaco-text.config'
 
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { installMonacoReferenceNavigation } from '@/features/endge-ide/source-editor/adapters/monaco/install-monaco-reference-navigation'
@@ -263,9 +264,7 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       minimap: { enabled: false },
       scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
       automaticLayout: true,
-      fontSize: 14,
-      tabSize: 2,
-      insertSpaces: true,
+      ...ENDGE_MONACO_TEXT_OPTIONS,
       wordWrap: 'on',
       formatOnPaste: true,
       formatOnType: true,

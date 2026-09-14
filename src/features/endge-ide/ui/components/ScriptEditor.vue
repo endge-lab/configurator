@@ -6,6 +6,7 @@ import { Endge } from '@endge/core'
 import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ENDGE_MONACO_TEXT_OPTIONS } from '@/features/endge-ide/config/monaco-text.config'
 import { formatSource } from '@/features/endge-ide/tools/format-source'
 
 import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
@@ -112,9 +113,7 @@ onMounted(() => {
       minimap: { enabled: false },
       scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
       automaticLayout: true,
-      fontSize: 14,
-      tabSize: 2,
-      insertSpaces: true,
+      ...ENDGE_MONACO_TEXT_OPTIONS,
       readOnly: Endge.mode === 'debugger' || props.readOnly,
       formatOnPaste: true,
       formatOnType: true,

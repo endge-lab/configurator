@@ -23,6 +23,9 @@ export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
     icon: 'History',
     content: 'component',
     defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/remote-debugger/ui/InspectionHistory_Widget.vue'))),
+    headerContributions: {
+      center: [{ id: 'inspection-controls', component: markRaw(defineAsyncComponent(() => import('@/features/remote-debugger/ui/InspectionHistoryControls.vue'))) }],
+    },
     singleton: true,
     permanent: true,
     defaultPosition: 'bottom',

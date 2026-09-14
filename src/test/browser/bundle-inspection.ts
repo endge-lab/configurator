@@ -27,9 +27,10 @@ async function main(): Promise<void> {
     Endge.context.configurePersistence({ context: 'disabled' })
     await Endge.boot({
       mode: 'debugger',
-      scope: { workspaceIdentity: 'inspection-fixture' },
+      scope: {},
       vars: {},
-      bridge: { role: 'configurator', serverUrl: server, debug: true },
+      bridge: { role: 'configurator', serverUrl: server, debug: true, allWorkspaces: true },
+      ui: { adapterFallbackIds: ['vue-shadcn', 'vue-native'] },
     })
     await EndgeIDE.init()
     Configurator.remoteDebugger.init()

@@ -2,7 +2,7 @@
 import type { SmartTabRef } from '@/features/endge-ide/ui/smart-tabs'
 
 import { Endge } from '@endge/core'
-import { Box, Loader2 } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -123,7 +123,19 @@ onMounted(() => {
       >
         <div class="flex flex-col items-center justify-center gap-6">
           <div class="rounded-lg p-8 text-muted-foreground/80">
-            <Box class="size-24" stroke-width="1.25" />
+            <svg class="size-24 opacity-30" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="editor-empty-state-logo-gradient" x1="26" y1="26" x2="58" y2="38" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#635BFF" />
+                  <stop offset="1" stop-color="#4338FF" />
+                </linearGradient>
+              </defs>
+              <path
+                class="fill-[#171B24] dark:fill-white"
+                d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
+              />
+              <rect x="26" y="26" width="32" height="12" rx="4" fill="url(#editor-empty-state-logo-gradient)" />
+            </svg>
           </div>
           <ul class="flex flex-col gap-2 text-sm">
             <li

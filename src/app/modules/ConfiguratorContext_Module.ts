@@ -77,8 +77,9 @@ export class ConfiguratorContext_Module {
       ? {
           mode: 'debugger',
           vars: {},
-          scope: { workspaceIdentity: this.workspaceIdentity },
-          bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: true, label: 'Configurator debugger' },
+          scope: {},
+          bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: true, allWorkspaces: true, label: 'Configurator debugger' },
+          ui: { adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS },
           commands: { remote: this._remoteCommands },
         }
       : this._createBootContext(options.context, backendConfig, domainProvider)
@@ -394,9 +395,12 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /**
-   * Показывает, был ли уже выполнен успешный boot текущего приложения.
-   */
+  /** Пользователь локальной сессии Configurator, независимо от инспектируемого контекста. */
+  public get userIdentity(): string | null {
+    return this._userIdentity
+  }
+
+  /** Показывает, был ли уже выполнен успешный boot текущего приложения. */
   public get isInitialized(): boolean {
     return this._isInitialized
   }

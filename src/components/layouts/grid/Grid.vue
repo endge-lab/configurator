@@ -161,7 +161,7 @@ function startBottomResize(event: MouseEvent) {
       return
     }
 
-    const maxHeight = mainArea.offsetHeight * 0.5
+    const maxHeight = mainArea.offsetHeight * 0.9
     const deltaY = startY - e.clientY
     const newHeight = Math.min(maxHeight, Math.max(100, startHeight + deltaY))
     bottomPanelHeight.value = newHeight

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WidgetDefinition, WidgetDefinitionState, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
+import type { WidgetDefinition, WidgetDefinitionState, WidgetHeaderContributions, WidgetInstance, WidgetPosition } from '@/components/layouts/grid/types.ts'
 import {
   AppWindowMac,
   Ellipsis,
@@ -75,6 +75,16 @@ const optionsActions = computed(() => {
   const defaultActions = props.definition.defaultHeaderActions?.options ?? []
   return instanceActions.length > 0 ? instanceActions : defaultActions
 })
+
+const headerContributions = computed<WidgetHeaderContributions>(() =>
+  props.definition.content === 'component'
+    ? (props.definition.headerContributions ?? {})
+    : {},
+)
+
+const afterTitleContributions = computed(() => headerContributions.value.afterTitle ?? [])
+const centerContributions = computed(() => headerContributions.value.center ?? [])
+const rightContributions = computed(() => headerContributions.value.right ?? [])
 
 const allowedPositions = computed(() =>
   props.definition.allowedPositions ?? ['left', 'right', 'bottom', 'floating'],
@@ -202,124 +212,158 @@ onUnmounted(() => {
 <template>
   <div class="flex flex-col h-full">
     <div
-      class="flex items-center gap-1 px-2 h-10 border-b border-border shrink-0"
-      :class="{ 'cursor-move': position === 'floating' }"
+      class="items-center gap-1 px-2 h-10 border-b border-border shrink-0"
+      :class="[
+        centerContributions.length > 0 ? 'grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : 'flex',
+        { 'cursor-move': position === 'floating' },
+      ]"
       @mousedown="position === 'floating' && emit('headerMousedown', $event)"
     >
-      <Loader2 v-if="activeInstance?.isLoading" class="size-4 text-muted-foreground shrink-0 animate-spin" />
-      <component :is="getIconComponent(definition.icon)" v-else-if="definition.icon" class="size-4 text-muted-foreground shrink-0" />
-      <span class="text-sm font-medium truncate">{{ instanceTitle }}</span>
+      <div class="flex min-w-0 items-center gap-1" :class="{ 'col-start-1': centerContributions.length > 0 }">
+        <Loader2 v-if="activeInstance?.isLoading" class="size-4 text-muted-foreground shrink-0 animate-spin" />
+        <component :is="getIconComponent(definition.icon)" v-else-if="definition.icon" class="size-4 text-muted-foreground shrink-0" />
+        <span class="text-sm font-medium truncate">{{ instanceTitle }}</span>
 
-      <div class="flex-1" />
+        <div v-if="afterTitleContributions.length > 0" class="flex shrink-0 items-center gap-1 pl-1" @mousedown.stop>
+          <component
+            :is="contribution.component"
+            v-for="contribution in afterTitleContributions"
+            :key="contribution.id"
+            v-bind="contribution.props"
+          />
+        </div>
+      </div>
 
-      <template v-for="action in headerActions" :key="action.id">
+      <div v-if="centerContributions.length === 0" class="flex-1" />
+
+      <div v-if="centerContributions.length > 0" class="col-start-2 flex shrink-0 items-center justify-self-center gap-1" @mousedown.stop>
+        <component
+          :is="contribution.component"
+          v-for="contribution in centerContributions"
+          :key="contribution.id"
+          v-bind="contribution.props"
+        />
+      </div>
+
+      <div class="flex min-w-0 items-center justify-self-end gap-1" :class="{ 'col-start-3': centerContributions.length > 0 }">
+        <div v-if="rightContributions.length > 0" class="flex shrink-0 items-center gap-1" @mousedown.stop>
+          <component
+            :is="contribution.component"
+            v-for="contribution in rightContributions"
+            :key="contribution.id"
+            v-bind="contribution.props"
+          />
+        </div>
+
+        <template v-for="action in headerActions" :key="action.id">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                :disabled="isActionDisabled(action)"
+                @mousedown.stop
+                @click="action.onClick?.()"
+              >
+                <component :is="getIconComponent(action.icon)" v-if="action.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent v-if="action.title">
+              {{ action.title }}
+            </TooltipContent>
+          </Tooltip>
+        </template>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" size="icon" class="size-7" @mousedown.stop>
+              <Ellipsis class="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48">
+            <template v-for="action in optionsActions" :key="action.id">
+              <DropdownMenuItem
+                :disabled="isActionDisabled(action)"
+                @click="action.onClick?.()"
+              >
+                <component :is="getIconComponent(action.icon)" v-if="action.icon" class="size-4" />
+                {{ action.title }}
+              </DropdownMenuItem>
+            </template>
+            <DropdownMenuSeparator v-if="optionsActions.length > 0" />
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <PanelsLeftBottom class="size-4 mr-2" />
+                {{ t('grid.widget.moveTo') }}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    v-if="allowedPositions.includes('left')"
+                    :disabled="position === 'left'"
+                    @click="handleMoveTo('left')"
+                  >
+                    <PanelLeft class="size-4" />
+                    {{ t('grid.widget.pinLeft') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="allowedPositions.includes('right')"
+                    :disabled="position === 'right'"
+                    @click="handleMoveTo('right')"
+                  >
+                    <PanelRight class="size-4" />
+                    {{ t('grid.widget.pinRight') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="allowedPositions.includes('bottom')"
+                    :disabled="position === 'bottom'"
+                    @click="handleMoveTo('bottom')"
+                  >
+                    <PanelBottom class="size-4" />
+                    {{ t('grid.widget.pinBottom') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="allowedPositions.includes('floating')"
+                    :disabled="position === 'floating'"
+                    @click="handleMoveTo('floating')"
+                  >
+                    <PictureInPicture2 class="size-4" />
+                    {{ t('grid.widget.floating') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="canMoveToPopup"
+                    @click="handleMoveTo('popup')"
+                  >
+                    <AppWindowMac class="size-4" />
+                    {{ t('grid.widget.popup') }}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              v-if="!definition.permanent"
+              class="text-destructive focus:text-destructive"
+              @click="handleClose"
+            >
+              <X class="size-4" />
+              {{ t('grid.widget.close') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Tooltip>
           <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-7"
-              :disabled="isActionDisabled(action)"
-              @mousedown.stop
-              @click="action.onClick?.()"
-            >
-              <component :is="getIconComponent(action.icon)" v-if="action.icon" class="size-4" />
+            <Button variant="ghost" size="icon" class="size-7" @mousedown.stop @click="handleMinimize">
+              <Minus class="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent v-if="action.title">
-            {{ action.title }}
-          </TooltipContent>
+          <TooltipContent>{{ t('grid.widget.minimize') }}</TooltipContent>
         </Tooltip>
-      </template>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="icon" class="size-7" @mousedown.stop>
-            <Ellipsis class="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-48">
-          <template v-for="action in optionsActions" :key="action.id">
-            <DropdownMenuItem
-              :disabled="isActionDisabled(action)"
-              @click="action.onClick?.()"
-            >
-              <component :is="getIconComponent(action.icon)" v-if="action.icon" class="size-4" />
-              {{ action.title }}
-            </DropdownMenuItem>
-          </template>
-          <DropdownMenuSeparator v-if="optionsActions.length > 0" />
-
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <PanelsLeftBottom class="size-4 mr-2" />
-              {{ t('grid.widget.moveTo') }}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem
-                  v-if="allowedPositions.includes('left')"
-                  :disabled="position === 'left'"
-                  @click="handleMoveTo('left')"
-                >
-                  <PanelLeft class="size-4" />
-                  {{ t('grid.widget.pinLeft') }}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  v-if="allowedPositions.includes('right')"
-                  :disabled="position === 'right'"
-                  @click="handleMoveTo('right')"
-                >
-                  <PanelRight class="size-4" />
-                  {{ t('grid.widget.pinRight') }}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  v-if="allowedPositions.includes('bottom')"
-                  :disabled="position === 'bottom'"
-                  @click="handleMoveTo('bottom')"
-                >
-                  <PanelBottom class="size-4" />
-                  {{ t('grid.widget.pinBottom') }}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  v-if="allowedPositions.includes('floating')"
-                  :disabled="position === 'floating'"
-                  @click="handleMoveTo('floating')"
-                >
-                  <PictureInPicture2 class="size-4" />
-                  {{ t('grid.widget.floating') }}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  v-if="canMoveToPopup"
-                  @click="handleMoveTo('popup')"
-                >
-                  <AppWindowMac class="size-4" />
-                  {{ t('grid.widget.popup') }}
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            v-if="!definition.permanent"
-            class="text-destructive focus:text-destructive"
-            @click="handleClose"
-          >
-            <X class="size-4" />
-            {{ t('grid.widget.close') }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <Button variant="ghost" size="icon" class="size-7" @mousedown.stop @click="handleMinimize">
-            <Minus class="size-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ t('grid.widget.minimize') }}</TooltipContent>
-      </Tooltip>
+      </div>
     </div>
 
     <div

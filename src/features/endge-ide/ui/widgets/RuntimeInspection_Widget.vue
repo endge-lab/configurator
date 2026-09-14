@@ -88,8 +88,5 @@ async function control(operation: RuntimeControlOperation): Promise<void> {
         {{ t('runtimeInspection.emptyTree') }}
       </p>
     </div>
-    <p class="shrink-0 border-t px-3 py-2 text-[10px] leading-4 text-muted-foreground">
-      {{ t('runtimeInspection.selectHint') }}
-    </p>
   </section>
 </template>

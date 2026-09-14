@@ -36,3 +36,10 @@ export function getDomainCollectionPresentation(collection: EndgeDomainCollectio
     .find(item => item.persistence?.collection === collection)
   return descriptor ? getDomainSectionPresentation(descriptor.section) : FALLBACK_PRESENTATION
 }
+
+/** Program uses compiler family names, which can differ from authoring document types. */
+export function getProgramDocumentPresentation(entityType: string): DomainDocumentPresentation {
+  const descriptor = Object.values(DOMAIN_DOCUMENT_DESCRIPTORS)
+    .find(value => value.type === entityType || value.capabilities.program === entityType)
+  return getDomainDocumentPresentation(descriptor?.type ?? entityType as DomainDocumentType)
+}

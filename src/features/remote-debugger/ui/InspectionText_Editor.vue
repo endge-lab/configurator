@@ -2,20 +2,22 @@
 import { useUI } from '@endge/ui-vue'
 import * as monaco from 'monaco-editor'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ENDGE_MONACO_TEXT_OPTIONS } from '@/features/endge-ide/config/monaco-text.config'
 import {
   applyEndgeMonacoTheme,
   ENDGE_MONACO_SCROLLBAR_OPTIONS,
 } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
 
-const props = defineProps<{ text: string }>()
+const props = defineProps<{ text: string, language?: string }>()
 const element = ref<HTMLElement | null>(null)
 const ui = useUI()
 let editor: monaco.editor.IStandaloneCodeEditor | undefined
 let model: monaco.editor.ITextModel | undefined
 onMounted(() => {
-  model = monaco.editor.createModel(props.text, 'plaintext')
+  model = monaco.editor.createModel(props.text, props.language ?? 'plaintext')
   editor = monaco.editor.create(element.value!, {
     model,
+    ...ENDGE_MONACO_TEXT_OPTIONS,
     readOnly: true,
     domReadOnly: true,
     automaticLayout: true,
@@ -28,6 +30,11 @@ watch(
   () => props.text,
   value => model?.setValue(value),
 )
+watch(() => props.language, (value) => {
+  if (model) {
+    monaco.editor.setModelLanguage(model, value ?? 'plaintext')
+  }
+})
 watch(
   () => ui.value.isDark,
   value => applyEndgeMonacoTheme(monaco, value),

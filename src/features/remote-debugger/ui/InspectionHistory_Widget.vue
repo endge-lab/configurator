@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
 
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -11,6 +12,32 @@ import { Input } from '@/components/ui/input'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 
 const session = Configurator.remoteDebugger
+const layoutKey = 'configurator.inspection.list-width'
+const userIdentity = Configurator.context.userIdentity
+const savedSize = userIdentity ? Endge.context.getUserState<number>(userIdentity, layoutKey) : undefined
+const listSize = typeof savedSize === 'number' && Number.isFinite(savedSize) ? Math.max(20, Math.min(80, savedSize)) : 50
+let pendingSize = listSize
+let layoutTimer: ReturnType<typeof setTimeout> | undefined
+function persistLayout(): void {
+  clearTimeout(layoutTimer)
+  layoutTimer = undefined
+  if (userIdentity) {
+    Endge.context.setUserState(userIdentity, layoutKey, pendingSize)
+  }
+}
+function saveLayout(sizes: number[]): void {
+  if (sizes[0] === undefined || !Number.isFinite(sizes[0]) || sizes[0] === pendingSize) {
+    return
+  }
+  pendingSize = Math.max(20, Math.min(80, sizes[0]))
+  clearTimeout(layoutTimer)
+  layoutTimer = setTimeout(persistLayout, 200)
+}
+onBeforeUnmount(() => {
+  if (layoutTimer) {
+    persistLayout()
+  }
+})
 const revision = ref(0)
 const off = Endge.inspection.subscribe(() => revision.value++)
 onBeforeUnmount(off)
@@ -35,10 +62,6 @@ const search = ref('')
 const kind = ref('all')
 const selected = ref<number | null>(null)
 const visible = ref(200)
-const from = ref('')
-const to = ref('')
-const format = ref<'gzip' | 'json'>('gzip')
-const exporting = ref(false)
 const filtered = computed(() =>
   history.value.records.filter(
     record =>
@@ -61,34 +84,6 @@ function attempt(action: () => void | Promise<void>): void {
       toast.error(error instanceof Error ? error.message : String(error)),
     )
 }
-async function download(range: boolean): Promise<void> {
-  exporting.value = true
-  try {
-    if (
-      range
-      && (!from.value
-        || !to.value
-        || !Number.isSafeInteger(Number(from.value))
-        || !Number.isSafeInteger(Number(to.value))
-        || Number(from.value) > Number(to.value))
-    ) {
-      throw new Error('Укажите корректный диапазон записей')
-    }
-    await session.downloadRecording(
-      format.value,
-      range ? { from: Number(from.value), to: Number(to.value) } : undefined,
-    )
-  }
-  finally {
-    exporting.value = false
-  }
-}
-function first(): void {
-  const record = history.value.records[0]
-  if (record) {
-    session.seek(record.sequence)
-  }
-}
 const { t } = useI18n()
 </script>
 
@@ -97,59 +92,8 @@ const { t } = useI18n()
     class="flex h-full min-h-0 flex-col overflow-auto text-xs"
     data-testid="inspection-history"
   >
-    <div class="flex shrink-0 flex-wrap items-center gap-1 border-b px-2 py-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="!history.records.length"
-        @click="attempt(first)"
-      >
-        {{ t('bundleInspection.beginning') }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="history.appliedSequence === history.records[0]?.sequence"
-        @click="
-          attempt(() => {
-            session.pause();
-            history.stepBackward();
-          })
-        "
-      >
-        {{ t('bundleInspection.previous') }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="history.appliedSequence === history.receivedSequence"
-        @click="
-          attempt(() => {
-            session.pause();
-            history.setFollowLive(false);
-            history.stepForward();
-          })
-        "
-      >
-        {{ t('bundleInspection.next') }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="!history.records.length"
-        @click="session.play()"
-      >
-        {{ session.playing.value ? t('bundleInspection.pause') : t('bundleInspection.play') }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="history.receivedSequence === null"
-        @click="attempt(() => session.seek(history.receivedSequence!))"
-      >
-        {{ t('bundleInspection.latest') }}
-      </Button>
-      <label class="mx-2 flex items-center gap-2"><Checkbox
+    <div class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 py-1">
+      <label class="flex shrink-0 items-center gap-2"><Checkbox
         :model-value="history.followLive"
         @update:model-value="
           (value) =>
@@ -159,55 +103,25 @@ const { t } = useI18n()
             })
         "
       /> {{ t('bundleInspection.follow') }} </label>
+
+      <template v-if="session.source.value === 'remote'">
+        <label class="flex items-center gap-2"><Checkbox
+          :model-value="session.skipData.value"
+          :disabled="!session.connected.value || session.inspectionBusy.value"
+          @update:model-value="
+            (value) => attempt(() => session.setSkipData(value === true))
+          "
+        /> {{ t('bundleInspection.skipData') }} </label>
+        <Button
+          size="sm"
+          variant="ghost"
+          :disabled="!session.connected.value || session.inspectionBusy.value"
+          @click="attempt(() => session.refreshInspection())"
+        >
+          {{ t('bundleInspection.requestSnapshot') }}
+        </Button>
+      </template>
       <span class="ml-auto tabular-nums text-muted-foreground"> {{ t('bundleInspection.viewing') }} {{ history.appliedSequence ?? "—" }} {{ t('bundleInspection.received') }} {{ history.receivedSequence ?? "—" }} {{ t('bundleInspection.separator') }} {{ history.records.length }} {{ t('bundleInspection.recordsSeparator') }} {{ (history.bytes / 1024).toFixed(1) }} {{ t('bundleInspection.sizeUnit') }} </span>
-    </div>
-    <div
-      v-if="session.source.value === 'remote'"
-      class="flex shrink-0 items-center gap-3 border-b px-3 py-1"
-    >
-      <label class="flex items-center gap-2"><Checkbox
-        :model-value="session.skipData.value"
-        :disabled="!session.connected.value || session.inspectionBusy.value"
-        @update:model-value="
-          (value) => attempt(() => session.setSkipData(value === true))
-        "
-      /> {{ t('bundleInspection.skipData') }} </label>
-      <Button
-        size="sm"
-        variant="ghost"
-        :disabled="!session.connected.value || session.inspectionBusy.value"
-        @click="attempt(() => session.refreshInspection())"
-      >
-        {{ t('bundleInspection.requestSnapshot') }}
-      </Button>
-    </div>
-    <div
-      v-if="history.records.length"
-      class="flex shrink-0 items-center gap-3 px-3 py-2"
-    >
-      <input
-        type="range"
-        class="min-w-0 flex-1"
-        min="0"
-        :max="history.records.length - 1"
-        :value="
-          history.records.findIndex(
-            (record) => record.sequence === history.appliedSequence,
-          )
-        "
-        aria-label="Шаг истории"
-        @input="
-          (event) =>
-            attempt(() =>
-              session.seek(
-                history.records[
-                  Number((event.target as HTMLInputElement).value)
-                ]!.sequence,
-              ),
-            )
-        "
-      >
-      <span class="text-muted-foreground"> {{ t('bundleInspection.filterHelp') }} </span>
     </div>
     <div
       v-if="history.archives.length"
@@ -240,8 +154,8 @@ const { t } = useI18n()
     <p v-if="history.error" role="alert" class="px-3 text-destructive">
       {{ history.error }}
     </p>
-    <div class="grid min-h-40 flex-1 grid-cols-2 divide-x">
-      <div class="flex min-h-0 flex-col">
+    <SplitterGroup direction="horizontal" class="min-h-40 flex-1" @layout="saveLayout">
+      <SplitterPanel :default-size="listSize" :min-size="20" class="flex min-h-0 min-w-0 flex-col">
         <div class="flex shrink-0 gap-2 p-2">
           <Input
             v-model="search"
@@ -305,8 +219,9 @@ const { t } = useI18n()
             {{ t('bundleInspection.noRuntime') }}
           </p>
         </div>
-      </div>
-      <div class="min-h-0 overflow-auto p-2">
+      </SplitterPanel>
+      <SplitterResizeHandle :aria-label="t('bundleInspection.resizePanels')" class="w-1 shrink-0 bg-border transition-colors hover:bg-primary/30 focus-visible:bg-primary/30" />
+      <SplitterPanel :default-size="100 - listSize" :min-size="20" class="min-h-0 min-w-0 overflow-auto p-2">
         <Button
           v-if="details"
           size="sm"
@@ -315,50 +230,7 @@ const { t } = useI18n()
         >
           {{ t('bundleInspection.goToRecord') }} {{ details.sequence }}
         </Button><SourceJsonTree v-if="details" :data="details" />
-      </div>
-    </div>
-    <div class="flex shrink-0 flex-wrap items-center gap-2 border-t p-2">
-      <select
-        v-model="format"
-        aria-label="Формат экспорта истории"
-        class="rounded border bg-background px-2 py-1"
-      >
-        <option value="gzip">
-          {{ t('bundleInspection.gzip') }}
-        </option>
-        <option value="json">
-          {{ t('bundleInspection.json') }}
-        </option>
-      </select>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="!history.records.length || exporting"
-        @click="attempt(() => download(false))"
-      >
-        {{ t('bundleInspection.exportAll') }}
-      </Button>
-      <Input
-        v-model="from"
-        type="number"
-        placeholder="От"
-        aria-label="Начало диапазона"
-        class="h-7 w-24 text-xs"
-      /><Input
-        v-model="to"
-        type="number"
-        placeholder="До"
-        aria-label="Конец диапазона"
-        class="h-7 w-24 text-xs"
-      />
-      <Button
-        variant="ghost"
-        size="sm"
-        :disabled="!history.records.length || exporting"
-        @click="attempt(() => download(true))"
-      >
-        {{ t('bundleInspection.exportRange') }}
-      </Button>
-    </div>
+      </SplitterPanel>
+    </SplitterGroup>
   </div>
 </template>

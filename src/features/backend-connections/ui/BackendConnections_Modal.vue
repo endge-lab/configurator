@@ -145,7 +145,7 @@ defineExpose({ open })
               </p>
             </div>
             <Button
-              v-if="connection.source === 'local'"
+              v-if="connection.source === 'local' && activeBackendURL !== connection.baseUrl"
               variant="ghost"
               size="icon"
               class="size-8 text-muted-foreground hover:text-destructive"

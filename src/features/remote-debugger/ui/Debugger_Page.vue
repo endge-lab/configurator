@@ -11,13 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
 import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
 import BundleImportDialog from './BundleImport_Dialog.vue'
 
 const { t } = useI18n()
 const debuggerSession = Configurator.remoteDebugger
-const { clients, selected, status, canControl, source, fileName }
+const { clients, selected, status, canControl, source, fileName, connected }
   = debuggerSession
 const importOpen = ref(false)
 function fileDrag(event: DragEvent): boolean {
@@ -88,7 +89,7 @@ onBeforeUnmount(() => {
             <div class="flex flex-col gap-0.5">
               <span>{{ client.label || t("remoteDebugger.application") }}</span>
               <span class="text-xs text-muted-foreground">{{
-                client.instanceId
+                client.workspaceDisplayName || client.workspaceIdentity || client.instanceId
               }}</span>
             </div>
           </DropdownMenuItem>
@@ -100,6 +101,15 @@ onBeforeUnmount(() => {
           </p>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Tooltip v-if="source === 'remote'">
+        <TooltipTrigger as-child>
+          <span class="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground" role="status" tabindex="0">
+            <span class="size-2 rounded-full" :class="connected ? 'bg-green-500' : 'bg-red-500'" aria-hidden="true" />
+            {{ connected ? t('remoteDebugger.online') : t('remoteDebugger.offline') }}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{{ connected ? t('remoteDebugger.onlineHint') : t('remoteDebugger.offlineHint') }}</TooltipContent>
+      </Tooltip>
       <button
         type="button"
         class="ml-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
@@ -110,6 +120,7 @@ onBeforeUnmount(() => {
     </template>
     <div class="flex min-h-0 flex-1 flex-col">
       <div
+        v-if="status"
         class="shrink-0 border-b px-3 py-1 text-xs text-muted-foreground"
         role="status"
       >

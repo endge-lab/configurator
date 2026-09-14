@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RFacet } from '@endge/core'
+import type { CompiledDocumentDescriptor, RFacet } from '@endge/core'
 import type { Component } from 'vue'
 
 import { Endge } from '@endge/core'
@@ -16,35 +16,43 @@ const pendingFacet = ref<string | null>(null)
 const context = useEndgeIDEContext()
 const iconMap = icons as Record<string, Component>
 
+type Facet = Pick<RFacet, 'identity' | 'displayName' | 'position'> & { icon?: string, color?: string }
+const catalogDocuments = () => Object.values(Endge.program.catalog.documents)
 const facets = computed(() => {
   void context.version.value
+  if (Endge.mode === 'debugger') {
+    return catalogDocuments().filter(document => document.entityType === 'facet' || document.entityType === 'facets').filter(facet => documents(facet).length > 0).sort((a, b) => a.position - b.position)
+  }
   return Endge.domain.getFacets()
     .filter(facet => facet.deletedAt == null && facet.active !== false)
     .filter(facet => documents(facet).length > 0)
     .sort((left, right) => left.position - right.position || left.identity.localeCompare(right.identity))
 })
 
-function documents(facet: RFacet) {
+function documents(facet: Facet): Array<{ identity: string, displayName?: string, name?: string }> {
+  if (Endge.mode === 'debugger') {
+    return catalogDocuments().filter((document: CompiledDocumentDescriptor) => ['facet-document', 'facetDocuments'].includes(document.entityType) && document.facetIdentity === facet.identity)
+  }
   return Endge.domain.getFacetDocuments(facet.identity)
     .filter(document => document.deletedAt == null && document.active !== false)
     .sort((left, right) => left.identity.localeCompare(right.identity))
 }
 
-function selection(facet: RFacet): string | null {
+function selection(facet: Facet): string | null {
   return context.currentContext().facets[facet.identity] ?? null
 }
 
-function selectionLabel(facet: RFacet): string {
+function selectionLabel(facet: Facet): string {
   const identity = selection(facet)
-  const document = identity ? Endge.domain.getFacetDocument(facet.identity, identity) : null
+  const document = identity ? documents(facet).find(item => item.identity === identity) : null
   return document?.displayName ?? identity ?? '—'
 }
 
-function facetIcon(facet: RFacet): Component {
-  return iconMap[facet.icon] ?? Layers3
+function facetIcon(facet: Facet): Component {
+  return iconMap[facet.icon ?? ''] ?? Layers3
 }
 
-async function select(facet: RFacet, document: string): Promise<void> {
+async function select(facet: Facet, document: string): Promise<void> {
   if (props.readonly || pendingFacet.value || Endge.context.isFacetLockedBySession(facet.identity)) {
     return
   }

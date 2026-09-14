@@ -91,6 +91,11 @@ export const DOCUMENT_SECTION_BY_TYPE: Readonly<Partial<Record<string, DomainSec
   'policy': DomainSectionType.Policy,
   'style': DomainSectionType.Style,
   'configuration': DomainSectionType.Configuration,
+  'facet': DomainSectionType.Configuration,
+  'facet-document': DomainSectionType.Configuration,
+  // Early Bundle catalogs used Domain collection names for context documents.
+  'facets': DomainSectionType.Configuration,
+  'facetDocuments': DomainSectionType.Configuration,
   'page-template': DomainSectionType.PageTemplate,
   'page': DomainSectionType.Page,
   'navigation': DomainSectionType.Navigation,

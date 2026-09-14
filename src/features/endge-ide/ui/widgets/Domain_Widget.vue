@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ComponentSFCProgramPayload, DomainDocumentType, EndgeArchivedDocument, RCompositionKind, RFacetDocument } from '@endge/core'
+import type { CompiledProgramCatalog, ComponentSFCProgramPayload, DomainDocumentType, EndgeArchivedDocument, RCompositionKind, RFacetDocument } from '@endge/core'
 import type { ArchivedWorkspace } from '@/features/backend-connections/domain/types/backend-connection.type'
 import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
 import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
@@ -95,6 +95,7 @@ import {
   groupDomainWorkingSetItems,
   projectDomainWorkingSetItems,
 } from '@/features/endge-ide/services/domain/domain-tree-working-set'
+import { buildProgramDomainTree } from '@/features/endge-ide/services/domain/program-domain-tree'
 import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
 import {
   commitVocabMockGeneration,
@@ -104,6 +105,8 @@ import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-doma
 import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
+const props = defineProps<{ programCatalog?: CompiledProgramCatalog }>()
+
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 function facetRootId(identity: string): string {
@@ -111,7 +114,7 @@ function facetRootId(identity: string): string {
 }
 
 const tabs = EndgeIDE.tabs
-const hasActiveWorkspace = computed(() => Configurator.hasActiveWorkspace)
+const hasActiveWorkspace = computed(() => props.programCatalog !== undefined || Configurator.hasActiveWorkspace)
 const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
 
@@ -315,7 +318,7 @@ const facetRegistryVersion = ref(0)
 const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
 })
-const debuggerMode = Endge.mode === 'debugger'
+const debuggerMode = Endge.mode === 'debugger' || props.programCatalog !== undefined
 const activeDocumentStructure = EndgeIDE.uiState.documentStructure
 const vocabMockDialog = ref({
   open: false,
@@ -425,7 +428,7 @@ function resetIdentityLabels(): void {
 }
 
 function getWorkspaceRootLabel(): string {
-  if (!hasActiveWorkspace.value) {
+  if (props.programCatalog || !hasActiveWorkspace.value) {
     return ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
   }
   return Endge.workspace.current.displayName?.trim()
@@ -450,7 +453,7 @@ function getVisibleNodeBadges(node: FsNode): string[] {
 }
 
 function isStartupComposition(node: FsNode): boolean {
-  return hasActiveWorkspace.value
+  return !props.programCatalog && hasActiveWorkspace.value
     && node.type === 'file'
     && node.docType === 'composition'
     && node.identity === Endge.workspace.current.startupCompositionIdentity
@@ -861,8 +864,20 @@ const ROOT_TO_SECTION = computed(() => {
   }
 })
 
+const programTree = computed(() => props.programCatalog
+  ? buildProgramDomainTree(props.programCatalog, {
+      ...Object.fromEntries(Object.entries(ROOT_TO_SECTION.value)
+        .filter(([id]) => id !== 'root-configurations')
+        .map(([id, value]) => [id, value.section])),
+      'root-workspaces': DomainSectionType.Workspace,
+    }, activeDocumentStructure.value === 'custom', Endge.workspace.isLoaded ? Endge.workspace.current : props.programCatalog.workspace)
+  : [])
+
 /** Порядок корневых папок. */
 const ROOT_FOLDER_ORDER = computed(() => {
+  if (props.programCatalog) {
+    return programTree.value.filter(node => node.type === 'folder').map(node => node.id)
+  }
   const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
   const base = getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)).filter(id => !facetIds.includes(id))
   const index = base.indexOf('root-workspaces')
@@ -872,6 +887,9 @@ const ROOT_FOLDER_ORDER = computed(() => {
 
 // ---------- дерево ----------
 const fsTree = computed<FsNode[]>(() => {
+  if (props.programCatalog) {
+    return programTree.value
+  }
   if (!hasActiveWorkspace.value) {
     const workspaces = sessionState.value.status === 'authenticated' ? sessionState.value.session.workspaces : []
     return [{
@@ -1190,6 +1208,9 @@ function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode)
 }
 
 function onDragOver(e: DragEvent, item: FlatFsItem): void {
+  if (debuggerMode) {
+    return
+  }
   if (item.node.type !== 'folder') {
     return
   }
@@ -1237,6 +1258,9 @@ function clearDragSources(): void {
 }
 
 async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
+  if (debuggerMode) {
+    return
+  }
   e.preventDefault()
   const dropNode = item.node
   if (dropNode.type !== 'folder') {
@@ -1301,11 +1325,13 @@ const ROOT_BLOCKS = computed(() => {
   if (!hasActiveWorkspace.value) {
     return [{ id: 'context', title: 'Контекст', rootIds: ['root-workspaces'] }]
   }
-  const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
+  const facetIds = props.programCatalog
+    ? ROOT_FOLDER_ORDER.value.filter(id => id.startsWith('root-facet:'))
+    : Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
   const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value).map(block => block.id === 'context'
     ? { ...block, rootIds: [...block.rootIds, ...facetIds] }
     : block)
-  if (!debuggerMode && activeDocumentStructure.value === 'custom') {
+  if ((!debuggerMode || props.programCatalog) && activeDocumentStructure.value === 'custom') {
     const context = blocks.find(block => block.id === 'context')
     return [
       ...(context ? [context] : []),
@@ -1325,7 +1351,7 @@ const ROOT_BLOCKS = computed(() => {
 })
 
 /** Дополнительная группа сохранена в модели, но скрыта как в основном Configurator. */
-const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => block.id !== 'other-documents'))
+const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => props.programCatalog || block.id !== 'other-documents'))
 
 /** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
 const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
@@ -1640,6 +1666,9 @@ function applyWorkingSetFilter(roots: readonly DomainWorkingSetRef[]): void {
 
 let workingSetFilterInitialized = false
 watch(availableWorkingSetRefs, (available) => {
+  if (debuggerMode) {
+    return
+  }
   const source = workingSetFilterInitialized
     ? { enabled: workingSetFilterEnabled.value, roots: workingSetRoots.value }
     : persistedWorkingSetFilter.value
@@ -1701,6 +1730,16 @@ function selectRange(anchorKey: string, targetKey: string, rootId: string): void
 
 function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   closeContextMenu()
+
+  if (props.programCatalog) {
+    if (item.node.type === 'folder') {
+      toggleFolder(item.path)
+    }
+    else if (item.node.compiledDocumentKey) {
+      EndgeIDE.tabs.openCompiledDocument(item.node.compiledDocumentKey)
+    }
+    return
+  }
 
   if (item.node.workspaceIdentity) {
     if (item.node.activeWorkspace) {
@@ -1795,6 +1834,9 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
 }
 
 function isSelected(item: FlatFsItem): boolean {
+  if (props.programCatalog) {
+    return item.node.type === 'file' && tabs.activeTabId.value === `compiled:${item.node.compiledDocumentKey}`
+  }
   return item.node.type === 'file' && selectedFileKeys.value.has(getSelectionKey(item))
 }
 
@@ -2440,7 +2482,7 @@ function rowClasses(item: FlatFsItem): string {
           <div class="flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" @click="expandAll">
+                <Button size="icon" variant="ghost" class="size-7" :aria-label="$t('uiText.expandAllBlocks1119dd7e')" @click="expandAll">
                   <ChevronsDown class="size-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -2449,7 +2491,7 @@ function rowClasses(item: FlatFsItem): string {
 
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button size="icon" variant="ghost" class="size-7" @click="collapseAll">
+                <Button size="icon" variant="ghost" class="size-7" :aria-label="$t('uiText.collapseAllBlocks81a9cc06')" @click="collapseAll">
                   <ChevronsUp class="size-3.5" />
                 </Button>
               </TooltipTrigger>
@@ -2626,7 +2668,10 @@ function rowClasses(item: FlatFsItem): string {
 
     <div v-else class="flex-1 min-h-0" @click="closeContextMenu">
       <ScrollArea class="h-full">
-        <div class="p-2 text-[13px] leading-5">
+        <div class="p-2 text-[13px] leading-5" :role="programCatalog ? 'tree' : undefined" :aria-label="programCatalog ? 'Структура сборки' : undefined">
+          <p v-if="programCatalog && !Object.keys(programCatalog.documents).length" class="p-3 text-xs text-muted-foreground">
+            {{ Endge.program.programId ? t('bundleInspection.noDocuments') : t('bundleInspection.loadHint') }}
+          </p>
           <div
             v-for="block in groupedFlatFs"
             :key="block.id"
@@ -2653,9 +2698,15 @@ function rowClasses(item: FlatFsItem): string {
               <div
                 v-for="it in root.items"
                 :key="getTreeItemRenderKey(it)"
+                :role="programCatalog ? 'treeitem' : undefined"
+                :tabindex="programCatalog ? 0 : undefined"
+                :aria-level="programCatalog ? it.depth + 1 : undefined"
+                :aria-expanded="programCatalog && it.node.type === 'folder' ? folderIsExpanded(it.path) : undefined"
+                :aria-selected="programCatalog ? isSelected(it) : undefined"
                 :class="rowClasses(it)"
                 :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
                 :draggable="canDragTreeItem(it)"
+                @keydown.enter.prevent="programCatalog && onRowClick($event as unknown as MouseEvent, it)"
                 @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
                 @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
                 @dragstart="(e) => onDragStart(e, it)"
