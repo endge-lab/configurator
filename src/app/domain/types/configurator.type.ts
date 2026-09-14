@@ -8,6 +8,7 @@ import type { OidcDiscovery_Module } from '@/app/modules/OidcDiscovery_Module'
 import type { Questions_Module } from '@/app/modules/Questions_Module'
 import type { BackendConnections_Module } from '@/features/backend-connections/modules/BackendConnections_Module'
 import type { BackendVersions_Module } from '@/features/backend-connections/modules/BackendVersions_Module'
+import type { ConfiguratorPresence_Module } from '@/features/configurator-presence/ConfiguratorPresence_Module'
 import type { ConfiguratorSession_Module } from '@/features/configurator-session'
 import type { DomainVersions_Module } from '@/features/domain-version/DomainVersions_Module'
 
@@ -30,6 +31,7 @@ export interface ConfiguratorBackendConnectionFailure {
 }
 
 export interface ConfiguratorModules {
+  presence: ConfiguratorPresence_Module
   events: ConfiguratorEvents_Module
   session: ConfiguratorSession_Module
   connections: BackendConnections_Module

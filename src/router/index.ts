@@ -26,7 +26,7 @@ router.beforeEach(async (to) => {
   }
   const mode = to.name === 'debugger' ? 'debugger' : 'application'
   if (Configurator.isReady && Endge.mode !== mode) {
-    window.location.assign(to.fullPath)
+    window.location.assign(router.resolve(to.fullPath).href)
     return false
   }
   const status = await Configurator.init(mode)

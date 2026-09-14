@@ -127,6 +127,9 @@ export class ConfiguratorContext_Module {
       throw cause
     }
 
+    if (options.mode !== 'debugger') {
+      this._startPresenceBridge(ctx, backendConfig)
+    }
     this._isInitialized = true
     this._isCoreInitialized = true
     this._currentContext = { ...Endge.context.getExecutionContext() }
@@ -192,6 +195,26 @@ export class ConfiguratorContext_Module {
       await Endge.reset()
     }
     this._isCoreInitialized = false
+  }
+
+  /** Запускает необязательный Bridge после boot; его сбой не отменяет загрузку Core. */
+  private _startPresenceBridge(ctx: EndgeBootContext, backendConfig: EndgeBackendConfig): void {
+    try {
+      Endge.bridge.setup({
+        ...ctx,
+        bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: false, label: 'Configurator' },
+      })
+      Endge.bridge.start()
+    }
+    catch {
+      console.warn('[ConfiguratorPresence] Не удалось запустить список подключений. Работа конфигуратора продолжается.')
+      try {
+        Endge.bridge.reset()
+      }
+      catch {
+        // Ошибка очистки необязательного Bridge не должна отменять успешный boot.
+      }
+    }
   }
 
   /** Собирает boot-контекст из единожды выбранного backend provider. */

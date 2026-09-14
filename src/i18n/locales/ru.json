@@ -1,4 +1,12 @@
 {
+  "configuratorPresence": {
+    "button": "Другие подключения: {count}",
+    "title": "Подключены к workspace",
+    "ownAccount": "Ваш аккаунт",
+    "connectionId": "· {id}",
+    "connection": "Подключение",
+    "unknownUser": "Пользователь"
+  },
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Предпросмотр",

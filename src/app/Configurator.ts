@@ -160,6 +160,9 @@ export class Configurator {
 
   public static get remoteDebugger() { return this._remoteDebugger }
 
+  /** Возвращает необязательную проекцию подключений текущего workspace. */
+  public static get presence() { return this._modules.presence }
+
   public static async activateDebugger(): Promise<void> {
     await EndgeIDE.init()
     this._remoteDebugger.init()
@@ -272,6 +275,7 @@ export class Configurator {
   }
 
   public static async reset(): Promise<void> {
+    this._modules.presence.reset()
     await this.deactivateIDE()
     this._modules.i18n.reset()
     await this._modules.context.reset()
@@ -429,6 +433,7 @@ export class Configurator {
       workspaceIdentity,
       userIdentity: sessionState.session.developer.subject,
     })
+    this._modules.presence.init()
     this._modules.i18n.init()
     return 'ready'
   }

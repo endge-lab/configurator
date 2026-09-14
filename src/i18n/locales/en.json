@@ -1,4 +1,12 @@
 {
+  "configuratorPresence": {
+    "button": "Other connections: {count}",
+    "title": "Connected to workspace",
+    "ownAccount": "Your account",
+    "connectionId": "· {id}",
+    "connection": "Connection",
+    "unknownUser": "User"
+  },
   "runtimeWorkflow": {
     "tabs": "Runtime Preview",
     "preview": "Preview",

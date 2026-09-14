@@ -5,6 +5,7 @@ import { Endge } from '@endge/core'
 import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Hammer, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 
 import { Configurator } from '@/app/Configurator'
 import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
@@ -25,6 +26,7 @@ import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Moda
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import ConfiguratorPresence_Button from '@/features/configurator-presence/ui/ConfiguratorPresence_Button.vue'
 import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import { ENDGE_IDE_DOCUMENTATION_URL, ENDGE_IDE_GOVERNANCE_PORTAL_URL } from '@/features/endge-ide/config/documentation.config'
@@ -108,10 +110,6 @@ function openServiceVersions(): void {
 
 function openExecutionBundleProfiles(): void {
   executionBundleProfilesModal.value?.open()
-}
-
-function openRemoteDebugger(): void {
-  window.open(new URL('/debugger', window.location.origin).href, '_blank', 'noopener')
 }
 
 function openDSLPlayground(): void {
@@ -262,8 +260,10 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuItem @select="openRemoteDebugger">
-            {{ t('endgeIde.headerMenu.debug.remoteDebug') }}
+          <DropdownMenuItem as-child>
+            <RouterLink :to="{ name: 'debugger' }" target="_blank" rel="noopener">
+              {{ t('endgeIde.headerMenu.debug.remoteDebug') }}
+            </RouterLink>
           </DropdownMenuItem>
           <DropdownMenuItem @click="toggleProblems">
             {{ t('endgeIde.headerMenu.debug.problems') }}
@@ -414,6 +414,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <TooltipContent>{{ t('workspaceWorkflow.openCurrent') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      <ConfiguratorPresence_Button />
     </div>
   </Teleport>
 

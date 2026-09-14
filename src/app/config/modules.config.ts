@@ -18,6 +18,7 @@ import { BackendConnectionsHttp_Adapter } from '@/features/backend-connections/a
 import { BackendVersionHttp_Adapter } from '@/features/backend-connections/adapters/BackendVersionHttp_Adapter'
 import { BackendConnections_Module } from '@/features/backend-connections/modules/BackendConnections_Module'
 import { BackendVersions_Module } from '@/features/backend-connections/modules/BackendVersions_Module'
+import { ConfiguratorPresence_Module } from '@/features/configurator-presence/ConfiguratorPresence_Module'
 import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session/adapters/ConfiguratorSessionHttp_Adapter'
 import { ConfiguratorSession_Module } from '@/features/configurator-session/ConfiguratorSession_Module'
 import { DomainVersionHttp_Adapter } from '@/features/domain-version/adapters/DomainVersionHttp_Adapter'
@@ -37,6 +38,7 @@ export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, re
   const events = new ConfiguratorEvents_Module()
   return {
     events,
+    presence: new ConfiguratorPresence_Module(),
     connections,
     backendVersions: new BackendVersions_Module(new BackendVersionHttp_Adapter()),
     domainVersions: new DomainVersions_Module(new DomainVersionHttp_Adapter()),

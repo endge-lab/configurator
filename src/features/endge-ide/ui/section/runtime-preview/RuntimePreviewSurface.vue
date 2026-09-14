@@ -49,7 +49,7 @@ const isResizing = ref(false)
 const isHierarchyResizing = ref(false)
 const propsPanelVisible = useConfiguratorState(
   'configurator.runtime-preview.props-panel-visible',
-  true,
+  false,
   { legacyKeys: ['endge:runtime-preview:props-panel-visible'] },
 )
 const propsPanelWidth = useConfiguratorState(
