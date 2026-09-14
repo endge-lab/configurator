@@ -1,9 +1,12 @@
+import type { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 import type { BuildProfileTransport } from '@/features/endge-ide/domain/entities/RBuildProfile'
-import type { BuildProfileAdapter } from '@/features/endge-ide/domain/types/build-profile.type'
 
+import type { BuildProfileAdapter } from '@/features/endge-ide/domain/types/build-profile.type'
 import { Endge } from '@endge/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Configurator } from '@/app/Configurator'
 import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
+import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
 import { cloneBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
 
 import { EndgeIDEBuildProfiles_Module } from '@/features/endge-ide/modules/EndgeIDEBuildProfiles_Module'
@@ -14,27 +17,27 @@ describe('модуль профилей сборки', () => {
   it('builds once, freezes export options and does not start runtime', async () => {
     const module = new EndgeIDEBuildProfiles_Module(adapterStub())
     let finish!: () => void
-    const build = vi.spyOn(Endge, 'build').mockImplementation(
+    const build = vi.spyOn(Endge, 'buildSavedProgram').mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          finish = resolve
+        new Promise<null>((resolve) => {
+          finish = () => resolve(null)
         }),
     )
-    const exported = { programId: 'build' } as ReturnType<
+    const exported = { programId: 'build', compilerVersion: 'program-v4', context: {} } as ReturnType<
       typeof Endge.program.exportBundle
     >
     const pack = vi
       .spyOn(Endge.program, 'exportBundle')
       .mockReturnValue(exported)
     const download = vi
-      .spyOn(BundleFiles_Service.prototype, 'download')
-      .mockResolvedValue()
+      .spyOn(BundleFiles_Service.prototype, 'encode')
+      .mockResolvedValue(new Uint8Array([1, 2, 3]))
     const execute = vi.spyOn(Endge.runtime, 'execute')
     const settings = transport().settings
-    const pending = module.buildAndDownload(settings)
+    const pending = module.buildBundle(settings)
     expect(module.buildStatus.value).toBe('building')
     settings.includeAst = true
-    await expect(module.buildAndDownload(settings)).rejects.toThrow(
+    await expect(module.buildBundle(settings)).rejects.toThrow(
       'уже выполняется',
     )
     finish()
@@ -44,26 +47,33 @@ describe('модуль профилей сборки', () => {
     expect(download).toHaveBeenCalledWith(
       { format: 'endge-bundle', version: 1, bundle: exported },
       'gzip',
-      'build',
       expect.any(AbortSignal),
     )
     expect(module.buildStatus.value).toBe('ready')
+    expect(module.resultOpen.value).toBe(true)
+    expect(module.result.value?.sizeBytes).toBe(3)
+    const save = vi.spyOn(BundleFiles_Service.prototype, 'downloadBytes').mockImplementation(() => {})
+    expect(save).not.toHaveBeenCalled()
+    module.downloadResult()
+    expect(save).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'gzip', 'build')
+    module.closeResult()
+    expect(module.result.value).toBeNull()
     expect(execute).not.toHaveBeenCalled()
   })
 
   it('cancels a pending build on reset and applies defaults to old settings', async () => {
     const module = new EndgeIDEBuildProfiles_Module(adapterStub())
     let finish!: () => void
-    vi.spyOn(Endge, 'build').mockImplementation(
+    vi.spyOn(Endge, 'buildSavedProgram').mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          finish = resolve
+        new Promise<null>((resolve) => {
+          finish = () => resolve(null)
         }),
     )
     const download = vi
-      .spyOn(BundleFiles_Service.prototype, 'download')
-      .mockResolvedValue()
-    const pending = module.buildAndDownload(transport().settings)
+      .spyOn(BundleFiles_Service.prototype, 'encode')
+      .mockResolvedValue(new Uint8Array([1, 2, 3]))
+    const pending = module.buildBundle(transport().settings)
     module.reset()
     finish()
     await expect(pending).rejects.toThrow()
@@ -73,6 +83,48 @@ describe('модуль профилей сборки', () => {
     expect(
       cloneBuildProfileSettings(legacy as typeof module.draftSettings.value),
     ).toMatchObject({ includeAst: false, fileFormat: 'gzip' })
+  })
+
+  it('publishes frozen gzip bytes and provenance even when JSON was selected', async () => {
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    const source = { workspaceId: 'workspace-id', workspaceIdentity: 'workspace-a', generation: 'generation-a', headSequence: 7 }
+    vi.spyOn(Endge, 'buildSavedProgram').mockResolvedValue({ workspace: { identity: source.workspaceIdentity, state: { id: source.workspaceId, generation: source.generation, headSequence: source.headSequence } } } as Awaited<ReturnType<typeof Endge.buildSavedProgram>>)
+    vi.spyOn(Endge.program, 'exportBundle').mockReturnValue({ programId: 'build-a', compilerVersion: 'program-v4', context: { configuration: { secret: true }, project: 'project-a' } } as unknown as ReturnType<typeof Endge.program.exportBundle>)
+    const gzip = new Uint8Array([31, 139, 1])
+    vi.spyOn(BundleFiles_Service.prototype, 'encode').mockImplementation(async (_value, format) => format === 'gzip' ? gzip : new Uint8Array([123, 125]))
+    const releases = new ConfiguratorReleases_Module({} as ConfiguratorReleasesHttp_Adapter)
+    vi.spyOn(Configurator, 'releases', 'get').mockReturnValue(releases)
+    vi.spyOn(releases, 'load').mockResolvedValue()
+    vi.spyOn(releases, 'commits', 'get').mockReturnValue([{ id: 'commit-a', headSequence: 7 }] as unknown as typeof releases.commits)
+    const publish = vi.spyOn(releases, 'createFromBuild').mockResolvedValue({ identity: 'v1' } as Awaited<ReturnType<typeof releases.createFromBuild>>)
+    await module.buildBundle({ ...transport().settings, fileFormat: 'json' })
+    await module.prepareRelease()
+    expect(module.needsCommit.value).toBe(false)
+    await module.publishResult(' v1 ', ' Комментарий ', '')
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ identity: 'v1', description: 'Комментарий', sourceCommitId: 'commit-a', source, buildMetadata: expect.objectContaining({ programId: 'build-a', fileFormat: 'gzip', context: { project: 'project-a' } }) }), gzip)
+    expect(module.publishedRelease.value).toBe('v1')
+    await expect(module.publishResult('v1', '', '')).rejects.toThrow()
+    expect(publish).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not publish a result reset during commit lookup', async () => {
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    vi.spyOn(Endge, 'buildSavedProgram').mockResolvedValue({ workspace: { identity: 'workspace-a', state: { id: 'id', generation: 'generation', headSequence: 1 } } } as Awaited<ReturnType<typeof Endge.buildSavedProgram>>)
+    vi.spyOn(Endge.program, 'exportBundle').mockReturnValue({ programId: 'build-a', compilerVersion: 'program-v4', context: {} } as ReturnType<typeof Endge.program.exportBundle>)
+    vi.spyOn(BundleFiles_Service.prototype, 'encode').mockResolvedValue(new Uint8Array([1]))
+    const releases = new ConfiguratorReleases_Module({} as ConfiguratorReleasesHttp_Adapter)
+    vi.spyOn(Configurator, 'releases', 'get').mockReturnValue(releases)
+    let finish!: () => void
+    vi.spyOn(releases, 'load').mockImplementation(() => new Promise<void>((resolve) => {
+      finish = resolve
+    }))
+    const publish = vi.spyOn(releases, 'createFromBuild')
+    await module.buildBundle(transport().settings)
+    const pending = module.publishResult('v1', '', 'commit')
+    module.reset()
+    finish()
+    await expect(pending).rejects.toThrow('текущей сессии')
+    expect(publish).not.toHaveBeenCalled()
   })
 
   it('загружает workspace, создаёт профиль из текущего черновика и сбрасывает состояние', async () => {

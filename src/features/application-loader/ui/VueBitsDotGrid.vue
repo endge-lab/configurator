@@ -11,11 +11,11 @@
 -->
 
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
+
 import { gsap } from 'gsap'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
-import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch, type CSSProperties } from 'vue'
-
-gsap.registerPlugin(InertiaPlugin)
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 interface Dot {
   cx: number
@@ -56,6 +56,8 @@ const props = withDefaults(defineProps<DotGridProps>(), {
   className: '',
   style: () => ({}),
 })
+
+gsap.registerPlugin(InertiaPlugin)
 
 const wrapperRef = useTemplateRef<HTMLDivElement>('wrapperRef')
 const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
@@ -285,7 +287,7 @@ onMounted(async () => {
     draw()
   }
 
-  if ('ResizeObserver' in window) {
+  if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(buildGrid)
     if (wrapperRef.value) {
       resizeObserver.observe(wrapperRef.value)

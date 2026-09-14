@@ -18,9 +18,6 @@ router.beforeEach(async (to) => {
     window.location.replace(canonicalURL)
     return false
   }
-  if (to.meta.standalone) {
-    return true
-  }
   if (to.name === 'oidc-popup-callback') {
     if (Configurator.isReady) {
       await Configurator.deactivateIDE()

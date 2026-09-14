@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Configurator } from '@/app/Configurator'
 import { Grid } from '@/components/layouts/grid'
+import Logo from '@/components/layouts/main/Logo.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +39,7 @@ async function dropFile(event: DragEvent): Promise<void> {
   event.stopImmediatePropagation()
   const files = Array.from(event.dataTransfer?.files ?? [])
   importOpen.value = true
-  if (files.length !== 1) {
-    debuggerSession.cancelFile()
-    debuggerSession.fileError.value = 'Перетащите один файл Bundle.'
-    return
-  }
-  if (await debuggerSession.openFile(files[0]!)) {
+  if (await debuggerSession.openFiles(files)) {
     importOpen.value = false
   }
 }
@@ -64,6 +60,7 @@ onBeforeUnmount(() => {
 <template>
   <Grid>
     <template #header>
+      <Logo icon-height="h-8" />
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button

@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { BackendConnectionStorage } from '@/features/backend-connections/services/backend-connection-storage'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createDefaultBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
+import BuildResultDialog from '@/features/endge-ide/ui/modals/BuildResult_Dialog.vue'
 import DebuggerPage from '@/features/remote-debugger/ui/Debugger_Page.vue'
 import { startRuntimeInspectionClient } from './runtime-inspection-client'
 import { i18n } from '@/i18n'
@@ -64,7 +65,7 @@ async function main(): Promise<void> {
           const build = async () => {
             busy.value = true
             try {
-              await EndgeIDE.buildProfiles.buildAndDownload({
+              await EndgeIDE.buildProfiles.buildBundle({
                 ...createDefaultBuildProfileSettings(),
                 includeAst: includeAst.value,
                 fileFormat: fileFormat.value,
@@ -79,6 +80,7 @@ async function main(): Promise<void> {
           }
           return () =>
             h('section', { class: 'space-y-4 p-8' }, [
+              h(BuildResultDialog),
               h('h1', 'Сборка изолированной модели'),
               h(
                 'select',
@@ -116,7 +118,7 @@ async function main(): Promise<void> {
             ])
         },
       })
-      createApp(Build).mount('#build')
+      createApp(Build).use(i18n).mount('#build')
     }
   }
   document.body.dataset.ready = 'true'

@@ -50,6 +50,21 @@ describe('сервис версий Configurator', () => {
     )
   })
 
+  it('uploads exact binary and metadata using the workspace frozen at build time', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(json({ id: 'release-id', identity: 'v1', displayName: 'v1', sourceCommitId: 'commit-id', headSequence: 7, createdAt: 'now', description: 'Comment', buildMetadata: { version: 1, programId: 'program-a' } }, 201))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ConfiguratorReleasesHttp_Adapter('https://backend.test', () => 'new-workspace')
+    const bytes = new Uint8Array([31, 139, 8, 0])
+    const release = await service.createFromBuild({ identity: 'v1', displayName: 'v1', description: 'Comment', commitMessage: 'Saved', source: { workspaceId: 'old-id', workspaceIdentity: 'built-workspace', generation: 'generation-a', headSequence: 7 }, buildMetadata: { version: 1, programId: 'program-a', compilerVersion: 'program-v4', runtime: 'ts-browser', scope: 'complete-model', contextMode: 'effective-context', context: {}, includeAst: false, fileFormat: 'gzip' } }, bytes)
+    const [url, request] = fetchMock.mock.calls[0]!
+    expect(url).toBe('https://backend.test/api/v1/releases/from-build')
+    expect(request.headers['X-Endge-Workspace']).toBe('built-workspace')
+    expect(JSON.parse(request.body.get('metadata'))).toMatchObject({ workspaceId: 'old-id', generation: 'generation-a', headSequence: 7, description: 'Comment', commitMessage: 'Saved' })
+    expect(new Uint8Array(await request.body.get('bundle').arrayBuffer())).toEqual(bytes)
+    expect(release.buildMetadata?.programId).toBe('program-a')
+    expect(release.description).toBe('Comment')
+  })
+
   it('создаёт сохраняющий commit с head sequence из предварительного плана', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       json(

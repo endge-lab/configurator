@@ -18,6 +18,8 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_ENVIRONMENT?: string
   readonly VITE_SENTRY_RELEASE?: string
   readonly VITE_APP_SWITCHER?: string
+  /** Минимальное время показа стартового loader в миллисекундах. Пустое значение отключает loader. */
+  readonly VITE_CONFIGURATOR_LOADER_MIN_DURATION_MS?: string
   /** Включить Vite-плагин кодогенерации (endge-codegen). По умолчанию выключен. */
   readonly VITE_ENDGE_CODEGEN_ENABLED?: string
 }

@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import type {
   ConfiguratorCommit,
   ConfiguratorRelease,
   ConfiguratorRestorePlan,
   ConfiguratorVersionActor,
 } from '@/features/configurator-releases/domain/types/configurator-release.type'
-
 import {
   AlertTriangle,
   Check,
@@ -19,10 +17,11 @@ import {
   Tag,
   Users,
 } from 'lucide-vue-next'
+
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { toast } from 'vue-sonner'
-
 import { Configurator } from '@/app/Configurator'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -42,6 +41,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ConfiguratorVersionsError } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 
 type VersionTab = 'commits' | 'releases'
 interface RestoreTarget {
@@ -561,7 +561,9 @@ onBeforeUnmount(stop)
 
       <TabsContent value="releases" class="mt-0 min-h-0 flex-1 overflow-y-auto">
         <div class="space-y-3 p-3">
-          <p class="text-xs text-muted-foreground">{{ $t('releaseBuild.listHelp') }}</p>
+          <p class="text-xs text-muted-foreground">
+            {{ $t('releaseBuild.listHelp') }}
+          </p>
 
           <div
             v-if="loading && releases.length === 0"
@@ -601,15 +603,23 @@ onBeforeUnmount(stop)
                       {{ $t('uiText.current71e8b656') }}
                     </Badge>
                   </div>
-                  <p v-if="release.description" class="mb-1 whitespace-pre-wrap text-xs">{{ release.description }}</p>
+                  <p v-if="release.description" class="mb-1 whitespace-pre-wrap text-xs">
+                    {{ release.description }}
+                  </p>
                   <details v-if="release.buildMetadata" class="mb-2 text-xs">
-                    <summary class="cursor-pointer">{{ $t('releaseBuild.parameters') }} · {{ release.buildMetadata.runtime }} · {{ ((release.buildMetadata.sizeBytes ?? 0) / 1024).toFixed(1) }} KiB</summary>
+                    <summary class="cursor-pointer">
+                      {{ [$t('releaseBuild.parameters'), release.buildMetadata.runtime, `${((release.buildMetadata.sizeBytes ?? 0) / 1024).toFixed(1)} KiB`].join(' · ') }}
+                    </summary>
                     <p>{{ release.buildMetadata.profile?.displayName ?? $t('releaseBuild.defaultProfile') }}</p>
                     <p>{{ $t('releaseBuild.ast') }}: {{ release.buildMetadata.includeAst ? $t('releaseBuild.yes') : $t('releaseBuild.no') }}</p>
                     <SourceJsonTree :data="release.buildMetadata" />
-                    <Button size="sm" variant="outline" @click="downloadBuild(release.identity)">{{ $t('releaseBuild.downloadBundle') }}</Button>
+                    <Button size="sm" variant="outline" @click="downloadBuild(release.identity)">
+                      {{ $t('releaseBuild.downloadBundle') }}
+                    </Button>
                   </details>
-                  <p v-else class="mb-1 text-xs text-muted-foreground">{{ $t('releaseBuild.noBundle') }}</p>
+                  <p v-else class="mb-1 text-xs text-muted-foreground">
+                    {{ $t('releaseBuild.noBundle') }}
+                  </p>
                   <p class="mt-1 truncate text-[10px] text-muted-foreground">
                     {{ actorName(release.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
                     {{ formatDate(release.createdAt) }}

@@ -1,5 +1,3 @@
-import type { BuildResult } from '@/features/endge-ide/domain/types/build-result.type'
-import { Configurator } from '@/app/Configurator'
 import type {
   BuildProfileSettings,
   BuildProfileVisibility,
@@ -8,9 +6,11 @@ import type {
   BuildProfileAdapter,
   BuildProfilePatch,
 } from '@/features/endge-ide/domain/types/build-profile.type'
-
+import type { BuildResult } from '@/features/endge-ide/domain/types/build-result.type'
 import { Endge } from '@endge/core'
+
 import { readonly, ref, shallowRef } from 'vue'
+import { Configurator } from '@/app/Configurator'
 import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
 
 import {
@@ -66,8 +66,10 @@ export class EndgeIDEBuildProfiles_Module {
     try {
       this._buildStatus.value = 'building'
       const snapshot = await Endge.buildSavedProgram(controller.signal)
+      controller.signal.throwIfAborted()
       const bundle = Endge.program.exportBundle({ includeAst: options.includeAst })
       this._buildStatus.value = 'packing'
+      const { configuration: _configuration, ...buildContext } = bundle.context
       const files = new BundleFiles_Service()
       const container = { format: 'endge-bundle' as const, version: 1 as const, bundle }
       const gzip = await files.encode(container, 'gzip', controller.signal)
@@ -78,7 +80,7 @@ export class EndgeIDEBuildProfiles_Module {
         fileFormat: options.fileFormat,
         sizeBytes: bytes.byteLength,
         source: snapshot ? { workspaceId: snapshot.workspace.state.id, workspaceIdentity: snapshot.workspace.identity, headSequence: snapshot.workspace.state.headSequence, generation: snapshot.workspace.state.generation } : null,
-        metadata: { version: 1, profile: profileSnapshot, programId: bundle.programId, compilerVersion: bundle.compilerVersion, runtime: 'ts-browser', scope: 'complete-model', contextMode: 'effective-context', context: bundle.context, includeAst: options.includeAst, fileFormat: 'gzip', sizeBytes: gzip.byteLength },
+        metadata: { version: 1, profile: profileSnapshot, programId: bundle.programId, compilerVersion: bundle.compilerVersion, runtime: 'ts-browser', scope: 'complete-model', contextMode: 'effective-context', context: buildContext, includeAst: options.includeAst, fileFormat: 'gzip', sizeBytes: gzip.byteLength },
       }
       this._prepared = { bytes, gzip, result }
       this._result.value = result
@@ -148,6 +150,9 @@ export class EndgeIDEBuildProfiles_Module {
     try {
       const releases = Configurator.releases
       await releases.load()
+      if (this._prepared !== prepared) {
+        throw new Error('Сборка больше не относится к текущей сессии')
+      }
       const source = prepared.result.source
       const commit = releases.commits.find(value => value.headSequence === source.headSequence)
       const release = await releases.createFromBuild({ identity, displayName: identity, description: description.trim() || undefined, sourceCommitId: commit?.id, commitMessage: commitMessage.trim() || undefined, source, buildMetadata: prepared.result.metadata }, prepared.gzip)

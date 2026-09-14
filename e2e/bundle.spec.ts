@@ -42,6 +42,8 @@ for (const format of ['gzip', 'json'] as const) {
       }
       const downloadPromise = page.waitForEvent('download')
       await page.getByRole('button', { name: 'Собрать и скачать' }).click()
+      await expect(page.getByTestId('build-result')).toBeVisible()
+      await page.getByRole('button', { name: 'Скачать Bundle', exact: true }).click()
       const download = await downloadPromise
       const filename = info.outputPath(download.suggestedFilename())
       await download.saveAs(filename)
@@ -394,5 +396,76 @@ test('large history keeps the panel bounded and seeks through checkpoints', asyn
   expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.inspection.data.count)).toBe(9999)
   await info.attach('large-history-ui', { body: JSON.stringify({ records: records.length, totalImportAndInteractionsMs: Date.now() - started, listHeight: listBounds!.height }), contentType: 'application/json' })
   await info.attach('large-history-panel', { body: await page.screenshot({ path: info.outputPath('large-history-panel.png') }), contentType: 'image/png' })
+  expect(errors).toEqual([])
+})
+
+test('drop Bundle anywhere or onto the dialog without navigating away', async ({ page }) => {
+  const errors: string[] = []
+  collectErrors(page, errors)
+  await ready(page, 'debugger')
+  const bytes = [...await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.gz')]
+  const drop = async (target: string, data: number[], name: string) => {
+    const transfer = await page.evaluateHandle(({ data, name }) => {
+      const value = new DataTransfer()
+      value.items.add(new File([new Uint8Array(data)], name, { type: 'application/octet-stream' }))
+      return value
+    }, { data, name })
+    await page.locator(target).dispatchEvent('dragover', { dataTransfer: transfer })
+    await page.locator(target).dispatchEvent('drop', { dataTransfer: transfer })
+    await transfer.dispose()
+  }
+  const url = page.url()
+  await drop('body', bytes, 'content-detected.txt')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('treeitem', { name: 'Bundle 1', exact: true })).toBeVisible()
+  const programId = await page.evaluate(() => (window as any).inspectionFixture.Endge.program.programId)
+  await page.getByRole('button', { name: 'Приложение для удалённой отладки' }).click()
+  await page.getByRole('menuitem', { name: 'Загрузить Bundle…' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await drop('[role="dialog"]', bytes, 'valid.endge-bundle.gz')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await drop('body', [123, 98, 114, 111, 107, 101, 110], 'bad.gz')
+  await expect(page.getByRole('alert')).toBeVisible()
+  expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.program.programId)).toBe(programId)
+  expect(page.url()).toBe(url)
+  await page.getByRole('button', { name: 'Отмена', exact: true }).click()
+  expect(errors).toEqual([])
+})
+
+test('build result collects description and commit message for release', async ({ page }, info) => {
+  const errors: string[] = []
+  collectErrors(page, errors)
+  await ready(page, 'build')
+  // The form uses real Core compilation/Worker packing; publication is isolated here.
+  // Actual multipart HTTP/PostgreSQL transaction is covered by release_build_test.go.
+  await page.evaluate(() => {
+    const fixture = (window as any).inspectionFixture
+    Object.defineProperty(fixture.Configurator.context, 'workspaceRole', { get: () => 'admin' })
+    const build = fixture.Endge.buildSavedProgram.bind(fixture.Endge)
+    fixture.Endge.buildSavedProgram = async (signal: AbortSignal) => {
+      await build(signal)
+      return { workspace: { identity: 'fixture', state: { id: 'workspace-id', headSequence: 7, generation: 'generation-a' } } }
+    }
+    const releases = fixture.Configurator.releases
+    releases.load = async () => undefined
+    Object.defineProperty(releases, 'commits', { get: () => [] })
+    releases.createFromBuild = async (input: unknown, bytes: Uint8Array) => {
+      fixture.published = { input, signature: Array.from(bytes.slice(0, 2)) }
+      return { identity: 'release-fixture' }
+    }
+  })
+  await page.getByRole('button', { name: 'Собрать и скачать' }).click()
+  await expect(page.getByTestId('build-result')).toBeVisible()
+  await page.getByRole('button', { name: 'Создать релиз', exact: true }).click()
+  await page.getByLabel('Название релиза', { exact: true }).fill('release-fixture')
+  await page.getByLabel('Описание', { exact: true }).fill('Комментарий к сборке')
+  await page.getByLabel('Сообщение коммита', { exact: true }).fill('Сохранить собранную модель')
+  await page.screenshot({ path: info.outputPath('release-build-dialog.png') })
+  await page.locator('button[form="publish-build"]').click()
+  await expect(page.getByRole('status')).toContainText('release-fixture')
+  expect(await page.evaluate(() => (window as any).inspectionFixture.published)).toMatchObject({
+    signature: [31, 139],
+    input: { identity: 'release-fixture', description: 'Комментарий к сборке', commitMessage: 'Сохранить собранную модель', source: { headSequence: 7 }, buildMetadata: { version: 1, fileFormat: 'gzip', runtime: 'ts-browser' } },
+  })
   expect(errors).toEqual([])
 })

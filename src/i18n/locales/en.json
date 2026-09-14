@@ -25,7 +25,7 @@
     "description": "Endge configuration environment",
     "title": "Configurator"
   },
-  "loaderPreview": {
+  "applicationLoader": {
     "loadingWorkspace": "Starting workspace"
   },
   "documentMetadata": {

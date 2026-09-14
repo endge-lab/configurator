@@ -16,7 +16,8 @@ import {
 const open = defineModel<boolean>('open', { default: false })
 const session = Configurator.remoteDebugger
 const input = ref<HTMLInputElement | null>(null)
-const busy = ref(false)
+const applying = ref(false)
+const busy = computed(() => applying.value || session.fileLoading.value)
 const pending = session.pendingFile
 const records = computed(
   () =>
@@ -36,12 +37,12 @@ async function read(file?: File): Promise<void> {
   if (!file) {
     return
   }
-  busy.value = true
+  applying.value = true
   try {
     await session.prepareFile(file)
   }
   finally {
-    busy.value = false
+    applying.value = false
   }
 }
 function change(event: Event): void {
@@ -52,7 +53,7 @@ function cancel(): void {
   open.value = false
 }
 async function install(): Promise<void> {
-  busy.value = true
+  applying.value = true
   try {
     await session.installPendingFile()
     if (!session.pendingFile.value) {
@@ -60,7 +61,7 @@ async function install(): Promise<void> {
     }
   }
   finally {
-    busy.value = false
+    applying.value = false
   }
 }
 const { t } = useI18n()

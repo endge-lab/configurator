@@ -64,6 +64,8 @@ export class RemoteDebugger_Module {
   } | null>(null)
 
   public readonly fileError = shallowRef('')
+  private readonly _fileLoading = shallowRef(false)
+  public readonly fileLoading = readonly(this._fileLoading)
   public readonly connected = shallowRef(false)
   private readonly _files = new BundleFiles_Service()
   private _fileController: AbortController | null = null
@@ -200,6 +202,7 @@ export class RemoteDebugger_Module {
     this._fileController?.abort()
     const controller = new AbortController()
     this._fileController = controller
+    this._fileLoading.value = true
     this.fileError.value = ''
     this.pendingFile.value = null
     try {
@@ -218,7 +221,21 @@ export class RemoteDebugger_Module {
           = error instanceof Error ? error.message : String(error)
       }
     }
+    finally {
+      if (this._fileController === controller) {
+        this._fileLoading.value = false
+      }
+    }
     return false
+  }
+
+  public async openFiles(files: readonly File[]): Promise<boolean> {
+    if (files.length !== 1) {
+      this.cancelFile()
+      this.fileError.value = 'Перетащите один файл Bundle.'
+      return false
+    }
+    return this.openFile(files[0]!)
   }
 
   public async openFile(file: File): Promise<boolean> {
@@ -232,6 +249,7 @@ export class RemoteDebugger_Module {
   public cancelFile(): void {
     this._fileController?.abort()
     this._fileController = null
+    this._fileLoading.value = false
     this.pendingFile.value = null
     this.fileError.value = ''
   }

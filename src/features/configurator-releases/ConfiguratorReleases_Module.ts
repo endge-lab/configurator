@@ -1,4 +1,3 @@
-import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 import type { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 import type {
   ConfiguratorCommit,
@@ -6,6 +5,7 @@ import type {
   ConfiguratorRelease,
   ConfiguratorRestorePlan,
 } from '@/features/configurator-releases/domain/types/configurator-release.type'
+import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 
 export class ConfiguratorReleases_Module {
   /** Изменяемое состояние истории версий принадлежит только модулю. */

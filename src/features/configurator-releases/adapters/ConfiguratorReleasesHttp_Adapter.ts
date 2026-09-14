@@ -1,4 +1,3 @@
-import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 import type {
   ConfiguratorCommit,
   ConfiguratorCommitPlan,
@@ -6,6 +5,7 @@ import type {
   ConfiguratorRestorePlan,
   ConfiguratorVersionActor,
 } from '@/features/configurator-releases/domain/types/configurator-release.type'
+import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 
 type RecordValue = Record<string, any>
 
@@ -93,7 +93,8 @@ export class ConfiguratorReleasesHttp_Adapter {
     form.set('metadata', JSON.stringify({ ...metadata, workspaceId: source.workspaceId, generation: source.generation, headSequence: source.headSequence }))
     form.set('bundle', new Blob([new Uint8Array(bytes)], { type: 'application/gzip' }), 'program.endge-bundle.gz')
     const response = await fetch(`${this._baseURL}/api/v1/releases/from-build`, {
-      method: 'POST', credentials: 'include',
+      method: 'POST',
+      credentials: 'include',
       headers: { 'Accept': 'application/json', 'X-Endge-Workspace': source.workspaceIdentity },
       body: form,
     })
@@ -106,7 +107,8 @@ export class ConfiguratorReleasesHttp_Adapter {
 
   public async downloadBuild(identity: string): Promise<void> {
     const response = await fetch(`${this._baseURL}/api/v1/releases/${encodeURIComponent(identity)}/bundle`, {
-      credentials: 'include', headers: { 'X-Endge-Workspace': this._workspaceIdentity() },
+      credentials: 'include',
+      headers: { 'X-Endge-Workspace': this._workspaceIdentity() },
     })
     if (!response.ok) {
       throw new Error('Bundle релиза недоступен')

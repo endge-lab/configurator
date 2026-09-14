@@ -33,7 +33,6 @@ useTitle(browserTitle, {
 
 const context = useEndgeIDEContext()
 const isOidcPopupCallback = computed(() => route.name === 'oidc-popup-callback')
-const isStandaloneRoute = computed(() => route.meta.standalone === true)
 const isContextSwitching = computed(() => context.isSwitching())
 const hasActiveWorkspace = computed(() => Configurator.hasActiveWorkspace)
 const detachedShell = computed(() => Endge.mode !== 'debugger' && !hasActiveWorkspace.value)
@@ -102,7 +101,7 @@ onErrorCaptured((err, instance, info) => {
 </script>
 
 <template>
-  <RouterView v-if="isStandaloneRoute || isOidcPopupCallback" />
+  <RouterView v-if="isOidcPopupCallback" />
   <AuthenticationRequiredGate v-else-if="authenticationRequired" />
   <BackendConnectionFailureGate v-else-if="backendConnectionFailed" />
   <BackendSelectionGate v-else-if="backendSelectionRequired" />
