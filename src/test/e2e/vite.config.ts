@@ -1,5 +1,5 @@
 import { defineConfig, mergeConfig } from 'vite'
-import applicationConfig from '../vite.config'
+import applicationConfig from '../../../vite.config'
 
 // A test session must not reload when another local task edits the shared workspace.
 export default defineConfig(async environment => mergeConfig(

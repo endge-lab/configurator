@@ -13,7 +13,7 @@ function collectErrors(page: Page, errors: string[]): void {
 }
 
 async function ready(page: Page, role: string): Promise<void> {
-  await page.goto(`/e2e/fixture.html?role=${role}`)
+  await page.goto(`/src/test/e2e/fixture.html?role=${role}`)
   await expect(page.locator('body')).toHaveAttribute('data-ready', 'true')
 }
 async function openFile(page: Page, filename: string): Promise<void> {
