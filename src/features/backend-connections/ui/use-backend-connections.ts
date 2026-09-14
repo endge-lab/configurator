@@ -20,11 +20,7 @@ export function useBackendConnections() {
     }),
     activeBackendURL: computed(() => {
       void revision.value
-      return Configurator.connections.activeBackendURL
-    }),
-    isPrimaryActive: computed(() => {
-      void revision.value
-      return Configurator.connections.isPrimaryActive
+      return Configurator.connections.activeBackendURLOrNull ?? ''
     }),
   }
 }

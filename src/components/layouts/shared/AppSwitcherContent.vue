@@ -3,6 +3,7 @@ import type { BackendConnection } from '@/features/backend-connections'
 
 import { ChevronsUpDown, Server } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Configurator } from '@/app/Configurator'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useBackendConnections, useBackendVersions } from '@/features/backend-connections'
@@ -25,15 +27,31 @@ defineProps<{
   sideOffset?: number
 }>()
 
-const { catalog, activeBackendURL, isPrimaryActive } = useBackendConnections()
+const { catalog, activeBackendURL } = useBackendConnections()
+const { t } = useI18n()
 const { state: backendVersionState, refresh: refreshBackendVersion, refreshMany: refreshBackendVersions } = useBackendVersions()
 const { state: domainVersionState, refreshMany } = useDomainVersions()
 const open = ref(false)
 const activeConnectionName = computed(() =>
   catalog.value?.items.find(connection => connection.baseUrl === activeBackendURL.value)?.name
-  ?? (isPrimaryActive.value ? 'Основной' : activeBackendURL.value),
+  ?? activeBackendURL.value,
 )
 const activeConnectionLabel = computed(() => formatConnectionName(activeConnectionName.value, activeBackendURL.value))
+const connectionGroups = computed(() => {
+  const localURLs = new Set((catalog.value?.localItems ?? []).map(connection => connection.baseUrl))
+  return [
+    {
+      key: 'local',
+      label: t('backendConnections.localGroup'),
+      items: catalog.value?.localItems ?? [],
+    },
+    {
+      key: 'environment',
+      label: t('backendConnections.environmentGroup'),
+      items: (catalog.value?.environmentItems ?? []).filter(connection => !localURLs.has(connection.baseUrl)),
+    },
+  ]
+})
 
 function formatConnectionName(name: string, backendURL: string): string {
   const state = backendVersionState(backendURL)
@@ -65,7 +83,9 @@ async function refreshStatuses(force = false): Promise<void> {
 }
 
 watch(activeBackendURL, (backendURL) => {
-  void refreshBackendVersion(backendURL)
+  if (backendURL) {
+    void refreshBackendVersion(backendURL)
+  }
 }, { immediate: true })
 
 watch([open, catalog], ([isOpen, currentCatalog]) => {
@@ -94,28 +114,34 @@ watch([open, catalog], ([isOpen, currentCatalog]) => {
       :side="side"
       :side-offset="sideOffset ?? 4"
     >
-      <DropdownMenuLabel class="text-xs text-muted-foreground">
-        {{ $t('uiText.connectionsc188eb08') }}
-      </DropdownMenuLabel>
-      <DropdownMenuGroup>
-        <DropdownMenuItem
-          v-for="connection in catalog?.items ?? []"
-          :key="connection.id"
-          class="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-4 px-3 py-2"
-          :class="activeBackendURL === connection.baseUrl ? 'bg-accent text-accent-foreground' : ''"
-          @click="switchBackend(connection.baseUrl)"
-        >
-          <div class="flex min-w-0 items-start gap-3">
-            <Server class="mt-0.5 size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
-            <div class="min-w-0 flex-1">
-              <span class="block truncate text-xs font-medium">{{ formatConnectionName(connection.name, connection.baseUrl) }}</span>
-              <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
-              <span class="block truncate text-[10px] text-muted-foreground">{{ workspaceFor(connection) }}</span>
+      <template v-for="(group, groupIndex) in connectionGroups" :key="group.key">
+        <DropdownMenuSeparator v-if="groupIndex > 0" />
+        <DropdownMenuLabel class="text-xs text-muted-foreground">
+          {{ group.label }}
+        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            v-for="connection in group.items"
+            :key="`${connection.source}:${connection.id}`"
+            class="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-4 px-3 py-2"
+            :class="activeBackendURL === connection.baseUrl ? 'bg-accent text-accent-foreground' : ''"
+            @click="switchBackend(connection.baseUrl)"
+          >
+            <div class="flex min-w-0 items-start gap-3">
+              <Server class="mt-0.5 size-4 shrink-0" :class="connection.primary ? 'text-primary' : 'text-orange-500'" />
+              <div class="min-w-0 flex-1">
+                <span class="block truncate text-xs font-medium">{{ formatConnectionName(connection.name, connection.baseUrl) }}</span>
+                <span class="block truncate font-mono text-[10px] text-muted-foreground">{{ connection.baseUrl }}</span>
+                <span class="block truncate text-[10px] text-muted-foreground">{{ workspaceFor(connection) }}</span>
+              </div>
             </div>
-          </div>
-          <DomainVersionBadge class="self-center" :state="statusFor(connection)" />
-        </DropdownMenuItem>
-      </DropdownMenuGroup>
+            <DomainVersionBadge class="self-center" :state="statusFor(connection)" />
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="group.items.length === 0" disabled class="px-3 py-2 text-xs text-muted-foreground">
+            {{ $t('backendConnections.emptyGroup') }}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </template>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

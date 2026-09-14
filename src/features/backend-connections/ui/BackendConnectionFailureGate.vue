@@ -5,8 +5,8 @@ import { Configurator } from '@/app/Configurator'
 
 const failure = Configurator.backendConnectionFailure
 
-function switchToPrimary(): void {
-  Configurator.connections.fallbackToPrimary()
+function chooseConnection(): void {
+  Configurator.connections.clearActiveBackend()
 }
 </script>
 
@@ -40,10 +40,10 @@ function switchToPrimary(): void {
         <button
           type="button"
           class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          @click="switchToPrimary"
+          @click="chooseConnection"
         >
           <ArrowLeft class="size-4" />
-          {{ $t('uiText.goToMain24ba8bde') }}
+          {{ $t('backendConnections.chooseAnother') }}
         </button>
       </footer>
     </section>

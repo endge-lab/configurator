@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import GridNavUser from '@/components/layouts/grid/GridNavUser.vue'
+import Logo from '@/components/layouts/main/Logo.vue'
 import { AppSwitcherContent } from '@/components/layouts/shared'
 
 const route = useRoute()
@@ -11,6 +12,7 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 <template>
   <div class="flex items-center gap-2">
+    <Logo v-if="!isAdminRoute" icon-height="h-8" />
     <AppSwitcherContent v-if="!isAdminRoute" />
     <div
       data-target="grid-layout-header-menu"

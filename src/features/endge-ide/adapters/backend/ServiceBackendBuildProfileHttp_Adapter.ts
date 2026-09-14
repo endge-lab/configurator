@@ -75,6 +75,8 @@ function normalizeBuildProfile(value: unknown): BuildProfileTransport {
   const node = asRecord(topology[0])
   const visibility = text(source.visibility)
   const diagnostics = text(settings.diagnostics)
+  const fileFormat = settings.fileFormat ?? 'gzip'
+  const includeAst = settings.includeAst ?? false
   const debuggerStructure = text(settings.debuggerStructure)
   if (!text(source.id) || !text(source.identity) || !text(source.displayName)
     || (visibility !== 'shared' && visibility !== 'private')
@@ -82,6 +84,7 @@ function normalizeBuildProfile(value: unknown): BuildProfileTransport {
     || (debuggerStructure !== 'complete-catalog' && debuggerStructure !== 'extended-catalog')
     || text(settings.buildScope) !== 'complete-model' || text(settings.contexts) !== 'all-contexts'
     || topology.length !== 1 || text(node.node) !== 'frontend' || text(node.runtime) !== 'ts-browser'
+    || (fileFormat !== 'gzip' && fileFormat !== 'json') || typeof includeAst !== 'boolean'
     || number(source.settingsVersion) !== 1 || number(source.revision) < 1) {
     throw new Error('Backend вернул некорректный профиль сборки')
   }
@@ -93,6 +96,8 @@ function normalizeBuildProfile(value: unknown): BuildProfileTransport {
     ownerLogin: text(source.ownerLogin) || undefined,
     settingsVersion: 1,
     settings: {
+      includeAst,
+      fileFormat,
       buildScope: 'complete-model',
       contexts: 'all-contexts',
       diagnostics,

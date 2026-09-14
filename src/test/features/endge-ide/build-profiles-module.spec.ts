@@ -1,26 +1,109 @@
 import type { BuildProfileTransport } from '@/features/endge-ide/domain/entities/RBuildProfile'
 import type { BuildProfileAdapter } from '@/features/endge-ide/domain/types/build-profile.type'
 
-import { describe, expect, it, vi } from 'vitest'
+import { Endge } from '@endge/core'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
+import { cloneBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
 
 import { EndgeIDEBuildProfiles_Module } from '@/features/endge-ide/modules/EndgeIDEBuildProfiles_Module'
 
+afterEach(() => vi.restoreAllMocks())
+
 describe('модуль профилей сборки', () => {
+  it('builds once, freezes export options and does not start runtime', async () => {
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    let finish!: () => void
+    const build = vi.spyOn(Endge, 'build').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const exported = { programId: 'build' } as ReturnType<
+      typeof Endge.program.exportBundle
+    >
+    const pack = vi
+      .spyOn(Endge.program, 'exportBundle')
+      .mockReturnValue(exported)
+    const download = vi
+      .spyOn(BundleFiles_Service.prototype, 'download')
+      .mockResolvedValue()
+    const execute = vi.spyOn(Endge.runtime, 'execute')
+    const settings = transport().settings
+    const pending = module.buildAndDownload(settings)
+    expect(module.buildStatus.value).toBe('building')
+    settings.includeAst = true
+    await expect(module.buildAndDownload(settings)).rejects.toThrow(
+      'уже выполняется',
+    )
+    finish()
+    await pending
+    expect(build).toHaveBeenCalledTimes(1)
+    expect(pack).toHaveBeenCalledWith({ includeAst: false })
+    expect(download).toHaveBeenCalledWith(
+      { format: 'endge-bundle', version: 1, bundle: exported },
+      'gzip',
+      'build',
+      expect.any(AbortSignal),
+    )
+    expect(module.buildStatus.value).toBe('ready')
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('cancels a pending build on reset and applies defaults to old settings', async () => {
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    let finish!: () => void
+    vi.spyOn(Endge, 'build').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    const download = vi
+      .spyOn(BundleFiles_Service.prototype, 'download')
+      .mockResolvedValue()
+    const pending = module.buildAndDownload(transport().settings)
+    module.reset()
+    finish()
+    await expect(pending).rejects.toThrow()
+    expect(download).not.toHaveBeenCalled()
+    expect(module.buildStatus.value).toBe('idle')
+    const { includeAst, fileFormat, ...legacy } = transport().settings
+    expect(
+      cloneBuildProfileSettings(legacy as typeof module.draftSettings.value),
+    ).toMatchObject({ includeAst: false, fileFormat: 'gzip' })
+  })
+
   it('загружает workspace, создаёт профиль из текущего черновика и сбрасывает состояние', async () => {
     const adapter = adapterStub()
     adapter.list = vi.fn().mockResolvedValue([transport()])
-    adapter.create = vi.fn().mockResolvedValue(transport({ identity: 'created', displayName: 'Новый профиль 2' }))
+    adapter.create = vi
+      .fn()
+      .mockResolvedValue(
+        transport({ identity: 'created', displayName: 'Новый профиль 2' }),
+      )
     const module = new EndgeIDEBuildProfiles_Module(adapter)
 
     await module.load('workspace-a')
     expect(module.status.value).toBe('ready')
     expect(module.profiles.value).toHaveLength(1)
-    module.draftSettings.value = { ...module.draftSettings.value, diagnostics: 'minimal' }
+    module.draftSettings.value = {
+      ...module.draftSettings.value,
+      diagnostics: 'minimal',
+    }
 
     await module.create('shared')
 
-    expect(adapter.create).toHaveBeenCalledWith('workspace-a', 'shared', expect.objectContaining({ diagnostics: 'minimal' }))
-    expect(module.profiles.value.map(profile => profile.identity)).toEqual(['profile-1', 'created'])
+    expect(adapter.create).toHaveBeenCalledWith(
+      'workspace-a',
+      'shared',
+      expect.objectContaining({ diagnostics: 'minimal' }),
+    )
+    expect(module.profiles.value.map(profile => profile.identity)).toEqual([
+      'profile-1',
+      'created',
+    ])
 
     module.reset()
     expect(module.status.value).toBe('idle')
@@ -67,7 +150,9 @@ describe('модуль профилей сборки', () => {
     await module.load('workspace-a')
     const profile = module.profiles.value[0]!
 
-    await expect(module.patch(profile, { displayName: 'Optimistic' })).rejects.toThrow('revision conflict')
+    await expect(
+      module.patch(profile, { displayName: 'Optimistic' }),
+    ).rejects.toThrow('revision conflict')
 
     expect(profile.displayName).toBe('Profile')
     expect(profile.revision).toBe(1)
@@ -83,7 +168,9 @@ function adapterStub(): BuildProfileAdapter {
   }
 }
 
-function transport(patch: Partial<BuildProfileTransport> = {}): BuildProfileTransport {
+function transport(
+  patch: Partial<BuildProfileTransport> = {},
+): BuildProfileTransport {
   return {
     id: 'id-1',
     identity: 'profile-1',
@@ -92,6 +179,8 @@ function transport(patch: Partial<BuildProfileTransport> = {}): BuildProfileTran
     ownerLogin: 'owner',
     settingsVersion: 1,
     settings: {
+      includeAst: false,
+      fileFormat: 'gzip',
       buildScope: 'complete-model',
       contexts: 'all-contexts',
       diagnostics: 'detailed',

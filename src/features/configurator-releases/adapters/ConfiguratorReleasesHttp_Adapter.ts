@@ -1,3 +1,4 @@
+import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 import type {
   ConfiguratorCommit,
   ConfiguratorCommitPlan,
@@ -84,6 +85,38 @@ export class ConfiguratorReleasesHttp_Adapter {
         body: { identity: value, displayName: value, sourceCommitId },
       }),
     )
+  }
+
+  public async createFromBuild(input: CreateBuiltRelease, bytes: Uint8Array): Promise<ConfiguratorRelease> {
+    const { source, ...metadata } = input
+    const form = new FormData()
+    form.set('metadata', JSON.stringify({ ...metadata, workspaceId: source.workspaceId, generation: source.generation, headSequence: source.headSequence }))
+    form.set('bundle', new Blob([new Uint8Array(bytes)], { type: 'application/gzip' }), 'program.endge-bundle.gz')
+    const response = await fetch(`${this._baseURL}/api/v1/releases/from-build`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Accept': 'application/json', 'X-Endge-Workspace': source.workspaceIdentity },
+      body: form,
+    })
+    const value = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new ConfiguratorVersionsError(String(value.message ?? 'Не удалось создать релиз'), String(value.code ?? ''), response.status)
+    }
+    return normalizeRelease(value)
+  }
+
+  public async downloadBuild(identity: string): Promise<void> {
+    const response = await fetch(`${this._baseURL}/api/v1/releases/${encodeURIComponent(identity)}/bundle`, {
+      credentials: 'include', headers: { 'X-Endge-Workspace': this._workspaceIdentity() },
+    })
+    if (!response.ok) {
+      throw new Error('Bundle релиза недоступен')
+    }
+    const url = URL.createObjectURL(await response.blob())
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${identity}.endge-bundle.gz`
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
   public async planCommitRestore(id: string): Promise<ConfiguratorRestorePlan> {
@@ -188,6 +221,7 @@ function normalizeRelease(value: RecordValue): ConfiguratorRelease {
     displayName: String(value.displayName || value.identity || ''),
     description:
       value.description == null ? undefined : String(value.description),
+    buildMetadata: value.buildMetadata ?? undefined,
     sourceCommitId: String(value.sourceCommitId || ''),
     headSequence: Number(value.headSequence || 0),
     createdBy: normalizeActor(value.createdBy),

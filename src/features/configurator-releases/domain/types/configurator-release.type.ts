@@ -1,3 +1,4 @@
+import type { ReleaseBuildMetadata } from './release-build.type'
 export interface ConfiguratorVersionActor {
   id: string
   username?: string
@@ -5,6 +6,7 @@ export interface ConfiguratorVersionActor {
 }
 
 export interface ConfiguratorRelease {
+  buildMetadata?: ReleaseBuildMetadata
   id: string
   identity: string
   displayName: string

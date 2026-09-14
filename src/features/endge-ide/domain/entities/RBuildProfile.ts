@@ -5,6 +5,8 @@ export type BuildProfileDiagnostics = 'minimal' | 'standard' | 'detailed'
 export type BuildProfileDebuggerStructure = 'complete-catalog' | 'extended-catalog'
 
 export interface BuildProfileSettings {
+  includeAst: boolean
+  fileFormat: 'gzip' | 'json'
   buildScope: 'complete-model'
   contexts: 'all-contexts'
   diagnostics: BuildProfileDiagnostics
@@ -80,6 +82,8 @@ export class RBuildProfile extends REntity<string> {
 
 export function createDefaultBuildProfileSettings(): BuildProfileSettings {
   return {
+    includeAst: false,
+    fileFormat: 'gzip',
     buildScope: 'complete-model',
     contexts: 'all-contexts',
     diagnostics: 'detailed',
@@ -90,6 +94,8 @@ export function createDefaultBuildProfileSettings(): BuildProfileSettings {
 
 export function cloneBuildProfileSettings(value: BuildProfileSettings): BuildProfileSettings {
   return {
+    includeAst: value.includeAst === true,
+    fileFormat: value.fileFormat === 'json' ? 'json' : 'gzip',
     buildScope: 'complete-model',
     contexts: 'all-contexts',
     diagnostics: value.diagnostics,

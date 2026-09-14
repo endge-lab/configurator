@@ -22,14 +22,35 @@ import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEB
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
 import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
-import type { SmartTabRef, SmartTabsApi, SmartTabViewResolved } from '@/features/endge-ide/ui/smart-tabs/types.ts'
-import { ComponentType, Endge, FilterType, getDomainDocumentDescriptor, isExternallyManaged, isSystemManaged, QueryType, readOnlyDocument } from '@endge/core'
+import type {
+  SmartTabRef,
+  SmartTabsApi,
+  SmartTabViewResolved,
+} from '@/features/endge-ide/ui/smart-tabs/types.ts'
+import {
+  ComponentType,
+  Endge,
+  FilterType,
+  getDomainDocumentDescriptor,
+  isExternallyManaged,
+  isSystemManaged,
+  QueryType,
+  readOnlyDocument,
+} from '@endge/core'
 
 import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
-import { getLayoutState, hideWidget, showWidget } from '@/components/layouts/grid/layout'
+import {
+  getLayoutState,
+  hideWidget,
+  showWidget,
+} from '@/components/layouts/grid/layout'
 
-import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_ICON_BADGE_SIZE, DOCUMENT_ICON_SIZES } from '@/features/document-presentation/config/document-presentation'
+import {
+  DOCUMENT_AUXILIARY_PRESENTATION,
+  DOCUMENT_ICON_BADGE_SIZE,
+  DOCUMENT_ICON_SIZES,
+} from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 import { isIDETabStorageDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags.ts'
 import { createEndgeIDETabsConfig } from '@/features/endge-ide/config/tabs.ts'
@@ -43,7 +64,10 @@ import { RComputationEditor } from '@/features/endge-ide/domain/entities/RComput
 import { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor.ts'
 import { RConverterEditor } from '@/features/endge-ide/domain/entities/RConverterEditor.ts'
 import { RDataViewEditor } from '@/features/endge-ide/domain/entities/RDataViewEditor.ts'
-import { FacetDocumentMetadataSession, RFacetDocumentEditor } from '@/features/endge-ide/domain/entities/RFacetDocumentEditor.ts'
+import {
+  FacetDocumentMetadataSession,
+  RFacetDocumentEditor,
+} from '@/features/endge-ide/domain/entities/RFacetDocumentEditor.ts'
 import { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor.ts'
 import { RI18nBundleEditor } from '@/features/endge-ide/domain/entities/RI18nBundleEditor.ts'
 import { RIntegrationEditor } from '@/features/endge-ide/domain/entities/RIntegrationEditor.ts'
@@ -72,42 +96,138 @@ import { DocumentMetadataSession as DocumentMetadataEditorSession } from '@/feat
 import { getDomainDocumentPath } from '@/features/endge-ide/services/domain/domain-document-path'
 import { getDomainDocumentLabel } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 import { resolveSourceReferenceDocumentTarget } from '@/features/endge-ide/services/source-reference/source-reference-document-target'
-import { ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS, isStandaloneWorkspaceWidgetActive } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
+import {
+  ENDGE_IDE_STANDALONE_WORKSPACE_WIDGET_IDS,
+  isStandaloneWorkspaceWidgetActive,
+} from '@/features/endge-ide/tools/endge-ide-workspace-surface'
 import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
 import { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs'
 
-const TabContentWrapper = defineAsyncComponent(() => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'))
-const ComponentDSL_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'))
-const ComponentSFC_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'))
-const ComponentTable_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/ComponentTable_Editor.vue'))
-const Action_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Action_Editor.vue'))
-const Query_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'))
-const DataView_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'))
-const Composition_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'))
-const Simulation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Simulation_Editor.vue'))
-const Store_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'))
-const Stream_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Stream_Editor.vue'))
-const Update_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Update_Editor.vue'))
-const Mock_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Mock_Editor.vue'))
-const Computation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Computation_Editor.vue'))
-const Type_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'))
-const Converter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'))
-const Integration_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'))
-const Policy_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Policy_Editor.vue'))
-const Style_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Style_Editor.vue'))
-const Configuration_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Configuration_Editor.vue'))
-const Vocabs_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Vocabs_Editor.vue'))
-const AuthProfile_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/AuthProfile_Editor.vue'))
-const I18nBundles_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/I18nBundles_Editor.vue'))
-const PageTemplate_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/PageTemplate_Editor.vue'))
-const Page_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Page_Editor.vue'))
-const Navigation_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'))
-const Filter_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'))
-const FacetDocument_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/entity/FacetDocument_Editor.vue'))
-const Workspace_Editor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'))
-const DSL_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'))
-const SFC_Playground_Widget = defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'))
-const DemonstrationTab_View = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'))
+const TabContentWrapper = defineAsyncComponent(
+  () => import('@/features/endge-ide/ui/components/TabContentWrapper.vue'),
+)
+const ComponentDSL_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/ComponentDSL_Editor.vue'),
+)
+const ComponentSFC_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/ComponentSFC_Editor.vue'),
+)
+const ComponentTable_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/ComponentTable_Editor.vue'),
+)
+const Action_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Action_Editor.vue'),
+)
+const Query_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Query_Editor.vue'),
+)
+const DataView_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/DataView_Editor.vue'),
+)
+const Composition_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Composition_Editor.vue'),
+)
+const Simulation_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Simulation_Editor.vue'),
+)
+const Store_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Store_Editor.vue'),
+)
+const Stream_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Stream_Editor.vue'),
+)
+const Update_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Update_Editor.vue'),
+)
+const Mock_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Mock_Editor.vue'),
+)
+const Computation_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Computation_Editor.vue'),
+)
+const Type_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Type_Editor.vue'),
+)
+const Converter_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Converter_Editor.vue'),
+)
+const Integration_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Integration_Editor.vue'),
+)
+const Policy_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Policy_Editor.vue'),
+)
+const Style_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Style_Editor.vue'),
+)
+const Configuration_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Configuration_Editor.vue'),
+)
+const Vocabs_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Vocabs_Editor.vue'),
+)
+const AuthProfile_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/AuthProfile_Editor.vue'),
+)
+const I18nBundles_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/I18nBundles_Editor.vue'),
+)
+const PageTemplate_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/PageTemplate_Editor.vue'),
+)
+const Page_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Page_Editor.vue'),
+)
+const Navigation_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Navigation_Editor.vue'),
+)
+const Filter_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/Filter_Editor.vue'),
+)
+const FacetDocument_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/entity/FacetDocument_Editor.vue'),
+)
+const Workspace_Editor = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'),
+)
+const DSL_Playground_Widget = defineAsyncComponent(
+  () => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'),
+)
+const SFC_Playground_Widget = defineAsyncComponent(
+  () => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'),
+)
+const DemonstrationTab_View = defineAsyncComponent(
+  () =>
+    import('@/features/endge-ide/ui/section/demonstration/DemonstrationTab_View.vue'),
+)
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
@@ -170,14 +290,26 @@ export class EndgeIDETabs_Module {
   private _sourceNavigationToken = 0
   private readonly _documentEditorModel = shallowRef<unknown | null>(null)
   private readonly _documentModel = shallowRef<unknown | null>(null)
-  private readonly _documentMetadataSession = shallowRef<DocumentMetadataSession | null>(null)
-  private readonly _sourceNavigationRequest = shallowRef<DocumentSourceNavigationRequest | null>(null)
+  private readonly _documentMetadataSession
+    = shallowRef<DocumentMetadataSession | null>(null)
+
+  private readonly _sourceNavigationRequest
+    = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
   /** Readonly reactive views текущего editor, model и одноразовой Source navigation. */
-  public readonly documentEditorModel: Readonly<ShallowRef<unknown | null>> = this._documentEditorModel
-  public readonly documentModel: Readonly<ShallowRef<unknown | null>> = this._documentModel
-  public readonly documentMetadataSession: Readonly<ShallowRef<DocumentMetadataSession | null>> = this._documentMetadataSession
-  public readonly sourceNavigationRequest: Readonly<ShallowRef<DocumentSourceNavigationRequest | null>> = this._sourceNavigationRequest
+  public readonly documentEditorModel: Readonly<ShallowRef<unknown | null>>
+    = this._documentEditorModel
+
+  public readonly documentModel: Readonly<ShallowRef<unknown | null>>
+    = this._documentModel
+
+  public readonly documentMetadataSession: Readonly<
+    ShallowRef<DocumentMetadataSession | null>
+  > = this._documentMetadataSession
+
+  public readonly sourceNavigationRequest: Readonly<
+    ShallowRef<DocumentSourceNavigationRequest | null>
+  > = this._sourceNavigationRequest
 
   public constructor(
     private readonly _busy: EndgeIDEBusy_Module,
@@ -255,40 +387,112 @@ export class EndgeIDETabs_Module {
     })
   }
 
-  public openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
+  public openTab(
+    tab: SmartTabRef,
+    opts?: { activate?: boolean, replace?: boolean },
+  ): void {
     this._tabsApi.openTab(tab, opts)
   }
 
-  public activateTab(id: string): void { this._tabsApi.activateTab(id) }
-  public closeTab(id: string): void { this._tabsApi.closeTab(id) }
-  public closeAll(): void { this._tabsApi.closeAll() }
-  public closeOthers(id: string): void { this._tabsApi.closeOthers(id) }
-  public closeAllToLeft(id: string): void { this._tabsApi.closeAllToLeft(id) }
-  public closeAllToRight(id: string): void { this._tabsApi.closeAllToRight(id) }
+  public activateTab(id: string): void {
+    this._tabsApi.activateTab(id)
+  }
 
-  public moveTab(fromIndex: number, toIndex: number): void { this._tabsApi.moveTab(fromIndex, toIndex) }
-  public getTabViewState(tabId: string, key: string) { return this._tabsApi.getTabViewState(tabId, key) }
-  public setTabViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabViewState']>[2]): void { this._tabsApi.setTabViewState(tabId, key, slice) }
-  public clearTabViewState(tabId: string, key?: string): void { this._tabsApi.clearTabViewState(tabId, key) }
-  public getTabVolatileViewState(tabId: string, key: string) { return this._tabsApi.getTabVolatileViewState(tabId, key) }
-  public setTabVolatileViewState(tabId: string, key: string, slice: Parameters<SmartTabsApi['setTabVolatileViewState']>[2]): void { this._tabsApi.setTabVolatileViewState(tabId, key, slice) }
-  public clearTabVolatileViewState(tabId: string, key?: string): void { this._tabsApi.clearTabVolatileViewState(tabId, key) }
-  public getSharedViewState(key: string) { return this._tabsApi.getSharedViewState(key) }
-  public setSharedViewState(key: string, slice: Parameters<SmartTabsApi['setSharedViewState']>[1]): void { this._tabsApi.setSharedViewState(key, slice) }
-  public clearSharedViewState(key?: string): void { this._tabsApi.clearSharedViewState(key) }
-  public flushStorage(): void { this._tabsApi.flushStorage() }
-  public clearStorage(): void { this._tabsApi.clearStorage() }
+  public closeTab(id: string): void {
+    this._tabsApi.closeTab(id)
+  }
+
+  public closeAll(): void {
+    this._tabsApi.closeAll()
+  }
+
+  public closeOthers(id: string): void {
+    this._tabsApi.closeOthers(id)
+  }
+
+  public closeAllToLeft(id: string): void {
+    this._tabsApi.closeAllToLeft(id)
+  }
+
+  public closeAllToRight(id: string): void {
+    this._tabsApi.closeAllToRight(id)
+  }
+
+  public moveTab(fromIndex: number, toIndex: number): void {
+    this._tabsApi.moveTab(fromIndex, toIndex)
+  }
+
+  public getTabViewState(tabId: string, key: string) {
+    return this._tabsApi.getTabViewState(tabId, key)
+  }
+
+  public setTabViewState(
+    tabId: string,
+    key: string,
+    slice: Parameters<SmartTabsApi['setTabViewState']>[2],
+  ): void {
+    this._tabsApi.setTabViewState(tabId, key, slice)
+  }
+
+  public clearTabViewState(tabId: string, key?: string): void {
+    this._tabsApi.clearTabViewState(tabId, key)
+  }
+
+  public getTabVolatileViewState(tabId: string, key: string) {
+    return this._tabsApi.getTabVolatileViewState(tabId, key)
+  }
+
+  public setTabVolatileViewState(
+    tabId: string,
+    key: string,
+    slice: Parameters<SmartTabsApi['setTabVolatileViewState']>[2],
+  ): void {
+    this._tabsApi.setTabVolatileViewState(tabId, key, slice)
+  }
+
+  public clearTabVolatileViewState(tabId: string, key?: string): void {
+    this._tabsApi.clearTabVolatileViewState(tabId, key)
+  }
+
+  public getSharedViewState(key: string) {
+    return this._tabsApi.getSharedViewState(key)
+  }
+
+  public setSharedViewState(
+    key: string,
+    slice: Parameters<SmartTabsApi['setSharedViewState']>[1],
+  ): void {
+    this._tabsApi.setSharedViewState(key, slice)
+  }
+
+  public clearSharedViewState(key?: string): void {
+    this._tabsApi.clearSharedViewState(key)
+  }
+
+  public flushStorage(): void {
+    this._tabsApi.flushStorage()
+  }
+
+  public clearStorage(): void {
+    this._tabsApi.clearStorage()
+  }
 
   /** Возвращает true, когда активный редактор отличается от последнего успешного сохранения. */
   public isTabDirty(id: string): boolean {
     if (id === 'workspace-settings') {
-      return (this._workspace?.editor.value?.dirty ?? false) || this._workspace?.metadataSession.value?.dirty === true
+      return (
+        (this._workspace?.editor.value?.dirty ?? false)
+        || this._workspace?.metadataSession.value?.dirty === true
+      )
     }
     const session = this._sessionByTabId.get(id)
     if (!session?.editor || session.savedSnapshot == null) {
       return false
     }
-    return createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot || session.metadata?.dirty === true
+    return (
+      createDocumentEditorSnapshot(session.editor) !== session.savedSnapshot
+      || session.metadata?.dirty === true
+    )
   }
 
   /** Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку. */
@@ -299,7 +503,8 @@ export class EndgeIDETabs_Module {
     }
     if (this.isTabDirty(id)) {
       toast.warning('Документ не сохранён', {
-        description: 'Сохраните изменения или закройте вкладку крестиком без сохранения.',
+        description:
+          'Сохраните изменения или закройте вкладку крестиком без сохранения.',
       })
       return
     }
@@ -339,7 +544,10 @@ export class EndgeIDETabs_Module {
       return
     }
     if (activeTab.viewId === VIEW_ID_WORKSPACE_SETTINGS) {
-      if (this._busy.value || !this._workspace?.editor.value?.displayName.trim()) {
+      if (
+        this._busy.value
+        || !this._workspace?.editor.value?.displayName.trim()
+      ) {
         return
       }
       try {
@@ -348,7 +556,9 @@ export class EndgeIDETabs_Module {
       }
       catch (error) {
         if (!warnDebuggerReadOnly(error)) {
-          toast.error('Не удалось сохранить рабочее пространство', { description: error instanceof Error ? error.message : String(error) })
+          toast.error('Не удалось сохранить рабочее пространство', {
+            description: error instanceof Error ? error.message : String(error),
+          })
         }
       }
       return
@@ -361,7 +571,9 @@ export class EndgeIDETabs_Module {
   }
 
   /** Регистрирует подготовку UI-черновиков активной вкладки перед любым способом сохранения. */
-  public registerSavePreparation(handler: () => boolean | Promise<boolean>): () => void {
+  public registerSavePreparation(
+    handler: () => boolean | Promise<boolean>,
+  ): () => void {
     const tabId = this.activeTab.value?.id
     const session = tabId ? this._sessionByTabId.get(tabId) : null
     if (!session) {
@@ -390,41 +602,68 @@ export class EndgeIDETabs_Module {
         return
       }
       const session = this._sessionByTabId.get(activeTab.id)
-      const model = session?.model as { managedBy?: 'system' | 'integration' | 'user', managedById?: string | null } | null | undefined
+      const model = session?.model as
+        | {
+          managedBy?: 'system' | 'integration' | 'user'
+          managedById?: string | null
+        }
+        | null
+        | undefined
       if (isExternallyManaged(model)) {
-        if (documentType === 'style' && isSystemManaged(model) && session?.syncSystemBeforeSave) {
+        if (
+          documentType === 'style'
+          && isSystemManaged(model)
+          && session?.syncSystemBeforeSave
+        ) {
           session.syncSystemBeforeSave()
         }
         else {
-          toast.info(model?.managedBy === 'integration'
-            ? 'Документ управляется интеграцией и не может быть изменён'
-            : 'Системный документ нельзя изменить')
+          toast.info(
+            model?.managedBy === 'integration'
+              ? 'Документ управляется интеграцией и не может быть изменён'
+              : 'Системный документ нельзя изменить',
+          )
           return
         }
       }
       else {
         if (session?.metadata && !session.metadata.prepareBeforeSave()) {
-          toast.error('Метаданные не сохранены', { description: session.metadata.error ?? 'Исправьте JSON metadata.' })
+          toast.error('Метаданные не сохранены', {
+            description: session.metadata.error ?? 'Исправьте JSON metadata.',
+          })
           return
         }
-        if (session?.prepareBeforeSave && !await session.prepareBeforeSave()) {
+        if (
+          session?.prepareBeforeSave
+          && !(await session.prepareBeforeSave())
+        ) {
           return
         }
         session?.syncBeforeSave?.()
       }
-      const saveDocumentId = this._resolveSaveDocumentId(documentType, documentId, session?.model ?? null)
-      const savingSnapshot = session?.editor ? createDocumentEditorSnapshot(session.editor) : undefined
+      const saveDocumentId = this._resolveSaveDocumentId(
+        documentType,
+        documentId,
+        session?.model ?? null,
+      )
+      const savingSnapshot = session?.editor
+        ? createDocumentEditorSnapshot(session.editor)
+        : undefined
       await Endge.domainRepository.saveDocument(saveDocumentId, documentType, {
         model: session?.model ?? session?.editor ?? null,
         previousIdentity: session?.persistedIdentity,
       })
       let effectiveDocumentId = saveDocumentId
       if (session?.model && typeof session.model === 'object') {
-        const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
+        const identity = String(
+          (session.model as { identity?: unknown }).identity ?? '',
+        ).trim()
         if (identity) {
           effectiveDocumentId = identity
           session.persistedIdentity = identity
-          const tabPayload = this._getPayload<DocumentTabPayload>(activeTab.payload)
+          const tabPayload = this._getPayload<DocumentTabPayload>(
+            activeTab.payload,
+          )
           if (tabPayload) {
             tabPayload.documentId = identity
           }
@@ -442,21 +681,39 @@ export class EndgeIDETabs_Module {
       if (warnDebuggerReadOnly(e)) {
         return
       }
-      console.error(`[EndgeIDETabs] save failed: ${e instanceof Error ? e.message : String(e)}`)
+      console.error(
+        `[EndgeIDETabs] save failed: ${e instanceof Error ? e.message : String(e)}`,
+      )
       toast.error('Ошибка сохранения', { description: String(e) })
     }
   }
 
-  public openDocument(id: string | number, docType: DomainDocumentType, options: { sourceOffset?: number } = {}): void {
+  public openDocument(
+    id: string | number,
+    docType: DomainDocumentType,
+    options: { sourceOffset?: number } = {},
+  ): void {
     const documentId = resolveEndgeIDEDocumentIdentity(id, docType)
-    const presentationKind = this._getDocumentPresentationKind(documentId, docType)
-    const presentation = getDomainDocumentPresentation(docType, presentationKind)
+    const presentationKind = this._getDocumentPresentationKind(
+      documentId,
+      docType,
+    )
+    const presentation = getDomainDocumentPresentation(
+      docType,
+      presentationKind,
+    )
     const tabId = `${String(docType)}-${documentId || 'empty'}`
     const tabRef: SmartTabRef = {
       id: tabId,
-      label: documentId ? this.getDocumentLabel(documentId, docType) : 'Без имени',
+      label: documentId
+        ? this.getDocumentLabel(documentId, docType)
+        : 'Без имени',
       viewId: VIEW_ID_DOCUMENT,
-      payload: { documentId, documentType: docType, presentationKind } satisfies DocumentTabPayload,
+      payload: {
+        documentId,
+        documentType: docType,
+        presentationKind,
+      } satisfies DocumentTabPayload,
       closable: true,
       meta: {
         icon: presentation.icon,
@@ -477,9 +734,15 @@ export class EndgeIDETabs_Module {
   }
 
   /** Открывает вложенный документ по составному ключу фасета и документа. */
-  public openFacetDocument(facetIdentity: string, documentIdentity: string): void {
+  public openFacetDocument(
+    facetIdentity: string,
+    documentIdentity: string,
+  ): void {
     const facet = Endge.domain.getFacet(facetIdentity)
-    const document = Endge.domain.getFacetDocument(facetIdentity, documentIdentity)
+    const document = Endge.domain.getFacetDocument(
+      facetIdentity,
+      documentIdentity,
+    )
     if (!facet || !document) {
       toast.warning('Документ фасета не найден')
       return
@@ -488,9 +751,16 @@ export class EndgeIDETabs_Module {
       id: `facet-document:${encodeURIComponent(facetIdentity)}:${encodeURIComponent(documentIdentity)}`,
       label: document.displayName || document.identity,
       viewId: VIEW_ID_FACET_DOCUMENT,
-      payload: { facetIdentity, documentIdentity } satisfies FacetDocumentTabPayload,
+      payload: {
+        facetIdentity,
+        documentIdentity,
+      } satisfies FacetDocumentTabPayload,
       closable: true,
-      meta: { icon: facet.icon, iconClass: DOCUMENT_ICON_SIZES.tab, iconColor: facet.color },
+      meta: {
+        icon: facet.icon,
+        iconClass: DOCUMENT_ICON_SIZES.tab,
+        iconColor: facet.color,
+      },
     }
     this.openTab(tabRef)
   }
@@ -617,12 +887,19 @@ export class EndgeIDETabs_Module {
   /** Открывает ту же Workspace-сессию сразу на Workflow, в том числе из её настроек. */
   public openWorkspaceWorkflow(): void {
     this.openWorkspaceSettings()
-    this._tabsApi.setTabViewState('workspace-settings', 'workspace.active-tab', { version: 1, value: 'workflow' })
+    this._tabsApi.setTabViewState(
+      'workspace-settings',
+      'workspace.active-tab',
+      { version: 1, value: 'workflow' },
+    )
   }
 
   private _workspaceTabMeta(): Record<string, unknown> {
     const presentation = DOCUMENT_AUXILIARY_PRESENTATION.workspace
-    return { icon: presentation.icon, iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}` }
+    return {
+      icon: presentation.icon,
+      iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}`,
+    }
   }
 
   private _refreshPersistedDocumentTabs(): void {
@@ -638,13 +915,19 @@ export class EndgeIDETabs_Module {
       if (!payload) {
         continue
       }
-      tab.label = this.getDocumentLabel(payload.documentId, payload.documentType)
+      tab.label = this.getDocumentLabel(
+        payload.documentId,
+        payload.documentType,
+      )
       const presentationKind = this._getDocumentPresentationKind(
         payload.documentId,
         payload.documentType,
         payload.presentationKind,
       )
-      const presentation = getDomainDocumentPresentation(payload.documentType, presentationKind)
+      const presentation = getDomainDocumentPresentation(
+        payload.documentType,
+        presentationKind,
+      )
       tab.meta = {
         ...tab.meta,
         icon: presentation.icon,
@@ -677,7 +960,9 @@ export class EndgeIDETabs_Module {
     return String(composition.kind ?? 'library')
   }
 
-  private _sourceReferenceLabel(target: SourceDocumentReference['target']): string {
+  private _sourceReferenceLabel(
+    target: SourceDocumentReference['target'],
+  ): string {
     return {
       'action': 'Action',
       'auth-profile': 'Auth profile',
@@ -699,29 +984,68 @@ export class EndgeIDETabs_Module {
     }[target]
   }
 
+  public openCompiledDocument(key: string): void {
+    const document = Endge.program.catalog.documents[key]
+    if (!document) {
+      return
+    }
+    this.openTab({
+      id: `compiled:${key}`,
+      label: document.displayName,
+      viewId: 'program-document',
+      payload: { documentKey: key },
+      ephemeral: true,
+      closable: true,
+    })
+  }
+
   private _registerSystemViews(): void {
+    this._tabsApi.viewRegistry.register(
+      'program-document',
+      (tab): SmartTabViewResolved => ({
+        component: markRaw(
+          defineAsyncComponent(
+            () =>
+              import('@/features/remote-debugger/ui/ProgramDocument_View.vue'),
+          ),
+        ),
+        props: { documentKey: tab.payload?.documentKey },
+      }),
+    )
     const wrap = (tab: SmartTabRef): SmartTabViewResolved => ({
       component: markRaw(TabContentWrapper),
       props: { tab },
     })
     this._tabsApi.viewRegistry.register(VIEW_ID_DOCUMENT, wrap)
     this._tabsApi.viewRegistry.register(VIEW_ID_FACET_DOCUMENT, wrap)
-    this._tabsApi.viewRegistry.register(VIEW_ID_WORKSPACE_SETTINGS, (): SmartTabViewResolved => ({
-      component: markRaw(Workspace_Editor),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_DSL_PLAYGROUND, (): SmartTabViewResolved => ({
-      component: markRaw(DSL_Playground_Widget),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_SFC_PLAYGROUND, (): SmartTabViewResolved => ({
-      component: markRaw(SFC_Playground_Widget),
-      props: {},
-    }))
-    this._tabsApi.viewRegistry.register(VIEW_ID_DEMONSTRATION, (): SmartTabViewResolved => ({
-      component: markRaw(DemonstrationTab_View),
-      props: {},
-    }))
+    this._tabsApi.viewRegistry.register(
+      VIEW_ID_WORKSPACE_SETTINGS,
+      (): SmartTabViewResolved => ({
+        component: markRaw(Workspace_Editor),
+        props: {},
+      }),
+    )
+    this._tabsApi.viewRegistry.register(
+      VIEW_ID_DSL_PLAYGROUND,
+      (): SmartTabViewResolved => ({
+        component: markRaw(DSL_Playground_Widget),
+        props: {},
+      }),
+    )
+    this._tabsApi.viewRegistry.register(
+      VIEW_ID_SFC_PLAYGROUND,
+      (): SmartTabViewResolved => ({
+        component: markRaw(SFC_Playground_Widget),
+        props: {},
+      }),
+    )
+    this._tabsApi.viewRegistry.register(
+      VIEW_ID_DEMONSTRATION,
+      (): SmartTabViewResolved => ({
+        component: markRaw(DemonstrationTab_View),
+        props: {},
+      }),
+    )
   }
 
   private _resolveDocumentTab(tab: SmartTabRef): SmartTabViewResolved | null {
@@ -742,20 +1066,35 @@ export class EndgeIDETabs_Module {
       return null
     }
     if (session.model && typeof session.model === 'object') {
-      const identity = String((session.model as { identity?: unknown }).identity ?? '').trim()
+      const identity = String(
+        (session.model as { identity?: unknown }).identity ?? '',
+      ).trim()
       session.persistedIdentity = identity || documentId
     }
     if (Endge.mode === 'debugger' && session.editor) {
       session.editor = readOnlyDocument(session.editor as object)
       session.view.props.tabContext = { editor: session.editor }
     }
-    if (getDomainDocumentDescriptor(documentType).capabilities.metadata && session.editor && session.model && typeof session.editor === 'object' && typeof session.model === 'object') {
-      session.metadata = reactive(new DocumentMetadataEditorSession(
-        documentType,
-        session.editor as Record<string, unknown>,
-        session.model as Record<string, unknown>,
-        Endge.mode === 'debugger' || isExternallyManaged(session.model as { managedBy?: 'system' | 'integration' | 'user' }),
-      )) as DocumentMetadataSession
+    if (
+      getDomainDocumentDescriptor(documentType).capabilities.metadata
+      && session.editor
+      && session.model
+      && typeof session.editor === 'object'
+      && typeof session.model === 'object'
+    ) {
+      session.metadata = reactive(
+        new DocumentMetadataEditorSession(
+          documentType,
+          session.editor as Record<string, unknown>,
+          session.model as Record<string, unknown>,
+          Endge.mode === 'debugger'
+          || isExternallyManaged(
+            session.model as {
+              managedBy?: 'system' | 'integration' | 'user'
+            },
+          ),
+        ),
+      ) as DocumentMetadataSession
     }
     if (session.editor) {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
@@ -765,7 +1104,9 @@ export class EndgeIDETabs_Module {
     return session.view
   }
 
-  private _resolveFacetDocumentTab(tab: SmartTabRef): SmartTabViewResolved | null {
+  private _resolveFacetDocumentTab(
+    tab: SmartTabRef,
+  ): SmartTabViewResolved | null {
     const cached = this._sessionByTabId.get(tab.id)
     if (cached) {
       this._setCurrentFromSession(cached)
@@ -775,14 +1116,19 @@ export class EndgeIDETabs_Module {
     if (!payload) {
       return null
     }
-    const document = Endge.domain.getFacetDocument(payload.facetIdentity, payload.documentIdentity)
+    const document = Endge.domain.getFacetDocument(
+      payload.facetIdentity,
+      payload.documentIdentity,
+    )
     if (!document) {
       return null
     }
     const rawEditor = new RFacetDocumentEditor()
     rawEditor.fillFromSource(document)
     const editor = reactive(rawEditor as object) as RFacetDocumentEditor
-    const metadata = reactive(new FacetDocumentMetadataSession(editor)) as unknown as DocumentMetadataSession
+    const metadata = reactive(
+      new FacetDocumentMetadataSession(editor),
+    ) as unknown as DocumentMetadataSession
     const session: EditorSession = {
       view: { component: markRaw(FacetDocument_Editor), props: {} },
       editor,
@@ -805,21 +1151,32 @@ export class EndgeIDETabs_Module {
         return
       }
       if (session.metadata && !session.metadata.prepareBeforeSave()) {
-        toast.error('Метаданные не сохранены', { description: session.metadata.error ?? 'Исправьте JSON metadata.' })
+        toast.error('Метаданные не сохранены', {
+          description: session.metadata.error ?? 'Исправьте JSON metadata.',
+        })
         return
       }
-      const previousIdentity = session.persistedIdentity ?? payload.documentIdentity
-      const next = await Endge.domainRepository.updateFacetDocument(payload.facetIdentity, previousIdentity, editor.toMutation())
+      const previousIdentity
+        = session.persistedIdentity ?? payload.documentIdentity
+      const next = await Endge.domainRepository.updateFacetDocument(
+        payload.facetIdentity,
+        previousIdentity,
+        editor.toMutation(),
+      )
       session.model = next
       session.persistedIdentity = next.identity
       payload.documentIdentity = next.identity
       tab.label = next.displayName || next.identity
       session.savedSnapshot = createDocumentEditorSnapshot(editor)
       session.metadata?.acceptSaved()
-      toast.success('Сохранено', { description: `${payload.facetIdentity} / ${next.identity}` })
+      toast.success('Сохранено', {
+        description: `${payload.facetIdentity} / ${next.identity}`,
+      })
     }
     catch (error) {
-      toast.error('Ошибка сохранения', { description: error instanceof Error ? error.message : String(error) })
+      toast.error('Ошибка сохранения', {
+        description: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 
@@ -828,9 +1185,18 @@ export class EndgeIDETabs_Module {
   }
 
   private readonly _docResolvers: Map<string, DocResolver> = new Map([
-    [String(ComponentType.Table), documentId => this._resolveComponentTable(documentId)],
-    [String(ComponentType.DSL), documentId => this._resolveComponentDSL(documentId)],
-    [String(COMPONENT_SFC_TYPE), documentId => this._resolveComponentSFC(documentId)],
+    [
+      String(ComponentType.Table),
+      documentId => this._resolveComponentTable(documentId),
+    ],
+    [
+      String(ComponentType.DSL),
+      documentId => this._resolveComponentDSL(documentId),
+    ],
+    [
+      String(COMPONENT_SFC_TYPE),
+      documentId => this._resolveComponentSFC(documentId),
+    ],
     [String(QueryType.REST), documentId => this._resolveQuery(documentId)],
     [String(QueryType.GraphQL), documentId => this._resolveQuery(documentId)],
     [String(QueryType.Custom), documentId => this._resolveQuery(documentId)],
@@ -842,7 +1208,10 @@ export class EndgeIDETabs_Module {
     ['update', documentId => this._resolveUpdate(documentId)],
     ['mock', documentId => this._resolveMock(documentId)],
     ['action', documentId => this._resolveAction(documentId)],
-    [String(FilterType.DefaultFilter), documentId => this._resolveFilter(documentId)],
+    [
+      String(FilterType.DefaultFilter),
+      documentId => this._resolveFilter(documentId),
+    ],
     ['converter', documentId => this._resolveConverter(documentId)],
     ['computation', documentId => this._resolveComputation(documentId)],
     ['integration', documentId => this._resolveIntegration(documentId)],
@@ -859,7 +1228,9 @@ export class EndgeIDETabs_Module {
   ])
 
   private _resolveComponentTable(documentId: string): EditorSession | null {
-    const component = Endge.domain.getComponent(documentId) as RComponentTable | null
+    const component = Endge.domain.getComponent(
+      documentId,
+    ) as RComponentTable | null
     if (!component) {
       return null
     }
@@ -873,15 +1244,22 @@ export class EndgeIDETabs_Module {
       editor,
       model: component,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
-          (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(component)
+        if (
+          typeof (editor as unknown as { updateSource?: (m: unknown) => void })
+            .updateSource === 'function'
+        ) {
+          (
+            editor as unknown as { updateSource: (m: unknown) => void }
+          ).updateSource(component)
         }
       },
     }
   }
 
   private _resolveComponentDSL(documentId: string): EditorSession | null {
-    const component = Endge.domain.getComponent(documentId) as RComponentDSL | null
+    const component = Endge.domain.getComponent(
+      documentId,
+    ) as RComponentDSL | null
     if (!component) {
       return null
     }
@@ -895,15 +1273,21 @@ export class EndgeIDETabs_Module {
       editor,
       model: component,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
-          (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(component)
+        if (
+          typeof (editor as unknown as { updateSource?: (m: unknown) => void })
+            .updateSource === 'function'
+        ) {
+          (
+            editor as unknown as { updateSource: (m: unknown) => void }
+          ).updateSource(component)
         }
       },
     }
   }
 
   private _resolveComponentSFC(documentId: string): EditorSession | null {
-    const component = (Endge.domain as any).getComponentSFC?.(documentId) ?? null
+    const component
+      = (Endge.domain as any).getComponentSFC?.(documentId) ?? null
     if (!component) {
       return null
     }
@@ -928,13 +1312,21 @@ export class EndgeIDETabs_Module {
     const editor = new RTypeEditor()
     editor.fillFromSource(rType)
     return {
-      view: { component: markRaw(Type_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Type_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: rType,
       persistedIdentity: rType.identity,
       syncBeforeSave: () => {
-        if (typeof (editor as unknown as { updateSource?: (m: unknown) => void }).updateSource === 'function') {
-          (editor as unknown as { updateSource: (m: unknown) => void }).updateSource(rType)
+        if (
+          typeof (editor as unknown as { updateSource?: (m: unknown) => void })
+            .updateSource === 'function'
+        ) {
+          (
+            editor as unknown as { updateSource: (m: unknown) => void }
+          ).updateSource(rType)
         }
       },
     }
@@ -967,7 +1359,10 @@ export class EndgeIDETabs_Module {
     const editor = new RQueryEditor()
     editor.fillFromSource(query)
     return {
-      view: { component: markRaw(Query_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Query_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: query,
       syncBeforeSave: () => editor.updateSource(query),
@@ -982,7 +1377,10 @@ export class EndgeIDETabs_Module {
     const editor = new RDataViewEditor()
     editor.fillFromSource(dataView)
     return {
-      view: { component: markRaw(DataView_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(DataView_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: dataView,
       syncBeforeSave: () => editor.updateSource(dataView),
@@ -990,7 +1388,9 @@ export class EndgeIDETabs_Module {
   }
 
   private _resolveComposition(documentId: string): EditorSession | null {
-    const composition = Endge.domain.getComposition(documentId) as RComposition | null
+    const composition = Endge.domain.getComposition(
+      documentId,
+    ) as RComposition | null
     if (!composition) {
       return null
     }
@@ -998,7 +1398,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(composition)
     const editor = reactive(rawEditor as object) as RCompositionEditor
     return {
-      view: { component: markRaw(Composition_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Composition_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: composition,
       syncBeforeSave: () => editor.updateSource(composition),
@@ -1006,7 +1409,9 @@ export class EndgeIDETabs_Module {
   }
 
   private _resolveSimulation(documentId: string): EditorSession | null {
-    const simulation = Endge.domain.getSimulation(documentId) as RSimulation | null
+    const simulation = Endge.domain.getSimulation(
+      documentId,
+    ) as RSimulation | null
     if (!simulation) {
       return null
     }
@@ -1014,7 +1419,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(simulation)
     const editor = reactive(rawEditor as object) as RSimulationEditor
     return {
-      view: { component: markRaw(Simulation_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Simulation_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: simulation,
       syncBeforeSave: () => editor.updateSource(simulation),
@@ -1030,7 +1438,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(store)
     const editor = reactive(rawEditor as object) as RStoreEditor
     return {
-      view: { component: markRaw(Store_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Store_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: store,
       syncBeforeSave: () => editor.updateSource(store),
@@ -1046,7 +1457,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(stream)
     const editor = reactive(rawEditor as object) as RStreamEditor
     return {
-      view: { component: markRaw(Stream_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Stream_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: stream,
       syncBeforeSave: () => editor.updateSource(stream),
@@ -1062,7 +1476,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(update)
     const editor = reactive(rawEditor as object) as RUpdateEditor
     return {
-      view: { component: markRaw(Update_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Update_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: update,
       syncBeforeSave: () => editor.updateSource(update),
@@ -1078,7 +1495,10 @@ export class EndgeIDETabs_Module {
     rawEditor.fillFromSource(mock)
     const editor = reactive(rawEditor as object) as RMockEditor
     return {
-      view: { component: markRaw(Mock_Editor), props: { tabContext: { editor } } },
+      view: {
+        component: markRaw(Mock_Editor),
+        props: { tabContext: { editor } },
+      },
       editor,
       model: mock,
       syncBeforeSave: () => editor.updateSource(mock),
@@ -1123,7 +1543,9 @@ export class EndgeIDETabs_Module {
   }
 
   private _resolveComputation(documentId: string): EditorSession | null {
-    const computation = Endge.domain.getComputation(documentId) as RComputation | null
+    const computation = Endge.domain.getComputation(
+      documentId,
+    ) as RComputation | null
     if (!computation) {
       return null
     }
@@ -1197,7 +1619,9 @@ export class EndgeIDETabs_Module {
   }
 
   private _resolveConfiguration(documentId: string): EditorSession | null {
-    const configuration = Endge.domain.getConfiguration(documentId) as RConfiguration | null
+    const configuration = Endge.domain.getConfiguration(
+      documentId,
+    ) as RConfiguration | null
     if (!configuration) {
       return null
     }
@@ -1330,7 +1754,8 @@ export class EndgeIDETabs_Module {
   }
 
   private _setCurrentFromSession(session: EditorSession): void {
-    this._documentEditorModel.value = session.editor != null ? reactive(session.editor as object) : null
+    this._documentEditorModel.value
+      = session.editor != null ? reactive(session.editor as object) : null
     this._documentModel.value = session.model ?? null
     this._documentMetadataSession.value = session.metadata ?? null
   }

@@ -12,25 +12,22 @@ export class EndgeBackendConfigurationError extends Error {
   }
 }
 
-/** До явного выбора transport направлен на primary для bootstrap session/catalog. */
-export function getEndgeBackendConfig(): EndgeBackendConfig {
-  const primaryBackendURL = normalizeHTTPURL(
-    requiredEnv('VITE_ENDGE_SERVICE_BACKEND_URL', import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL),
-  )
-  const activeBackendURL = new BackendConnectionStorage().readActiveBackend() ?? primaryBackendURL
-  return {
-    serviceBackendURL: activeBackendURL,
-    primaryBackendURL,
-    activeBackendURL,
-  }
+/** Возвращает необязательное стартовое подключение из build-time env. */
+export function getDefaultBackendURL(): string | null {
+  const value = String(import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL ?? '').trim()
+  return value ? normalizeHTTPURL(value) : null
 }
 
-function requiredEnv(name: string, value: unknown): string {
-  const normalized = String(value ?? '').trim()
-  if (!normalized) {
-    throw new EndgeBackendConfigurationError(`${name} is required`)
+/** Возвращает transport-конфигурацию явно выбранного backend. */
+export function getEndgeBackendConfig(): EndgeBackendConfig {
+  const activeBackendURL = new BackendConnectionStorage().readActiveBackend()
+  if (!activeBackendURL) {
+    throw new EndgeBackendConfigurationError('Backend connection is not selected')
   }
-  return normalized
+  return {
+    serviceBackendURL: activeBackendURL,
+    activeBackendURL,
+  }
 }
 
 function normalizeHTTPURL(value: string): string {
@@ -38,6 +35,6 @@ function normalizeHTTPURL(value: string): string {
     return normalizeBackendURL(value)
   }
   catch {
-    throw new EndgeBackendConfigurationError('VITE_ENDGE_SERVICE_BACKEND_URL must be a valid http/https URL')
+    throw new EndgeBackendConfigurationError('VITE_ENDGE_SERVICE_BACKEND_URL must be empty or a valid http/https URL')
   }
 }

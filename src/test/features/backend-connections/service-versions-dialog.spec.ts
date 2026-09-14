@@ -11,10 +11,13 @@ import ru from '@/i18n/locales/ru.json'
 const fixture = vi.hoisted(() => ({ states: {} as Record<string, BackendVersionState> }))
 vi.mock('@/app/Configurator', () => ({ Configurator: { connections: { readWorkspaceFor: () => null } } }))
 vi.mock('@/features/backend-connections/ui/use-backend-connections', () => ({
-  useBackendConnections: () => ({ catalog: { value: { items: [
-    { id: 'one', name: 'Первое', baseUrl: 'http://first.test' },
-    { id: 'two', name: 'Второе', baseUrl: 'http://second.test' },
-  ] } } }),
+  useBackendConnections: () => ({
+    activeBackendURL: { value: 'http://second.test' },
+    catalog: { value: { items: [
+      { id: 'one', name: 'Первое', baseUrl: 'http://first.test' },
+      { id: 'two', name: 'Второе', baseUrl: 'http://second.test' },
+    ] } },
+  }),
 }))
 vi.mock('@/features/backend-connections/ui/use-backend-versions', () => ({
   useBackendVersions: () => ({ state: (url: string) => fixture.states[url], refreshMany: vi.fn() }),
@@ -27,6 +30,15 @@ vi.mock('@/components/ui/dialog', async () => {
   const { defineComponent, h } = await import('vue')
   const Wrapper = defineComponent({ setup: (_, { slots }) => () => h('div', slots.default?.()) })
   return { Dialog: Wrapper, DialogContent: Wrapper, DialogHeader: Wrapper, DialogTitle: Wrapper }
+})
+vi.mock('@/components/ui/tabs', async () => {
+  const { defineComponent, h } = await import('vue')
+  const Wrapper = defineComponent({ setup: (_, { slots }) => () => h('div', slots.default?.()) })
+  const Tabs = defineComponent({
+    props: { modelValue: String },
+    setup: (props, { slots }) => () => h('div', { 'data-active-environment': props.modelValue }, slots.default?.()),
+  })
+  return { Tabs, TabsContent: Wrapper, TabsList: Wrapper, TabsTrigger: Wrapper }
 })
 vi.mock('@/components/ui/tooltip', async () => {
   const { defineComponent, h } = await import('vue')
@@ -53,6 +65,7 @@ describe('mock Generator в диалоге версий', () => {
     expect(html).toContain('AI Workbench')
     expect(html).toContain('v0.6.0')
     expect(html.match(/aria-label="Недоступен"/g)).toHaveLength(3)
+    expect(html).toContain('data-active-environment="http://second.test"')
   })
   it('показывает версию доступного Mock и загрузку другой среды', async () => {
     fixture.states['http://first.test'] = ready([{ service: 'service_mock_generator', status: 'available', version: '0.1.0' }])

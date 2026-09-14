@@ -5,10 +5,13 @@ export interface BackendConnection {
   createdBy?: string
   createdAt?: string
   primary: boolean
+  source: 'default' | 'local' | 'environment'
 }
 
 export interface BackendConnectionCatalog {
   items: BackendConnection[]
+  localItems: BackendConnection[]
+  environmentItems: BackendConnection[]
   total: number
   canManage: boolean
 }
@@ -32,9 +35,9 @@ export interface BackendConnectionListResponse {
 }
 
 export interface BackendConnectionsService {
-  list: () => Promise<BackendConnectionListResponse>
-  create: (name: string, baseURL: string) => Promise<void>
-  delete: (id: string) => Promise<void>
+  list: (backendURL?: string) => Promise<BackendConnectionListResponse>
+  create: (name: string, baseURL: string, backendURL?: string) => Promise<void>
+  delete: (id: string, backendURL?: string) => Promise<void>
 }
 
 /** Минимальные данные нового рабочего пространства выбранного backend. */

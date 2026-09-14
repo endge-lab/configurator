@@ -1,5 +1,5 @@
 import type { RuntimeHostSnapshot, RuntimeInspectionSnapshot } from '@endge/core'
-import { createDefaultEndgeConfiguration, Endge } from '@endge/core'
+import { createDefaultEndgeConfiguration, Endge, RComponentSFC } from '@endge/core'
 import { Raph } from '@endge/raph'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RuntimeInspectionRenderer } from '@/features/endge-ide/services/runtime-preview/runtime-inspection-renderer'
@@ -14,7 +14,8 @@ beforeEach(async () => {
   const configuration = createDefaultEndgeConfiguration()
   Endge.workspace.applyInspection({ identity: 'inspection', displayName: 'Inspection', startupCompositionIdentity: null, configuration, managedBy: 'user', managedById: null, dataMode: 'live', installedIntegrations: [] })
   Endge.configuration.applyInspection(configuration)
-  Endge.domain.replaceFromPlain({ componentSFCs: [{ id: 'client-table', identity: 'client-table', source: '<script setup lang="ts">defineProps<{ rows: Array<{ id: number }> }>()</script><template><Table :rows="rows" row-key="id"><Column key="id" /></Table></template>' }] })
+  const component = Object.assign(new RComponentSFC(), { id: 'client-table', identity: 'client-table', source: '<script setup lang="ts">defineProps<{ rows: Array<{ id: number }> }>()</script><template><Table :rows="rows" row-key="id"><Column key="id" /></Table></template>' })
+  Endge.program.addArtifact(Endge.compiler.compileComponentSFCArtifact(component))
 })
 afterEach(async () => {
   await Endge.reset()
@@ -22,8 +23,8 @@ afterEach(async () => {
 })
 
 describe('визуальное превью наблюдаемого клиента', () => {
-  /** Один Domain SFC рендерится для разных runtime bindings, не создавая executing hosts или Program artifacts. */
-  it('компилирует Domain и читает разные входы двух экземпляров из снимка Raph', () => {
+  /** Установленный SFC artifact рендерится для разных bindings без повторной компиляции и executing hosts. */
+  it('читает установленный Program и разные входы двух экземпляров из снимка Raph', () => {
     const first = host('first')
     const second = host('second')
     let snapshot: RuntimeInspectionSnapshot = {
@@ -36,6 +37,7 @@ describe('визуальное превью наблюдаемого клиен�
         second: { kind: 'component-sfc', input: { kind: 'raph', bindings: { rows: { path: 'second' } } }, computations: [], dataMeta: {} },
       } },
     }
+    const compile = vi.spyOn(Endge.compiler, 'compileComponentSFCArtifact')
     const execute = vi.spyOn(Endge.runtime, 'execute')
     const computations = vi.spyOn(Endge.computations, 'createResource')
     const addPhase = vi.spyOn(Raph, 'addPhase')
@@ -58,7 +60,8 @@ describe('визуальное превью наблюдаемого клиен�
       expect(updated.runtime).toBe(a.runtime)
     }
     expect(Endge.runtime.getRuntimeHosts()).toEqual([])
-    expect(Endge.program.getArtifact('component-sfc', 'client-table')).toBeNull()
+    expect(Endge.program.getArtifact('component-sfc', 'client-table')).not.toBeNull()
+    expect(compile).not.toHaveBeenCalled()
     expect(execute).not.toHaveBeenCalled()
     expect(computations).not.toHaveBeenCalled()
     expect(addPhase).not.toHaveBeenCalled()

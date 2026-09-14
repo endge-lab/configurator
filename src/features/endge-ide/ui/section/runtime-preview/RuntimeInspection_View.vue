@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { Braces, Info, MonitorPlay, RefreshCw, Workflow } from 'lucide-vue-next'
+import { Braces, Info, MonitorPlay, Workflow } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
-import { Configurator } from '@/app/Configurator'
 import { Button } from '@/components/ui/button'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
@@ -13,7 +11,6 @@ import WorkspaceWorkflowView from '@/features/workspace-workflow/ui/WorkspaceWor
 
 const { t } = useI18n()
 const inspection = EndgeIDE.runtimeInspection
-const session = Configurator.remoteDebugger
 const tab = ref<'preview' | 'data' | 'workflow' | 'details'>('preview')
 const capturedAt = computed(() => {
   const time = inspection.inspection.value.dataGeneratedAt
@@ -33,28 +30,6 @@ watch([tab, inspection.workflow], ([value, workflow]) => {
     inspection.prepareWorkflow()
   }
 })
-
-async function refresh(): Promise<void> {
-  try {
-    await session.refreshInspection()
-  }
-  catch (error) {
-    report(error)
-  }
-}
-
-async function interval(event: Event): Promise<void> {
-  try {
-    await session.setInspectionInterval(Number((event.target as HTMLSelectElement).value))
-  }
-  catch (error) {
-    report(error)
-  }
-}
-
-function report(error: unknown): void {
-  toast.error(t('runtimeInspection.refreshFailed'), { description: error instanceof Error ? error.message : String(error) })
-}
 </script>
 
 <template>
@@ -72,25 +47,6 @@ function report(error: unknown): void {
         </Button>
         <Button id="inspection-details-tab" role="tab" :aria-selected="tab === 'details'" aria-controls="inspection-details" :variant="tab === 'details' ? 'secondary' : 'ghost'" size="sm" @click="tab = 'details'">
           <Info class="mr-1.5 size-4" />{{ t('runtimeInspection.details') }}
-        </Button>
-      </div>
-      <div class="ml-auto flex items-center gap-2">
-        <select class="h-8 rounded-md border bg-background px-2 text-xs" :aria-label="t('runtimeInspection.interval')" :value="session.inspectionInterval.value" :disabled="!session.canControl.value || session.inspectionBusy.value || session.skipData.value" @change="interval">
-          <option :value="0">
-            {{ t('runtimeInspection.manual') }}
-          </option>
-          <option :value="1000">
-            {{ t('runtimeInspection.every', { seconds: 1 }) }}
-          </option>
-          <option :value="5000">
-            {{ t('runtimeInspection.every', { seconds: 5 }) }}
-          </option>
-          <option :value="10000">
-            {{ t('runtimeInspection.every', { seconds: 10 }) }}
-          </option>
-        </select>
-        <Button variant="ghost" size="sm" :disabled="!session.canControl.value || session.inspectionBusy.value" @click="refresh">
-          <RefreshCw class="mr-1.5 size-3.5" :class="session.inspectionBusy.value && 'animate-spin'" />{{ t('runtimeInspection.refresh') }}
         </Button>
       </div>
     </div>

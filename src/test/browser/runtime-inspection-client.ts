@@ -2,7 +2,7 @@ import type { EndgeDomainBundle, StoreRuntimeHost } from '@endge/core'
 import { createDefaultEndgeConfiguration, Endge } from '@endge/core'
 
 /** Ручной browser integration fixture: реальные Core/Bridge и локальный backend, только данные в памяти. */
-export async function startRuntimeInspectionClient(workspaceIdentity: string, serverUrl: string): Promise<void> {
+export async function startRuntimeInspectionClient(workspaceIdentity: string, serverUrl: string, options: { mountRuntime?: boolean } = {}): Promise<void> {
   Endge.context.configurePersistence({ context: 'disabled' })
   const keys = ['facets', 'facet-documents', 'folders', 'types', 'queries', 'data-views', 'compositions', 'stores', 'streams', 'simulations', 'updates', 'mocks', 'components', 'actions', 'filters', 'converters', 'computations', 'vocabs', 'i18n-bundles', 'auth-profiles', 'navigations', 'styles', 'configurations']
   const documents = Object.fromEntries(keys.map(key => [key, []])) as unknown as EndgeDomainBundle['documents']
@@ -14,6 +14,7 @@ export async function startRuntimeInspectionClient(workspaceIdentity: string, se
 defineProps<{ rows: Array<{ id: number, label: string }>, count: number }>()
 </script>
 <template>
+  <!-- inspection fixture comment -->
   <Flex direction="column" gap="3">
     <Text>Client counter: {{ count }}</Text>
     <Table :rows="rows" row-key="id"><Column key="id" title="ID"><Cell><Text>{{ row.id }}</Text></Cell></Column><Column key="label" title="Label"><Cell><Text>{{ row.label }}</Text></Cell></Column></Table>
@@ -39,13 +40,15 @@ defineProps<{ rows: Array<{ id: number, label: string }>, count: number }>()
   if (graph?.status === 'error') {
     throw new Error(JSON.stringify(graph.diagnostics))
   }
-  await Endge.runtime.composition.mount('inspection-graph', { id: 'inspection-first' })
-  await Endge.runtime.composition.mount('inspection-graph', { id: 'inspection-second' })
-  Endge.runtime.getRuntimeHostsByEntity('store', 'inspection-store').forEach((host, index) => {
-    const store = host as StoreRuntimeHost
-    store.set('count', index * 10)
-    store.set('rows', [{ id: index + 1, label: `Client instance ${index + 1}` }])
-  })
+  if (options.mountRuntime !== false) {
+    await Endge.runtime.composition.mount('inspection-graph', { id: 'inspection-first' })
+    await Endge.runtime.composition.mount('inspection-graph', { id: 'inspection-second' })
+    Endge.runtime.getRuntimeHostsByEntity('store', 'inspection-store').forEach((host, index) => {
+      const store = host as StoreRuntimeHost
+      store.set('count', index * 10)
+      store.set('rows', [{ id: index + 1, label: `Client instance ${index + 1}` }])
+    })
+  }
   const output = document.querySelector('pre')!
   const render = () => {
     output.textContent = JSON.stringify({ connections: Endge.bridge.connections.map(item => ({ status: item.status, error: item.error })), consent: Boolean(Endge.bridge.debug.pendingConsent), hosts: Endge.runtime.snapshot().hosts.map(host => ({ id: host.id, status: host.status })), data: Endge.runtime.getRuntimeHostsByEntity('store', 'inspection-store').map(host => (host as StoreRuntimeHost).getDataSnapshot()) }, null, 2)

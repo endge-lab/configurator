@@ -1,5 +1,11 @@
 export const ACTIVE_BACKEND_STORAGE_KEY = 'endge:configurator:active-backend-url:v1'
 export const ACTIVE_WORKSPACE_STORAGE_KEY_PREFIX = 'endge:configurator:active-workspace:v1'
+export const LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY = 'endge:configurator:backend-connections:v1'
+
+export interface LocalBackendConnection {
+  name: string
+  baseUrl: string
+}
 
 /** Нормализует backend URL одинаково для env, каталога и browser storage. */
 export function normalizeBackendURL(value: unknown): string {
@@ -50,6 +56,86 @@ export class BackendConnectionStorage {
     }
     catch {
       // После reload выбор снова потребуется, если storage недоступен.
+    }
+  }
+
+  public removeActiveBackend(): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    try {
+      window.localStorage.removeItem(ACTIVE_BACKEND_STORAGE_KEY)
+    }
+    catch {
+      // Следующий bootstrap продолжит использовать текущий URL до reload.
+    }
+  }
+
+  public readLocalConnections(): LocalBackendConnection[] {
+    if (typeof window === 'undefined') {
+      return []
+    }
+    try {
+      const raw = window.localStorage.getItem(LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY)
+      if (!raw) {
+        return []
+      }
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) {
+        return []
+      }
+      const byURL = new Map<string, LocalBackendConnection>()
+      for (const value of parsed) {
+        if (!isRecord(value)) {
+          continue
+        }
+        const name = String(value.name ?? '').trim()
+        if (!name) {
+          continue
+        }
+        try {
+          const baseUrl = normalizeBackendURL(value.baseUrl)
+          if (!byURL.has(baseUrl)) {
+            byURL.set(baseUrl, { name, baseUrl })
+          }
+        }
+        catch {
+          // Повреждённая запись не становится доступным target.
+        }
+      }
+      return [...byURL.values()]
+    }
+    catch {
+      return []
+    }
+  }
+
+  public writeLocalConnection(connection: LocalBackendConnection): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const baseUrl = normalizeBackendURL(connection.baseUrl)
+    const values = this.readLocalConnections().filter(item => item.baseUrl !== baseUrl)
+    values.push({ name: connection.name.trim(), baseUrl })
+    try {
+      window.localStorage.setItem(LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY, JSON.stringify(values))
+    }
+    catch {
+      // Подключение останется недоступным после reload, если storage недоступен.
+    }
+  }
+
+  public removeLocalConnection(backendURL: string): void {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const baseUrl = normalizeBackendURL(backendURL)
+    try {
+      const values = this.readLocalConnections().filter(item => item.baseUrl !== baseUrl)
+      window.localStorage.setItem(LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY, JSON.stringify(values))
+    }
+    catch {
+      // Недоступный storage не изменяет текущую in-memory проекцию владельца.
     }
   }
 
@@ -116,4 +202,8 @@ export function currentActiveBackendURL(): string {
 function normalizeIdentity(value: unknown): string | null {
   const identity = String(value ?? '').trim()
   return identity || null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value)
 }

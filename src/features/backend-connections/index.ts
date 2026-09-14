@@ -19,9 +19,11 @@ export {
   BackendConnectionStorage,
   currentActiveBackendURL,
   currentTargetStorageNamespace,
+  LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY,
   normalizeBackendURL,
   workspaceStorageKey,
 } from '@/features/backend-connections/services/backend-connection-storage'
+export type { LocalBackendConnection } from '@/features/backend-connections/services/backend-connection-storage'
 export { resolveConfiguratorWorkspace } from '@/features/backend-connections/services/resolve-configurator-workspace'
 export { default as ServiceVersionsDialog } from '@/features/backend-connections/ui/ServiceVersions_Dialog.vue'
 export { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'

@@ -9,55 +9,67 @@ import type {
 
 import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
 
-/** Владелец primary/active target, каталога и per-backend Workspace. */
+/** Владелец default/active target, локального каталога, каталога среды и per-backend Workspace. */
 export class BackendConnections_Module {
-  public readonly primaryBackendURL: string
+  public readonly defaultBackendURL: string | null
   private _activeBackendURL: string | null
-  private _state: BackendConnectionCatalogState = { status: 'idle' }
+  private _catalog: BackendConnectionCatalog
+  private _environmentItems: BackendConnection[] = []
+  private _state: BackendConnectionCatalogState
   private _loadPromise: Promise<BackendConnectionCatalog> | null = null
   private readonly _listeners = new Set<() => void>()
 
   public constructor(
-    primaryBackendURL: string,
+    defaultBackendURL: string | null,
     private readonly _service: BackendConnectionsService,
     private readonly _storage = new BackendConnectionStorage(),
     private readonly _reload: () => void = () => undefined,
   ) {
-    this.primaryBackendURL = normalizeBackendURL(primaryBackendURL)
+    this.defaultBackendURL = defaultBackendURL ? normalizeBackendURL(defaultBackendURL) : null
     this._activeBackendURL = this._storage.readActiveBackend()
+    this._catalog = this._buildCatalog(false)
+    this._state = { status: 'ready', catalog: this._catalog }
   }
 
-  /** До выбора primary используется только как transport для session/catalog. */
+  /** Возвращает явно выбранный backend; до выбора transport отсутствует. */
   public get activeBackendURL(): string {
-    return this._activeBackendURL ?? this.primaryBackendURL
+    if (!this._activeBackendURL) {
+      throw new Error('Backend connection is not selected')
+    }
+    return this._activeBackendURL
+  }
+
+  public get activeBackendURLOrNull(): string | null {
+    return this._activeBackendURL
   }
 
   public get hasActiveBackend(): boolean {
     return this._activeBackendURL !== null
   }
 
-  public get isPrimaryActive(): boolean {
-    return this._activeBackendURL === this.primaryBackendURL
-  }
-
   public get state(): BackendConnectionCatalogState {
     return this._state
   }
 
-  public get catalog(): BackendConnectionCatalog | null {
-    return this._state.status === 'ready' ? this._state.catalog : null
+  public get catalog(): BackendConnectionCatalog {
+    return this._catalog
   }
 
+  /** Загружает общий каталог именно из выбранной среды, не блокируя локальный каталог. */
   public async load(): Promise<BackendConnectionCatalog> {
+    if (!this._activeBackendURL) {
+      return this._catalog
+    }
     if (this._loadPromise) {
       return this._loadPromise
     }
     this._setState({ status: 'loading' })
-    this._loadPromise = this._service.list()
+    this._loadPromise = this._service.list(this._activeBackendURL)
       .then((response) => {
-        const catalog = this._normalizeCatalog(response.items, response.canManage)
-        this._setState({ status: 'ready', catalog })
-        return catalog
+        this._environmentItems = this._normalizeEnvironmentConnections(response.items)
+        this._catalog = this._buildCatalog(response.canManage)
+        this._setState({ status: 'ready', catalog: this._catalog })
+        return this._catalog
       })
       .catch((error: unknown) => {
         const value = error as { code?: string, message?: string }
@@ -74,8 +86,31 @@ export class BackendConnections_Module {
     return this._loadPromise
   }
 
-  public async create(name: string, baseURL: string): Promise<void> {
-    await this._service.create(name.trim(), normalizeBackendURL(baseURL))
+  public async create(name: string, baseURL: string, saveLocally = true): Promise<void> {
+    if (saveLocally) {
+      this.createLocal(name, baseURL)
+      return
+    }
+    await this.createInEnvironment(name, baseURL)
+  }
+
+  public createLocal(name: string, baseURL: string): void {
+    const normalizedName = normalizeConnectionName(name)
+    const normalizedURL = normalizeBackendURL(baseURL)
+    this._storage.writeLocalConnection({ name: normalizedName, baseUrl: normalizedURL })
+    this._catalog = this._buildCatalog(this._catalog.canManage)
+    this._setState({ status: 'ready', catalog: this._catalog })
+  }
+
+  public async createInEnvironment(name: string, baseURL: string): Promise<void> {
+    if (!this._catalog.canManage) {
+      throw new Error('Platform Admin role is required')
+    }
+    await this._service.create(
+      normalizeConnectionName(name),
+      normalizeBackendURL(baseURL),
+      this.activeBackendURL,
+    )
     await this.load()
   }
 
@@ -175,18 +210,15 @@ export class BackendConnections_Module {
     }
   }
 
-  public async delete(id: string): Promise<void> {
-    const active = this.catalog?.items.find(item => item.id === id)?.baseUrl === this.activeBackendURL
-    await this._service.delete(id)
-    if (active) {
-      this.fallbackToPrimary()
-      return
-    }
-    await this.load()
+  public deleteLocal(baseURL: string): void {
+    this._storage.removeLocalConnection(baseURL)
+    this._catalog = this._buildCatalog(this._catalog.canManage)
+    this._setState({ status: 'ready', catalog: this._catalog })
   }
 
-  public hasActiveConnection(catalog: BackendConnectionCatalog): boolean {
-    return catalog.items.some(item => item.baseUrl === this._activeBackendURL)
+  public async delete(id: string): Promise<void> {
+    await this._service.delete(id, this.activeBackendURL)
+    await this.load()
   }
 
   public switchBackend(backendURL: string): void {
@@ -194,20 +226,18 @@ export class BackendConnections_Module {
     if (normalized === this._activeBackendURL) {
       return
     }
-    if (normalized !== this.primaryBackendURL && !this.catalog?.items.some(item => item.baseUrl === normalized)) {
-      throw new Error('Backend connection is not present in the primary catalog')
+    if (!this._catalog.items.some(item => item.baseUrl === normalized)) {
+      throw new Error('Backend connection is not present in the available catalogs')
     }
     this._storage.writeActiveBackend(normalized)
     this._activeBackendURL = normalized
     this._reload()
   }
 
-  public fallbackToPrimary(): void {
-    if (this.isPrimaryActive) {
-      return
-    }
-    this._storage.writeActiveBackend(this.primaryBackendURL)
-    this._activeBackendURL = this.primaryBackendURL
+  /** Сбрасывает выбор и возвращает приложение к локальному gate подключений. */
+  public clearActiveBackend(): void {
+    this._storage.removeActiveBackend()
+    this._activeBackendURL = null
     this._reload()
   }
 
@@ -239,35 +269,73 @@ export class BackendConnections_Module {
     return () => this._listeners.delete(listener)
   }
 
-  private _normalizeCatalog(
+  private _normalizeEnvironmentConnections(
     values: Array<{ id: string, name?: string, baseUrl: string, createdBy?: string, createdAt?: string }>,
-    canManage: boolean,
-  ): BackendConnectionCatalog {
+  ): BackendConnection[] {
     const byURL = new Map<string, BackendConnection>()
-    byURL.set(this.primaryBackendURL, {
-      id: 'primary',
-      name: 'Основной',
-      baseUrl: this.primaryBackendURL,
-      primary: true,
-    })
     for (const value of values) {
       try {
         const baseUrl = normalizeBackendURL(value.baseUrl)
         if (!byURL.has(baseUrl)) {
-          byURL.set(baseUrl, { ...value, name: value.name?.trim() || baseUrl, baseUrl, primary: false })
+          byURL.set(baseUrl, {
+            ...value,
+            name: value.name?.trim() || baseUrl,
+            baseUrl,
+            primary: false,
+            source: 'environment',
+          })
         }
       }
       catch {
         // Некорректная legacy-строка не становится доступным target.
       }
     }
-    const items = [...byURL.values()].sort((left, right) => {
+    return sortConnections([...byURL.values()])
+  }
+
+  private _buildCatalog(canManage: boolean): BackendConnectionCatalog {
+    const localByURL = new Map<string, BackendConnection>()
+    if (this.defaultBackendURL) {
+      localByURL.set(this.defaultBackendURL, {
+        id: 'default',
+        name: 'Основной',
+        baseUrl: this.defaultBackendURL,
+        primary: true,
+        source: 'default',
+      })
+    }
+    for (const value of this._storage.readLocalConnections()) {
+      if (!localByURL.has(value.baseUrl)) {
+        localByURL.set(value.baseUrl, {
+          id: `local:${value.baseUrl}`,
+          name: value.name,
+          baseUrl: value.baseUrl,
+          primary: false,
+          source: 'local',
+        })
+      }
+    }
+    const localItems = [...localByURL.values()].sort((left, right) => {
       if (left.primary !== right.primary) {
         return left.primary ? -1 : 1
       }
-      return left.name.localeCompare(right.name) || left.baseUrl.localeCompare(right.baseUrl)
+      return compareConnections(left, right)
     })
-    return { items, total: items.length, canManage }
+    const items = [...localItems]
+    const visibleURLs = new Set(localItems.map(item => item.baseUrl))
+    for (const connection of this._environmentItems) {
+      if (!visibleURLs.has(connection.baseUrl)) {
+        items.push(connection)
+        visibleURLs.add(connection.baseUrl)
+      }
+    }
+    return {
+      items,
+      localItems,
+      environmentItems: this._environmentItems,
+      total: items.length,
+      canManage,
+    }
   }
 
   private _setState(state: BackendConnectionCatalogState): void {
@@ -276,6 +344,25 @@ export class BackendConnections_Module {
       listener()
     }
   }
+}
+
+function normalizeConnectionName(value: string): string {
+  const name = value.trim()
+  if (!name) {
+    throw new Error('Connection name is required')
+  }
+  if ([...name].length > 160) {
+    throw new Error('Connection name must not exceed 160 characters')
+  }
+  return name
+}
+
+function sortConnections(values: BackendConnection[]): BackendConnection[] {
+  return values.sort(compareConnections)
+}
+
+function compareConnections(left: BackendConnection, right: BackendConnection): number {
+  return left.name.localeCompare(right.name) || left.baseUrl.localeCompare(right.baseUrl)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

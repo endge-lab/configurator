@@ -36,7 +36,9 @@ async function mountApplication(): Promise<void> {
     // Initial navigation запускает Configurator и является Endge boot-барьером.
     await router.isReady()
     const isOidcPopupCallback = router.currentRoute.value.name === 'oidc-popup-callback'
-    if (!Configurator.isReady
+    const isStandaloneRoute = router.currentRoute.value.meta.standalone === true
+    if (!isStandaloneRoute
+      && !Configurator.isReady
       && !isOidcPopupCallback
       && Configurator.status !== 'authentication-required'
       && Configurator.status !== 'backend-selection-required'

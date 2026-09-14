@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Settings2 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -16,14 +15,15 @@ const props = withDefaults(defineProps<{
 
 const appVersion: string = __APP_VERSION__
 const appVersionUpdated: string = __APP_VERSION_UPDATED__
+const gradientId = `${useId()}-endge-logo-gradient`
 
 const iconClass = computed<string>(() => {
   // Tailwind class вариант (по умолчанию)
   if (typeof props.iconHeight === 'string' && props.iconHeight.trim().startsWith('h-')) {
-    return `${props.iconHeight} object-contain`
+    return `${props.iconHeight} w-auto shrink-0`
   }
   // если строка "40px"/"2.5rem" - оставим h-auto и зададим style
-  return 'h-auto object-contain'
+  return 'h-auto w-auto shrink-0'
 })
 
 const iconStyle = computed<Record<string, string> | undefined>(() => {
@@ -46,11 +46,33 @@ const iconStyle = computed<Record<string, string> | undefined>(() => {
     <Tooltip>
       <TooltipTrigger as-child>
         <div class="flex items-center gap-2 cursor-default">
-          <Settings2
-            aria-label="Конфигуратор"
+          <svg
+            role="img"
+            aria-label="Endge"
             :class="iconClass"
             :style="iconStyle"
-          />
+            viewBox="0 0 64 64"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient :id="gradientId" x1="26" y1="26" x2="58" y2="38" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#635BFF" />
+                <stop offset="1" stop-color="#4338FF" />
+              </linearGradient>
+            </defs>
+            <path
+              class="fill-[#171B24] dark:fill-white"
+              d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
+            />
+            <rect
+              x="26"
+              y="26"
+              width="32"
+              height="12"
+              rx="4"
+              :fill="`url(#${gradientId})`"
+            />
+          </svg>
         </div>
       </TooltipTrigger>
 

@@ -19,33 +19,16 @@ export type RuntimeInspectionRenderable
     | { kind: 'store-snapshot', key: string, title: string, fields: { key: string, value: unknown, kind: string }[] }
     | { kind: 'unavailable', key: string, title: string, message: string }
 
-/** Только проекция UI: исходное состояние читается у Core Runtime, compilation не публикуется в Program. */
+/** Только проекция UI: исходное состояние читается у Core Runtime, артефакты читаются из установленного Program. */
 export class RuntimeInspectionRenderer {
-  private readonly _artifacts = new Map<string, { source: string, artifact: ProgramArtifact<ComponentSFCProgramPayload> }>()
   private readonly _ports = new Map<string, { createdAt: number, port: ComponentSFCRenderPort }>()
   private readonly _reader: RuntimeArtifactReader = {
-    getArtifact: <T>(type: Parameters<RuntimeArtifactReader['getArtifact']>[0], identity: string | number): ProgramArtifact<T> | null => {
-      if (type !== 'component-sfc') {
-        return null
-      }
-      const component = Endge.domain.getComponentSFC(String(identity))
-      if (!component) {
-        return null
-      }
-      const cached = this._artifacts.get(component.identity)
-      if (cached?.source === component.source) {
-        return cached.artifact as ProgramArtifact<T>
-      }
-      const artifact = Endge.compiler.compileComponentSFCArtifact(component)
-      this._artifacts.set(component.identity, { source: component.source, artifact })
-      return artifact as ProgramArtifact<T>
-    },
+    getArtifact: <T>(type: Parameters<RuntimeArtifactReader['getArtifact']>[0], identity: string | number): ProgramArtifact<T> | null => Endge.program.getArtifact<T>(type, identity),
   }
 
   public constructor(private readonly _snapshot: () => RuntimeInspectionSnapshot) {}
 
   public reset(): void {
-    this._artifacts.clear()
     this._ports.clear()
   }
 
@@ -80,7 +63,7 @@ export class RuntimeInspectionRenderer {
     try {
       const artifact = this._reader.getArtifact<ComponentSFCProgramPayload>('component-sfc', host.entityIdentity)
       if (!artifact?.payload.ir) {
-        return { kind: 'unavailable', key, title, message: artifact?.diagnostics.map(item => item.message).join('\n') || 'Не удалось скомпилировать Component SFC из Domain клиента.' }
+        return { kind: 'unavailable', key, title, message: artifact?.diagnostics.map(item => item.message).join('\n') || 'Артефакт Component SFC отсутствует в установленной программе.' }
       }
       const input = render.input
       const props = input?.kind === 'local' ? { ...input.props } : { ...(input?.props ?? {}) }

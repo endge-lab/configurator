@@ -1,0 +1,398 @@
+import type { Page } from '@playwright/test'
+import { Buffer } from 'node:buffer'
+import { readFile } from 'node:fs/promises'
+import { expect, test } from '@playwright/test'
+
+function collectErrors(page: Page, errors: string[]): void {
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      errors.push(message.text())
+    }
+  })
+}
+
+async function ready(page: Page, role: string): Promise<void> {
+  await page.goto(`/e2e/fixture.html?role=${role}`)
+  await expect(page.locator('body')).toHaveAttribute('data-ready', 'true')
+}
+async function openFile(page: Page, filename: string): Promise<void> {
+  await page
+    .getByRole('button', { name: 'Приложение для удалённой отладки' })
+    .click()
+  await page.getByRole('menuitem', { name: 'Загрузить Bundle…' }).click()
+  await page.getByTestId('bundle-file-input').setInputFiles(filename)
+  await expect(page.getByTestId('bundle-summary')).toBeVisible()
+  await page.getByRole('button', { name: 'Открыть инспекцию' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+}
+
+for (const format of ['gzip', 'json'] as const) {
+  for (const ast of [false, true]) {
+    test(`build → ${format} → debugger, AST=${ast}`, async ({
+      page,
+      context,
+    }, info) => {
+      const errors: string[] = []
+      collectErrors(page, errors)
+      await ready(page, 'build')
+      await page.getByLabel('Формат файла').selectOption(format)
+      if (ast) {
+        await page.getByLabel('Включить AST').check()
+      }
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByRole('button', { name: 'Собрать и скачать' }).click()
+      const download = await downloadPromise
+      const filename = info.outputPath(download.suggestedFilename())
+      await download.saveAs(filename)
+      const bytes = await readFile(filename)
+      if (format === 'gzip') {
+        expect([...bytes.subarray(0, 2)]).toEqual([31, 139])
+      }
+      else {
+        expect(JSON.parse(bytes.toString()).format).toBe('endge-bundle')
+      }
+      const debuggerPage = await context.newPage()
+      collectErrors(debuggerPage, errors)
+      await ready(debuggerPage, 'debugger')
+      await openFile(debuggerPage, filename)
+      await debuggerPage
+        .getByRole('treeitem', { name: /Inspection Table/ })
+        .click()
+      await expect(
+        debuggerPage.getByRole('tab', { name: 'Артефакт', exact: true }),
+      ).toBeVisible()
+      await debuggerPage
+        .getByRole('tab', { name: 'Текст', exact: true })
+        .click()
+      await expect(
+        debuggerPage.getByText(
+          ast ? 'Восстановлено из AST.' : 'Source недоступен в этом Bundle:',
+          { exact: false },
+        ),
+      ).toBeVisible()
+      await debuggerPage
+        .getByRole('tab', { name: 'Артефакт', exact: true })
+        .click()
+      await expect(
+        debuggerPage.getByRole('button', { name: 'Скачать артефакт JSON' }),
+      ).toBeVisible()
+      expect(
+        await debuggerPage.evaluate(
+          () =>
+            (window as any).inspectionFixture.Endge.runtime.getRuntimeHosts().length,
+        ),
+      ).toBe(0)
+      expect(errors).toEqual([])
+    })
+  }
+}
+
+test('live receive paused → step → snapshot → data policy → file replay', async ({
+  page,
+  context,
+}, info) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  const client = await context.newPage()
+  collectErrors(client, errors)
+  await ready(client, 'client')
+  await ready(page, 'debugger')
+  await page
+    .getByRole('button', { name: 'Приложение для удалённой отладки' })
+    .click()
+  await page
+    .getByRole('menuitem', { name: /Runtime inspection fixture/ })
+    .click()
+  await expect
+    .poll(() =>
+      client.evaluate(() =>
+        Boolean(
+          (window as any).inspectionFixture.Endge.bridge.debug.pendingConsent,
+        ),
+      ),
+    )
+    .toBe(true)
+  await client.getByRole('button', { name: 'Разрешить отладку' }).click()
+  await expect(
+    page.getByText('Приём истории активен', { exact: false }),
+  ).toBeVisible()
+  // Open through the registered layout owner, then all timeline interactions use the real widget.
+  await page.evaluate(async () => {
+    const { showWidget }
+      = await import('/src/components/layouts/grid/layout.ts')
+    showWidget('inspection-history')
+  })
+  await expect(page.getByTestId('inspection-history')).toBeVisible()
+  await expect(page.getByLabel('Не передавать данные')).toBeChecked()
+  await page.getByLabel('Не передавать данные').click()
+  await expect(page.getByLabel('Не передавать данные')).not.toBeChecked()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as any).inspectionFixture.Endge.inspection.receivedSequence,
+      ),
+    )
+    .toBeGreaterThan(0)
+  await page.getByRole('button', { name: 'К последнему', exact: true }).click()
+  const applied = await page.evaluate(
+    () => (window as any).inspectionFixture.Endge.inspection.appliedSequence,
+  )
+  await client.getByRole('button', { name: 'Изменить данные' }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as any).inspectionFixture.Endge.inspection.receivedSequence,
+      ),
+    )
+    .toBeGreaterThan(applied)
+  expect(
+    await page.evaluate(
+      () => (window as any).inspectionFixture.Endge.inspection.appliedSequence,
+    ),
+  ).toBe(applied)
+  await page.getByRole('button', { name: 'Шаг вперёд', exact: true }).click()
+  await page.getByRole('button', { name: 'К последнему', exact: true }).click()
+  await page.getByRole('button', { name: 'Запросить полный снимок' }).click()
+  await page.getByRole('button', { name: 'К последнему', exact: true }).click()
+  const expected = await page.evaluate(
+    () => (window as any).inspectionFixture.Endge.runtime.inspection.data,
+  )
+  const downloadPromise = page.waitForEvent('download')
+  await page
+    .getByRole('button', { name: 'Скачать программу и историю' })
+    .click()
+  const download = await downloadPromise
+  const filename = info.outputPath(download.suggestedFilename())
+  await download.saveAs(filename)
+  const filePage = await context.newPage()
+  collectErrors(filePage, errors)
+  await ready(filePage, 'debugger')
+  await openFile(filePage, filename)
+  await filePage.evaluate(() => {
+    const inspection = (window as any).inspectionFixture.Endge.inspection
+    inspection.seek(inspection.receivedSequence)
+  })
+  expect(
+    await filePage.evaluate(
+      () => (window as any).inspectionFixture.Endge.runtime.inspection.data,
+    ),
+  ).toEqual(expected)
+  await page.getByLabel('Не передавать данные').click()
+  await expect(page.getByLabel('Не передавать данные')).toBeChecked()
+  await info.attach('inspection-history', { body: await page.screenshot({ path: info.outputPath('inspection-history.png') }), contentType: 'image/png' })
+  await client.getByRole('button', { name: 'Отключить' }).click()
+  expect(errors).toEqual([])
+})
+
+test('large artifact, chunk append and failed import preserve the session', async ({
+  page,
+}, info) => {
+  const errors: string[] = []
+  collectErrors(page, errors)
+  await ready(page, 'debugger')
+  const value = JSON.parse(
+    await readFile(
+      '../../packages/@endge-core/src/test/fixtures/bundles/program.json',
+      'utf8',
+    ),
+  )
+  const artifact = Object.values(value.bundle.artifacts).find(
+    (item: any) => item.ref.entityType === 'component-sfc',
+  ) as any
+  artifact.metadata.self.large = Array.from({ length: 20000 }, (_, id) => ({
+    id,
+    value: `Artifact row ${id}`,
+  }))
+  const initial = {
+    sequence: 0,
+    at: 0,
+    kind: 'snapshot',
+    scope: 'inspection',
+    revision: 0,
+    reason: 'initial',
+    value: {
+      context: value.bundle.context,
+      runtime: {
+        version: 1,
+        runtime: {
+          generatedAt: 0,
+          hosts: [],
+          scopes: [],
+          total: 0,
+          byStatus: {},
+          deletedTotal: 0,
+          deletedHosts: [],
+        },
+      },
+      data: { count: 0 },
+      dataAvailable: true,
+    },
+  }
+  const updates = [1, 2, 3].map(sequence => ({
+    sequence,
+    at: sequence,
+    kind: 'delta',
+    baseRevision: sequence - 1,
+    revision: sequence,
+    changes: [{ op: 'set', path: ['data', 'count'], value: sequence }],
+  }))
+  value.bundle.catalog.folders = {
+    workspace: { id: 'workspace', identity: 'workspace', displayName: 'Workspace', parentId: null, scope: 'workspace', entityType: null, position: 0 },
+    nested: { id: 'nested', identity: 'nested', displayName: 'Nested', parentId: 'workspace', scope: 'workspace', entityType: null, position: 1 },
+    components: { id: 'components', identity: 'components', displayName: 'Components', parentId: null, scope: 'collection', entityType: 'components', position: 2 },
+  }
+  value.bundle.catalog.documents['component-sfc:2'].workspaceFolderId = 'nested'
+  value.bundle.catalog.documents['component-sfc:2'].folderId = 'components'
+  value.inspection = {
+    version: 1,
+    programId: value.bundle.programId,
+    runId: 'browser-run',
+    recordingId: 'browser-recording',
+    chunks: [
+      { firstSequence: 0, lastSequence: 1, records: [initial, updates[0]] },
+    ],
+  }
+  const file = info.outputPath('program-with-history.json')
+  const { writeFile } = await import('node:fs/promises')
+  await writeFile(file, JSON.stringify(value))
+  await page.evaluate(() => {
+    const fixture = (window as any).inspectionFixture
+    fixture.gaps = []
+    fixture.lastTick = performance.now()
+    fixture.timer = setInterval(() => {
+      const now = performance.now()
+      fixture.gaps.push(now - fixture.lastTick)
+      fixture.lastTick = now
+    }, 16)
+  })
+  await openFile(page, file)
+  const responsiveness = await page.evaluate(() => {
+    const fixture = (window as any).inspectionFixture
+    clearInterval(fixture.timer)
+    return {
+      ticks: fixture.gaps.length,
+      maximumGapMs: Math.max(...fixture.gaps),
+    }
+  })
+  expect(responsiveness.ticks).toBeGreaterThan(0)
+  await info.attach('worker-import-responsiveness', {
+    body: JSON.stringify(responsiveness),
+    contentType: 'application/json',
+  })
+  await page.getByRole('treeitem', { name: 'Workspace', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'Nested', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'Bundle 1', exact: true }).click()
+  await page.getByRole('tab', { name: 'Артефакт', exact: true }).click()
+  expect(await page.locator('body *').count()).toBeLessThan(3000)
+  const before = await page.evaluate(
+    () => (window as any).inspectionFixture.Endge.program.programId,
+  )
+  await page
+    .getByRole('button', { name: 'Приложение для удалённой отладки' })
+    .click()
+  await page.getByRole('menuitem', { name: 'Загрузить Bundle…' }).click()
+  await page
+    .getByTestId('bundle-file-input')
+    .setInputFiles({
+      name: 'looks-valid.endge-bundle.gz',
+      mimeType: 'application/gzip',
+      buffer: Buffer.from('{broken'),
+    })
+  await expect(page.getByRole('alert')).toBeVisible()
+  await page.getByRole('button', { name: 'Отмена', exact: true }).click()
+  expect(
+    await page.evaluate(
+      () => (window as any).inspectionFixture.Endge.program.programId,
+    ),
+  ).toBe(before)
+  const tail = {
+    format: 'endge-bundle',
+    version: 1,
+    inspection: {
+      ...value.inspection,
+      chunks: [
+        { firstSequence: 2, lastSequence: 3, records: updates.slice(1) },
+      ],
+    },
+  }
+  await page
+    .getByRole('button', { name: 'Приложение для удалённой отладки' })
+    .click()
+  await page.getByRole('menuitem', { name: 'Загрузить Bundle…' }).click()
+  await page
+    .getByTestId('bundle-file-input')
+    .setInputFiles({
+      name: 'chunks.txt',
+      mimeType: 'application/octet-stream',
+      buffer: Buffer.from(JSON.stringify(tail)),
+    })
+  await expect(page.getByTestId('bundle-summary')).toBeVisible()
+  await page.getByRole('button', { name: 'Добавить историю' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(
+    await page.evaluate(
+      () => (window as any).inspectionFixture.Endge.inspection.receivedSequence,
+    ),
+  ).toBe(3)
+  expect(
+    await page.evaluate(
+      () => (window as any).inspectionFixture.Endge.inspection.appliedSequence,
+    ),
+  ).toBe(0)
+  await page.evaluate(() =>
+    (window as any).inspectionFixture.Endge.inspection.seek(3),
+  )
+  expect(
+    await page.evaluate(
+      () => (window as any).inspectionFixture.Endge.runtime.inspection.data,
+    ),
+  ).toEqual({ count: 3 })
+  expect(errors).toEqual([])
+})
+
+test('large history keeps the panel bounded and seeks through checkpoints', async ({ page }, info) => {
+  const errors: string[] = []
+  collectErrors(page, errors)
+  await ready(page, 'debugger')
+  const value = JSON.parse(await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
+  const snapshotValue = {
+    context: value.bundle.context,
+    runtime: { version: 1, runtime: { generatedAt: 0, hosts: [], scopes: [], total: 0, byStatus: {}, deletedTotal: 0, deletedHosts: [] } },
+    data: { count: 0 },
+    dataAvailable: true,
+  }
+  const records = Array.from({ length: 10001 }, (_, sequence) => sequence % 500 === 0
+    ? { sequence, at: sequence, kind: 'snapshot', scope: 'inspection', revision: sequence, reason: sequence === 0 ? 'initial' : 'checkpoint', value: { ...snapshotValue, data: { count: sequence } } }
+    : { sequence, at: sequence, kind: 'delta', baseRevision: sequence - 1, revision: sequence, changes: [{ op: 'set', path: ['data', 'count'], value: sequence }] })
+  value.inspection = { version: 1, programId: value.bundle.programId, runId: 'large-run', recordingId: 'large-recording', chunks: [{ firstSequence: 0, lastSequence: 10000, records }] }
+  const filename = info.outputPath('large-history.json')
+  const { writeFile } = await import('node:fs/promises')
+  await writeFile(filename, JSON.stringify(value))
+  const started = Date.now()
+  await openFile(page, filename)
+  await page.evaluate(async () => {
+    const { showWidget } = await import('/src/components/layouts/grid/layout.ts')
+    showWidget('inspection-history')
+  })
+  const panel = page.getByTestId('inspection-history')
+  await expect(panel).toBeVisible()
+  const list = panel.getByRole('list', { name: 'Записи инспекции' })
+  await expect(list.getByRole('button')).toHaveCount(201)
+  const listBounds = await list.boundingBox()
+  const exportBounds = await panel.getByRole('button', { name: 'Скачать программу и историю' }).boundingBox()
+  expect(listBounds!.height).toBeGreaterThan(100)
+  expect(listBounds!.y + listBounds!.height).toBeLessThanOrEqual(exportBounds!.y)
+  await expect(panel.getByLabel('Не передавать данные')).toHaveCount(0)
+  await panel.getByLabel('Тип записи').selectOption('snapshot')
+  await expect(list.getByRole('button')).toHaveCount(21)
+  await panel.getByRole('button', { name: 'К последнему', exact: true }).click()
+  expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.inspection.data.count)).toBe(10000)
+  await panel.getByRole('button', { name: 'Назад', exact: true }).click()
+  expect(await page.evaluate(() => (window as any).inspectionFixture.Endge.runtime.inspection.data.count)).toBe(9999)
+  await info.attach('large-history-ui', { body: JSON.stringify({ records: records.length, totalImportAndInteractionsMs: Date.now() - started, listHeight: listBounds!.height }), contentType: 'application/json' })
+  await info.attach('large-history-panel', { body: await page.screenshot({ path: info.outputPath('large-history-panel.png') }), contentType: 'image/png' })
+  expect(errors).toEqual([])
+})

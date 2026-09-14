@@ -9,34 +9,31 @@ export class BackendConnectionServiceError extends Error {
   }
 }
 
-/** Единственный сетевой adapter каталога. Всегда привязан к primary backend. */
+/** Единственный сетевой adapter каталога выбранной среды. */
 export class BackendConnectionsHttp_Adapter implements BackendConnectionsService {
-  private readonly _baseURL: string
+  public constructor(private readonly _fixedBackendURL?: string) {}
 
-  public constructor(primaryBackendURL: string) {
-    this._baseURL = normalizeBackendURL(primaryBackendURL)
+  public async list(backendURL?: string): Promise<BackendConnectionListResponse> {
+    return this._request<BackendConnectionListResponse>(backendURL, '/api/v1/backend-connections')
   }
 
-  public async list(): Promise<BackendConnectionListResponse> {
-    return this._request<BackendConnectionListResponse>('/api/v1/backend-connections')
-  }
-
-  public async create(name: string, baseUrl: string): Promise<void> {
-    await this._request('/api/v1/backend-connections', {
+  public async create(name: string, baseUrl: string, backendURL?: string): Promise<void> {
+    await this._request(backendURL, '/api/v1/backend-connections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, baseUrl }),
     })
   }
 
-  public async delete(id: string): Promise<void> {
-    await this._request(`/api/v1/backend-connections/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  public async delete(id: string, backendURL?: string): Promise<void> {
+    await this._request(backendURL, `/api/v1/backend-connections/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
-  private async _request<T = void>(path: string, init: RequestInit = {}): Promise<T> {
+  private async _request<T = void>(backendURL: string | undefined, path: string, init: RequestInit = {}): Promise<T> {
+    const baseURL = normalizeBackendURL(backendURL ?? this._fixedBackendURL)
     let response: Response
     try {
-      response = await fetch(`${this._baseURL}${path}`, {
+      response = await fetch(`${baseURL}${path}`, {
         ...init,
         credentials: 'include',
         headers: { Accept: 'application/json', ...init.headers },

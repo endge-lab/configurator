@@ -36,6 +36,7 @@ import DocumentImport_Modal from '@/features/endge-ide/modules/document-import/u
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import DomainExport_Modal from '@/features/endge-ide/ui/modals/DomainExport_Modal.vue'
 import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
+import BuildResultDialog from '@/features/endge-ide/ui/modals/BuildResult_Dialog.vue'
 import ExecutionBundleProfiles_Modal from '@/features/endge-ide/ui/modals/ExecutionBundleProfiles_Modal.vue'
 import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
 import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
@@ -426,6 +427,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
   <AccessControl_Modal ref="accessControlModal" />
   <AIManagement_Modal ref="aiManagementModal" />
   <ServiceVersionsDialog ref="serviceVersionsDialog" />
+  <BuildResultDialog />
   <ExecutionBundleProfiles_Modal ref="executionBundleProfilesModal" />
   <RuntimePreviewAuthDialog />
 </template>

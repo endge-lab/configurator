@@ -1,3 +1,4 @@
+import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 import type { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 import type {
   ConfiguratorCommit,
@@ -54,6 +55,19 @@ export class ConfiguratorReleases_Module {
       await this._refresh()
       return release
     })
+  }
+
+  public createFromBuild(input: CreateBuiltRelease, bytes: Uint8Array): Promise<ConfiguratorRelease> {
+    return this._run(async () => {
+      const release = await this._service.createFromBuild(input, bytes)
+      // The release is already committed; a later list failure must not suggest publishing again.
+      this._releases = [release, ...this._releases.filter(value => value.id !== release.id)]
+      return release
+    })
+  }
+
+  public downloadBuild(identity: string): Promise<void> {
+    return this._service.downloadBuild(identity)
   }
 
   public planCommitRestore(id: string): Promise<ConfiguratorRestorePlan> {

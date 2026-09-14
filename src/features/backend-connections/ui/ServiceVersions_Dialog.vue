@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -44,22 +45,20 @@ interface ServiceVersionRow {
 }
 
 const { t } = useI18n()
-const { catalog } = useBackendConnections()
+const { activeBackendURL, catalog } = useBackendConnections()
 const { state: backendVersionState, refreshMany: refreshBackendVersions } = useBackendVersions()
 const { state: domainVersionState, refreshMany: refreshDomainVersions } = useDomainVersions()
 const openState = ref(false)
 const isRefreshing = ref(false)
+const activeEnvironment = ref(activeBackendURL.value)
 const configuratorVersion = __APP_VERSION__
 
-const rows = computed<ServiceVersionRow[]>(() => [
-  {
-    key: 'configurator',
-    label: t('help.serviceVersions.configurator'),
-    version: configuratorVersion,
-    status: 'available',
-  },
-  ...(catalog.value?.items ?? []).flatMap(backendRows),
-])
+const configuratorRow = computed<ServiceVersionRow>(() => ({
+  key: 'configurator',
+  label: t('help.serviceVersions.configurator'),
+  version: configuratorVersion,
+  status: 'available',
+}))
 
 function backendRows(connection: BackendConnection): ServiceVersionRow[] {
   const currentState = backendVersionState(connection.baseUrl)
@@ -156,6 +155,10 @@ async function loadVersions(): Promise<void> {
 }
 
 function open(): void {
+  const connections = catalog.value?.items ?? []
+  activeEnvironment.value = connections.some(connection => connection.baseUrl === activeBackendURL.value)
+    ? activeBackendURL.value
+    : connections[0]?.baseUrl ?? ''
   openState.value = true
   void loadVersions()
 }
@@ -173,12 +176,9 @@ defineExpose({ open })
       </DialogHeader>
 
       <TooltipProvider>
-        <div class="max-h-[55vh] divide-y overflow-y-auto px-5 py-2">
+        <div class="border-b px-5 py-2">
           <div
-            v-for="row in rows"
-            :key="row.key"
             class="flex min-h-10 items-center gap-3 py-2.5"
-            :class="row.nested ? 'pl-7' : ''"
           >
             <Tooltip>
               <TooltipTrigger as-child>
@@ -186,32 +186,83 @@ defineExpose({ open })
                   role="status"
                   tabindex="0"
                   class="inline-flex size-4 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  :aria-label="statusLabel(row.status)"
+                  :aria-label="statusLabel(configuratorRow.status)"
                 >
-                  <span class="size-2 rounded-full" :class="statusDotClass(row.status)" />
+                  <span class="size-2 rounded-full" :class="statusDotClass(configuratorRow.status)" />
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top">
-                {{ statusLabel(row.status) }}
+                {{ statusLabel(configuratorRow.status) }}
               </TooltipContent>
             </Tooltip>
 
-            <span
-              class="min-w-0 flex-1 truncate text-sm"
-              :class="row.nested ? 'font-normal text-muted-foreground' : 'font-medium'"
-            >
-              {{ row.label }}
+            <span class="min-w-0 flex-1 truncate text-sm font-medium">
+              {{ configuratorRow.label }}
             </span>
-            <DomainVersionBadge
-              v-if="row.domainState"
-              class="shrink-0"
-              :state="row.domainState"
-            />
             <span class="shrink-0 font-mono text-sm font-semibold tabular-nums">
-              {{ versionLabel(row.version) }}
+              {{ versionLabel(configuratorRow.version) }}
             </span>
           </div>
         </div>
+
+        <Tabs v-if="catalog?.items.length" v-model="activeEnvironment" class="gap-0">
+          <div class="overflow-x-auto border-b px-5 py-3">
+            <TabsList class="w-max justify-start">
+              <TabsTrigger
+                v-for="connection in catalog.items"
+                :key="connection.id"
+                :value="connection.baseUrl"
+              >
+                {{ connection.name }}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent
+            v-for="connection in catalog.items"
+            :key="connection.id"
+            :value="connection.baseUrl"
+            class="m-0 max-h-[55vh] overflow-y-auto px-5 py-2"
+          >
+            <div
+              v-for="row in backendRows(connection)"
+              :key="row.key"
+              class="flex min-h-10 items-center gap-3 border-b py-2.5 last:border-b-0"
+              :class="row.nested ? 'pl-7' : ''"
+            >
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <span
+                    role="status"
+                    tabindex="0"
+                    class="inline-flex size-4 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    :aria-label="statusLabel(row.status)"
+                  >
+                    <span class="size-2 rounded-full" :class="statusDotClass(row.status)" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {{ statusLabel(row.status) }}
+                </TooltipContent>
+              </Tooltip>
+
+              <span
+                class="min-w-0 flex-1 truncate text-sm"
+                :class="row.nested ? 'font-normal text-muted-foreground' : 'font-medium'"
+              >
+                {{ row.label }}
+              </span>
+              <DomainVersionBadge
+                v-if="row.domainState"
+                class="shrink-0"
+                :state="row.domainState"
+              />
+              <span class="shrink-0 font-mono text-sm font-semibold tabular-nums">
+                {{ versionLabel(row.version) }}
+              </span>
+            </div>
+          </TabsContent>
+        </Tabs>
       </TooltipProvider>
     </DialogContent>
   </Dialog>

@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ChevronRight, Server } from 'lucide-vue-next'
+import { ChevronRight, Plus, Server } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
+import { Button } from '@/components/ui/button'
+import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
 import { useBackendConnections } from '@/features/backend-connections/ui/use-backend-connections'
 
 const { catalog } = useBackendConnections()
 const selecting = ref(false)
+const connectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
 
 function selectBackend(backendURL: string): void {
   if (selecting.value) {
@@ -36,8 +39,8 @@ function selectBackend(backendURL: string): void {
       </header>
       <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
         <button
-          v-for="(connection, index) in catalog?.items ?? []"
-          :key="connection.id"
+          v-for="(connection, index) in catalog.localItems"
+          :key="`${connection.source}:${connection.id}`"
           type="button"
           :autofocus="index === 0"
           :disabled="selecting"
@@ -53,7 +56,17 @@ function selectBackend(backendURL: string): void {
           </span>
           <ChevronRight class="size-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
         </button>
+        <p v-if="catalog.localItems.length === 0" class="px-4 py-8 text-center text-sm text-muted-foreground">
+          {{ $t('backendConnections.emptyLocal') }}
+        </p>
       </div>
+      <footer class="flex justify-end border-t border-border bg-muted/20 px-7 py-5">
+        <Button class="gap-2" @click="connectionsModal?.open()">
+          <Plus class="size-4" />
+          {{ $t('backendConnections.addLocal') }}
+        </Button>
+      </footer>
     </section>
+    <BackendConnections_Modal ref="connectionsModal" />
   </main>
 </template>

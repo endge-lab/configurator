@@ -5,6 +5,7 @@ import {
   createWidgetInstance,
   getAreaActiveWidget,
   getAreaExpanded,
+  getAreaSize,
   getLayoutState,
   getWidget,
   getWidgetInstances,
@@ -15,6 +16,7 @@ import {
   reorderWidget,
   setAreaActiveWidget,
   setAreaExpanded,
+  setAreaSize,
   setLayoutScope,
   setWidgetVisibility,
   unregisterAllWidgets,
@@ -89,6 +91,9 @@ export class EndgeIDEWidgets_Module {
     const debuggerMode = Endge.mode === 'debugger'
     if (debuggerMode) {
       setLayoutScope('debugger')
+      if (getAreaSize('bottom') === 200) {
+        setAreaSize('bottom', 420)
+      }
     }
     else {
       migratePersistedWidgetId(LEGACY_ENDGE_PREVIEW_WIDGET_ID, ENDGE_IDE_RUNTIME_TREE_WIDGET_ID)
@@ -99,14 +104,15 @@ export class EndgeIDEWidgets_Module {
       removePersistedWidgetId('pulse')
     }
     const definitions = debuggerMode
-      ? this._widgetDefinitions.filter(def => def.id === ENDGE_IDE_DOMAIN_WIDGET_ID || def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID).map(def => ({
+      ? this._widgetDefinitions.filter(def => def.id === ENDGE_IDE_DOMAIN_WIDGET_ID || def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID || def.id === 'inspection-history').map(def => ({
           ...def,
           ...(def.id === ENDGE_IDE_RUNTIME_TREE_WIDGET_ID ? { defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/endge-ide/ui/widgets/RuntimeInspection_Widget.vue'))) } : {}),
-          allowedPositions: ['left' as const],
+          ...(def.id === ENDGE_IDE_DOMAIN_WIDGET_ID ? { title: 'Структура сборки', defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/remote-debugger/ui/ProgramStructure_Widget.vue'))) } : {}),
+          allowedPositions: def.id === 'inspection-history' ? ['bottom' as const] : ['left' as const],
           floatingConstraints: undefined,
           permanent: true,
         }))
-      : this._widgetDefinitions
+      : this._widgetDefinitions.filter(def => def.id !== 'inspection-history')
 
     // 1) Регистрируем виджеты (внутри registerWidget подхватываются позиции/expanded/activeWidget)
     definitions.forEach(def => registerWidget(def))

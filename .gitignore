@@ -40,3 +40,6 @@ coverage
 *.tsbuildinfo
 .idea
 .playwright-cli
+
+/test-results/
+/playwright-report/

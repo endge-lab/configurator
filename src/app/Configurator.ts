@@ -16,7 +16,6 @@ import type { Router } from 'vue-router'
 
 import { Endge } from '@endge/core'
 import type { EndgeBootMode } from '@endge/core'
-import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session/adapters/ConfiguratorSessionHttp_Adapter'
 import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
 import {
   clearConfiguratorLoginRedirectGuard,
@@ -328,73 +327,29 @@ export class Configurator {
   private static async _initialize(mode: EndgeBootMode): Promise<ConfiguratorStatus> {
     this._authenticationRequirement = null
     this._backendConnectionFailure = null
-    const backendConfig = getEndgeBackendConfig()
-    if (!this._modules.connections.isPrimaryActive) {
-      const primarySession = await new ConfiguratorSessionHttp_Adapter(backendConfig.primaryBackendURL).check()
-      if (primarySession.status === 'unauthenticated') {
-        return this._startLoginOrRequire(primarySession.loginUrl, backendConfig.primaryBackendURL)
-      }
-      if (primarySession.status !== 'authenticated') {
-        return this._connectionFailed(
-          backendConfig.primaryBackendURL,
-          primarySession.status === 'error' ? primarySession.code : 'primary_session_unavailable',
-          primarySession.status === 'error'
-            ? primarySession.message
-            : 'Primary backend session is unavailable',
-        )
-      }
-      clearConfiguratorLoginRedirectGuard(backendConfig.primaryBackendURL)
-      try {
-        const catalog = await this._modules.connections.load()
-        if (!this._modules.connections.hasActiveBackend) {
-          return 'backend-selection-required'
-        }
-        if (!this._modules.connections.hasActiveConnection(catalog)) {
-          this._modules.connections.fallbackToPrimary()
-          return 'redirecting'
-        }
-      }
-      catch (error) {
-        const value = error as { code?: string, message?: string }
-        return this._connectionFailed(
-          backendConfig.primaryBackendURL,
-          value.code ?? 'backend_catalog_unavailable',
-          value.message ?? 'Backend connection catalog is unavailable',
-        )
-      }
+    if (!this._modules.connections.hasActiveBackend) {
+      return 'backend-selection-required'
     }
+    const backendConfig = getEndgeBackendConfig()
 
     const sessionState = await this._modules.session.check()
     if (sessionState.status === 'unauthenticated') {
       return this._startLoginOrRequire(sessionState.loginUrl, backendConfig.activeBackendURL)
     }
     if (sessionState.status === 'error') {
-      if (!this._modules.connections.isPrimaryActive) {
-        return this._connectionFailed(
-          backendConfig.activeBackendURL,
-          sessionState.code,
-          sessionState.message,
-        )
-      }
-      throw new ConfiguratorBootstrapError(sessionState.code, sessionState.message)
+      return this._connectionFailed(
+        backendConfig.activeBackendURL,
+        sessionState.code,
+        sessionState.message,
+      )
     }
     if (sessionState.status !== 'authenticated') {
       throw new ConfiguratorBootstrapError('session_invalid_state', `Unexpected session state: ${sessionState.status}`)
     }
 
     clearConfiguratorLoginRedirectGuard(backendConfig.activeBackendURL)
-    if (this._modules.connections.isPrimaryActive) {
-      try {
-        await this._modules.connections.load()
-      }
-      catch (error) {
-        const value = error as { code?: string, message?: string }
-        throw new ConfiguratorBootstrapError(
-          value.code ?? 'backend_catalog_unavailable',
-          value.message ?? 'Backend connection catalog is unavailable',
-        )
-      }
-    }
+    // Каталог среды дополняет локальные targets и не блокирует рабочий bootstrap.
+    await this._modules.connections.load().catch(() => undefined)
 
     const storedWorkspace = this._modules.connections.readWorkspace()
     const workspaceSeed = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()

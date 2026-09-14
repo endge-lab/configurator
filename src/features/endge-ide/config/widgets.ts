@@ -18,6 +18,17 @@ const Storage_Widget = defineAsyncComponent(() => import('@/features/endge-ide/u
 
 export const endgeIDEWidgetsConfig: WidgetDefinition[] = [
   {
+    id: 'inspection-history',
+    title: 'История инспекции',
+    icon: 'History',
+    content: 'component',
+    defaultComponent: markRaw(defineAsyncComponent(() => import('@/features/remote-debugger/ui/InspectionHistory_Widget.vue'))),
+    singleton: true,
+    permanent: true,
+    defaultPosition: 'bottom',
+    allowedPositions: ['bottom'],
+  },
+  {
     id: ENDGE_IDE_DOMAIN_WIDGET_ID,
     title: 'Домен',
     icon: 'FolderTree',

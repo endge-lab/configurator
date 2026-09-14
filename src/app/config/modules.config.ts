@@ -23,14 +23,13 @@ import { ConfiguratorSessionHttp_Adapter } from '@/features/configurator-session
 import { ConfiguratorSession_Module } from '@/features/configurator-session/ConfiguratorSession_Module'
 import { DomainVersionHttp_Adapter } from '@/features/domain-version/adapters/DomainVersionHttp_Adapter'
 import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_Module'
-import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
+import { getDefaultBackendURL } from '@/features/endge-ide/config/endge-backend'
 
 /** Создаёт единый граф модулей уровня приложения. */
 export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, remoteCommands?: EndgeRemoteCommandTransport): ConfiguratorModules {
-  const backendConfig = getEndgeBackendConfig()
   const connections = new BackendConnections_Module(
-    backendConfig.primaryBackendURL,
-    new BackendConnectionsHttp_Adapter(backendConfig.primaryBackendURL),
+    getDefaultBackendURL(),
+    new BackendConnectionsHttp_Adapter(),
     undefined,
     () => new BrowserNavigation_Adapter().reload(),
   )
@@ -43,7 +42,7 @@ export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, re
     backendVersions: new BackendVersions_Module(new BackendVersionHttp_Adapter()),
     domainVersions: new DomainVersions_Module(new DomainVersionHttp_Adapter()),
     session: new ConfiguratorSession_Module(
-      new ConfiguratorSessionHttp_Adapter(connections.activeBackendURL),
+      new ConfiguratorSessionHttp_Adapter(() => connections.activeBackendURL),
     ),
     context: new ConfiguratorContext_Module(events, remoteCommands),
     diagnostics: new ConfiguratorDiagnostics_Module(

@@ -148,7 +148,8 @@ export class EndgeIDERuntimeInspection_Module {
       return FilterType.DefaultFilter
     }
     if (host.entityType === 'query') {
-      return Endge.domain.getQuery(host.entityIdentity)?.type ?? QueryType.REST
+      const type = Endge.program.getQueryArtifact(host.entityIdentity)?.payload.type
+      return Object.values(QueryType).includes(type as QueryType) ? type as QueryType : QueryType.REST
     }
     return host.entityType as DomainDocumentType
   }

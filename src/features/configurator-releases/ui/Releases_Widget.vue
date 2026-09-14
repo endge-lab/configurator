@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
 import type {
   ConfiguratorCommit,
   ConfiguratorRelease,
@@ -53,8 +54,6 @@ const stateVersion = ref(0)
 const activeTab = ref<VersionTab>('commits')
 const commitMessage = ref('')
 const commitMessageTouched = ref(false)
-const releaseName = ref('')
-const releaseNameTouched = ref(false)
 const commitDetailsOpen = ref(false)
 const commitDetails = ref<ConfiguratorCommit | null>(null)
 const restoreDialogOpen = ref(false)
@@ -123,22 +122,6 @@ const commitMessageError = computed(() => {
   }
   return ''
 })
-const releaseNameError = computed(() => {
-  if (!releaseNameTouched.value) {
-    return ''
-  }
-  const value = releaseName.value.trim()
-  if (!value) {
-    return 'Введите название релиза'
-  }
-  if (value.length > 160) {
-    return 'Название не должно превышать 160 символов'
-  }
-  if (value === 'last') {
-    return 'Название «last» зарезервировано'
-  }
-  return ''
-})
 const restoreChanges = computed(() => {
   const plan = restorePlan.value
   return plan ? plan.creates + plan.updates + plan.restores + plan.deletes : 0
@@ -185,25 +168,12 @@ async function createCommit(): Promise<void> {
   }
 }
 
-async function createRelease(): Promise<void> {
-  releaseNameTouched.value = true
-  if (releaseNameError.value) {
-    return
-  }
-  if (hasPendingRevisions.value || !latestCommit.value) {
-    activeTab.value = 'commits'
-    toast.error('Сначала зафиксируйте текущие изменения')
-    return
-  }
+async function downloadBuild(identity: string): Promise<void> {
   try {
-    const identity = releaseName.value.trim()
-    await Configurator.releases.createRelease(identity, latestCommit.value.id)
-    releaseName.value = ''
-    releaseNameTouched.value = false
-    toast.success('Релиз создан', { description: identity })
+    await Configurator.releases.downloadBuild(identity)
   }
   catch (error) {
-    toast.error(errorMessage(error, 'Не удалось создать релиз'))
+    toast.error(errorMessage(error, 'Не удалось скачать Bundle'))
   }
 }
 
@@ -591,47 +561,7 @@ onBeforeUnmount(stop)
 
       <TabsContent value="releases" class="mt-0 min-h-0 flex-1 overflow-y-auto">
         <div class="space-y-3 p-3">
-          <section v-if="canWrite" class="rounded-lg border bg-muted/20 p-2.5">
-            <form class="space-y-2" @submit.prevent="createRelease">
-              <div class="flex gap-2">
-                <Input
-                  v-model="releaseName"
-                  class="h-8 text-xs"
-                  :aria-invalid="Boolean(releaseNameError)"
-                  maxlength="160"
-                  placeholder="Название релиза"
-                />
-                <Button
-                  type="submit"
-                  size="icon-sm"
-                  :disabled="loading"
-                  title="Создать релиз"
-                >
-                  <Loader2 v-if="loading" class="animate-spin" />
-                  <Plus v-else />
-                </Button>
-              </div>
-              <p v-if="releaseNameError" class="text-[11px] text-destructive">
-                {{ releaseNameError }}
-              </p>
-              <button
-                v-else-if="hasPendingRevisions"
-                type="button"
-                class="flex items-center gap-1.5 text-left text-[10px] text-amber-700 hover:underline dark:text-amber-300"
-                @click="activeTab = 'commits'"
-              >
-                <AlertTriangle class="size-3" />
-                {{ $t('uiText.firstCommitTheCurrentChanges40f607f3') }}
-              </button>
-              <p
-                v-else-if="latestCommit"
-                class="truncate text-[10px] text-muted-foreground"
-              >
-                {{ $t('uiText.source6604c0ef') }} {{ latestCommit.message }} {{ $t('uiText.symbol1fdf0d90') }}
-                {{ shortId(latestCommit.id) }}
-              </p>
-            </form>
-          </section>
+          <p class="text-xs text-muted-foreground">{{ $t('releaseBuild.listHelp') }}</p>
 
           <div
             v-if="loading && releases.length === 0"
@@ -671,6 +601,15 @@ onBeforeUnmount(stop)
                       {{ $t('uiText.current71e8b656') }}
                     </Badge>
                   </div>
+                  <p v-if="release.description" class="mb-1 whitespace-pre-wrap text-xs">{{ release.description }}</p>
+                  <details v-if="release.buildMetadata" class="mb-2 text-xs">
+                    <summary class="cursor-pointer">{{ $t('releaseBuild.parameters') }} · {{ release.buildMetadata.runtime }} · {{ ((release.buildMetadata.sizeBytes ?? 0) / 1024).toFixed(1) }} KiB</summary>
+                    <p>{{ release.buildMetadata.profile?.displayName ?? $t('releaseBuild.defaultProfile') }}</p>
+                    <p>{{ $t('releaseBuild.ast') }}: {{ release.buildMetadata.includeAst ? $t('releaseBuild.yes') : $t('releaseBuild.no') }}</p>
+                    <SourceJsonTree :data="release.buildMetadata" />
+                    <Button size="sm" variant="outline" @click="downloadBuild(release.identity)">{{ $t('releaseBuild.downloadBundle') }}</Button>
+                  </details>
+                  <p v-else class="mb-1 text-xs text-muted-foreground">{{ $t('releaseBuild.noBundle') }}</p>
                   <p class="mt-1 truncate text-[10px] text-muted-foreground">
                     {{ actorName(release.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
                     {{ formatDate(release.createdAt) }}

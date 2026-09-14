@@ -7,6 +7,7 @@ import { BackendConnections_Module } from '@/features/backend-connections/module
 import {
   ACTIVE_BACKEND_STORAGE_KEY,
   BackendConnectionStorage,
+  LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY,
   normalizeBackendURL,
   workspaceStorageKey,
 } from '@/features/backend-connections/services/backend-connection-storage'
@@ -65,6 +66,7 @@ describe('подключения к backend', () => {
   })
 
   it('создаёт и дедублицирует основное подключение, переключаясь только через хранилище и перезагрузку', async () => {
+    localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://primary.test')
     const service = new ServiceStub()
     service.response = {
       canManage: true,
@@ -88,29 +90,32 @@ describe('подключения к backend', () => {
       'https://remote.test',
     ])
     expect(catalog.items.map(item => item.name)).toEqual(['Основной', 'Production'])
+    expect(catalog.localItems.map(item => item.name)).toEqual(['Основной'])
+    expect(catalog.environmentItems.map(item => item.name)).toEqual(['Duplicate', 'Production'])
     module.switchBackend('https://remote.test/')
     expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://remote.test')
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('всегда читает каталог с основного URL сервиса', async () => {
+  it('читает каталог из выбранного URL среды', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       items: [],
       total: 0,
       canManage: false,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new BackendConnectionsHttp_Adapter('https://primary.test/')
+    const service = new BackendConnectionsHttp_Adapter()
 
-    await service.list()
+    await service.list('https://active.test/')
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://primary.test/api/v1/backend-connections',
+      'https://active.test/api/v1/backend-connections',
       expect.objectContaining({ credentials: 'include' }),
     )
   })
 
   it('оставляет legacy-подключение видимым, если старый backend ещё не имеет имени', async () => {
+    localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://primary.test')
     const service = new ServiceStub()
     service.response = {
       canManage: false,
@@ -138,12 +143,12 @@ describe('подключения к backend', () => {
       headers: { 'Content-Type': 'application/json' },
     }))
     vi.stubGlobal('fetch', fetchMock)
-    const service = new BackendConnectionsHttp_Adapter('https://primary.test/')
+    const service = new BackendConnectionsHttp_Adapter()
 
-    await service.create('Production', 'https://remote.test')
+    await service.create('Production', 'https://remote.test', 'https://active.test/')
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://primary.test/api/v1/backend-connections',
+      'https://active.test/api/v1/backend-connections',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: 'Production', baseUrl: 'https://remote.test' }),
@@ -151,7 +156,29 @@ describe('подключения к backend', () => {
     )
   })
 
-  it('возвращается к основному подключению и перезагружает приложение, если активного удалённого backend нет в каталоге', async () => {
+  it('работает без default backend и сохраняет локальный каталог отдельно от active target', async () => {
+    const reload = vi.fn()
+    const module = new BackendConnections_Module(null, new ServiceStub(), new BackendConnectionStorage(), reload)
+
+    expect(module.hasActiveBackend).toBe(false)
+    expect(module.catalog.localItems).toEqual([])
+
+    await module.create('Local', 'https://local.test/', true)
+
+    expect(module.catalog.localItems).toMatchObject([{
+      name: 'Local',
+      baseUrl: 'https://local.test',
+      source: 'local',
+    }])
+    expect(localStorage.getItem(LOCAL_BACKEND_CONNECTIONS_STORAGE_KEY)).toContain('https://local.test')
+    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBeNull()
+
+    module.switchBackend('https://local.test')
+    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://local.test')
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('не использует каталог среды как ограничение для уже выбранного backend', async () => {
     localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://removed.test')
     const service = new ServiceStub()
     const reload = vi.fn()
@@ -161,13 +188,11 @@ describe('подключения к backend', () => {
       new BackendConnectionStorage(),
       reload,
     )
-    const catalog = await module.load()
+    await module.load()
 
-    expect(module.hasActiveConnection(catalog)).toBe(false)
-    module.fallbackToPrimary()
-
-    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://primary.test')
-    expect(reload).toHaveBeenCalledOnce()
+    expect(module.activeBackendURL).toBe('https://removed.test')
+    expect(localStorage.getItem(ACTIVE_BACKEND_STORAGE_KEY)).toBe('https://removed.test')
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('предпочитает сохранённый активный Workspace, затем необязательное начальное значение, иначе требует выбора', () => {

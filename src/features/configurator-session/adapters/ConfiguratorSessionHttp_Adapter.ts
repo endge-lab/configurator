@@ -10,17 +10,14 @@ type UnknownRecord = Record<string, unknown>
 
 /** HTTP service developer session нового backend. */
 export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionService {
-  private readonly _baseURL: string
-
-  public constructor(baseURL: string) {
-    this._baseURL = normalizeBaseURL(baseURL)
-  }
+  public constructor(private readonly _backendURL: string | (() => string)) {}
 
   /** Проверяет opaque browser session и возвращает безопасный developer snapshot. */
   public async check(): Promise<ConfiguratorSessionState> {
+    const baseURL = this._resolveBaseURL()
     let response: Response
     try {
-      response = await fetch(`${this._baseURL}/auth/session`, {
+      response = await fetch(`${baseURL}/auth/session`, {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       })
@@ -56,7 +53,7 @@ export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionServi
 
   /** Отзывает backend session и удаляет opaque cookie на стороне сервера. */
   public async logout(): Promise<void> {
-    const response = await fetch(`${this._baseURL}/auth/logout`, {
+    const response = await fetch(`${this._resolveBaseURL()}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
       headers: { Accept: 'application/json' },
@@ -64,6 +61,10 @@ export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionServi
     if (!response.ok && response.status !== 401) {
       throw new Error(`Configurator logout failed with ${response.status}`)
     }
+  }
+
+  private _resolveBaseURL(): string {
+    return normalizeBaseURL(typeof this._backendURL === 'function' ? this._backendURL() : this._backendURL)
   }
 }
 

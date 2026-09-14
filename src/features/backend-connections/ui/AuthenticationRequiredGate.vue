@@ -4,14 +4,13 @@ import { ArrowLeft, LogIn, ShieldAlert } from 'lucide-vue-next'
 import { Configurator } from '@/app/Configurator'
 
 const requirement = Configurator.authenticationRequirement
-const canSwitchToPrimary = !Configurator.connections.isPrimaryActive
 
 function retryAuthentication(): void {
   Configurator.retryAuthentication()
 }
 
-function switchToPrimary(): void {
-  Configurator.connections.fallbackToPrimary()
+function chooseConnection(): void {
+  Configurator.connections.clearActiveBackend()
 }
 </script>
 
@@ -40,13 +39,12 @@ function switchToPrimary(): void {
 
       <footer class="flex justify-end gap-2 border-t border-border bg-muted/20 px-7 py-5">
         <button
-          v-if="canSwitchToPrimary"
           type="button"
           class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          @click="switchToPrimary"
+          @click="chooseConnection"
         >
           <ArrowLeft class="size-4" />
-          {{ $t('uiText.goToMain24ba8bde') }}
+          {{ $t('backendConnections.chooseAnother') }}
         </button>
         <button
           type="button"
