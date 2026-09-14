@@ -173,10 +173,6 @@ export class Configurator {
     window.close()
   }
 
-  public static get chromeBridge() {
-    return this._modules.chromeBridge
-  }
-
   public static get questions() {
     return this._modules.questions
   }
@@ -215,7 +211,6 @@ export class Configurator {
 
     this._errorBoundary = new VueErrorBoundary_Adapter(app, router, this._modules.diagnostics)
     this._errorBoundary.setup()
-    this._modules.chromeBridge.setup()
     EndgeIDE.setup(this._modules.context)
   }
 
@@ -294,7 +289,6 @@ export class Configurator {
     await this.reset()
     this._errorBoundary?.destroy()
     this._errorBoundary = null
-    this._modules.chromeBridge.destroy()
   }
 
   /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */

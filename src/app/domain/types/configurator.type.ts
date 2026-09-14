@@ -1,4 +1,3 @@
-import type { ConfiguratorChromeBridge_Module } from '@/app/modules/ConfiguratorChromeBridge_Module'
 import type { ConfiguratorContext_Module } from '@/app/modules/ConfiguratorContext_Module'
 import type { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
 import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
@@ -40,7 +39,6 @@ export interface ConfiguratorModules {
   context: ConfiguratorContext_Module
   diagnostics: ConfiguratorDiagnostics_Module
   i18n: ConfiguratorI18n_Module
-  chromeBridge: ConfiguratorChromeBridge_Module
   questions: Questions_Module
   layout: Layout_Module
   oidcDiscovery: OidcDiscovery_Module

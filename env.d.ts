@@ -20,8 +20,6 @@ interface ImportMetaEnv {
   readonly VITE_APP_SWITCHER?: string
   /** Минимальное время показа стартового loader в миллисекундах. Пустое значение отключает loader. */
   readonly VITE_CONFIGURATOR_LOADER_MIN_DURATION_MS?: string
-  /** Включить Vite-плагин кодогенерации (endge-codegen). По умолчанию выключен. */
-  readonly VITE_ENDGE_CODEGEN_ENABLED?: string
 }
 
 interface ImportMeta {
@@ -29,5 +27,3 @@ interface ImportMeta {
 }
 declare const __APP_VERSION__: string
 declare const __APP_VERSION_UPDATED__: string
-
-declare module 'virtual:endge-codegen-push' {}

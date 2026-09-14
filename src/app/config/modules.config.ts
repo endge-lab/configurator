@@ -2,11 +2,9 @@ import type { EndgeRemoteCommandTransport } from '@endge/core'
 import type { ConfiguratorModules } from '@/app/domain/types/configurator.type'
 
 import { BrowserNavigation_Adapter } from '@/app/adapters/BrowserNavigation_Adapter'
-import { ConfiguratorChromeBridge_Adapter } from '@/app/adapters/ConfiguratorChromeBridge_Adapter'
 import { ConfiguratorDiagnosticsStorage_Adapter } from '@/app/adapters/ConfiguratorDiagnosticsStorage_Adapter'
 import { FetchOidcDiscovery_Adapter } from '@/app/adapters/oidc/FetchOidcDiscovery_Adapter'
 import { CONFIGURATOR_DIAGNOSTICS_CONFIG } from '@/app/config/diagnostics.config'
-import { ConfiguratorChromeBridge_Module } from '@/app/modules/ConfiguratorChromeBridge_Module'
 import { ConfiguratorContext_Module } from '@/app/modules/ConfiguratorContext_Module'
 import { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
 import { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
@@ -53,7 +51,6 @@ export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, re
       new ConfiguratorDiagnosticsStorage_Adapter(),
     ),
     i18n: new ConfiguratorI18n_Module(),
-    chromeBridge: new ConfiguratorChromeBridge_Module(new ConfiguratorChromeBridge_Adapter()),
     questions: new Questions_Module(),
     layout: new Layout_Module(),
     oidcDiscovery: new OidcDiscovery_Module(new FetchOidcDiscovery_Adapter()),

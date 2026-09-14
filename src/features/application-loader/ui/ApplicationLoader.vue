@@ -39,17 +39,11 @@ const brandName = 'Endge'
         viewBox="0 0 64 64"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <defs>
-          <linearGradient id="application-loader-gradient" x1="26" y1="26" x2="58" y2="38" gradientUnits="userSpaceOnUse">
-            <stop stop-color="var(--primary)" />
-            <stop offset="1" stop-color="#9d72ea" />
-          </linearGradient>
-        </defs>
         <path
           fill="#FFFFFF"
           d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
         />
-        <rect x="26" y="26" width="32" height="12" rx="4" fill="url(#application-loader-gradient)" />
+        <rect x="26" y="26" width="32" height="12" rx="4" fill="#FFFFFF" />
       </svg>
 
       <h1 id="application-loader-title" class="application-loader__title">

@@ -10,7 +10,6 @@ import { defineConfig, loadEnv } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import pkg from './package.json'
-import { endgeCodegen } from './plugins/vite-plugin-endge-codegen'
 import { endgeTestIntegrations } from './plugins/vite-plugin-endge-test-integrations'
 
 process.env.VITE_VERSION = process.env.npm_package_version
@@ -26,9 +25,6 @@ export default defineConfig(({ mode, command }) => {
   const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url))
   const runsFromParentWorkspace = existsSync(new URL('../../pnpm-workspace.yaml', import.meta.url))
   const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
-  const codegenEnabled
-    = isDevServer
-      && (env.VITE_ENDGE_CODEGEN_ENABLED === 'true' || env.VITE_ENDGE_CODEGEN_ENABLED === '1')
   const vueDevToolsEnabled
     = isDevServer
       && (env.VITE_VUE_DEVTOOLS_ENABLED === 'true' || env.VITE_VUE_DEVTOOLS_ENABLED === '1')
@@ -39,7 +35,6 @@ export default defineConfig(({ mode, command }) => {
       vue(),
       vueDevToolsEnabled && vueDevTools(),
       tailwindcss(),
-      endgeCodegen({ enabled: codegenEnabled }),
       endgeTestIntegrations({
         enabled: testIntegrationsEnabled,
         registryPath: fileURLToPath(new URL('./src/test/integrations/local-registry/index.ts', import.meta.url)),

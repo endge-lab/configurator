@@ -21,11 +21,6 @@ import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 /* eslint-enable perfectionist/sort-imports */
 
-// В dev приложение само отдаёт домен в Vite-плагин для кодогенерации в src/gen
-if (import.meta.env.DEV) {
-  import('virtual:endge-codegen-push')
-}
-
 const app = createApp(App)
 installEndgeVueWarnHandler(app)
 
