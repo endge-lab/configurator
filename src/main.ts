@@ -33,7 +33,8 @@ function shouldShowApplicationLoader(): boolean {
   }
 
   const initialLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-  return router.resolve(initialLocation).name !== 'oidc-popup-callback'
+  const routeName = router.resolve(initialLocation).name
+  return routeName === 'configurator' || routeName === 'debugger'
 }
 
 async function mountApplicationLoader(): Promise<ApplicationLoaderHandle | undefined> {
