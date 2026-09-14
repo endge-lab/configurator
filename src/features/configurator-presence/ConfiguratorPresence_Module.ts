@@ -13,7 +13,7 @@ export class ConfiguratorPresence_Module {
   private _viewFailed = false
   public readonly connections = readonly(this._connections)
   public readonly status = readonly(this._status)
-  public readonly count = computed(() => this._connections.value.length)
+  public readonly count = computed(() => this._connections.value.filter(connection => !connection.isCurrentInstance).length)
 
   /**
    * ----------------------------------------
@@ -75,12 +75,12 @@ export class ConfiguratorPresence_Module {
       const roster = Endge.bridge.configurator.connections
       const connections: ConfiguratorPresenceConnection[] = []
       for (const state of connected) {
-        const own = roster.find(item => item.serverUrl === state.serverUrl && item.instanceId === state.instanceId)
-        if (!own) {
+        const currentConnection = roster.find(item => item.serverUrl === state.serverUrl && item.instanceId === state.instanceId)
+        if (!currentConnection) {
           continue
         }
         for (const item of roster) {
-          if (item.serverUrl !== state.serverUrl || item.instanceId === state.instanceId) {
+          if (item.serverUrl !== state.serverUrl) {
             continue
           }
           if (typeof item.instanceId !== 'string' || !item.instanceId || typeof item.userId !== 'string'
@@ -90,7 +90,8 @@ export class ConfiguratorPresence_Module {
           }
           connections.push({
             ...item,
-            isOwnAccount: item.userId === own.userId,
+            isCurrentInstance: item.instanceId === state.instanceId,
+            isOwnAccount: item.userId === currentConnection.userId,
             initials: item.displayName.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toUpperCase(),
           })
         }

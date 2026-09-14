@@ -1,7 +1,7 @@
 {
   "configuratorPresence": {
     "button": "Other connections: {count}",
-    "title": "Connected to backend",
+    "title": "Active sessions",
     "ownAccount": "Your account",
     "connection": "Connection",
     "unknownUser": "User"
