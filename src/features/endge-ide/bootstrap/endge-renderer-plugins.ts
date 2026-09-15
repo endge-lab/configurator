@@ -1,8 +1,7 @@
 import { Endge } from '@endge/core'
 import { EndgeVuePlugin } from '@endge/ui-vue'
-import { EndgeVueShadcnPlugin } from '@endge/ui-vue-shadcn'
 
-const REQUIRED_RENDERER_MODULE_KEYS = ['vue', 'vueShadcn'] as const
+const REQUIRED_RENDERER_MODULE_KEYS = ['vue'] as const
 
 /**
  * Плагины renderer необходимо зарегистрировать до импорта, читающего модули Endge
@@ -11,7 +10,6 @@ const REQUIRED_RENDERER_MODULE_KEYS = ['vue', 'vueShadcn'] as const
  */
 if (!Endge.isConfigured) {
   Endge.use(EndgeVuePlugin)
-  Endge.use(EndgeVueShadcnPlugin)
 }
 else {
   const missingModules = REQUIRED_RENDERER_MODULE_KEYS.filter(key => !Endge.hasModule(key))

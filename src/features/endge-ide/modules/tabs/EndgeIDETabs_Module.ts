@@ -218,9 +218,6 @@ const Workspace_Editor = defineAsyncComponent(
   () =>
     import('@/features/endge-ide/ui/section/document/singleton/Workspace_Editor.vue'),
 )
-const DSL_Playground_Widget = defineAsyncComponent(
-  () => import('@/features/endge-ide/ui/widgets/DSL_Playground_Widget.vue'),
-)
 const SFC_Playground_Widget = defineAsyncComponent(
   () => import('@/features/endge-ide/ui/widgets/SFC_Playground_Widget.vue'),
 )
@@ -234,7 +231,6 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_FACET_DOCUMENT = 'endge-facet-document' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
-const VIEW_ID_DSL_PLAYGROUND = 'endge-dsl-playground' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 
@@ -350,6 +346,7 @@ export class EndgeIDETabs_Module {
     this._tabsApi.closeTab('pulse')
     this._tabsApi.closeTab('architecture')
     this._tabsApi.closeTab('domain-analysis')
+    this._tabsApi.closeTab('dsl-playground')
     for (const tab of this._tabsApi.openTabs.value) {
       // Старые сохранённые debug-вкладки не имеют view после перехода на Bridge.
       if (tab.viewId === 'endge-runtime-debug') {
@@ -826,20 +823,6 @@ export class EndgeIDETabs_Module {
     })
   }
 
-  /** Открыть DSL Песочницу в единственном экземпляре (при повторном вызове - активация вкладки). */
-  public openDSLPlayground(): void {
-    const tabRef: SmartTabRef = {
-      id: 'dsl-playground',
-      label: 'DSL Песочница',
-      viewId: VIEW_ID_DSL_PLAYGROUND,
-      payload: {},
-      closable: true,
-      singleton: true,
-      meta: { icon: 'ti ti-device-gamepad-3 text-orange-500 text-xl' },
-    }
-    this.openTab(tabRef)
-  }
-
   /** Открыть SFC Playground в единственном экземпляре (при повторном вызове - активация вкладки). */
   public openSFCPlayground(): void {
     const tabRef: SmartTabRef = {
@@ -1026,13 +1009,6 @@ export class EndgeIDETabs_Module {
       VIEW_ID_WORKSPACE_SETTINGS,
       (): SmartTabViewResolved => ({
         component: markRaw(Workspace_Editor),
-        props: {},
-      }),
-    )
-    this._tabsApi.viewRegistry.register(
-      VIEW_ID_DSL_PLAYGROUND,
-      (): SmartTabViewResolved => ({
-        component: markRaw(DSL_Playground_Widget),
         props: {},
       }),
     )

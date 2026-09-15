@@ -59,36 +59,32 @@ async function save(): Promise<void> {
     </template>
 
     <div class="min-h-0 flex-1 bg-muted/25 p-4">
-      <div class="h-full overflow-hidden rounded-xl border bg-card/85 shadow-sm dark:rounded-none dark:bg-editor-surface">
-        <div class="h-full min-h-0 p-4 lg:p-5">
-          <ConfigurationSettingsEditor
-            v-model="configuration"
-            variant="contribution"
-            contribution-mode="inherit-only"
-            document-metadata
-            :metadata-session="metadataSession"
-            :upstream="upstreamConfiguration"
-          >
-            <template #general>
-              <section class="max-w-2xl space-y-4">
-                <DocumentIdField :document-id="editor.id" />
-                <div class="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  {{ $t('facets.facet') }} <code>{{ editor.facetIdentity }}</code>
-                </div>
-                <div class="space-y-2">
-                  <Label for="facet-document-identity">{{ $t('facets.identity') }}</Label><DocumentIdentityInput id="facet-document-identity" v-model="editor.identity" placeholder="moscow" />
-                </div>
-                <div class="space-y-2">
-                  <Label for="facet-document-name">{{ $t('facets.name') }}</Label><Input id="facet-document-name" v-model="editor.displayName" placeholder="Москва" />
-                </div>
-                <div class="space-y-2">
-                  <Label for="facet-document-description">{{ $t('facets.description') }}</Label><Textarea id="facet-document-description" v-model="editor.description" :rows="4" />
-                </div>
-              </section>
-            </template>
-          </ConfigurationSettingsEditor>
-        </div>
-      </div>
+      <ConfigurationSettingsEditor
+        v-model="configuration"
+        variant="contribution"
+        contribution-mode="inherit-only"
+        document-metadata
+        :metadata-session="metadataSession"
+        :upstream="upstreamConfiguration"
+      >
+        <template #general>
+          <section class="max-w-2xl space-y-4">
+            <DocumentIdField :document-id="editor.id" />
+            <div class="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              {{ $t('facets.facet') }} <code>{{ editor.facetIdentity }}</code>
+            </div>
+            <div class="space-y-2">
+              <Label for="facet-document-identity">{{ $t('facets.identity') }}</Label><DocumentIdentityInput id="facet-document-identity" v-model="editor.identity" placeholder="moscow" />
+            </div>
+            <div class="space-y-2">
+              <Label for="facet-document-name">{{ $t('facets.name') }}</Label><Input id="facet-document-name" v-model="editor.displayName" placeholder="Москва" />
+            </div>
+            <div class="space-y-2">
+              <Label for="facet-document-description">{{ $t('facets.description') }}</Label><Textarea id="facet-document-description" v-model="editor.description" :rows="4" />
+            </div>
+          </section>
+        </template>
+      </ConfigurationSettingsEditor>
     </div>
   </SourceDocumentEditorShell>
 </template>

@@ -23,9 +23,6 @@ importers:
       '@endge/ui-vue':
         specifier: 0.33.0
         version: 0.33.0(@endge/core@12.0.1(@endge/raph@3.3.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.0)(@endge/utils@0.27.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))
-      '@endge/ui-vue-shadcn':
-        specifier: 0.9.0
-        version: 0.9.0(@endge/core@12.0.1(@endge/raph@3.3.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.0)(@endge/utils@0.27.0)(vue@3.5.38(typescript@6.0.3))
       '@endge/utils':
         specifier: 0.27.0
         version: 0.27.0
@@ -35,9 +32,6 @@ importers:
       '@lucide/lab':
         specifier: ^0.1.2
         version: 0.1.2
-      '@revolist/vue3-datagrid':
-        specifier: ^4.19.4
-        version: 4.23.17
       '@tabler/icons-webfont':
         specifier: ^3.36.1
         version: 3.44.0(chokidar@3.6.0)
@@ -490,14 +484,6 @@ packages:
   '@endge/raph@3.3.0':
     resolution: {integrity: sha512-1tiytJD2XYD3sdIVU6c3KittLH/bqPz7ovlHyIJVjbebC49ZKpI60cyFBteEK7eF+F4poYesfee95iiZZbFrIA==}
 
-  '@endge/ui-vue-shadcn@0.9.0':
-    resolution: {integrity: sha512-6WzTTnqOYXm4wvwY3JVBG1Wgig9Pv0ZwNOfhwVToV1Uzop2YBCHnGKsXXjPAy1nCpFzspYe1vF+2TQn0ef2j5w==}
-    peerDependencies:
-      '@endge/core': ^12.0.0
-      '@endge/raph': ^3.3.0
-      '@endge/utils': ^0.27.0
-      vue: ^3.5.0
-
   '@endge/ui-vue@0.33.0':
     resolution: {integrity: sha512-R/9rZGopG6iMqXuNwSRADeWtHCvgqe6r3VWFrJf3GNVIH0P0TmqnnyzpLe2XZaMyUQjAJesSJH3iD6ffO5blMw==}
     peerDependencies:
@@ -867,11 +853,6 @@ packages:
 
   '@lucide/lab@0.1.2':
     resolution: {integrity: sha512-VprF2BJa7ZuTGOhUd5cf8tHJXyL63wdxcGieAiVVoR9hO0YmPsnZO0AGqDiX2/br+/MC6n8BoJcmPilltOXIJA==}
-
-  '@lucide/vue@1.26.0':
-    resolution: {integrity: sha512-jz00zLm8+i7VzBuQTbmjChIvIKehaIK5YbOVC+bab7qTh4JTkCd0XJQ4l5TY57gT08fMPVlvUITROB/vm/xImA==}
-    peerDependencies:
-      vue: '>=3.0.1'
 
   '@microsoft/fetch-event-source@2.0.1':
     resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
@@ -1258,18 +1239,8 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@tanstack/table-core@8.21.3':
-    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
-    engines: {node: '>=12'}
-
   '@tanstack/virtual-core@3.17.1':
     resolution: {integrity: sha512-VZyW2Uiml5tmBZwPGrSD3Sz73OxzljQMCmzYHsUTPEuTsERf5xwa+uWb01xEzkz3ZSYTjj8NEb/mKHvgKxyZdA==}
-
-  '@tanstack/vue-table@8.21.3':
-    resolution: {integrity: sha512-rusRyd77c5tDPloPskctMyPLFEQUeBzxdQ+2Eow4F7gDPlPOB1UnnhzfpdvqZ8ZyX2rRNGmqNnQWm87OI2OQPw==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      vue: '>=3.2'
 
   '@tanstack/vue-virtual@3.13.29':
     resolution: {integrity: sha512-MWb9tNHjpar3sP34b8+3A4I5j9akveoPXIYqqp7/ipyWd49a/kso+1S1LqEmAVR/+g/k1WWTJC4ktvdCGWgXYQ==}
@@ -4760,18 +4731,6 @@ snapshots:
 
   '@endge/raph@3.3.0': {}
 
-  '@endge/ui-vue-shadcn@0.9.0(@endge/core@12.0.1(@endge/raph@3.3.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.0)(@endge/utils@0.27.0)(vue@3.5.38(typescript@6.0.3))':
-    dependencies:
-      '@babel/parser': 7.29.7
-      '@endge/core': 12.0.1(@endge/raph@3.3.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@endge/raph': 3.3.0
-      '@endge/utils': 0.27.0
-      '@lucide/vue': 1.26.0(vue@3.5.38(typescript@6.0.3))
-      '@tanstack/vue-table': 8.21.3(vue@3.5.38(typescript@6.0.3))
-      '@tanstack/vue-virtual': 3.13.29(vue@3.5.38(typescript@6.0.3))
-      sortablejs: 1.15.7
-      vue: 3.5.38(typescript@6.0.3)
-
   '@endge/ui-vue@0.33.0(@endge/core@12.0.1(@endge/raph@3.3.0)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.0)(@endge/utils@0.27.0)(@primevue/themes@4.5.4)(class-transformer@0.5.1)(class-validator@0.14.4)(primeicons@6.0.1)(primevue@4.5.5(vue@3.5.38(typescript@6.0.3)))(reflect-metadata@0.2.2)(vue@3.5.38(typescript@6.0.3))':
     dependencies:
       '@babel/parser': 7.29.7
@@ -5145,10 +5104,6 @@ snapshots:
 
   '@lucide/lab@0.1.2': {}
 
-  '@lucide/vue@1.26.0(vue@3.5.38(typescript@6.0.3))':
-    dependencies:
-      vue: 3.5.38(typescript@6.0.3)
-
   '@microsoft/fetch-event-source@2.0.1': {}
 
   '@npmcli/agent@3.0.0':
@@ -5450,14 +5405,7 @@ snapshots:
       tailwindcss: 4.3.1
       vite: 7.3.5(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0)
 
-  '@tanstack/table-core@8.21.3': {}
-
   '@tanstack/virtual-core@3.17.1': {}
-
-  '@tanstack/vue-table@8.21.3(vue@3.5.38(typescript@6.0.3))':
-    dependencies:
-      '@tanstack/table-core': 8.21.3
-      vue: 3.5.38(typescript@6.0.3)
 
   '@tanstack/vue-virtual@3.13.29(vue@3.5.38(typescript@6.0.3))':
     dependencies:
@@ -8256,7 +8204,8 @@ snapshots:
 
   sortablejs@1.14.0: {}
 
-  sortablejs@1.15.7: {}
+  sortablejs@1.15.7:
+    optional: true
 
   source-map-js@1.2.1: {}
 

@@ -16,7 +16,7 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
     return this.selectedColumns?.[0] || null
   }
 
-  // источник данных для таблицы (берет количество элементов для revoGrid)
+  // Источник данных для определения количества строк таблицы.
   sourceIndex: string = ''
 
   bindings: TableBinding = { keys: {} }

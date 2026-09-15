@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Box, Settings2 } from 'lucide-vue-next'
+import { Settings2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 import { useLayout } from '@/components/layouts/grid'
+import Logo from '@/components/layouts/main/Logo.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,8 +49,8 @@ useLayout({ title: computed(() => 'Endge') })
 
   <main class="flex h-full min-h-0 flex-1 items-center justify-center p-6 text-muted-foreground">
     <div class="flex max-w-md flex-col items-center gap-5 text-center">
-      <div class="rounded-lg p-8 text-muted-foreground/80">
-        <Box class="size-24" stroke-width="1.25" />
+      <div class="rounded-lg p-8 text-muted-foreground/80 opacity-30">
+        <Logo icon-height="h-24" />
       </div>
       <div class="space-y-2">
         <h1 class="text-base font-medium text-foreground">

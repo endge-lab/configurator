@@ -12,7 +12,6 @@ import { startRuntimeInspectionClient } from './runtime-inspection-client'
 import { i18n } from '@/i18n'
 import '@/features/endge-ide/source-editor/adapters/monaco/configure-monaco-workers'
 import '@/assets/main.css'
-import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 
 const role = new URLSearchParams(location.search).get('role') ?? 'debugger'
@@ -30,7 +29,7 @@ async function main(): Promise<void> {
       scope: {},
       vars: {},
       bridge: { role: 'configurator', serverUrl: server, debug: true, allWorkspaces: true },
-      ui: { adapterFallbackIds: ['vue-shadcn', 'vue-native'] },
+      ui: { adapterFallbackIds: ['vue-native'] },
     })
     await EndgeIDE.init()
     Configurator.remoteDebugger.init()

@@ -1,5 +1,7 @@
 import { createApp } from 'vue'
 
+import { i18n } from '@/i18n'
+
 interface ApplicationLoaderOptions {
   minimumDuration: number
   statusLabel: string
@@ -18,6 +20,7 @@ export async function startApplicationLoader(options: ApplicationLoaderOptions):
       statusLabel: options.statusLabel,
       versionLabel: options.versionLabel,
     })
+    loaderApp.use(i18n)
     loaderApp.mount('#app')
 
     let active = true

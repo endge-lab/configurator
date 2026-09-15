@@ -6,11 +6,6 @@
 /* Endge */
 @import "./endge.scss";
 
-/* Table */
-@import "./sections/table/table.scss";
-@import "./sections/table/table-dark.scss";
-@import "./sections/table/table-light-calm.scss";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -112,7 +112,7 @@ defineExpose({ open })
       <DialogHeader class="border-b bg-muted/35 px-6 py-5 text-left">
         <DialogTitle class="flex items-center gap-2">
           <Server class="size-4 text-orange-500" />
-          {{ $t('endgeIde.headerMenu.file.connections') }}
+          {{ $t('endgeIde.headerMenu.settings.connections') }}
         </DialogTitle>
       </DialogHeader>
 

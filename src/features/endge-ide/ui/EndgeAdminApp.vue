@@ -113,10 +113,6 @@ function openExecutionBundleProfiles(): void {
   executionBundleProfilesModal.value?.open()
 }
 
-function openDSLPlayground(): void {
-  tabs.openDSLPlayground()
-}
-
 function openSFCPlayground(): void {
   tabs.openSFCPlayground()
 }
@@ -206,19 +202,6 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @click="openBackendConnections">
-            <Settings2 class="size-3.5" />
-            {{ t('endgeIde.headerMenu.file.connections') }}
-          </DropdownMenuItem>
-          <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
-            <ShieldCheck class="size-3.5" />
-            {{ t('endgeIde.headerMenu.file.access') }}
-          </DropdownMenuItem>
-          <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
-            <Bot class="size-3.5 text-fuchsia-500" />
-            {{ t('endgeIde.headerMenu.file.aiSettings') }}
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -269,20 +252,20 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <DropdownMenuItem @click="toggleProblems">
             {{ t('endgeIde.headerMenu.debug.problems') }}
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            {{ t('endgeIde.headerMenu.debug.domainBuild') }}
+          <DropdownMenuItem @click="openSFCPlayground">
+            {{ t('endgeIde.headerMenu.debug.sfcPlayground') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Дополнительно -->
+      <!-- Настройки -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
             type="button"
             class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            {{ t('endgeIde.headerMenu.additional.title') }}
+            {{ t('endgeIde.headerMenu.settings.title') }}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -291,19 +274,18 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           side="bottom"
           :side-offset="4"
         >
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              {{ t('endgeIde.headerMenu.additional.uiPlayground') }}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem @click="openDSLPlayground">
-                {{ t('endgeIde.headerMenu.additional.dsl') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem @click="openSFCPlayground">
-                {{ t('endgeIde.headerMenu.additional.sfc') }}
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <DropdownMenuItem @click="openBackendConnections">
+            <Settings2 class="size-3.5" />
+            {{ t('endgeIde.headerMenu.settings.connections') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
+            <ShieldCheck class="size-3.5" />
+            {{ t('endgeIde.headerMenu.settings.access') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
+            <Bot class="size-3.5 text-fuchsia-500" />
+            {{ t('endgeIde.headerMenu.settings.aiSettings') }}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

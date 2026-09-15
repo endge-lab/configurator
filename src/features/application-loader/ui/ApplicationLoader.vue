@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Logo from '@/components/layouts/main/Logo.vue'
+
 import VueBitsDotGrid from './VueBitsDotGrid.vue'
 
 defineProps<{
@@ -32,19 +34,9 @@ const brandName = 'Endge'
     </div>
 
     <section class="application-loader__content" aria-labelledby="application-loader-title">
-      <svg
-        class="application-loader__mark"
-        role="img"
-        :aria-label="brandName"
-        viewBox="0 0 64 64"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fill="#FFFFFF"
-          d="M12 6H52C55.3137 6 58 8.68629 58 12V16C58 19.3137 55.3137 22 52 22H22V42H52C55.3137 42 58 44.6863 58 48V52C58 55.3137 55.3137 58 52 58H12C8.68629 58 6 55.3137 6 52V12C6 8.68629 8.68629 6 12 6Z"
-        />
-        <rect x="26" y="26" width="32" height="12" rx="4" fill="#FFFFFF" />
-      </svg>
+      <div class="application-loader__mark">
+        <Logo icon-height="var(--application-loader-mark-height)" />
+      </div>
 
       <h1 id="application-loader-title" class="application-loader__title">
         {{ brandName }}
@@ -130,8 +122,8 @@ const brandName = 'Endge'
 }
 
 .application-loader__mark {
-  width: auto;
-  height: 96px;
+  --application-loader-mark-height: 96px;
+
   margin-bottom: 22px;
   filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.42));
   animation: application-loader-mark 2.6s ease-in-out infinite;
@@ -221,7 +213,7 @@ const brandName = 'Endge'
 
 @media (max-width: 640px) {
   .application-loader__mark {
-    height: 82px;
+    --application-loader-mark-height: 82px;
   }
 }
 

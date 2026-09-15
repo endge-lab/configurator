@@ -217,22 +217,13 @@
   },
   "endgeIde": {
     "headerMenu": {
-      "additional": {
-        "dsl": "DSL",
-        "sfc": "SFC",
-        "title": "Дополнительно",
-        "uiPlayground": "UI Playground"
-      },
       "debug": {
         "problems": "Поиск проблем",
-        "domainBuild": "Сборка домена",
-        "title": "Отладка",
-        "remoteDebug": "Дебагер"
+        "remoteDebug": "Дебагер",
+        "sfcPlayground": "SFC песочница",
+        "title": "Отладка"
       },
       "file": {
-        "access": "Управление доступом",
-        "aiSettings": "Настройки AI",
-        "connections": "Настройка подключений",
         "export": "Экспорт",
         "import": "Импорт",
         "importGraphQL": "Типы из GraphQL…",
@@ -240,6 +231,12 @@
         "importWorkspaceAdmin": "Импорт доступен только Workspace Admin",
         "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "Файл"
+      },
+      "settings": {
+        "access": "Управление доступом",
+        "aiSettings": "Настройки AI",
+        "connections": "Настройка подключений",
+        "title": "Настройки"
       },
       "view": {
         "title": "Вид"
@@ -650,7 +647,6 @@
     "displayName403372fc": "Отображаемое имя",
     "displayNamec7874aaa": "Отображаемое имя",
     "document0fd26103": "Документ",
-    "documentIsAvailableForViewingAndEditF67af9d5": "Документ доступен для просмотра и редактирования, runtime preview удалён.",
     "documents61c54621": "документов",
     "documentscff56568": "документах",
     "documentTypefcf0e9cc": "Тип документа",
@@ -817,7 +813,6 @@
     "inputs5d8f6298": "Входные данные",
     "inputVariablesAndBindingsPkFkF79eaa9b": "Входные переменные и привязки (PK/FK)",
     "insertAreasIntoTemplateDe5b1370": "Вставить области в шаблон",
-    "insertEeb8caeb": "Вставить",
     "integration06eff510": "integration",
     "integrationD25926dd": "Интеграция -",
     "interact53deafc6": "Взаимодействие",
@@ -829,7 +824,6 @@
     "json031a4e76": "JSON",
     "jsonFileForAnalysisAndSupport3b241d20": "JSON-файл для анализа и поддержки.",
     "jsonMock994e1594": "JSON-мок",
-    "jsxSource79d23f25": "JSX source",
     "keya62f2225": "key",
     "keyboardConditionc45b562c": "Клавиатурное условие",
     "keyc67dd20e": "Ключ",
@@ -851,7 +845,6 @@
     "leaf98798241": "лист",
     "leavesTheChoiceToTheSpecificUXAdapterForRenderingac5ee3b2": "оставляет выбор конкретного UX адаптеру отрисовки.",
     "left4af2530f": "Слева",
-    "legacyDslSource6fcced0e": "источник устаревшего DSL",
     "legacySetupSourceDataOnly5a6ad2e7": "источник настройки устаревшего формата (только данные)",
     "leveld9f964d7": "Уровень",
     "limitingCombinationNotSet178555a6": "Ограничивающая комбинация не задана.",

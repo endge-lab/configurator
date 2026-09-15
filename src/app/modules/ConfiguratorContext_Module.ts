@@ -26,7 +26,7 @@ import { registerEndgeMockProviders } from '@/features/endge-ide/bootstrap/endge
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { configuratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
 
-const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-shadcn', 'vue-native'] as const
+const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-native'] as const
 
 /**
  * Управляет boot и immutable execution context всей IDE.

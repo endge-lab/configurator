@@ -17,7 +17,6 @@ import router from './router'
 import 'reflect-metadata'
 import './assets/main.css'
 import '@vue-flow/core/dist/style.css'
-import '@endge/ui-vue-shadcn/vue-shadcn.css'
 import '@endge/ui-vue/vue.css'
 /* eslint-enable perfectionist/sort-imports */
 

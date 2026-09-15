@@ -366,7 +366,7 @@ defineExpose({ open })
       <DialogHeader class="border-b bg-muted/35 px-6 py-5 text-left">
         <DialogTitle class="flex items-center gap-2">
           <ShieldCheck class="size-4 text-primary" />
-          {{ $t('endgeIde.headerMenu.file.access') }}
+          {{ $t('endgeIde.headerMenu.settings.access') }}
         </DialogTitle>
         <DialogDescription>
           {{ platformAdmin ? $t('uiText.platformAndWorkspacePermissions7a8e46d9') : `Workspace: ${workspaceIdentity}` }}

@@ -217,22 +217,13 @@
   },
   "endgeIde": {
     "headerMenu": {
-      "additional": {
-        "dsl": "DSL",
-        "sfc": "SFC",
-        "title": "More",
-        "uiPlayground": "UI Playground"
-      },
       "debug": {
         "problems": "Find problems",
-        "domainBuild": "Domain build",
-        "title": "Debug",
-        "remoteDebug": "Remote debug"
+        "remoteDebug": "Remote debug",
+        "sfcPlayground": "SFC playground",
+        "title": "Debug"
       },
       "file": {
-        "access": "Access management",
-        "aiSettings": "AI settings",
-        "connections": "Connection settings",
         "export": "Export",
         "import": "Import",
         "importGraphQL": "Types from GraphQL…",
@@ -240,6 +231,12 @@
         "importWorkspaceAdmin": "Import is available only to Workspace Admin",
         "importWorkspaceSnapshot": "Workspace snapshot…",
         "title": "File"
+      },
+      "settings": {
+        "access": "Access management",
+        "aiSettings": "AI settings",
+        "connections": "Connection settings",
+        "title": "Settings"
       },
       "view": {
         "title": "View"
@@ -650,7 +647,6 @@
     "displayName403372fc": "Display name",
     "displayNamec7874aaa": "Display name",
     "document0fd26103": "Document",
-    "documentIsAvailableForViewingAndEditF67af9d5": "Document is available for viewing and editing, runtime preview removed.",
     "documents61c54621": "documents",
     "documentscff56568": "documents",
     "documentTypefcf0e9cc": "Document type",
@@ -817,7 +813,6 @@
     "inputs5d8f6298": "Inputs",
     "inputVariablesAndBindingsPkFkF79eaa9b": "Input variables and bindings (PK/FK)",
     "insertAreasIntoTemplateDe5b1370": "Insert areas into template",
-    "insertEeb8caeb": "Insert",
     "integration06eff510": "integration",
     "integrationD25926dd": "Integration -",
     "interact53deafc6": "Interact",
@@ -829,7 +824,6 @@
     "json031a4e76": "JSON",
     "jsonFileForAnalysisAndSupport3b241d20": "JSON file for analysis and support.",
     "jsonMock994e1594": "JSON Mock",
-    "jsxSource79d23f25": "JSX source",
     "keya62f2225": "key",
     "keyboardConditionc45b562c": "Keyboard condition",
     "keyc67dd20e": "Key",
@@ -851,7 +845,6 @@
     "leaf98798241": "leaf",
     "leavesTheChoiceToTheSpecificUXAdapterForRenderingac5ee3b2": "leaves the choice to the specific UX adapter for rendering.",
     "left4af2530f": "Left",
-    "legacyDslSource6fcced0e": "Legacy DSL source",
     "legacySetupSourceDataOnly5a6ad2e7": "Legacy setup source (data only)",
     "leveld9f964d7": "Level",
     "limitingCombinationNotSet178555a6": "Limiting combination not set.",
