@@ -1,7 +1,7 @@
 {
   "name": "@endge/configurator",
   "type": "module",
-  "version": "2.12.2",
+  "version": "2.12.0",
   "version_updated": "15.09.2026",
   "private": false,
   "packageManager": "pnpm@10.18.2",
@@ -21,12 +21,12 @@
     "fix": "pnpm lint-fix"
   },
   "dependencies": {
-    "@endge/computation-sandbox": "0.5.0",
-    "@endge/core": "12.0.1",
-    "@endge/integration-api": "0.2.0",
-    "@endge/raph": "3.3.0",
-    "@endge/ui-vue": "0.33.0",
-    "@endge/utils": "0.27.0",
+    "@endge/computation-sandbox": "0.5.1",
+    "@endge/core": "12.0.3",
+    "@endge/integration-api": "0.2.1",
+    "@endge/raph": "3.3.1",
+    "@endge/ui-vue": "0.34.0",
+    "@endge/utils": "0.27.1",
     "@formatjs/intl-durationformat": "^0.7.6",
     "@lucide/lab": "^0.1.2",
     "@tabler/icons-webfont": "^3.36.1",
