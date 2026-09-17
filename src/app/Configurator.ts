@@ -163,6 +163,7 @@ export class Configurator {
   public static get presence() { return this._modules.presence }
 
   public static async activateDebugger(): Promise<void> {
+    EndgeIDE.setup(this._modules.context)
     await EndgeIDE.init()
     this._remoteDebugger.init()
   }
@@ -211,7 +212,6 @@ export class Configurator {
 
     this._errorBoundary = new VueErrorBoundary_Adapter(app, router, this._modules.diagnostics)
     this._errorBoundary.setup()
-    EndgeIDE.setup(this._modules.context)
   }
 
   /** Проверяет сессию и однократно запускает Endge при первой навигации router. */
@@ -293,6 +293,7 @@ export class Configurator {
 
   /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */
   public static async activateIDE(): Promise<void> {
+    EndgeIDE.setup(this._modules.context)
     if (!this.hasActiveWorkspace) {
       await EndgeIDE.initDetached()
       return

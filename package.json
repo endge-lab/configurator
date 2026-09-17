@@ -1,8 +1,8 @@
 {
   "name": "@endge/configurator",
   "type": "module",
-  "version": "2.12.1",
-  "version_updated": "16.09.2026",
+  "version": "2.12.2",
+  "version_updated": "17.09.2026",
   "private": false,
   "packageManager": "pnpm@10.18.2",
   "engines": {
