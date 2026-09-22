@@ -1,0 +1,158 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  clearConfiguratorBrowserState,
+  clearConfiguratorLoginRedirectGuard,
+  ConfiguratorSession_Module,
+  ConfiguratorSessionHttp_Adapter,
+  startConfiguratorLogin,
+} from '@/features/configurator-session'
+import { CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX } from '@/features/configurator-session/config/configurator-session'
+
+const BACKEND_URL = 'https://backend.test'
+const CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY
+  = `${CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY_PREFIX}:${encodeURIComponent(BACKEND_URL)}`
+
+function sessionResponse(): Response {
+  return new Response(JSON.stringify({
+    user: {
+      id: 'developer-id',
+      providerId: 'keycloak',
+      subject: 'developer-subject',
+      issuer: 'https://identity.test/realms/endge',
+      username: 'developer',
+      displayName: 'Developer',
+      active: true,
+      ignoredClaim: 'must-not-leak',
+    },
+    platformAdmin: false,
+    workspaces: [{
+      id: 'workspace-id',
+      identity: 'workspace-a',
+      displayName: 'Workspace A',
+      active: true,
+      role: 'editor',
+      configuration: { mustNotLeak: true },
+    }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+}
+
+function installWindow(): { assign: ReturnType<typeof vi.fn>, storage: Map<string, string> } {
+  const storage = new Map<string, string>()
+  const assign = vi.fn()
+  vi.stubGlobal('window', {
+    location: {
+      origin: 'https://configurator.test',
+      href: 'https://configurator.test/editor?project=demo',
+      assign,
+    },
+    sessionStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    },
+  })
+  return { assign, storage }
+}
+
+describe('пользовательская сессия Configurator', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('использует один запрос с credentials и сохраняет только безопасную проекцию сессии', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(sessionResponse())
+    vi.stubGlobal('fetch', fetchMock)
+    const module = new ConfiguratorSession_Module(
+      new ConfiguratorSessionHttp_Adapter('https://backend.test/'),
+    )
+
+    const [left, right] = await Promise.all([module.check(), module.check()])
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/auth/session', expect.objectContaining({
+      credentials: 'include',
+    }))
+    expect(left).toEqual(right)
+    expect(module.state).toEqual({
+      status: 'authenticated',
+      session: {
+        developer: {
+          id: 'developer-id',
+          providerId: 'keycloak',
+          subject: 'developer-subject',
+          issuer: 'https://identity.test/realms/endge',
+          username: 'developer',
+          displayName: 'Developer',
+          active: true,
+        },
+        platformAdmin: false,
+        workspaces: [{
+          id: 'workspace-id',
+          identity: 'workspace-a',
+          displayName: 'Workspace A',
+          active: true,
+          role: 'editor',
+        }],
+      },
+    })
+  })
+
+  it('однократно формирует returnTo и на две минуты предотвращает цикл перенаправлений', () => {
+    const { assign } = installWindow()
+
+    expect(startConfiguratorLogin('https://backend.test/auth/login', BACKEND_URL)).toEqual({ redirected: true })
+    expect(assign).toHaveBeenCalledOnce()
+    const target = new URL(assign.mock.calls[0]![0])
+    expect(target.searchParams.get('returnTo')).toBe('https://configurator.test/editor?project=demo')
+
+    expect(startConfiguratorLogin('https://backend.test/auth/login', BACKEND_URL)).toMatchObject({
+      redirected: false,
+      code: 'auth_redirect_loop',
+    })
+    expect(assign).toHaveBeenCalledOnce()
+  })
+
+  it('очищает маркер перенаправления после успешной проверки сессии', () => {
+    const { storage } = installWindow()
+    storage.set(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY, String(Date.now()))
+
+    clearConfiguratorLoginRedirectGuard(BACKEND_URL)
+
+    expect(storage.has(CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY)).toBe(false)
+  })
+
+  it('отправляет logout с credentials и очищает состояние модуля', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(sessionResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const module = new ConfiguratorSession_Module(
+      new ConfiguratorSessionHttp_Adapter('https://backend.test'),
+    )
+    await module.check()
+
+    await module.logout()
+
+    expect(fetchMock).toHaveBeenLastCalledWith('https://backend.test/auth/logout', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+    }))
+    expect(module.state).toEqual({ status: 'idle' })
+  })
+
+  it('очищает браузерное хранилище Configurator при принудительном выходе', () => {
+    const localStorageClear = vi.fn()
+    const sessionStorageClear = vi.fn()
+    vi.stubGlobal('window', {
+      localStorage: { clear: localStorageClear },
+      sessionStorage: { clear: sessionStorageClear },
+    })
+
+    clearConfiguratorBrowserState()
+
+    expect(localStorageClear).toHaveBeenCalledOnce()
+    expect(sessionStorageClear).toHaveBeenCalledOnce()
+  })
+})

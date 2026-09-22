@@ -1,0 +1,344 @@
+<script setup lang="ts">
+import type { ScriptEditorExtension } from '@/features/endge-ide/source-editor/adapters/monaco/script-editor-extension.types'
+import type { SourceFormatLanguage } from '@/features/endge-ide/tools/format-source'
+
+import { Endge } from '@endge/core'
+import { useUI } from '@endge/ui-vue'
+import * as monaco from 'monaco-editor'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ENDGE_MONACO_TEXT_OPTIONS } from '@/features/endge-ide/config/monaco-text.config'
+import { formatSource } from '@/features/endge-ide/tools/format-source'
+
+import { applyEndgeMonacoTheme, ENDGE_MONACO_SCROLLBAR_OPTIONS } from '@/features/endge-ide/tools/source-editor/editor-surface-theme'
+import { usePersistedMonacoViewState } from '@/features/endge-ide/tools/source-editor/use-persisted-monaco-view-state'
+import { warnDebuggerEditAttempt } from '@/features/endge-ide/tools/warn-debugger-read-only'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+
+type EditorLanguage = 'typescript' | 'javascript' | 'html' | 'css' | 'json' | 'plaintext'
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: string
+    language?: EditorLanguage
+    formatLanguage?: SourceFormatLanguage
+    minHeight?: number | string
+    showToolbar?: boolean
+    readOnly?: boolean
+    extensions?: readonly ScriptEditorExtension[]
+    viewStateKey?: string
+  }>(),
+  {
+    language: 'typescript',
+    minHeight: 600,
+    showToolbar: false,
+    readOnly: false,
+    extensions: () => [],
+    viewStateKey: 'script-editor',
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+  (e: 'blur'): void
+  (e: 'format'): void
+}>()
+
+const ui = useUI()
+const container = ref<HTMLDivElement | null>(null)
+const viewState = usePersistedMonacoViewState(`monaco.${props.viewStateKey}`)
+let editor: monaco.editor.IStandaloneCodeEditor | null = null
+let extensionDisposables: monaco.IDisposable[] = []
+
+const editorMinHeight = computed(() => {
+  if (typeof props.minHeight === 'number') {
+    return `${props.minHeight}px`
+  }
+
+  return props.minHeight
+})
+async function formatDocument(): Promise<void> {
+  Endge.assertWritable()
+  if (!editor) {
+    return
+  }
+
+  const model = editor.getModel()
+  const formatLanguage = props.formatLanguage ?? (
+    props.language === 'plaintext' ? null : props.language
+  )
+
+  if (!model || !formatLanguage) {
+    await editor.getAction('editor.action.formatDocument')?.run()
+    return
+  }
+
+  try {
+    const formatted = await formatSource(model.getValue(), formatLanguage)
+    if (formatted !== model.getValue()) {
+      editor.pushUndoStop()
+      editor.executeEdits('format-document', [{
+        range: model.getFullModelRange(),
+        text: formatted,
+        forceMoveMarkers: true,
+      }])
+      editor.pushUndoStop()
+    }
+    emit('format')
+  }
+  catch (error) {
+    console.error(`[ScriptEditor] Failed to format ${formatLanguage} document: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+function focusOffset(offset: number): void {
+  const model = editor?.getModel()
+  if (!editor || !model) {
+    return
+  }
+
+  const position = model.getPositionAt(Math.max(0, Math.min(offset, model.getValueLength())))
+  editor.setPosition(position)
+  editor.revealLineInCenter(position.lineNumber)
+  editor.focus()
+}
+
+defineExpose({ focusOffset, formatDocument })
+
+onMounted(() => {
+  if (container.value) {
+    editor = monaco.editor.create(container.value, {
+      value: props.modelValue,
+      language: props.language || 'typescript',
+      theme: applyEndgeMonacoTheme(monaco, ui.value.isDark),
+      minimap: { enabled: false },
+      scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
+      automaticLayout: true,
+      ...ENDGE_MONACO_TEXT_OPTIONS,
+      readOnly: Endge.mode === 'debugger' || props.readOnly,
+      formatOnPaste: true,
+      formatOnType: true,
+      autoClosingBrackets: 'always',
+      autoClosingQuotes: 'always',
+      autoClosingOvertype: 'always',
+      autoIndent: 'full',
+      folding: true,
+      foldingStrategy: 'auto',
+      showFoldingControls: 'always',
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+    })
+    viewState.attach(editor)
+    editor.onDidAttemptReadOnlyEdit(warnDebuggerEditAttempt)
+
+    editor.onDidChangeModelContent(() => {
+      emit('update:modelValue', editor!.getValue())
+    })
+
+    editor.onDidBlurEditorText(() => {
+      emit('blur')
+    })
+
+    const model = editor.getModel()
+    if (model) {
+      extensionDisposables = props.extensions.flatMap((extension) => {
+        try {
+          const disposable = extension.install({ monaco, editor: editor!, model })
+          return disposable ? [disposable] : []
+        }
+        catch (error) {
+          console.error(`[ScriptEditor] Failed to install extension "${extension.id}": ${error instanceof Error ? error.message : String(error)}`)
+          return []
+        }
+      })
+    }
+  }
+})
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (editor && editor.getValue() !== newValue) {
+      editor.setValue(newValue)
+    }
+  },
+)
+
+watch(
+  () => ui.value.isDark,
+  (isDark) => {
+    if (editor) {
+      applyEndgeMonacoTheme(monaco, isDark)
+    }
+  },
+)
+
+watch(
+  () => props.language,
+  (language) => {
+    const model = editor?.getModel()
+    if (model) {
+      monaco.editor.setModelLanguage(model, language)
+    }
+  },
+)
+
+watch(
+  () => props.readOnly,
+  (readOnly) => {
+    editor?.updateOptions({ readOnly: Endge.mode === 'debugger' || readOnly })
+  },
+)
+
+onBeforeUnmount(() => {
+  viewState.detach()
+  extensionDisposables.forEach(disposable => disposable.dispose())
+  extensionDisposables = []
+  editor?.dispose()
+})
+</script>
+
+<template>
+  <div
+    class="editor-wrapper"
+    :class="{
+      'editor-wrapper--dark': ui.isDark,
+      'editor-wrapper--framed': showToolbar,
+    }"
+  >
+    <div v-if="showToolbar" class="editor-toolbar">
+      <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+        <SourceFormatButton :disabled="Endge.mode === 'debugger' || readOnly" @click="formatDocument" />
+      </div>
+    </div>
+    <div ref="container" class="editor" />
+  </div>
+</template>
+
+<style scoped>
+.editor-wrapper {
+  height: 100%;
+  min-height: v-bind(editorMinHeight);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-wrapper--framed {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: var(--editor-surface);
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: color-mix(in srgb, var(--editor-surface), white 5%);
+}
+
+.editor {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+:deep(.endge-sfc-column-action) {
+  margin-left: 32px;
+  color: #8790a8 !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer !important;
+  user-select: none;
+  transition: color 120ms ease;
+}
+
+:deep(.endge-sfc-column-action:hover) {
+  color: #c792ea !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:deep(.endge-source-inline-action) {
+  margin-left: 12px;
+  color: #8790a8 !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer !important;
+  user-select: none;
+  transition: color 120ms ease;
+}
+
+:deep(.endge-source-inline-action:hover) {
+  color: #c792ea !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:deep(.endge-source-inline-action--disabled) {
+  color: #697184 !important;
+  cursor: help !important;
+  text-decoration: none;
+}
+
+:deep(.endge-sfc-expression-identifier) {
+  color: #001080 !important;
+}
+
+:deep(.endge-sfc-expression-property) {
+  color: #0451a5 !important;
+}
+
+:deep(.endge-sfc-expression-keyword) {
+  color: #00f !important;
+}
+
+:deep(.endge-sfc-expression-number) {
+  color: #098658 !important;
+}
+
+:deep(.endge-sfc-expression-string) {
+  color: #a31515 !important;
+}
+
+:deep(.endge-sfc-expression-operator) {
+  color: #000 !important;
+}
+
+:deep(.endge-sfc-expression-comment) {
+  color: #008000 !important;
+  font-style: italic;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-identifier) {
+  color: #f07178 !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-property) {
+  color: #82aaff !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-keyword) {
+  color: #c792ea !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-number) {
+  color: #ffcb6b !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-string) {
+  color: #c3e88d !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-operator) {
+  color: #bfc7d5 !important;
+}
+
+.editor-wrapper--dark :deep(.endge-sfc-expression-comment) {
+  color: #717cb4 !important;
+}
+</style>

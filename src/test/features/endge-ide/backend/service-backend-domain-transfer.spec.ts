@@ -1,0 +1,159 @@
+import type { ServiceBackendDomainTransferError } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
+
+const snapshotJSON = JSON.stringify({
+  kind: 'workspace-snapshot',
+  schemaVersion: 1,
+  workspace: {},
+  installedIntegrations: [],
+  documents: {},
+})
+
+describe('сервис переноса домена через backend', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('создаёт план импорта с cookie credentials и областью Workspace', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      valid: true,
+      planId: '550e8400-e29b-41d4-a716-446655440006',
+      targetWorkspace: 'workspace-a',
+      targetETag: '"generation:3"',
+      incoming: { documents: 12, integrations: 0 },
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
+      warnings: ['Documents absent from snapshot will be marked as deleted: 3'],
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test/')
+
+    await expect(service.planImport({
+      workspaceIdentity: 'workspace-a',
+      snapshotJSON,
+    })).resolves.toMatchObject({
+      valid: true,
+      incoming: { documents: 12 },
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/import/plan', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Endge-Workspace': 'workspace-a',
+      },
+      body: JSON.stringify({
+        artifact: JSON.parse(snapshotJSON),
+        password: '',
+      }),
+      signal: undefined,
+    })
+  })
+
+  it('передаёт encrypted envelope и пароль без преобразования внутреннего artifact', async () => {
+    const encrypted = JSON.stringify({
+      kind: 'endge-encrypted-workspace',
+      version: 1,
+      kdf: { algorithm: 'argon2id' },
+      cipher: { algorithm: 'aes-256-gcm' },
+      ciphertext: 'opaque',
+    })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      valid: true,
+      planId: '550e8400-e29b-41d4-a716-446655440006',
+      targetWorkspace: 'workspace-a',
+      targetETag: '"generation:3"',
+      incoming: { documents: 1, integrations: 0, buildProfiles: 2, aiConnections: 1, aiModels: 1 },
+      warnings: [],
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
+
+    await expect(service.planImport({
+      workspaceIdentity: 'workspace-a',
+      snapshotJSON: encrypted,
+      password: 'secret password',
+    })).resolves.toMatchObject({
+      incoming: { buildProfiles: 2, aiConnections: 1, aiModels: 1 },
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/import/plan', expect.objectContaining({
+      body: JSON.stringify({ artifact: JSON.parse(encrypted), password: 'secret password' }),
+    }))
+  })
+
+  it('применяет только проверенный план с точным подтверждением и If-Match', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      workspace: 'workspace-a',
+      imported: { documents: 12, integrations: 0 },
+      creates: 2,
+      updates: 8,
+      restores: 1,
+      deletes: 3,
+      commitId: 'commit-id',
+      parentCommitId: 'parent-commit-id',
+      domainVersion: 'dv2:sha256:test',
+    }, 201))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
+
+    await service.import({
+      workspaceIdentity: 'workspace-a',
+      planId: '550e8400-e29b-41d4-a716-446655440006',
+      confirmation: 'workspace-a',
+      targetETag: '"generation:3"',
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('https://backend.test/api/v1/domain/import', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Endge-Workspace': 'workspace-a',
+        'If-Match': '"generation:3"',
+      },
+      body: JSON.stringify({
+        planId: '550e8400-e29b-41d4-a716-446655440006',
+        confirmation: 'workspace-a',
+      }),
+      signal: undefined,
+    })
+  })
+
+  it('возвращает отказ для Workspace Admin, не считая его новым входом', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      code: 'workspace_admin_required',
+      message: 'Workspace Admin role is required',
+    }, 403)))
+    const service = new ServiceBackendDomainTransferHttp_Adapter('https://backend.test')
+
+    await expect(service.planImport({
+      workspaceIdentity: 'workspace-a',
+      snapshotJSON,
+    })).rejects.toMatchObject({
+      code: 'workspace_admin_required',
+      status: 403,
+      loginUrl: undefined,
+    } satisfies Partial<ServiceBackendDomainTransferError>)
+  })
+})
+
+function jsonResponse(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}

@@ -1,0 +1,35 @@
+import type { TypeSourceExpression } from '@endge/core'
+
+export type ConfigValueEditorKind = 'string' | 'number' | 'boolean' | 'enum' | 'time' | 'datetime' | 'trigger-set' | 'trigger-activation' | 'json' | 'array' | 'object' | 'record' | 'union'
+
+/** Единый реестр диспетчеризации исходных значений по умолчанию и фактических значений контекста. */
+export function resolveConfigValueEditor(type: TypeSourceExpression): ConfigValueEditorKind {
+  if (type.kind === 'enum') {
+    return 'enum'
+  }
+  if (type.kind === 'array') {
+    return 'array'
+  }
+  if (type.kind === 'object') {
+    return 'object'
+  }
+  if (type.kind === 'record') {
+    return 'record'
+  }
+  if (type.kind === 'union') {
+    return 'union'
+  }
+  if (type.kind !== 'reference') {
+    return 'json'
+  }
+  switch (type.identity) {
+    case 'String': case 'ID': return 'string'
+    case 'Number': return 'number'
+    case 'Boolean': return 'boolean'
+    case 'Time': return 'time'
+    case 'DateTime': return 'datetime'
+    case 'TriggerActivation': return 'trigger-activation'
+    case 'TriggerSet': return 'trigger-set'
+    default: return 'json'
+  }
+}

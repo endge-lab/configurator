@@ -1,0 +1,152 @@
+<script setup lang="ts">
+import type { DomainDocumentType } from '@endge/core'
+import type {
+  DocumentDependencyNode,
+  DocumentDependencyTreeResult,
+} from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
+
+import { Endge } from '@endge/core'
+import { TriangleAlert } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
+
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import {
+  buildCompositionDependencyHierarchy,
+} from '@/features/endge-ide/services/composition-dependencies/composition-dependency-tree'
+import {
+  buildDocumentDependencyHierarchy,
+} from '@/features/endge-ide/services/document-dependencies/document-dependency-graph'
+import DocumentDependencyTreeNode from '@/features/endge-ide/ui/components/document-dependencies/DocumentDependencyTreeNode.vue'
+
+const props = defineProps<{
+  documentType: DomainDocumentType
+  id?: string | number | null
+  identity: string
+  displayName?: string | null
+  source?: string | null
+  draft?: unknown
+  tree?: DocumentDependencyTreeResult | null
+}>()
+
+const documentResult = shallowRef<DocumentDependencyTreeResult>(props.tree ?? buildTree())
+const result = computed(() => props.tree ?? documentResult.value)
+const errorCount = computed(
+  () => result.value.diagnostics.filter(item => item.severity === 'error').length,
+)
+let refreshTimer: ReturnType<typeof setTimeout> | null = null
+const unsubscribeDomain = Endge.domain.subscribe(() => scheduleRefresh())
+const unsubscribeProgram = Endge.program.subscribe(() => scheduleRefresh())
+
+watch(
+  () => [props.documentType, props.id, props.identity, props.displayName, props.source, props.draft],
+  () => scheduleRefresh(),
+  { deep: true },
+)
+
+watch(() => props.tree, (tree) => {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+  if (!tree) {
+    documentResult.value = buildTree()
+  }
+})
+
+onBeforeUnmount(() => {
+  unsubscribeDomain()
+  unsubscribeProgram()
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+  }
+})
+
+function buildTree(): DocumentDependencyTreeResult {
+  if (String(props.documentType) === 'composition') {
+    const input = {
+      identity: props.identity,
+      displayName: props.displayName,
+      source: props.source ?? '',
+    }
+    return buildCompositionDependencyHierarchy(input)
+  }
+
+  const input = {
+    documentType: props.documentType,
+    id: props.id,
+    identity: props.identity,
+    displayName: props.displayName,
+    source: props.source,
+    draft: props.draft,
+  }
+  return buildDocumentDependencyHierarchy(input)
+}
+
+function scheduleRefresh(): void {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+  }
+  if (props.tree) {
+    refreshTimer = null
+    return
+  }
+  refreshTimer = setTimeout(() => {
+    refreshTimer = null
+    documentResult.value = buildTree()
+  }, 140)
+}
+
+function openDocument(node: DocumentDependencyNode): void {
+  if (!node.documentType || node.status === 'missing') {
+    return
+  }
+  EndgeIDE.tabs.openDocument(node.identity, node.documentType)
+}
+</script>
+
+<template>
+  <section
+    class="flex h-full min-h-0 flex-col border-l border-border/55 bg-background"
+    aria-label="Зависимости документа"
+  >
+    <div
+      v-if="result.status === 'compile-error' && !result.root"
+      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center"
+    >
+      <span class="inline-flex size-9 items-center justify-center rounded-full border border-amber-400/25 bg-amber-400/5 text-amber-400">
+        <TriangleAlert class="size-4" stroke-width="1.8" />
+      </span>
+      <span class="text-xs font-medium text-foreground">{{ $t('uiText.compilationErrors56931820') }}</span>
+      <span class="text-[10px] text-muted-foreground">
+        {{ errorCount }} {{ errorCount === 1 ? $t('uiText.errorc394f7f8') : $t('uiText.errors200f99bf') }} {{ $t('uiText.inCurrentSourceeb4219f0') }}
+      </span>
+    </div>
+
+    <ScrollArea v-else class="min-h-0 flex-1">
+      <div class="py-1.5">
+        <div
+          v-if="result.status === 'compile-error'"
+          class="mx-3 mb-1.5 flex items-center gap-2 border-l-2 border-amber-400/60 bg-amber-400/[0.04] px-2 py-1.5 text-[10px] text-amber-300"
+        >
+          <TriangleAlert class="size-3.5 shrink-0" />
+          {{ $t('uiText.compilationErrors5d2fb4df') }} {{ errorCount }}
+        </div>
+        <DocumentDependencyTreeNode
+          v-if="result.root"
+          :key="result.root.id"
+          :node="result.root"
+          :depth="0"
+          root
+          @open="openDocument"
+        />
+        <div
+          v-if="result.root && !result.root.children.length"
+          class="mx-3 my-3 border-l border-dashed border-border pl-3 text-[11px] text-muted-foreground"
+        >
+          {{ $t('uiText.noExternalDependenciesd19b0e67') }}
+        </div>
+      </div>
+    </ScrollArea>
+  </section>
+</template>

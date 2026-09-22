@@ -1,0 +1,3996 @@
+<script setup lang="ts">
+import type {
+  ComponentSFCInteractionTriggerProjection,
+  ComponentSFCTableCellBindingProjection,
+  ComponentSFCTableColumnProjection,
+  ComponentSFCTableMenuNodeProjection,
+  ComponentSFCTableSourcePatch,
+  ComponentSFCTableVisualCellTag,
+  ComponentSFCTableVisualMenuKind,
+  ComponentSFCTableVisualProjection,
+  ComponentSFCVisualSourceValue,
+  EndgeSFCEditingConfiguration,
+  RComponentContractInput,
+} from '@endge/core'
+import type {
+  TableCellBindingValueKind,
+  TableCellComponentOption,
+} from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
+import type { TableVisualColumnPinSide } from '@/features/endge-ide/services/component-sfc-editor/table-column-pin-state'
+import type { TableVisualColumnSortDirection } from '@/features/endge-ide/services/component-sfc-editor/table-column-sort-state'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
+import type { SearchableSelectOption } from '@/features/endge-ide/ui/components/searchable-select'
+
+import {
+  compileComponentSFCExpression,
+  COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS,
+  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+  ENDGE_SFC_TABLE_CELL_SELECTION_MODES,
+  ENDGE_SFC_TABLE_PAGING_MODES,
+  ENDGE_SFC_TABLE_SELECTION_MODES,
+  ENDGE_SFC_TABLE_SELECTION_TRIGGERS,
+  ENDGE_SFC_TABLE_SORT_COMPARATORS,
+  getComponentSFCTagInputContract,
+  patchComponentSFCTableSource,
+  readComponentSFCTranslationFallback,
+} from '@endge/core'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Blocks,
+  Braces,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileCode2,
+  FileJson2,
+  GripVertical,
+  PanelLeft,
+  PanelRight,
+  PencilLine,
+  Pin,
+  PinOff,
+  Plus,
+  Radio,
+  Settings2,
+  SquareMenu,
+  Table2,
+  Tags,
+  Trash2,
+  Unplug,
+} from 'lucide-vue-next'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import {
+  parseTableDefaultPin,
+  updateTableDefaultPin,
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-pin-state'
+import {
+  isTableColumnSortPath,
+  moveTableDefaultSort,
+  parseTableColumnSortPaths,
+  parseTableDefaultSort,
+  renameTableDefaultSortKey,
+  serializeTableColumnSortPaths,
+  updateTableDefaultSort,
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-sort-state'
+import {
+  parseTableDefaultHidden,
+  updateTableDefaultHidden,
+} from '@/features/endge-ide/services/component-sfc-editor/table-column-visibility-state'
+import {
+  createVisualSchemaWorkspaceState,
+  isVisualSchemaWorkspaceState,
+  visualSchemaLayoutKey,
+} from '@/features/endge-ide/services/visual-schema-workspace-state'
+import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/ComponentSFCPropsVisualEditor.vue'
+import DocumentMetadataEditor from '@/features/endge-ide/ui/components/DocumentMetadataEditor.vue'
+import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
+import { useSmartTabSelection, useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
+
+import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
+import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
+import ComponentSFCEditOutcomeEditor from './ComponentSFCEditOutcomeEditor.vue'
+import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
+import ComponentSFCPortsVisualEditor from './ComponentSFCPortsVisualEditor.vue'
+import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
+import ComponentSFCSettingsSectionHeader from './ComponentSFCSettingsSectionHeader.vue'
+import ComponentSFCTableMenuPreviewEditor from './ComponentSFCTableMenuPreviewEditor.vue'
+
+const props = defineProps<{
+  source: string
+  identity: string
+  projection: ComponentSFCTableVisualProjection
+  componentOptions: TableCellComponentOption[]
+  propTypes: VisualSchemaTypeOption[]
+  sfcEditing: EndgeSFCEditingConfiguration
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:source', source: string): void
+  (event: 'openSource', offset: number): void
+  (event: 'open:type', identity: string): void
+}>()
+
+const mainTab = defineModel<'table' | 'columns'>('mode', { default: 'table' })
+
+const PAGING_NOT_SET_VALUE = '__paging_not_set__'
+const PAGING_SOURCE_VALUE = '__paging_source__'
+const SELECTION_NOT_SET_VALUE = '__selection_not_set__'
+const SELECTION_SOURCE_VALUE = '__selection_source__'
+const DATA_SPLIT_DEFAULT_RATIO = 30
+const DATA_SPLIT_MIN_RATIO = 20
+const DATA_SPLIT_MAX_RATIO = 55
+const DATA_SPLIT_KEYBOARD_STEP = 2
+const SELECTION_MODE_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_MODES[number], string> = {
+  none: 'Без выделения',
+  single: 'Одна строка',
+  multiple: 'Несколько строк',
+}
+const CELL_SELECTION_MODE_LABELS: Record<typeof ENDGE_SFC_TABLE_CELL_SELECTION_MODES[number], string> = {
+  none: 'Без выделения',
+  single: 'Одна ячейка',
+}
+const SELECTION_TRIGGER_LABELS: Record<typeof ENDGE_SFC_TABLE_SELECTION_TRIGGERS[number], string> = {
+  auto: 'Auto',
+  control: 'Только control слева',
+  row: 'Только клик по строке',
+  both: 'Control и строка',
+}
+const PAGING_LABELS: Record<typeof ENDGE_SFC_TABLE_PAGING_MODES[number], string> = {
+  pages: 'Страницы',
+  virtual: 'Виртуальный скролл',
+}
+const SELECTION_MODE_OPTIONS = ENDGE_SFC_TABLE_SELECTION_MODES.map(value => ({ value, label: SELECTION_MODE_LABELS[value] }))
+const CELL_SELECTION_MODE_OPTIONS = ENDGE_SFC_TABLE_CELL_SELECTION_MODES.map(value => ({ value, label: CELL_SELECTION_MODE_LABELS[value] }))
+const SELECTION_TRIGGER_OPTIONS = ENDGE_SFC_TABLE_SELECTION_TRIGGERS.map(value => ({ value, label: SELECTION_TRIGGER_LABELS[value] }))
+const PAGING_OPTIONS = ENDGE_SFC_TABLE_PAGING_MODES.map(value => ({ value, label: PAGING_LABELS[value] }))
+const SORT_COMPARATOR_OPTIONS = ENDGE_SFC_TABLE_SORT_COMPARATORS.map(value => ({
+  value,
+  label: value[0]!.toUpperCase() + value.slice(1),
+}))
+const MENU_KIND_OPTIONS = [
+  { kind: 'column', label: 'Меню заголовков' },
+  { kind: 'row', label: 'Меню ячеек' },
+] as const
+
+type EditableTableAttributeName
+  = 'selection-mode' | 'selection-trigger' | 'cell-selection-mode'
+    | 'paging' | 'page-size' | 'page-sizes'
+    | 'default-pin' | 'default-sort' | 'default-hidden'
+
+interface MenuItemDraft {
+  labelMode: 'text' | 'translation'
+  label: string
+  translationKey: string
+  action: string
+  input: string
+  icon: string
+  visible: string
+  disabled: string
+}
+
+interface MenuLabelUpdate {
+  index: number
+  mode: 'text' | 'translation'
+  label: string
+  translationKey: string
+}
+
+interface PendingEditsHandle {
+  flushPendingEdits: () => boolean | Promise<boolean>
+}
+
+const tableSection = useSmartTabSelection(
+  'component-sfc.visual.table-section',
+  'general',
+  ['general', 'inputs', 'events', 'ports', 'selection', 'paging', 'visibility', 'pinning', 'sorting', 'menus', 'metadata'] as const,
+)
+const columnSection = useSmartTabSelection(
+  'component-sfc.visual.column-section',
+  'general',
+  ['general', 'data', 'editing', 'events', 'sorting', 'cell-menu'] as const,
+)
+const editingSection = useSmartTabSelection(
+  'component-sfc.visual.column-editing-section',
+  'editor',
+  ['editor', 'triggers', 'reaction'] as const,
+)
+const activeMenuKind = useSmartTabSelection(
+  'component-sfc.visual.table-menu-kind',
+  'column',
+  ['column', 'row'] as const,
+)
+const tableSections = [
+  { id: 'general', label: 'Основное', icon: Settings2, description: 'Основные параметры таблицы и её отображения.' },
+  { id: 'inputs', label: 'Входные данные', icon: Braces, description: 'Public props генерируются напрямую в SFC defineProps.' },
+  { id: 'events', label: 'События', icon: Radio, description: 'Добавляйте только события Table, для которых нужна реакция.' },
+  { id: 'ports', label: 'Порты', icon: Unplug, description: 'Required, Provided, Events и Forwarding читаются из definePorts и сразу патчат Source.' },
+  { id: 'selection', label: 'Выделение', icon: Check, description: 'Режим задаёт допустимое количество выбранных строк, а способ выбора — какие действия меняют состояние выделения.' },
+  { id: 'paging', label: 'Пагинация', icon: Table2, description: 'Способ отображения больших наборов строк.' },
+  { id: 'visibility', label: 'Видимость', icon: Eye, description: 'Управляет колонками, видимыми при первом открытии таблицы; ту же настройку можно менять на вкладке «Колонки».' },
+  { id: 'pinning', label: 'Закрепления', icon: Pin, description: 'Задаёт колонки, закреплённые слева или справа по умолчанию; порядок берётся со вкладки «Колонки».' },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Строки сортировки идут в порядке приоритета; поля и comparator задаются в настройках колонок.' },
+  { id: 'menus', label: 'Меню', icon: SquareMenu, description: 'Настройка меню заголовков колонок и меню ячеек таблицы по умолчанию.' },
+  { id: 'metadata', label: 'Метаданные', icon: FileJson2, description: 'Редактирование metadata компонента как JSON-объекта.' },
+] as const
+const columnSections = [
+  { id: 'general', label: 'Основное', icon: Settings2, description: 'Key, отображаемое имя и ширина выбранной колонки.' },
+  { id: 'data', label: 'Данные', icon: Blocks, description: 'Компонент или встроенный tag ячейки и значения его входных параметров.' },
+  { id: 'editing', label: 'Редактирование', icon: PencilLine, description: 'Editor, trigger входа и реакция после изменения.' },
+  { id: 'events', label: 'События', icon: Radio, description: 'Обработчики событий ячейки получают row, rowIndex, rowKey, columnKey, value и event().' },
+  { id: 'sorting', label: 'Сортировка', icon: ArrowUpDown, description: 'Цепочки сравниваются последовательно. Используйте dot paths без префикса row; если список пуст, используется key колонки.' },
+  { id: 'cell-menu', label: 'Меню ячеек', icon: SquareMenu, description: 'Наследование, переопределение или отключение Table > CellMenu для ячеек выбранной колонки.' },
+] as const
+const editingSections = [
+  { id: 'editor', label: 'Редактор', description: 'Включение редактирования, выбор editor-а и его входные параметры.' },
+  { id: 'triggers', label: 'Триггеры', description: 'Начало, сохранение и отмена режима редактирования.' },
+  { id: 'reaction', label: 'После сохранения', description: 'Реакция на семантическое событие edited после commit.' },
+] as const
+const activeTableSection = computed(() => tableSections.find(section => section.id === tableSection.value) ?? tableSections[0])
+const activeColumnSection = computed(() => columnSections.find(section => section.id === columnSection.value) ?? columnSections[0])
+const activeEditingSection = computed(() => editingSections.find(section => section.id === editingSection.value) ?? editingSections[0])
+const inputWorkspaceState = useSmartTabViewState(
+  'component-sfc.visual.table-input-workspace',
+  {
+    defaultValue: () => createVisualSchemaWorkspaceState(false, false),
+    validate: isVisualSchemaWorkspaceState,
+  },
+)
+const inputShowPreview = computed({
+  get: () => inputWorkspaceState.value.showPreview,
+  set: value => inputWorkspaceState.value.showPreview = value,
+})
+const inputShowExample = computed({
+  get: () => inputWorkspaceState.value.showExample,
+  set: value => inputWorkspaceState.value.showExample = value,
+})
+const inputLayoutKey = computed(() => visualSchemaLayoutKey(inputShowPreview.value, inputShowExample.value))
+const inputPanelSizes = computed(() => inputWorkspaceState.value.layouts[inputLayoutKey.value])
+const dataSplitRatio = useSmartTabViewState<number>(
+  'component-sfc.visual.table-data-split-ratio',
+  {
+    defaultValue: () => DATA_SPLIT_DEFAULT_RATIO,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= DATA_SPLIT_MIN_RATIO
+      && value <= DATA_SPLIT_MAX_RATIO,
+  },
+)
+const tableNavigationWidth = useSmartTabViewState<number>(
+  'component-sfc.visual.table-navigation-width',
+  {
+    defaultValue: () => 232,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= 192
+      && value <= 420,
+  },
+)
+const columnNavigationWidth = useSmartTabViewState<number>(
+  'component-sfc.visual.column-navigation-width',
+  {
+    defaultValue: () => 232,
+    validate: value => typeof value === 'number'
+      && Number.isFinite(value)
+      && value >= 192
+      && value <= 420,
+  },
+)
+const dataSplitContainer = ref<HTMLElement | null>(null)
+const dataSplitRatioDraft = ref(dataSplitRatio.value)
+const isDataSplitResizing = ref(false)
+const removeAllColumnsDialogOpen = ref(false)
+const columnContextMenu = ref<{ columnIndex: number, x: number, y: number } | null>(null)
+const selectedColumnIndex = ref<number | null>(null)
+const dragColumnIndex = ref<number | null>(null)
+const dragOverColumnIndex = ref<number | null>(null)
+const titleDraft = ref('')
+const keyDraft = ref('')
+const widthDraft = ref('')
+const pageSizeDraft = ref('')
+const pageSizesDraft = ref('')
+const cellEditorMode = ref<'component' | 'tag' | 'source'>('tag')
+const cellBindingDrafts = ref<Record<string, string>>({})
+const cellBindingKinds = ref<Record<string, TableCellBindingValueKind>>({})
+const cellBindingErrors = ref<Record<string, string>>({})
+const sortPathDrafts = ref<string[]>([])
+const pendingEditingColumnId = ref<string | null>(null)
+const portsVisualEditorRef = ref<PendingEditsHandle | null>(null)
+const tableMenuEditorRefs = ref<PendingEditsHandle[]>([])
+const editableVariantEditorRef = ref<PendingEditsHandle | null>(null)
+const editedReactionEditorRef = ref<PendingEditsHandle | null>(null)
+const cellInteractionsEditorRef = ref<PendingEditsHandle | null>(null)
+const columnMenuEditorRef = ref<PendingEditsHandle | null>(null)
+
+watch(dataSplitRatio, (ratio) => {
+  if (!isDataSplitResizing.value) {
+    dataSplitRatioDraft.value = ratio
+  }
+})
+
+interface TableCellBindingField extends RComponentContractInput {
+  sourceOnly?: boolean
+}
+
+const columns = computed(() => props.projection.columns)
+const defaultPinByKey = computed(() => props.projection.defaultPin?.kind === 'expression'
+  ? new Map<string, 'left' | 'right'>()
+  : parseTableDefaultPin(sourceValueText(props.projection.defaultPin)))
+const defaultPinItems = computed(() => Array.from(
+  defaultPinByKey.value,
+  ([key, side]) => ({ key, side }),
+))
+const defaultHiddenKeys = computed(() => props.projection.defaultHidden?.kind === 'expression'
+  ? new Set<string>()
+  : parseTableDefaultHidden(sourceValueText(props.projection.defaultHidden)))
+const defaultSortItems = computed(() => props.projection.defaultSort?.kind === 'expression'
+  ? []
+  : parseTableDefaultSort(sourceValueText(props.projection.defaultSort)))
+const tableColumnOptions = computed<SearchableSelectOption[]>(() => columns.value.flatMap((column) => {
+  const key = staticColumnKey(column)
+  if (!key) {
+    return []
+  }
+  const title = columnTitle(column)
+  return [{
+    value: key,
+    label: title === key ? key : `${title} · ${key}`,
+  }]
+}))
+const columnsByPinSide = computed(() => {
+  const grouped: Record<TableVisualColumnPinSide, ComponentSFCTableColumnProjection[]> = {
+    left: [],
+    none: [],
+    right: [],
+  }
+  for (const column of columns.value) {
+    grouped[columnPinSide(column)].push(column)
+  }
+  return grouped
+})
+const orderedColumns = computed(() => [
+  ...columnsByPinSide.value.left,
+  ...columnsByPinSide.value.none,
+  ...columnsByPinSide.value.right,
+])
+const selectedColumn = computed(() => {
+  const index = selectedColumnIndex.value
+  return index == null ? null : columns.value[index] ?? null
+})
+const selectedColumnMenuIndex = computed(() => selectedColumn.value?.index ?? -1)
+const selectedCellEditingPending = computed(() => {
+  const column = selectedColumn.value
+  return Boolean(
+    column
+    && !column.editing.enabled
+    && pendingEditingColumnId.value === column.id,
+  )
+})
+const contextMenuColumn = computed(() => {
+  const index = columnContextMenu.value?.columnIndex
+  return index == null ? null : columns.value[index] ?? null
+})
+const metadataSession = computed(() => EndgeIDE.tabs.documentMetadataSession.value)
+watch(() => props.source, () => metadataSession.value?.refreshFromDocument(), { immediate: true })
+
+function updateMetadataDraft(value: string): void {
+  metadataSession.value?.updateDraft(value)
+}
+
+function updateMetadataValidation(error: string | null): void {
+  if (metadataSession.value) {
+    metadataSession.value.error = error
+  }
+}
+
+function commitMetadata(): void {
+  metadataSession.value?.prepareBeforeSave()
+}
+
+const selectionModeValue = computed(() => {
+  const value = props.projection.selectionMode
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_SELECTION_MODES as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
+const selectionTriggerValue = computed(() => {
+  const value = props.projection.selectionTrigger
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_SELECTION_TRIGGERS as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
+const cellSelectionModeValue = computed(() => {
+  const value = props.projection.cellSelectionMode
+  if (value?.kind === 'expression') {
+    return SELECTION_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_CELL_SELECTION_MODES as readonly string[]).includes(source)
+    ? source
+    : SELECTION_NOT_SET_VALUE
+})
+const selectionModeIsSourceOwned = computed(() => props.projection.selectionMode?.kind === 'expression')
+const selectionTriggerIsSourceOwned = computed(() => props.projection.selectionTrigger?.kind === 'expression')
+const cellSelectionModeIsSourceOwned = computed(() => props.projection.cellSelectionMode?.kind === 'expression')
+const pagingModeValue = computed(() => {
+  const value = props.projection.paging
+  if (value?.kind === 'expression') {
+    return PAGING_SOURCE_VALUE
+  }
+  const source = sourceValueText(value).trim()
+  return (ENDGE_SFC_TABLE_PAGING_MODES as readonly string[]).includes(source) ? source : PAGING_NOT_SET_VALUE
+})
+const pagingIsSourceOwned = computed(() => props.projection.paging?.kind === 'expression')
+const usesPagePaging = computed(() => pagingModeValue.value === 'pages')
+const componentSelectOptions = computed<SearchableSelectOption[]>(() => props.componentOptions.map(option => ({
+  value: option.value,
+  label: option.label,
+})))
+const tagSelectOptions = computed<SearchableSelectOption[]>(() => (
+  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS.map(tag => ({ value: tag, label: tag }))
+))
+const selectedComponentValue = computed(() => {
+  const cell = selectedColumn.value?.cell
+  return cell?.kind === 'component' && cell.identity
+    ? cell.identity
+    : null
+})
+const selectedTagValue = computed(() => selectedColumn.value?.cell.kind === 'tag'
+  ? selectedColumn.value.cell.tag
+  : null)
+const selectedColumnSortComparator = computed(() => {
+  const sort = selectedColumn.value?.sort
+  if (!sort || sort.kind === 'expression') {
+    return 'natural'
+  }
+  const value = sourceValueText(sort)
+  return SORT_COMPARATOR_OPTIONS.some(option => option.value === value) ? value : 'natural'
+})
+const selectedComponentOption = computed(() => props.componentOptions.find(
+  option => option.value === selectedComponentValue.value,
+) ?? null)
+const selectedCellBindings = computed<ComponentSFCTableCellBindingProjection[]>(() => {
+  const cell = selectedColumn.value?.cell
+  if (cellEditorMode.value === 'component' && cell?.kind === 'component') {
+    return cell.bindings
+  }
+  if (cellEditorMode.value === 'tag' && cell?.kind === 'tag') {
+    return cell.bindings
+  }
+  return []
+})
+const cellBindingFields = computed<TableCellBindingField[]>(() => {
+  const cell = selectedColumn.value?.cell
+  const contract = cellEditorMode.value === 'component' && cell?.kind === 'component'
+    ? selectedComponentOption.value?.inputs ?? []
+    : cellEditorMode.value === 'tag' && cell?.kind === 'tag'
+      ? getComponentSFCTagInputContract(cell.tag)
+      : []
+  const knownNames = new Set(contract.map(input => input.name))
+  const sourceOnly = selectedCellBindings.value
+    .filter(binding => !knownNames.has(binding.name))
+    .map(binding => ({
+      name: binding.name,
+      type: 'Source',
+      optional: true,
+      sourceOnly: true,
+    }))
+
+  return [...contract, ...sourceOnly]
+})
+
+function isSourceOwnedCell(column: ComponentSFCTableColumnProjection | null | undefined): boolean {
+  return column?.cell.kind === 'source'
+}
+
+watch(
+  columns,
+  (nextColumns) => {
+    if (!nextColumns.length) {
+      selectedColumnIndex.value = null
+      return
+    }
+    if (selectedColumnIndex.value == null || selectedColumnIndex.value >= nextColumns.length) {
+      selectedColumnIndex.value = Math.min(selectedColumnIndex.value ?? 0, nextColumns.length - 1)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  selectedColumn,
+  (column, previousColumn) => {
+    if (column?.id !== previousColumn?.id) {
+      pendingEditingColumnId.value = null
+    }
+    if (!column?.editing.enabled) {
+      editingSection.value = 'editor'
+    }
+    titleDraft.value = columnTitleText(column?.title)
+    keyDraft.value = sourceValueText(column?.key)
+    widthDraft.value = sourceValueText(column?.width)
+    cellEditorMode.value = column?.cell.kind === 'component'
+      ? 'component'
+      : column?.cell.kind === 'tag'
+        ? 'tag'
+        : 'source'
+    sortPathDrafts.value = parseTableColumnSortPaths(sourceValueText(column?.sortBy))
+    syncCellBindingDrafts(column)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => selectedColumn.value?.editing.enabled,
+  (enabled) => {
+    if (enabled) {
+      pendingEditingColumnId.value = null
+    }
+    else {
+      editingSection.value = 'editor'
+    }
+  },
+)
+
+watch(
+  () => [
+    props.projection.pageSize,
+    props.projection.pageSizes,
+  ] as const,
+  ([pageSize, pageSizes]) => {
+    pageSizeDraft.value = sourceValueText(pageSize)
+    pageSizesDraft.value = sourceValueText(pageSizes)
+  },
+  { immediate: true },
+)
+
+function sourceValueText(value: ComponentSFCVisualSourceValue | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+  if (value.kind === 'expression') {
+    return value.source
+  }
+  if (value.kind === 'boolean') {
+    return value.value ? 'true' : 'false'
+  }
+  return value.value == null ? '' : String(value.value)
+}
+
+function columnTitleText(
+  value: ComponentSFCVisualSourceValue | null | undefined,
+): string {
+  if (value?.kind === 'expression') {
+    return readComponentSFCTranslationFallback(value.source) ?? value.source
+  }
+  return sourceValueText(value)
+}
+
+function tableSectionSummary(sectionId: typeof tableSections[number]['id']): string | null {
+  switch (sectionId) {
+    case 'general':
+    case 'inputs':
+    case 'events':
+    case 'ports':
+      return null
+    case 'selection':
+      if (selectionModeIsSourceOwned.value || selectionTriggerIsSourceOwned.value || cellSelectionModeIsSourceOwned.value) {
+        return 'Source'
+      }
+      if (selectionModeValue.value === SELECTION_NOT_SET_VALUE && cellSelectionModeValue.value === SELECTION_NOT_SET_VALUE) {
+        return null
+      }
+      return [
+        `Строки: ${selectionModeValue.value === SELECTION_NOT_SET_VALUE ? 'none' : selectionModeValue.value}`,
+        `Ячейка: ${cellSelectionModeValue.value === SELECTION_NOT_SET_VALUE ? 'none' : cellSelectionModeValue.value}`,
+      ].join(' · ')
+    case 'paging':
+      if (pagingIsSourceOwned.value) {
+        return 'Source'
+      }
+      return pagingModeValue.value === 'pages'
+        ? 'Pages'
+        : pagingModeValue.value === 'virtual'
+          ? 'Virtual'
+          : null
+    case 'visibility': {
+      if (props.projection.defaultHidden?.kind === 'expression') {
+        return 'Source'
+      }
+      const visibleCount = columns.value.filter(column => !isColumnHiddenByDefault(column)).length
+      return columns.value.length ? `${visibleCount}/${columns.value.length}` : null
+    }
+    case 'pinning':
+      if (props.projection.defaultPin?.kind === 'expression') {
+        return 'Source'
+      }
+      return defaultPinItems.value.length ? String(defaultPinItems.value.length) : null
+    case 'sorting':
+      if (props.projection.defaultSort?.kind === 'expression') {
+        return 'Source'
+      }
+      return defaultSortItems.value.length ? String(defaultSortItems.value.length) : null
+    case 'menus': {
+      const count = props.projection.menus.column.items.length
+        + props.projection.menus.row.items.length
+      return count ? String(count) : null
+    }
+    case 'metadata':
+      return null
+  }
+}
+
+function menuProjection(kind: ComponentSFCTableVisualMenuKind, columnIndex?: number) {
+  return columnIndex == null ? props.projection.menus[kind] : props.projection.columns[columnIndex]?.cellMenu
+}
+
+function setMenuMode(kind: ComponentSFCTableVisualMenuKind, value: unknown, columnIndex?: number): void {
+  const mode = String(value ?? '') as 'default' | 'disabled' | 'none' | 'custom'
+  applyPatch({ type: 'set-menu-mode', menu: kind, mode, ...(columnIndex == null ? {} : { columnIndex }) })
+}
+
+function addMenuNode(kind: ComponentSFCTableVisualMenuKind, node: 'item' | 'separator', columnIndex?: number): void {
+  applyPatch({ type: 'add-menu-node', menu: kind, node, ...(columnIndex == null ? {} : { columnIndex }) })
+}
+
+function removeMenuNode(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, columnIndex?: number): void {
+  applyPatch({ type: 'remove-menu-node', menu: kind, nodeIndex, ...(columnIndex == null ? {} : { columnIndex }) })
+}
+
+function setMenuItemAttribute(
+  kind: ComponentSFCTableVisualMenuKind,
+  nodeIndex: number,
+  name: 'label' | 'action' | 'input' | 'icon' | 'visible' | 'disabled',
+  value: string | null,
+  valueKind: 'expression' | 'literal',
+  columnIndex?: number,
+): boolean {
+  return applyPatch({ type: 'set-menu-item-attribute', menu: kind, nodeIndex, name, value: value?.trim() || null, valueKind, ...(columnIndex == null ? {} : { columnIndex }) })
+}
+
+function setMenuItemAction(kind: ComponentSFCTableVisualMenuKind, nodeIndex: number, value: unknown, columnIndex?: number): void {
+  const identity = typeof value === 'string' || typeof value === 'number' ? String(value) : null
+  setMenuItemAttribute(kind, nodeIndex, 'action', identity, menuActionValueKind(identity), columnIndex)
+}
+
+function menuActionValueKind(identity: string | null): 'expression' | 'literal' {
+  const option = props.projection.menuActions.find(action => action.identity === identity)
+  return option && ['required', 'provided', 'forwarded'].includes(option.source)
+    ? 'expression'
+    : 'literal'
+}
+
+function createMenuItem(kind: ComponentSFCTableVisualMenuKind, draft: MenuItemDraft, columnIndex?: number): void {
+  const label = draft.label.trim()
+  const action = draft.action.trim()
+  if (!label || !action) {
+    toast.error('Название и Action обязательны для пункта меню.')
+    return
+  }
+
+  const nodeIndex = menuProjection(kind, columnIndex)?.items.length ?? 0
+  const scope = columnIndex == null ? {} : { columnIndex }
+  const translationKey = draft.translationKey.trim() || `table:menu.item-${nodeIndex + 1}`
+  const labelValue = draft.labelMode === 'translation'
+    ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
+    : label
+  const patches: ComponentSFCTableSourcePatch[] = [
+    { type: 'add-menu-node', menu: kind, node: 'item', ...scope },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'label',
+      value: labelValue,
+      valueKind: draft.labelMode === 'translation' ? 'expression' : 'literal',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'action',
+      value: action,
+      valueKind: menuActionValueKind(action),
+      ...scope,
+    },
+  ]
+
+  if (draft.input.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'input',
+      value: draft.input.trim(),
+      valueKind: 'expression',
+      ...scope,
+    })
+  }
+  if (draft.icon.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'icon',
+      value: draft.icon.trim(),
+      valueKind: 'literal',
+      ...scope,
+    })
+  }
+  if (draft.visible.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'visible',
+      value: draft.visible.trim(),
+      valueKind: 'expression',
+      ...scope,
+    })
+  }
+  if (draft.disabled.trim()) {
+    patches.push({
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex,
+      name: 'disabled',
+      value: draft.disabled.trim(),
+      valueKind: 'expression',
+      ...scope,
+    })
+  }
+
+  applyPatches(patches)
+}
+
+function saveMenuLabel(
+  kind: ComponentSFCTableVisualMenuKind,
+  update: MenuLabelUpdate,
+  columnIndex?: number,
+  complete?: (saved: boolean) => void,
+): void {
+  const label = update.label.trim()
+  if (!label) {
+    complete?.(false)
+    return
+  }
+  const translationKey = update.translationKey.trim() || `table:menu.item-${update.index + 1}`
+  const saved = setMenuItemAttribute(
+    kind,
+    update.index,
+    'label',
+    update.mode === 'translation'
+      ? `t('${escapeExpressionString(translationKey)}', '${escapeExpressionString(label)}')`
+      : label,
+    update.mode === 'translation' ? 'expression' : 'literal',
+    columnIndex,
+  )
+  complete?.(saved)
+}
+
+function saveMenuDetails(
+  kind: ComponentSFCTableVisualMenuKind,
+  payload: { index: number, input: string, icon: string, visible: string, disabled: string },
+  columnIndex?: number,
+  complete?: (saved: boolean) => void,
+): void {
+  const scope = columnIndex == null ? {} : { columnIndex }
+  const saved = applyPatches([
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'input',
+      value: payload.input.trim() || null,
+      valueKind: 'expression',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'icon',
+      value: payload.icon.trim() || null,
+      valueKind: 'literal',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'visible',
+      value: payload.visible.trim() || null,
+      valueKind: 'expression',
+      ...scope,
+    },
+    {
+      type: 'set-menu-item-attribute',
+      menu: kind,
+      nodeIndex: payload.index,
+      name: 'disabled',
+      value: payload.disabled.trim() || null,
+      valueKind: 'expression',
+      ...scope,
+    },
+  ])
+  complete?.(saved)
+}
+
+function moveMenuItem(
+  kind: ComponentSFCTableVisualMenuKind,
+  payload: { fromIndex: number, toIndex: number },
+  columnIndex?: number,
+): void {
+  applyPatch({
+    type: 'move-menu-node',
+    menu: kind,
+    fromIndex: payload.fromIndex,
+    toIndex: payload.toIndex,
+    ...(columnIndex == null ? {} : { columnIndex }),
+  })
+}
+
+function escapeExpressionString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
+}
+
+function openMenuSource(kind: ComponentSFCTableVisualMenuKind, item?: ComponentSFCTableMenuNodeProjection, columnIndex?: number): void {
+  emit('openSource', item?.sourceRange.start ?? menuProjection(kind, columnIndex)?.sourceRange?.start ?? props.projection.sourceRange.start)
+}
+
+function updateInputPanelSizes(sizes: number[]): void {
+  inputWorkspaceState.value.layouts[inputLayoutKey.value] = [...sizes]
+}
+
+function updateTableSection(value: string | null): void {
+  if (tableSections.some(section => section.id === value)) {
+    tableSection.value = value as typeof tableSection.value
+  }
+}
+
+function updateColumnSection(value: string | null): void {
+  if (columnSections.some(section => section.id === value)) {
+    columnSection.value = value as typeof columnSection.value
+  }
+}
+
+function updateEditingSection(value: string | null): void {
+  const section = editingSections.find(item => item.id === value)
+  if (!section) {
+    return
+  }
+  if (section.id !== 'editor' && !selectedColumn.value?.editing.enabled) {
+    return
+  }
+  editingSection.value = section.id
+}
+
+function syncCellBindingDrafts(column: ComponentSFCTableColumnProjection | null): void {
+  const cell = column?.cell
+  const bindings = cell?.kind === 'component' || cell?.kind === 'tag' ? cell.bindings : []
+  cellBindingDrafts.value = Object.fromEntries(
+    bindings.map(binding => [binding.name, sourceValueText(binding.value)]),
+  )
+  cellBindingKinds.value = Object.fromEntries(
+    bindings.map(binding => [
+      binding.name,
+      binding.value.kind === 'expression' ? 'expression' : 'literal',
+    ]),
+  )
+  cellBindingErrors.value = {}
+}
+
+function currentCellBinding(name: string): ComponentSFCTableCellBindingProjection | null {
+  return selectedCellBindings.value.find(binding => binding.name === name) ?? null
+}
+
+function cellBindingKind(name: string): TableCellBindingValueKind {
+  return cellBindingKinds.value[name]
+    ?? (currentCellBinding(name)?.value.kind === 'expression' ? 'expression' : 'literal')
+}
+
+function resetCellBinding(name: string): void {
+  const binding = currentCellBinding(name)
+  cellBindingDrafts.value[name] = binding ? sourceValueText(binding.value) : ''
+  cellBindingKinds.value[name] = binding?.value.kind === 'expression' ? 'expression' : 'literal'
+  delete cellBindingErrors.value[name]
+}
+
+function setCellBindingKind(name: string, valueKind: TableCellBindingValueKind): void {
+  if (cellBindingKind(name) === valueKind) {
+    return
+  }
+  cellBindingKinds.value[name] = valueKind
+  if (cellBindingDrafts.value[name]?.trim()) {
+    commitCellBinding(name)
+  }
+}
+
+function commitCellBinding(name: string): void {
+  const column = selectedColumn.value
+  if (!column || isSourceOwnedCell(column)) {
+    return
+  }
+
+  const rawValue = cellBindingDrafts.value[name] ?? ''
+  const value = rawValue.trim() || null
+  const valueKind = cellBindingKind(name)
+  const current = currentCellBinding(name)
+  const currentKind = current?.value.kind === 'expression' ? 'expression' : 'literal'
+  const currentValue = current ? sourceValueText(current.value) : ''
+
+  if ((value ?? '') === currentValue && (!current || currentKind === valueKind)) {
+    delete cellBindingErrors.value[name]
+    return
+  }
+  if (valueKind === 'expression' && value) {
+    const validation = compileComponentSFCExpression(value, {
+      sourcePath: `template.Table.Column.${name}`,
+    })
+    const error = validation.diagnostics.find(item => item.severity === 'error')
+    if (error) {
+      cellBindingErrors.value[name] = error.message
+      return
+    }
+  }
+
+  if (applyPatch({
+    type: 'set-column-cell-attribute',
+    columnIndex: column.index,
+    name,
+    value,
+    valueKind,
+  })) {
+    delete cellBindingErrors.value[name]
+  }
+}
+
+function handleCellBindingFocusOut(event: FocusEvent, name: string): void {
+  const owner = event.currentTarget as HTMLElement | null
+  if (owner?.contains(event.relatedTarget as Node | null)) {
+    return
+  }
+  commitCellBinding(name)
+}
+
+function columnTitle(column: ComponentSFCTableColumnProjection): string {
+  return columnTitleText(column.title)
+    || sourceValueText(column.key)
+    || `Колонка ${column.index + 1}`
+}
+
+function staticColumnKey(column: ComponentSFCTableColumnProjection): string | null {
+  if (column.key?.kind !== 'literal') {
+    return null
+  }
+  return sourceValueText(column.key).trim() || null
+}
+
+function columnPinSide(column: ComponentSFCTableColumnProjection): TableVisualColumnPinSide {
+  const key = staticColumnKey(column)
+  return key ? defaultPinByKey.value.get(key) ?? 'none' : 'none'
+}
+
+function isColumnHiddenByDefault(column: ComponentSFCTableColumnProjection): boolean {
+  const key = staticColumnKey(column)
+  return key ? defaultHiddenKeys.value.has(key) : false
+}
+
+function columnSortDirection(column: ComponentSFCTableColumnProjection): TableVisualColumnSortDirection | null {
+  const key = staticColumnKey(column)
+  return key ? defaultSortItems.value.find(item => item.key === key)?.direction ?? null : null
+}
+
+function columnSortPriority(column: ComponentSFCTableColumnProjection): number | null {
+  const key = staticColumnKey(column)
+  const index = key ? defaultSortItems.value.findIndex(item => item.key === key) : -1
+  return index >= 0 ? index + 1 : null
+}
+
+function isColumnSortable(column: ComponentSFCTableColumnProjection): boolean {
+  if (column.sortable?.kind === 'boolean') {
+    return column.sortable.value
+  }
+  const value = sourceValueText(column.sortable).trim()
+  return Boolean(value && value !== 'false')
+}
+
+function columnSortEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  if (!staticColumnKey(column)) {
+    return 'Для сортировки колонке нужен статический key.'
+  }
+  if (!canEdit(props.projection.defaultSort)) {
+    return 'Сортировка управляется динамическим выражением в Source.'
+  }
+  if (!canEdit(props.projection.sortMode)) {
+    return 'Режим сортировки управляется динамическим выражением в Source.'
+  }
+  if (sourceValueText(props.projection.sortMode).trim() === 'disabled') {
+    return 'Сортировка отключена атрибутом sort-mode="disabled".'
+  }
+  return null
+}
+
+function canSetColumnSortDirection(column: ComponentSFCTableColumnProjection): boolean {
+  return !columnSortDirectionEditingHint(column)
+}
+
+function columnSortDetailsEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  if (!canEdit(column.sort) || !canEdit(column.sortBy)) {
+    return 'Comparator или sort-by управляется динамическим выражением в Source.'
+  }
+  if (!isColumnSortable(column) && !canEdit(column.sortable)) {
+    return 'Атрибут sortable управляется динамическим выражением в Source.'
+  }
+  return null
+}
+
+function columnSortDirectionEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  const commonHint = columnSortEditingHint(column)
+  if (commonHint) {
+    return commonHint
+  }
+  if (!isColumnSortable(column) && !canEdit(column.sortable)) {
+    return 'Атрибут sortable управляется динамическим выражением в Source.'
+  }
+  return null
+}
+
+function canEditColumnVisibility(column: ComponentSFCTableColumnProjection): boolean {
+  return Boolean(staticColumnKey(column) && canEdit(props.projection.defaultHidden))
+}
+
+function columnVisibilityEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  if (!staticColumnKey(column)) {
+    return 'Для настройки видимости колонке нужен статический key.'
+  }
+  if (!canEdit(props.projection.defaultHidden)) {
+    return 'Видимость управляется динамическим выражением в Source.'
+  }
+  return null
+}
+
+function canEditColumnPin(column: ComponentSFCTableColumnProjection): boolean {
+  return Boolean(
+    staticColumnKey(column)
+    && canEdit(props.projection.defaultPin)
+    && canEdit(props.projection.columnPin)
+    && sourceValueText(props.projection.columnPin).trim() !== 'disabled',
+  )
+}
+
+function columnPinEditingHint(column: ComponentSFCTableColumnProjection): string | null {
+  if (!staticColumnKey(column)) {
+    return 'Для закрепления колонке нужен статический key.'
+  }
+  if (!canEdit(props.projection.defaultPin) || !canEdit(props.projection.columnPin)) {
+    return 'Закрепление управляется динамическим выражением в Source.'
+  }
+  if (sourceValueText(props.projection.columnPin).trim() === 'disabled') {
+    return 'Закрепление отключено атрибутом column-pin="disabled".'
+  }
+  return null
+}
+
+function columnByStaticKey(key: string): ComponentSFCTableColumnProjection | null {
+  return columns.value.find(column => staticColumnKey(column) === key) ?? null
+}
+
+function singleSelectValue(value: string | string[] | null): string | null {
+  return typeof value === 'string' && value ? value : null
+}
+
+function defaultPinColumnOptions(currentKey = ''): SearchableSelectOption[] {
+  const occupied = new Set(defaultPinByKey.value.keys())
+  return tableColumnOptions.value.filter((option) => {
+    if (option.value === currentKey) {
+      return true
+    }
+    const column = columnByStaticKey(option.value)
+    return !occupied.has(option.value) && Boolean(column && canEditColumnPin(column))
+  })
+}
+
+function defaultSortColumnOptions(currentKey = ''): SearchableSelectOption[] {
+  const occupied = new Set(defaultSortItems.value.map(item => item.key))
+  const sortMode = sourceValueText(props.projection.sortMode).trim()
+  if (!currentKey && sortMode === 'single' && occupied.size > 0) {
+    return []
+  }
+  return tableColumnOptions.value.filter((option) => {
+    if (option.value === currentKey) {
+      return true
+    }
+    const column = columnByStaticKey(option.value)
+    return !occupied.has(option.value) && Boolean(column && !columnSortDirectionEditingHint(column))
+  })
+}
+
+function canEditDefaultPinRule(key: string): boolean {
+  const column = columnByStaticKey(key)
+  return Boolean(column && !columnPinEditingHint(column))
+}
+
+function canEditDefaultSortRule(key: string): boolean {
+  const column = columnByStaticKey(key)
+  return Boolean(column && !columnSortDirectionEditingHint(column))
+}
+
+function isColumnDraggable(column: ComponentSFCTableColumnProjection): boolean {
+  return columnsByPinSide.value[columnPinSide(column)].length > 1
+}
+
+function isFirstColumnOnPinSide(column: ComponentSFCTableColumnProjection): boolean {
+  return columnsByPinSide.value[columnPinSide(column)][0]?.index === column.index
+}
+
+function showDividerBeforeColumn(column: ComponentSFCTableColumnProjection): boolean {
+  if (!isFirstColumnOnPinSide(column)) {
+    return false
+  }
+  const side = columnPinSide(column)
+  if (side === 'none') {
+    return columnsByPinSide.value.left.length > 0
+  }
+  if (side === 'right') {
+    return columnsByPinSide.value.left.length > 0 || columnsByPinSide.value.none.length > 0
+  }
+  return false
+}
+
+function columnPinLabel(column: ComponentSFCTableColumnProjection): string {
+  return columnPinSide(column) === 'left' ? 'Закреплена слева' : 'Закреплена справа'
+}
+
+function canEdit(value: ComponentSFCVisualSourceValue | null | undefined): boolean {
+  return value?.kind !== 'expression'
+}
+
+function applyPatch(patch: ComponentSFCTableSourcePatch): boolean {
+  return applyPatches([patch])
+}
+
+/** Применяет связанные Table-настройки атомарно и публикует только итоговый Source. */
+function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
+  let nextSource = props.source
+  let changed = false
+
+  for (const patch of patches) {
+    const result = patchComponentSFCTableSource(nextSource, patch, {
+      sfcEditing: props.sfcEditing,
+    })
+    if (!result.ok) {
+      toast.error('Не удалось изменить Table Source', {
+        description: result.message,
+      })
+      return false
+    }
+    nextSource = result.source
+    changed ||= result.changed
+  }
+
+  if (changed) {
+    emit('update:source', nextSource)
+  }
+  return true
+}
+
+/** Применяет локальные черновики вложенных визуальных редакторов перед persistence. */
+async function flushPendingEdits(): Promise<boolean> {
+  if (metadataSession.value?.error || Object.keys(cellBindingErrors.value).length) {
+    return false
+  }
+
+  const handles = [
+    portsVisualEditorRef.value,
+    ...tableMenuEditorRefs.value,
+    editableVariantEditorRef.value,
+    editedReactionEditorRef.value,
+    cellInteractionsEditorRef.value,
+    columnMenuEditorRef.value,
+  ]
+  for (const handle of handles) {
+    if (!handle) {
+      continue
+    }
+    if (!await handle.flushPendingEdits()) {
+      return false
+    }
+    await nextTick()
+  }
+  return !metadataSession.value?.error && Object.keys(cellBindingErrors.value).length === 0
+}
+
+defineExpose({ flushPendingEdits })
+
+function tableProjectionValue(name: EditableTableAttributeName): ComponentSFCVisualSourceValue | null {
+  switch (name) {
+    case 'selection-mode':
+      return props.projection.selectionMode
+    case 'selection-trigger':
+      return props.projection.selectionTrigger
+    case 'cell-selection-mode':
+      return props.projection.cellSelectionMode
+    case 'paging':
+      return props.projection.paging
+    case 'page-size':
+      return props.projection.pageSize
+    case 'page-sizes':
+      return props.projection.pageSizes
+    case 'default-pin':
+      return props.projection.defaultPin
+    case 'default-sort':
+      return props.projection.defaultSort
+    case 'default-hidden':
+      return props.projection.defaultHidden
+  }
+  return null
+}
+
+function commitTableAttribute(name: EditableTableAttributeName, rawValue: string): void {
+  const currentValue = tableProjectionValue(name)
+  if (!canEdit(currentValue)) {
+    return
+  }
+  const value = rawValue.trim() || null
+  if ((value ?? '') === sourceValueText(currentValue)) {
+    return
+  }
+  applyPatch({ type: 'set-table-attribute', name, value })
+}
+
+function updateSelectionMode(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || selectionModeIsSourceOwned.value) {
+    return
+  }
+  const mode = value === SELECTION_NOT_SET_VALUE ? null : value
+  applyPatches([
+    { type: 'set-table-attribute', name: 'selection-mode', value: mode },
+  ])
+}
+
+function updateSelectionTrigger(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || selectionTriggerIsSourceOwned.value) {
+    return
+  }
+  commitTableAttribute('selection-trigger', value === SELECTION_NOT_SET_VALUE ? '' : value)
+}
+
+function updateCellSelectionMode(value: string | null): void {
+  if (!value || value === SELECTION_SOURCE_VALUE || cellSelectionModeIsSourceOwned.value) {
+    return
+  }
+  const mode = value === SELECTION_NOT_SET_VALUE ? null : value
+  applyPatches([
+    { type: 'set-table-attribute', name: 'cell-selection-mode', value: mode },
+  ])
+}
+
+function updatePaging(value: string | null): void {
+  if (!value || value === PAGING_SOURCE_VALUE || pagingIsSourceOwned.value) {
+    return
+  }
+
+  const paging = value === PAGING_NOT_SET_VALUE ? null : value
+  const patches: ComponentSFCTableSourcePatch[] = [
+    { type: 'set-table-attribute', name: 'paging', value: paging },
+  ]
+
+  if (paging !== 'pages') {
+    patches.push(
+      { type: 'set-table-attribute', name: 'page-size', value: null },
+      { type: 'set-table-attribute', name: 'page-sizes', value: null },
+    )
+  }
+
+  applyPatches(patches)
+}
+
+function commitPageSize(): void {
+  const value = pageSizeDraft.value.trim()
+  if (value && (!/^\d+$/.test(value) || Number(value) < 1)) {
+    pageSizeDraft.value = sourceValueText(props.projection.pageSize)
+    toast.warning('Размер страницы должен быть целым числом больше нуля')
+    return
+  }
+  commitTableAttribute('page-size', value)
+}
+
+function commitPageSizes(): void {
+  const value = pageSizesDraft.value.trim()
+  const parts = value.split(',').map(item => item.trim()).filter(Boolean)
+  if (value && (parts.length === 0 || parts.some(item => !/^\d+$/.test(item) || Number(item) < 1))) {
+    pageSizesDraft.value = sourceValueText(props.projection.pageSizes)
+    toast.warning('Используйте положительные числа через запятую')
+    return
+  }
+
+  const normalized = value ? [...new Set(parts)].join(',') : ''
+  pageSizesDraft.value = normalized
+  commitTableAttribute('page-sizes', normalized)
+}
+
+function addColumn(): void {
+  const nextIndex = columns.value.length
+  if (applyPatch({ type: 'add-column' })) {
+    selectedColumnIndex.value = nextIndex
+  }
+}
+
+function removeSelectedColumn(): void {
+  const index = selectedColumnIndex.value
+  if (index == null) {
+    return
+  }
+  removeColumnAt(index)
+}
+
+function removeColumnAt(index: number): void {
+  const column = columns.value[index]
+  if (!column) {
+    return
+  }
+
+  const patches: ComponentSFCTableSourcePatch[] = []
+  const key = staticColumnKey(column)
+  if (key && canEdit(props.projection.defaultPin)) {
+    const current = sourceValueText(props.projection.defaultPin)
+    const next = updateTableDefaultPin(current, key, null)
+    if ((next ?? '') !== current) {
+      patches.push({ type: 'set-table-attribute', name: 'default-pin', value: next })
+    }
+  }
+  if (key && canEdit(props.projection.defaultHidden)) {
+    const current = sourceValueText(props.projection.defaultHidden)
+    const next = updateTableDefaultHidden(current, key, false)
+    if ((next ?? '') !== current) {
+      patches.push({ type: 'set-table-attribute', name: 'default-hidden', value: next })
+    }
+  }
+  if (key && canEdit(props.projection.defaultSort)) {
+    const current = sourceValueText(props.projection.defaultSort)
+    const next = updateTableDefaultSort(current, key, null)
+    if ((next ?? '') !== current) {
+      patches.push({ type: 'set-table-attribute', name: 'default-sort', value: next })
+    }
+  }
+  patches.push({ type: 'remove-column', columnIndex: index })
+
+  if (applyPatches(patches)) {
+    selectedColumnIndex.value = columns.value.length <= 1 ? null : Math.min(index, columns.value.length - 2)
+  }
+}
+
+function removeAllColumns(): void {
+  const patches: ComponentSFCTableSourcePatch[] = []
+  if (canEdit(props.projection.defaultPin) && sourceValueText(props.projection.defaultPin).trim()) {
+    patches.push({ type: 'set-table-attribute', name: 'default-pin', value: null })
+  }
+  if (canEdit(props.projection.defaultHidden) && sourceValueText(props.projection.defaultHidden).trim()) {
+    patches.push({ type: 'set-table-attribute', name: 'default-hidden', value: null })
+  }
+  if (canEdit(props.projection.defaultSort) && sourceValueText(props.projection.defaultSort).trim()) {
+    patches.push({ type: 'set-table-attribute', name: 'default-sort', value: null })
+  }
+  patches.push(...columns.value.map((_, index) => ({
+    type: 'remove-column' as const,
+    columnIndex: columns.value.length - index - 1,
+  })))
+
+  if (!patches.length) {
+    removeAllColumnsDialogOpen.value = false
+    return
+  }
+
+  if (applyPatches(patches)) {
+    selectedColumnIndex.value = null
+    removeAllColumnsDialogOpen.value = false
+  }
+}
+
+function setColumnPin(index: number, side: 'left' | 'right' | null): void {
+  const column = columns.value[index]
+  if (!column) {
+    return
+  }
+  const unavailableReason = columnPinEditingHint(column)
+  const key = staticColumnKey(column)
+  if (unavailableReason || !key) {
+    toast.warning('Закрепление недоступно', { description: unavailableReason ?? undefined })
+    return
+  }
+
+  const current = sourceValueText(props.projection.defaultPin)
+  const next = updateTableDefaultPin(current, key, side)
+  if ((next ?? '') !== current) {
+    applyPatch({ type: 'set-table-attribute', name: 'default-pin', value: next })
+  }
+}
+
+function addDefaultPinRule(value: string | string[] | null): void {
+  const key = singleSelectValue(value)
+  const column = key ? columnByStaticKey(key) : null
+  if (column) {
+    setColumnPin(column.index, 'left')
+  }
+}
+
+function changeDefaultPinRuleKey(currentKey: string, value: string | string[] | null): void {
+  const nextKey = singleSelectValue(value)
+  const column = nextKey ? columnByStaticKey(nextKey) : null
+  const side = defaultPinByKey.value.get(currentKey)
+  if (!nextKey || nextKey === currentKey || !column || !side || columnPinEditingHint(column)) {
+    return
+  }
+
+  const current = sourceValueText(props.projection.defaultPin)
+  const withoutCurrent = updateTableDefaultPin(current, currentKey, null) ?? ''
+  const next = updateTableDefaultPin(withoutCurrent, nextKey, side)
+  applyPatch({ type: 'set-table-attribute', name: 'default-pin', value: next })
+}
+
+function setDefaultPinRuleSide(key: string, side: 'left' | 'right'): void {
+  const column = columnByStaticKey(key)
+  if (column) {
+    setColumnPin(column.index, side)
+  }
+}
+
+function removeDefaultPinRule(key: string): void {
+  if (!canEdit(props.projection.defaultPin)) {
+    return
+  }
+  const current = sourceValueText(props.projection.defaultPin)
+  const next = updateTableDefaultPin(current, key, null)
+  if ((next ?? '') !== current) {
+    applyPatch({ type: 'set-table-attribute', name: 'default-pin', value: next })
+  }
+}
+
+function setColumnHiddenByDefault(index: number, hidden: boolean): void {
+  const column = columns.value[index]
+  if (!column) {
+    return
+  }
+  const unavailableReason = columnVisibilityEditingHint(column)
+  const key = staticColumnKey(column)
+  if (unavailableReason || !key) {
+    toast.warning('Видимость недоступна', { description: unavailableReason ?? undefined })
+    return
+  }
+
+  const current = sourceValueText(props.projection.defaultHidden)
+  const next = updateTableDefaultHidden(current, key, hidden)
+  if ((next ?? '') !== current) {
+    applyPatch({ type: 'set-table-attribute', name: 'default-hidden', value: next })
+  }
+}
+
+function setColumnDefaultSort(
+  index: number,
+  direction: TableVisualColumnSortDirection | null,
+): void {
+  const column = columns.value[index]
+  if (!column) {
+    return
+  }
+  const unavailableReason = columnSortEditingHint(column)
+  const key = staticColumnKey(column)
+  if (unavailableReason || !key) {
+    toast.warning('Сортировка недоступна', { description: unavailableReason ?? undefined })
+    return
+  }
+  if (direction && !isColumnSortable(column) && !canEdit(column.sortable)) {
+    toast.warning('Сортировка недоступна', {
+      description: 'Атрибут sortable управляется динамическим выражением в Source.',
+    })
+    return
+  }
+
+  const current = sourceValueText(props.projection.defaultSort)
+  const next = updateTableDefaultSort(current, key, direction)
+  const sortPathPatches = collectSelectedColumnSortPathPreservationPatches(column)
+  if (!sortPathPatches) {
+    return
+  }
+  const patches: ComponentSFCTableSourcePatch[] = [...sortPathPatches]
+  if (direction && !isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  if ((next ?? '') !== current) {
+    patches.push({ type: 'set-table-attribute', name: 'default-sort', value: next })
+  }
+  if (patches.length) {
+    applyPatches(patches)
+  }
+}
+
+function updateColumnSortComparator(value: string | null): void {
+  const column = selectedColumn.value
+  if (!column || !value || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  const sortPathPatches = collectSelectedColumnSortPathPreservationPatches(column)
+  if (!sortPathPatches) {
+    return
+  }
+  const patches: ComponentSFCTableSourcePatch[] = [...sortPathPatches]
+  if (!isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  patches.push({
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort',
+    value: value === 'natural' ? null : value,
+  })
+  applyPatches(patches)
+}
+
+/** Сохраняет незакоммиченные chains в той же Source transaction, что и adjacent sort controls. */
+function collectSelectedColumnSortPathPreservationPatches(
+  column: ComponentSFCTableColumnProjection,
+): ComponentSFCTableSourcePatch[] | null {
+  if (
+    mainTab.value !== 'columns'
+    || selectedColumn.value?.index !== column.index
+    || !canEdit(column.sortBy)
+  ) {
+    return []
+  }
+
+  const paths = sortPathDrafts.value.map(path => path.trim()).filter(Boolean)
+  if (paths.some(path => !isTableColumnSortPath(path))) {
+    toast.warning('Некорректная цепочка поля', {
+      description: 'Используйте простой dot path без row., пробелов, массивов и selectors.',
+    })
+    return null
+  }
+
+  const value = serializeTableColumnSortPaths(paths)
+  if ((value ?? '') === sourceValueText(column.sortBy)) {
+    return []
+  }
+
+  return [{
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort-by',
+    value,
+  }]
+}
+
+function applyColumnSortPaths(paths: readonly string[]): void {
+  const column = selectedColumn.value
+  if (!column || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  const normalizedPaths = paths.map(path => path.trim()).filter(Boolean)
+  const patches: ComponentSFCTableSourcePatch[] = []
+  if (normalizedPaths.length && !isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  patches.push({
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name: 'sort-by',
+    value: serializeTableColumnSortPaths(normalizedPaths),
+  })
+  if (applyPatches(patches)) {
+    sortPathDrafts.value = normalizedPaths
+  }
+}
+
+function addColumnSortPath(): void {
+  const column = selectedColumn.value
+  if (!column || columnSortDetailsEditingHint(column)) {
+    return
+  }
+  sortPathDrafts.value = [...sortPathDrafts.value, '']
+}
+
+function resetColumnSortPaths(): void {
+  sortPathDrafts.value = parseTableColumnSortPaths(sourceValueText(selectedColumn.value?.sortBy))
+}
+
+function commitColumnSortPath(index: number): void {
+  const value = sortPathDrafts.value[index]?.trim() ?? ''
+  if (!value) {
+    removeColumnSortPath(index)
+    return
+  }
+  if (!isTableColumnSortPath(value)) {
+    toast.warning('Некорректная цепочка поля', {
+      description: 'Используйте простой dot path без row., пробелов, массивов и selectors.',
+    })
+    resetColumnSortPaths()
+    return
+  }
+  const next = [...sortPathDrafts.value]
+  next[index] = value
+  applyColumnSortPaths(next)
+}
+
+function removeColumnSortPath(index: number): void {
+  const next = [...sortPathDrafts.value]
+  next.splice(index, 1)
+  applyColumnSortPaths(next)
+}
+
+function moveColumnSortPath(index: number, offset: -1 | 1): void {
+  const targetIndex = index + offset
+  if (targetIndex < 0 || targetIndex >= sortPathDrafts.value.length) {
+    return
+  }
+  const next = [...sortPathDrafts.value]
+  ;[next[index], next[targetIndex]] = [next[targetIndex]!, next[index]!]
+  applyColumnSortPaths(next)
+}
+
+function addDefaultSortRule(value: string | string[] | null): void {
+  const key = singleSelectValue(value)
+  const column = key ? columnByStaticKey(key) : null
+  if (column) {
+    setColumnDefaultSort(column.index, 'asc')
+  }
+}
+
+function changeDefaultSortRuleKey(currentKey: string, value: string | string[] | null): void {
+  const nextKey = singleSelectValue(value)
+  const column = nextKey ? columnByStaticKey(nextKey) : null
+  if (!nextKey || nextKey === currentKey || !column || columnSortDirectionEditingHint(column)) {
+    return
+  }
+
+  const current = sourceValueText(props.projection.defaultSort)
+  const next = renameTableDefaultSortKey(current, currentKey, nextKey)
+  const patches: ComponentSFCTableSourcePatch[] = []
+  if (!isColumnSortable(column)) {
+    patches.push({
+      type: 'set-column-attribute',
+      columnIndex: column.index,
+      name: 'sortable',
+      value: 'true',
+    })
+  }
+  if ((next ?? '') !== current) {
+    patches.push({ type: 'set-table-attribute', name: 'default-sort', value: next })
+  }
+  if (patches.length) {
+    applyPatches(patches)
+  }
+}
+
+function setDefaultSortRuleDirection(key: string, direction: TableVisualColumnSortDirection): void {
+  const column = columnByStaticKey(key)
+  if (column) {
+    setColumnDefaultSort(column.index, direction)
+  }
+}
+
+function removeDefaultSortRule(key: string): void {
+  const column = columnByStaticKey(key)
+  if (column) {
+    setColumnDefaultSort(column.index, null)
+    return
+  }
+  if (!canEdit(props.projection.defaultSort)) {
+    return
+  }
+  const current = sourceValueText(props.projection.defaultSort)
+  const next = updateTableDefaultSort(current, key, null)
+  if ((next ?? '') !== current) {
+    applyPatch({ type: 'set-table-attribute', name: 'default-sort', value: next })
+  }
+}
+
+function moveDefaultSortRule(key: string, offset: -1 | 1): void {
+  const column = columnByStaticKey(key)
+  if (column) {
+    moveColumnSortPriority(column.index, offset)
+  }
+}
+
+function moveColumnSortPriority(index: number, offset: -1 | 1): void {
+  const column = columns.value[index]
+  const key = column ? staticColumnKey(column) : null
+  if (!column || !key || columnSortEditingHint(column)) {
+    return
+  }
+  const current = sourceValueText(props.projection.defaultSort)
+  const next = moveTableDefaultSort(current, key, offset)
+  if ((next ?? '') !== current) {
+    applyPatch({ type: 'set-table-attribute', name: 'default-sort', value: next })
+  }
+}
+
+function commitAttribute(
+  name: 'key' | 'title' | 'width',
+  value: string,
+): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  if (name === 'key' && !value.trim()) {
+    keyDraft.value = sourceValueText(column.key)
+    toast.warning('Key колонки не может быть пустым')
+    return
+  }
+
+  const current = sourceValueText(column[name])
+  const normalized = name === 'width' && !value.trim() ? null : value
+  if ((normalized ?? '') === current) {
+    return
+  }
+  const patches: ComponentSFCTableSourcePatch[] = [{
+    type: 'set-column-attribute',
+    columnIndex: column.index,
+    name,
+    value: normalized,
+  }]
+
+  if (name === 'key' && canEdit(props.projection.defaultPin)) {
+    const oldKey = staticColumnKey(column)
+    const pinSide = columnPinSide(column)
+    const nextKey = value.trim()
+    if (oldKey && nextKey && pinSide !== 'none') {
+      const withoutOldKey = updateTableDefaultPin(
+        sourceValueText(props.projection.defaultPin),
+        oldKey,
+        null,
+      )
+      const withNewKey = updateTableDefaultPin(withoutOldKey ?? '', nextKey, pinSide)
+      patches.push({ type: 'set-table-attribute', name: 'default-pin', value: withNewKey })
+    }
+  }
+
+  if (name === 'key' && canEdit(props.projection.defaultHidden)) {
+    const oldKey = staticColumnKey(column)
+    const nextKey = value.trim()
+    if (oldKey && nextKey && isColumnHiddenByDefault(column)) {
+      const withoutOldKey = updateTableDefaultHidden(
+        sourceValueText(props.projection.defaultHidden),
+        oldKey,
+        false,
+      )
+      const withNewKey = updateTableDefaultHidden(withoutOldKey ?? '', nextKey, true)
+      patches.push({ type: 'set-table-attribute', name: 'default-hidden', value: withNewKey })
+    }
+  }
+
+  if (name === 'key' && canEdit(props.projection.defaultSort)) {
+    const oldKey = staticColumnKey(column)
+    const nextKey = value.trim()
+    if (oldKey && nextKey && columnSortDirection(column)) {
+      const current = sourceValueText(props.projection.defaultSort)
+      const next = renameTableDefaultSortKey(current, oldKey, nextKey)
+      if ((next ?? '') !== current) {
+        patches.push({ type: 'set-table-attribute', name: 'default-sort', value: next })
+      }
+    }
+  }
+
+  applyPatches(patches)
+}
+
+function updateComponent(value: string | string[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !value || Array.isArray(value) || isSourceOwnedCell(column)) {
+    return
+  }
+  if (column.cell.kind === 'component' && column.cell.identity === value) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-component',
+    columnIndex: column.index,
+    identity: value,
+    syntax: column.cell.kind === 'component' || column.cell.kind === 'tag'
+      ? column.cell.syntax
+      : undefined,
+  })
+}
+
+function updateTag(value: string | string[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !value || Array.isArray(value) || isSourceOwnedCell(column)) {
+    return
+  }
+  const tag = value as ComponentSFCTableVisualCellTag
+  if (column.cell.kind === 'tag' && column.cell.tag === value) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-tag',
+    columnIndex: column.index,
+    tag,
+    syntax: column.cell.kind === 'component' || column.cell.kind === 'tag'
+      ? column.cell.syntax
+      : undefined,
+  })
+}
+
+function selectCellEditorMode(mode: 'component' | 'tag' | 'source'): void {
+  if (mode === 'source' || !isSourceOwnedCell(selectedColumn.value)) {
+    cellEditorMode.value = mode
+  }
+}
+
+function openSelectedColumnSource(): void {
+  if (selectedColumn.value) {
+    emit('openSource', selectedColumn.value.sourceRange.start)
+  }
+}
+
+function openSelectedCellEditingSource(): void {
+  const range = selectedColumn.value?.editing.sourceRange ?? selectedColumn.value?.sourceRange
+  if (range) {
+    emit('openSource', range.start)
+  }
+}
+
+function setSelectedCellEditingEnabled(enabled: boolean): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable) {
+    return
+  }
+  if (enabled && !column.editing.enabled && !column.editing.editor) {
+    pendingEditingColumnId.value = column.id
+    return
+  }
+  if (!enabled) {
+    pendingEditingColumnId.value = null
+    editingSection.value = 'editor'
+  }
+  if (column.editing.enabled === enabled) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-editable',
+    columnIndex: column.index,
+    enabled,
+  })
+}
+
+function updateSelectedCellEditTrigger(index: number, trigger: ComponentSFCInteractionTriggerProjection): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable || !column.editing.enabled) {
+    return
+  }
+  const triggers = column.editing.triggers.map(cloneInteractionTrigger)
+  if (!triggers[index]) {
+    return
+  }
+  triggers[index] = cloneInteractionTrigger(trigger)
+  applySelectedCellEditTriggers(triggers)
+}
+
+function addSelectedCellEditTrigger(): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable || !column.editing.enabled) {
+    return
+  }
+  applySelectedCellEditTriggers([
+    ...column.editing.triggers.map(cloneInteractionTrigger),
+    createInteractionTrigger('keydown'),
+  ])
+}
+
+function removeSelectedCellEditTrigger(index: number): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable || !column.editing.enabled) {
+    return
+  }
+  const triggers = column.editing.triggers.map(cloneInteractionTrigger)
+  triggers.splice(index, 1)
+  applySelectedCellEditTriggers(triggers)
+}
+
+function applySelectedCellEditTriggers(triggers: ComponentSFCInteractionTriggerProjection[]): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-edit-triggers',
+    columnIndex: column.index,
+    triggers,
+  })
+}
+
+function setSelectedCellEditedReaction(value: string | null, complete?: (saved: boolean) => void): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.editable || !column.editing.enabled || !column.editing.reaction.editable) {
+    complete?.(false)
+    return
+  }
+  const saved = applyPatch({
+    type: 'set-column-cell-edited-reaction',
+    columnIndex: column.index,
+    value,
+  })
+  complete?.(saved)
+}
+
+function setSelectedCellCancelTriggers(triggers: ComponentSFCInteractionTriggerProjection[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.enabled) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-cancel-triggers',
+    columnIndex: column.index,
+    triggers,
+  })
+}
+
+function setSelectedCellCommitTriggers(triggers: ComponentSFCInteractionTriggerProjection[] | null): void {
+  const column = selectedColumn.value
+  if (!column || !column.editing.enabled) {
+    return
+  }
+  applyPatch({
+    type: 'set-column-cell-commit-triggers',
+    columnIndex: column.index,
+    triggers,
+  })
+}
+
+function setSelectedCellEditorComponent(identity: string): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  const editor = column.editing.editor
+  if (!column.editing.editorImplicit && editor?.kind === 'component' && editor.identity === identity) {
+    return
+  }
+  if (applyPatch({
+    type: 'set-column-cell-editor-component',
+    columnIndex: column.index,
+    identity,
+  })) {
+    pendingEditingColumnId.value = null
+  }
+}
+
+function setSelectedCellEditorTag(tag: ComponentSFCTableVisualCellTag): void {
+  const column = selectedColumn.value
+  if (!column) {
+    return
+  }
+  const editor = column.editing.editor
+  if (!column.editing.editorImplicit && editor?.kind === 'tag' && editor.tag === tag) {
+    return
+  }
+  if (applyPatch({
+    type: 'set-column-cell-editor-tag',
+    columnIndex: column.index,
+    tag,
+  })) {
+    pendingEditingColumnId.value = null
+  }
+}
+
+function setSelectedCellEditorBinding(payload: {
+  name: string
+  value: string | null
+  valueKind: TableCellBindingValueKind
+}, complete?: (saved: boolean) => void): void {
+  const column = selectedColumn.value
+  if (!column) {
+    complete?.(false)
+    return
+  }
+  const saved = applyPatch({
+    type: 'set-column-cell-editor-attribute',
+    columnIndex: column.index,
+    ...payload,
+  })
+  complete?.(saved)
+}
+
+function separateSelectedCellEditor(): void {
+  const editor = selectedColumn.value?.editing.editor
+  if (editor?.kind === 'component' && editor.identity) {
+    setSelectedCellEditorComponent(editor.identity)
+  }
+  else if (editor?.kind === 'tag') {
+    setSelectedCellEditorTag(editor.tag)
+  }
+}
+
+function createInteractionTrigger(event: string): ComponentSFCInteractionTriggerProjection {
+  return {
+    event,
+    key: [],
+    code: [],
+    held: null,
+    modifiers: {},
+    repeat: null,
+    composing: null,
+    button: null,
+    flags: {},
+  }
+}
+
+function cloneInteractionTrigger(trigger: ComponentSFCInteractionTriggerProjection): ComponentSFCInteractionTriggerProjection {
+  return {
+    ...trigger,
+    key: [...trigger.key],
+    code: [...trigger.code],
+    held: trigger.held ? { ...trigger.held, key: [...trigger.held.key], code: [...trigger.held.code] } : null,
+    modifiers: { ...trigger.modifiers },
+    flags: { ...trigger.flags },
+  }
+}
+
+function updateSelectedCellInteractions(value: string | null, complete?: (saved: boolean) => void): void {
+  const column = selectedColumn.value
+  if (!column) {
+    complete?.(false)
+    return
+  }
+  const saved = applyPatch({
+    type: 'set-column-cell-on',
+    columnIndex: column.index,
+    value,
+  })
+  complete?.(saved)
+}
+
+function openColumnContextMenu(event: MouseEvent, columnIndex: number): void {
+  event.preventDefault()
+  event.stopPropagation()
+  selectedColumnIndex.value = columnIndex
+  columnContextMenu.value = {
+    columnIndex,
+    x: Math.max(8, Math.min(event.clientX, window.innerWidth - 248)),
+    y: Math.max(8, Math.min(event.clientY, window.innerHeight - 272)),
+  }
+}
+
+function openColumnContextMenuFromKeyboard(event: KeyboardEvent, columnIndex: number): void {
+  if (!(event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) {
+    return
+  }
+  event.preventDefault()
+  const rect = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+  columnContextMenu.value = {
+    columnIndex,
+    x: Math.max(8, Math.min(rect?.left ?? 8, window.innerWidth - 248)),
+    y: Math.max(8, Math.min(rect?.bottom ?? 8, window.innerHeight - 272)),
+  }
+  selectedColumnIndex.value = columnIndex
+}
+
+function closeColumnContextMenu(): void {
+  columnContextMenu.value = null
+}
+
+function removeColumnFromContextMenu(): void {
+  const index = columnContextMenu.value?.columnIndex
+  closeColumnContextMenu()
+  if (index != null) {
+    removeColumnAt(index)
+  }
+}
+
+function setContextMenuColumnPin(side: 'left' | 'right' | null): void {
+  const index = columnContextMenu.value?.columnIndex
+  closeColumnContextMenu()
+  if (index != null) {
+    setColumnPin(index, side)
+  }
+}
+
+function toggleContextMenuColumnVisibility(): void {
+  const index = columnContextMenu.value?.columnIndex
+  const column = contextMenuColumn.value
+  closeColumnContextMenu()
+  if (index != null && column) {
+    setColumnHiddenByDefault(index, !isColumnHiddenByDefault(column))
+  }
+}
+
+function onColumnDragStart(event: DragEvent, index: number): void {
+  const column = columns.value[index]
+  if (!column || !isColumnDraggable(column)) {
+    event.preventDefault()
+    return
+  }
+  dragColumnIndex.value = index
+  dragOverColumnIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+function onColumnDragOver(event: DragEvent, index: number): void {
+  const fromIndex = dragColumnIndex.value
+  const fromColumn = fromIndex == null ? null : columns.value[fromIndex]
+  const toColumn = columns.value[index]
+  if (!fromColumn || !toColumn || columnPinSide(fromColumn) !== columnPinSide(toColumn)) {
+    dragOverColumnIndex.value = null
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'none'
+    }
+    return
+  }
+  event.preventDefault()
+  dragOverColumnIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function onColumnDrop(event: DragEvent, toIndex: number): void {
+  event.preventDefault()
+  const fromIndex = dragColumnIndex.value
+  const fromColumn = fromIndex == null ? null : columns.value[fromIndex]
+  const toColumn = columns.value[toIndex]
+  if (
+    fromIndex != null
+    && fromIndex !== toIndex
+    && fromColumn
+    && toColumn
+    && columnPinSide(fromColumn) === columnPinSide(toColumn)
+  ) {
+    if (applyPatch({ type: 'move-column', fromIndex, toIndex })) {
+      selectedColumnIndex.value = toIndex
+    }
+  }
+  resetDragState()
+}
+
+function resetDragState(): void {
+  dragColumnIndex.value = null
+  dragOverColumnIndex.value = null
+}
+
+function blurInput(event: KeyboardEvent): void {
+  (event.currentTarget as HTMLInputElement | null)?.blur()
+}
+
+function isTextEditingTarget(target: EventTarget | null): boolean {
+  return target instanceof Element
+    && Boolean(target.closest('input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="dialog"]'))
+}
+
+function clampDataSplitRatio(ratio: number): number {
+  return Math.min(DATA_SPLIT_MAX_RATIO, Math.max(DATA_SPLIT_MIN_RATIO, ratio))
+}
+
+function updateDataSplitRatio(clientX: number): void {
+  const container = dataSplitContainer.value
+  if (!container) {
+    return
+  }
+
+  const rect = container.getBoundingClientRect()
+  if (rect.width <= 0) {
+    return
+  }
+
+  dataSplitRatioDraft.value = clampDataSplitRatio(((clientX - rect.left) / rect.width) * 100)
+}
+
+function handleDataSplitPointerMove(event: PointerEvent): void {
+  if (isDataSplitResizing.value) {
+    updateDataSplitRatio(event.clientX)
+  }
+}
+
+function endDataSplitResize(): void {
+  if (!isDataSplitResizing.value) {
+    return
+  }
+
+  isDataSplitResizing.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('pointermove', handleDataSplitPointerMove)
+  window.removeEventListener('pointerup', endDataSplitResize)
+  window.removeEventListener('pointercancel', endDataSplitResize)
+  dataSplitRatio.value = dataSplitRatioDraft.value
+}
+
+function beginDataSplitResize(event: PointerEvent): void {
+  if (event.button !== 0) {
+    return
+  }
+
+  event.preventDefault()
+  isDataSplitResizing.value = true
+  document.body.style.cursor = 'ew-resize'
+  document.body.style.userSelect = 'none'
+  updateDataSplitRatio(event.clientX)
+  window.addEventListener('pointermove', handleDataSplitPointerMove)
+  window.addEventListener('pointerup', endDataSplitResize)
+  window.addEventListener('pointercancel', endDataSplitResize)
+}
+
+function resizeDataSplitByKeyboard(event: KeyboardEvent): void {
+  const direction = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
+  if (!direction) {
+    return
+  }
+
+  event.preventDefault()
+  const step = event.shiftKey ? DATA_SPLIT_KEYBOARD_STEP * 5 : DATA_SPLIT_KEYBOARD_STEP
+  const ratio = clampDataSplitRatio(dataSplitRatioDraft.value + direction * step)
+  dataSplitRatioDraft.value = ratio
+  dataSplitRatio.value = ratio
+}
+
+function resetDataSplitRatio(): void {
+  dataSplitRatioDraft.value = DATA_SPLIT_DEFAULT_RATIO
+  dataSplitRatio.value = DATA_SPLIT_DEFAULT_RATIO
+}
+
+function handleEditorShortcut(event: KeyboardEvent): void {
+  if (mainTab.value !== 'columns' || event.repeat) {
+    return
+  }
+
+  if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'n') {
+    event.preventDefault()
+    event.stopPropagation()
+    closeColumnContextMenu()
+    addColumn()
+    return
+  }
+
+  if (
+    event.key === 'Backspace'
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.altKey
+    && !event.shiftKey
+    && !isTextEditingTarget(event.target)
+    && !columnContextMenu.value
+    && !removeAllColumnsDialogOpen.value
+    && selectedColumn.value
+  ) {
+    event.preventDefault()
+    closeColumnContextMenu()
+    removeSelectedColumn()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleEditorShortcut, { capture: true })
+})
+
+onBeforeUnmount(() => {
+  endDataSplitResize()
+  window.removeEventListener('keydown', handleEditorShortcut, { capture: true })
+})
+</script>
+
+<template>
+  <div
+    data-editor-shortcut-scope="component-sfc-table"
+    :data-shortcuts-active="mainTab === 'columns' ? 'true' : undefined"
+    class="component-sfc-table-visual-editor flex h-full min-h-0 flex-col overflow-hidden p-3 sm:p-4"
+    @keydown.esc="closeColumnContextMenu"
+  >
+    <Tabs v-model="mainTab" class="flex min-h-0 flex-1 flex-col">
+      <TabsContent value="table" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+        <SettingsNavigationPanel
+          v-model="tableSection"
+          v-model:sidebar-width="tableNavigationWidth"
+          :default-sidebar-width="232"
+          class="editor-panel h-full"
+          navigation-class="bg-muted/20"
+          separator-label="Изменить ширину меню настроек таблицы"
+        >
+          <template #navigation>
+            <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+              <TabsTrigger
+                v-for="section in tableSections"
+                :key="section.id"
+                :value="section.id"
+                class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              >
+                <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                <span class="truncate">{{ section.label }}</span>
+                <Badge
+                  v-if="section.id !== 'selection' && tableSectionSummary(section.id)"
+                  variant="secondary"
+                  class="ml-auto h-5 min-w-5 justify-center px-1.5 text-[9px] font-normal"
+                >
+                  {{ tableSectionSummary(section.id) }}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+          </template>
+
+          <div class="contents">
+            <div class="border-b border-border/70 p-3 lg:hidden">
+              <Select :model-value="tableSection" @update:model-value="value => updateTableSection(value == null ? null : String(value))">
+                <SelectTrigger class="editor-control w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="section in tableSections" :key="section.id" :value="section.id">
+                    {{ section.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <ComponentSFCSettingsSectionHeader
+              :label="activeTableSection.label"
+              :description="activeTableSection.description"
+            >
+              <template v-if="tableSection === 'inputs'" #actions>
+                <TooltipProvider :delay-duration="120">
+                  <div class="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Input editor display options">
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 gap-1.5 px-2 text-[11px]"
+                          :class="inputShowPreview ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+                          :aria-pressed="inputShowPreview"
+                          @click="inputShowPreview = !inputShowPreview"
+                        >
+                          <Eye class="size-3.5" />
+                          {{ $t('uiText.previewf1fbb2b4') }}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{ $t('uiText.showInputFieldsDocumentation831031d4') }}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 gap-1.5 px-2 text-[11px]"
+                          :class="inputShowExample ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+                          :aria-pressed="inputShowExample"
+                          @click="inputShowExample = !inputShowExample"
+                        >
+                          <FileJson2 class="size-3.5" />
+                          {{ $t('uiText.example0f01ed56') }}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{ $t('uiText.showAutomaticallyGeneratedJSONExampleaac04605') }}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              </template>
+            </ComponentSFCSettingsSectionHeader>
+
+            <section v-if="tableSection === 'inputs'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <ComponentSFCPropsVisualEditor
+                class="min-h-0 flex-1"
+                :source="source"
+                :identity="`${identity || 'Table'}Props`"
+                :types="propTypes"
+                :show-preview="inputShowPreview"
+                :show-example="inputShowExample"
+                :panel-sizes="inputPanelSizes"
+                @update:source="value => emit('update:source', value)"
+                @update:panel-sizes="updateInputPanelSizes"
+                @open-source="offset => emit('openSource', offset)"
+                @open:type="identity => emit('open:type', identity)"
+              />
+            </section>
+
+            <DocumentMetadataEditor
+              v-else-if="tableSection === 'metadata' && metadataSession"
+              :model-value="metadataSession.draft"
+              view-state-key="component-sfc.table-metadata"
+              :read-only="metadataSession.readOnly || !metadataSession.projection.editable"
+              :message="metadataSession.projection.message"
+              :external-error="metadataSession.error"
+              @update:model-value="updateMetadataDraft"
+              @validation="updateMetadataValidation"
+              @commit="commitMetadata"
+            />
+
+            <ScrollArea v-else class="min-h-0 flex-1">
+              <TooltipProvider :delay-duration="120">
+                <div class="p-5">
+                  <section v-show="tableSection === 'general'">
+                    <slot name="general" />
+                  </section>
+
+                  <ComponentSFCPortsVisualEditor
+                    v-if="tableSection === 'events' || tableSection === 'ports'"
+                    ref="portsVisualEditorRef"
+                    :source="source"
+                    :mode="tableSection"
+                    :table-ref="sourceValueText(projection.ref) || null"
+                    @update:source="value => emit('update:source', value)"
+                    @open-source="offset => emit('openSource', offset)"
+                  />
+
+                  <section v-show="tableSection === 'selection'" class="space-y-3">
+                    <div class="max-w-[720px] space-y-4">
+                      <div class="rounded-md border p-4">
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 class="text-sm font-medium">
+                              {{ $t('uiText.rowSelection6f2a0d08') }}
+                            </h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">
+                              {{ $t('uiText.oneOrMoreCompleteRows6c1f3f62') }}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">
+                            {{ $t('uiText.rowe8cdc05b') }}
+                          </Badge>
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-selection-mode">{{ $t('uiText.count576698c4') }}</Label>
+                            <Select
+                              :model-value="selectionModeValue"
+                              :disabled="selectionModeIsSourceOwned"
+                              @update:model-value="value => updateSelectionMode(value == null ? null : String(value))"
+                            >
+                              <SelectTrigger id="sfc-table-selection-mode" class="editor-control w-full">
+                                <SelectValue placeholder="Выберите режим" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                  {{ $t('uiText.notSet6ddd51c3') }}
+                                </SelectItem>
+                                <SelectItem v-for="option in SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
+                                  {{ option.label }}
+                                </SelectItem>
+                                <SelectItem v-if="selectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                  {{ $t('uiText.configuredInSourcef77e8980') }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p v-if="selectionModeIsSourceOwned" class="text-xs text-muted-foreground">
+                              {{ $t('uiText.dynamicSelectionModeExpressionCanBeChangedOnlyInSour2518fde8') }}
+                            </p>
+                          </div>
+
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-selection-trigger">{{ $t('uiText.selectionMode0d86befa') }}</Label>
+                            <Select
+                              :model-value="selectionTriggerValue"
+                              :disabled="selectionTriggerIsSourceOwned"
+                              @update:model-value="value => updateSelectionTrigger(value == null ? null : String(value))"
+                            >
+                              <SelectTrigger id="sfc-table-selection-trigger" class="editor-control w-full">
+                                <SelectValue placeholder="Выберите способ" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                  {{ $t('uiText.adapterDefaulte94960f4') }}
+                                </SelectItem>
+                                <SelectItem v-for="option in SELECTION_TRIGGER_OPTIONS" :key="option.value" :value="option.value">
+                                  {{ option.label }}
+                                </SelectItem>
+                                <SelectItem v-if="selectionTriggerIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                  {{ $t('uiText.configuredInSourcef77e8980') }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p v-if="selectionTriggerIsSourceOwned" class="text-xs text-muted-foreground">
+                              {{ $t('uiText.dynamicSelectionTriggerExpressionCanBeChangedOnlyInS634b95fb') }}
+                            </p>
+                            <p v-else class="text-[11px] text-muted-foreground">
+                              <code>{{ $t('uiText.auto0d612c12') }}</code> {{ $t('uiText.leavesTheChoiceToTheSpecificUXAdapterForRenderingac5ee3b2') }}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="rounded-md border p-4">
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 class="text-sm font-medium">
+                              {{ $t('uiText.cellSelection27258257') }}
+                            </h3>
+                            <p class="mt-0.5 text-[11px] text-muted-foreground">
+                              {{ $t('uiText.oneSpecificCellByRowAndColumnKeyd12e3d8a') }}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">
+                            {{ $t('uiText.cell5f435eb3') }}
+                          </Badge>
+                        </div>
+
+                        <div class="max-w-sm space-y-1.5">
+                          <Label for="sfc-table-cell-selection-mode">{{ $t('uiText.count576698c4') }}</Label>
+                          <Select
+                            :model-value="cellSelectionModeValue"
+                            :disabled="cellSelectionModeIsSourceOwned"
+                            @update:model-value="value => updateCellSelectionMode(value == null ? null : String(value))"
+                          >
+                            <SelectTrigger id="sfc-table-cell-selection-mode" class="editor-control w-full">
+                              <SelectValue placeholder="Выберите режим" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem :value="SELECTION_NOT_SET_VALUE">
+                                {{ $t('uiText.notSet6ddd51c3') }}
+                              </SelectItem>
+                              <SelectItem v-for="option in CELL_SELECTION_MODE_OPTIONS" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                              </SelectItem>
+                              <SelectItem v-if="cellSelectionModeIsSourceOwned" :value="SELECTION_SOURCE_VALUE">
+                                {{ $t('uiText.configuredInSourcef77e8980') }}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p v-if="cellSelectionModeIsSourceOwned" class="text-xs text-muted-foreground">
+                            {{ $t('uiText.dynamicCellSelectionModeExpressionCanBeChangedOnlyIn80145e32') }}
+                          </p>
+                          <p v-else class="text-[11px] text-muted-foreground">
+                            {{ $t('uiText.worksIndependentlyOfRowSelectionWhen5a3ba996') }} <code>{{ $t('uiText.selectionTriggerRow38c3b843') }}</code> {{ $t('uiText.or30bb0333') }} <code>{{ $t('uiText.bothfc39b18f') }}</code> {{ $t('uiText.clickingACellAlsoChangesTheSelectionOfItsRow129d9892') }}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-show="tableSection === 'paging'" class="space-y-3">
+                    <div class="max-w-[720px] min-w-0 space-y-3">
+                      <div class="max-w-sm space-y-1.5">
+                        <Label for="sfc-table-paging">{{ $t('uiText.modeff0fbd56') }}</Label>
+                        <Select
+                          :model-value="pagingModeValue"
+                          :disabled="pagingIsSourceOwned"
+                          @update:model-value="(value) => updatePaging(value == null ? null : String(value))"
+                        >
+                          <SelectTrigger id="sfc-table-paging" class="editor-control w-full">
+                            <SelectValue placeholder="Выберите режим" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem :value="PAGING_NOT_SET_VALUE">
+                              {{ $t('uiText.notSet6ddd51c3') }}
+                            </SelectItem>
+                            <SelectItem v-for="option in PAGING_OPTIONS" :key="option.value" :value="option.value">
+                              {{ option.label }}
+                            </SelectItem>
+                            <SelectItem v-if="pagingIsSourceOwned" :value="PAGING_SOURCE_VALUE">
+                              {{ $t('uiText.configuredInSourcef77e8980') }}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p v-if="pagingIsSourceOwned" class="text-xs text-muted-foreground">
+                          {{ $t('uiText.dynamicPagingExpressionCanBeChangedOnlyInSourcee06eb20e') }}
+                        </p>
+                      </div>
+
+                      <Transition name="table-settings-reveal">
+                        <div v-if="usesPagePaging" class="grid gap-3 rounded-lg border border-border/70 bg-background/10 p-3 sm:grid-cols-2">
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-page-size">{{ $t('uiText.rowsPerPage80916119') }}</Label>
+                            <Input
+                              id="sfc-table-page-size"
+                              :model-value="pageSizeDraft"
+                              type="number"
+                              min="1"
+                              step="1"
+                              class="editor-control"
+                              placeholder="10"
+                              :disabled="!canEdit(projection.pageSize)"
+                              @update:model-value="pageSizeDraft = String($event)"
+                              @blur="commitPageSize"
+                              @keydown.enter="blurInput"
+                            />
+                            <p class="text-[11px] text-muted-foreground">
+                              {{ $t('uiText.attribute6eb04cd3') }} <code>{{ $t('uiText.pageSize4d3ae2d7') }}</code>
+                            </p>
+                          </div>
+
+                          <div class="space-y-1.5">
+                            <Label for="sfc-table-page-sizes">{{ $t('uiText.availableSizesec37927e') }}</Label>
+                            <Input
+                              id="sfc-table-page-sizes"
+                              v-model="pageSizesDraft"
+                              class="editor-control font-mono"
+                              spellcheck="false"
+                              placeholder="10,25,50,100"
+                              :disabled="!canEdit(projection.pageSizes)"
+                              @blur="commitPageSizes"
+                              @keydown.enter="blurInput"
+                            />
+                            <p class="text-[11px] text-muted-foreground">
+                              {{ $t('uiText.positiveNumbersSeparatedByCommas86f4f699') }}
+                            </p>
+                          </div>
+                        </div>
+                      </Transition>
+                    </div>
+                  </section>
+
+                  <section v-show="tableSection === 'visibility'" class="space-y-3">
+                    <div class="max-w-[720px] min-w-0">
+                      <div
+                        v-if="columns.length"
+                        class="editor-control grid gap-1 rounded-lg border border-border/70 p-2 sm:grid-cols-2"
+                      >
+                        <button
+                          v-for="column in columns"
+                          :key="`visibility-${column.id}`"
+                          type="button"
+                          role="checkbox"
+                          :aria-checked="!isColumnHiddenByDefault(column)"
+                          :disabled="!canEditColumnVisibility(column)"
+                          class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
+                          :title="columnVisibilityEditingHint(column) ?? undefined"
+                          @click="setColumnHiddenByDefault(column.index, !isColumnHiddenByDefault(column))"
+                        >
+                          <span
+                            class="inline-flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
+                            :class="isColumnHiddenByDefault(column) ? 'border-border bg-background/40' : 'border-primary bg-primary text-primary-foreground'"
+                          >
+                            <Check v-if="!isColumnHiddenByDefault(column)" class="size-3" :stroke-width="3" />
+                          </span>
+                          <span class="truncate">{{ columnTitle(column) }}</span>
+                        </button>
+                      </div>
+                      <div v-else class="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                        {{ $t('uiText.addColumnsToConfigureTheirInitialVisibility589642e0') }}
+                      </div>
+                      <p v-if="projection.defaultHidden?.kind === 'expression'" class="mt-2 text-xs text-muted-foreground">
+                        {{ $t('uiText.dynamicDefaultHiddenExpressionCanBeChangedOnlyInSourbdb36390') }}
+                      </p>
+                    </div>
+                  </section>
+
+                  <section v-show="tableSection === 'pinning'" class="space-y-3">
+                    <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
+                      <div
+                        v-if="projection.defaultPin?.kind === 'expression'"
+                        class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
+                      >
+                        <FileCode2 class="size-3.5 shrink-0" />
+                        {{ $t('uiText.dynamicDefaultPinIsConfiguredInSource05b57d8a') }}
+                      </div>
+                      <table v-else class="w-full table-fixed text-xs">
+                        <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th scope="col" class="px-2 py-1 text-left font-medium">
+                              {{ $t('uiText.column1c191bdd') }}
+                            </th>
+                            <th scope="col" class="w-24 px-1 py-1 text-left font-medium">
+                              {{ $t('uiText.side14dbfb1b') }}
+                            </th>
+                            <th scope="col" class="w-8" />
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/60">
+                          <tr v-for="item in defaultPinItems" :key="`default-pin-${item.key}`" class="bg-background/15">
+                            <td class="p-1">
+                              <SearchableSelect
+                                :model-value="item.key"
+                                :options="defaultPinColumnOptions(item.key)"
+                                size="compact"
+                                trigger-class="editor-control h-7 border-0 px-2 text-xs shadow-none focus-visible:ring-1"
+                                :disabled="!canEditDefaultPinRule(item.key)"
+                                @update:model-value="value => changeDefaultPinRuleKey(item.key, value)"
+                              />
+                            </td>
+                            <td class="p-1">
+                              <div class="editor-control grid h-7 grid-cols-2 rounded-md border border-border/70 p-0.5">
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      class="h-6 min-w-0 rounded px-1"
+                                      :class="item.side === 'left' ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                      :disabled="!canEditDefaultPinRule(item.key)"
+                                      aria-label="Закрепить слева"
+                                      @click="setDefaultPinRuleSide(item.key, 'left')"
+                                    >
+                                      <PanelLeft class="size-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ $t('uiText.left4af2530f') }}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      class="h-6 min-w-0 rounded px-1"
+                                      :class="item.side === 'right' ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                      :disabled="!canEditDefaultPinRule(item.key)"
+                                      aria-label="Закрепить справа"
+                                      @click="setDefaultPinRuleSide(item.key, 'right')"
+                                    >
+                                      <PanelRight class="size-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ $t('uiText.right600c48eb') }}</TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </td>
+                            <td class="p-1 text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                class="size-7 text-muted-foreground hover:text-destructive"
+                                :disabled="!canEdit(projection.defaultPin)"
+                                aria-label="Убрать закрепление"
+                                @click="removeDefaultPinRule(item.key)"
+                              >
+                                <Trash2 class="size-3.5" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr v-if="defaultPinColumnOptions().length">
+                            <td colspan="3" class="p-1">
+                              <SearchableSelect
+                                :model-value="null"
+                                :options="defaultPinColumnOptions()"
+                                placeholder="Добавить колонку…"
+                                size="compact"
+                                trigger-class="h-7 border-0 px-2 text-xs shadow-none focus-visible:ring-1"
+                                @update:model-value="addDefaultPinRule"
+                              />
+                            </td>
+                          </tr>
+                          <tr v-else-if="!defaultPinItems.length">
+                            <td colspan="3" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
+                              {{ $t('uiText.noAvailableColumns44adbd0a') }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <section v-show="tableSection === 'menus'" class="space-y-4">
+                    <Tabs v-model="activeMenuKind" class="w-full">
+                      <TabsList class="grid w-full grid-cols-2">
+                        <TabsTrigger
+                          v-for="menuOption in MENU_KIND_OPTIONS"
+                          :key="`menu-tab-${menuOption.kind}`"
+                          :value="menuOption.kind"
+                        >
+                          {{ menuOption.label }}
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent
+                        v-for="menuOption in MENU_KIND_OPTIONS"
+                        :key="menuOption.kind"
+                        :value="menuOption.kind"
+                        class="m-0 mt-4"
+                      >
+                        <ComponentSFCTableMenuPreviewEditor
+                          ref="tableMenuEditorRefs"
+                          :kind="menuOption.kind"
+                          :menu="projection.menus[menuOption.kind]"
+                          :actions="projection.menuActions"
+                          @set-mode="value => setMenuMode(menuOption.kind, value)"
+                          @create-item="draft => createMenuItem(menuOption.kind, draft)"
+                          @add-separator="addMenuNode(menuOption.kind, 'separator')"
+                          @move-item="payload => moveMenuItem(menuOption.kind, payload)"
+                          @remove-item="index => removeMenuNode(menuOption.kind, index)"
+                          @save-label="(update, complete) => saveMenuLabel(menuOption.kind, update, undefined, complete)"
+                          @set-action="payload => setMenuItemAction(menuOption.kind, payload.index, payload.value)"
+                          @save-details="(payload, complete) => saveMenuDetails(menuOption.kind, payload, undefined, complete)"
+                          @open-source="item => openMenuSource(menuOption.kind, item)"
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </section>
+
+                  <section v-show="tableSection === 'sorting'" class="space-y-3">
+                    <div class="max-w-[720px] min-w-0 overflow-hidden rounded-lg border border-border/70">
+                      <div
+                        v-if="projection.defaultSort?.kind === 'expression'"
+                        class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
+                      >
+                        <FileCode2 class="size-3.5 shrink-0" />
+                        {{ $t('uiText.dynamicDefaultSortIsConfiguredInSource90fb90c6') }}
+                      </div>
+                      <table v-else class="w-full table-fixed text-xs">
+                        <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th scope="col" class="px-2 py-1 text-left font-medium">
+                              {{ $t('uiText.column1c191bdd') }}
+                            </th>
+                            <th scope="col" class="w-28 px-1 py-1 text-left font-medium">
+                              {{ $t('uiText.direction7af7cb1d') }}
+                            </th>
+                            <th scope="col" class="w-24 px-1 py-1 text-left font-medium">
+                              {{ $t('uiText.priorityb5b6ddbf') }}
+                            </th>
+                            <th scope="col" class="w-8" />
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/60">
+                          <tr v-for="(item, index) in defaultSortItems" :key="`default-sort-${item.key}`" class="bg-background/15">
+                            <td class="p-1">
+                              <SearchableSelect
+                                :model-value="item.key"
+                                :options="defaultSortColumnOptions(item.key)"
+                                size="compact"
+                                trigger-class="editor-control h-7 border-0 px-2 text-xs shadow-none focus-visible:ring-1"
+                                :disabled="!canEditDefaultSortRule(item.key)"
+                                @update:model-value="value => changeDefaultSortRuleKey(item.key, value)"
+                              />
+                            </td>
+                            <td class="p-1">
+                              <div class="editor-control grid h-7 grid-cols-2 rounded-md border border-border/70 p-0.5">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  class="h-6 min-w-0 rounded px-1 text-[10px] font-semibold"
+                                  :class="item.direction === 'asc' ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                  :disabled="!canEditDefaultSortRule(item.key)"
+                                  @click="setDefaultSortRuleDirection(item.key, 'asc')"
+                                >
+                                  {{ $t('uiText.asceaffec78') }}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  class="h-6 min-w-0 rounded px-1 text-[10px] font-semibold"
+                                  :class="item.direction === 'desc' ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                  :disabled="!canEditDefaultSortRule(item.key)"
+                                  @click="setDefaultSortRuleDirection(item.key, 'desc')"
+                                >
+                                  {{ $t('uiText.descb5093023') }}
+                                </Button>
+                              </div>
+                            </td>
+                            <td class="p-1">
+                              <div class="flex h-7 items-center justify-center gap-0.5">
+                                <span class="min-w-5 text-center font-mono text-[10px] text-muted-foreground">#{{ index + 1 }}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-6 text-muted-foreground"
+                                  :disabled="index === 0 || !canEditDefaultSortRule(item.key)"
+                                  aria-label="Повысить приоритет"
+                                  @click="moveDefaultSortRule(item.key, -1)"
+                                >
+                                  <ArrowUp class="size-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-6 text-muted-foreground"
+                                  :disabled="index === defaultSortItems.length - 1 || !canEditDefaultSortRule(item.key)"
+                                  aria-label="Понизить приоритет"
+                                  @click="moveDefaultSortRule(item.key, 1)"
+                                >
+                                  <ArrowDown class="size-3" />
+                                </Button>
+                              </div>
+                            </td>
+                            <td class="p-1 text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                class="size-7 text-muted-foreground hover:text-destructive"
+                                :disabled="!canEdit(projection.defaultSort)"
+                                aria-label="Удалить сортировку"
+                                @click="removeDefaultSortRule(item.key)"
+                              >
+                                <Trash2 class="size-3.5" />
+                              </Button>
+                            </td>
+                          </tr>
+                          <tr v-if="defaultSortColumnOptions().length">
+                            <td colspan="4" class="p-1">
+                              <SearchableSelect
+                                :model-value="null"
+                                :options="defaultSortColumnOptions()"
+                                placeholder="Добавить колонку…"
+                                size="compact"
+                                trigger-class="h-7 border-0 px-2 text-xs shadow-none focus-visible:ring-1"
+                                @update:model-value="addDefaultSortRule"
+                              />
+                            </td>
+                          </tr>
+                          <tr v-else-if="!defaultSortItems.length">
+                            <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
+                              {{ $t('uiText.noAvailableColumns44adbd0a') }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              </TooltipProvider>
+            </ScrollArea>
+          </div>
+        </SettingsNavigationPanel>
+      </TabsContent>
+
+      <TabsContent value="columns" class="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+        <div class="flex h-full min-h-0 flex-col gap-3 pr-2">
+          <Card class="editor-panel shrink-0 gap-0 overflow-hidden py-0">
+            <div class="flex min-h-16 items-start gap-2 p-3">
+              <div class="flex flex-1 flex-wrap items-center gap-2">
+                <template
+                  v-for="column in orderedColumns"
+                  :key="column.id"
+                >
+                  <div
+                    v-if="showDividerBeforeColumn(column)"
+                    aria-hidden="true"
+                    class="h-7 w-px shrink-0 rounded-full bg-border/80"
+                  />
+                  <div
+                    role="button"
+                    tabindex="0"
+                    :draggable="isColumnDraggable(column)"
+                    class="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-[border-color,background-color,box-shadow,opacity]"
+                    :class="[
+                      selectedColumnIndex === column.index
+                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        : columnPinSide(column) === 'none'
+                          ? 'editor-control border-border/70 hover:border-border hover:brightness-110'
+                          : 'editor-control border-primary/40 bg-primary/5 hover:border-primary/60 hover:brightness-110',
+                      isColumnDraggable(column) ? 'cursor-move' : 'cursor-default',
+                      isColumnHiddenByDefault(column) ? 'opacity-60' : '',
+                      dragColumnIndex === column.index ? 'opacity-40' : '',
+                      dragOverColumnIndex === column.index && dragColumnIndex !== column.index
+                        ? 'ring-1 ring-primary'
+                        : '',
+                    ]"
+                    :title="columnTitle(column)"
+                    @click="selectedColumnIndex = column.index"
+                    @keydown.enter.prevent="selectedColumnIndex = column.index"
+                    @keydown.space.prevent="selectedColumnIndex = column.index"
+                    @contextmenu="(event: MouseEvent) => openColumnContextMenu(event, column.index)"
+                    @keydown="(event: KeyboardEvent) => openColumnContextMenuFromKeyboard(event, column.index)"
+                    @dragstart="(event: DragEvent) => onColumnDragStart(event, column.index)"
+                    @dragover="(event: DragEvent) => onColumnDragOver(event, column.index)"
+                    @dragleave="dragOverColumnIndex = null"
+                    @drop="(event: DragEvent) => onColumnDrop(event, column.index)"
+                    @dragend="resetDragState"
+                  >
+                    <GripVertical class="size-3.5 shrink-0 opacity-60" />
+                    <span class="max-w-52 truncate">{{ columnTitle(column) }}</span>
+                    <FileCode2 v-if="isSourceOwnedCell(column)" class="size-3.5 shrink-0 opacity-75" />
+                    <span
+                      v-if="isColumnHiddenByDefault(column)"
+                      class="inline-flex size-5 shrink-0 items-center justify-center"
+                      title="Скрыта по умолчанию"
+                    >
+                      <EyeOff class="size-3.5" />
+                    </span>
+                    <span
+                      v-if="columnPinSide(column) !== 'none'"
+                      class="inline-flex shrink-0 items-center"
+                      :title="columnPinLabel(column)"
+                    >
+                      <Pin class="size-3.5" />
+                    </span>
+                  </div>
+                </template>
+
+                <div v-if="!columns.length" class="px-2 py-2 text-xs text-muted-foreground">
+                  {{ $t('uiText.noColumnsClickToCreateTheFirstOneb9f3a328') }}
+                </div>
+              </div>
+
+              <div class="flex shrink-0 items-center gap-1.5">
+                <TooltipProvider :delay-duration="120">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        class="size-8 shrink-0"
+                        aria-label="Добавить колонку"
+                        @click="addColumn"
+                      >
+                        <Plus class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{{ $t('uiText.addColumnAf4484cb') }}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        class="size-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        aria-label="Удалить все колонки"
+                        :disabled="!columns.length"
+                        @click="removeAllColumnsDialogOpen = true"
+                      >
+                        <Trash2 class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{{ $t('uiText.deleteAllColumns318d6951') }}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </Card>
+
+          <Teleport to="body">
+            <template v-if="columnContextMenu && contextMenuColumn">
+              <div
+                class="fixed inset-0 z-[199]"
+                aria-hidden="true"
+                @pointerdown="closeColumnContextMenu"
+                @contextmenu.prevent="closeColumnContextMenu"
+              />
+              <div
+                role="menu"
+                class="fixed z-[200] min-w-60 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                :style="{ left: `${columnContextMenu.x}px`, top: `${columnContextMenu.y}px` }"
+                @click.stop
+              >
+                <div class="truncate px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  {{ columnTitle(contextMenuColumn) }}
+                </div>
+                <div class="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'left'"
+                  @click="setContextMenuColumnPin('left')"
+                >
+                  <PanelLeft class="size-4 shrink-0" />
+                  {{ $t('grid.widget.pinLeft') }}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'right'"
+                  @click="setContextMenuColumnPin('right')"
+                >
+                  <PanelRight class="size-4 shrink-0" />
+                  {{ $t('grid.widget.pinRight') }}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnPin(contextMenuColumn) || columnPinSide(contextMenuColumn) === 'none'"
+                  @click="setContextMenuColumnPin(null)"
+                >
+                  <PinOff class="size-4 shrink-0" />
+                  {{ $t('uiText.unpin09cd2ba7') }}
+                </button>
+                <div
+                  v-if="columnPinEditingHint(contextMenuColumn)"
+                  class="mt-1 border-t px-2 pt-2 pb-1 text-[11px] leading-4 text-muted-foreground"
+                >
+                  {{ columnPinEditingHint(contextMenuColumn) }}
+                </div>
+                <div class="my-1 h-px bg-border" />
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  :aria-checked="!isColumnHiddenByDefault(contextMenuColumn)"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-45"
+                  :disabled="!canEditColumnVisibility(contextMenuColumn)"
+                  @click="toggleContextMenuColumnVisibility"
+                >
+                  <Eye v-if="isColumnHiddenByDefault(contextMenuColumn)" class="size-4 shrink-0" />
+                  <EyeOff v-else class="size-4 shrink-0" />
+                  {{ isColumnHiddenByDefault(contextMenuColumn) ? $t('uiText.showByDefault28aff316') : $t('uiText.hideByDefaulte791e9cd') }}
+                </button>
+                <div
+                  v-if="columnVisibilityEditingHint(contextMenuColumn)"
+                  class="px-2 py-1 text-[11px] leading-4 text-muted-foreground"
+                >
+                  {{ columnVisibilityEditingHint(contextMenuColumn) }}
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-destructive outline-none hover:bg-destructive/10 focus-visible:bg-destructive/10"
+                  @click="removeColumnFromContextMenu"
+                >
+                  <Trash2 class="size-4 shrink-0" />
+                  {{ $t('uiText.delete86ea33ae') }}
+                </button>
+              </div>
+            </template>
+          </Teleport>
+
+          <AlertDialog v-model:open="removeAllColumnsDialogOpen">
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{{ $t('uiText.deleteAllColumns98a171f8') }}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {{ $t('uiText.allColumnsFromTableWillBeDeletedCountfae1ad0f') }} {{ columns.length }}{{ $t('uiText.sourceWillChangeImmediatelyAndTheChangeWillBecomePercfb01934') }}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{{ $t('uiText.cancel0ec753be') }}</AlertDialogCancel>
+                <AlertDialogAction
+                  class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  @click="removeAllColumns"
+                >
+                  {{ $t('uiText.deleteAllc3df07c7') }}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <SettingsNavigationPanel
+            v-model="columnSection"
+            v-model:sidebar-width="columnNavigationWidth"
+            :default-sidebar-width="232"
+            class="editor-panel min-h-0 flex-1"
+            navigation-class="bg-muted/20"
+            separator-label="Изменить ширину меню настроек колонки"
+          >
+            <template #navigation>
+              <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+                <template v-for="section in columnSections" :key="section.id">
+                  <TabsTrigger
+                    :value="section.id"
+                    class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                  >
+                    <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+                    <span class="truncate">{{ section.label }}</span>
+                  </TabsTrigger>
+
+                  <div
+                    v-if="section.id === 'editing' && columnSection === 'editing'"
+                    class="ml-4 flex flex-col gap-0.5 border-l border-border/70 pl-2"
+                  >
+                    <button
+                      v-for="editingItem in editingSections"
+                      :key="editingItem.id"
+                      type="button"
+                      class="h-7 rounded px-2 text-left text-xs transition-colors hover:bg-background/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                      :class="editingSection === editingItem.id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground'"
+                      :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                      @click="updateEditingSection(editingItem.id)"
+                    >
+                      {{ editingItem.label }}
+                    </button>
+                  </div>
+                </template>
+              </TabsList>
+            </template>
+
+            <div class="contents">
+              <div class="grid gap-2 border-b border-border/70 p-3 lg:hidden">
+                <Select :model-value="columnSection" @update:model-value="value => updateColumnSection(value == null ? null : String(value))">
+                  <SelectTrigger class="editor-control w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="section in columnSections" :key="section.id" :value="section.id">
+                      {{ section.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  v-if="columnSection === 'editing'"
+                  :model-value="editingSection"
+                  @update:model-value="value => updateEditingSection(value == null ? null : String(value))"
+                >
+                  <SelectTrigger class="editor-control w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="editingItem in editingSections"
+                      :key="editingItem.id"
+                      :value="editingItem.id"
+                      :disabled="editingItem.id !== 'editor' && !selectedColumn?.editing.enabled"
+                    >
+                      {{ editingItem.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <ComponentSFCSettingsSectionHeader
+                :label="columnSection === 'editing' ? activeEditingSection.label : activeColumnSection.label"
+                :description="columnSection === 'editing' ? activeEditingSection.description : activeColumnSection.description"
+              >
+                <template v-if="columnSection === 'data' && selectedColumn" #actions>
+                  <TooltipProvider :delay-duration="120">
+                    <div
+                      class="editor-control inline-flex items-center rounded-md border border-border/70 p-0.5"
+                      role="group"
+                      aria-label="Способ отображения данных"
+                    >
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'component' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            :disabled="isSourceOwnedCell(selectedColumn)"
+                            aria-label="Компонент"
+                            @click="selectCellEditorMode('component')"
+                          >
+                            <Blocks class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{{ $t('uiText.existingComponent00f3092d') }}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'tag' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            :disabled="isSourceOwnedCell(selectedColumn)"
+                            aria-label="Tag"
+                            @click="selectCellEditorMode('tag')"
+                          >
+                            <Tags class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{{ $t('uiText.builtInSFCTaga7d43335') }}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            class="size-7"
+                            :class="cellEditorMode === 'source' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                            aria-label="Source"
+                            @click="selectCellEditorMode('source')"
+                          >
+                            <FileCode2 class="size-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{{ $t('uiText.customSourceMarkup2872b476') }}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
+                </template>
+              </ComponentSFCSettingsSectionHeader>
+
+              <ScrollArea class="min-h-0 flex-1">
+                <div v-if="!selectedColumn" class="p-5 text-sm text-muted-foreground">
+                  {{ $t('uiText.selectTheColumnAboveToConfigure017c6705') }}
+                </div>
+
+                <template v-else>
+                  <section v-show="columnSection === 'general'" class="px-5 py-5">
+                    <div class="grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(260px,1.28fr)_minmax(120px,0.48fr)]">
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-key">{{ $t('uiText.keyc67dd20e') }}</Label>
+                        <Input
+                          id="sfc-table-column-key"
+                          v-model="keyDraft"
+                          class="editor-control font-mono"
+                          spellcheck="false"
+                          :disabled="!canEdit(selectedColumn.key)"
+                          @blur="commitAttribute('key', keyDraft)"
+                          @keydown.enter="blurInput"
+                        />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-title">{{ $t('uiText.displayName403372fc') }}</Label>
+                        <Input
+                          id="sfc-table-column-title"
+                          v-model="titleDraft"
+                          class="editor-control"
+                          :disabled="!canEdit(selectedColumn.title)"
+                          @blur="commitAttribute('title', titleDraft)"
+                          @keydown.enter="blurInput"
+                        />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for="sfc-table-column-width">{{ $t('uiText.widthD73c1c19') }}</Label>
+                        <Input
+                          id="sfc-table-column-width"
+                          v-model="widthDraft"
+                          class="editor-control"
+                          placeholder="auto"
+                          :disabled="!canEdit(selectedColumn.width)"
+                          @blur="commitAttribute('width', widthDraft)"
+                          @keydown.enter="blurInput"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-show="columnSection === 'data'" class="px-5 py-4">
+                    <div
+                      v-if="cellEditorMode === 'component' || cellEditorMode === 'tag'"
+                      ref="dataSplitContainer"
+                      class="table-data-split flex overflow-hidden rounded-lg border border-border/70"
+                    >
+                      <div
+                        class="editor-control min-w-0 flex-none p-4"
+                        :style="{ flexBasis: `calc((100% - 7px) * ${dataSplitRatioDraft / 100})` }"
+                      >
+                        <div v-if="cellEditorMode === 'component'" class="space-y-2">
+                          <Label>{{ $t('nav.error.component') }}</Label>
+                          <SearchableSelect
+                            :options="componentSelectOptions"
+                            :model-value="selectedComponentValue"
+                            placeholder="Найти компонент..."
+                            trigger-class="editor-control w-full"
+                            @update:model-value="updateComponent"
+                          />
+                          <p class="text-xs text-muted-foreground">
+                            {{ selectedComponentOption ? `${selectedComponentOption.inputs.length} входных параметров` : $t('uiText.selectComponentdfd14214') }}
+                          </p>
+                        </div>
+
+                        <div v-else class="space-y-2">
+                          <Label>{{ $t('uiText.tag982963c1') }}</Label>
+                          <SearchableSelect
+                            :options="tagSelectOptions"
+                            :model-value="selectedTagValue"
+                            placeholder="Найти SFC tag..."
+                            trigger-class="editor-control w-full font-mono"
+                            @update:model-value="updateTag"
+                          />
+                          <p class="text-xs text-muted-foreground">
+                            {{ $t('uiText.builtInRendererNeutralElement6ca7692b') }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        class="table-data-split__separator"
+                        :data-resizing="isDataSplitResizing"
+                        role="separator"
+                        aria-label="Изменить ширину панелей выбора элемента и входных параметров"
+                        aria-orientation="vertical"
+                        :aria-valuenow="Math.round(dataSplitRatioDraft)"
+                        :aria-valuemin="DATA_SPLIT_MIN_RATIO"
+                        :aria-valuemax="DATA_SPLIT_MAX_RATIO"
+                        tabindex="0"
+                        @dblclick="resetDataSplitRatio"
+                        @pointerdown="beginDataSplitResize"
+                        @keydown.stop="resizeDataSplitByKeyboard"
+                      >
+                        <span />
+                      </div>
+
+                      <div class="min-w-0 flex-1 bg-editor-panel">
+                        <div class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] border-b bg-muted/25 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <div>{{ $t('uiText.inputParametera1b0115f') }}</div>
+                          <div>{{ $t('uiText.value9f0b9909') }}</div>
+                        </div>
+
+                        <div v-if="cellBindingFields.length" class="divide-y divide-border/60">
+                          <div
+                            v-for="field in cellBindingFields"
+                            :key="field.name"
+                            class="grid grid-cols-[minmax(120px,0.42fr)_minmax(0,0.58fr)] items-start gap-3 px-3 py-2.5"
+                            :class="!field.optional && !cellBindingDrafts[field.name]?.trim() ? 'bg-amber-500/5' : ''"
+                          >
+                            <div class="min-w-0 pt-1">
+                              <div class="flex min-w-0 items-center gap-1.5">
+                                <code class="truncate text-xs font-medium text-foreground">{{ field.name }}</code>
+                                <span v-if="!field.optional" class="text-xs text-amber-500">{{ $t('uiText.symboldf58248c') }}</span>
+                                <Badge v-if="field.sourceOnly" variant="outline" class="h-4 px-1 text-[9px] font-normal">
+                                  {{ $t('uiText.sourceda13add2') }}
+                                </Badge>
+                              </div>
+                              <div class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground" :title="field.type">
+                                {{ field.type }}
+                              </div>
+                            </div>
+
+                            <div class="min-w-0">
+                              <div
+                                class="editor-control flex min-w-0 items-center rounded-md border border-border/70 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/30"
+                                :class="cellBindingErrors[field.name] ? 'border-destructive/70' : ''"
+                                @focusout="handleCellBindingFocusOut($event, field.name)"
+                              >
+                                <TooltipProvider :delay-duration="120">
+                                  <Tooltip>
+                                    <TooltipTrigger as-child>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 min-w-7 rounded-r-none border-r px-1.5 font-mono text-[10px]"
+                                        :class="cellBindingKind(field.name) === 'expression' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+                                        aria-label="Динамическое выражение"
+                                        @click="setCellBindingKind(field.name, 'expression')"
+                                      >
+                                        {{ $t('uiText.fx06967d8e') }}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{{ $t('uiText.dynamicExpression1516a0ed') }}{{ field.name }}{{ $t('uiText.row2544f1c7') }}</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger as-child>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 min-w-7 rounded-none border-r px-1.5 font-mono text-[10px]"
+                                        :class="cellBindingKind(field.name) === 'literal' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+                                        aria-label="Статическое значение"
+                                        @click="setCellBindingKind(field.name, 'literal')"
+                                      >
+                                        {{ $t('uiText.aa2c419ecc') }}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{{ $t('uiText.staticLiteral6ba321c2') }} {{ field.name }}{{ $t('uiText.value85e1f3ce') }}</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <Input
+                                  v-model="cellBindingDrafts[field.name]"
+                                  class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0"
+                                  :placeholder="cellBindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'"
+                                  spellcheck="false"
+                                  @keydown.enter.prevent="commitCellBinding(field.name)"
+                                  @keydown.esc.prevent="resetCellBinding(field.name)"
+                                />
+                              </div>
+                              <p v-if="cellBindingErrors[field.name]" class="mt-1 text-[10px] leading-tight text-destructive">
+                                {{ cellBindingErrors[field.name] }}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div v-else class="flex min-h-24 items-center justify-center px-4 text-center text-xs text-muted-foreground">
+                          {{ selectedComponentValue || selectedTagValue ? $t('uiText.theSelectedElementHasNoDataParameters07be4c71') : $t('uiText.selectAnElementFromTheLeft6d31f071') }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      v-else
+                      class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-sm font-medium">
+                          {{ $t('uiText.sourceda13add2') }}
+                        </div>
+                        <div class="mt-0.5 text-xs text-muted-foreground">
+                          {{ $t('uiText.columnContentCanBeEditedManuallyWithoutUsingTheVisua4255ee64') }}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0 gap-1.5"
+                        @click="openSelectedColumnSource"
+                      >
+                        {{ $t('uiText.editInSource42ceebde') }}
+                        <ExternalLink class="size-3.5" />
+                      </Button>
+                    </div>
+                  </section>
+
+                  <section v-show="columnSection === 'editing'" class="bg-background/15 px-5 py-4">
+                    <div
+                      v-if="!selectedColumn.editing.editable"
+                      class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-sm font-medium">
+                          {{ selectedColumn.editing.enabled ? $t('uiText.editingEnabledSourcee2e4af0e') : $t('uiText.editingIsControlledBySource5d5d2460') }}
+                        </div>
+                        <div class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          {{ selectedColumn.editing.message }}
+                        </div>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                        <FileCode2 class="size-3.5" />
+                        {{ $t('uiText.open1259571a') }}
+                      </Button>
+                    </div>
+
+                    <div v-else>
+                      <div v-if="editingSection === 'editor'" class="space-y-4">
+                        <div class="editor-panel flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3">
+                          <span class="text-sm font-medium">{{ $t('uiText.makeEditablec02b8dda') }}</span>
+                          <Switch
+                            :checked="selectedColumn.editing.enabled || selectedCellEditingPending"
+                            aria-label="Сделать содержимое ячейки редактируемым"
+                            @update:checked="setSelectedCellEditingEnabled"
+                          />
+                        </div>
+
+                        <ComponentSFCEditableVariantEditor
+                          v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
+                          ref="editableVariantEditorRef"
+                          :editor="selectedColumn.editing.editor"
+                          :implicit="selectedColumn.editing.editorImplicit"
+                          :selecting="selectedCellEditingPending"
+                          :component-options="componentOptions"
+                          @set-component="setSelectedCellEditorComponent"
+                          @set-tag="setSelectedCellEditorTag"
+                          @set-binding="setSelectedCellEditorBinding"
+                          @separate="separateSelectedCellEditor"
+                          @open-source="openSelectedCellEditingSource"
+                        />
+                      </div>
+
+                      <div
+                        v-else-if="!selectedColumn.editing.enabled"
+                        class="editor-control rounded-lg border border-border/70 px-4 py-3 text-sm text-muted-foreground"
+                      >
+                        {{ $t('uiText.firstEnableEditingInTheEditorSection5717b65c') }}
+                      </div>
+
+                      <div v-else-if="editingSection === 'triggers'" class="space-y-4">
+                        <div class="flex justify-end">
+                          <Button type="button" variant="outline" size="sm" class="gap-1.5" @click="addSelectedCellEditTrigger">
+                            <Plus class="size-3.5" />
+                            {{ $t('uiText.alternativeTriggerf046e22b') }}
+                          </Button>
+                        </div>
+
+                        <div v-if="selectedColumn.editing.usesDefaultTrigger" class="rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                          {{ $t('uiText.used855c96b7') }} <code>{{ $t('uiText.clickb93ec566') }}</code> {{ $t('uiText.byDefaultAttribute3974e058') }} <code>{{ $t('uiText.editOn538ec565') }}</code> {{ $t('uiText.isNotRequiredInSourcea486e5aa') }}
+                        </div>
+
+                        <div v-if="selectedColumn.editing.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                          <span>{{ $t('uiText.forAllTriggerf6184df1') }}</span>
+                          <code v-for="suffix in selectedColumn.editing.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
+                        </div>
+
+                        <div class="space-y-3">
+                          <ComponentSFCInteractionBindingEditor
+                            v-for="(trigger, index) in selectedColumn.editing.triggers"
+                            :key="`${index}:${trigger.event}`"
+                            :trigger="trigger"
+                            :events="COMPONENT_SFC_INTERACTION_EVENT_DEFINITIONS"
+                            @update:trigger="updateSelectedCellEditTrigger(index, $event)"
+                          >
+                            <template #actions>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                class="size-7 text-muted-foreground hover:text-destructive"
+                                :aria-label="selectedColumn.editing.triggers.length === 1 ? 'Вернуть click по умолчанию' : 'Удалить альтернативный trigger'"
+                                @click="removeSelectedCellEditTrigger(index)"
+                              >
+                                <Trash2 class="size-3.5" />
+                              </Button>
+                            </template>
+                          </ComponentSFCInteractionBindingEditor>
+                        </div>
+
+                        <ComponentSFCEditOutcomeEditor
+                          :cancel="selectedColumn.editing.cancel"
+                          :commit="selectedColumn.editing.commit"
+                          @update-cancel="setSelectedCellCancelTriggers"
+                          @update-commit="setSelectedCellCommitTriggers"
+                        />
+                      </div>
+
+                      <div v-else class="space-y-2">
+                        <div v-if="selectedColumn.editing.reaction.editable" class="space-y-2">
+                          <div v-if="selectedColumn.editing.reaction.suffixes.length" class="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                            <span>{{ $t('uiText.forEditedc382045e') }}</span>
+                            <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
+                          </div>
+                          <ComponentSFCReactionEditor
+                            ref="editedReactionEditorRef"
+                            :model-value="selectedColumn.editing.reaction.source"
+                            event-name="edited"
+                            variant="section"
+                            @save="setSelectedCellEditedReaction"
+                          />
+                        </div>
+
+                        <div
+                          v-else
+                          class="editor-control flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3"
+                        >
+                          <div class="min-w-0">
+                            <div class="text-sm font-medium">
+                              {{ $t('uiText.reactionIsControlledBySource7dc58447') }}
+                            </div>
+                            <div class="mt-0.5 text-xs text-muted-foreground">
+                              {{ selectedColumn.editing.reaction.message }}
+                            </div>
+                          </div>
+                          <Button type="button" variant="outline" size="sm" class="shrink-0 gap-1.5" @click="openSelectedCellEditingSource">
+                            <FileCode2 class="size-3.5" />
+                            {{ $t('uiText.open1259571a') }}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div v-show="columnSection === 'events'">
+                    <ComponentSFCCellInteractionsEditor
+                      ref="cellInteractionsEditorRef"
+                      :model-value="selectedColumn.interactions"
+                      @update="updateSelectedCellInteractions"
+                      @open-source="openSelectedColumnSource"
+                    />
+                  </div>
+
+                  <section v-show="columnSection === 'sorting'" class="bg-background/15 px-5 py-4">
+                    <div class="grid max-w-[980px] gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
+                      <div class="overflow-hidden rounded-lg border border-border/70">
+                        <div
+                          v-if="selectedColumn.sortBy?.kind === 'expression'"
+                          class="editor-control flex min-h-10 items-center gap-2 px-3 text-xs text-muted-foreground"
+                        >
+                          <FileCode2 class="size-3.5 shrink-0" />
+                          {{ $t('uiText.dynamicSortByIsConfiguredInSource2aad5d7e') }}
+                        </div>
+                        <table v-else class="w-full table-fixed text-xs">
+                          <thead class="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <tr>
+                              <th scope="col" class="w-9 px-1 py-1 text-center font-medium">
+                                #
+                              </th>
+                              <th scope="col" class="px-2 py-1 text-left font-medium">
+                                {{ $t('uiText.fieldChain35fa6224') }}
+                              </th>
+                              <th scope="col" class="w-[76px] px-1 py-1 text-center font-medium">
+                                {{ $t('uiText.orderf6f1e527') }}
+                              </th>
+                              <th scope="col" class="w-8" />
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-border/60">
+                            <tr v-for="(path, index) in sortPathDrafts" :key="`sort-path-${index}`" class="bg-background/15">
+                              <td class="px-1 text-center font-mono text-[10px] text-muted-foreground">
+                                {{ index + 1 }}
+                              </td>
+                              <td class="p-1">
+                                <Input
+                                  v-model="sortPathDrafts[index]"
+                                  class="editor-control h-7 border-0 px-2 font-mono text-xs shadow-none focus-visible:ring-1"
+                                  placeholder="departureLeg.aircraft.tail"
+                                  spellcheck="false"
+                                  :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  @blur="commitColumnSortPath(index)"
+                                  @keydown.enter.prevent="commitColumnSortPath(index)"
+                                  @keydown.esc.prevent="resetColumnSortPaths"
+                                />
+                              </td>
+                              <td class="p-1">
+                                <div class="flex items-center justify-center gap-0.5">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-6 text-muted-foreground"
+                                    :disabled="index === 0 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                    aria-label="Переместить поле выше"
+                                    @click="moveColumnSortPath(index, -1)"
+                                  >
+                                    <ArrowUp class="size-3" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-6 text-muted-foreground"
+                                    :disabled="index === sortPathDrafts.length - 1 || Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                    aria-label="Переместить поле ниже"
+                                    @click="moveColumnSortPath(index, 1)"
+                                  >
+                                    <ArrowDown class="size-3" />
+                                  </Button>
+                                </div>
+                              </td>
+                              <td class="p-1 text-center">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  class="size-7 text-muted-foreground hover:text-destructive"
+                                  :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  aria-label="Удалить цепочку"
+                                  @click="removeColumnSortPath(index)"
+                                >
+                                  <Trash2 class="size-3.5" />
+                                </Button>
+                              </td>
+                            </tr>
+                            <tr v-if="!sortPathDrafts.length">
+                              <td colspan="4" class="px-3 py-2 text-center text-[11px] text-muted-foreground">
+                                {{ $t('uiText.usedColumnKey1f2dda0a') }} <code>{{ sourceValueText(selectedColumn.key) || '—' }}</code>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div v-if="selectedColumn.sortBy?.kind !== 'expression'" class="border-t border-border/60 p-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            class="h-7 w-full justify-start gap-1.5 text-xs text-muted-foreground"
+                            :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                            @click="addColumnSortPath"
+                          >
+                            <Plus class="size-3.5" />
+                            {{ $t('uiText.addChaind1764c2d') }}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <aside class="overflow-hidden rounded-lg border border-border/70 bg-muted/10">
+                        <div class="p-3">
+                          <Label class="text-xs">{{ $t('uiText.direction7af7cb1d') }}</Label>
+                          <TooltipProvider :delay-duration="120">
+                            <div class="mt-2 space-y-2">
+                              <div
+                                class="editor-control inline-flex h-8 items-center rounded-md border border-border/70 p-0.5"
+                                role="group"
+                                aria-label="Сортировка колонки по умолчанию"
+                              >
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-9 px-2"
+                                        :class="columnSortDirection(selectedColumn) == null ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="Boolean(columnSortEditingHint(selectedColumn))"
+                                        aria-label="Без сортировки по умолчанию"
+                                        @click="setColumnDefaultSort(selectedColumn.index, null)"
+                                      >
+                                        {{ $t('uiText.symbol1b93795b') }}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortEditingHint(selectedColumn) ?? 'Без сортировки по умолчанию' }}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                        :class="columnSortDirection(selectedColumn) === 'asc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                        @click="setColumnDefaultSort(selectedColumn.index, 'asc')"
+                                      >
+                                        {{ $t('uiText.asceaffec78') }}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По возрастанию' }}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger as-child>
+                                    <span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 min-w-11 px-2 text-[10px] font-semibold"
+                                        :class="columnSortDirection(selectedColumn) === 'desc' ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground' : 'text-muted-foreground'"
+                                        :disabled="!canSetColumnSortDirection(selectedColumn)"
+                                        @click="setColumnDefaultSort(selectedColumn.index, 'desc')"
+                                      >
+                                        {{ $t('uiText.descb5093023') }}
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{{ columnSortDirectionEditingHint(selectedColumn) ?? 'По убыванию' }}</TooltipContent>
+                                </Tooltip>
+                              </div>
+
+                              <div v-if="columnSortPriority(selectedColumn) != null" class="flex items-center gap-1">
+                                <span class="mr-auto text-[10px] text-muted-foreground">{{ $t('uiText.priorityb5b6ddbf') }}</span>
+                                <Badge variant="outline" class="h-7 min-w-7 justify-center px-1 font-mono text-[10px]">
+                                  #{{ columnSortPriority(selectedColumn) }}
+                                </Badge>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  class="size-7 text-muted-foreground"
+                                  :disabled="columnSortPriority(selectedColumn) === 1"
+                                  aria-label="Повысить приоритет сортировки"
+                                  @click="moveColumnSortPriority(selectedColumn.index, -1)"
+                                >
+                                  <ChevronLeft class="size-3.5" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  class="size-7 text-muted-foreground"
+                                  :disabled="columnSortPriority(selectedColumn) === defaultSortItems.length"
+                                  aria-label="Понизить приоритет сортировки"
+                                  @click="moveColumnSortPriority(selectedColumn.index, 1)"
+                                >
+                                  <ChevronRight class="size-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </TooltipProvider>
+                        </div>
+
+                        <div class="border-t border-border/70 p-3">
+                          <Label for="sfc-table-column-sort-comparator" class="text-xs">{{ $t('uiText.comparison189d15bc') }}</Label>
+                          <Select
+                            :model-value="selectedColumnSortComparator"
+                            :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                            @update:model-value="value => updateColumnSortComparator(value == null ? null : String(value))"
+                          >
+                            <SelectTrigger id="sfc-table-column-sort-comparator" class="editor-control mt-2 h-8 w-full text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem v-for="option in SORT_COMPARATOR_OPTIONS" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </aside>
+                    </div>
+                  </section>
+
+                  <section v-show="columnSection === 'cell-menu'" class="px-5 py-4">
+                    <ComponentSFCTableMenuPreviewEditor
+                      ref="columnMenuEditorRef"
+                      kind="row"
+                      :menu="selectedColumn.cellMenu"
+                      :actions="projection.menuActions"
+                      allow-inherit
+                      @set-mode="value => setMenuMode('row', value, selectedColumnMenuIndex)"
+                      @create-item="draft => createMenuItem('row', draft, selectedColumnMenuIndex)"
+                      @add-separator="addMenuNode('row', 'separator', selectedColumnMenuIndex)"
+                      @move-item="payload => moveMenuItem('row', payload, selectedColumnMenuIndex)"
+                      @remove-item="index => removeMenuNode('row', index, selectedColumnMenuIndex)"
+                      @save-label="(update, complete) => saveMenuLabel('row', update, selectedColumnMenuIndex, complete)"
+                      @set-action="payload => setMenuItemAction('row', payload.index, payload.value, selectedColumnMenuIndex)"
+                      @save-details="(payload, complete) => saveMenuDetails('row', payload, selectedColumnMenuIndex, complete)"
+                      @open-source="item => openMenuSource('row', item, selectedColumnMenuIndex)"
+                    />
+                  </section>
+                </template>
+              </ScrollArea>
+            </div>
+          </SettingsNavigationPanel>
+        </div>
+      </TabsContent>
+    </Tabs>
+  </div>
+</template>
+
+<style scoped>
+.component-sfc-table-visual-editor :deep(.editor-panel) {
+  background: var(--editor-panel);
+}
+
+.component-sfc-table-visual-editor :deep(.editor-control) {
+  background: var(--editor-control);
+}
+
+.table-data-split__separator {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 7px;
+  min-height: 0;
+  flex: 0 0 7px;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+  cursor: ew-resize;
+  outline: none;
+  touch-action: none;
+}
+
+.table-data-split__separator span {
+  width: 2px;
+  height: 30px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 34%, transparent);
+  transition: height 120ms ease, background-color 120ms ease;
+}
+
+.table-data-split__separator:hover span,
+.table-data-split__separator:focus-visible span,
+.table-data-split__separator[data-resizing='true'] span {
+  height: 46px;
+  background: var(--primary);
+}
+
+.table-settings-reveal-enter-active,
+.table-settings-reveal-leave-active {
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.table-settings-reveal-enter-from,
+.table-settings-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

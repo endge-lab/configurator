@@ -1,0 +1,798 @@
+<script setup lang="ts">
+import type {
+  ConfiguratorCommit,
+  ConfiguratorRelease,
+  ConfiguratorRestorePlan,
+  ConfiguratorVersionActor,
+} from '@/features/configurator-releases/domain/types/configurator-release.type'
+import {
+  AlertTriangle,
+  Check,
+  Download,
+  GitCommitHorizontal,
+  History,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Tag,
+  Users,
+} from 'lucide-vue-next'
+
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { Configurator } from '@/app/Configurator'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { ConfiguratorVersionsError } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
+import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
+
+type VersionTab = 'commits' | 'releases'
+interface RestoreTarget {
+  kind: 'commit' | 'release'
+  id: string
+  title: string
+}
+
+const stateVersion = ref(0)
+const activeTab = ref<VersionTab>('commits')
+const commitMessage = ref('')
+const commitMessageTouched = ref(false)
+const commitDetailsOpen = ref(false)
+const commitDetails = ref<ConfiguratorCommit | null>(null)
+const restoreDialogOpen = ref(false)
+const restoreTarget = ref<RestoreTarget | null>(null)
+const restorePlan = ref<ConfiguratorRestorePlan | null>(null)
+const restoreHasPendingRevisions = ref(false)
+
+const role = computed(() => Configurator.context.workspaceRole)
+const canWrite = computed(
+  () => role.value === 'editor' || role.value === 'admin',
+)
+const canRestore = computed(() => role.value === 'admin')
+const releases = computed(() => {
+  void stateVersion.value
+  return Configurator.releases.releases
+})
+const commits = computed(() => {
+  void stateVersion.value
+  return Configurator.releases.commits
+})
+const commitPlan = computed(() => {
+  void stateVersion.value
+  return Configurator.releases.commitPlan
+})
+const loading = computed(() => {
+  void stateVersion.value
+  return Configurator.releases.loading
+})
+const hasPendingRevisions = computed(
+  () => Number(commitPlan.value?.revisionCount || 0) > 0,
+)
+const latestCommit = computed(
+  () =>
+    [...commits.value].sort(
+      (left, right) => right.headSequence - left.headSequence,
+    )[0] ?? null,
+)
+const currentCommitId = computed(() => {
+  if (hasPendingRevisions.value || !commitPlan.value) {
+    return null
+  }
+  return (
+    commits.value.find(
+      commit => commit.headSequence === commitPlan.value?.headSequence,
+    )?.id ?? null
+  )
+})
+const releasesByCommit = computed(() => {
+  const result = new Map<string, ConfiguratorRelease[]>()
+  for (const release of releases.value) {
+    const items = result.get(release.sourceCommitId) ?? []
+    items.push(release)
+    result.set(release.sourceCommitId, items)
+  }
+  return result
+})
+const commitMessageError = computed(() => {
+  if (!commitMessageTouched.value) {
+    return ''
+  }
+  if (!commitMessage.value.trim()) {
+    return 'Введите сообщение коммита'
+  }
+  if (commitMessage.value.trim().length > 1000) {
+    return 'Сообщение не должно превышать 1000 символов'
+  }
+  return ''
+})
+const restoreChanges = computed(() => {
+  const plan = restorePlan.value
+  return plan ? plan.creates + plan.updates + plan.restores + plan.deletes : 0
+})
+
+const stop = Configurator.releases.subscribe(() => {
+  stateVersion.value += 1
+})
+
+async function loadVersions(): Promise<void> {
+  try {
+    await Configurator.releases.load()
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось загрузить версии'))
+  }
+}
+
+function refreshActiveDomainVersion(): void {
+  const workspace = Configurator.connections.readWorkspace()
+  if (workspace) {
+    void Configurator.domainVersions.refresh({
+      backendURL: Configurator.connections.activeBackendURL,
+      workspace,
+    }, true)
+  }
+}
+
+async function createCommit(): Promise<void> {
+  commitMessageTouched.value = true
+  if (commitMessageError.value || !hasPendingRevisions.value) {
+    return
+  }
+  try {
+    const message = commitMessage.value.trim()
+    await Configurator.releases.createCommit(message)
+    refreshActiveDomainVersion()
+    commitMessage.value = ''
+    commitMessageTouched.value = false
+    toast.success('Коммит создан', { description: message })
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось создать коммит'))
+  }
+}
+
+async function downloadBuild(identity: string): Promise<void> {
+  try {
+    await Configurator.releases.downloadBuild(identity)
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось скачать Bundle'))
+  }
+}
+
+async function downloadRelease(identity: string): Promise<void> {
+  try {
+    await Configurator.releases.download(identity)
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось скачать релиз'))
+  }
+}
+
+async function openCommitDetails(commit: ConfiguratorCommit): Promise<void> {
+  try {
+    commitDetails.value = await Configurator.releases.getCommitDiff(commit.id)
+    commitDetailsOpen.value = true
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось загрузить состав коммита'))
+  }
+}
+
+async function requestRestore(target: RestoreTarget): Promise<void> {
+  if (!canRestore.value) {
+    return
+  }
+  try {
+    await Configurator.releases.load()
+    const plan
+      = target.kind === 'commit'
+        ? await Configurator.releases.planCommitRestore(target.id)
+        : await Configurator.releases.planReleaseRestore(target.id)
+    restoreHasPendingRevisions.value
+      = hasPendingRevisions.value
+        || plan.expectedHeadSequence > (latestCommit.value?.headSequence ?? 0)
+    restoreTarget.value = target
+    restorePlan.value = plan
+    restoreDialogOpen.value = true
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось подготовить восстановление'))
+  }
+}
+
+async function confirmRestore(): Promise<void> {
+  const target = restoreTarget.value
+  const plan = restorePlan.value
+  if (!target || !plan) {
+    return
+  }
+  try {
+    if (target.kind === 'commit') {
+      await Configurator.releases.restoreCommit(
+        target.id,
+        plan.expectedHeadSequence,
+      )
+    }
+    else {
+      await Configurator.releases.restoreRelease(
+        target.id,
+        plan.expectedHeadSequence,
+      )
+    }
+
+    restoreDialogOpen.value = false
+    toast.success('Версия восстановлена', {
+      description: 'Создан новый коммит восстановления',
+    })
+    await Configurator.context.reloadCurrentContext()
+    refreshActiveDomainVersion()
+  }
+  catch (error) {
+    toast.error(errorMessage(error, 'Не удалось восстановить версию'))
+  }
+}
+
+function isCurrentCommit(commit: ConfiguratorCommit): boolean {
+  return currentCommitId.value === commit.id
+}
+
+function isBaseCommit(commit: ConfiguratorCommit): boolean {
+  return hasPendingRevisions.value && latestCommit.value?.id === commit.id
+}
+
+function isCurrentRelease(release: ConfiguratorRelease): boolean {
+  return (
+    !hasPendingRevisions.value
+    && release.headSequence === commitPlan.value?.headSequence
+  )
+}
+
+function actorName(actor: ConfiguratorVersionActor): string {
+  return actor.displayName || actor.username || 'Системный пользователь'
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return 'дата неизвестна'
+  }
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+function operationLabel(operation: string): string {
+  return (
+    (
+      {
+        bootstrap: 'Начальное состояние',
+        commit_restore: 'Восстановление коммита',
+        import: 'Импорт',
+        release_restore: 'Восстановление релиза',
+        user: 'Коммит',
+      } as Record<string, string>
+    )[operation] || operation
+  )
+}
+
+function shortId(id: string): string {
+  return id.slice(0, 8)
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ConfiguratorVersionsError) {
+    if (error.code === 'pending_revisions_must_be_committed') {
+      return 'Сначала создайте коммит текущих изменений'
+    }
+    if (error.code === 'head_sequence_conflict') {
+      return 'Workspace изменился. Обновите список и повторите действие'
+    }
+    if (error.code === 'nothing_to_restore') {
+      return 'Workspace уже соответствует выбранной версии'
+    }
+  }
+  return error instanceof Error ? error.message : fallback
+}
+
+onMounted(() => {
+  void loadVersions()
+})
+onBeforeUnmount(stop)
+</script>
+
+<template>
+  <TooltipProvider :delay-duration="250">
+    <Tabs
+      v-model="activeTab"
+      class="flex h-full min-h-0 flex-col bg-background"
+    >
+      <TabsList
+        class="grid h-10 w-full shrink-0 grid-cols-2 rounded-none border-b bg-muted/20 p-1"
+      >
+        <TabsTrigger value="commits" class="rounded-sm text-xs">
+          <GitCommitHorizontal class="size-3.5" />
+          {{ $t('uiText.commitsb4f456d7') }}
+          <span
+            v-if="hasPendingRevisions"
+            class="size-1.5 rounded-full bg-amber-500"
+          />
+        </TabsTrigger>
+        <TabsTrigger value="releases" class="rounded-sm text-xs">
+          <Tag class="size-3.5" />
+          {{ $t('uiText.releases56f8a21b') }}
+          <span
+            v-if="releases.length"
+            class="text-[10px] text-muted-foreground"
+          >{{ releases.length }}</span>
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="commits" class="mt-0 min-h-0 flex-1 overflow-y-auto">
+        <div class="space-y-3 p-3">
+          <section
+            v-if="commitPlan"
+            class="overflow-hidden rounded-lg border"
+            :class="
+              hasPendingRevisions
+                ? 'border-amber-500/35 bg-amber-500/[0.045]'
+                : 'border-emerald-500/25 bg-emerald-500/[0.035]'
+            "
+          >
+            <div class="flex items-start gap-2.5 p-3">
+              <div
+                class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full"
+                :class="
+                  hasPendingRevisions
+                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                    : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                "
+              >
+                <History v-if="hasPendingRevisions" class="size-3.5" />
+                <Check v-else class="size-3.5" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold">
+                  {{
+                    hasPendingRevisions
+                      ? $t('uiText.thereAreUncommittedChanges445ac940')
+                      : $t('uiText.workingVersionIsCommitted29033306')
+                  }}
+                </p>
+                <p class="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                  <template v-if="hasPendingRevisions">
+                    {{ commitPlan.revisionCount }} {{ $t('uiText.revisionsIn1dfcceac') }}
+                    {{ commitPlan.documentCount }} {{ $t('uiText.documentscff56568') }}
+                  </template>
+                  <template v-else>
+                    {{ $t('uiText.noNewRevisionsSinceTheLastCommitb0355954') }}
+                  </template>
+                </p>
+                <div
+                  v-if="commitPlan.shared"
+                  class="mt-2 flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300"
+                >
+                  <Users class="size-3" />
+                  {{ $t('uiText.thisCommitWillIncludeChangesFromMultipleContributors679c96d2') }}
+                </div>
+              </div>
+            </div>
+
+            <form
+              v-if="canWrite && hasPendingRevisions"
+              class="border-t border-amber-500/20 p-2.5"
+              @submit.prevent="createCommit"
+            >
+              <div class="flex gap-2">
+                <Input
+                  v-model="commitMessage"
+                  class="h-8 text-xs"
+                  :aria-invalid="Boolean(commitMessageError)"
+                  maxlength="1000"
+                  placeholder="Что изменилось?"
+                />
+                <Button
+                  type="submit"
+                  size="icon-sm"
+                  :disabled="loading"
+                  title="Создать коммит"
+                >
+                  <Loader2 v-if="loading" class="animate-spin" />
+                  <Plus v-else />
+                </Button>
+              </div>
+              <p
+                v-if="commitMessageError"
+                class="mt-1.5 text-[11px] text-destructive"
+              >
+                {{ commitMessageError }}
+              </p>
+              <p
+                v-else-if="commitPlan.contributors.length"
+                class="mt-1.5 truncate text-[10px] text-muted-foreground"
+              >
+                {{ $t('uiText.authors27a67c1d') }} {{ commitPlan.contributors.map(actorName).join(", ") }}
+              </p>
+            </form>
+          </section>
+
+          <div
+            v-if="loading && commits.length === 0"
+            class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
+          >
+            <Loader2 class="size-4 animate-spin" />
+            {{ $t('uiText.loadingHistory5fc600ee') }}
+          </div>
+          <div
+            v-else-if="commits.length === 0"
+            class="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground"
+          >
+            {{ $t('uiText.noCommitsYetea3fc6d3') }}
+          </div>
+          <div v-else class="relative space-y-0.5 pl-4">
+            <div class="absolute bottom-4 left-[7px] top-4 w-px bg-border" />
+            <article
+              v-for="commit in commits"
+              :key="commit.id"
+              class="group relative rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-border hover:bg-muted/35"
+            >
+              <span
+                class="absolute -left-[13px] top-4 size-2.5 rounded-full border-2 border-background ring-1 ring-border"
+                :class="
+                  isCurrentCommit(commit)
+                    ? 'bg-emerald-500'
+                    : isBaseCommit(commit)
+                      ? 'bg-amber-500'
+                      : 'bg-muted-foreground/45'
+                "
+              />
+              <div class="flex min-w-0 items-start gap-2">
+                <button type="button" class="min-w-0 flex-1 text-left" @click="openCommitDetails(commit)">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <p
+                      class="truncate text-xs font-medium"
+                      :title="commit.message"
+                    >
+                      {{ commit.message }}
+                    </p>
+                    <Badge
+                      v-if="isCurrentCommit(commit)"
+                      variant="outline"
+                      class="h-4 border-emerald-500/35 px-1.5 text-[9px] text-emerald-700 dark:text-emerald-300"
+                    >
+                      {{ $t('uiText.current71e8b656') }}
+                    </Badge>
+                    <Badge
+                      v-else-if="isBaseCommit(commit)"
+                      variant="outline"
+                      class="h-4 border-amber-500/35 px-1.5 text-[9px] text-amber-700 dark:text-amber-300"
+                    >
+                      {{ $t('uiText.laste863f95e') }}
+                    </Badge>
+                  </div>
+                  <p class="mt-1 truncate text-[10px] text-muted-foreground">
+                    {{ actorName(commit.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
+                    {{ formatDate(commit.createdAt) }} {{ $t('uiText.symbol1fdf0d90') }}
+                    {{ operationLabel(commit.operation) }}
+                  </p>
+                  <p
+                    class="mt-0.5 font-mono text-[9px] text-muted-foreground/70"
+                  >
+                    {{ shortId(commit.id) }} {{ $t('uiText.heade80b21bb') }} {{ commit.headSequence }}
+                  </p>
+                </button>
+
+                <div class="flex shrink-0 items-center gap-0.5">
+                  <Tooltip v-if="releasesByCommit.get(commit.id)?.length">
+                    <TooltipTrigger as-child>
+                      <button
+                        type="button"
+                        class="flex h-7 items-center gap-1 rounded-md px-1.5 text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
+                      >
+                        <Tag class="size-3.5" />
+                        <span class="text-[9px] font-semibold">{{
+                          releasesByCommit.get(commit.id)?.length
+                        }}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" class="max-w-56">
+                      <p class="mb-1 text-[10px] font-semibold">
+                        {{ $t('uiText.releasesOfThisCommit282df137') }}
+                      </p>
+                      <p
+                        v-for="release in releasesByCommit.get(commit.id)"
+                        :key="release.id"
+                        class="text-[10px]"
+                      >
+                        {{ release.displayName }}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip v-if="canRestore && !isCurrentCommit(commit)">
+                    <TooltipTrigger as-child>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="size-7 opacity-60 group-hover:opacity-100"
+                        :disabled="loading"
+                        @click="
+                          requestRestore({
+                            kind: 'commit',
+                            id: commit.id,
+                            title: commit.message,
+                          })
+                        "
+                      >
+                        <RotateCcw class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {{ $t('uiText.restoreThisVersion8738260e') }}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="releases" class="mt-0 min-h-0 flex-1 overflow-y-auto">
+        <div class="space-y-3 p-3">
+          <p class="text-xs text-muted-foreground">
+            {{ $t('releaseBuild.listHelp') }}
+          </p>
+
+          <div
+            v-if="loading && releases.length === 0"
+            class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
+          >
+            <Loader2 class="size-4 animate-spin" />
+            {{ $t('uiText.loadingReleasesbc706c8b') }}
+          </div>
+          <div
+            v-else-if="releases.length === 0"
+            class="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground"
+          >
+            {{ $t('uiText.noReleasesYet6be9790d') }}
+          </div>
+          <template v-else>
+            <article
+              v-for="release in releases"
+              :key="release.id"
+              class="group rounded-lg border p-2.5 transition-colors hover:bg-muted/35"
+            >
+              <div class="flex items-start gap-2">
+                <div
+                  class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                >
+                  <Tag class="size-3.5" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <p class="truncate text-xs font-medium">
+                      {{ release.displayName }}
+                    </p>
+                    <Badge
+                      v-if="isCurrentRelease(release)"
+                      variant="outline"
+                      class="h-4 border-emerald-500/35 px-1.5 text-[9px] text-emerald-700 dark:text-emerald-300"
+                    >
+                      {{ $t('uiText.current71e8b656') }}
+                    </Badge>
+                  </div>
+                  <p v-if="release.description" class="mb-1 whitespace-pre-wrap text-xs">
+                    {{ release.description }}
+                  </p>
+                  <details v-if="release.buildMetadata" class="mb-2 text-xs">
+                    <summary class="cursor-pointer">
+                      {{ [$t('releaseBuild.parameters'), release.buildMetadata.runtime, `${((release.buildMetadata.sizeBytes ?? 0) / 1024).toFixed(1)} KiB`].join(' · ') }}
+                    </summary>
+                    <p>{{ release.buildMetadata.profile?.displayName ?? $t('releaseBuild.defaultProfile') }}</p>
+                    <p>{{ $t('releaseBuild.ast') }}: {{ release.buildMetadata.includeAst ? $t('releaseBuild.yes') : $t('releaseBuild.no') }}</p>
+                    <SourceJsonTree :data="release.buildMetadata" />
+                    <Button size="sm" variant="outline" @click="downloadBuild(release.identity)">
+                      {{ $t('releaseBuild.downloadBundle') }}
+                    </Button>
+                  </details>
+                  <p v-else class="mb-1 text-xs text-muted-foreground">
+                    {{ $t('releaseBuild.noBundle') }}
+                  </p>
+                  <p class="mt-1 truncate text-[10px] text-muted-foreground">
+                    {{ actorName(release.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }}
+                    {{ formatDate(release.createdAt) }}
+                  </p>
+                  <p
+                    class="mt-0.5 font-mono text-[9px] text-muted-foreground/70"
+                  >
+                    {{ $t('uiText.commit4015b57a') }} {{ shortId(release.sourceCommitId) }} {{ $t('uiText.heade80b21bb') }}
+                    {{ release.headSequence }}
+                  </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-0.5">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="size-7"
+                        @click="downloadRelease(release.identity)"
+                      >
+                        <Download class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {{ $t('uiText.downloadJson2007ff2d') }}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip v-if="canRestore && !isCurrentRelease(release)">
+                    <TooltipTrigger as-child>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="size-7"
+                        :disabled="loading"
+                        @click="
+                          requestRestore({
+                            kind: 'release',
+                            id: release.identity,
+                            title: release.displayName,
+                          })
+                        "
+                      >
+                        <RotateCcw class="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {{ $t('uiText.restoreRelease9e5b22ea') }}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </article>
+          </template>
+        </div>
+      </TabsContent>
+    </Tabs>
+
+    <Dialog v-model:open="commitDetailsOpen">
+      <DialogContent class="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader class="shrink-0 border-b bg-muted/25 px-5 py-4 pr-12 text-left">
+          <DialogTitle class="text-base">
+            {{ commitDetails?.message }}
+          </DialogTitle>
+          <DialogDescription v-if="commitDetails">
+            {{ actorName(commitDetails.createdBy) }} {{ $t('uiText.symbol1fdf0d90') }} {{ formatDate(commitDetails.createdAt) }} {{ $t('uiText.symbol1fdf0d90') }}
+            {{ operationLabel(commitDetails.operation) }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="commitDetails" class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+          <div class="mb-3 flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2 text-[11px]">
+            <span class="text-muted-foreground">{{ $t('uiText.commit1a1873ab') }}</span>
+            <span class="font-mono">{{ commitDetails.id }}</span>
+          </div>
+          <p class="mb-2 text-xs font-semibold">
+            {{ $t('uiText.changes560792db') }} {{ commitDetails.changes.length }}
+          </p>
+          <div v-if="commitDetails.changes.length" class="space-y-1.5">
+            <div
+              v-for="change in commitDetails.changes"
+              :key="`${change.documentType}:${change.documentId}`"
+              class="flex items-center gap-2 rounded-md border px-3 py-2"
+            >
+              <GitCommitHorizontal class="size-3.5 shrink-0 text-muted-foreground" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-xs font-medium">
+                  {{ change.documentType }}
+                </p>
+                <p class="truncate font-mono text-[9px] text-muted-foreground">
+                  {{ change.documentIdentity || change.documentId }}
+                </p>
+              </div>
+              <Badge variant="outline" class="h-5 px-1.5 text-[9px]">
+                {{ change.operation }}
+              </Badge>
+            </div>
+          </div>
+          <div v-else class="rounded-md border border-dashed p-5 text-center text-xs text-muted-foreground">
+            {{ $t('uiText.noDetailedChanges6c8e9273') }}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="restoreDialogOpen">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ $t('uiText.restore8074d192') }}{{ restoreTarget?.title }}{{ $t('uiText.symbolAd4e2955') }}</DialogTitle>
+          <DialogDescription>
+            {{ $t('uiText.workspaceWillTransitionToTheSelectedStateForAllUsers29153112') }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="restorePlan" class="space-y-3">
+          <div
+            class="grid grid-cols-2 gap-2 rounded-lg border bg-muted/25 p-3 text-xs"
+          >
+            <div>
+              <p class="text-muted-foreground">
+                {{ $t('uiText.objectsInPlan3df74a2e') }}
+              </p>
+              <p class="mt-0.5 text-base font-semibold">
+                {{ restoreChanges }}
+              </p>
+            </div>
+            <div>
+              <p class="text-muted-foreground">
+                {{ $t('uiText.currentHead4ebb4fec') }}
+              </p>
+              <p class="mt-0.5 font-mono text-base font-semibold">
+                {{ restorePlan.expectedHeadSequence }}
+              </p>
+            </div>
+          </div>
+          <div
+            v-if="restoreHasPendingRevisions"
+            class="flex gap-2 rounded-md border border-destructive/35 bg-destructive/[0.07] p-2.5 text-[11px] leading-4 text-destructive"
+          >
+            <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
+            {{ $t('uiText.thereAreUncommittedChangesAfterRestoringTheSelectedV83a161c5') }}
+          </div>
+          <div
+            v-else
+            class="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-2.5 text-[11px] leading-4 text-amber-800 dark:text-amber-200"
+          >
+            <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
+            {{ $t('uiText.afterRestorationTheDomainWillBeFullyReloadedForAllUs84f917d2') }}
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            :disabled="loading"
+            @click="restoreDialogOpen = false"
+          >
+            {{ $t('uiText.cancel0ec753be') }}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            :disabled="loading"
+            @click="confirmRestore"
+          >
+            <Loader2 v-if="loading" class="animate-spin" />
+            <RotateCcw v-else />
+            {{ $t('uiText.restore29f3b29d') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </TooltipProvider>
+</template>

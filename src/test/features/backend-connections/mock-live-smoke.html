@@ -1,0 +1,22 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Mock Generator local OIDC smoke</title>
+<body><h1>Mock Generator: локальная HTTP/SSE проверка</h1><p>Используется текущая browser session локального backend. Только синтетические данные и временная сессия генератора.</p>
+<label>Backend <input id="backend" value="http://localhost:8080"></label><label>Workspace <input id="workspace" value="default"></label><button id="run">Проверить</button><pre id="result">Ожидание запуска</pre>
+<script type="module">
+const output=document.querySelector('#result');
+document.querySelector('#run').onclick=async()=>{
+ const base=document.querySelector('#backend').value;const workspace=document.querySelector('#workspace').value;
+ if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base)){output.textContent='Разрешён только loopback backend';return}
+ const headers={'Content-Type':'application/json','X-Endge-Workspace':workspace};const report=[];let id;let controller;
+ async function call(method,path,body,expected=200){const r=await fetch(base+'/api/v1/mock-data'+path,{method,credentials:'include',headers,body:body===undefined?undefined:JSON.stringify(body)});const text=await r.text();if(r.status!==expected)throw Error(method+' '+path+': '+r.status+' '+text);report.push(method+' '+path.replace(id??'never','<session>')+': '+r.status);return text?JSON.parse(text):undefined}
+ try{
+  const caps=await call('GET','/capabilities');if(!caps.available)throw Error('Mock unavailable');
+  const schema={$schema:'https://json-schema.org/draft/2020-12/schema',type:'integer',minimum:1,maximum:10};
+  const generated=await call('POST','/generate',{schema,generation:{count:3,seed:'local-browser-oidc'}});if(generated.items.length!==3||!generated.items.every(x=>Number.isInteger(x)&&x>=1&&x<=10))throw Error('Invalid generated values');
+  const info=await call('POST','/streams',{schema,generation:{seed:'local-browser-oidc'},stream:{intervalMs:100,itemsPerMessage:3}},201);id=info.id;controller=new AbortController();
+  const response=await fetch(base+info.eventsUrl,{credentials:'include',headers,signal:controller.signal});if(response.status!==200)throw Error('SSE '+response.status);
+  const reader=response.body.getReader();let buffer='';let events=[];while(events.length<2){const {done,value}=await reader.read();if(done)throw Error('Early SSE end');buffer+=new TextDecoder().decode(value);let boundary;while((boundary=buffer.indexOf('\n\n'))>=0){const frame=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);if(frame.startsWith('data: '))events.push(JSON.parse(frame.slice(6)))}}
+  if(events[0].type!=='started'||events[1].type!=='data'||events[1].streamId!==id||events[1].sequence!==1||JSON.stringify(events[1].items)!==JSON.stringify(generated.items))throw Error('Invalid SSE identity/sequence/determinism');report.push('SSE started/data; public ID; sequence; deterministic values: PASS');
+  await call('PATCH','/streams/'+id,{paused:true});await call('POST','/streams/'+id+'/keepalive');await call('PATCH','/streams/'+id,{paused:false,itemsPerMessage:2});await call('DELETE','/streams/'+id,undefined,204);id=undefined;controller.abort();report.push('PASS: user session → backend → service client_credentials → Mock → SSE');
+ }catch(e){report.push('FAIL: '+e.message)}finally{controller?.abort();if(id){try{await call('DELETE','/streams/'+id,undefined,204)}catch{}}output.textContent=report.join('\n')}
+};
+</script></body></html>

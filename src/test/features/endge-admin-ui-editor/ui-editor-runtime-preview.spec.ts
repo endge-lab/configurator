@@ -1,0 +1,86 @@
+import { Endge } from '@endge/core'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
+import { UIEditorRuntimePreviewSession } from '@/features/endge-admin-ui-editor/entities/ui-editor-runtime-preview'
+
+describe('сессия runtime preview UI-редактора', () => {
+  let session: UIEditorRuntimePreviewSession
+
+  beforeEach(() => {
+    prepareCompilerContext()
+    session = new UIEditorRuntimePreviewSession()
+  })
+
+  afterEach(async () => {
+    await session.dispose()
+    Endge.configuration.reset()
+    Endge.program.clear()
+    Endge.domain.reset()
+    Endge.workspace.reset()
+  })
+
+  it('монтирует текущий черновик через ComponentSFCRuntimeHost и освобождает его', async () => {
+    const launched = await session.launch(`<script setup lang="ts">
+defineProps<{ label: string }>()
+definePreviewProps({ label: 'Runtime value' })
+</script>
+<template><Flex direction="row"><Text>{{ label }}</Text></Flex></template>`)
+
+    expect(launched).toBe(true)
+    expect(session.status.value).toBe('active')
+    expect(session.runtime.value?.entityType).toBe('component-sfc')
+    expect(session.runtime.value?.getIr()?.template.roots[0]).toMatchObject({ tag: 'Flex' })
+    expect(session.input.value).toEqual({ kind: 'local', props: { label: 'Runtime value' } })
+
+    const runtimeId = session.runtime.value!.id
+    await session.dispose()
+    expect(Endge.runtime.getRuntimeById(runtimeId)).toBeNull()
+  })
+
+  it('сохраняет последний корректный runtime, если следующий Source невалиден', async () => {
+    await session.launch('<template><Flex><Text>Valid</Text></Flex></template>')
+    const runtime = session.runtime.value
+
+    expect(await session.launch('<template><Flex>')).toBe(false)
+    expect(session.status.value).toBe('stale')
+    expect(session.runtime.value).toBe(runtime)
+    expect(session.error.value).toBeTruthy()
+  })
+})
+
+function prepareCompilerContext(): void {
+  Endge.workspace.apply({
+    identity: 'ui-editor-preview-workspace',
+    displayName: 'UI Editor Preview Workspace',
+    configuration: {
+      vars: [],
+      locales: [{ code: 'en', displayName: 'English', shortLabel: 'EN', direction: 'ltr' }],
+      defaultLocale: 'en',
+      fallbackLocale: 'en',
+      themes: [{ identity: 'light', displayName: 'Light' }],
+      defaultTheme: 'light',
+      defaultAuthProfileIdentity: null,
+      sfcAdapterIds: ['vue-native'],
+      defaultSfcAdapterId: 'vue-native',
+    },
+  })
+  Endge.domain.addFacet({
+    id: 1,
+    identity: 'deployment',
+    position: 0,
+  } as any)
+  Endge.domain.addFacetDocument({
+    id: 2,
+    facetIdentity: 'deployment',
+    identity: 'ui-editor-preview',
+    configuration: { mode: 'inherit', patch: {} },
+  } as any)
+  Endge.configuration.build({
+    dataProvider: 'plain',
+    scope: {},
+    vars: {},
+    context: {
+      facets: { deployment: 'ui-editor-preview' },
+    },
+  })
+}

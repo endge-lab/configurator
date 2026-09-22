@@ -1,0 +1,415 @@
+<script setup lang="ts">
+import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
+
+import { Endge } from '@endge/core'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Hammer, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
+
+import { Configurator } from '@/app/Configurator'
+import { getIconComponent, toggleWidget } from '@/components/layouts/grid'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
+import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
+import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
+import { ServiceVersionsDialog } from '@/features/backend-connections'
+import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import ConfiguratorPresence_Button from '@/features/configurator-presence/ui/ConfiguratorPresence_Button.vue'
+import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
+import { ENDGE_IDE_DOCUMENTATION_URL, ENDGE_IDE_GOVERNANCE_PORTAL_URL } from '@/features/endge-ide/config/documentation.config'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentImport_Modal from '@/features/endge-ide/modules/document-import/ui/DocumentImport_Modal.vue'
+import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
+import BuildResultDialog from '@/features/endge-ide/ui/modals/BuildResult_Dialog.vue'
+import DomainExport_Modal from '@/features/endge-ide/ui/modals/DomainExport_Modal.vue'
+import DomainImport_Modal from '@/features/endge-ide/ui/modals/DomainImport_Modal.vue'
+import ExecutionBundleProfiles_Modal from '@/features/endge-ide/ui/modals/ExecutionBundleProfiles_Modal.vue'
+import RuntimePreviewAuthDialog from '@/features/endge-ide/ui/section/runtime-preview/RuntimePreviewAuthDialog.vue'
+import EndgeIDEStatusBar from '@/features/endge-ide/ui/shell/EndgeIDEStatusBar.vue'
+import EditorView from '@/features/endge-ide/ui/views/Editor_View.vue'
+
+const tabs = EndgeIDE.tabs
+const context = useEndgeIDEContext()
+const { t } = useI18n()
+const configuratorMenuItems = EndgeIDE.integrations.menuItems
+const widgetVisibilityItems = EndgeIDE.widgets.visibilityItems
+const isBusy = computed(() => EndgeIDE.busy.value)
+const canImportWorkspaceSnapshot = computed(() => Configurator.context.workspaceRole === 'admin')
+const canImportDocuments = computed(() => Endge.domainRepository.capabilities.mutations)
+const startupCompositionIdentity = computed(() =>
+  String(Endge.workspace.current.startupCompositionIdentity ?? '').trim(),
+)
+const isLaunchingStartupRuntime = ref(false)
+const domainImportModal = ref<InstanceType<typeof DomainImport_Modal> | null>(null)
+const domainExportModal = ref<InstanceType<typeof DomainExport_Modal> | null>(null)
+const backendConnectionsModal = ref<InstanceType<typeof BackendConnections_Modal> | null>(null)
+const accessControlModal = ref<InstanceType<typeof AccessControl_Modal> | null>(null)
+const aiManagementModal = ref<InstanceType<typeof AIManagement_Modal> | null>(null)
+const serviceVersionsDialog = ref<InstanceType<typeof ServiceVersionsDialog> | null>(null)
+const executionBundleProfilesModal = ref<InstanceType<typeof ExecutionBundleProfiles_Modal> | null>(null)
+const canConfigureAI = computed(() => {
+  if (Configurator.session.state.status !== 'authenticated') {
+    return false
+  }
+  return Configurator.session.state.session.platformAdmin
+    || ['viewer', 'editor', 'admin'].includes(Configurator.context.workspaceRole ?? '')
+})
+const canManageAccess = computed(() => {
+  const state = Configurator.session.state
+  return canManageAccessPolicy(
+    state.status === 'authenticated' && state.session.platformAdmin,
+    Configurator.context.workspaceRole ?? '',
+  )
+})
+const launchStartupRuntimeTitle = computed(() =>
+  startupCompositionIdentity.value
+    ? `Запустить Runtime Preview стартовой Composition «${startupCompositionIdentity.value}»`
+    : 'В Workspace не выбрана стартовая Composition',
+)
+
+function exportCurrentDomain(): void {
+  domainExportModal.value?.open()
+}
+
+function openDomainImport(): void {
+  void domainImportModal.value?.open()
+}
+
+function openDocumentImport(format: 'graphql' | 'openapi'): void {
+  EndgeIDE.documentImport.open(format)
+}
+
+function openBackendConnections(): void {
+  backendConnectionsModal.value?.open()
+}
+
+function openAccessControl(): void {
+  accessControlModal.value?.open()
+}
+
+function openAIManagement(): void {
+  void aiManagementModal.value?.open()
+}
+
+function openServiceVersions(): void {
+  serviceVersionsDialog.value?.open()
+}
+
+function openExecutionBundleProfiles(): void {
+  executionBundleProfilesModal.value?.open()
+}
+
+function openSFCPlayground(): void {
+  tabs.openSFCPlayground()
+}
+
+function toggleProblems(): void {
+  toggleWidget(ENDGE_IDE_PROBLEMS_WIDGET_ID)
+}
+
+async function launchStartupRuntime(): Promise<void> {
+  const identity = startupCompositionIdentity.value
+  if (!identity || context.isSwitching() || isLaunchingStartupRuntime.value) {
+    return
+  }
+
+  isLaunchingStartupRuntime.value = true
+  try {
+    const launched = await EndgeIDE.runtimePreview.launch({
+      entityType: 'composition',
+      identity,
+    })
+    if (launched) {
+      EndgeIDE.runtimePreview.requestTreeExpansion('root-content')
+    }
+  }
+  finally {
+    isLaunchingStartupRuntime.value = false
+  }
+}
+
+async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): Promise<void> {
+  try {
+    await entry.item.action?.()
+  }
+  catch (error) {
+    console.error(`[EndgeIDEIntegrations] Menu action "${entry.id}" failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+</script>
+
+<template>
+  <Teleport to="[data-target='grid-layout-status-bar']" defer>
+    <EndgeIDEStatusBar />
+  </Teleport>
+
+  <Teleport to="[data-target='grid-layout-header-menu']" defer>
+    <nav class="flex items-center gap-1 text-xs font-medium">
+      <!-- Схема / документ -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('endgeIde.headerMenu.file.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem @click="exportCurrentDomain">
+            <Download class="size-3.5" />
+            {{ t('endgeIde.headerMenu.file.export') }}
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger :disabled="isBusy">
+              <Upload class="size-3.5" />
+              {{ t('endgeIde.headerMenu.file.import') }}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent class="w-64">
+              <DropdownMenuItem :disabled="!canImportWorkspaceSnapshot" @click="openDomainImport">
+                <Upload class="size-3.5" />
+                {{ canImportWorkspaceSnapshot
+                  ? t('endgeIde.headerMenu.file.importWorkspaceSnapshot')
+                  : t('endgeIde.headerMenu.file.importWorkspaceAdmin') }}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem :disabled="!canImportDocuments" @click="openDocumentImport('graphql')">
+                <Braces class="size-3.5" />
+                {{ t('endgeIde.headerMenu.file.importGraphQL') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem :disabled="!canImportDocuments" @click="openDocumentImport('openapi')">
+                <FileCode2 class="size-3.5" />
+                {{ t('endgeIde.headerMenu.file.importOpenAPI') }}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Видимость виджетов -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('endgeIde.headerMenu.view.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-64" align="start" side="bottom" :side-offset="4">
+          <DropdownMenuCheckboxItem
+            v-for="widget in widgetVisibilityItems"
+            :key="widget.id"
+            :model-value="widget.visible"
+            @select.prevent="EndgeIDE.widgets.toggleVisibility(widget.id)"
+          >
+            <component :is="getIconComponent(widget.icon)" class="size-3.5" :class="widget.iconClass" />
+            {{ widget.title }}
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Отладка -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('endgeIde.headerMenu.debug.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem as-child>
+            <RouterLink :to="{ name: 'debugger' }" target="_blank" rel="noopener">
+              {{ t('endgeIde.headerMenu.debug.remoteDebug') }}
+            </RouterLink>
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="toggleProblems">
+            {{ t('endgeIde.headerMenu.debug.problems') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="openSFCPlayground">
+            {{ t('endgeIde.headerMenu.debug.sfcPlayground') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Настройки -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('endgeIde.headerMenu.settings.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem @click="openBackendConnections">
+            <Settings2 class="size-3.5" />
+            {{ t('endgeIde.headerMenu.settings.connections') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
+            <ShieldCheck class="size-3.5" />
+            {{ t('endgeIde.headerMenu.settings.access') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
+            <Bot class="size-3.5 text-fuchsia-500" />
+            {{ t('endgeIde.headerMenu.settings.aiSettings') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Помощь -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="px-2 py-1 rounded-md hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            {{ t('help.title') }}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          class="w-56"
+          align="start"
+          side="bottom"
+          :side-offset="4"
+        >
+          <DropdownMenuItem
+            v-if="ENDGE_IDE_DOCUMENTATION_URL"
+            as="a"
+            :href="ENDGE_IDE_DOCUMENTATION_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BookOpen class="size-3.5" />
+            {{ t('help.documentation') }}
+            <ArrowUpRight class="ml-auto size-3.5 opacity-50" />
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            v-if="ENDGE_IDE_GOVERNANCE_PORTAL_URL"
+            as="a"
+            :href="ENDGE_IDE_GOVERNANCE_PORTAL_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <LayoutDashboard class="size-3.5" />
+            {{ t('help.portal') }}
+            <ArrowUpRight class="ml-auto size-3.5 opacity-50" />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="ENDGE_IDE_DOCUMENTATION_URL || ENDGE_IDE_GOVERNANCE_PORTAL_URL" />
+          <DropdownMenuItem @click="openServiceVersions">
+            <Boxes class="size-3.5" />
+            {{ t('help.serviceVersions.menu') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <span
+        v-if="configuratorMenuItems.length"
+        class="mx-1 h-4 w-px bg-border"
+        aria-hidden="true"
+      />
+      <button
+        v-for="entry in configuratorMenuItems"
+        :key="entry.id"
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        :disabled="!entry.item.action"
+        :title="`${entry.item.title} · ${entry.integrationIdentity}`"
+        @click="runIntegrationMenuAction(entry)"
+      >
+        <component
+          :is="getIconComponent(entry.item.icon)"
+          v-if="getIconComponent(entry.item.icon)"
+          class="size-3.5"
+        />
+        {{ entry.item.title }}
+      </button>
+    </nav>
+  </Teleport>
+
+  <Teleport to="[data-target='grid-layout-header-actions']" defer>
+    <div class="mr-1 flex items-center gap-1">
+      <button
+        type="button"
+        class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
+        :disabled="!startupCompositionIdentity || context.isSwitching() || isLaunchingStartupRuntime"
+        :title="launchStartupRuntimeTitle"
+        aria-label="Запустить Runtime Preview стартовой Composition"
+        @click="launchStartupRuntime"
+      >
+        <Loader2 v-if="isLaunchingStartupRuntime" class="size-4 animate-spin" />
+        <Play v-else class="size-4 text-emerald-500" />
+      </button>
+      <button
+        type="button"
+        class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground"
+        title="Открыть профили сборки"
+        aria-label="Открыть профили сборки Execution Bundle"
+        @click="openExecutionBundleProfiles"
+      >
+        <Hammer class="size-4 text-amber-500" />
+      </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-md border border-transparent bg-transparent transition-colors hover:border-border hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+              :disabled="context.isSwitching()"
+              :aria-label="t('workspaceWorkflow.openCurrent')"
+              @click="tabs.openWorkspaceWorkflow()"
+            >
+              <DocumentIcon :presentation="DOCUMENT_AUXILIARY_PRESENTATION.workspace" size="tab" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('workspaceWorkflow.openCurrent') }}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <ConfiguratorPresence_Button />
+    </div>
+  </Teleport>
+
+  <EditorView />
+  <DomainExport_Modal ref="domainExportModal" />
+  <DomainImport_Modal ref="domainImportModal" />
+  <DocumentImport_Modal />
+  <BackendConnections_Modal ref="backendConnectionsModal" />
+  <AccessControl_Modal ref="accessControlModal" />
+  <AIManagement_Modal ref="aiManagementModal" />
+  <ServiceVersionsDialog ref="serviceVersionsDialog" />
+  <BuildResultDialog />
+  <ExecutionBundleProfiles_Modal ref="executionBundleProfilesModal" />
+  <RuntimePreviewAuthDialog />
+</template>

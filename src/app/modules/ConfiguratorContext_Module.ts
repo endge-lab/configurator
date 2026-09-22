@@ -1,0 +1,520 @@
+import type {
+  EndgeBootContext,
+  EndgeCommandExecutor,
+  EndgeDataMode,
+  EndgeDomainProvider,
+  EndgeExecutionContext,
+  EndgeRemoteCommandTransport,
+} from '@endge/core'
+import type {
+  ConfiguratorContextInitOptions,
+  ConfiguratorContextSurfaceLifecycle,
+  ConfiguratorDetachedContextInitOptions,
+} from '@/app/domain/types/configurator-context.type'
+import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
+import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
+
+import {
+  createContextCommandExecutor,
+  Endge,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
+  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+} from '@endge/core'
+
+import { registerEndgeMockProviders } from '@/features/endge-ide/bootstrap/endge-mock-providers'
+import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
+import { configuratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
+
+const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-native'] as const
+
+/**
+ * Управляет boot и immutable execution context всей IDE.
+ */
+export class ConfiguratorContext_Module {
+  private _isInitialized = false
+  private _isCoreInitialized = false
+  private _isSwitchingContext = false
+  private _switchQueue: Promise<void> = Promise.resolve()
+  private _currentContext: Partial<EndgeExecutionContext> = {}
+  private _requestedContext: Partial<EndgeExecutionContext> = {}
+  private _backendConfig: EndgeBackendConfig | null = null
+  private _domainProvider: EndgeDomainProvider | null = null
+  private _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
+  private _workspaceIdentity: string | null = null
+  private _userIdentity: string | null = null
+  private readonly _listeners = new Set<() => void>()
+  private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
+
+  public constructor(
+    private readonly _events: Pick<ConfiguratorEvents_Module, 'start' | 'stop'>,
+    private readonly _remoteCommands?: EndgeRemoteCommandTransport,
+  ) {}
+
+  /**
+   * Одноразово запускает прикладное ядро конфигуратора.
+   * Передает boot-контекст в `Endge.boot()` и проверяет выбранный renderer adapter.
+   */
+  public async init(options: ConfiguratorContextInitOptions = {}): Promise<void> {
+    if (this._isInitialized) {
+      return
+    }
+
+    const backendConfig = this._backendConfig ?? options.backendConfig ?? getEndgeBackendConfig()
+    const domainProvider = this._domainProvider ?? options.domainProvider ?? null
+    if (!domainProvider && options.mode !== 'debugger') {
+      throw new Error('[EndgeIDE] domainProvider is required')
+    }
+
+    this._backendConfig = backendConfig
+    this._domainProvider = domainProvider
+    this._workspaceRole = this._workspaceRole ?? options.workspaceRole ?? null
+    this._workspaceIdentity = this._workspaceIdentity ?? options.workspaceIdentity ?? null
+    if (options.userIdentity !== undefined) {
+      this._userIdentity = String(options.userIdentity ?? '').trim() || null
+    }
+    const ctx: EndgeBootContext = options.mode === 'debugger'
+      ? {
+          mode: 'debugger',
+          vars: {},
+          scope: {},
+          bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: true, allWorkspaces: true, label: 'Configurator debugger' },
+          ui: { adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS },
+          commands: { remote: this._remoteCommands },
+        }
+      : this._createBootContext(options.context, backendConfig, domainProvider)
+
+    if (options.mode !== 'debugger') {
+      registerEndgeMockProviders()
+    }
+    let bootCompleted = false
+    try {
+      if (options.mode !== 'debugger') {
+        this._events.start()
+        if (this._userIdentity) {
+          Endge.context.setCurrentUser(this._userIdentity)
+        }
+      }
+      await Endge.boot(ctx)
+      bootCompleted = true
+      if (this._userIdentity && Endge.mode !== 'debugger') {
+        Endge.context.setSessionIdentityProvider({
+          getCurrentIdentity: () => ({ userId: this._userIdentity }),
+        })
+      }
+      if (Endge.mode !== 'debugger') {
+        this._restoreDataModeOverride()
+        this._assertWorkspaceRendererReady()
+      }
+    }
+    catch (cause) {
+      this._events.stop()
+      this._isInitialized = false
+      this._currentContext = {}
+      this._requestedContext = {}
+      this._notify()
+
+      if (bootCompleted) {
+        try {
+          await Endge.reset()
+        }
+        catch (resetCause) {
+          throw new AggregateError(
+            [cause, resetCause],
+            '[EndgeIDE] initialization failed and Core cleanup was incomplete',
+          )
+        }
+      }
+      throw cause
+    }
+
+    if (options.mode !== 'debugger') {
+      this._startPresenceBridge(ctx, backendConfig)
+    }
+    this._isInitialized = true
+    this._isCoreInitialized = true
+    this._currentContext = { ...Endge.context.getExecutionContext() }
+    this._requestedContext = { ...this._currentContext }
+    this._notify()
+  }
+
+  /** Initializes the application shell without booting workspace-bound Core. */
+  public initDetached(options: ConfiguratorDetachedContextInitOptions): void {
+    if (this._isInitialized) {
+      return
+    }
+    this._backendConfig = options.backendConfig
+    this._domainProvider = null
+    this._workspaceRole = null
+    this._workspaceIdentity = null
+    this._userIdentity = String(options.userIdentity ?? '').trim() || null
+    this._currentContext = {}
+    this._requestedContext = {}
+    this._isCoreInitialized = false
+    this._isInitialized = true
+    this._notify()
+  }
+
+  /** Полностью перезапускает Endge под новым immutable structural context. */
+  public async switchContext(next: Partial<EndgeExecutionContext>): Promise<void> {
+    Endge.assertWritable()
+    const requested = {
+      ...this._requestedContext,
+      ...next,
+      facets: next.facets ?? this._requestedContext.facets,
+    }
+    this._requestedContext = requested
+    this._switchQueue = this._switchQueue
+      .catch(() => undefined)
+      .then(() => this._performContextSwitch(requested))
+    return this._switchQueue
+  }
+
+  /**
+   * Принудительно очищает все модули Endge и повторяет полный boot текущего
+   * контекста: setup -> load from provider -> build -> start.
+   */
+  public async reloadCurrentContext(): Promise<void> {
+    Endge.assertWritable()
+    this._switchQueue = this._switchQueue
+      .catch(() => undefined)
+      // Повторный boot должен согласовать сохранённые selections с новым Domain.
+      // Явные координаты оставляем только для пользовательского switchContext().
+      .then(() => this._performContextSwitch({}, true))
+    return this._switchQueue
+  }
+
+  /**
+   * Сбрасывает состояние Endge и локальный флаг запуска приложения.
+   * Используется для полного повторного boot без пересоздания IDE context runtime.
+   */
+  public async reset(): Promise<void> {
+    this._isInitialized = false
+    this._notify()
+    this._events.stop()
+    if (this._isCoreInitialized) {
+      await Endge.reset()
+    }
+    this._isCoreInitialized = false
+  }
+
+  /** Запускает необязательный Bridge после boot; его сбой не отменяет загрузку Core. */
+  private _startPresenceBridge(ctx: EndgeBootContext, backendConfig: EndgeBackendConfig): void {
+    try {
+      Endge.bridge.setup({
+        ...ctx,
+        bridge: { role: 'configurator', serverUrl: backendConfig.serviceBackendURL, debug: false, label: 'Configurator' },
+      })
+      Endge.bridge.start()
+    }
+    catch {
+      console.warn('[ConfiguratorPresence] Не удалось запустить список подключений. Работа конфигуратора продолжается.')
+      try {
+        Endge.bridge.reset()
+      }
+      catch {
+        // Ошибка очистки необязательного Bridge не должна отменять успешный boot.
+      }
+    }
+  }
+
+  /** Собирает boot-контекст из единожды выбранного backend provider. */
+  private _createBootContext(
+    context: Partial<EndgeExecutionContext> = {},
+    backendConfig: EndgeBackendConfig,
+    domainProvider: EndgeDomainProvider | null,
+  ): EndgeBootContext {
+    const workspaceIdentity = this._workspaceIdentity ?? String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
+    const facetSelections = readFacetSelections(import.meta.env)
+    const authVariables = readAuthVariableRecord(import.meta.env)
+    const commonContext = {
+      scope: workspaceIdentity ? { workspaceIdentity } : {},
+      context: {
+        ...(Object.keys(facetSelections).length > 0 ? { facets: facetSelections } : {}),
+        ...context,
+      },
+      vars: {
+        OIDC_ISSUER: import.meta.env.VITE_OIDC_ISSUER,
+        ENDPOINT_AUTH: import.meta.env.VITE_ENDPOINT_AUTH,
+        ...authVariables,
+        // Application env передаётся в ядро явно: @endge/core собирается отдельно
+        // и не должен читать import.meta.env приложения из своего library bundle.
+        SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN,
+        SENTRY_ENVIRONMENT: import.meta.env.VITE_SENTRY_ENVIRONMENT,
+        SENTRY_RELEASE: import.meta.env.VITE_SENTRY_RELEASE,
+      },
+      ui: {
+        defaultLocale: String(import.meta.env.VITE_DEFAULT_LOCALE || 'ru'),
+        defaultTheme: 'dark',
+        adapterFallbackIds: CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
+      },
+      auth: {
+        storageNamespace: backendConfig.activeBackendURL,
+      },
+    }
+
+    if (!domainProvider) {
+      throw new Error('[EndgeIDE] domainProvider is required')
+    }
+
+    return {
+      ...commonContext,
+      commands: { local: this._createCommandExecutor() },
+      dataProvider: 'default',
+      domainProvider,
+    }
+  }
+
+  /** Привязывает команды к штатным операциям приложения; сами setters не отправляют команды обратно. */
+  private _createCommandExecutor(): EndgeCommandExecutor {
+    const context = Endge.context
+    return createContextCommandExecutor({
+      setCurrentWorkspace: workspace => context.setCurrentWorkspace(workspace),
+      setFacetSelection: (facet, document) => this.switchContext({
+        facets: { ...this._requestedContext.facets, [facet]: document },
+      }),
+      setCurrentUser: user => context.setCurrentUser(user),
+      setCurrentLocale: locale => context.setCurrentLocale(locale),
+      setCurrentTheme: theme => context.setCurrentTheme(theme),
+      setCurrentTimezone: timezone => context.setCurrentTimezone(timezone),
+      setDataMode: mode => this._changeDataMode(mode),
+      clearDataModeOverride: () => this._changeDataMode(null),
+    })
+  }
+
+  /** Одинаково обновляет режим и живые preview после локальной или полученной от дебагера команды. */
+  private async _changeDataMode(mode: EndgeDataMode | null): Promise<void> {
+    if (mode === null) {
+      this.clearDataModeOverride()
+    }
+    else {
+      this.setMockEnabled(mode === 'mock')
+    }
+    await this._runSurfaceHook('afterDataModeChange')
+  }
+
+  private async _performContextSwitch(
+    next: Partial<EndgeExecutionContext>,
+    forceReload = false,
+  ): Promise<void> {
+    const previous = { ...this._currentContext }
+    if (!forceReload && sameContext(previous, next)) {
+      return
+    }
+
+    this._isSwitchingContext = true
+    this._notify()
+    try {
+      await this._runSurfaceHook('beforeContextReset')
+      await this.reset()
+      await this.init({ context: next })
+      await this._runSurfaceHook('afterContextBoot')
+    }
+    catch (error) {
+      try {
+        await this.reset()
+        await this.init({ context: previous })
+        await this._runSurfaceHook('afterContextBoot')
+      }
+      catch {
+        // Исходная ошибка содержит первичную причину; rollback best-effort.
+      }
+      throw error
+    }
+    finally {
+      this._isSwitchingContext = false
+      this._notify()
+    }
+  }
+
+  /** Подписывает UI на boot/context-switch состояние IDE context runtime. */
+  public subscribe(listener: () => void): () => void {
+    this._listeners.add(listener)
+    return () => this._listeners.delete(listener)
+  }
+
+  /** Регистрирует смонтированную поверхность приложения, владеющую runtime handles между перезапусками контекста. */
+  public registerSurface(id: string, lifecycle: ConfiguratorContextSurfaceLifecycle): () => void {
+    const key = String(id ?? '').trim()
+    if (!key) {
+      throw new Error('[EndgeIDE] surface id is required.')
+    }
+    this._surfaces.set(key, lifecycle)
+    return () => {
+      if (this._surfaces.get(key) === lifecycle) {
+        this._surfaces.delete(key)
+      }
+    }
+  }
+
+  private async _runSurfaceHook(hook: keyof ConfiguratorContextSurfaceLifecycle): Promise<void> {
+    for (const lifecycle of this._surfaces.values()) {
+      await lifecycle[hook]?.()
+    }
+  }
+
+  private _notify(): void {
+    for (const listener of this._listeners) {
+      listener()
+    }
+  }
+
+  /** Восстанавливает переопределение Configurator после загрузки Workspace через Endge.boot(). */
+  private _restoreDataModeOverride(): void {
+    const workspaceIdentity = Endge.workspace.current.identity
+    const mode = configuratorDataModeRepository.read(this._activeBackendURL(), workspaceIdentity)
+    if (mode) {
+      Endge.context.setDataMode(mode)
+    }
+    else {
+      Endge.context.clearDataModeOverride()
+    }
+  }
+
+  private _assertWorkspaceRendererReady(): void {
+    const adapter = Endge.uiRegistry.adapters.requireActive({
+      protocol: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
+      protocolVersion: ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
+      requiredRendererKeys: ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+      requiredRootKeys: ['shell', 'sfc', 'sfc-runtime', 'filter-view'],
+    })
+    const expectedAdapter = Endge.uiRegistry.adapters.resolveAvailable(
+      Endge.workspace.defaultSfcAdapterId,
+      CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS,
+    )
+
+    if (!expectedAdapter) {
+      Endge.uiRegistry.adapters.require({ id: Endge.workspace.defaultSfcAdapterId })
+      return
+    }
+
+    if (adapter.id !== expectedAdapter.id) {
+      throw new Error(
+        `[EndgeIDE] active SFC adapter "${adapter.id}" does not match resolved adapter "${expectedAdapter.id}"`,
+      )
+    }
+  }
+
+  /** Пользователь локальной сессии Configurator, независимо от инспектируемого контекста. */
+  public get userIdentity(): string | null {
+    return this._userIdentity
+  }
+
+  /** Показывает, был ли уже выполнен успешный boot текущего приложения. */
+  public get isInitialized(): boolean {
+    return this._isInitialized
+  }
+
+  public get isSwitchingContext(): boolean {
+    return this._isSwitchingContext
+  }
+
+  public get currentContext(): Readonly<Partial<EndgeExecutionContext>> {
+    return this._currentContext
+  }
+
+  /** Возвращает единожды выбранную конфигурацию backend без повторного чтения env. */
+  public get backendConfig(): Readonly<EndgeBackendConfig> | null {
+    return this._backendConfig
+  }
+
+  /** Эффективная роль текущего разработчика в выбранном workspace. */
+  public get workspaceRole(): 'viewer' | 'editor' | 'admin' | null {
+    return this._workspaceRole
+  }
+
+  /** Workspace, выбранный при авторизованном запуске Configurator. */
+  public get workspaceIdentity(): string {
+    if (!this._workspaceIdentity) {
+      throw new Error('[Configurator] Active workspace is required')
+    }
+    return this._workspaceIdentity
+  }
+
+  public get activeWorkspaceIdentity(): string | null {
+    return this._workspaceIdentity
+  }
+
+  public get hasActiveWorkspace(): boolean {
+    return this._workspaceIdentity !== null
+  }
+
+  /** Возвращает фактический режим данных для fixtures Store и выполнения Query. */
+  public get isMockEnabled(): boolean {
+    return Endge.context.isMockEnabled
+  }
+
+  /** Показывает, переопределяет ли Configurator текущее значение Workspace по умолчанию. */
+  public get isDataModeOverridden(): boolean {
+    return Endge.context.isDataModeOverridden
+  }
+
+  /** Обновляет mock-режим без перестроения неизменяемого структурного контекста. */
+  public setMockEnabled(enabled: boolean): void {
+    const mode = enabled ? 'mock' : 'live'
+    configuratorDataModeRepository.write(this._activeBackendURL(), Endge.workspace.current.identity, mode)
+    Endge.context.setDataMode(mode)
+    this._notify()
+  }
+
+  /** Возвращает выполнение данных к сохранённому значению Workspace по умолчанию. */
+  public clearDataModeOverride(): void {
+    configuratorDataModeRepository.clear(this._activeBackendURL(), Endge.workspace.current.identity)
+    Endge.context.clearDataModeOverride()
+    this._notify()
+  }
+
+  private _activeBackendURL(): string {
+    return this._backendConfig?.activeBackendURL ?? getEndgeBackendConfig().activeBackendURL
+  }
+}
+
+/** Допускает для auth только явно выделенный VITE_ENDGE_AUTH_* namespace host-приложения. */
+function readAuthVariableRecord(env: ImportMetaEnv): Readonly<Record<string, string>> {
+  const variables: Record<string, string> = {}
+  for (const [key, rawValue] of Object.entries(env as unknown as Record<string, unknown>)) {
+    if (!key.startsWith('VITE_ENDGE_AUTH_') || typeof rawValue !== 'string') {
+      continue
+    }
+    const ref = key.slice('VITE_ENDGE_AUTH_'.length).trim()
+    const value = rawValue.trim()
+    if (ref && value) {
+      variables[ref] = value
+    }
+  }
+  return variables
+}
+
+function sameContext(left: Partial<EndgeExecutionContext>, right: Partial<EndgeExecutionContext>): boolean {
+  const leftFacets = left.facets ?? {}
+  const rightFacets = right.facets ?? {}
+  const keys = new Set([...Object.keys(leftFacets), ...Object.keys(rightFacets)])
+  return [...keys].every(key => leftFacets[key] === rightFacets[key])
+}
+
+/** Reads optional deployment-provided facet selections without fixed facet names. */
+function readFacetSelections(env: ImportMetaEnv): Readonly<Record<string, string>> {
+  const raw = String((env as unknown as Record<string, unknown>).VITE_ENDGE_FACETS ?? '').trim()
+  if (!raw) {
+    return {}
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new TypeError('expected a JSON object')
+    }
+    const selections: Record<string, string> = {}
+    for (const [facet, document] of Object.entries(parsed)) {
+      const normalizedFacet = facet.trim()
+      const normalizedDocument = typeof document === 'string' ? document.trim() : ''
+      if (!normalizedFacet || !normalizedDocument) {
+        throw new TypeError('facet identities and document identities must be non-empty strings')
+      }
+      selections[normalizedFacet] = normalizedDocument
+    }
+    return selections
+  }
+  catch (cause) {
+    throw new Error('[EndgeIDE] VITE_ENDGE_FACETS must be a JSON object of facet selections', { cause })
+  }
+}

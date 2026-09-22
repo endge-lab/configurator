@@ -1,0 +1,309 @@
+<script setup lang="ts">
+import type { RaphPhase } from '@endge/raph'
+import { Raph } from '@endge/raph'
+import { onBeforeUnmount, onMounted, ref, triggerRef } from 'vue'
+
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import RaphTreeItem from '@/features/endge-ide/ui/widgets/components/RaphTreeItem.vue'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
+
+/** Дерево узлов (Raph.debug.getTree()) */
+interface NodeTree {
+  id: string
+  type?: string
+  children: NodeTree[]
+  routes: string[]
+}
+
+/** Группа событий при записи */
+interface EventGroup {
+  phase: string
+  path: string
+  nodes: Array<{ id?: string }>
+  resolvedSamples: Array<Array<{ segment: string, keyField: string, keyValue: unknown, index?: number }>>
+}
+
+const activeTab = useConfiguratorState(
+  'configurator.raph.active-tab',
+  'phases',
+  { legacyKeys: ['endge-raph-widget-tab'] },
+)
+const recordingEnabled = ref(false)
+const unsubscribe: (() => void)[] = []
+
+const phases = ref<RaphPhase[]>([])
+const tree = ref<NodeTree[]>([])
+const events = ref<EventGroup[]>([])
+const metrics = ref({ ups: 0, nps: 0, eps: 0 })
+
+const MAX_HISTORY = 200
+let refreshTimer: ReturnType<typeof setInterval> | undefined
+let batchesThisSecond = 0
+let eventsThisSecond = 0
+
+function refreshPhases(): void {
+  try {
+    phases.value = [...Raph.runtime.phases]
+  }
+  catch {
+    phases.value = []
+  }
+  triggerRef(phases)
+}
+
+function refreshNodes(): void {
+  try {
+    const root = Raph.debug.getTree()
+    const mapNode = (owner: typeof root): NodeTree => ({
+      id: owner.id,
+      type: owner.kind,
+      children: owner.children.map(mapNode),
+      routes: [],
+    })
+    tree.value = [mapNode(root)]
+  }
+  catch {
+    tree.value = []
+  }
+}
+
+function toggleRecording(): void {
+  recordingEnabled.value = !recordingEnabled.value
+  if (recordingEnabled.value) {
+    events.value = []
+  }
+}
+
+onMounted(() => {
+  unsubscribe.push(Raph.watch('*', ({ events: changed }) => {
+    batchesThisSecond++
+    eventsThisSecond += changed.length
+    if (!recordingEnabled.value) {
+      return
+    }
+    events.value.push(...changed.map(event => ({
+      phase: 'path',
+      path: event.path,
+      nodes: [],
+      resolvedSamples: [],
+    })))
+    if (events.value.length > MAX_HISTORY) {
+      events.value.splice(0, events.value.length - MAX_HISTORY)
+    }
+  }))
+  refreshTimer = setInterval(() => {
+    refreshPhases()
+    refreshNodes()
+    metrics.value = { ups: batchesThisSecond, nps: 0, eps: eventsThisSecond }
+    batchesThisSecond = 0
+    eventsThisSecond = 0
+  }, 1000)
+  refreshPhases()
+  refreshNodes()
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
+  unsubscribe.forEach(fn => fn?.())
+  unsubscribe.length = 0
+})
+</script>
+
+<template>
+  <div class="flex flex-col h-full">
+    <div class="shrink-0 px-3 py-2 border-b flex items-center justify-between gap-2">
+      <div class="text-xs text-muted-foreground flex items-center gap-3">
+        <span>{{ $t('uiText.upsCc125e24') }} {{ metrics.ups.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
+        <span>{{ $t('uiText.eps58704b29') }} {{ metrics.eps.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
+        <span>{{ $t('uiText.npsC6038aa1') }} {{ metrics.nps.toFixed(1) }}{{ $t('uiText.text461069e6') }}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" class="size-8" @click="refreshPhases(); refreshNodes()">
+                <i class="ti ti-refresh text-base" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.updateC2f668e5') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="size-8"
+                :class="{ 'text-red-500': recordingEnabled }"
+                @click="toggleRecording"
+              >
+                <i :class="recordingEnabled ? 'ti ti-player-record-filled' : 'ti ti-player-record'" class="text-base" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ recordingEnabled ? $t('uiText.disable5ee528dc') : $t('uiText.enable66be7e0c') }} {{ $t('uiText.eventRecordingEcf33cb2') }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+
+    <Tabs v-model="activeTab" class="flex-1 flex flex-col min-h-0">
+      <TabsList class="shrink-0 w-full grid grid-cols-3 rounded-none border-b">
+        <TabsTrigger value="phases" class="rounded-none">
+          {{ $t('uiText.phases8d0528a2') }}
+        </TabsTrigger>
+        <TabsTrigger value="nodes" class="rounded-none">
+          {{ $t('uiText.nodes3293ac18') }}
+        </TabsTrigger>
+        <TabsTrigger value="events" class="rounded-none">
+          {{ $t('uiText.eventsBb9ac875') }}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="phases" class="flex-1 mt-0 min-h-0 overflow-hidden">
+        <ScrollArea class="h-full">
+          <div class="p-3 space-y-2">
+            <details
+              v-for="(phase, index) in phases"
+              :key="index"
+              class="border border-border rounded-md bg-muted/30"
+            >
+              <summary
+                class="cursor-pointer flex items-center justify-between px-2 py-1.5 font-semibold text-xs hover:bg-muted transition-colors rounded-t-md"
+              >
+                <span class="truncate">
+                  {{ (phase as any).name }} - {{ (phase as any).traversal }}
+                  <span class="text-muted"> ({{ (phase as any).routes?.length ?? 0 }} {{ $t('uiText.routes8289d505') }}</span>
+                </span>
+              </summary>
+              <ul class="pl-4 py-1 text-xs text-destructive list-disc">
+                <li v-for="(route, idx) in (phase as any).routes" :key="idx" class="break-all">
+                  {{ route }}
+                </li>
+              </ul>
+            </details>
+            <p v-if="!phases.length" class="text-xs text-muted-foreground">
+              {{ $t('uiText.empty1526c020') }}
+            </p>
+          </div>
+        </ScrollArea>
+      </TabsContent>
+
+      <TabsContent value="nodes" class="flex-1 mt-0 min-h-0 overflow-hidden">
+        <ScrollArea class="h-full">
+          <div class="p-3 space-y-1">
+            <RaphTreeItem v-for="root in tree" :key="root.id" :node="root" :depth="0" />
+            <p v-if="!tree.length" class="text-xs text-muted-foreground">
+              {{ $t('uiText.empty1526c020') }}
+            </p>
+          </div>
+        </ScrollArea>
+      </TabsContent>
+
+      <TabsContent value="events" class="flex-1 mt-0 min-h-0 overflow-hidden">
+        <ScrollArea class="h-full">
+          <div class="p-3 space-y-2">
+            <div class="flex items-center gap-2 mb-2">
+              <i
+                v-if="recordingEnabled"
+                class="ti ti-player-record-filled text-red-500 shrink-0"
+                title="Запись идёт"
+              />
+              <span class="text-xs" :class="recordingEnabled ? 'text-red-500' : 'text-muted-foreground'">
+                {{ recordingEnabled ? $t('uiText.recordingInProgressD97363a1') : $t('uiText.recordingStopped4613e383') }}
+              </span>
+              <span class="text-xs text-muted-foreground">({{ events.length }})</span>
+            </div>
+            <details
+              v-for="(g, i) in events"
+              :key="i"
+              class="border border-border rounded-md bg-muted/30"
+            >
+              <summary
+                class="cursor-pointer flex items-center justify-between px-2 py-1.5 font-semibold text-xs hover:bg-muted transition-colors rounded-t-md"
+              >
+                <span class="truncate">
+                  <span class="text-primary">{{ g.phase }}</span>
+                  <span class="text-muted"> - </span>
+                  <span class="font-mono">{{ g.path }}</span>
+                  <span class="text-muted"> {{ $t('uiText.nodes30d987fd') }} {{ g.nodes.length }}</span>
+                  <span v-if="g.resolvedSamples?.length" class="text-muted"> {{ $t('uiText.paramsD51f9495') }} {{ g.resolvedSamples.length }}</span>
+                </span>
+              </summary>
+              <div class="px-3 py-2 text-xs space-y-3">
+                <div>
+                  <div class="text-muted mb-1">
+                    {{ $t('uiText.triggeredNodesId2a9c1bfd') }}
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    <span
+                      v-for="n in g.nodes"
+                      :key="n?.id"
+                      class="font-mono px-1.5 py-0.5 rounded bg-muted"
+                    >
+                      {{ n?.id ?? '(node)' }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="g.resolvedSamples?.length">
+                  <div class="text-muted mb-1">
+                    {{ $t('uiText.parametersResolved951a68bf') }}
+                  </div>
+                  <div
+                    v-for="(sample, si) in g.resolvedSamples"
+                    :key="si"
+                    class="overflow-auto"
+                  >
+                    <div v-if="g.resolvedSamples.length > 1" class="text-muted mb-1">
+                      {{ $t('uiText.option761dd472') }}{{ si + 1 }}
+                    </div>
+                    <table class="w-full text-left border-collapse min-w-[320px] text-xs">
+                      <thead class="text-muted">
+                        <tr>
+                          <th class="py-1 pr-2 border-b border-border">
+                            {{ $t('uiText.segment6a80eba8') }}
+                          </th>
+                          <th class="py-1 px-2 border-b border-border">
+                            {{ $t('uiText.keyfieldBdfd29d1') }}
+                          </th>
+                          <th class="py-1 px-2 border-b border-border">
+                            {{ $t('uiText.keyvalue8b98b6f3') }}
+                          </th>
+                          <th class="py-1 pl-2 border-b border-border">
+                            {{ $t('uiText.indexE540cdd1') }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(r, ri) in sample" :key="ri" class="align-top">
+                          <td class="py-1 pr-2 border-b border-border font-mono">
+                            {{ r.segment }}
+                          </td>
+                          <td class="py-1 px-2 border-b border-border font-mono">
+                            {{ r.keyField }}
+                          </td>
+                          <td class="py-1 px-2 border-b border-border">
+                            <pre class="font-mono whitespace-pre-wrap break-all m-0">{{ r.keyValue }}</pre>
+                          </td>
+                          <td class="py-1 pl-2 border-b border-border font-mono">
+                            {{ r.index ?? '-' }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </details>
+            <p v-if="!events.length" class="text-xs text-muted-foreground">
+              {{ $t('uiText.empty1526c020') }}
+            </p>
+          </div>
+        </ScrollArea>
+      </TabsContent>
+    </Tabs>
+  </div>
+</template>

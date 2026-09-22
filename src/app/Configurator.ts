@@ -1,0 +1,420 @@
+/* eslint-disable perfectionist/sort-imports -- Endge plugins must be registered before context runtime is evaluated */
+import '@/features/endge-ide/bootstrap/endge-runtime-plugins'
+import '@/features/endge-ide/bootstrap/endge-renderer-plugins'
+
+import type {
+  ConfiguratorAuthenticationRequirement,
+  ConfiguratorBackendConnectionFailure,
+  ConfiguratorModules,
+  ConfiguratorStatus,
+} from '@/app/domain/types/configurator.type'
+import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
+import type { WorkspaceCreateInput } from '@/features/backend-connections/domain/types/backend-connection.type'
+import type { ConfiguratorSessionBinding } from '@/features/configurator-session/ui/configurator-session-context'
+import type { App } from 'vue'
+import type { Router } from 'vue-router'
+
+import { Endge } from '@endge/core'
+import type { EndgeBootMode } from '@endge/core'
+import { clearConfiguratorBrowserState } from '@/features/configurator-session/tools/clear-configurator-browser-state'
+import {
+  clearConfiguratorLoginRedirectGuard,
+  startConfiguratorLogin,
+} from '@/features/configurator-session/tools/start-configurator-login'
+import { resolveConfiguratorWorkspace } from '@/features/backend-connections/services/resolve-configurator-workspace'
+
+import { createConfiguratorModules } from '@/app/config/modules.config'
+import { VueErrorBoundary_Adapter } from '@/app/adapters/VueErrorBoundary_Adapter'
+import { AccessControl_Module } from '@/features/access-control/AccessControl_Module'
+import { AccessControlHttp_Adapter } from '@/features/access-control/adapters/AccessControlHttp_Adapter'
+import { AIWorkbench } from '@/features/ai-assistant'
+import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
+import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
+import { ServiceBackendDomainHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainHttp_Adapter'
+import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
+import { RemoteDebugger_Module } from '@/features/remote-debugger/RemoteDebugger_Module'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+/* eslint-enable perfectionist/sort-imports */
+
+export class ConfiguratorBootstrapError extends Error {
+  public constructor(public readonly code: string, message: string) {
+    super(message)
+    this.name = 'ConfiguratorBootstrapError'
+  }
+}
+
+/** Федерация уровня приложения и единственный владелец запуска Configurator. */
+export class Configurator {
+  private static readonly _modules: ConfiguratorModules = createConfiguratorModules(
+    () => EndgeIDE.reset(),
+    { send: command => Configurator._remoteDebugger.execute(command) },
+  )
+
+  private static _initialization: Promise<ConfiguratorStatus> | null = null
+  private static _status: 'idle' | ConfiguratorStatus = 'idle'
+  private static _authenticationRequirement: ConfiguratorAuthenticationRequirement | null = null
+  private static _backendConnectionFailure: ConfiguratorBackendConnectionFailure | null = null
+  private static _errorBoundary: VueErrorBoundary_Adapter | null = null
+  private static _accessControl: AccessControl_Module | null = null
+  private static _releases: ConfiguratorReleases_Module | null = null
+  private static readonly _remoteDebugger = new RemoteDebugger_Module()
+
+  private constructor() {}
+
+  public static get isReady(): boolean {
+    return this._status === 'ready'
+  }
+
+  public static get session() {
+    return this._modules.session
+  }
+
+  public static get connections() {
+    return this._modules.connections
+  }
+
+  public static get backendVersions() {
+    return this._modules.backendVersions
+  }
+
+  public static get domainVersions() {
+    return this._modules.domainVersions
+  }
+
+  public static get status(): 'idle' | ConfiguratorStatus {
+    return this._status
+  }
+
+  public static get workspaceSelection(): readonly ConfiguratorWorkspaceAccess[] {
+    const state = this._modules.session.state
+    return state.status === 'authenticated'
+      ? state.session.workspaces.filter(workspace => workspace.active)
+      : []
+  }
+
+  public static get activeWorkspaceIdentity(): string | null {
+    return this._modules.context.activeWorkspaceIdentity
+  }
+
+  public static get hasActiveWorkspace(): boolean {
+    return this._modules.context.hasActiveWorkspace
+  }
+
+  /** После создания обновляет серверный список Workspace без переключения контекста. */
+  public static async createWorkspace(input: WorkspaceCreateInput): Promise<boolean> {
+    const state = this.session.state
+    if (state.status !== 'authenticated' || !state.session.platformAdmin) {
+      throw new Error('workspace_creation_forbidden')
+    }
+    await this.connections.createWorkspace(input)
+    // Создание уже завершено: ошибка обновления списка не должна предлагать повторить POST.
+    try {
+      return (await this.session.check()).status === 'authenticated'
+    }
+    catch {
+      return false
+    }
+  }
+
+  /** Мягко удаляет доступный Workspace и синхронизирует application context. */
+  public static async deleteWorkspace(workspaceIdentity: string): Promise<boolean> {
+    const state = this.session.state
+    const session = state.status === 'authenticated' ? state.session : null
+    const access = session?.workspaces.find(workspace => workspace.identity === workspaceIdentity)
+    if (!access || (access.role !== 'admin' && !session?.platformAdmin)) {
+      throw new Error('workspace_deletion_forbidden')
+    }
+    const isCurrent = this.activeWorkspaceIdentity === workspaceIdentity
+    await this.connections.deleteWorkspace(workspaceIdentity)
+    if (isCurrent) {
+      this.connections.clearWorkspaceAndReload()
+      return true
+    }
+    return (await this.session.check()).status === 'authenticated'
+  }
+
+  public static get backendConnectionFailure(): ConfiguratorBackendConnectionFailure | null {
+    return this._backendConnectionFailure
+  }
+
+  public static get authenticationRequirement(): ConfiguratorAuthenticationRequirement | null {
+    return this._authenticationRequirement
+  }
+
+  public static get context() {
+    return this._modules.context
+  }
+
+  public static get events() {
+    return this._modules.events
+  }
+
+  public static get diagnostics() {
+    return this._modules.diagnostics
+  }
+
+  public static get i18n() {
+    return this._modules.i18n
+  }
+
+  public static get remoteDebugger() { return this._remoteDebugger }
+
+  /** Возвращает необязательную проекцию подключений текущего workspace. */
+  public static get presence() { return this._modules.presence }
+
+  public static async activateDebugger(): Promise<void> {
+    EndgeIDE.setup(this._modules.context)
+    await EndgeIDE.init()
+    this._remoteDebugger.init()
+  }
+
+  public static closeDebugger(): void {
+    this._remoteDebugger.dispose()
+    Endge.bridge.reset()
+    window.close()
+  }
+
+  public static get questions() {
+    return this._modules.questions
+  }
+
+  public static get layout() {
+    return this._modules.layout
+  }
+
+  public static get oidcDiscovery() {
+    return this._modules.oidcDiscovery
+  }
+
+  /** Возвращает application-scoped access-control module для активного backend. */
+  public static get accessControl(): AccessControl_Module {
+    this._accessControl ??= new AccessControl_Module(
+      new AccessControlHttp_Adapter(this._modules.connections.activeBackendURL),
+    )
+    return this._accessControl
+  }
+
+  /** Возвращает application-owned историю версий активного workspace. */
+  public static get releases(): ConfiguratorReleases_Module {
+    this._releases ??= new ConfiguratorReleases_Module(
+      new ConfiguratorReleasesHttp_Adapter(
+        getEndgeBackendConfig().serviceBackendURL,
+        () => Endge.workspace.current.identity,
+      ),
+    )
+    return this._releases
+  }
+
+  public static setup(app: App, router: Router): void {
+    if (this._errorBoundary) {
+      return
+    }
+
+    this._errorBoundary = new VueErrorBoundary_Adapter(app, router, this._modules.diagnostics)
+    this._errorBoundary.setup()
+  }
+
+  /** Проверяет сессию и однократно запускает Endge при первой навигации router. */
+  public static async init(mode: EndgeBootMode = 'application'): Promise<ConfiguratorStatus> {
+    if (this._status !== 'idle') {
+      return this._status
+    }
+
+    if (!this._initialization) {
+      this._initialization = this._initialize(mode)
+        .then((status) => {
+          this._status = status
+          return status
+        })
+        .finally(() => {
+          this._initialization = null
+        })
+    }
+
+    return this._initialization
+  }
+
+  public static get sessionBinding(): ConfiguratorSessionBinding {
+    return {
+      module: this._modules.session,
+      logout: () => this.logout(),
+    }
+  }
+
+  public static async logout(): Promise<void> {
+    try {
+      await this._modules.session.logout()
+    }
+    finally {
+      clearConfiguratorBrowserState()
+    }
+    const state = await this._modules.session.check()
+    if (state.status === 'unauthenticated') {
+      this._startLoginOrThrow(state.loginUrl)
+      return
+    }
+    if (state.status === 'error') {
+      throw new ConfiguratorBootstrapError(state.code, state.message)
+    }
+    throw new ConfiguratorBootstrapError('logout_failed', 'Backend session remained authenticated after logout')
+  }
+
+  public static retryAuthentication(): void {
+    const requirement = this._authenticationRequirement
+    if (!requirement) {
+      return
+    }
+    clearConfiguratorLoginRedirectGuard(requirement.backendURL)
+    this._startLoginOrThrow(requirement.loginUrl, requirement.backendURL)
+  }
+
+  public static async reset(): Promise<void> {
+    this._modules.presence.reset()
+    await this.deactivateIDE()
+    this._modules.i18n.reset()
+    await this._modules.context.reset()
+    this._modules.events.reset()
+    this._modules.session.reset()
+    this._modules.diagnostics.reset()
+    this._modules.questions.reset()
+    this._modules.layout.reset()
+    this._accessControl = null
+    this._releases = null
+    this._authenticationRequirement = null
+    this._backendConnectionFailure = null
+    this._status = 'idle'
+  }
+
+  public static async destroy(): Promise<void> {
+    await this.reset()
+    this._errorBoundary?.destroy()
+    this._errorBoundary = null
+  }
+
+  /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */
+  public static async activateIDE(): Promise<void> {
+    EndgeIDE.setup(this._modules.context)
+    if (!this.hasActiveWorkspace) {
+      await EndgeIDE.initDetached()
+      return
+    }
+    await EndgeIDE.init()
+    try {
+      await AIWorkbench.init(
+        this.context.backendConfig!.serviceBackendURL,
+        this.context.workspaceIdentity,
+      )
+    }
+    catch (cause) {
+      AIWorkbench.reset()
+      await EndgeIDE.reset()
+      throw cause
+    }
+  }
+
+  /** Освобождает route-scoped feature owners в обратном порядке. */
+  public static async deactivateIDE(): Promise<void> {
+    this._remoteDebugger.dispose()
+    AIWorkbench.reset()
+    await EndgeIDE.reset()
+  }
+
+  private static async _initialize(mode: EndgeBootMode): Promise<ConfiguratorStatus> {
+    this._authenticationRequirement = null
+    this._backendConnectionFailure = null
+    if (!this._modules.connections.hasActiveBackend) {
+      return 'backend-selection-required'
+    }
+    const backendConfig = getEndgeBackendConfig()
+
+    const sessionState = await this._modules.session.check()
+    if (sessionState.status === 'unauthenticated') {
+      return this._startLoginOrRequire(sessionState.loginUrl, backendConfig.activeBackendURL)
+    }
+    if (sessionState.status === 'error') {
+      return this._connectionFailed(
+        backendConfig.activeBackendURL,
+        sessionState.code,
+        sessionState.message,
+      )
+    }
+    if (sessionState.status !== 'authenticated') {
+      throw new ConfiguratorBootstrapError('session_invalid_state', `Unexpected session state: ${sessionState.status}`)
+    }
+
+    clearConfiguratorLoginRedirectGuard(backendConfig.activeBackendURL)
+    // Каталог среды дополняет локальные targets и не блокирует рабочий bootstrap.
+    await this._modules.connections.load().catch(() => undefined)
+
+    const storedWorkspace = this._modules.connections.readWorkspace()
+    const workspaceSeed = String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
+    const workspaceAccess = resolveConfiguratorWorkspace(
+      sessionState.session.workspaces,
+      storedWorkspace,
+      workspaceSeed,
+    )
+    if (!workspaceAccess) {
+      this._modules.context.initDetached({
+        backendConfig,
+        userIdentity: sessionState.session.developer.subject,
+      })
+      this._modules.i18n.init()
+      return 'ready'
+    }
+    if (storedWorkspace !== workspaceAccess.identity) {
+      this._modules.connections.seedWorkspace(workspaceAccess.identity)
+    }
+    const workspaceIdentity = workspaceAccess.identity
+    const role = sessionState.session.platformAdmin ? 'admin' : workspaceAccess?.role
+    if (!role) {
+      throw new ConfiguratorBootstrapError('workspace_forbidden', `Workspace access denied: ${workspaceIdentity}`)
+    }
+
+    const domainProvider = new ServiceBackendDomainHttp_Adapter(
+      backendConfig.serviceBackendURL,
+      loginUrl => this._startLoginOrThrow(loginUrl),
+      role !== 'viewer',
+    )
+    await this._modules.context.init({
+      mode,
+      backendConfig,
+      domainProvider: mode === 'debugger' ? undefined : domainProvider,
+      workspaceRole: role,
+      workspaceIdentity,
+      userIdentity: sessionState.session.developer.subject,
+    })
+    this._modules.presence.init()
+    this._modules.i18n.init()
+    return 'ready'
+  }
+
+  private static _connectionFailed(backendURL: string, code: string, message: string): ConfiguratorStatus {
+    this._backendConnectionFailure = { backendURL, code, message }
+    return 'backend-connection-failed'
+  }
+
+  private static _startLoginOrRequire(loginUrl: string, backendURL: string): ConfiguratorStatus {
+    const result = startConfiguratorLogin(loginUrl, backendURL)
+    if (result.redirected) {
+      return 'redirecting'
+    }
+    if (result.code === 'auth_redirect_loop') {
+      this._authenticationRequirement = { backendURL, loginUrl }
+      return 'authentication-required'
+    }
+    throw new ConfiguratorBootstrapError(
+      result.code ?? 'auth_redirect_failed',
+      result.message ?? 'Configurator login redirect failed',
+    )
+  }
+
+  private static _startLoginOrThrow(loginUrl: string, backendURL = this._modules.connections.activeBackendURL): void {
+    const result = startConfiguratorLogin(loginUrl, backendURL)
+    if (!result.redirected) {
+      throw new ConfiguratorBootstrapError(
+        result.code ?? 'auth_redirect_failed',
+        result.message ?? 'Configurator login redirect failed',
+      )
+    }
+  }
+}

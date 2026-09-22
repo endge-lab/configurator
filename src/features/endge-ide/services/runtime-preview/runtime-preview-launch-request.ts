@@ -1,0 +1,99 @@
+import type { DomainDocumentType } from '@endge/core'
+import type { RuntimePreviewLaunchRequest } from '@/features/endge-ide/domain/types/runtime-preview.types'
+
+import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
+import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
+import { RSimulationEditor } from '@/features/endge-ide/domain/entities/RSimulationEditor'
+import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
+
+export interface RuntimePreviewDocumentReference {
+  docType: DomainDocumentType
+  identity?: string | null
+}
+
+/** Сопоставляет сохранённый документ Domain tree с той же runtime-целью, которую использует его редактор. */
+export function createRuntimePreviewLaunchRequestFromDocument(
+  document: RuntimePreviewDocumentReference,
+): RuntimePreviewLaunchRequest | null {
+  const identity = String(document.identity ?? '').trim()
+  if (!identity) {
+    return null
+  }
+
+  switch (document.docType) {
+    case 'composition':
+      return { entityType: 'composition', identity }
+    case 'component-sfc':
+      return { entityType: 'component-sfc', identity }
+    case 'store':
+      return { entityType: 'store', identity }
+    case 'simulation':
+      return { entityType: 'simulation', identity }
+    default:
+      return null
+  }
+}
+
+/** Преобразует в запрос запуска только документы с исполняемым runtime-контрактом. */
+export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePreviewLaunchRequest | null {
+  if (editor instanceof RSimulationEditor) {
+    return {
+      entityType: 'simulation',
+      identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        name: editor.name,
+        displayName: editor.name,
+        source: editor.source,
+        sourceVersion: editor.sourceVersion,
+      },
+    }
+  }
+  if (editor instanceof RComponentSFCEditor) {
+    return {
+      entityType: 'component-sfc',
+      identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        tag: editor.tag,
+        name: editor.name,
+        displayName: editor.displayName,
+        source: editor.source,
+      },
+    }
+  }
+
+  if (editor instanceof RCompositionEditor) {
+    return {
+      entityType: 'composition',
+      identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        name: editor.name,
+        displayName: editor.name,
+        source: editor.source,
+        sourceVersion: editor.sourceVersion,
+      },
+    }
+  }
+
+  if (editor instanceof RStoreEditor) {
+    return {
+      entityType: 'store',
+      identity: editor.identity,
+      draft: {
+        id: editor.id,
+        identity: editor.identity,
+        name: editor.name,
+        displayName: editor.name,
+        source: editor.source,
+        sourceVersion: editor.sourceVersion,
+      },
+    }
+  }
+
+  return null
+}

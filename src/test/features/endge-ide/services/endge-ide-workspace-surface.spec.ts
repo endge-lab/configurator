@@ -1,0 +1,58 @@
+import type { LayoutWidgetsState, WidgetDefinition, WidgetDefinitionState } from '@/components/layouts/grid/types'
+
+import { describe, expect, it } from 'vitest'
+
+import { ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID } from '@/features/endge-admin-ui-editor/entities/ui-editor-workspace'
+import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/domain-workspace.types'
+import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
+import { ENDGE_IDE_RUNTIME_TREE_WIDGET_ID } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import { isEditorTabSurfaceVisible } from '@/features/endge-ide/tools/endge-ide-workspace-surface'
+
+function createWidgets(activeWidget: string | null, expanded = true): LayoutWidgetsState {
+  const definitions = [
+    { id: ENDGE_IDE_DOMAIN_WIDGET_ID, position: 'left' },
+    { id: ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, position: 'left' },
+    { id: ENDGE_IDE_PROBLEMS_WIDGET_ID, position: 'left' },
+    { id: ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID, position: 'left' },
+  ].reduce<LayoutWidgetsState['definitions']>((result, item) => {
+    result[item.id] = {
+      id: item.id,
+      title: item.id,
+      icon: item.id,
+      content: 'component',
+      position: item.position,
+      minimized: false,
+    } as WidgetDefinition & WidgetDefinitionState
+    return result
+  }, {})
+
+  return {
+    areas: {
+      left: { size: 250, expanded, activeWidget },
+      right: { size: 250, expanded: true, activeWidget: null },
+      bottom: { size: 200, expanded: true, activeWidget: null },
+      floating: { order: {}, states: {} },
+      popup: { states: {} },
+    },
+    definitions,
+    instances: {},
+  }
+}
+
+describe('рабочая поверхность Endge IDE', () => {
+  it.each([
+    ENDGE_IDE_RUNTIME_TREE_WIDGET_ID,
+    ENDGE_IDE_PROBLEMS_WIDGET_ID,
+    ENDGE_ADMIN_UI_LIBRARY_WIDGET_ID,
+  ])('скрывает поверхность вкладок редактора, пока активен %s', (widgetId) => {
+    expect(isEditorTabSurfaceVisible(createWidgets(widgetId))).toBe(false)
+  })
+
+  it('оставляет поверхность вкладок редактора видимой для обычного бокового виджета', () => {
+    expect(isEditorTabSurfaceVisible(createWidgets(ENDGE_IDE_DOMAIN_WIDGET_ID))).toBe(true)
+  })
+
+  it('оставляет поверхность вкладок редактора видимой, когда область самостоятельного виджета свёрнута', () => {
+    expect(isEditorTabSurfaceVisible(createWidgets(ENDGE_IDE_RUNTIME_TREE_WIDGET_ID, false))).toBe(true)
+  })
+})

@@ -1,0 +1,575 @@
+<script setup lang="ts">
+import type { ComponentSFCTagAttributeContract, EndgeSFCEditingConfiguration, RComponentSFC } from '@endge/core'
+import type { TableCellComponentOption } from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
+import type { VisualSchemaTypeOption } from '@/features/endge-ide/services/visual-schema-editor.types'
+
+import {
+  compileComponentSFC,
+  ComponentType,
+  createComponentSFCAttributeContractsFromInputs,
+  Endge,
+  inspectComponentSFCVisual,
+} from '@endge/core'
+import { useDomainStore } from '@endge/ui-vue'
+import { AlertCircle, Code2, Columns3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
+import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
+import { createSFCStyleEndgeCSSContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/endgecss.contribution'
+import { createExtractComponentContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/extract-component'
+import { createSFCLanguageContribution } from '@/features/endge-ide/source-editor/contributions/component-sfc/language.contribution'
+import { createExtractTypeContribution } from '@/features/endge-ide/source-editor/contributions/types/extract-type'
+import { createTypeRegistryContribution } from '@/features/endge-ide/source-editor/contributions/types/type-registry.contribution'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
+
+interface ScriptEditorHandle {
+  focusOffset: (offset: number) => void
+  formatDocument: () => Promise<void>
+}
+
+const tabs = EndgeIDE.tabs
+const domainStore = useDomainStore()
+const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
+const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
+const launchLoading = ref(false)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'visual',
+  ['general', 'visual', 'source', 'diagnostics'] as const,
+)
+const tableVisualTab = useSmartTabSelection(
+  'component-sfc.visual.active-tab',
+  'table',
+  ['table', 'columns'] as const,
+)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('component-sfc', editor.value))
+const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const tableVisualEditorRef = ref<{ flushPendingEdits: () => boolean | Promise<boolean> } | null>(null)
+const configurationRevision = ref(0)
+const offConfiguration = Endge.configuration.subscribe(() => {
+  configurationRevision.value += 1
+})
+onScopeDispose(offConfiguration)
+
+let unregisterSavePreparation: (() => void) | null = null
+onMounted(() => {
+  unregisterSavePreparation = tabs.registerSavePreparation(prepareBeforeSave)
+})
+onScopeDispose(() => unregisterSavePreparation?.())
+const sfcEditing = computed<EndgeSFCEditingConfiguration>(() => {
+  void configurationRevision.value
+  return Endge.configuration.isResolved
+    ? Endge.configuration.current.sfcEditing
+    : Endge.workspace.current.configuration.sfcEditing
+})
+const visualInspection = computed(() => {
+  const current = editor.value
+  return current
+    ? inspectComponentSFCVisual(current.source ?? '', {
+        resolveComponentTag: tag => Endge.program.resolveComponentTag(tag),
+        resolveTypeDefinition: resolveEndgeTypeDefinition,
+        actionIdentities: Endge.actions.listResolved().map(action => action.identity),
+        sfcEditing: sfcEditing.value,
+      })
+    : null
+})
+const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
+const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)
+const tableVisualDiagnostics = computed(() => (
+  visualInspection.value?.diagnostics.filter(item => (
+    item.sourcePath?.startsWith('template') || item.code.startsWith('sfc-table')
+  )) ?? []
+))
+const tableVisualErrorCount = computed(() => (
+  tableVisualDiagnostics.value.filter(item => item.severity === 'error').length
+))
+const tableComponentOptions = computed<TableCellComponentOption[]>(() => Endge.domain.getComponentSFCs()
+  .filter((component: RComponentSFC) => component.id !== editor.value?.id && Boolean(component.identity?.trim()))
+  .map((component: RComponentSFC) => {
+    const compilation = compileComponentSFC(component.source ?? '', {
+      resolveTypeDefinition: resolveEndgeTypeDefinition,
+      sfcEditing: sfcEditing.value,
+    })
+    const isTable = compilation.ir?.template.roots.some(
+      node => node.kind === 'element' && node.tag === 'Table',
+    ) ?? false
+    return {
+      value: component.identity,
+      label: component.displayName || component.name || component.identity,
+      inputs: compilation.contract.inputs,
+      editorEligible: !isTable && compilation.contract.events.some(event => event.name === 'edited'),
+    }
+  }))
+const tablePropTypes = computed<VisualSchemaTypeOption[]>(() => {
+  const primitives: VisualSchemaTypeOption[] = [
+    { identity: 'string', label: 'string', category: 'primitive' },
+    { identity: 'number', label: 'number', category: 'primitive' },
+    { identity: 'boolean', label: 'boolean', category: 'primitive' },
+    { identity: 'unknown', label: 'unknown', category: 'primitive' },
+    { identity: 'any', label: 'any', category: 'primitive' },
+    { identity: 'null', label: 'null', category: 'primitive' },
+  ]
+  const registered = domainStore.typeCatalog
+    .filter(type => type.category !== 'primitive' && Boolean(type.identity?.trim()))
+    .map(type => ({
+      identity: type.identity,
+      label: type.displayName || type.identity,
+      category: type.category,
+      source: String(Endge.domain.getType(type.identity)?.source ?? ''),
+    } satisfies VisualSchemaTypeOption))
+  return [...primitives, ...registered]
+})
+const componentAttributeContractCache = new Map<string, {
+  source: string
+  contracts: ComponentSFCTagAttributeContract[]
+}>()
+
+function resolveUserComponentAttributeContracts(tag: string): readonly ComponentSFCTagAttributeContract[] {
+  const identity = Endge.program.resolveComponentTag(tag)
+    ?? Endge.domain.getComponentSFCs().find(component => component.tag?.trim() === tag)?.identity
+  const component = identity ? Endge.domain.getComponentSFC(identity) : null
+  if (!component) {
+    return []
+  }
+
+  const source = component.source ?? ''
+  const cached = componentAttributeContractCache.get(component.identity)
+  if (cached?.source === source) {
+    return cached.contracts
+  }
+
+  const contracts = createComponentSFCAttributeContractsFromInputs(
+    compileComponentSFC(source, { resolveTypeDefinition: resolveEndgeTypeDefinition }).contract.inputs,
+  )
+  componentAttributeContractCache.set(component.identity, { source, contracts })
+  return contracts
+}
+
+const sourceEditorExtensions = [
+  createSFCLanguageContribution({
+    resolveTagAttributeContracts: resolveUserComponentAttributeContracts,
+  }),
+  createTypeRegistryContribution(),
+  createExtractTypeContribution({
+    getEditorModel: () => editor.value,
+    getPersistedModel: () => tabs.documentModel.value as RComponentSFC | null,
+  }),
+  createSFCStyleEndgeCSSContribution(),
+  createExtractComponentContribution({
+    getEditorModel: () => editor.value,
+    getPersistedModel: () => tabs.documentModel.value as RComponentSFC | null,
+  }),
+]
+
+watch(hasTableVisual, (supported) => {
+  if (supported && activeTab.value === 'general') {
+    activeTab.value = 'visual'
+    return
+  }
+  if (!supported && activeTab.value === 'visual') {
+    activeTab.value = 'source'
+  }
+}, { immediate: true })
+
+async function save(): Promise<void> {
+  await EndgeIDE.tabs.save()
+}
+
+/** Завершает активный field edit и применяет вложенные visual drafts до sync модели. */
+async function prepareBeforeSave(): Promise<boolean> {
+  const activeElement = document.activeElement
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur()
+    await nextTick()
+  }
+  const visualEditor = tableVisualEditorRef.value
+  return visualEditor ? await visualEditor.flushPendingEdits() : true
+}
+
+function updateVisualSource(source: string): void {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+  current.source = source
+  current.parseSource?.()
+}
+
+async function openSourceAt(offset: number): Promise<void> {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset(offset)
+}
+
+function openTableVisualTab(tab: 'table' | 'columns'): void {
+  activeTab.value = 'visual'
+  tableVisualTab.value = tab
+}
+
+watch(
+  [
+    () => tabs.sourceNavigationRequest.value,
+    () => editor.value?.id,
+    () => editor.value?.identity,
+  ],
+  async ([request]) => {
+    if (!request || String(request.documentType) !== 'component-sfc') {
+      return
+    }
+    const current = editor.value
+    if (!current || ![current.id, current.identity].some(value => String(value ?? '') === request.documentId)) {
+      return
+    }
+    await openSourceAt(request.offset)
+  },
+  { immediate: true, flush: 'post' },
+)
+
+function openTypeDocument(identity: string): void {
+  const type = domainStore.typeCatalog.find(item => item.identity === identity)
+  if (!type || type.category === 'primitive') {
+    return
+  }
+  EndgeIDE.tabs.openSourceReference({
+    target: 'type',
+    identity,
+    range: { start: 0, end: 0 },
+  })
+}
+
+async function launchPreview(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  launchLoading.value = true
+  try {
+    current.parseSource?.()
+    await EndgeIDE.runtimePreview.launchEditor(current)
+  }
+  finally {
+    launchLoading.value = false
+  }
+}
+</script>
+
+<template>
+  <div v-if="!editor" class="p-4 text-sm text-muted-foreground">
+    {{ $t('uiText.noEditorF03cf60f') }}
+  </div>
+  <SourceDocumentEditorShell
+    v-else
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.displayName || editor.name"
+    :document-type="ComponentType.SFC"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-if="!hasTableVisual">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="hasTableVisual">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'visual' && tableVisualTab === 'table'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Таблица"
+                @click="openTableVisualTab('table')"
+              >
+                <Table2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.tableF2729fd7') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="hasTableVisual">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'visual' && tableVisualTab === 'columns'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Колонки"
+                @click="openTableVisualTab('columns')"
+              >
+                <Columns3 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.columnsE9516417') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'source'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Source"
+                @click="activeTab = 'source'"
+              >
+                <Code2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                aria-label="Запуск"
+                :disabled="launchLoading"
+                @click="launchPreview"
+              >
+                <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider>
+        <div v-if="activeTab === 'visual' && hasTableVisual" class="flex items-center gap-2">
+          <Badge variant="outline" class="gap-1 font-normal">
+            <Columns3 class="size-3" />
+            {{ tableVisualProjection?.columns.length ?? 0 }}
+          </Badge>
+          <Badge
+            v-if="tableVisualDiagnostics.length"
+            :variant="tableVisualErrorCount ? 'destructive' : 'secondary'"
+            class="gap-1 font-normal"
+          >
+            <AlertCircle class="size-3" />
+            {{ tableVisualDiagnostics.length }}
+          </Badge>
+        </div>
+        <div v-if="activeTab === 'source'" class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
+      <div class="max-w-2xl space-y-5">
+        <DocumentIdField :document-id="editor.id" />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="component-sfc-display-name">{{ $t('uiText.name3de49828') }}</Label>
+            <Input
+              id="component-sfc-display-name"
+              v-model="editor.displayName"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+            <DocumentIdentityInput
+              id="component-sfc-identity"
+              v-model="editor.identity"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <Label for="component-sfc-tag">{{ $t('uiText.tag982963c1') }}</Label>
+          <Input
+            id="component-sfc-tag"
+            v-model="editor.tag"
+            placeholder="Tail или Module.SomeTag"
+            spellcheck="false"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label for="component-sfc-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+          <Textarea
+            id="component-sfc-description"
+            v-model="editor.description"
+            :rows="5"
+          />
+        </div>
+        <div class="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+          <div>{{ $t('uiText.modelversionc0e8ccdd') }} {{ documentModel?.modelVersion ?? 1 }}</div>
+          <div>{{ $t('uiText.targetsff36e6e5') }} {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+          <div>{{ $t('uiText.sourced0192309') }} {{ String(editor.source ?? '').length }} {{ $t('uiText.chars76a91d6c') }}</div>
+        </div>
+      </div>
+    </DocumentGeneralSettingsPanel>
+
+    <ComponentSFCTableVisualEditor
+      v-else-if="activeTab === 'visual' && tableVisualProjection"
+      ref="tableVisualEditorRef"
+      v-model:mode="tableVisualTab"
+      :source="editor.source"
+      :identity="editor.identity"
+      :projection="tableVisualProjection"
+      :component-options="tableComponentOptions"
+      :prop-types="tablePropTypes"
+      :sfc-editing="sfcEditing"
+      class="min-h-0 flex-1"
+      @update:source="updateVisualSource"
+      @open-source="openSourceAt"
+      @open:type="openTypeDocument"
+    >
+      <template #general>
+        <div class="max-w-2xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="component-sfc-display-name-visual">{{ $t('uiText.name3de49828') }}</Label>
+              <Input
+                id="component-sfc-display-name-visual"
+                v-model="editor.displayName"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="component-sfc-identity-visual">{{ $t('uiText.identity7e5a975b') }}</Label>
+              <DocumentIdentityInput
+                id="component-sfc-identity-visual"
+                v-model="editor.identity"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-tag-visual">{{ $t('uiText.tag982963c1') }}</Label>
+            <Input
+              id="component-sfc-tag-visual"
+              v-model="editor.tag"
+              placeholder="Tail или Module.SomeTag"
+              spellcheck="false"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="component-sfc-description-visual">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+            <Textarea
+              id="component-sfc-description-visual"
+              v-model="editor.description"
+              :rows="5"
+            />
+          </div>
+          <div class="space-y-1 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+            <div>{{ $t('uiText.modelversionc0e8ccdd') }} {{ documentModel?.modelVersion ?? 1 }}</div>
+            <div>{{ $t('uiText.targetsff36e6e5') }} {{ (documentModel?.supportedTargets ?? []).join(', ') || '—' }}</div>
+            <div>{{ $t('uiText.sourced0192309') }} {{ String(editor.source ?? '').length }} {{ $t('uiText.chars76a91d6c') }}</div>
+          </div>
+        </div>
+      </template>
+    </ComponentSFCTableVisualEditor>
+
+    <div v-else-if="activeTab === 'source'" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ScriptEditor
+        ref="sourceEditorRef"
+        v-model="editor.source"
+        view-state-key="component-sfc.source"
+        :extensions="sourceEditorExtensions"
+        language="html"
+        format-language="vue"
+        class="min-h-0 flex-1"
+        min-height="420px"
+        @blur="editor.parseSource()"
+      />
+    </div>
+
+    <EntityProblemsPanel
+      v-else-if="diagnosticsEntityRef"
+      :entity-ref="diagnosticsEntityRef"
+      class="min-h-0 flex-1"
+    />
+  </SourceDocumentEditorShell>
+</template>

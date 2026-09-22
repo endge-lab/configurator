@@ -1,0 +1,256 @@
+import type { RuntimeInspectionLease } from '@endge/core'
+import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
+
+import { Endge } from '@endge/core'
+
+import { isIDEWidgetsDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags'
+import { createEndgeIDEModules } from '@/features/endge-ide/config/modules.config'
+
+/** Федерация уровня маршрута для смонтированного рабочего пространства IDE. */
+export class EndgeIDE {
+  private static _modules: EndgeIDEModules | null = null
+  private static _initialized = false
+  private static _hasActiveModules = false
+  private static _detached = false
+  private static _initialization: Promise<void> | null = null
+  private static _destroyedSnapshotsLease: RuntimeInspectionLease | null = null
+
+  private constructor() {}
+
+  public static setup(context: EndgeIDEContextPort): void {
+    this._modules ??= createEndgeIDEModules(context)
+  }
+
+  public static get demonstration() {
+    return this._requireModules().demonstration
+  }
+
+  /** Возвращает принадлежащий IDE state owner визуального UI-редактора. */
+  public static get uiEditor() {
+    return this._requireModules().uiEditor
+  }
+
+  public static get domainDrag() {
+    return this._requireModules().domainDrag
+  }
+
+  public static get domainTransfer() {
+    return this._requireModules().domainTransfer
+  }
+
+  public static get buildProfiles() {
+    return this._requireModules().buildProfiles
+  }
+
+  public static get documentImport() {
+    return this._requireModules().documentImport
+  }
+
+  public static get modals() {
+    return this._requireModules().modals
+  }
+
+  public static get tabs() {
+    return this._requireModules().tabs
+  }
+
+  public static get workspace() {
+    return this._requireModules().workspace
+  }
+
+  public static get uiState() {
+    return this._requireModules().uiState
+  }
+
+  public static get widgets() {
+    return this._requireModules().widgets
+  }
+
+  public static get hotkeys() {
+    return this._requireModules().hotkeys
+  }
+
+  public static get runtimePreview() {
+    return this._requireModules().runtimePreview
+  }
+
+  public static get runtimeInspection() {
+    return this._requireModules().runtimeInspection
+  }
+
+  public static get problems() {
+    return this._requireModules().problems
+  }
+
+  public static get sourceEditorDialogs() {
+    return this._requireModules().sourceEditorDialogs
+  }
+
+  public static get authProfileEditors() {
+    return this._requireModules().authProfileEditors
+  }
+
+  public static get integrations() {
+    return this._requireModules().integrations
+  }
+
+  public static get busy() {
+    return this._requireModules().busy.state
+  }
+
+  public static get agentTableActions() {
+    return this._requireModules().agentTableActions
+  }
+
+  public static runBusy<T>(operation: Promise<T>): Promise<T> {
+    return this._requireModules().busy.run(operation)
+  }
+
+  public static async init(): Promise<void> {
+    if (this._initialized) {
+      return
+    }
+    if (this._initialization) {
+      return this._initialization
+    }
+
+    this._initialization = this._initialize().finally(() => {
+      this._initialization = null
+    })
+    return this._initialization
+  }
+
+  /** Mounts only the Domain widget and creation modal without workspace Core. */
+  public static async initDetached(): Promise<void> {
+    if (this._initialized) {
+      return
+    }
+    const modules = this._requireModules()
+    this._hasActiveModules = true
+    this._detached = true
+    try {
+      modules.modals.init()
+      modules.widgets.initDetached()
+      this._initialized = true
+    }
+    catch (error) {
+      await this._resetModules()
+      throw error
+    }
+  }
+
+  public static async reset(): Promise<void> {
+    await this._initialization?.catch(() => undefined)
+    if (!this._hasActiveModules) {
+      return
+    }
+
+    await this._resetModules()
+  }
+
+  private static async _resetModules(): Promise<void> {
+    const modules = this._requireModules()
+    if (this._detached) {
+      modules.widgets.reset()
+      modules.modals.reset()
+      this._initialized = false
+      this._hasActiveModules = false
+      this._detached = false
+      return
+    }
+    try {
+      await modules.integrations.reset()
+      modules.uiEditor.reset()
+      modules.problems.reset()
+      modules.sourceEditorDialogs.reset()
+      modules.authProfileEditors.reset()
+      modules.runtimePreview.reset()
+      modules.runtimeInspection.reset()
+      modules.hotkeys.reset()
+      modules.tabs.reset()
+      modules.workspace.reset()
+      modules.uiState.reset()
+      if (!isIDEWidgetsDisabled()) {
+        modules.widgets.reset()
+      }
+      modules.modals.reset()
+      modules.demonstration.reset()
+      modules.domainDrag.reset()
+      modules.documentImport.reset()
+      modules.busy.reset()
+      modules.agentTableActions.reset()
+      modules.buildProfiles.reset()
+    }
+    finally {
+      this._destroyedSnapshotsLease?.release()
+      this._destroyedSnapshotsLease = null
+      this._initialized = false
+      this._hasActiveModules = false
+      this._detached = false
+    }
+  }
+
+  private static async _initialize(): Promise<void> {
+    const modules = this._requireModules()
+    const widgetsDisabled = isIDEWidgetsDisabled()
+
+    this._hasActiveModules = true
+    this._detached = false
+    try {
+      modules.uiState.init()
+      if (Endge.mode === 'debugger') {
+        modules.runtimeInspection.init()
+        modules.widgets.init()
+        modules.tabs.init()
+        modules.hotkeys.setSaveHandler(() => modules.tabs.save())
+        modules.hotkeys.setCloseTabHandler(() => modules.tabs.closeActiveTabFromHotkey())
+        modules.hotkeys.init()
+        this._initialized = true
+        return
+      }
+      this._destroyedSnapshotsLease = Endge.runtime.acquireDestroyedHostSnapshots(50)
+      modules.demonstration.init()
+      modules.modals.init()
+      if (!widgetsDisabled) {
+        modules.widgets.init()
+      }
+      modules.tabs.init()
+      this._configureHotkeys()
+      modules.hotkeys.init()
+      modules.runtimePreview.init()
+      modules.problems.init()
+      await modules.integrations.init()
+
+      this._initialized = true
+    }
+    catch (error) {
+      await this._resetModules()
+      throw error
+    }
+  }
+
+  private static _configureHotkeys(): void {
+    const modules = this._requireModules()
+    modules.hotkeys.setSaveHandler(() => modules.tabs.save())
+    modules.hotkeys.setCloseTabHandler(() => modules.tabs.closeActiveTabFromHotkey())
+    modules.hotkeys.setCreateDocumentHandler(() => modules.modals.openCreateDocument())
+    modules.hotkeys.setRunRuntimeHandler(() => {
+      const editor = modules.tabs.documentEditorModel.value
+      if (!modules.runtimePreview.canLaunchEditor(editor)) {
+        return false
+      }
+      void modules.runtimePreview.launchEditor(editor)
+      return true
+    })
+    modules.hotkeys.setReturnToDomainHandler(() => {
+      return modules.problems.returnToDomain() || modules.runtimePreview.returnToDomain()
+    })
+  }
+
+  private static _requireModules(): EndgeIDEModules {
+    if (!this._modules) {
+      throw new Error('[EndgeIDE] setup() must be called before accessing IDE modules')
+    }
+    return this._modules
+  }
+}

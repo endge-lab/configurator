@@ -1,0 +1,344 @@
+import type {
+  CompositionProgramPayload,
+  CompositionRuntimeDescriptor,
+  DomainDocumentType,
+  RuntimeArtifactReader,
+  SimulationSourceArtifact,
+} from '@endge/core'
+import type {
+  RuntimePreviewCompositionAddress,
+  RuntimePreviewTarget,
+  RuntimePreviewTreeNode,
+} from '@/features/endge-ide/domain/types/runtime-preview.types'
+
+import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
+
+import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
+
+export function buildRuntimePreviewTree(
+  target: RuntimePreviewTarget,
+  artifacts: RuntimeArtifactReader = Endge.program,
+): RuntimePreviewTreeNode[] {
+  if (target.entityType === 'simulation') {
+    const root = makeNode({
+      id: `simulation:${target.identity}`,
+      kind: 'simulation',
+      entityType: 'simulation',
+      identity: target.identity,
+      ...domainNodeFields('simulation', target.identity),
+    })
+    const artifact = artifacts.getArtifact<SimulationSourceArtifact>('simulation', target.identity)
+    if (!artifact || artifact.status === 'error') {
+      root.subtitle = 'artifact unavailable'
+      return [root]
+    }
+    const child = buildRuntimePreviewTree(artifact.payload.target, artifacts)[0]
+    if (child) {
+      const prefix = (node: RuntimePreviewTreeNode, parentId: string): void => {
+        node.id = `${root.id}/${node.id}`
+        node.parentId = parentId
+        node.children.forEach(item => prefix(item, node.id))
+      }
+      prefix(child, root.id)
+      root.children = [child]
+    }
+    return [root]
+  }
+  if (target.entityType === 'composition') {
+    return [buildRootCompositionNode(target.identity, artifacts)]
+  }
+  if (target.entityType === 'component-sfc') {
+    return [buildComponentNode(target.identity)]
+  }
+  return [buildStoreNode(target.identity)]
+}
+
+function buildRootCompositionNode(identity: string, artifacts: RuntimeArtifactReader): RuntimePreviewTreeNode {
+  return buildCompositionNode(
+    identity,
+    { rootIdentity: identity, invocationPath: [] },
+    null,
+    new Set(),
+    artifacts.getArtifact<CompositionProgramPayload>('composition', identity)?.payload.activation?.mode ?? 'startup',
+    null,
+    artifacts,
+  )
+}
+
+function buildComponentNode(identity: string): RuntimePreviewTreeNode {
+  return makeNode({
+    id: `component-sfc:${identity}`,
+    kind: 'component-sfc',
+    entityType: 'component-sfc',
+    identity,
+    ...domainNodeFields(ComponentType.SFC, identity),
+    renderable: true,
+  })
+}
+
+function buildStoreNode(identity: string): RuntimePreviewTreeNode {
+  return makeNode({
+    id: `store:${identity}`,
+    kind: 'runtime',
+    entityType: 'store',
+    identity,
+    ...domainNodeFields('store', identity),
+    renderable: true,
+  })
+}
+
+function buildCompositionNode(
+  identity: string,
+  address: RuntimePreviewCompositionAddress,
+  parentId: string | null,
+  ancestors: Set<string>,
+  activationMode: 'startup' | 'manual',
+  runtimeName: string | null,
+  artifacts: RuntimeArtifactReader,
+): RuntimePreviewTreeNode {
+  const model = Endge.domain.getComposition(identity)
+  const nodeId = compositionNodeId(address)
+  const node = makeNode({
+    id: nodeId,
+    parentId,
+    kind: 'composition',
+    entityType: 'composition',
+    identity,
+    ...domainNodeFields('composition', identity, runtimeName, String(model?.kind ?? 'library')),
+    activationMode,
+    composition: address,
+  })
+  if (ancestors.has(identity)) {
+    node.subtitle = 'cycle'
+    return node
+  }
+  const artifact = artifacts.getArtifact<CompositionProgramPayload>('composition', identity)
+  if (!artifact || artifact.status === 'error') {
+    node.subtitle = 'artifact unavailable'
+    return node
+  }
+  const nextAncestors = new Set(ancestors).add(identity)
+  node.children = buildScopeContents(artifact.payload, 'scope_default', address, node.id, nextAncestors, artifacts)
+  for (const scope of artifact.payload.scopes.filter(item => item.parentPath === 'scope_default')) {
+    node.children.push(buildScopeNode(artifact.payload, scope.path, address, node.id, nextAncestors, artifacts))
+  }
+  return node
+}
+
+function buildScopeNode(
+  payload: CompositionProgramPayload,
+  scopePath: string,
+  address: RuntimePreviewCompositionAddress,
+  parentId: string,
+  ancestors: Set<string>,
+  artifacts: RuntimeArtifactReader,
+): RuntimePreviewTreeNode {
+  const descriptor = payload.scopes.find(item => item.path === scopePath)!
+  const id = `${compositionNodeId(address)}:scope:${scopePath}`
+  const node = makeNode({
+    id,
+    parentId,
+    kind: 'scope',
+    title: descriptor.name,
+    subtitle: null,
+    entityType: 'scope',
+    identity: scopePath,
+    activationMode: descriptor.effectiveActivation.mode,
+    composition: address,
+    scopePath,
+    presentation: {
+      documentType: null,
+      icon: 'Layers3',
+      colorClass: 'text-slate-500',
+      badgeIcon: null,
+      runtimeName: descriptor.name,
+    },
+  })
+  node.children = buildScopeContents(payload, scopePath, address, id, ancestors, artifacts)
+  for (const child of payload.scopes.filter(item => item.parentPath === scopePath)) {
+    node.children.push(buildScopeNode(payload, child.path, address, id, ancestors, artifacts))
+  }
+  return node
+}
+
+function buildScopeContents(
+  payload: CompositionProgramPayload,
+  scopePath: string,
+  address: RuntimePreviewCompositionAddress,
+  parentId: string,
+  ancestors: Set<string>,
+  artifacts: RuntimeArtifactReader,
+): RuntimePreviewTreeNode[] {
+  const result: RuntimePreviewTreeNode[] = []
+  const dependencyGroupId = `${compositionNodeId(address)}:scope:${scopePath}:group:data-resources`
+  const dependencies: RuntimePreviewTreeNode[] = []
+  for (const data of payload.data.filter(item => (item.scopePath ?? 'scope_default') === scopePath)) {
+    const documentType = data.kind === 'store' ? 'store' : 'vocabs'
+    const dataPath = data.path ?? data.name
+    dependencies.push(makeNode({
+      id: `${compositionNodeId(address)}:data:${dataPath}`,
+      parentId: dependencyGroupId,
+      kind: 'data',
+      entityType: data.kind,
+      identity: data.identity,
+      ...domainNodeFields(documentType, data.identity, data.name),
+      composition: address,
+      scopePath,
+    }))
+  }
+  for (const resource of payload.resources.filter(item => item.scopePath === scopePath)) {
+    if (resource.kind === 'operation-history') {
+      dependencies.push(makeNode({
+        id: `${compositionNodeId(address)}:resource:${resource.path}`,
+        parentId: dependencyGroupId,
+        kind: 'resource',
+        title: resource.name,
+        entityType: resource.kind,
+        identity: resource.name,
+        composition: address,
+        scopePath,
+        resourcePath: resource.path,
+      }))
+      continue
+    }
+    const documentType = resource.kind === 'i18n' ? 'i18n-bundles' : 'style'
+    dependencies.push(makeNode({
+      id: `${compositionNodeId(address)}:resource:${resource.path}`,
+      parentId: dependencyGroupId,
+      kind: 'resource',
+      entityType: resource.kind,
+      identity: resource.identity,
+      ...domainNodeFields(documentType, resource.identity, resource.name),
+      composition: address,
+      scopePath,
+      resourcePath: resource.path,
+    }))
+  }
+  for (const runtime of payload.runtimes.filter(item => item.scopePath === scopePath)) {
+    if (runtime.kind === 'composition') {
+      result.push(buildCompositionNode(
+        runtime.identity,
+        { rootIdentity: address.rootIdentity, invocationPath: [...address.invocationPath, runtime.path] },
+        parentId,
+        ancestors,
+        runtime.effectiveActivation.mode,
+        runtime.name,
+        artifacts,
+      ))
+      continue
+    }
+    const target = runtimeDocumentTarget(payload, runtime)
+    const runtimeNode = makeNode({
+      id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
+      parentId: runtime.kind === 'stream' ? dependencyGroupId : parentId,
+      kind: 'runtime',
+      runtimeKind: runtime.kind,
+      entityType: String(target.documentType),
+      identity: target.identity,
+      ...domainNodeFields(target.documentType, target.identity, runtime.name),
+      activationMode: runtime.effectiveActivation.mode,
+      composition: address,
+      runtimePath: runtime.path,
+      scopePath,
+      renderable: runtime.kind === 'component' || runtime.kind === 'filter-view',
+    })
+    if (runtime.kind === 'stream') {
+      dependencies.push(runtimeNode)
+    }
+    else {
+      result.push(runtimeNode)
+    }
+  }
+  if (dependencies.length) {
+    result.unshift(makeNode({
+      id: dependencyGroupId,
+      parentId,
+      kind: 'group',
+      title: 'data-resources',
+      entityType: 'data-resources',
+      identity: 'data-resources',
+      presentation: {
+        documentType: null,
+        icon: 'Folder',
+        colorClass: 'text-slate-500',
+        badgeIcon: null,
+        runtimeName: null,
+      },
+      composition: address,
+      scopePath,
+      children: dependencies,
+    }))
+  }
+  return result
+}
+
+function compositionNodeId(address: RuntimePreviewCompositionAddress): string {
+  const nested = address.invocationPath.length ? `/${address.invocationPath.join('/')}` : ''
+  return `composition:${address.rootIdentity}${nested}`
+}
+
+function makeNode(
+  input: Partial<RuntimePreviewTreeNode>
+    & Pick<RuntimePreviewTreeNode, 'id' | 'kind' | 'title' | 'entityType' | 'identity'>,
+): RuntimePreviewTreeNode {
+  return {
+    parentId: null,
+    subtitle: null,
+    activationMode: null,
+    composition: null,
+    runtimePath: null,
+    scopePath: null,
+    resourcePath: null,
+    presentation: null,
+    renderable: false,
+    children: [],
+    ...input,
+  }
+}
+
+function domainNodeFields(
+  documentType: DomainDocumentType,
+  identity: string,
+  runtimeName: string | null = null,
+  presentationKind?: string,
+): Pick<RuntimePreviewTreeNode, 'presentation' | 'subtitle' | 'title'> {
+  const resolved = resolveDomainEntityPresentation(documentType, identity, presentationKind)
+  return {
+    title: resolved.title,
+    subtitle: runtimeName,
+    presentation: {
+      documentType,
+      icon: resolved.icon,
+      colorClass: resolved.colorClass,
+      badgeIcon: resolved.badgeIcon,
+      runtimeName,
+    },
+  }
+}
+
+function runtimeDocumentTarget(payload: CompositionProgramPayload, runtime: CompositionRuntimeDescriptor): {
+  documentType: DomainDocumentType
+  identity: string
+} {
+  if (runtime.kind === 'component') {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity ?? runtime.identity }
+  }
+  if (runtime.kind === 'query') {
+    const query = Endge.domain.getQuery(runtime.identity)
+    return { documentType: query?.type ?? QueryType.REST, identity: runtime.identity }
+  }
+  if (runtime.kind === 'stream') {
+    return { documentType: 'stream', identity: runtime.identity }
+  }
+  if (runtime.kind === 'filter') {
+    const filter = Endge.domain.getFilter(runtime.identity)
+    return { documentType: filter?.type ?? FilterType.DefaultFilter, identity: runtime.identity }
+  }
+  if (runtime.kind === 'filter-view' && runtime.componentIdentity) {
+    return { documentType: ComponentType.SFC, identity: runtime.componentIdentity }
+  }
+  const source = payload.runtimes.find(item => item.name === runtime.identity && item.kind === 'filter')
+  const identity = source?.identity ?? runtime.identity
+  const filter = Endge.domain.getFilter(identity)
+  return { documentType: filter?.type ?? FilterType.DefaultFilter, identity }
+}
