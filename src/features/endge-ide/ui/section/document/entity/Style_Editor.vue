@@ -1,0 +1,189 @@
+<script setup lang="ts">
+import type { RStyleEditor } from '@/features/endge-ide/domain/entities/RStyleEditor'
+
+import { compileEndgeCSS } from '@endge/core'
+import { materializeEndgeCSSForDOM } from '@endge/ui-vue'
+import { Code2, FileCode2, Loader2, Save, Settings2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import EndgeStyleSourceEditor from '@/features/endge-ide/ui/components/EndgeStyleSourceEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
+
+const props = defineProps<{ tabContext?: { editor?: RStyleEditor } }>()
+const editor = computed(() => props.tabContext?.editor ?? null)
+const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
+const splitRatio = ref(0.68)
+const cssPreviewVisible = ref(false)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const compilation = computed(() => compileEndgeCSS(editor.value?.source ?? '', {
+  identity: editor.value?.identity || 'draft-style',
+}))
+const generatedCSS = computed(() => compilation.value.artifact
+  ? materializeEndgeCSSForDOM([compilation.value.artifact]).css
+  : '/* Invalid EndgeCSS is not materialized. */')
+
+function applySourceText(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  current.identity = current.identity.trim()
+  current.name = current.name.trim() || current.identity
+  current.refreshDiagnostics()
+  if (current.diagnostics.length) {
+    toast.error('Стиль не сохранён', { description: current.diagnostics[0] })
+    activeTab.value = 'general'
+    return
+  }
+  await EndgeIDE.tabs.save()
+}
+</script>
+
+<template>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="style"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
+    <template #metadata-after>
+      <div v-if="editor.systemManaged" class="flex min-w-0 items-center gap-1.5">
+        <span class="shrink-0 text-muted-foreground">{{ $t('uiText.kind2b617982') }}</span>
+        <span class="min-w-0 truncate font-mono text-foreground/80">{{ $t('uiText.system317f1e76') }}</span>
+      </div>
+    </template>
+
+    <template #right>
+      <TooltipProvider v-if="activeTab === 'source'">
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="cssPreviewVisible ? 'bg-editor-control text-foreground shadow-sm' : 'text-muted-foreground'"
+                :aria-pressed="cssPreviewVisible"
+                :aria-label="cssPreviewVisible ? $t('styleEditor.hideCSSPreview') : $t('styleEditor.showCSSPreview')"
+                @click="cssPreviewVisible = !cssPreviewVisible"
+              >
+                <FileCode2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {{ cssPreviewVisible ? $t('styleEditor.hideCSSPreview') : $t('styleEditor.showCSSPreview') }}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'general' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Основное" @click="activeTab = 'general'">
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" class="h-7 w-7" :class="activeTab === 'source' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'" aria-label="Source" @click="activeTab = 'source'">
+                <Code2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.sourceda13add2') }}</TooltipContent>
+          </Tooltip>
+        </div>
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button size="icon" variant="ghost" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить стиль" @click="save">
+              <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Save v-else class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </template>
+
+    <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
+      <div class="max-w-2xl space-y-5">
+        <DocumentIdField :document-id="editor.id" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="style-name">{{ $t('uiText.name3de49828') }}</Label>
+            <Input id="style-name" v-model="editor.name" :disabled="editor.systemManaged" />
+          </div>
+          <div class="space-y-2">
+            <Label for="style-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+            <DocumentIdentityInput id="style-identity" v-model="editor.identity" :disabled="editor.systemManaged" spellcheck="false" />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <Label for="style-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+          <Textarea id="style-description" v-model="editor.description" :rows="4" />
+        </div>
+        <div class="max-w-xs space-y-2">
+          <Label for="style-source-version">{{ $t('uiText.sourceVersionb94adbb6') }}</Label>
+          <Input id="style-source-version" v-model.number="editor.sourceVersion" type="number" min="1" />
+        </div>
+        <p class="text-xs text-muted-foreground">
+          {{ $t('uiText.payloadStoresOnlySourceASTSemanticArtifactAndDOMCSSAef38cdad') }}
+        </p>
+      </div>
+    </DocumentGeneralSettingsPanel>
+
+    <div v-else class="flex min-h-0 flex-1 flex-col">
+      <SourceEditorSplitView v-model:ratio="splitRatio" :output-visible="cssPreviewVisible" separator-label="Изменить ширину EndgeCSS и CSS preview">
+        <template #editor>
+          <EndgeStyleSourceEditor ref="sourceEditorRef" :model-value="editor.source" @update:model-value="applySourceText" />
+        </template>
+        <template #output>
+          <div class="flex h-full min-h-0 flex-col bg-slate-950 text-slate-200">
+            <div class="border-b border-slate-800 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {{ $t('uiText.derivedDOMCSSfb493ce7') }} {{ compilation.diagnostics.length }} {{ $t('uiText.diagnostics7d481ffd') }}
+            </div>
+            <div v-if="compilation.diagnostics.length" class="max-h-36 overflow-auto border-b border-slate-800 p-2">
+              <div v-for="diagnostic in compilation.diagnostics" :key="`${diagnostic.code}:${diagnostic.range?.start}`" class="mb-1 rounded bg-slate-900 px-2 py-1 text-xs" :class="diagnostic.severity === 'error' ? 'text-red-300' : 'text-amber-300'">
+                {{ diagnostic.code }}: {{ diagnostic.message }}
+              </div>
+            </div>
+            <pre class="min-h-0 flex-1 overflow-auto p-3 text-xs leading-5"><code>{{ generatedCSS }}</code></pre>
+          </div>
+        </template>
+      </SourceEditorSplitView>
+    </div>
+  </SourceDocumentEditorShell>
+</template>

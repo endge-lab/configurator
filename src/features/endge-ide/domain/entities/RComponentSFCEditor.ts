@@ -1,0 +1,92 @@
+import type { RComponentSFCSource_Parts } from '@endge/core'
+import {
+  parseSFCSourceParts,
+
+} from '@endge/core'
+
+/**
+ * Редакторская модель SFC-компонента.
+ *
+ * Source остается единственным persisted и authoring-полем. `sourceParts`
+ * хранится только как derived-состояние для diagnostics/debug UI.
+ */
+export class RComponentSFCEditor {
+  id!: number
+
+  identity!: string
+
+  tag = ''
+
+  name!: string
+
+  displayName!: string
+
+  description: string | null = null
+
+  folderId?: string | number | null = null
+
+  modelVersion = 1
+
+  supportedTargets: Array<'dom' | 'canvas'> = ['dom', 'canvas']
+
+  meta: Record<string, unknown> = {}
+
+  source = ''
+
+  sourceParts: RComponentSFCSource_Parts = parseSFCSourceParts('')
+
+  /** Заполняет редактор из persisted SFC-модели. */
+  fillFromSource(source: any): void {
+    this.id = source.id
+    this.identity = String(source.identity ?? '').trim()
+    this.tag = normalizeTag(source.tag) ?? ''
+    this.name = source.name
+    this.displayName = source.displayName ?? source.name
+    this.description = source.description ?? null
+    this.folderId = source.folderId ?? null
+    this.modelVersion = Number(source.modelVersion ?? 1)
+    this.supportedTargets = normalizeTargets(source.supportedTargets)
+    this.meta = { ...(source.meta ?? {}) }
+    this.source = source.source ?? ''
+    this.sourceParts = parseSFCSourceParts(this.source)
+  }
+
+  /** Переносит редакторское состояние обратно в persisted SFC-модель. */
+  updateSource(source: any): void {
+    this.parseSource()
+    source.id = this.id
+    source.identity = this.identity
+    source.tag = normalizeTag(this.tag)
+    source.name = this.name
+    source.displayName = this.displayName || this.name
+    source.description = this.description
+    source.folderId = this.folderId ?? null
+    source.modelVersion = Number(this.modelVersion ?? 1)
+    source.supportedTargets = normalizeTargets(this.supportedTargets)
+    source.meta = { ...this.meta }
+    source.source = this.source
+  }
+
+  /** Обновляет вкладки из полного source, если пользователь редактировал raw preview. */
+  parseSource(): void {
+    this.sourceParts = parseSFCSourceParts(this.source)
+  }
+}
+
+/** Нормализует пустой editor input в отсутствие пользовательского tag. */
+function normalizeTag(raw: unknown): string | null {
+  if (typeof raw !== 'string') {
+    return null
+  }
+  return raw.trim() || null
+}
+
+/** Оставляет только targets, которые поддерживает SFC v1. */
+function normalizeTargets(raw: unknown): Array<'dom' | 'canvas'> {
+  if (!Array.isArray(raw)) {
+    return ['dom', 'canvas']
+  }
+
+  const targets = raw.filter((target): target is 'dom' | 'canvas' => target === 'dom' || target === 'canvas')
+  return targets.length ? Array.from(new Set(targets)) : ['dom', 'canvas']
+}

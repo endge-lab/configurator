@@ -1,0 +1,362 @@
+<script setup lang="ts">
+import type { RMockEditor } from '@/features/endge-ide/domain/entities/RMockEditor'
+
+import { Endge } from '@endge/core'
+import {
+  Cable,
+  FileText,
+  Loader2,
+  Save,
+  Settings2,
+  TriangleAlert,
+} from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import ScriptEditor from '@/features/endge-ide/ui/components/ScriptEditor.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
+
+interface ScriptEditorHandle {
+  formatDocument: () => Promise<void>
+}
+
+const props = defineProps<{
+  tabContext?: { editor?: RMockEditor }
+}>()
+
+const editor = computed(() => props.tabContext?.editor ?? null)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'content',
+  ['general', 'content', 'diagnostics'] as const,
+)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('mock', editor.value))
+const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
+const monacoLanguage = computed(() =>
+  editor.value?.contentType === 'text/plain' ? 'plaintext' : 'json',
+)
+const bindingConnected = computed(() => {
+  const current = editor.value
+  if (
+    !current
+    || current.contentSource !== 'code-provider'
+    || !current.codeRef.trim()
+  ) {
+    return false
+  }
+  return Endge.mock
+    .listProviders()
+    .some(provider => provider.ref === current.codeRef.trim())
+})
+
+function setContentSource(value: unknown): void {
+  if (!editor.value) {
+    return
+  }
+  editor.value.contentSource
+    = value === 'code-provider' ? 'code-provider' : 'document'
+  editor.value.refreshDiagnostics()
+}
+
+function setContentType(value: unknown): void {
+  if (!editor.value) {
+    return
+  }
+  editor.value.contentType
+    = value === 'text/plain' ? 'text/plain' : 'application/json'
+  editor.value.refreshDiagnostics()
+}
+
+function updateSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  current.identity = current.identity.trim()
+  current.name = current.name.trim() || current.identity
+  current.codeRef = current.codeRef.trim()
+  current.refreshDiagnostics()
+
+  const blocking = current.diagnostics.find(
+    message =>
+      message.startsWith('Identity')
+      || message.startsWith('Для code-provider')
+      || message.startsWith('Некорректный JSON'),
+  )
+  if (blocking) {
+    toast.error('Mock не сохранен', { description: blocking })
+    activeTab.value = blocking.startsWith('Identity') ? 'general' : 'content'
+    return
+  }
+
+  await EndgeIDE.tabs.save()
+}
+</script>
+
+<template>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="mock"
+    :dependency-draft="editor"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'content'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Данные"
+                @click="activeTab = 'content'"
+              >
+                <FileText class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.dataD8e5fd81') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить Mock" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider>
+        <template v-if="activeTab === 'content' && editor.contentSource === 'document'">
+          <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+            <Select
+              :model-value="editor.contentType"
+              @update:model-value="setContentType"
+            >
+              <SelectTrigger class="h-7 w-28 border-0 bg-transparent px-2 text-xs shadow-none focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="application/json">
+                  {{ $t('uiText.json031a4e76') }}
+                </SelectItem>
+                <SelectItem value="text/plain">
+                  {{ $t('uiText.plainText9580fcbc') }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+          </div>
+        </template>
+      </TooltipProvider>
+    </template>
+
+    <DocumentGeneralSettingsPanel
+      v-if="activeTab === 'general'"
+    >
+      <div class="max-w-2xl space-y-5">
+        <DocumentIdField :document-id="editor.id" />
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="mock-name">{{ $t('uiText.name3de49828') }}</Label>
+            <Input
+              id="mock-name"
+              v-model="editor.name"
+              placeholder="Orders response"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="mock-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+            <DocumentIdentityInput
+              id="mock-identity"
+              v-model="editor.identity"
+              placeholder="orders-response"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <Label for="mock-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+          <Textarea
+            id="mock-description"
+            v-model="editor.description"
+            :rows="4"
+            placeholder="Назначение и сценарий mock-данных"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label>{{ $t('uiText.dataSource1a462271') }}</Label>
+          <Select
+            :model-value="editor.contentSource"
+            @update:model-value="setContentSource"
+          >
+            <SelectTrigger class="max-w-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="document">
+                {{ $t('uiText.payloadDocument1b5e2ee8') }}
+              </SelectItem>
+              <SelectItem value="code-provider">
+                {{ $t('uiText.codeProvider2a8d35e5') }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="text-xs text-muted-foreground">
+            {{ $t('uiText.codeProviderSuppliesOnlyContentIdentityFoldersAndRel9dd6e060') }}
+          </p>
+        </div>
+      </div>
+    </DocumentGeneralSettingsPanel>
+
+    <div
+      v-else-if="activeTab === 'content'"
+      class="flex min-h-0 flex-1 flex-col"
+    >
+      <template v-if="editor.contentSource === 'document'">
+        <ScriptEditor
+          ref="sourceEditorRef"
+          :model-value="editor.source"
+          view-state-key="mock.source"
+          :language="monacoLanguage"
+          class="min-h-0 flex-1"
+          min-height="100%"
+          @update:model-value="updateSource"
+        />
+      </template>
+
+      <div v-else class="flex-1 overflow-auto p-6">
+        <div class="max-w-2xl space-y-5">
+          <div class="rounded-lg border bg-muted/20 p-4">
+            <div class="mb-3 flex items-center gap-2 text-sm font-medium">
+              <Cable class="size-4" />{{ $t('uiText.codeProviderBindingbc6133c6') }}
+            </div>
+            <div class="space-y-2">
+              <Label for="mock-code-ref">{{ $t('uiText.providerRef4701b475') }}</Label>
+              <Input
+                id="mock-code-ref"
+                v-model="editor.codeRef"
+                placeholder="@app:mocks.orders"
+                spellcheck="false"
+                @blur="editor.refreshDiagnostics()"
+              />
+              <p
+                class="text-xs"
+                :class="
+                  bindingConnected
+                    ? 'text-emerald-600'
+                    : 'text-muted-foreground'
+                "
+              >
+                {{
+                  bindingConnected
+                    ? $t('uiText.providerConnectedInCurrentRuntime6ba51471')
+                    : $t('uiText.providerMayBeConnectedLaterByTheApplicationBundle7a695984')
+                }}
+              </p>
+            </div>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ $t('uiText.providerAvailabilityIsARuntimeCheckAndDoesNotBlockSa6df37ecf') }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <EntityProblemsPanel
+      v-else-if="diagnosticsEntityRef"
+      :entity-ref="diagnosticsEntityRef"
+      class="min-h-0 flex-1"
+    />
+  </SourceDocumentEditorShell>
+</template>

@@ -1,0 +1,75 @@
+import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { dirname } from 'node:path'
+import process from 'node:process'
+import { fileURLToPath, URL } from 'node:url'
+
+import tailwindcss from '@tailwindcss/vite'
+import vue from '@vitejs/plugin-vue'
+import { defineConfig, loadEnv } from 'vite'
+import vueDevTools from 'vite-plugin-vue-devtools'
+
+import pkg from './package.json'
+import { endgeTestIntegrations } from './plugins/vite-plugin-endge-test-integrations'
+
+process.env.VITE_VERSION = process.env.npm_package_version
+process.env.VITE_GIT_SHA = execSync('git rev-parse --short=8 HEAD').toString().trim()
+
+// https://vite.dev/config/
+export default defineConfig(({ mode, command }) => {
+  const cwd = dirname(fileURLToPath(import.meta.url)) // соответствует process.cwd()
+  const env = loadEnv(mode, cwd)
+  const isDevServer = command === 'serve'
+  const testIntegrationsEnabled = isDevServer || mode === 'test-integrations'
+  const testIntegrationsRoot = fileURLToPath(new URL('./src/test/integrations/local-registry', import.meta.url))
+  const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url))
+  const runsFromParentWorkspace = existsSync(new URL('../../pnpm-workspace.yaml', import.meta.url))
+  const packagesRoot = fileURLToPath(new URL('../../packages', import.meta.url))
+  const vueDevToolsEnabled
+    = isDevServer
+      && (env.VITE_VUE_DEVTOOLS_ENABLED === 'true' || env.VITE_VUE_DEVTOOLS_ENABLED === '1')
+
+  return {
+    base: '/',
+    plugins: [
+      vue(),
+      vueDevToolsEnabled && vueDevTools(),
+      tailwindcss(),
+      endgeTestIntegrations({
+        enabled: testIntegrationsEnabled,
+        registryPath: fileURLToPath(new URL('./src/test/integrations/local-registry/index.ts', import.meta.url)),
+      }),
+    ],
+    server: {
+      fs: {
+        allow: [
+          cwd,
+          testIntegrationsRoot,
+          packagesRoot,
+          ...(runsFromParentWorkspace ? [workspaceRoot] : []),
+        ],
+      },
+    },
+    optimizeDeps: {
+      // Core собирается локальным watch-процессом и должен обновляться без
+      // замороженной копии в node_modules/.vite/deps.
+      exclude: ['@endge/core'],
+    },
+    resolve: {
+      // Runtime-пакеты Endge и class-transformer используют общее состояние singleton.
+      // Без dedupe optimizeDeps может разрешить вложенные опубликованные копии:
+      // Тогда Raph предоставляет более старый API, а class-transformer теряет
+      // метаданные декораторов, используемые Serialize.fromJSON в @endge/core.
+      dedupe: ['@endge/core', '@endge/raph', '@endge/utils', 'class-transformer'],
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),
+      },
+    },
+    define: {
+      process: { env: {} },
+      __APP_VERSION__: JSON.stringify(pkg.version),
+      __APP_VERSION_UPDATED__: JSON.stringify(pkg.version_updated),
+    },
+  }
+})

@@ -1,0 +1,277 @@
+<script setup lang="ts">
+import type { DomainDocumentType } from '@endge/core'
+import type { RTypeEditor } from '@/features/endge-ide/domain/entities/RTypeEditor'
+
+import { Endge } from '@endge/core'
+import { useDomainStore } from '@endge/ui-vue'
+import { Code2, Eye, FileJson2, ListTree, Loader2, RotateCcw, Save, Settings2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import {
+  createVisualSchemaWorkspaceState,
+  isVisualSchemaWorkspaceState,
+  visualSchemaLayoutKey,
+} from '@/features/endge-ide/services/visual-schema-workspace-state'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import TypeSourceEditor from '@/features/endge-ide/ui/components/TypeSourceEditor.vue'
+import TypeVisualEditor from '@/features/endge-ide/ui/components/TypeVisualEditor.vue'
+import { useSmartTabSelection, useSmartTabSharedViewState } from '@/features/endge-ide/ui/smart-tabs'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
+
+const editor = computed(() => EndgeIDE.tabs.documentEditorModel.value as RTypeEditor | null)
+const domainStore = useDomainStore()
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'visual',
+  ['general', 'visual', 'source'] as const,
+)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const tabs = [
+  { value: 'general', label: 'Основное', icon: Settings2 },
+  { value: 'visual', label: 'Visual', icon: ListTree },
+  { value: 'source', label: 'Source', icon: Code2 },
+] as const
+
+const visualTypes = computed(() => domainStore.typeCatalog
+  .map(type => ({
+    identity: type.identity,
+    label: type.displayName || type.identity,
+    category: type.category,
+    source: String(Endge.domain.getType(type.identity)?.source ?? ''),
+  }))
+  .filter(type => type.identity !== '')
+  .sort((left, right) => {
+    const order = { primitive: 0, reference: 1, user: 2 }
+    return order[left.category] - order[right.category] || left.label.localeCompare(right.label)
+  }))
+const visualWorkspaceState = useSmartTabSharedViewState(
+  'type-editor.visual-workspace',
+  {
+    version: 1,
+    defaultValue: () => createVisualSchemaWorkspaceState(true, true),
+    validate: isVisualSchemaWorkspaceState,
+  },
+)
+const visualShowPreview = computed({
+  get: () => visualWorkspaceState.value.showPreview,
+  set: (value) => {
+    visualWorkspaceState.value.showPreview = value
+  },
+})
+const visualShowExample = computed({
+  get: () => visualWorkspaceState.value.showExample,
+  set: (value) => {
+    visualWorkspaceState.value.showExample = value
+  },
+})
+const visualLayoutKey = computed(() => visualSchemaLayoutKey(visualShowPreview.value, visualShowExample.value))
+const visualPanelSizes = computed(() => visualWorkspaceState.value.layouts[visualLayoutKey.value])
+function openTypeDocument(typeId: string): void {
+  const id = String(typeId).trim()
+  if (!id) {
+    toast.warning('Не указан тип')
+    return
+  }
+  const type = Endge.domain.getType(id)
+  if (type?.isPrimitive) {
+    toast.info('Это примитивный тип')
+    return
+  }
+  EndgeIDE.tabs.openDocument(id, 'type' as DomainDocumentType)
+}
+
+function updateTypeSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+function updateVisualPanelSizes(sizes: number[]): void {
+  visualWorkspaceState.value.layouts[visualLayoutKey.value] = [...sizes]
+}
+
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  current.identity = current.identity.trim()
+  current.name = current.name.trim() || current.identity
+  if (!current.identity) {
+    toast.error('Identity типа не может быть пустым')
+    activeTab.value = 'general'
+    return
+  }
+
+  await EndgeIDE.tabs.save()
+}
+</script>
+
+<template>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity || editor.name"
+    :display-name="editor.name"
+    document-type="type"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip v-for="tab in tabs" :key="tab.value">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="activeTab === tab.value ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                :aria-label="tab.label"
+                @click="activeTab = tab.value"
+              >
+                <component :is="tab.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ tab.label }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="EndgeIDE.busy.value"
+                aria-label="Сохранить"
+                @click="save"
+              >
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider v-if="activeTab === 'source'">
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton @click="sourceEditorRef?.formatDocument()" />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Сбросить Type Source"
+                @click="editor.resetSource()"
+              >
+                <RotateCcw class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.replaceSourceWithBaseExample759e21b4') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
+      <TooltipProvider v-else-if="activeTab === 'visual'">
+        <div class="flex items-center justify-end gap-1">
+          <div class="flex items-center rounded-md border bg-muted/40 p-0.5" role="group" aria-label="Visual editor display options">
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1.5 px-2 text-[11px]"
+              :class="visualShowPreview ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+              :aria-pressed="visualShowPreview"
+              @click="visualShowPreview = !visualShowPreview"
+            >
+              <Eye class="size-3.5" />
+              {{ $t('uiText.previewf1fbb2b4') }}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1.5 px-2 text-[11px]"
+              :class="visualShowExample ? 'bg-editor-control text-sky-700 shadow-sm dark:text-sky-300' : 'text-muted-foreground'"
+              :aria-pressed="visualShowExample"
+              @click="visualShowExample = !visualShowExample"
+            >
+              <FileJson2 class="size-3.5" />
+              {{ $t('uiText.example0f01ed56') }}
+            </Button>
+          </div>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <div class="min-h-0 flex-1 overflow-hidden">
+      <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
+        <div class="max-w-xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
+          <div class="space-y-2">
+            <Label for="type-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+            <DocumentIdentityInput id="type-identity" v-model="editor.identity" class="font-mono" spellcheck="false" />
+          </div>
+          <div class="space-y-2">
+            <Label for="type-name">{{ $t('uiText.typeNamebebb44b3') }}</Label>
+            <Input id="type-name" v-model="editor.name" />
+          </div>
+          <div class="space-y-2">
+            <Label for="type-source-version">{{ $t('uiText.typeSourceVersion4b28fe73') }}</Label>
+            <Input id="type-source-version" :model-value="String(editor.sourceVersion)" disabled />
+          </div>
+          <div class="space-y-2">
+            <Label for="type-description">{{ $t('uiText.descriptionF5441f6a') }}</Label>
+            <Textarea
+              id="type-description"
+              v-model="editor.description"
+              :rows="5"
+              placeholder="Назначение типа и особенности его использования"
+            />
+          </div>
+        </div>
+      </DocumentGeneralSettingsPanel>
+
+      <TypeVisualEditor
+        v-else-if="activeTab === 'visual'"
+        :model-value="editor.source"
+        :identity="editor.identity || editor.name"
+        :types="visualTypes"
+        :show-preview="visualShowPreview"
+        :show-example="visualShowExample"
+        :panel-sizes="visualPanelSizes"
+        @update:panel-sizes="updateVisualPanelSizes"
+        @update:model-value="updateTypeSource"
+        @open:type="openTypeDocument"
+      />
+
+      <TypeSourceEditor
+        v-else
+        ref="sourceEditorRef"
+        :model-value="editor.source"
+        :identity="editor.identity || editor.name"
+        @update:model-value="updateTypeSource"
+      />
+    </div>
+  </SourceDocumentEditorShell>
+</template>

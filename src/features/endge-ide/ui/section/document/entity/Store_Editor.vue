@@ -1,0 +1,299 @@
+<script setup lang="ts">
+import type { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
+
+import { Endge } from '@endge/core'
+import {
+  Code2,
+  FileJson,
+  Loader2,
+  Play,
+  RotateCcw,
+  Save,
+  Settings2,
+  TriangleAlert,
+} from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
+import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
+import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
+import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
+import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
+import StoreSourceEditor from '@/features/endge-ide/ui/components/StoreSourceEditor.vue'
+import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
+
+interface SourceEditorHandle {
+  formatDocument: () => Promise<void>
+}
+
+const editor = computed(
+  () => EndgeIDE.tabs.documentEditorModel.value as RStoreEditor | null,
+)
+const activeTab = useSmartTabSelection(
+  'editor.active-tab',
+  'source',
+  ['general', 'source', 'artifact', 'diagnostics'] as const,
+)
+const launchLoading = ref(false)
+const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const compiled = computed(() =>
+  editor.value ? Endge.source.compile('store', editor.value.source) : null,
+)
+const artifactJson = computed(() =>
+  JSON.stringify(compiled.value?.artifact ?? null, null, 2),
+)
+const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('store', editor.value))
+function updateSource(value: string): void {
+  editor.value?.applySourceText(value)
+}
+
+function resetSource(): void {
+  editor.value?.applySourceText(Endge.source.createDefault('store'))
+}
+
+async function save(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  current.identity = current.identity.trim()
+  current.name = current.name.trim()
+  if (!current.identity) {
+    toast.error('Identity хранилища не может быть пустым')
+    activeTab.value = 'general'
+    return
+  }
+  if (!current.name) {
+    current.name = current.identity
+  }
+
+  await EndgeIDE.tabs.save()
+}
+
+async function launchPreview(): Promise<void> {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+
+  launchLoading.value = true
+  try {
+    current.refreshDiagnostics()
+    await EndgeIDE.runtimePreview.launchEditor(current)
+  }
+  finally {
+    launchLoading.value = false
+  }
+}
+</script>
+
+<template>
+  <SourceDocumentEditorShell
+    v-if="editor"
+    :document-id="editor.id"
+    :identity="editor.identity"
+    :display-name="editor.name"
+    document-type="store"
+    :dependency-source="editor.source"
+    :dependency-draft="editor"
+  >
+    <template #center>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'general'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Основное"
+                @click="activeTab = 'general'"
+              >
+                <Settings2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'source'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Source"
+                @click="activeTab = 'source'"
+              >
+                <Code2 class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.source6da13add') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :disabled="launchLoading"
+                aria-label="Запустить preview хранилища"
+                @click="launchPreview"
+              >
+                <Loader2 v-if="launchLoading" class="size-4 animate-spin" />
+                <Play v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.runRuntimePreviewCtrlEnterF142bef6') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'artifact'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Артифакт"
+                @click="activeTab = 'artifact'"
+              >
+                <FileJson class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.artifactA171cb33') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                :class="
+                  activeTab === 'diagnostics'
+                    ? 'bg-editor-control shadow-sm'
+                    : 'text-muted-foreground'
+                "
+                aria-label="Диагностика"
+                @click="activeTab = 'diagnostics'"
+              >
+                <TriangleAlert class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.diagnosis9ba1e22a') }}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" class="mx-0.5 h-5" />
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="EndgeIDE.busy.value" aria-label="Сохранить" @click="save">
+                <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+                <Save v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <template #right>
+      <TooltipProvider>
+        <div class="flex items-center rounded-md border bg-muted/40 p-0.5">
+          <SourceFormatButton
+            v-if="activeTab === 'source'"
+            @click="sourceEditorRef?.formatDocument()"
+          />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                aria-label="Сбросить source"
+                @click="resetSource"
+              >
+                <RotateCcw class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('uiText.resetSourceC19e2677') }}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </template>
+
+    <div class="min-h-0 flex-1 overflow-hidden">
+      <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
+        <div class="max-w-xl space-y-5">
+          <DocumentIdField :document-id="editor.id" />
+          <div class="space-y-2">
+            <Label for="store-display-name">{{ $t('uiText.name3de49828') }}</Label>
+            <Input
+              id="store-display-name"
+              v-model="editor.name"
+              placeholder="Название хранилища"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="store-identity">{{ $t('uiText.identity7e5a975b') }}</Label>
+            <DocumentIdentityInput
+              id="store-identity"
+              v-model="editor.identity"
+              placeholder="Уникальный идентификатор"
+              spellcheck="false"
+            />
+            <p class="text-xs text-muted-foreground">
+              {{ $t('uiText.text1b3fa2a3') }}
+            </p>
+          </div>
+        </div>
+      </DocumentGeneralSettingsPanel>
+      <StoreSourceEditor
+        v-else-if="activeTab === 'source'"
+        ref="sourceEditorRef"
+        :model-value="editor.source"
+        @update:model-value="updateSource"
+      />
+      <pre
+        v-else-if="activeTab === 'artifact'"
+        class="h-full overflow-auto bg-muted/30 p-4 text-xs"
+      >{{ artifactJson }}</pre>
+      <EntityProblemsPanel
+        v-else-if="diagnosticsEntityRef"
+        :entity-ref="diagnosticsEntityRef"
+        class="h-full"
+      />
+    </div>
+  </SourceDocumentEditorShell>
+</template>

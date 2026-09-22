@@ -1,0 +1,3176 @@
+<script setup lang="ts">
+import type { CompiledProgramCatalog, ComponentSFCProgramPayload, DomainDocumentType, EndgeArchivedDocument, RCompositionKind, RFacetDocument } from '@endge/core'
+import type { ArchivedWorkspace } from '@/features/backend-connections/domain/types/backend-connection.type'
+import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
+import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
+import type {
+  DomainWorkingSetFilterState,
+  DomainWorkingSetRef,
+} from '@/features/endge-ide/domain/types/domain-working-set.type'
+import type {
+  DomainDragPayloadItem,
+  DragPayloadItem,
+  FolderDeletionPlan,
+  FolderDragPayloadItem,
+} from '@/features/endge-ide/services/domain/domain-drag-drop'
+import type { FlatFsItem, FsFileNode, FsFolderNode, FsNode } from '@/features/endge-ide/services/domain/domain-tree'
+import type { DomainWorkingSetProjectionOptions } from '@/features/endge-ide/services/domain/domain-tree-working-set'
+
+import type { PreparedVocabMockGeneration } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
+import { AuthInteractionRequiredError, DomainSectionType, Endge, isExternallyManaged, listBuiltInComponentPortManifests, QueryType } from '@endge/core'
+import { useDomainStore } from '@endge/ui-vue'
+import {
+  ArchiveRestore,
+  ArrowLeftRight,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDown,
+  ChevronsUp,
+  Copy,
+  FolderPlus,
+  FolderRoot,
+  Layers3,
+  ListFilter,
+  Loader2,
+  Palette,
+  Pencil,
+  Play,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  WandSparkles,
+  X,
+} from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { toast } from 'vue-sonner'
+import { Configurator } from '@/app/Configurator'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useConfiguratorSession } from '@/features/configurator-session/ui/configurator-session-context'
+import { DOCUMENT_AUXILIARY_PRESENTATION, DOCUMENT_COLORS } from '@/features/document-presentation/config/document-presentation'
+import {
+  getDomainCollectionPresentation,
+  getDomainDocumentPresentation,
+  getDomainSectionPresentation,
+} from '@/features/document-presentation/tools/resolve-document-presentation'
+import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { authorizeOidcProfile } from '@/features/endge-ide/services/auth/authorize-oidc-profile'
+import { restoreDomainWorkingSetFilter } from '@/features/endge-ide/services/domain-working-set/domain-working-set-persistence'
+import { ENDGE_DOMAIN_WORKING_SET_GRAPH } from '@/features/endge-ide/services/domain-working-set/endge-domain-working-set-graph'
+import {
+  canDelete,
+  createSubfolder as createDomainSubfolder,
+  createFolderDeletionPlan,
+  deleteEntity,
+  deleteFolderRecursively,
+  executeDrop,
+  getDropFolderId,
+} from '@/features/endge-ide/services/domain/domain-drag-drop'
+import { buildEventCatalogRoot } from '@/features/endge-ide/services/domain/domain-event-catalog'
+import {
+  attachResolvedActionTree,
+  attachResolvedTypeTree,
+  buildCustomWorkspaceProjection,
+  buildDomainTree,
+  buildWorkspaceTreeNodes,
+  flattenTree,
+  getDomainTreeRootBlocks,
+  getRootFolderOrder,
+  prioritizeStartupComposition,
+  ROOT_FOLDER_LABELS,
+  withoutDeleted,
+  WORKSPACE_ROOT_FOLDER_IDENTITY,
+} from '@/features/endge-ide/services/domain/domain-tree'
+import {
+  domainFileNodeToWorkingSetRef,
+  groupDomainWorkingSetItems,
+  projectDomainWorkingSetItems,
+} from '@/features/endge-ide/services/domain/domain-tree-working-set'
+import { buildProgramDomainTree } from '@/features/endge-ide/services/domain/program-domain-tree'
+import { createRuntimePreviewLaunchRequestFromDocument } from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
+import {
+  commitVocabMockGeneration,
+  prepareVocabMockGeneration,
+} from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
+import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
+import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
+import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
+
+const props = defineProps<{ programCatalog?: CompiledProgramCatalog }>()
+
+const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+
+function facetRootId(identity: string): string {
+  return `root-facet:${encodeURIComponent(identity)}`
+}
+
+const tabs = EndgeIDE.tabs
+const hasActiveWorkspace = computed(() => props.programCatalog !== undefined || Configurator.hasActiveWorkspace)
+const { t } = useI18n()
+const { state: sessionState } = useConfiguratorSession()
+
+type ArchiveEntry
+  = | (EndgeArchivedDocument & { kind: 'document' })
+    | (ArchivedWorkspace & { kind: 'workspace' })
+
+const archiveMode = ref(false)
+const archiveLoading = ref(false)
+const archiveNextCursor = ref<string | null>(null)
+const archiveEntries = ref<ArchiveEntry[]>([])
+const selectedArchiveKeys = ref<Set<string>>(new Set())
+const archiveSelectionAnchor = ref<string | null>(null)
+const archiveContextMenuRef = ref<HTMLElement | null>(null)
+const archiveContextMenu = ref({ open: false, x: 0, y: 0 })
+
+function archiveKey(item: ArchiveEntry): string {
+  return `${item.kind === 'document' ? item.type : 'workspace'}:${item.identity}`
+}
+
+function getArchiveEntryPresentation(item: ArchiveEntry): DomainDocumentPresentation {
+  return item.kind === 'workspace'
+    ? DOCUMENT_AUXILIARY_PRESENTATION.workspace
+    : getDomainCollectionPresentation(item.type)
+}
+
+function sortArchiveEntries(items: ArchiveEntry[]): ArchiveEntry[] {
+  return [...items].sort((left, right) => right.deletedAt.localeCompare(left.deletedAt)
+    || archiveKey(left).localeCompare(archiveKey(right)))
+}
+
+async function loadArchive(reset = true): Promise<void> {
+  if (archiveLoading.value) {
+    return
+  }
+  archiveLoading.value = true
+  try {
+    const [documentPage, workspaces] = await Promise.all([
+      hasActiveWorkspace.value
+        ? Endge.domainRepository.listArchivedDocuments(reset ? undefined : archiveNextCursor.value ?? undefined)
+        : Promise.resolve({ items: [] as EndgeArchivedDocument[], nextCursor: undefined }),
+      reset ? Configurator.connections.listArchivedWorkspaces() : Promise.resolve([]),
+    ])
+    const documents = documentPage.items
+      .filter(item => item.type !== 'folders')
+      .map(item => ({ ...item, kind: 'document' as const }))
+    const workspaceEntries = workspaces.map(item => ({ ...item, kind: 'workspace' as const }))
+    archiveEntries.value = sortArchiveEntries(reset
+      ? [...workspaceEntries, ...documents]
+      : [...archiveEntries.value, ...documents])
+    archiveNextCursor.value = documentPage.nextCursor ?? null
+    if (reset) {
+      selectedArchiveKeys.value = new Set()
+      archiveSelectionAnchor.value = null
+    }
+  }
+  catch (error) {
+    toast.error(t('archive.loadFailed'), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    archiveLoading.value = false
+  }
+}
+
+async function toggleArchiveMode(): Promise<void> {
+  archiveMode.value = !archiveMode.value
+  closeContextMenu()
+  archiveContextMenu.value.open = false
+  if (archiveMode.value) {
+    await loadArchive(true)
+  }
+}
+
+function onArchiveRowClick(event: MouseEvent, item: ArchiveEntry): void {
+  archiveContextMenu.value.open = false
+  const key = archiveKey(item)
+  if (event.shiftKey && archiveSelectionAnchor.value) {
+    const keys = archiveEntries.value.map(archiveKey)
+    const start = keys.indexOf(archiveSelectionAnchor.value)
+    const end = keys.indexOf(key)
+    if (start >= 0 && end >= 0) {
+      const [low, high] = start <= end ? [start, end] : [end, start]
+      selectedArchiveKeys.value = new Set(keys.slice(low, high + 1))
+      return
+    }
+  }
+  if (event.metaKey || event.ctrlKey) {
+    const next = new Set(selectedArchiveKeys.value)
+    next.has(key) ? next.delete(key) : next.add(key)
+    selectedArchiveKeys.value = next
+  }
+  else {
+    selectedArchiveKeys.value = new Set([key])
+  }
+  archiveSelectionAnchor.value = key
+}
+
+function openArchiveContextMenu(event: MouseEvent, item: ArchiveEntry): void {
+  event.preventDefault()
+  event.stopPropagation()
+  const key = archiveKey(item)
+  if (!selectedArchiveKeys.value.has(key)) {
+    selectedArchiveKeys.value = new Set([key])
+    archiveSelectionAnchor.value = key
+  }
+  archiveContextMenu.value = { open: true, x: event.clientX, y: event.clientY }
+}
+
+const selectedArchiveEntries = computed(() => archiveEntries.value.filter(item => selectedArchiveKeys.value.has(archiveKey(item))))
+const canRestoreArchiveSelection = computed(() => selectedArchiveEntries.value.length > 0
+  && selectedArchiveEntries.value.every((item) => {
+    if (item.kind === 'document') {
+      return item.type !== 'folders'
+    }
+    return item.role === 'admin'
+      || (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)
+  }))
+
+async function restoreArchiveSelection(): Promise<void> {
+  if (!canRestoreArchiveSelection.value) {
+    return
+  }
+  archiveContextMenu.value.open = false
+  const selected = [...selectedArchiveEntries.value]
+  const restored = new Set<string>()
+  let restoredDocuments = false
+  let restoredWorkspaces = false
+  for (const item of selected) {
+    try {
+      if (item.kind === 'document') {
+        await Endge.domainRepository.restoreArchivedDocument(item)
+        restoredDocuments = true
+      }
+      else {
+        await Configurator.connections.restoreWorkspace(item)
+        restoredWorkspaces = true
+      }
+      restored.add(archiveKey(item))
+    }
+    catch (error) {
+      toast.error(t('archive.restoreFailed', { item: item.displayName }), {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+  if (restoredDocuments) {
+    await Configurator.context.reloadCurrentContext()
+  }
+  if (restoredWorkspaces) {
+    await Configurator.session.check()
+  }
+  if (restored.size) {
+    archiveEntries.value = archiveEntries.value.filter(item => !restored.has(archiveKey(item)))
+    selectedArchiveKeys.value = new Set()
+    toast.success(restored.size === 1
+      ? t('archive.restoredOne')
+      : t('archive.restoredMany', { count: restored.size }))
+  }
+}
+
+function openCreateFromToolbar(): void {
+  if (hasActiveWorkspace.value) {
+    EndgeIDE.modals.openCreateDocument()
+    return
+  }
+  if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
+    EndgeIDE.modals.openCreateDocument({ documentType: 'workspace' })
+    return
+  }
+  toast.warning(t('detachedWorkspace.actionRequired'))
+}
+
+type MenuAction
+  = | { type: 'switch-workspace', workspaceIdentity: string }
+    | { type: 'create-workspace' }
+    | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, active: boolean }
+    | { type: 'create-configuration' }
+    | { type: 'remove-folder', node: FsFolderNode }
+    | { type: 'rename-folder', node: FsFolderNode }
+    | { type: 'edit-folder-appearance', node: FsFolderNode }
+    | { type: 'create-folder', node: FsFolderNode }
+    | { type: 'create-doc', node: FsFolderNode }
+    | { type: 'create-store-update', node: FsFileNode }
+    | { type: 'remove-doc', node: FsFileNode }
+    | { type: 'duplicate-doc', node: FsFileNode }
+    | { type: 'filter-dependencies', node: FsFileNode }
+    | { type: 'launch-runtime-previews', nodes: FsFileNode[] }
+    | { type: 'generate-vocab-mock' }
+    | { type: 'create-facet-document', facetIdentity: string }
+    | { type: 'show-deleted-facet-documents', facetIdentity: string }
+    | { type: 'remove-facet-document', facetIdentity: string, documentIdentity: string }
+    | { type: 'restore-facet-document', facetIdentity: string, documentIdentity: string }
+
+const domainStore = useDomainStore()
+const facetDocumentDialog = ref({ open: false, facetIdentity: '', identity: '', displayName: '', description: '', loading: false })
+const deletedFacetDocumentsDialog = ref({ open: false, facetIdentity: '', loading: false, items: [] as RFacetDocument[] })
+const workspaceDeletionDialog = ref({ open: false, workspaceIdentity: '', displayName: '', active: false, loading: false })
+const facetRegistryVersion = ref(0)
+const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
+  facetRegistryVersion.value += 1
+})
+const debuggerMode = Endge.mode === 'debugger' || props.programCatalog !== undefined
+const activeDocumentStructure = EndgeIDE.uiState.documentStructure
+const vocabMockDialog = ref({
+  open: false,
+  mode: 'existing' as 'existing' | 'new',
+  existingIdentity: '',
+  newIdentity: '',
+  loading: false,
+  prepared: null as PreparedVocabMockGeneration | null,
+})
+const jsonMockOptions = computed(() => Endge.domain.getMocks()
+  .filter(mock => mock.active !== false && !mock.deletedAt && mock.contentType === 'application/json')
+  .map(mock => ({ value: mock.identity, label: mock.displayName || mock.name || mock.identity })))
+const vocabMockTargetIdentity = computed(() => vocabMockDialog.value.mode === 'existing'
+  ? vocabMockDialog.value.existingIdentity
+  : vocabMockDialog.value.newIdentity)
+const actionRegistryVersion = ref(0)
+const unsubscribeActions = Endge.actions.subscribe(() => {
+  actionRegistryVersion.value += 1
+})
+
+function openVocabMockGenerator(): void {
+  vocabMockDialog.value = {
+    open: true,
+    mode: jsonMockOptions.value.length ? 'existing' : 'new',
+    existingIdentity: jsonMockOptions.value[0]?.value ?? '',
+    newIdentity: '',
+    loading: false,
+    prepared: null,
+  }
+}
+
+function closeVocabMockGenerator(): void {
+  if (vocabMockDialog.value.loading) {
+    return
+  }
+  vocabMockDialog.value.open = false
+  vocabMockDialog.value.prepared = null
+}
+
+async function prepareAndSaveVocabMock(): Promise<void> {
+  vocabMockDialog.value.loading = true
+  try {
+    const prepared = await prepareVocabMockGeneration(vocabMockTargetIdentity.value)
+    if (prepared.overwrittenKeys.length) {
+      vocabMockDialog.value.prepared = prepared
+      return
+    }
+    await savePreparedVocabMock(prepared)
+  }
+  catch (error) {
+    if (error instanceof AuthInteractionRequiredError) {
+      toast.error('Для подготовки Mock требуется авторизация', {
+        description: error.message,
+        action: {
+          label: 'Авторизоваться и повторить',
+          onClick: () => void authorizeAndRetryVocabMock(error.profileIdentity),
+        },
+      })
+    }
+    else {
+      toast.error('Не удалось подготовить Mock словарей', {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+  finally {
+    vocabMockDialog.value.loading = false
+  }
+}
+
+async function authorizeAndRetryVocabMock(profileIdentity: string): Promise<void> {
+  try {
+    await authorizeOidcProfile(profileIdentity)
+    await prepareAndSaveVocabMock()
+  }
+  catch (error) {
+    toast.error('Не удалось завершить вход для словарей', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
+async function confirmVocabMockOverwrite(): Promise<void> {
+  const prepared = vocabMockDialog.value.prepared
+  if (!prepared) {
+    return
+  }
+  vocabMockDialog.value.loading = true
+  try {
+    await savePreparedVocabMock(prepared)
+  }
+  catch (error) {
+    toast.error('Mock сохранён не полностью', {
+      description: error instanceof Error ? error.message : String(error),
+      duration: 10000,
+    })
+  }
+  finally {
+    vocabMockDialog.value.loading = false
+  }
+}
+
+async function savePreparedVocabMock(prepared: PreparedVocabMockGeneration): Promise<void> {
+  const result = await commitVocabMockGeneration(prepared)
+  toast.success('Mock-данные словарей сохранены', {
+    description: `${result.mockIdentity}: ${result.savedVocabs.length} Vocab`,
+  })
+  vocabMockDialog.value.open = false
+  vocabMockDialog.value.prepared = null
+  Endge.domain.notify()
+}
+
+// ---------- temporary identity labels (Option/Alt) ----------
+const showIdentityLabels = ref(false)
+
+function onIdentityModifierKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Alt') {
+    showIdentityLabels.value = true
+  }
+}
+
+function onIdentityModifierKeyup(event: KeyboardEvent): void {
+  if (event.key === 'Alt') {
+    showIdentityLabels.value = false
+  }
+}
+
+function resetIdentityLabels(): void {
+  showIdentityLabels.value = false
+}
+
+function getWorkspaceRootLabel(): string {
+  if (props.programCatalog || !hasActiveWorkspace.value) {
+    return ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
+  }
+  return Endge.workspace.current.displayName?.trim()
+    || Endge.workspace.current.identity?.trim()
+    || ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!
+}
+
+function getNodeLabel(node: FsNode): string {
+  if (node.type === 'folder' && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return getWorkspaceRootLabel()
+  }
+  if (!showIdentityLabels.value || node.type !== 'file') {
+    return node.name
+  }
+
+  return node.identity?.trim() || node.name
+}
+
+function getVisibleNodeBadges(node: FsNode): string[] {
+  const badges = (node.badges ?? []).filter(badge => badge !== 'system')
+  return isStartupComposition(node) ? ['Startup', ...badges] : badges
+}
+
+function isStartupComposition(node: FsNode): boolean {
+  return !props.programCatalog && hasActiveWorkspace.value
+    && node.type === 'file'
+    && node.docType === 'composition'
+    && node.identity === Endge.workspace.current.startupCompositionIdentity
+}
+
+function badgeClasses(badge: string): string {
+  return badge === 'Startup'
+    ? 'border-red-400/60 bg-red-500/10 text-red-700 dark:text-red-300'
+    : 'border-sky-300/60 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onIdentityModifierKeydown)
+  window.addEventListener('keyup', onIdentityModifierKeyup)
+  window.addEventListener('blur', resetIdentityLabels)
+})
+
+// ---------- expanded state (persisted) ----------
+const expandedKeys = useConfiguratorState<Record<string, boolean>>(
+  'configurator.domain-tree.expanded',
+  {},
+  { legacyKeys: ['endge-editor-domain-treeview-expanded'] },
+)
+const filteredExpandedKeys = useConfiguratorState<Record<string, boolean>>(
+  'configurator.domain-tree.filtered-expanded',
+  {},
+  { legacyKeys: ['endge-editor-domain-treeview-filtered-expanded'] },
+)
+
+const legacyShowRootHierarchyBackgrounds = useConfiguratorState(
+  'configurator.domain-tree.legacy-root-backgrounds',
+  false,
+  { legacyKeys: ['endge-editor-domain-tree-root-backgrounds'] },
+)
+
+type DomainTreeHighlightMode = 'root' | 'block' | 'none'
+
+const DOMAIN_TREE_HIGHLIGHT_MODES: readonly DomainTreeHighlightMode[] = ['root', 'block', 'none']
+const domainTreeHighlightMode = useConfiguratorState<DomainTreeHighlightMode>(
+  'configurator.domain-tree.highlight-mode',
+  legacyShowRootHierarchyBackgrounds.value ? 'block' : 'none',
+  { legacyKeys: ['endge-editor-domain-tree-highlight-mode'] },
+)
+
+const DOMAIN_TREE_HIGHLIGHT_PRESENTATION: Record<DomainTreeHighlightMode, { icon: any, label: string }> = {
+  root: { icon: FolderRoot, label: 'Подсвечены только корневые папки' },
+  block: { icon: Layers3, label: 'Подсвечены все блоки' },
+  none: { icon: Palette, label: 'Подсветка отключена' },
+}
+
+const domainTreeHighlightPresentation = computed(() =>
+  DOMAIN_TREE_HIGHLIGHT_PRESENTATION[domainTreeHighlightMode.value],
+)
+
+function cycleDomainTreeHighlightMode(): void {
+  const currentIndex = DOMAIN_TREE_HIGHLIGHT_MODES.indexOf(domainTreeHighlightMode.value)
+  domainTreeHighlightMode.value = DOMAIN_TREE_HIGHLIGHT_MODES[(currentIndex + 1) % DOMAIN_TREE_HIGHLIGHT_MODES.length] ?? 'root'
+}
+
+interface DomainTreeSearchState {
+  open: boolean
+  query: string
+}
+
+const persistedSearchState = useConfiguratorState<DomainTreeSearchState>(
+  'configurator.domain-tree.search',
+  { open: false, query: '' },
+  { legacyKeys: ['endge-editor-domain-tree-search'] },
+)
+const searchOpen = computed({
+  get: () => persistedSearchState.value.open,
+  set: open => persistedSearchState.value = { ...persistedSearchState.value, open },
+})
+const searchQuery = computed({
+  get: () => persistedSearchState.value.query,
+  set: query => persistedSearchState.value = { ...persistedSearchState.value, query },
+})
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLocaleLowerCase())
+const searchFilteringEnabled = computed(() => searchOpen.value && normalizedSearchQuery.value.length > 0)
+const searchToggleTooltip = computed(() => searchOpen.value ? 'Скрыть поиск' : 'Поиск по домену')
+
+interface DomainTreeFilterOptions {
+  preserveAncestors: boolean
+  showEmptyRootFolders: boolean
+  showEmptyGroups: boolean
+}
+
+const PROJECT_SEARCH_FILTER_OPTIONS = {
+  preserveAncestors: true,
+  showEmptyRootFolders: false,
+  showEmptyGroups: false,
+} satisfies DomainTreeFilterOptions
+
+function toggleSearch(): void {
+  searchOpen.value = !searchOpen.value
+}
+
+function clearSearch(): void {
+  searchQuery.value = ''
+}
+
+const persistedWorkingSetFilter = useConfiguratorState<DomainWorkingSetFilterState>(
+  'configurator.domain-tree.working-set-filter',
+  { enabled: false, roots: [] },
+  { legacyKeys: ['endge-editor-domain-working-set-filter'] },
+)
+const workingSetFilterEnabled = ref(false)
+const workingSetRoots = ref<DomainWorkingSetRef[]>([])
+const DEPENDENCY_FILTER_PROJECTION: DomainWorkingSetProjectionOptions = {
+  folderMode: 'root-folders',
+  preserveGroups: false,
+}
+const SHOW_DEPENDENCIES_LABEL = 'Показать зависимости выбранных файлов'
+const workingSetFilterTooltip = computed(() => workingSetFilterEnabled.value
+  ? 'Показать все файлы'
+  : SHOW_DEPENDENCIES_LABEL)
+
+const expandedFolders = computed<Set<string>>({
+  get(): Set<string> {
+    const s = new Set<string>()
+    for (const [k, v] of Object.entries(expandedKeys.value)) {
+      if (v) {
+        s.add(k)
+      }
+    }
+    return s
+  },
+  set(next: Set<string>) {
+    const obj: Record<string, boolean> = {}
+    for (const p of next) {
+      obj[p] = true
+    }
+    expandedKeys.value = obj
+  },
+})
+
+const workingSetExpandedFolders = computed<Set<string>>({
+  get(): Set<string> {
+    const expanded = new Set<string>()
+    for (const [path, isExpanded] of Object.entries(filteredExpandedKeys.value)) {
+      if (isExpanded) {
+        expanded.add(path)
+      }
+    }
+    return expanded
+  },
+  set(next: Set<string>) {
+    const persisted: Record<string, boolean> = {}
+    for (const path of next) {
+      persisted[path] = true
+    }
+    filteredExpandedKeys.value = persisted
+  },
+})
+const activeExpandedFolders = computed(() => workingSetFilterEnabled.value
+  ? workingSetExpandedFolders.value
+  : expandedFolders.value)
+
+function setActiveExpandedFolders(next: Set<string>): void {
+  if (workingSetFilterEnabled.value) {
+    workingSetExpandedFolders.value = next
+  }
+  else {
+    expandedFolders.value = next
+  }
+}
+
+function toggleFolder(path: string): void {
+  const s = new Set(activeExpandedFolders.value)
+  if (s.has(path)) {
+    s.delete(path)
+  }
+  else {
+    s.add(path)
+  }
+  setActiveExpandedFolders(s)
+}
+
+function folderIsExpanded(path: string): boolean {
+  return activeExpandedFolders.value.has(path)
+}
+
+// ---------- dialogs ----------
+const createFolderDialog = ref<{
+  open: boolean
+  loading: boolean
+  targetFolder: FsFolderNode | null
+  targetPath: string
+  name: string
+}>({
+  open: false,
+  loading: false,
+  targetFolder: null,
+  targetPath: '',
+  name: '',
+})
+
+const renameDialog = ref<{
+  open: boolean
+  folderId: string
+  newName: string
+}>({
+  open: false,
+  folderId: '',
+  newName: '',
+})
+
+const folderAppearanceDialog = ref({
+  open: false,
+  loading: false,
+  folderId: '',
+  icon: 'Folder',
+  color: '#64748b',
+  customized: false,
+})
+
+const folderDeletionDialog = ref<{
+  open: boolean
+  loading: boolean
+  plan: FolderDeletionPlan | null
+}>({
+  open: false,
+  loading: false,
+  plan: null,
+})
+
+const folderDeletionEntityCount = computed(() => folderDeletionDialog.value.plan?.entities.length ?? 0)
+const folderDeletionNestedFolderCount = computed(() =>
+  Math.max(0, (folderDeletionDialog.value.plan?.folders.length ?? 1) - 1),
+)
+const folderDeletionIsWorkspaceProjection = computed(() => folderDeletionDialog.value.plan?.root.scope === 'workspace')
+
+// ---------- context menu (single instance) ----------
+const contextMenuRef = ref<HTMLElement | null>(null)
+const contextMenu = ref<{
+  open: boolean
+  x: number
+  y: number
+  node: FsNode | null
+  path: string | null
+}>({
+  open: false,
+  x: 0,
+  y: 0,
+  node: null,
+  path: null,
+})
+
+function openContextMenu(e: MouseEvent, node: FsNode, path: string): void {
+  const folderNode = node.type === 'folder' ? (node as FsFolderNode) : null
+  if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
+    return
+  }
+  if (getMenuActions(node).length === 0) {
+    return
+  }
+  e.preventDefault()
+  e.stopPropagation()
+  contextMenu.value = {
+    open: true,
+    x: e.clientX,
+    y: e.clientY,
+    node,
+    path,
+  }
+}
+
+function closeContextMenu(): void {
+  contextMenu.value.open = false
+  contextMenu.value.node = null
+  contextMenu.value.path = null
+}
+
+function closeArchiveContextMenu(): void {
+  archiveContextMenu.value.open = false
+}
+
+// close context menu on global scroll/resize for “nice”
+function onWindowChange(): void {
+  if (contextMenu.value.open) {
+    closeContextMenu()
+  }
+  if (archiveContextMenu.value.open) {
+    closeArchiveContextMenu()
+  }
+}
+function onContextMenuClickOutside(e: MouseEvent): void {
+  if (contextMenuRef.value?.contains(e.target as Node)
+    || archiveContextMenuRef.value?.contains(e.target as Node)) {
+    return
+  }
+  closeContextMenu()
+  closeArchiveContextMenu()
+}
+
+function onContextMenuKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') {
+    closeContextMenu()
+    closeArchiveContextMenu()
+  }
+}
+
+watch(() => contextMenu.value.open || archiveContextMenu.value.open, (open) => {
+  if (!open) {
+    document.removeEventListener('mousedown', onContextMenuClickOutside)
+    document.removeEventListener('keydown', onContextMenuKeydown)
+    window.removeEventListener('resize', onWindowChange)
+    window.removeEventListener('scroll', onWindowChange, true)
+    return
+  }
+  document.addEventListener('mousedown', onContextMenuClickOutside)
+  document.addEventListener('keydown', onContextMenuKeydown)
+  window.addEventListener('resize', onWindowChange, { passive: true })
+  window.addEventListener('scroll', onWindowChange, { passive: true, capture: true })
+})
+onBeforeUnmount(() => {
+  unsubscribeActions()
+  unsubscribeDomainFacets()
+  window.removeEventListener('keydown', onIdentityModifierKeydown)
+  window.removeEventListener('keyup', onIdentityModifierKeyup)
+  window.removeEventListener('blur', resetIdentityLabels)
+  document.removeEventListener('mousedown', onContextMenuClickOutside)
+  document.removeEventListener('keydown', onContextMenuKeydown)
+  window.removeEventListener('resize', onWindowChange)
+  window.removeEventListener('scroll', onWindowChange, true)
+})
+
+// ---------- DnD ----------
+const dragSources = ref<FsFileNode[]>([])
+const draggedFolder = ref<{ path: string, rootId: string } | null>(null)
+const dragOverPath = ref<string | null>(null)
+
+function canDragTreeItem(item: FlatFsItem): boolean {
+  if (debuggerMode) {
+    return false
+  }
+  if (item.node.virtual) {
+    return canCopyVirtualAction(item.node)
+  }
+  if (item.node.facetIdentity) {
+    return false
+  }
+  if (item.node.type === 'file') {
+    return !(item.node as FsFileNode).isTableColumn
+      && (item.node as FsFileNode).docType !== 'update'
+  }
+
+  const folder = item.node as FsFolderNode
+  return !folder.isRoot
+    && folder.folderId != null
+    && folder.sectionType !== DomainSectionType.Integration
+    && !isExternallyManaged(folder)
+}
+
+function canCopyVirtualAction(node: FsNode): node is FsFileNode {
+  return node.type === 'file'
+    && node.docType === 'action'
+    && node.sectionType === DomainSectionType.Action
+    && Boolean(node.identity?.trim())
+}
+
+const selectedFileKeys = ref<Set<string>>(new Set())
+
+/** Маппинг: identity корневой папки — секция и активные документы домена. */
+const ROOT_TO_SECTION = computed(() => {
+  void facetRegistryVersion.value
+  const compositions = withoutDeleted(domainStore.compositions)
+  const facetRoots = Object.fromEntries(Endge.domain.getFacets().map(facet => [
+    facetRootId(facet.identity),
+    { section: DomainSectionType.Configuration, items: () => Endge.domain.getFacetDocuments(facet.identity) },
+  ]))
+  return {
+    ...(debuggerMode
+      ? { 'root-configurations': { section: DomainSectionType.Configuration, items: () => Endge.domain.getConfigurations() } }
+      : { 'root-workspaces': { section: DomainSectionType.Workspace, items: () => [] } }),
+    'root-types': { section: DomainSectionType.Type, items: () => withoutDeleted((debuggerMode ? domainStore.types : domainStore.typesComplex) ?? []) },
+    'root-queries': {
+      section: DomainSectionType.Query,
+      items: () => withoutDeleted([
+        ...(domainStore.queries ?? []),
+        ...((Endge.domain as any).getStreams?.() ?? []),
+      ]),
+    },
+    'root-data-views': { section: DomainSectionType.DataView, items: () => withoutDeleted((Endge.domain as any).getDataViews?.() ?? []) },
+    'root-compositions': {
+      section: DomainSectionType.Composition,
+      items: () => compositions.filter(composition => String(composition.kind ?? 'library') === 'library'),
+    },
+    'root-simulations': { section: DomainSectionType.Simulation, items: () => withoutDeleted(Endge.domain.getSimulations()) },
+    'root-stores': { section: DomainSectionType.Store, items: () => withoutDeleted((Endge.domain as any).getStores?.() ?? []) },
+    'root-components': { section: DomainSectionType.Component, items: () => withoutDeleted([...domainStore.components, ...((Endge.domain as any).getComponentSFCs?.() ?? [])]) },
+    'root-actions': { section: DomainSectionType.Action, items: () => withoutDeleted(domainStore.actions) },
+    ...(!debuggerMode ? { 'root-events': { section: DomainSectionType.Event, items: () => [] } } : {}),
+    'root-filters': { section: DomainSectionType.Filters, items: () => withoutDeleted(domainStore.filters) },
+    'root-converters': { section: DomainSectionType.Converter, items: () => withoutDeleted(domainStore.converters) },
+    'root-computations': { section: DomainSectionType.Computation, items: () => withoutDeleted(Endge.domain.getComputations()) },
+    'root-integrations': { section: DomainSectionType.Integration, items: () => withoutDeleted(domainStore.integrations) },
+    'root-policies': { section: DomainSectionType.Policy, items: () => withoutDeleted(domainStore.policies) },
+    'root-styles': { section: DomainSectionType.Style, items: () => withoutDeleted(domainStore.styles) },
+    'root-page-templates': { section: DomainSectionType.PageTemplate, items: () => withoutDeleted(domainStore.pageTemplates) },
+    'root-pages': { section: DomainSectionType.Page, items: () => withoutDeleted(domainStore.pages) },
+    'root-navigations': { section: DomainSectionType.Navigation, items: () => withoutDeleted(domainStore.navigations) },
+    'root-vocabs': { section: DomainSectionType.Vocabs, items: () => withoutDeleted(domainStore.vocabs) },
+    'root-mocks': { section: DomainSectionType.Mock, items: () => withoutDeleted(domainStore.mocks) },
+    'root-i18n-bundles': { section: DomainSectionType.I18nBundles, items: () => withoutDeleted(domainStore.i18nBundles) },
+    'root-auth-profiles': { section: DomainSectionType.AuthProfile, items: () => withoutDeleted(domainStore.authProfiles) },
+    ...facetRoots,
+  }
+})
+
+const programTree = computed(() => props.programCatalog
+  ? buildProgramDomainTree(props.programCatalog, {
+      ...Object.fromEntries(Object.entries(ROOT_TO_SECTION.value)
+        .filter(([id]) => id !== 'root-configurations')
+        .map(([id, value]) => [id, value.section])),
+      'root-workspaces': DomainSectionType.Workspace,
+    }, activeDocumentStructure.value === 'custom', Endge.workspace.isLoaded ? Endge.workspace.current : props.programCatalog.workspace)
+  : [])
+
+/** Порядок корневых папок. */
+const ROOT_FOLDER_ORDER = computed(() => {
+  if (props.programCatalog) {
+    return programTree.value.filter(node => node.type === 'folder').map(node => node.id)
+  }
+  const facetIds = Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
+  const base = getRootFolderOrder(Object.keys(ROOT_TO_SECTION.value)).filter(id => !facetIds.includes(id))
+  const index = base.indexOf('root-workspaces')
+  base.splice(index >= 0 ? index + 1 : base.length, 0, ...facetIds)
+  return base
+})
+
+// ---------- дерево ----------
+const fsTree = computed<FsNode[]>(() => {
+  if (props.programCatalog) {
+    return programTree.value
+  }
+  if (!hasActiveWorkspace.value) {
+    const workspaces = sessionState.value.status === 'authenticated' ? sessionState.value.session.workspaces : []
+    return [{
+      id: 'root-workspaces',
+      name: ROOT_FOLDER_LABELS['root-workspaces']!,
+      type: 'folder',
+      sectionType: DomainSectionType.Workspace,
+      isRoot: true,
+      virtual: true,
+      children: buildWorkspaceTreeNodes(workspaces, null, []),
+    }]
+  }
+  void actionRegistryVersion.value
+  const allFolders = Array.isArray(domainStore.folders) ? domainStore.folders : []
+  const tree = buildDomainTree({
+    rootToSection: ROOT_TO_SECTION.value,
+    rootOrder: ROOT_FOLDER_ORDER.value,
+    rootLabels: {
+      ...ROOT_FOLDER_LABELS,
+      'root-configurations': 'Конфигурации',
+      ...Object.fromEntries(Endge.domain.getFacets().map(facet => [facetRootId(facet.identity), facet.displayName])),
+    },
+    allFolders,
+    contextualCompositions: withoutDeleted<any>(
+      (Endge.domain as any).getCompositions?.() ?? [],
+    ).filter(composition => String(composition.kind ?? 'library') !== 'library') as Array<{
+      id?: string | number
+      identity?: string
+      name?: string
+      displayName?: string
+      kind?: RCompositionKind
+      kindIdentity?: string | null
+      folderId?: string | number | null
+    }>,
+    storeUpdates: withoutDeleted(
+      (Endge.domain as any).getUpdates?.() ?? [],
+    ),
+  })
+
+  if (debuggerMode) {
+    return tree
+  }
+
+  for (const facet of Endge.domain.getFacets()) {
+    const root = tree.find(node => node.type === 'folder' && node.id === facetRootId(facet.identity))
+    if (!root || root.type !== 'folder') {
+      continue
+    }
+    Object.assign(root, { facetIdentity: facet.identity, facetColor: facet.color, facetIcon: facet.icon })
+    for (const child of root.children ?? []) {
+      Object.assign(child, { facetIdentity: facet.identity, facetColor: facet.color, facetIcon: facet.icon })
+    }
+  }
+
+  attachResolvedTypeTree(tree, Endge.program.getTypeCatalog())
+  attachResolvedActionTree(tree, Endge.actions.listResolved())
+
+  const eventRoot = buildEventCatalogRoot(
+    listBuiltInComponentPortManifests(),
+    Endge.domain.getComponentSFCs().flatMap((component) => {
+      const artifact = Endge.program.getArtifact<ComponentSFCProgramPayload>('component-sfc', component.identity)
+      const manifest = artifact?.payload?.ir?.script.ports
+      return manifest
+        ? [{ identity: component.identity, displayName: component.displayName || component.name || component.identity, manifest }]
+        : []
+    }),
+  )
+  const eventRootIndex = tree.findIndex(node => node.type === 'folder' && node.id === 'root-events')
+  if (eventRootIndex >= 0) {
+    tree[eventRootIndex] = eventRoot
+  }
+  else { tree.push(eventRoot) }
+
+  const workspaceRoot = tree.find(node => node.type === 'folder' && node.id === 'root-workspaces')
+  if (workspaceRoot?.type === 'folder' && sessionState.value.status === 'authenticated') {
+    workspaceRoot.virtual = true
+    workspaceRoot.children = buildWorkspaceTreeNodes(
+      sessionState.value.session.workspaces.map(workspace => workspace.identity === Endge.workspace.current.identity
+        ? { ...workspace, displayName: Endge.workspace.current.displayName }
+        : workspace),
+      Endge.workspace.current.identity,
+      Endge.domain.getConfigurations(),
+    )
+  }
+
+  if (activeDocumentStructure.value === 'custom') {
+    const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value)
+    const contextRootIds = new Set([
+      ...(blocks.find(block => block.id === 'context')?.rootIds ?? []),
+      ...Endge.domain.getFacets().map(facet => facetRootId(facet.identity)),
+    ])
+    const sourceRootIds = new Set(blocks.flatMap(block => block.rootIds))
+    return prioritizeStartupComposition(
+      buildCustomWorkspaceProjection(tree, allFolders, contextRootIds, sourceRootIds),
+      Endge.workspace.current.startupCompositionIdentity,
+    )
+  }
+
+  return prioritizeStartupComposition(tree, Endge.workspace.current.startupCompositionIdentity)
+})
+
+const workingSetResult = computed(() => {
+  // Дерево служит reactive boundary для обновлённых документов и program artifacts.
+  void fsTree.value
+  return resolveDomainWorkingSet(workingSetRoots.value, ENDGE_DOMAIN_WORKING_SET_GRAPH)
+})
+
+const flatFs = computed<FlatFsItem[]>(() => {
+  if (workingSetFilterEnabled.value) {
+    const expandedPaths = searchFilteringEnabled.value
+      ? new Set(fsTree.value.filter(node => node.type === 'folder').map(node => node.name))
+      : workingSetExpandedFolders.value
+    const projectedItems = projectDomainWorkingSetItems(
+      fsTree.value,
+      workingSetResult.value,
+      expandedPaths,
+      DEPENDENCY_FILTER_PROJECTION,
+    )
+
+    if (searchFilteringEnabled.value) {
+      const matchedRootIds = new Set(
+        projectedItems
+          .filter(item => item.node.type === 'file' && nodeMatchesSearch(item.node, normalizedSearchQuery.value))
+          .map(item => item.rootId),
+      )
+
+      return projectedItems.filter(item => item.node.type === 'file'
+        ? nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+        : nodeMatchesSearch(item.node, normalizedSearchQuery.value)
+          || matchedRootIds.has(item.rootId)
+          || PROJECT_SEARCH_FILTER_OPTIONS.showEmptyRootFolders)
+    }
+
+    return projectedItems
+  }
+
+  if (searchFilteringEnabled.value) {
+    return projectDomainSearchItems(
+      fsTree.value,
+      normalizedSearchQuery.value,
+      PROJECT_SEARCH_FILTER_OPTIONS,
+    ).items
+  }
+
+  return flattenTree(fsTree.value, expandedFolders.value)
+})
+
+function onDragStart(e: DragEvent, item: FlatFsItem): void {
+  if (!e.dataTransfer) {
+    return
+  }
+  if (item.node.virtual) {
+    if (canCopyVirtualAction(item.node)) {
+      onVirtualActionDragStart(e, item, item.node)
+    }
+    return
+  }
+  if (item.node.type === 'folder') {
+    onFolderDragStart(e, item, item.node as FsFolderNode)
+    return
+  }
+  const itemKey = getSelectionKey(item)
+  const sourceItems = selectedFileKeys.value.has(itemKey)
+    ? flatFs.value.filter(it => it.node.type === 'file' && selectedFileKeys.value.has(getSelectionKey(it)))
+    : [item]
+  const sources = sourceItems.map(it => it.node as FsFileNode)
+  if (sources.some(source => isExternallyManaged(source))) {
+    dragSources.value = []
+    EndgeIDE.domainDrag.reset()
+    e.dataTransfer.effectAllowed = 'none'
+    toast.error('Управляемые извне документы нельзя перемещать')
+    return
+  }
+  dragSources.value = sources
+  e.dataTransfer.effectAllowed = 'copyMove'
+  const payload: DragPayloadItem[] = sourceItems.map(it => ({
+    id: (it.node as FsFileNode).id,
+    identity: (it.node as FsFileNode).identity,
+    sectionType: (it.node as FsFileNode).sectionType,
+    docType: (it.node as FsFileNode).docType,
+    rootId: it.rootId,
+  }))
+  const json = JSON.stringify(payload)
+  e.dataTransfer.setData('text/plain', json)
+  e.dataTransfer.setData('application/x-endge-domain-entity', json)
+
+  const tree: DomainDragTreeItem[] = sourceItems.map((it) => {
+    const n = it.node as FsFileNode
+    const pathSegments = it.path.split('/').filter(Boolean)
+    const parentPath = pathSegments.length > 1 ? pathSegments.slice(0, -1).join('/') : null
+    const hierarchyNodes = flatFs.value
+      .filter(
+        f => f.path === it.path || (it.path.startsWith(`${f.path}/`) && f.path.length > 0),
+      )
+      .sort((a, b) => a.depth - b.depth)
+      .map((f) => {
+        if (f.node.type === 'folder') {
+          const folder = f.node as FsFolderNode
+          return {
+            path: f.path,
+            depth: f.depth,
+            type: 'folder' as const,
+            id: folder.id,
+            name: folder.name ?? folder.id,
+            isRoot: folder.isRoot === true,
+            folderId: folder.folderId,
+          }
+        }
+        const file = f.node as FsFileNode
+        return {
+          path: f.path,
+          depth: f.depth,
+          type: 'file' as const,
+          id: file.id,
+          identity: file.identity,
+          name: file.name ?? file.id,
+          sectionType: file.sectionType,
+          docType: String(file.docType ?? ''),
+        }
+      })
+    return {
+      id: n.id,
+      identity: n.identity,
+      name: n.name ?? n.id,
+      sectionType: n.sectionType,
+      docType: String(n.docType ?? ''),
+      rootId: it.rootId,
+      path: it.path,
+      pathSegments,
+      depth: it.depth,
+      parentPath,
+      hierarchy: hierarchyNodes,
+    }
+  })
+  EndgeIDE.domainDrag.start(sources.map(n => n.sectionType), tree)
+}
+
+function onVirtualActionDragStart(e: DragEvent, item: FlatFsItem, node: FsFileNode): void {
+  const identity = node.identity?.trim()
+  if (!identity) {
+    e.dataTransfer!.effectAllowed = 'none'
+    return
+  }
+
+  const payload: DragPayloadItem[] = [{
+    id: node.id,
+    identity,
+    sectionType: DomainSectionType.Action,
+    docType: 'action',
+    rootId: item.rootId,
+  }]
+  const json = JSON.stringify(payload)
+  const pathSegments = item.path.split('/').filter(Boolean)
+  const tree: DomainDragTreeItem[] = [{
+    id: node.id,
+    identity,
+    name: node.name ?? identity,
+    sectionType: DomainSectionType.Action,
+    docType: 'action',
+    rootId: item.rootId,
+    path: item.path,
+    pathSegments,
+    depth: item.depth,
+    parentPath: pathSegments.length > 1 ? pathSegments.slice(0, -1).join('/') : null,
+    hierarchy: [{
+      path: item.path,
+      depth: item.depth,
+      type: 'file',
+      id: node.id,
+      identity,
+      name: node.name ?? identity,
+      sectionType: DomainSectionType.Action,
+      docType: 'action',
+    }],
+  }]
+
+  dragSources.value = []
+  draggedFolder.value = null
+  e.dataTransfer!.effectAllowed = 'copy'
+  e.dataTransfer!.setData('text/plain', json)
+  e.dataTransfer!.setData('application/x-endge-domain-entity', json)
+  EndgeIDE.domainDrag.start([DomainSectionType.Action], tree)
+}
+
+function onFolderDragStart(e: DragEvent, item: FlatFsItem, folder: FsFolderNode): void {
+  if (
+    folder.isRoot
+    || folder.folderId == null
+    || folder.sectionType === DomainSectionType.Integration
+    || isExternallyManaged(folder)
+  ) {
+    draggedFolder.value = null
+    EndgeIDE.domainDrag.reset()
+    e.dataTransfer!.effectAllowed = 'none'
+    toast.error('Эту папку нельзя перемещать')
+    return
+  }
+
+  const payload: FolderDragPayloadItem[] = [{
+    kind: 'folder',
+    id: String(folder.folderId),
+    identity: folder.identity,
+    sectionType: folder.sectionType,
+    rootId: item.rootId,
+  }]
+  const json = JSON.stringify(payload)
+  draggedFolder.value = {
+    path: item.path,
+    rootId: item.rootId,
+  }
+  dragSources.value = []
+  EndgeIDE.domainDrag.reset()
+  e.dataTransfer!.effectAllowed = 'copyMove'
+  e.dataTransfer!.setData('text/plain', json)
+  e.dataTransfer!.setData('application/x-endge-domain-entity', json)
+}
+
+function onDragOver(e: DragEvent, item: FlatFsItem): void {
+  if (debuggerMode) {
+    return
+  }
+  if (item.node.type !== 'folder') {
+    return
+  }
+  const folderNode = item.node as FsFolderNode
+  if (folderNode.sectionType === DomainSectionType.Integration) {
+    return
+  }
+  if (folderNode.facetIdentity) {
+    clearDragSources()
+    dragOverPath.value = null
+    toast.info('Документы нельзя переносить между фасетами')
+    return
+  }
+  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
+    return
+  }
+  const folderSource = draggedFolder.value
+  if (
+    folderSource
+    && (
+      folderSource.rootId !== item.rootId
+      || item.path === folderSource.path
+      || item.path.startsWith(`${folderSource.path}/`)
+    )
+  ) {
+    return
+  }
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+  dragOverPath.value = item.path
+}
+
+function onDragLeave(item: FlatFsItem): void {
+  if (dragOverPath.value === item.path) {
+    dragOverPath.value = null
+  }
+}
+
+function clearDragSources(): void {
+  dragSources.value = []
+  draggedFolder.value = null
+  EndgeIDE.domainDrag.reset()
+}
+
+async function onDrop(e: DragEvent, item: FlatFsItem): Promise<void> {
+  if (debuggerMode) {
+    return
+  }
+  e.preventDefault()
+  const dropNode = item.node
+  if (dropNode.type !== 'folder') {
+    return
+  }
+  const folderNode = dropNode as FsFolderNode
+  if (folderNode.sectionType === DomainSectionType.Integration) {
+    clearDragSources()
+    dragOverPath.value = null
+    toast.error('Глобальный реестр интеграций не поддерживает папки')
+    return
+  }
+  if (isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
+    dragOverPath.value = null
+    clearDragSources()
+    toast.error('Системные папки типов недоступны для перетаскивания')
+    return
+  }
+
+  let payload: DomainDragPayloadItem[] = []
+  try {
+    const raw = e.dataTransfer?.getData('text/plain')
+    if (raw) {
+      payload = JSON.parse(raw)
+    }
+  }
+  catch { /* ignore */ }
+  if (!payload.length) {
+    dragOverPath.value = null
+    clearDragSources()
+    return
+  }
+
+  dragOverPath.value = null
+  clearDragSources()
+
+  const dropTarget = {
+    targetRootId: item.rootId,
+    dropFolderId: getDropFolderId(folderNode),
+  }
+
+  const result = await EndgeIDE.runBusy(executeDrop(payload, dropTarget))
+
+  Endge.domain.notify()
+
+  if (result.errors.length) {
+    result.errors.forEach(msg => toast.error(msg))
+  }
+  if (payload.length > 1) {
+    if (result.moved && result.skipped) {
+      toast.success(`Перенесено: ${result.moved}`, { description: `Не перенесено: ${result.skipped}` })
+    }
+    else if (result.moved) {
+      toast.success(`Перенесено: ${result.moved}`)
+    }
+    else if (result.skipped && !result.errors.length) {
+      toast.info('Ничего не перенесено', { description: `Не подходят правила для выбранных сущностей (${result.skipped})` })
+    }
+  }
+}
+const ROOT_BLOCKS = computed(() => {
+  if (!hasActiveWorkspace.value) {
+    return [{ id: 'context', title: 'Контекст', rootIds: ['root-workspaces'] }]
+  }
+  const facetIds = props.programCatalog
+    ? ROOT_FOLDER_ORDER.value.filter(id => id.startsWith('root-facet:'))
+    : Endge.domain.getFacets().map(facet => facetRootId(facet.identity))
+  const blocks = getDomainTreeRootBlocks(ROOT_FOLDER_ORDER.value).map(block => block.id === 'context'
+    ? { ...block, rootIds: [...block.rootIds, ...facetIds] }
+    : block)
+  if ((!debuggerMode || props.programCatalog) && activeDocumentStructure.value === 'custom') {
+    const context = blocks.find(block => block.id === 'context')
+    return [
+      ...(context ? [context] : []),
+      {
+        id: 'workspace-files',
+        title: ROOT_FOLDER_LABELS[WORKSPACE_ROOT_FOLDER_IDENTITY]!,
+        rootIds: [WORKSPACE_ROOT_FOLDER_IDENTITY],
+      },
+    ]
+  }
+  if (!debuggerMode) {
+    return blocks
+  }
+  const grouped = new Set(blocks.flatMap(block => block.rootIds))
+  const remaining = ROOT_FOLDER_ORDER.value.filter(id => !grouped.has(id))
+  return remaining.length ? [...blocks, { id: 'other-documents', title: 'Прочие документы', rootIds: remaining }] : blocks
+})
+
+/** Дополнительная группа сохранена в модели, но скрыта как в основном Configurator. */
+const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => props.programCatalog || block.id !== 'other-documents'))
+
+/** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
+const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
+const INACTIVE_WORKSPACE_PRESENTATION: DomainDocumentPresentation = {
+  ...WORKSPACE_PRESENTATION,
+  colorClass: DOCUMENT_COLORS.slate,
+}
+
+function getWorkspaceTreePresentation(node: FsNode): DomainDocumentPresentation {
+  return node.activeWorkspace ? WORKSPACE_PRESENTATION : INACTIVE_WORKSPACE_PRESENTATION
+}
+
+const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
+  'root-workspaces': WORKSPACE_PRESENTATION,
+  'root-types': getDomainSectionPresentation(DomainSectionType.Type),
+  'root-queries': getDomainSectionPresentation(DomainSectionType.Query),
+  'root-data-views': getDomainSectionPresentation(DomainSectionType.DataView),
+  'root-compositions': getDomainSectionPresentation(DomainSectionType.Composition),
+  'root-stores': getDomainSectionPresentation(DomainSectionType.Store),
+  'root-components': getDomainSectionPresentation(DomainSectionType.Component),
+  'root-actions': getDomainSectionPresentation(DomainSectionType.Action),
+  'root-events': getDomainSectionPresentation(DomainSectionType.Event),
+  'root-converters': getDomainSectionPresentation(DomainSectionType.Converter),
+  'root-computations': getDomainSectionPresentation(DomainSectionType.Computation),
+  'root-integrations': getDomainSectionPresentation(DomainSectionType.Integration),
+  'root-filters': getDomainSectionPresentation(DomainSectionType.Filters),
+  'root-policies': getDomainSectionPresentation(DomainSectionType.Policy),
+  'root-styles': getDomainSectionPresentation(DomainSectionType.Style),
+  'root-page-templates': getDomainSectionPresentation(DomainSectionType.PageTemplate),
+  'root-pages': getDomainSectionPresentation(DomainSectionType.Page),
+  'root-navigations': getDomainSectionPresentation(DomainSectionType.Navigation),
+  'root-vocabs': getDomainSectionPresentation(DomainSectionType.Vocabs),
+  'root-mocks': getDomainSectionPresentation(DomainSectionType.Mock),
+  'root-i18n-bundles': getDomainSectionPresentation(DomainSectionType.I18nBundles),
+  'root-auth-profiles': getDomainSectionPresentation(DomainSectionType.AuthProfile),
+  'root-simulations': getDomainSectionPresentation(DomainSectionType.Simulation),
+}
+
+/** Типы документов, которые можно дублировать (те же, что в «Создать»). */
+const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
+  COMPONENT_SFC_TYPE,
+  QueryType.REST,
+  'data-view',
+  'composition',
+  'simulation',
+  'store',
+  'mock',
+  'action',
+  'computation',
+  'integration',
+  'policy',
+  'style',
+  'configuration',
+  'page-template',
+  'page',
+  'navigation',
+  'vocabs',
+  'i18n-bundles',
+  'auth-profile',
+])
+
+function isManagedTypeFolder(node: FsFolderNode): boolean {
+  return isExternallyManaged(node)
+}
+
+function getFolderPresentation(node: FsFolderNode): DomainDocumentPresentation {
+  if (node.facetIdentity) {
+    return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
+  }
+  if (node.workspaceIdentity) {
+    return getWorkspaceTreePresentation(node)
+  }
+  if (node.isRoot && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return WORKSPACE_PRESENTATION
+  }
+  if (node.scope === 'workspace') {
+    return {
+      icon: node.icon || 'Folder',
+      colorClass: node.color ? 'text-current' : 'text-slate-500 dark:text-slate-400',
+    }
+  }
+  if (node.isRoot && node.id in ROOT_FOLDER_PRESENTATION) {
+    return ROOT_FOLDER_PRESENTATION[node.id]
+  }
+  return node.virtualOrigin === 'builtin' || node.virtualOrigin === 'derived'
+    ? DOCUMENT_AUXILIARY_PRESENTATION.derivedFolder
+    : DOCUMENT_AUXILIARY_PRESENTATION.folder
+}
+
+function getTreeIconStyle(node: FsNode): Record<string, string> | undefined {
+  if (node.facetColor) {
+    return { color: node.facetColor }
+  }
+  if (node.type === 'folder' && node.isRoot && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY) {
+    return undefined
+  }
+  if (node.type === 'folder' && node.scope === 'workspace' && node.color) {
+    return { color: node.color }
+  }
+  return undefined
+}
+
+function getTreeDocumentPresentation(node: FsFileNode): DomainDocumentPresentation {
+  if (node.facetIdentity) {
+    return { icon: node.facetIcon || 'Layers3', colorClass: 'text-current' }
+  }
+  if (node.workspaceIdentity) {
+    return getWorkspaceTreePresentation(node)
+  }
+  if (node.isTableColumn) {
+    return DOCUMENT_AUXILIARY_PRESENTATION.tableColumn
+  }
+  const presentation = getDomainDocumentPresentation(node.docType, node.presentationKind)
+  if (isStartupComposition(node)) {
+    return { ...presentation, colorClass: 'text-red-500 dark:text-red-400' }
+  }
+  return node.origin?.kind === 'derived'
+    ? { ...presentation, colorClass: DOCUMENT_COLORS.sky }
+    : presentation
+}
+
+interface DomainSearchProjection {
+  items: FlatFsItem[]
+  hasMatch: boolean
+}
+
+function nodeMatchesSearch(node: FsNode, query: string): boolean {
+  const workspaceRootLabel = node.type === 'folder' && node.id === WORKSPACE_ROOT_FOLDER_IDENTITY
+    ? getWorkspaceRootLabel()
+    : undefined
+  return [node.name, node.identity, workspaceRootLabel]
+    .some(value => value?.toLocaleLowerCase().includes(query))
+}
+
+/**
+ * Строит только отображаемую проекцию поиска, не клонируя узлы домена.
+ * Совпадения раскрываются вместе с цепочкой родителей согласно настройкам фильтра.
+ */
+function projectDomainSearchItems(
+  nodes: readonly FsNode[],
+  query: string,
+  options: DomainTreeFilterOptions,
+  parentPath = '',
+  depth = 0,
+  rootId = '',
+): DomainSearchProjection {
+  const items: FlatFsItem[] = []
+  let hasMatch = false
+
+  for (const node of nodes) {
+    const path = parentPath ? `${parentPath}/${node.name}` : node.name
+    const currentRootId = depth === 0 && node.type === 'folder' ? node.id : rootId
+    const childProjection = node.children?.length
+      ? projectDomainSearchItems(node.children, query, options, path, depth + 1, currentRootId)
+      : { items: [], hasMatch: false }
+    const nodeHasMatch = nodeMatchesSearch(node, query)
+    const branchHasMatch = nodeHasMatch || childProjection.hasMatch
+    const isRoot = depth === 0 && node.type === 'folder'
+    const shouldShowNode = isRoot
+      ? branchHasMatch || options.showEmptyRootFolders
+      : nodeHasMatch || (options.preserveAncestors && childProjection.hasMatch)
+
+    if (shouldShowNode) {
+      items.push({ node, path, depth, rootId: currentRootId })
+    }
+
+    if (childProjection.hasMatch) {
+      const childItems = !shouldShowNode && !options.preserveAncestors
+        ? childProjection.items.map(item => ({ ...item, depth: Math.max(1, item.depth - 1) }))
+        : childProjection.items
+      items.push(...childItems)
+    }
+
+    hasMatch ||= branchHasMatch
+  }
+
+  return { items, hasMatch }
+}
+const groupedFlatFs = computed(() => {
+  if (workingSetFilterEnabled.value) {
+    return groupDomainWorkingSetItems(
+      flatFs.value,
+      VISIBLE_ROOT_BLOCKS.value,
+      ROOT_FOLDER_ORDER.value,
+      DEPENDENCY_FILTER_PROJECTION,
+    )
+  }
+
+  const groups = VISIBLE_ROOT_BLOCKS.value
+    .map(block => ({
+      ...block,
+      roots: block.rootIds
+        .map(rootId => ({
+          rootId,
+          items: flatFs.value.filter(item => item.rootId === rootId),
+        }))
+        .filter(root => root.items.length > 0),
+    }))
+
+  if (searchFilteringEnabled.value && PROJECT_SEARCH_FILTER_OPTIONS.showEmptyGroups) {
+    return groups
+  }
+
+  return groups.filter(block => block.roots.length > 0)
+})
+
+function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
+  const out: string[] = []
+  for (const node of items) {
+    const path = parentPath ? `${parentPath}/${node.name}` : node.name
+    if (node.type === 'folder' && node.children?.length) {
+      out.push(path)
+      out.push(...collectExpandablePaths(node.children, path))
+    }
+    else if (node.type === 'file') {
+      const fileNode = node as FsFileNode
+      if (fileNode.children?.length) {
+        out.push(path)
+        out.push(...collectExpandablePaths(fileNode.children, path))
+      }
+    }
+  }
+  return out
+}
+
+const allExpandablePaths = computed(() => collectExpandablePaths(fsTree.value))
+
+const allDomainFileItems = computed(() =>
+  flattenTree(fsTree.value, new Set(allExpandablePaths.value))
+    .filter(item => item.node.type === 'file' && !(item.node as FsFileNode).isTableColumn),
+)
+
+const availableWorkingSetRefs = computed(() =>
+  hasActiveWorkspace.value
+    ? allDomainFileItems.value.map(item => domainFileNodeToWorkingSetRef(item.node as FsFileNode))
+    : [],
+)
+
+function expandAll(): void {
+  if (workingSetFilterEnabled.value) {
+    const rootPaths = projectDomainWorkingSetItems(
+      fsTree.value,
+      workingSetResult.value,
+      new Set(),
+      DEPENDENCY_FILTER_PROJECTION,
+    )
+      .filter(item => item.node.type === 'folder')
+      .map(item => item.path)
+    workingSetExpandedFolders.value = new Set(rootPaths)
+    return
+  }
+
+  expandedFolders.value = new Set(allExpandablePaths.value)
+}
+
+function collapseAll(): void {
+  setActiveExpandedFolders(new Set())
+}
+
+// ---------- выделение (множественное: Ctrl/Meta, диапазон: Shift) ----------
+/** Стабильный ключ persisted-документа: document type + id. */
+function getFileSelectionKey(node: FsFileNode): string {
+  if (node.isTableColumn) {
+    return `table-column:${String(node.parentComponentId ?? '')}:${String(node.id)}`
+  }
+  const id = String(node.id ?? '').trim()
+  return id ? `${String(node.docType)}:${id}` : ''
+}
+
+function getSelectionKey(item: FlatFsItem): string {
+  if (item.node.type !== 'file') {
+    return ''
+  }
+  return getFileSelectionKey(item.node as FsFileNode)
+}
+
+function getTreeItemRenderKey(item: FlatFsItem): string {
+  if (item.node.type === 'file') {
+    return `file:${item.rootId}:${getSelectionKey(item)}:${item.path}`
+  }
+  const folder = item.node as FsFolderNode
+  return `folder:${item.rootId}:${String(folder.folderId ?? folder.id)}:${item.path}`
+}
+const lastClickedSelection = ref<{ key: string, rootId: string } | null>(null)
+
+const selectedExportNodes = computed<FsFileNode[]>(() => {
+  const selected = new Map<string, FsFileNode>()
+  for (const item of allDomainFileItems.value) {
+    const key = getSelectionKey(item)
+    if (!item.node.virtual && selectedFileKeys.value.has(key) && !selected.has(key)) {
+      selected.set(key, item.node as FsFileNode)
+    }
+  }
+  return [...selected.values()]
+})
+
+function resetWorkingSetFilter(): void {
+  workingSetFilterEnabled.value = false
+  workingSetRoots.value = []
+  persistedWorkingSetFilter.value = { enabled: false, roots: [] }
+}
+
+function applyWorkingSetFilter(roots: readonly DomainWorkingSetRef[]): void {
+  const nextRoots = roots.map(root => ({ ...root }))
+  workingSetRoots.value = nextRoots
+  workingSetFilterEnabled.value = true
+  persistedWorkingSetFilter.value = {
+    enabled: true,
+    roots: nextRoots,
+  }
+}
+
+let workingSetFilterInitialized = false
+watch(availableWorkingSetRefs, (available) => {
+  if (debuggerMode) {
+    return
+  }
+  const source = workingSetFilterInitialized
+    ? { enabled: workingSetFilterEnabled.value, roots: workingSetRoots.value }
+    : persistedWorkingSetFilter.value
+  const restored = restoreDomainWorkingSetFilter(source, available)
+
+  if (restored) {
+    applyWorkingSetFilter(restored.roots)
+  }
+  else if (source?.enabled === true) {
+    resetWorkingSetFilter()
+  }
+
+  workingSetFilterInitialized = true
+}, { immediate: true })
+
+function activateWorkingSetFilter(nodes: readonly FsFileNode[]): void {
+  const roots = nodes.map(domainFileNodeToWorkingSetRef)
+  if (roots.length === 0) {
+    toast.info('Выберите хотя бы один файл')
+    return
+  }
+
+  applyWorkingSetFilter(roots)
+  expandAll()
+}
+
+function toggleWorkingSetFilter(): void {
+  if (workingSetFilterEnabled.value) {
+    resetWorkingSetFilter()
+    return
+  }
+
+  activateWorkingSetFilter(selectedExportNodes.value)
+}
+
+function getFileItemsInRoot(rootId: string): FlatFsItem[] {
+  return flatFs.value.filter(it => it.node.type === 'file' && it.rootId === rootId)
+}
+
+function selectRange(anchorKey: string, targetKey: string, rootId: string): void {
+  const fileItems = getFileItemsInRoot(rootId)
+  const keys = fileItems.map(getSelectionKey)
+  const i = keys.indexOf(anchorKey)
+  const j = keys.indexOf(targetKey)
+  if (i === -1 || j === -1) {
+    return
+  }
+  const [lo, hi] = i <= j ? [i, j] : [j, i]
+  const next = new Set(selectedFileKeys.value)
+  for (let k = lo; k <= hi; k++) {
+    const fi = fileItems[k]
+    const key = fi ? getSelectionKey(fi) : ''
+    if (key) {
+      next.add(key)
+    }
+  }
+  selectedFileKeys.value = next
+}
+
+function onRowClick(e: MouseEvent, item: FlatFsItem): void {
+  closeContextMenu()
+
+  if (props.programCatalog) {
+    if (item.node.type === 'folder') {
+      toggleFolder(item.path)
+    }
+    else if (item.node.compiledDocumentKey) {
+      EndgeIDE.tabs.openCompiledDocument(item.node.compiledDocumentKey)
+    }
+    return
+  }
+
+  if (item.node.workspaceIdentity) {
+    if (item.node.activeWorkspace) {
+      EndgeIDE.tabs.openWorkspaceSettings()
+    }
+    else {
+      if (!hasActiveWorkspace.value) {
+        Configurator.connections.selectWorkspace(item.node.workspaceIdentity)
+      }
+      else {
+        toast.warning('Сначала переключитесь на это рабочее пространство', {
+          description: item.node.name,
+        })
+      }
+    }
+    return
+  }
+
+  if (item.node.type === 'folder') {
+    toggleFolder(item.path)
+    return
+  }
+
+  const node = item.node as FsFileNode
+  if (node.facetIdentity) {
+    EndgeIDE.tabs.openFacetDocument(node.facetIdentity, node.identity ?? node.id)
+    return
+  }
+  if (node.virtual) {
+    if (node.sourceDocument) {
+      const { identity, docType } = node.sourceDocument
+      const source = docType === COMPONENT_SFC_TYPE
+        ? Endge.domain.getComponentSFC(identity)
+        : Endge.domain.getComponent(identity)
+      EndgeIDE.tabs.openDocument(source?.id ?? identity, docType, {
+        sourceOffset: node.eventPort?.sourceRange?.start,
+      })
+      return
+    }
+    if (node.sectionType === DomainSectionType.Type) {
+      toast.info('Это built-in тип', {
+        description: 'Тип объявлен в ядре и не имеет persisted editor.',
+      })
+    }
+    else {
+      toast.info('Runtime Action доступен только для выбора и выполнения', {
+        description: 'Built-in, local и provided Actions не имеют persisted editor.',
+      })
+    }
+    return
+  }
+  const isShift = (e as MouseEvent & { shiftKey?: boolean }).shiftKey
+  const isMulti = (e as MouseEvent & { ctrlKey?: boolean, metaKey?: boolean }).ctrlKey || (e as MouseEvent & { metaKey?: boolean }).metaKey
+  const selectionKey = getSelectionKey(item)
+
+  if (isShift && lastClickedSelection.value) {
+    selectRange(lastClickedSelection.value.key, selectionKey, lastClickedSelection.value.rootId)
+    return
+  }
+  if (isMulti) {
+    const next = new Set(selectedFileKeys.value)
+    if (selectionKey) {
+      if (next.has(selectionKey)) {
+        next.delete(selectionKey)
+      }
+      else { next.add(selectionKey) }
+    }
+    selectedFileKeys.value = next
+    lastClickedSelection.value = selectionKey
+      ? { key: selectionKey, rootId: item.rootId }
+      : null
+    return
+  }
+
+  selectedFileKeys.value = selectionKey ? new Set([selectionKey]) : new Set()
+  lastClickedSelection.value = selectionKey
+    ? { key: selectionKey, rootId: item.rootId }
+    : null
+
+  if (node.docType === 'primitive') {
+    toast.info('Это примитивный тип', {
+      description: 'Редактор примитивов не доступен.',
+    })
+    return
+  }
+  const targetId = node.isTableColumn && node.parentComponentId ? node.parentComponentId : node.id
+  if (targetId == null || String(targetId).trim() === '') {
+    toast.warning('Нет идентификатора документа')
+    return
+  }
+  EndgeIDE.tabs.openDocument(targetId, node.docType)
+}
+
+function isSelected(item: FlatFsItem): boolean {
+  if (props.programCatalog) {
+    return item.node.type === 'file' && tabs.activeTabId.value === `compiled:${item.node.compiledDocumentKey}`
+  }
+  return item.node.type === 'file' && selectedFileKeys.value.has(getSelectionKey(item))
+}
+
+// ---------- actions ----------
+/** Закрывает вкладку документа, если она открыта. */
+function closeDocumentTabIfOpen(id: string, docType: DomainDocumentType): void {
+  tabs.closeTab(`${docType}-${id}`)
+}
+
+async function removeDocument(node: FsFileNode): Promise<void> {
+  try {
+    const result = await deleteEntity(node)
+    closeDocumentTabIfOpen(node.id, node.docType)
+    result.deletedDocs.forEach(doc => closeDocumentTabIfOpen(doc.id, doc.docType))
+    toast.success('Документ удалён')
+  }
+  catch (e) {
+    console.error(`[Domain_Widget] Не удалось удалить документ: ${e instanceof Error ? e.message : String(e)}`)
+    toast.error('Не удалось удалить', { description: (e as Error)?.message })
+  }
+}
+
+function openCreateFolderDialog(targetFolder: FsFolderNode, targetPath: string): void {
+  createFolderDialog.value.targetFolder = targetFolder
+  createFolderDialog.value.targetPath = targetPath
+  createFolderDialog.value.name = ''
+  createFolderDialog.value.open = true
+}
+
+function closeCreateFolderDialog(): void {
+  if (createFolderDialog.value.loading) {
+    return
+  }
+
+  createFolderDialog.value.open = false
+  createFolderDialog.value.targetFolder = null
+  createFolderDialog.value.targetPath = ''
+  createFolderDialog.value.name = ''
+}
+
+async function confirmCreateFolder(): Promise<void> {
+  if (createFolderDialog.value.loading) {
+    return
+  }
+
+  const targetFolder = createFolderDialog.value.targetFolder
+  const targetPath = createFolderDialog.value.targetPath
+  const name = createFolderDialog.value.name.trim()
+  if (!targetFolder || !targetPath) {
+    return
+  }
+  if (!name) {
+    toast.error('Введите название папки')
+    return
+  }
+
+  createFolderDialog.value.loading = true
+  try {
+    await EndgeIDE.runBusy(createDomainSubfolder(targetFolder, name))
+
+    const expanded = new Set(activeExpandedFolders.value)
+    expanded.add(targetPath)
+    setActiveExpandedFolders(expanded)
+
+    createFolderDialog.value.open = false
+    createFolderDialog.value.targetFolder = null
+    createFolderDialog.value.targetPath = ''
+    createFolderDialog.value.name = ''
+    toast.success('Папка создана')
+  }
+  catch (e) {
+    console.error(`[Domain_Widget] Ошибка сохранения папки в Payload: ${e instanceof Error ? e.message : String(e)}`)
+    toast.error('Не удалось создать папку', { description: (e as Error)?.message })
+  }
+  finally {
+    createFolderDialog.value.loading = false
+  }
+}
+
+function openFolderDeletionDialog(node: FsFolderNode): void {
+  folderDeletionDialog.value.plan = createFolderDeletionPlan(node)
+  folderDeletionDialog.value.open = true
+}
+
+function closeFolderDeletionDialog(): void {
+  if (folderDeletionDialog.value.loading) {
+    return
+  }
+  folderDeletionDialog.value.open = false
+  folderDeletionDialog.value.plan = null
+}
+
+async function confirmFolderDeletion(): Promise<void> {
+  const plan = folderDeletionDialog.value.plan
+  if (!plan) {
+    return
+  }
+
+  folderDeletionDialog.value.loading = true
+  try {
+    const result = await EndgeIDE.runBusy(deleteFolderRecursively(plan))
+    result.deletedEntities.forEach(entity => closeDocumentTabIfOpen(entity.id, entity.docType))
+
+    folderDeletionDialog.value.open = false
+    folderDeletionDialog.value.plan = null
+
+    if (result.failedEntities.length > 0 || result.failedFolders.length > 0) {
+      const firstFailure = result.failedEntities[0] ?? result.failedFolders[0]
+      toast.error('Удалена только часть содержимого папки', {
+        description: `Не удалось удалить: ${result.failedEntities.length + result.failedFolders.length}. ${firstFailure?.node.name}: ${firstFailure?.error.message}`,
+      })
+      return
+    }
+
+    toast.success('Папка и её содержимое удалены', {
+      description: `Удалено сущностей: ${result.entityCount}`,
+    })
+  }
+  catch (e) {
+    console.error(`[Domain_Widget] Ошибка удаления папки: ${e instanceof Error ? e.message : String(e)}`)
+    toast.error('Не удалось удалить папку', { description: (e as Error)?.message })
+  }
+  finally {
+    folderDeletionDialog.value.loading = false
+  }
+}
+
+function openRenameDialog(node: FsFolderNode): void {
+  if (!node.folderId) {
+    return
+  }
+  renameDialog.value.folderId = String(node.folderId)
+  renameDialog.value.newName = node.name
+  renameDialog.value.open = true
+}
+
+async function confirmRename(): Promise<void> {
+  const folder = Endge.domain.getFolder(renameDialog.value.folderId)
+  if (!folder) {
+    return
+  }
+  const newName = renameDialog.value.newName.trim()
+  if (!newName) {
+    toast.error('Введите название папки')
+    return
+  }
+  folder.name = newName
+  folder.displayName = newName
+  renameDialog.value.open = false
+  try {
+    await Endge.domainRepository.saveFolder(String(renameDialog.value.folderId))
+    toast.success('Папка переименована')
+  }
+  catch (e) {
+    console.error(`[Domain_Widget] Ошибка сохранения переименования папки: ${e instanceof Error ? e.message : String(e)}`)
+    toast.error('Не удалось переименовать папку', { description: (e as Error)?.message })
+  }
+  Endge.domain.notify()
+}
+
+function openFolderAppearanceDialog(node: FsFolderNode): void {
+  if (!node.folderId || node.scope !== 'workspace' || node.managedBy !== 'user') {
+    return
+  }
+  folderAppearanceDialog.value = {
+    open: true,
+    loading: false,
+    folderId: String(node.folderId),
+    icon: node.icon || 'Folder',
+    color: node.color || '#64748b',
+    customized: Boolean(node.icon || node.color),
+  }
+}
+
+function setFolderAppearanceIcon(icon: string): void {
+  folderAppearanceDialog.value.icon = icon
+  folderAppearanceDialog.value.customized = true
+}
+
+function setFolderAppearanceColor(color: string): void {
+  folderAppearanceDialog.value.color = color
+  folderAppearanceDialog.value.customized = true
+}
+
+function resetFolderAppearance(): void {
+  folderAppearanceDialog.value.icon = 'Folder'
+  folderAppearanceDialog.value.color = '#64748b'
+  folderAppearanceDialog.value.customized = false
+}
+
+async function saveFolderAppearance(): Promise<void> {
+  const state = folderAppearanceDialog.value
+  const folder = Endge.domain.getFolder(state.folderId)
+  if (!folder || folder.scope !== 'workspace' || folder.managedBy !== 'user') {
+    return
+  }
+  const previous = { icon: folder.icon, color: folder.color }
+  folder.icon = state.customized ? state.icon : null
+  folder.color = state.customized ? state.color.toLowerCase() : null
+  state.loading = true
+  try {
+    await Endge.domainRepository.saveFolder(state.folderId)
+    state.open = false
+    toast.success('Оформление папки сохранено')
+  }
+  catch (error) {
+    folder.icon = previous.icon
+    folder.color = previous.color
+    toast.error('Не удалось сохранить оформление', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    state.loading = false
+    Endge.domain.notify()
+  }
+}
+
+async function launchRuntimePreviews(nodes: readonly FsFileNode[]): Promise<void> {
+  const requests = nodes
+    .map(node => createRuntimePreviewLaunchRequestFromDocument(node))
+    .filter(request => request != null)
+
+  await EndgeIDE.runtimePreview.launchAll(requests)
+}
+
+async function createFacetDocument(): Promise<void> {
+  const state = facetDocumentDialog.value
+  state.loading = true
+  try {
+    const document = await Endge.domainRepository.createFacetDocument(state.facetIdentity, {
+      identity: state.identity.trim(),
+      displayName: state.displayName.trim(),
+      description: state.description.trim() || null,
+      configuration: { mode: 'inherit', patch: {} },
+      meta: {},
+      active: true,
+    })
+    state.open = false
+    EndgeIDE.tabs.openFacetDocument(state.facetIdentity, document.identity)
+    toast.success('Документ фасета создан')
+  }
+  catch (error) {
+    toast.error('Не удалось создать документ', { description: error instanceof Error ? error.message : String(error) })
+  }
+  finally { state.loading = false }
+}
+
+/** Подтверждает soft-delete Workspace и обновляет доступный session snapshot. */
+async function confirmWorkspaceDeletion(): Promise<void> {
+  const state = workspaceDeletionDialog.value
+  state.loading = true
+  try {
+    const refreshed = await Configurator.deleteWorkspace(state.workspaceIdentity)
+    state.open = false
+    if (refreshed) {
+      toast.success(t('workspaceTree.deleted'))
+    }
+    else {
+      toast.warning(t('workspaceTree.deleteRefreshFailed'))
+    }
+  }
+  catch (error) {
+    toast.error(t('workspaceTree.deleteFailed'), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    state.loading = false
+  }
+}
+
+function getContextFileNodes(node: FsFileNode): FsFileNode[] {
+  if (selectedFileKeys.value.has(getFileSelectionKey(node))) {
+    return selectedExportNodes.value
+  }
+  return [node]
+}
+
+// ---------- context menu items ----------
+/** Формирует контекстные действия для узла дерева домена. */
+function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
+  const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
+  if (debuggerMode) {
+    return items
+  }
+  if (node.type === 'folder' && node.id === 'root-workspaces') {
+    if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
+      items.push({ label: t('workspaceTree.create'), icon: Plus, action: { type: 'create-workspace' } })
+    }
+    return items
+  }
+  if (node.workspaceIdentity) {
+    if (node.activeWorkspace && Endge.domainRepository.capabilities.mutations) {
+      items.push({
+        label: 'Добавить конфигурацию',
+        icon: SlidersHorizontal,
+        action: { type: 'create-configuration' },
+      })
+    }
+    else if (!node.activeWorkspace) {
+      items.push({
+        label: 'Переключить рабочее место',
+        icon: ArrowLeftRight,
+        action: { type: 'switch-workspace', workspaceIdentity: node.workspaceIdentity },
+      })
+    }
+    if (node.workspaceRole === 'admin') {
+      items.push({
+        label: t('common.delete'),
+        icon: Trash2,
+        action: {
+          type: 'delete-workspace',
+          workspaceIdentity: node.workspaceIdentity,
+          displayName: node.name,
+          active: node.activeWorkspace === true,
+        },
+        destructive: true,
+      })
+    }
+    return items
+  }
+  if (node.facetIdentity) {
+    if (!Endge.domainRepository.capabilities.mutations) {
+      return items
+    }
+    if (node.type === 'folder') {
+      items.push({ label: 'Создать документ', icon: Plus, action: { type: 'create-facet-document', facetIdentity: node.facetIdentity } })
+      items.push({ label: 'Показать удалённые', icon: ArchiveRestore, action: { type: 'show-deleted-facet-documents', facetIdentity: node.facetIdentity } })
+    }
+    else {
+      items.push({
+        label: 'Удалить',
+        icon: Trash2,
+        destructive: true,
+        action: { type: 'remove-facet-document', facetIdentity: node.facetIdentity, documentIdentity: node.identity ?? node.id },
+      })
+    }
+    return items
+  }
+  if (node.virtual) {
+    return items
+  }
+
+  if (node.type === 'folder') {
+    const isRoot = node.isRoot === true
+    const supportsFolders = node.sectionType !== DomainSectionType.Integration
+    if (isManagedTypeFolder(node) && !isRoot) {
+      return items
+    }
+
+    if (!Endge.domainRepository.capabilities.mutations) {
+      return items
+    }
+
+    if (isRoot && node.sectionType === DomainSectionType.Vocabs) {
+      items.push({
+        label: 'Сформировать Mock-данные',
+        icon: WandSparkles,
+        action: { type: 'generate-vocab-mock' },
+      })
+    }
+
+    if (supportsFolders && !isRoot && node.folderId) {
+      items.push({
+        label: 'Удалить папку',
+        icon: Trash2,
+        destructive: true,
+        action: { type: 'remove-folder', node },
+      })
+      items.push({
+        label: 'Переименовать',
+        icon: Pencil,
+        action: { type: 'rename-folder', node },
+      })
+      if (node.scope === 'workspace' && node.managedBy === 'user') {
+        items.push({
+          label: 'Оформление',
+          icon: Palette,
+          action: { type: 'edit-folder-appearance', node },
+        })
+      }
+    }
+
+    if (supportsFolders) {
+      items.push({
+        label: 'Создать папку',
+        icon: FolderPlus,
+        action: { type: 'create-folder', node },
+      })
+    }
+    items.push({
+      label: 'Добавить сущность',
+      icon: Plus,
+      action: { type: 'create-doc', node },
+    })
+  }
+  else {
+    const fileNode = node as FsFileNode
+    if (fileNode.isTableColumn) {
+      return items
+    }
+
+    const contextNodes = getContextFileNodes(fileNode)
+    const runtimeNodes = contextNodes
+    if (runtimeNodes.length > 0) {
+      items.push({
+        label: runtimeNodes.length > 1
+          ? `Запустить в Runtime (${runtimeNodes.length})`
+          : 'Запустить в Runtime',
+        icon: Play,
+        action: { type: 'launch-runtime-previews', nodes: runtimeNodes },
+      })
+    }
+
+    const isContextFileSelected = selectedFileKeys.value.has(getFileSelectionKey(fileNode))
+    const isSingleSelectedFile = isContextFileSelected
+      && selectedExportNodes.value.length === 1
+    if (isSingleSelectedFile) {
+      items.push({
+        label: SHOW_DEPENDENCIES_LABEL,
+        icon: ListFilter,
+        action: { type: 'filter-dependencies', node: fileNode },
+      })
+    }
+
+    if (!Endge.domainRepository.capabilities.mutations) {
+      return items
+    }
+
+    const externallyManagedDoc = isExternallyManaged(fileNode)
+    const canDeleteDoc = canDelete(fileNode.sectionType, fileNode.docType)
+
+    if (!externallyManagedDoc && fileNode.docType === 'store') {
+      items.push({
+        label: 'Создать обновление',
+        icon: Plus,
+        action: { type: 'create-store-update', node: fileNode },
+      })
+    }
+
+    if (!externallyManagedDoc && DUPLICATABLE_DOC_TYPES.has(fileNode.docType)) {
+      items.push({
+        label: 'Дублировать',
+        icon: Copy,
+        action: { type: 'duplicate-doc', node },
+      })
+    }
+
+    if (!externallyManagedDoc && canDeleteDoc) {
+      items.push({
+        label: 'Удалить',
+        icon: Trash2,
+        destructive: true,
+        action: { type: 'remove-doc', node },
+      })
+    }
+  }
+
+  return items
+}
+
+async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
+  if (a.type === 'create-facet-document') {
+    facetDocumentDialog.value = { open: true, facetIdentity: a.facetIdentity, identity: '', displayName: '', description: '', loading: false }
+    return
+  }
+  if (a.type === 'show-deleted-facet-documents') {
+    deletedFacetDocumentsDialog.value = { open: true, facetIdentity: a.facetIdentity, loading: true, items: [] }
+    try {
+      const values = await Endge.domainRepository.listFacetDocuments(a.facetIdentity, true)
+      deletedFacetDocumentsDialog.value.items = values.filter(document => document.deletedAt != null)
+    }
+    catch (error) {
+      toast.error('Не удалось загрузить удалённые документы', { description: error instanceof Error ? error.message : String(error) })
+    }
+    finally { deletedFacetDocumentsDialog.value.loading = false }
+    return
+  }
+  if (a.type === 'remove-facet-document') {
+    try {
+      await Endge.domainRepository.deleteFacetDocument(a.facetIdentity, a.documentIdentity)
+      tabs.closeTab(`facet-document:${encodeURIComponent(a.facetIdentity)}:${encodeURIComponent(a.documentIdentity)}`)
+      toast.success('Документ перемещён в удалённые')
+    }
+    catch (error) {
+      toast.error('Не удалось удалить документ', { description: error instanceof Error ? error.message : String(error) })
+    }
+    return
+  }
+  if (a.type === 'restore-facet-document') {
+    try {
+      await Endge.domainRepository.restoreFacetDocument(a.facetIdentity, a.documentIdentity)
+      deletedFacetDocumentsDialog.value.items = deletedFacetDocumentsDialog.value.items.filter(item => item.identity !== a.documentIdentity)
+      toast.success('Документ восстановлен')
+    }
+    catch (error) {
+      toast.error('Не удалось восстановить документ', { description: error instanceof Error ? error.message : String(error) })
+    }
+    return
+  }
+  if (a.type === 'create-workspace') {
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({ documentType: 'workspace' })
+    return
+  }
+  if (a.type === 'delete-workspace') {
+    closeContextMenu()
+    workspaceDeletionDialog.value = { open: true, workspaceIdentity: a.workspaceIdentity, displayName: a.displayName, active: a.active, loading: false }
+    return
+  }
+  if (a.type === 'switch-workspace') {
+    Configurator.connections.selectWorkspace(a.workspaceIdentity)
+    return
+  }
+
+  if (a.type === 'create-configuration') {
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: DomainSectionType.Configuration,
+      documentType: 'configuration',
+    })
+    return
+  }
+
+  if (a.type === 'generate-vocab-mock') {
+    closeContextMenu()
+    openVocabMockGenerator()
+    return
+  }
+
+  if (a.type === 'remove-folder') {
+    openFolderDeletionDialog(a.node)
+    return
+  }
+
+  if (a.type === 'rename-folder') {
+    openRenameDialog(a.node)
+    return
+  }
+
+  if (a.type === 'edit-folder-appearance') {
+    openFolderAppearanceDialog(a.node)
+    return
+  }
+
+  if (a.type === 'create-folder') {
+    if (!ctxPath) {
+      return
+    }
+    openCreateFolderDialog(a.node, ctxPath)
+    return
+  }
+
+  if (a.type === 'create-doc') {
+    closeContextMenu()
+    const workspaceFolderId = a.node.scope === 'workspace'
+      ? a.node.folderId ?? Endge.domain.getFolderByIdentity(WORKSPACE_ROOT_FOLDER_IDENTITY)?.id ?? WORKSPACE_ROOT_FOLDER_IDENTITY
+      : undefined
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: a.node.scope === 'workspace' ? undefined : a.node.sectionType,
+      documentType: undefined,
+      folderId: a.node.scope === 'workspace' || a.node.isRoot ? undefined : (a.node.folderId ?? undefined),
+      workspaceFolderId,
+    })
+    return
+  }
+
+  if (a.type === 'create-store-update') {
+    const storeIdentity = String(a.node.identity ?? a.node.id ?? '').trim()
+    if (!storeIdentity) {
+      toast.error('Не удалось определить identity хранилища')
+      return
+    }
+    closeContextMenu()
+    EndgeIDE.modals.openCreateDocument({
+      sectionType: DomainSectionType.Store,
+      documentType: 'update',
+      updateOwnerStoreIdentity: storeIdentity,
+    })
+    return
+  }
+
+  if (a.type === 'remove-doc') {
+    await EndgeIDE.runBusy(removeDocument(a.node))
+    return
+  }
+
+  if (a.type === 'duplicate-doc') {
+    closeContextMenu()
+    EndgeIDE.modals.openDuplicateDocument({
+      id: a.node.id,
+      docType: a.node.docType,
+      name: a.node.name ?? a.node.id,
+    })
+    return
+  }
+
+  if (a.type === 'filter-dependencies') {
+    activateWorkingSetFilter([a.node])
+    return
+  }
+
+  if (a.type === 'launch-runtime-previews') {
+    await EndgeIDE.runBusy(launchRuntimePreviews(a.nodes))
+  }
+}
+
+// ---------- ui helpers ----------
+function rowPaddingStyle(depth: number, isNestedEntity = false): Record<string, string> {
+  const base = isNestedEntity ? (depth - 1) * 12 + 4 : depth * 12
+  return { paddingLeft: `${base + (isNestedEntity ? 6 : 0)}px` }
+}
+
+function getRootHierarchyColorClass(rootId: string): string {
+  return ROOT_FOLDER_PRESENTATION[rootId]?.colorClass ?? 'text-muted-foreground'
+}
+
+function rowClasses(item: FlatFsItem): string {
+  const isOver = dragOverPath.value === item.path && item.node.type === 'folder'
+  const selected = isSelected(item)
+  const isMutedSystemFolder
+    = item.node.type === 'folder'
+      && isManagedTypeFolder(item.node as FsFolderNode)
+      && (item.node as FsFolderNode).isRoot !== true
+  return [
+    'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
+    isMutedSystemFolder
+      ? 'text-slate-600'
+      : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
+    selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
+    isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
+  ].filter(Boolean).join(' ')
+}
+</script>
+
+<template>
+  <div class="flex flex-col h-full">
+    <!-- инструменты заголовка -->
+    <div class="rounded-none border-x-0 border-t-0 shrink-0">
+      <div class="px-2 py-1 flex items-center justify-between gap-1">
+        <TooltipProvider :delay-duration="150">
+          <div class="flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button size="icon" variant="ghost" class="size-7" :aria-label="$t('uiText.expandAllBlocks1119dd7e')" @click="expandAll">
+                  <ChevronsDown class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ $t('uiText.expandAllBlocks1119dd7e') }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button size="icon" variant="ghost" class="size-7" :aria-label="$t('uiText.collapseAllBlocks81a9cc06')" @click="collapseAll">
+                  <ChevronsUp class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ $t('uiText.collapseAllBlocks81a9cc06') }}</TooltipContent>
+            </Tooltip>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  v-if="!debuggerMode"
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="workingSetFilterEnabled
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="workingSetFilterTooltip"
+                  :aria-pressed="workingSetFilterEnabled"
+                  @click="toggleWorkingSetFilter"
+                >
+                  <ListFilter class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ workingSetFilterTooltip }}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="domainTreeHighlightMode !== 'none'
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="`${domainTreeHighlightPresentation.label}. Нажмите, чтобы переключить режим`"
+                  :data-state="domainTreeHighlightMode"
+                  @click="cycleDomainTreeHighlightMode"
+                >
+                  <component :is="domainTreeHighlightPresentation.icon" class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ domainTreeHighlightPresentation.label }}
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="searchOpen
+                    ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20'
+                    : 'text-muted-foreground'"
+                  :aria-label="searchToggleTooltip"
+                  :aria-pressed="searchOpen"
+                  @click="toggleSearch"
+                >
+                  <Search class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ searchToggleTooltip }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  v-if="!debuggerMode"
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm"
+                  :disabled="hasActiveWorkspace ? !Endge.domainRepository.capabilities.mutations : false"
+                  @click="openCreateFromToolbar"
+                >
+                  <Plus class="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ $t('uiText.create84370a20') }}</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <Button
+                  v-if="!debuggerMode"
+                  size="icon"
+                  variant="ghost"
+                  class="size-6 rounded-sm transition-colors"
+                  :class="archiveMode ? 'bg-primary/15 text-primary ring-1 ring-primary/35 hover:bg-primary/20' : 'text-muted-foreground'"
+                  :aria-label="$t('archive.toggle')"
+                  :aria-pressed="archiveMode"
+                  @click="toggleArchiveMode"
+                >
+                  <ArchiveRestore class="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ archiveMode ? $t('archive.backToDomain') : $t('archive.open') }}</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      </div>
+
+      <div v-if="searchOpen" class="border-t px-2 py-1.5">
+        <div class="relative w-full">
+          <Input
+            v-model="searchQuery"
+            autofocus
+            autocomplete="off"
+            aria-label="Поиск по домену"
+            placeholder="Поиск по домену"
+            class="h-8 w-full pr-8 text-xs"
+            @keydown.esc="searchOpen = false"
+          />
+          <Button
+            v-if="searchQuery"
+            type="button"
+            size="icon"
+            variant="ghost"
+            class="absolute right-1 top-1/2 size-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Очистить поиск"
+            @click="clearSearch"
+          >
+            <X class="size-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <!-- дерево -->
+    <div v-if="archiveMode" class="flex-1 min-h-0" @click="archiveContextMenu.open = false">
+      <ScrollArea class="h-full">
+        <div class="p-2 text-[13px] leading-5">
+          <div class="mb-1 rounded px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+            {{ $t('archive.title') }}
+          </div>
+          <div v-if="archiveLoading && !archiveEntries.length" class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground">
+            <Loader2 class="size-4 animate-spin" />
+            {{ $t('archive.loading') }}
+          </div>
+          <p v-else-if="!archiveEntries.length" class="py-10 text-center text-xs text-muted-foreground">
+            {{ $t('archive.empty') }}
+          </p>
+          <div
+            v-for="item in archiveEntries"
+            v-else
+            :key="archiveKey(item)"
+            class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-px text-foreground hover:bg-primary/30 dark:text-[oklch(0.89_0_0)]"
+            :class="selectedArchiveKeys.has(archiveKey(item)) ? 'bg-primary/30 ring-1 ring-secondary/70' : ''"
+            @click.stop="(event: MouseEvent) => onArchiveRowClick(event, item)"
+            @contextmenu="(event: MouseEvent) => openArchiveContextMenu(event, item)"
+          >
+            <DocumentIcon :presentation="getArchiveEntryPresentation(item)" size="tree" />
+            <span class="min-w-0 flex-1 truncate">{{ item.displayName }}</span>
+          </div>
+          <Button
+            v-if="archiveNextCursor"
+            size="sm"
+            variant="ghost"
+            class="mt-2 w-full text-xs"
+            :disabled="archiveLoading"
+            @click="loadArchive(false)"
+          >
+            <Loader2 v-if="archiveLoading" class="mr-2 size-3.5 animate-spin" />
+            {{ $t('archive.loadMore') }}
+          </Button>
+        </div>
+      </ScrollArea>
+    </div>
+
+    <div v-else class="flex-1 min-h-0" @click="closeContextMenu">
+      <ScrollArea class="h-full">
+        <div class="p-2 text-[13px] leading-5" :role="programCatalog ? 'tree' : undefined" :aria-label="programCatalog ? 'Структура сборки' : undefined">
+          <p v-if="programCatalog && !Object.keys(programCatalog.documents).length" class="p-3 text-xs text-muted-foreground">
+            {{ Endge.program.programId ? t('bundleInspection.noDocuments') : t('bundleInspection.loadHint') }}
+          </p>
+          <div
+            v-for="block in groupedFlatFs"
+            :key="block.id"
+            class="mb-3 last:mb-0"
+            :class="block.className"
+          >
+            <div
+              v-if="block.showTitle !== false"
+              class="mb-1 rounded px-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80"
+            >
+              {{ block.title }}
+            </div>
+
+            <div
+              v-for="root in block.roots"
+              :key="root.rootId"
+              class="domain-root-hierarchy mb-1 last:mb-0"
+              :class="[
+                getRootHierarchyColorClass(root.rootId),
+                domainTreeHighlightMode === 'root' && !workingSetFilterEnabled ? 'domain-root-hierarchy--root-highlighted' : '',
+                domainTreeHighlightMode === 'block' && !workingSetFilterEnabled ? 'domain-root-hierarchy--highlighted' : '',
+              ]"
+            >
+              <div
+                v-for="it in root.items"
+                :key="getTreeItemRenderKey(it)"
+                :role="programCatalog ? 'treeitem' : undefined"
+                :tabindex="programCatalog ? 0 : undefined"
+                :aria-level="programCatalog ? it.depth + 1 : undefined"
+                :aria-expanded="programCatalog && it.node.type === 'folder' ? folderIsExpanded(it.path) : undefined"
+                :aria-selected="programCatalog ? isSelected(it) : undefined"
+                :class="rowClasses(it)"
+                :style="rowPaddingStyle(it.depth, (it.node as FsFileNode).isTableColumn)"
+                :draggable="canDragTreeItem(it)"
+                @keydown.enter.prevent="programCatalog && onRowClick($event as unknown as MouseEvent, it)"
+                @click.stop="(ev: MouseEvent) => onRowClick(ev, it)"
+                @contextmenu="(e) => openContextMenu(e, it.node, it.path)"
+                @dragstart="(e) => onDragStart(e, it)"
+                @dragend="clearDragSources()"
+                @dragover="(e) => onDragOver(e, it)"
+                @dragleave="() => onDragLeave(it)"
+                @drop="(e) => onDrop(e, it)"
+              >
+                <span class="size-4 shrink-0 inline-flex items-center justify-center">
+                  <ChevronDown
+                    v-if="(it.node.type === 'folder' || it.node.children?.length) && folderIsExpanded(it.path)"
+                    class="size-4"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                  <ChevronRight
+                    v-else-if="it.node.type === 'folder' || it.node.children?.length"
+                    class="size-4"
+                    @click.stop="toggleFolder(it.path)"
+                  />
+                </span>
+
+                <DocumentIcon
+                  :presentation="it.node.type === 'folder' ? getFolderPresentation(it.node) : getTreeDocumentPresentation(it.node)"
+                  size="tree"
+                  :style="getTreeIconStyle(it.node)"
+                />
+
+                <span class="truncate">{{ getNodeLabel(it.node) }}</span>
+                <span
+                  v-for="badge in getVisibleNodeBadges(it.node)"
+                  :key="badge"
+                  class="shrink-0 rounded border px-1 text-[9px] leading-4"
+                  :class="badgeClasses(badge)"
+                >{{ badge }}</span>
+                <span
+                  v-if="it.node.managedBy === 'integration'"
+                  class="shrink-0 rounded border border-violet-300/60 bg-violet-500/10 px-1 text-[9px] leading-4 text-violet-700 dark:text-violet-300"
+                >{{ $t('uiText.integration06eff510') }}</span>
+                <span
+                  v-if="it.node.activeWorkspace"
+                  class="shrink-0 rounded border border-orange-400/40 bg-orange-500/10 px-1.5 text-[9px] leading-4 text-orange-700 dark:text-orange-300"
+                >{{ $t('workspaceTree.active') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+
+    <Teleport to="body">
+      <div
+        v-if="archiveContextMenu.open"
+        ref="archiveContextMenuRef"
+        role="menu"
+        class="z-50 min-w-[14rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        :style="{ position: 'fixed', left: `${archiveContextMenu.x}px`, top: `${archiveContextMenu.y}px` }"
+        @click.stop
+      >
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
+          :disabled="!canRestoreArchiveSelection"
+          @click="restoreArchiveSelection"
+        >
+          <ArchiveRestore class="mr-2 size-4 shrink-0" />
+          {{ selectedArchiveEntries.length > 1
+            ? $t('archive.restoreMany', { count: selectedArchiveEntries.length })
+            : $t('archive.restore') }}
+        </button>
+      </div>
+    </Teleport>
+
+    <!-- context menu (fixed по координатам курсора, закрытие по клику снаружи) -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenu.open && contextMenu.node"
+        ref="contextMenuRef"
+        role="menu"
+        class="z-50 min-w-[14rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        :style="{
+          position: 'fixed',
+          left: `${contextMenu.x}px`,
+          top: `${contextMenu.y}px`,
+        }"
+        @click.stop
+      >
+        <button
+          v-for="(mi, idx) in getMenuActions(contextMenu.node)"
+          :key="idx"
+          type="button"
+          role="menuitem"
+          class="flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground" :class="[
+            mi.destructive ? 'text-destructive focus:text-destructive' : '',
+          ]"
+          @click="async () => { await runMenuAction(mi.action, contextMenu.path); closeContextMenu() }"
+        >
+          <component :is="mi.icon" class="mr-2 size-4 shrink-0" />
+          <span>{{ mi.label }}</span>
+        </button>
+      </div>
+    </Teleport>
+
+    <Dialog v-model:open="facetDocumentDialog.open">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader><DialogTitle>{{ $t('facets.newDocument') }}</DialogTitle></DialogHeader>
+        <div class="space-y-4 py-2">
+          <div class="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            {{ $t('facets.facet') }} <code>{{ facetDocumentDialog.facetIdentity }}</code>
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-identity">{{ $t('facets.identity') }}</Label><Input id="new-facet-document-identity" v-model="facetDocumentDialog.identity" placeholder="moscow" />
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-name">{{ $t('facets.name') }}</Label><Input id="new-facet-document-name" v-model="facetDocumentDialog.displayName" placeholder="Москва" />
+          </div>
+          <div class="space-y-2">
+            <Label for="new-facet-document-description">{{ $t('facets.description') }}</Label><Textarea id="new-facet-document-description" v-model="facetDocumentDialog.description" :rows="3" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" :disabled="facetDocumentDialog.loading" @click="facetDocumentDialog.open = false">
+            {{ $t('facets.cancel') }}
+          </Button>
+          <Button :disabled="facetDocumentDialog.loading || !facetDocumentDialog.identity.trim() || !facetDocumentDialog.displayName.trim()" @click="createFacetDocument">
+            <Loader2 v-if="facetDocumentDialog.loading" class="mr-2 size-4 animate-spin" />{{ $t('facets.create') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="deletedFacetDocumentsDialog.open">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader><DialogTitle>{{ $t('facets.deletedDocuments', { facet: deletedFacetDocumentsDialog.facetIdentity }) }}</DialogTitle></DialogHeader>
+        <div class="max-h-80 space-y-2 overflow-y-auto py-2">
+          <div v-if="deletedFacetDocumentsDialog.loading" class="flex items-center justify-center py-8 text-sm text-muted-foreground">
+            <Loader2 class="mr-2 size-4 animate-spin" />{{ $t('facets.loading') }}
+          </div>
+          <p v-else-if="!deletedFacetDocumentsDialog.items.length" class="py-8 text-center text-sm text-muted-foreground">
+            {{ $t('facets.noDeletedDocuments') }}
+          </p>
+          <div v-for="document in deletedFacetDocumentsDialog.items" v-else :key="document.id" class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+            <div class="min-w-0">
+              <div class="truncate text-sm font-medium">
+                {{ document.displayName }}
+              </div><code class="text-[11px] text-muted-foreground">{{ document.identity }}</code>
+            </div>
+            <Button size="sm" variant="outline" class="gap-2" @click="runMenuAction({ type: 'restore-facet-document', facetIdentity: document.facetIdentity, documentIdentity: document.identity }, null)">
+              <ArchiveRestore class="size-4" />{{ $t('facets.restore') }}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="workspaceDeletionDialog.open">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ $t('workspaceTree.deleteTitle', { workspace: workspaceDeletionDialog.displayName }) }}</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-3 py-2 text-sm leading-6 text-muted-foreground">
+          <p>{{ $t('workspaceTree.deleteDescription') }}</p>
+          <p v-if="workspaceDeletionDialog.active" class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-foreground">
+            {{ $t('workspaceTree.deleteActiveDescription') }}
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" :disabled="workspaceDeletionDialog.loading" @click="workspaceDeletionDialog.open = false">
+            {{ $t('workspaceTree.deleteCancel') }}
+          </Button>
+          <Button variant="destructive" :disabled="workspaceDeletionDialog.loading" @click="confirmWorkspaceDeletion">
+            <Loader2 v-if="workspaceDeletionDialog.loading" class="mr-2 size-4 animate-spin" />
+            {{ $t('workspaceTree.deleteConfirm') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="vocabMockDialog.open">
+      <DialogContent class="sm:max-w-xl" @escape-key-down="closeVocabMockGenerator">
+        <DialogHeader>
+          <DialogTitle>{{ $t('uiText.text58a9f14f') }}</DialogTitle>
+        </DialogHeader>
+
+        <div v-if="!vocabMockDialog.prepared" class="space-y-5 py-2">
+          <p class="text-sm leading-6 text-muted-foreground">
+            {{ $t('uiText.upTo10RawPayloadElementsOfEachActiB8298dce') }}
+          </p>
+          <div class="flex rounded-md border bg-muted/30 p-1">
+            <Button
+              type="button"
+              size="sm"
+              class="flex-1"
+              :variant="vocabMockDialog.mode === 'existing' ? 'secondary' : 'ghost'"
+              :disabled="!jsonMockOptions.length"
+              @click="vocabMockDialog.mode = 'existing'"
+            >
+              {{ $t('uiText.existingMock7895db7d') }}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              class="flex-1"
+              :variant="vocabMockDialog.mode === 'new' ? 'secondary' : 'ghost'"
+              @click="vocabMockDialog.mode = 'new'"
+            >
+              {{ $t('uiText.newMockFfdb19c5') }}
+            </Button>
+          </div>
+          <div v-if="vocabMockDialog.mode === 'existing'" class="space-y-2">
+            <Label>{{ $t('uiText.jsonMock994e1594') }}</Label>
+            <Select v-model="vocabMockDialog.existingIdentity">
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Mock" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in jsonMockOptions" :key="option.value" :value="option.value">
+                  {{ option.label }} {{ $t('uiText.symbol1fdf0d90') }} {{ option.value }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div v-else class="space-y-2">
+            <Label for="vocab-mock-identity">{{ $t('uiText.text1001ff29') }}</Label>
+            <Input id="vocab-mock-identity" v-model="vocabMockDialog.newIdentity" placeholder="aodb-vocab-fixtures" spellcheck="false" />
+          </div>
+          <div class="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            {{ $t('uiText.eachVocabWillGetAReference635c09db') }} <code>{{ $t('uiText.mock84509e5f') }}{{ vocabMockTargetIdentity || 'identity' }}{{ $t('uiText.pathVocabIdentity4874f135') }}</code>{{ $t('uiText.symbol3a52ce78') }}
+          </div>
+        </div>
+
+        <div v-else class="space-y-4 py-2">
+          <div class="rounded-md border border-amber-500/35 bg-amber-500/5 p-3">
+            <div class="text-sm font-medium text-amber-700 dark:text-amber-300">
+              {{ $t('uiText.theFollowingKeysAlreadyExistAndWillDeaa2fae') }}
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <code
+                v-for="key in vocabMockDialog.prepared.overwrittenKeys"
+                :key="key"
+                class="rounded border bg-background px-1.5 py-0.5 text-xs"
+              >{{ key }}</code>
+            </div>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ $t('uiText.allTopLevelMockKeysWillBePreservedBc470981') }}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" :disabled="vocabMockDialog.loading" @click="closeVocabMockGenerator">
+            {{ $t('uiText.cancel0ec753be') }}
+          </Button>
+          <Button
+            v-if="!vocabMockDialog.prepared"
+            :disabled="vocabMockDialog.loading || !vocabMockTargetIdentity.trim()"
+            @click="prepareAndSaveVocabMock"
+          >
+            <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
+            {{ $t('uiText.loadAndSave2a5f0488') }}
+          </Button>
+          <Button v-else :disabled="vocabMockDialog.loading" @click="confirmVocabMockOverwrite">
+            <Loader2 v-if="vocabMockDialog.loading" class="mr-2 size-4 animate-spin" />
+            {{ $t('uiText.overwriteKeys19f6d0ea') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- диалог создания папки -->
+    <Dialog v-model:open="createFolderDialog.open">
+      <DialogContent
+        class="sm:max-w-md"
+        @pointer-down-outside="closeCreateFolderDialog"
+        @escape-key-down="closeCreateFolderDialog"
+      >
+        <DialogHeader>
+          <DialogTitle>{{ $t('uiText.createFolder944b559c') }}</DialogTitle>
+        </DialogHeader>
+
+        <div class="space-y-2 py-2">
+          <div class="text-sm text-muted-foreground">
+            {{ $t('uiText.folderName2662a610') }}
+          </div>
+          <Input
+            v-model="createFolderDialog.name"
+            autofocus
+            autocomplete="off"
+            placeholder="Введите название"
+            @keydown.enter.prevent="confirmCreateFolder"
+          />
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button
+            variant="outline"
+            :disabled="createFolderDialog.loading"
+            @click="closeCreateFolderDialog"
+          >
+            {{ $t('uiText.cancel555ad1c0') }}
+          </Button>
+          <Button
+            :disabled="createFolderDialog.loading || !createFolderDialog.name.trim()"
+            @click="confirmCreateFolder"
+          >
+            {{ createFolderDialog.loading ? $t('uiText.creating5e172131') : $t('uiText.create84370a20') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- подтверждение рекурсивного удаления папки -->
+    <Dialog v-model:open="folderDeletionDialog.open">
+      <DialogContent
+        class="sm:max-w-md"
+        @pointer-down-outside="closeFolderDeletionDialog"
+        @escape-key-down="closeFolderDeletionDialog"
+      >
+        <DialogHeader>
+          <DialogTitle>{{ $t('uiText.deleteFolderCdef0c65') }}{{ folderDeletionDialog.plan?.root.name }}{{ $t('uiText.symbolAd4e2955') }}</DialogTitle>
+        </DialogHeader>
+
+        <div class="space-y-3 py-2 text-sm">
+          <p class="text-muted-foreground">
+            {{ $t('uiText.theFolderAndAllItsContentsWillBeDe8ad26432') }}
+          </p>
+          <p v-if="folderDeletionIsWorkspaceProjection" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
+            {{ $t('workspaceTree.workspaceFolderDeletionWarning') }}
+          </p>
+          <div class="rounded-md border bg-muted/40 px-3 py-2">
+            <div>{{ $t('uiText.willBeRemovedEntitiesA87d81b1') }} <strong>{{ folderDeletionEntityCount }}</strong></div>
+            <div>{{ $t('uiText.nestedFolders283c1c2c') }} <strong>{{ folderDeletionNestedFolderCount }}</strong></div>
+          </div>
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button variant="outline" :disabled="folderDeletionDialog.loading" @click="closeFolderDeletionDialog">
+            {{ $t('uiText.cancel555ad1c0') }}
+          </Button>
+          <Button
+            variant="destructive"
+            :disabled="folderDeletionDialog.loading"
+            @click="confirmFolderDeletion"
+          >
+            {{ folderDeletionDialog.loading ? $t('uiText.deletingEa76db24') : $t('uiText.deleteAllE311ec3b') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- диалог переименования папки -->
+    <Dialog v-model:open="renameDialog.open">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ $t('uiText.renameFolder037143b4') }}</DialogTitle>
+        </DialogHeader>
+
+        <div class="space-y-2 py-2">
+          <div class="text-sm text-muted-foreground">
+            {{ $t('uiText.newFolderName5b5225d5') }}
+          </div>
+          <Input v-model="renameDialog.newName" placeholder="Введите новое название" />
+        </div>
+
+        <DialogFooter class="gap-2">
+          <Button variant="outline" @click="renameDialog.open = false">
+            {{ $t('uiText.cancel555ad1c0') }}
+          </Button>
+          <Button @click="() => EndgeIDE.runBusy(confirmRename())">
+            {{ $t('uiText.save4864057d') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="folderAppearanceDialog.open">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{{ $t('workspaceTree.folderAppearanceTitle') }}</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-2 py-2">
+          <Label>{{ $t('workspaceTree.folderAppearanceLabel') }}</Label>
+          <LucideAppearancePicker
+            :icon="folderAppearanceDialog.icon"
+            :color="folderAppearanceDialog.color"
+            :disabled="folderAppearanceDialog.loading"
+            @update:icon="setFolderAppearanceIcon"
+            @update:color="setFolderAppearanceColor"
+          />
+          <p class="text-xs text-muted-foreground">
+            {{ $t('workspaceTree.folderAppearanceHint') }}
+          </p>
+        </div>
+        <DialogFooter class="gap-2 sm:justify-between">
+          <Button variant="ghost" :disabled="folderAppearanceDialog.loading" @click="resetFolderAppearance">
+            {{ $t('workspaceTree.folderAppearanceReset') }}
+          </Button>
+          <div class="flex gap-2">
+            <Button variant="outline" :disabled="folderAppearanceDialog.loading" @click="folderAppearanceDialog.open = false">
+              {{ $t('uiText.cancel555ad1c0') }}
+            </Button>
+            <Button :disabled="folderAppearanceDialog.loading" @click="saveFolderAppearance">
+              <Loader2 v-if="folderAppearanceDialog.loading" class="mr-2 size-4 animate-spin" />
+              {{ $t('uiText.save4864057d') }}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>
+</template>
+
+<style scoped>
+.domain-root-hierarchy {
+  position: relative;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.domain-root-hierarchy::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1.5rem;
+  pointer-events: none;
+  content: '';
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 0.25rem;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.domain-root-hierarchy--root-highlighted::before {
+  opacity: 1;
+}
+
+.domain-root-hierarchy--highlighted {
+  background-color: color-mix(in srgb, currentColor 9%, transparent);
+  box-shadow:
+    inset 2px 0 0 color-mix(in srgb, currentColor 52%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+</style>

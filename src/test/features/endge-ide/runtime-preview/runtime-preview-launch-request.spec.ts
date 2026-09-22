@@ -1,0 +1,63 @@
+import { ComponentType, QueryType } from '@endge/core'
+import { describe, expect, it } from 'vitest'
+
+import { RComponentSFCEditor } from '@/features/endge-ide/domain/entities/RComponentSFCEditor'
+import { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
+import { RStoreEditor } from '@/features/endge-ide/domain/entities/RStoreEditor'
+import {
+  createRuntimePreviewLaunchRequest,
+  createRuntimePreviewLaunchRequestFromDocument,
+} from '@/features/endge-ide/services/runtime-preview/runtime-preview-launch-request'
+
+describe('запрос запуска Runtime Preview', () => {
+  it('сопоставляет поддерживающие runtime редакторы Source с их текущими черновиками', () => {
+    const component = Object.assign(new RComponentSFCEditor(), {
+      id: 7,
+      identity: 'flight-table',
+      tag: 'flight-table',
+      name: 'Flight table',
+      displayName: 'Flight table',
+      source: '<template><div /></template>',
+    })
+    const composition = Object.assign(new RCompositionEditor(), {
+      id: 8,
+      identity: 'flight-page',
+      name: 'Flight page',
+      source: 'composition source',
+      sourceVersion: 2,
+    })
+    const store = Object.assign(new RStoreEditor(), {
+      id: 9,
+      identity: 'flights',
+      name: 'Flights',
+      source: 'store source',
+      sourceVersion: 3,
+    })
+
+    expect(createRuntimePreviewLaunchRequest(component)?.draft?.source).toBe(component.source)
+    expect(createRuntimePreviewLaunchRequest(composition)?.draft?.sourceVersion).toBe(2)
+    expect(createRuntimePreviewLaunchRequest(store)?.draft?.source).toBe(store.source)
+  })
+
+  it('отклоняет редакторы без runtime-контракта', () => {
+    expect(createRuntimePreviewLaunchRequest({ identity: 'query' })).toBeNull()
+  })
+
+  it('сопоставляет сохранённые runtime-документы и игнорирует неподдерживаемые либо неопознанные документы', () => {
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'workspace', identity: 'operations' })).toBeNull()
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'composition', identity: 'flight-page' })).toEqual({
+      entityType: 'composition',
+      identity: 'flight-page',
+    })
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: ComponentType.SFC, identity: 'flight-table' })).toEqual({
+      entityType: 'component-sfc',
+      identity: 'flight-table',
+    })
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'store', identity: 'flights' })).toEqual({
+      entityType: 'store',
+      identity: 'flights',
+    })
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: QueryType.REST, identity: 'flights' })).toBeNull()
+    expect(createRuntimePreviewLaunchRequestFromDocument({ docType: 'store', identity: ' ' })).toBeNull()
+  })
+})

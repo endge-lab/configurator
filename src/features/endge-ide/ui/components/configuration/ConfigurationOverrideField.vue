@@ -1,0 +1,57 @@
+<script setup lang="ts">
+import type { Ref } from 'vue'
+import { GitBranchPlus, RotateCcw } from 'lucide-vue-next'
+import { inject } from 'vue'
+
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+
+defineProps<{
+  label: string
+  labelClass?: string
+  usesParentValue?: boolean
+  overridden?: boolean
+}>()
+
+const emit = defineEmits<{
+  enable: []
+  reset: []
+}>()
+const contributionOnly = inject<Ref<boolean>>('endge-configuration-contribution-only', { value: false } as Ref<boolean>)
+</script>
+
+<template>
+  <div class="space-y-2">
+    <div class="flex items-center justify-between gap-3">
+      <Label class="text-[15px] font-semibold leading-5 text-foreground" :class="labelClass">
+        {{ label }}
+      </Label>
+      <Button
+        v-if="usesParentValue"
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="size-8"
+        :title="overridden ? 'Вернуть наследование' : 'Переопределить значение'"
+        @click="overridden ? emit('reset') : emit('enable')"
+      >
+        <RotateCcw v-if="overridden" class="size-4" />
+        <GitBranchPlus v-else class="size-4" />
+      </Button>
+    </div>
+    <div
+      v-if="contributionOnly && usesParentValue && !overridden"
+      class="flex min-h-9 items-center rounded-md border border-dashed bg-muted/30 px-3 text-sm text-muted-foreground"
+    >
+      {{ $t('facets.notSet') }}
+    </div>
+    <slot
+      v-else
+      :disabled="usesParentValue && !overridden"
+      parent-value-placeholder="Значение определяется контекстом"
+    />
+    <p v-if="usesParentValue && !overridden" class="text-xs text-muted-foreground">
+      {{ contributionOnly ? $t('facets.localOverrideMissing') : $t('uiText.inheritedFromPreviousConfigurationLaye07e8f674') }}
+    </p>
+  </div>
+</template>

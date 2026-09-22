@@ -1,0 +1,743 @@
+<script setup lang="ts">
+import type { FilterFieldItemSchema } from '@endge/core'
+
+import { DomainSectionType, Endge } from '@endge/core'
+import { Clock, Filter, GripVertical, ListChecks, Loader2, Plus, Save, Trash2 } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
+
+/** Legacy fields editor. Он намеренно не читает и не изменяет Filter source. */
+const tabs = EndgeIDE.tabs
+interface EditorWithSelection { id: number | string, identity: string, displayName: string, fields: FilterFieldItemSchema[], selectedFieldIndex?: number | null }
+const editor = computed(() => (tabs.documentEditorModel.value as EditorWithSelection | null) ?? null)
+const fields = computed(() => editor.value?.fields ?? [])
+
+const selectedIndex = ref<number | null>(null)
+const dragFieldIndex = ref<number | null>(null)
+const dragOverFieldIndex = ref<number | null>(null)
+
+/** Синхронизация выбранного индекса с редактором (инспектор читает для примера словаря) */
+watch(editor, (ed) => {
+  const idx = ed?.selectedFieldIndex
+  if (typeof idx === 'number' && idx >= 0) {
+    selectedIndex.value = idx
+  }
+  else if (ed) {
+    selectedIndex.value = null
+  }
+}, { immediate: true })
+watch(selectedIndex, (idx) => {
+  const ed = editor.value
+  if (ed && 'selectedFieldIndex' in ed) {
+    (ed as EditorWithSelection).selectedFieldIndex = idx ?? null
+  }
+}, { flush: 'sync' })
+
+const selectedField = computed(() => {
+  const idx = selectedIndex.value
+  const arr = fields.value
+  if (idx == null || idx < 0 || !arr?.length || idx >= arr.length) {
+    return null
+  }
+  return arr[idx]
+})
+
+/** Чекбокс «Активно» - привязка через model-value для корректной реактивности */
+const activeChecked = computed({
+  get: () => editor.value?.fields?.[selectedIndex.value ?? -1]?.active === true,
+  set: (v: boolean) => {
+    if (selectedIndex.value != null) {
+      updateField(selectedIndex.value, 'active', v)
+    }
+  },
+})
+
+/** Доменные документы справочников. */
+const vocabDocs = computed(() =>
+  Endge.domain.getVocabs()
+    .filter(vocab => vocab.active !== false && vocab.mode === 'external_payload')
+    .map(vocab => ({
+      identity: String(vocab.identity ?? '').trim(),
+      label: String(vocab.displayName ?? vocab.name ?? vocab.identity ?? '').trim(),
+      collectionSlug: String(vocab.collectionSlug ?? '').trim(),
+    }))
+    .filter(vocab => vocab.identity && vocab.collectionSlug),
+)
+
+const vocabIdentityOptions = computed(() =>
+  vocabDocs.value.map(v => ({ value: v.identity, label: v.label || v.identity })),
+)
+
+function getVocabCollectionOptions(vocabIdentity: string | undefined) {
+  if (!vocabIdentity) {
+    return []
+  }
+  const vocab = vocabDocs.value.find(v => v.identity === vocabIdentity)
+  return vocab ? [{ value: vocab.collectionSlug, label: vocab.collectionSlug }] : []
+}
+
+const isDateLikeMode = (mode: string) => mode === 'date' || mode === 'time' || mode === 'datetime'
+
+/** Список конвертеров домена для выбора в поле */
+const converterOptions = computed(() => {
+  const list = Endge.domain.getConverters()
+  return list.map(c => ({
+    value: String(c.identity ?? c.id),
+    label: c.name ?? String(c.identity ?? c.id),
+  }))
+})
+
+/** Текущий массив identity конвертеров выбранного поля (нормализованный) */
+const selectedConverterIds = computed(() => {
+  const f = selectedField.value
+  if (!f) {
+    return []
+  }
+  const raw = f.converterIdentities
+  if (Array.isArray(raw)) {
+    return raw.map((c: any) => (typeof c === 'string' ? c : c?.identity)).filter(Boolean)
+  }
+  return []
+})
+
+function addConverterToField(converterIdentity: string): void {
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
+  const ids = selectedConverterIds.value
+  if (ids.includes(converterIdentity)) {
+    return
+  }
+  const next = [...ids, converterIdentity]
+  updateField(selectedIndex.value, 'converterIdentities', next)
+}
+
+function removeConverterFromField(at: number): void {
+  if (selectedIndex.value == null) {
+    return
+  }
+  const ids = selectedConverterIds.value.filter((_, i) => i !== at)
+  updateField(selectedIndex.value, 'converterIdentities', ids)
+}
+
+function setDefaultToToday(): void {
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
+  updateField(selectedIndex.value, 'defaultValue', '+0d')
+}
+
+function setDefaultToRelative(days: number): void {
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
+  const sign = days >= 0 ? '+' : '-'
+  updateField(selectedIndex.value, 'defaultValue', `${sign}${Math.abs(days)}d`)
+}
+
+function fieldSummary(field: FilterFieldItemSchema): string {
+  return field.label || '-'
+}
+
+function addField(): void {
+  if (!editor.value) {
+    return
+  }
+  const arr = editor.value.fields
+  const newField: FilterFieldItemSchema = {
+    key: `field_${arr.length + 1}`,
+    mode: 'static',
+    defaultValue: '*',
+    active: true,
+    multiple: true,
+    converterIdentities: [],
+  }
+  editor.value.fields.push(newField)
+  selectedIndex.value = editor.value.fields.length - 1
+}
+
+function removeField(index: number): void {
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
+  editor.value.fields.splice(index, 1)
+  if (selectedIndex.value === index) {
+    selectedIndex.value = null
+  }
+  else if (selectedIndex.value != null && selectedIndex.value > index) {
+    selectedIndex.value -= 1
+  }
+}
+
+function moveField(fromIndex: number, toIndex: number): void {
+  if (!editor.value || fromIndex === toIndex) {
+    return
+  }
+  const arr = editor.value.fields
+  if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
+    return
+  }
+  const [item] = arr.splice(fromIndex, 1)
+  if (!item) {
+    return
+  }
+  arr.splice(toIndex, 0, item)
+  if (selectedIndex.value === fromIndex) {
+    selectedIndex.value = toIndex
+  }
+  else if (selectedIndex.value != null && selectedIndex.value > fromIndex && selectedIndex.value <= toIndex) {
+    selectedIndex.value -= 1
+  }
+  else if (selectedIndex.value != null && selectedIndex.value >= toIndex && selectedIndex.value < fromIndex) {
+    selectedIndex.value += 1
+  }
+}
+
+function onFieldDragStart(e: DragEvent, index: number): void {
+  dragFieldIndex.value = index
+  dragOverFieldIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+function onFieldDragOver(e: DragEvent, index: number): void {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+  dragOverFieldIndex.value = index
+}
+
+function onFieldDragLeave(): void {
+  dragOverFieldIndex.value = null
+}
+
+function onFieldDrop(e: DragEvent, dropIndex: number): void {
+  e.preventDefault()
+  const from = dragFieldIndex.value
+  if (from == null) {
+    dragFieldIndex.value = null
+    dragOverFieldIndex.value = null
+    return
+  }
+  if (from !== dropIndex) {
+    moveField(from, dropIndex)
+  }
+  dragFieldIndex.value = null
+  dragOverFieldIndex.value = null
+}
+
+function onFieldDragEnd(): void {
+  dragFieldIndex.value = null
+  dragOverFieldIndex.value = null
+}
+
+function updateField<K extends keyof FilterFieldItemSchema>(index: number, key: K, value: FilterFieldItemSchema[K]): void {
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
+  const current = editor.value.fields[index]
+  if (!current) {
+    return
+  }
+  editor.value.fields[index] = { ...current, [key]: value }
+}
+
+function onModeChange(newMode: FilterFieldItemSchema['mode']): void {
+  if (selectedIndex.value == null) {
+    return
+  }
+  const cur = selectedField.value?.defaultValue ?? '*'
+  updateField(selectedIndex.value, 'mode', newMode)
+  if (isDateLikeMode(newMode) && (cur === '*' || cur === '')) {
+    updateField(selectedIndex.value, 'defaultValue', '+0d')
+  }
+}
+
+function onVocabIdentityChange(index: number, newIdentity: string): void {
+  if (!editor.value || index < 0 || index >= editor.value.fields.length) {
+    return
+  }
+  const vocab = vocabDocs.value.find(v => v.identity === newIdentity)
+  const current = editor.value.fields[index]
+  if (!current) {
+    return
+  }
+  editor.value.fields[index] = {
+    ...current,
+    vocabIdentity: newIdentity,
+    vocabCollection: vocab?.collectionSlug ?? '',
+  }
+}
+
+function onModeModelValue(value: unknown): void {
+  if (selectedIndex.value != null) {
+    onModeChange(String(value ?? 'static') as FilterFieldItemSchema['mode'])
+  }
+}
+
+function onVocabModelValue(value: unknown): void {
+  if (selectedIndex.value != null) {
+    onVocabIdentityChange(selectedIndex.value, String(value ?? ''))
+  }
+}
+
+function onVocabCollectionModelValue(value: unknown): void {
+  if (selectedIndex.value != null) {
+    updateField(selectedIndex.value, 'vocabCollection', String(value ?? ''))
+  }
+}
+
+function onConverterDrop(value: string | number): void {
+  addConverterToField(String(value))
+}
+
+function onActiveModelValue(value: string | boolean): void {
+  activeChecked.value = value === true
+}
+
+/** Текущий массив опций статического списка выбранного поля */
+const selectedStaticOptions = computed(() => {
+  const f = selectedField.value
+  const raw = f?.staticOptions
+  return Array.isArray(raw) ? raw : []
+})
+
+function addStaticOption(): void {
+  if (selectedIndex.value == null || !editor.value?.fields?.[selectedIndex.value]) {
+    return
+  }
+  const opts = [...selectedStaticOptions.value, { value: '', label: '' }]
+  updateField(selectedIndex.value, 'staticOptions', opts)
+}
+
+function removeStaticOption(optIndex: number): void {
+  if (selectedIndex.value == null) {
+    return
+  }
+  const opts = selectedStaticOptions.value.filter((_, i) => i !== optIndex)
+  updateField(selectedIndex.value, 'staticOptions', opts)
+}
+
+function updateStaticOption(optIndex: number, key: 'value' | 'label', val: string): void {
+  if (selectedIndex.value == null) {
+    return
+  }
+  const opts = selectedStaticOptions.value.map((opt, i) =>
+    i === optIndex ? { ...opt, [key]: val } : opt,
+  )
+  updateField(selectedIndex.value, 'staticOptions', opts)
+}
+
+async function save(): Promise<void> {
+  await EndgeIDE.tabs.save()
+}
+</script>
+
+<template>
+  <div class="w-full h-full flex flex-col min-h-0">
+    <div class="p-3 border-b flex items-center gap-3 shrink-0">
+      <div class="size-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+        <Filter class="size-4 text-blue-500" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="min-w-0">
+          <div class="text-lg font-semibold truncate">
+            {{ $t('uiText.filter6b353180') }} {{ editor?.displayName ?? '-' }}
+          </div>
+          <div class="text-xs text-muted-foreground truncate">
+            {{ $t('uiText.idA078622f') }} {{ editor?.id ?? '-' }} {{ $t('uiText.identityD63b139a') }} {{ editor?.identity ?? '-' }}
+          </div>
+        </div>
+      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" aria-label="Сохранить" :disabled="EndgeIDE.busy.value" @click="save">
+              <Loader2 v-if="EndgeIDE.busy.value" class="size-4 animate-spin" />
+              <Save v-else class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ $t('uiText.save4864057d') }}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col gap-3 p-3">
+      <!-- Список полей сверху -->
+      <Card class="shrink-0">
+        <div class="p-2 border-b flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-xs font-medium flex items-center gap-1">
+            <ListChecks class="size-3.5" />
+            {{ $t('uiText.filterFieldsCadad478') }}
+          </span>
+          <Button variant="outline" size="sm" class="h-7" @click="addField">
+            <Plus class="size-3.5 mr-1" />
+            {{ $t('uiText.add559a87f7') }}
+          </Button>
+        </div>
+        <div class="p-2 flex flex-wrap gap-1">
+          <button
+            v-for="(field, index) in fields"
+            :key="index"
+            type="button"
+            draggable="true"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs transition-colors border cursor-move"
+            :class="[
+              selectedIndex === index ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted border-transparent',
+              dragFieldIndex === index ? 'opacity-50' : '',
+              dragOverFieldIndex === index && dragFieldIndex !== index ? 'ring-1 ring-primary' : '',
+            ]"
+            :title="fieldSummary(field)"
+            @click="selectedIndex = index"
+            @dragstart="(e: DragEvent) => onFieldDragStart(e, index)"
+            @dragover="(e: DragEvent) => onFieldDragOver(e, index)"
+            @dragleave="onFieldDragLeave"
+            @drop="(e: DragEvent) => onFieldDrop(e, index)"
+            @dragend="onFieldDragEnd"
+          >
+            <GripVertical class="size-3.5 shrink-0 opacity-60" />
+            {{ fieldSummary(field) }}
+          </button>
+          <div v-if="fields.length === 0" class="px-3 py-2 text-xs text-muted-foreground">
+            {{ $t('uiText.noFieldsClickAddA2c4a7c9') }}
+          </div>
+        </div>
+      </Card>
+
+      <!-- Детальная форма выбранного поля (ниже) -->
+      <Card class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <ScrollArea class="flex-1">
+          <div v-if="selectedField === null" class="p-8 text-sm text-muted-foreground text-center">
+            {{ $t('uiText.selectAFieldFromTheListOrAddANew6551cdd4') }}
+          </div>
+          <div v-else class="p-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label>{{ $t('uiText.keyCc6ec0f0') }}</Label>
+                <Input
+                  v-if="selectedIndex !== null"
+                  :model-value="selectedField?.key ?? ''"
+                  @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'key', String(v ?? ''))"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label>{{ $t('uiText.label74341e3c') }}</Label>
+                <Input
+                  v-if="selectedIndex !== null"
+                  :model-value="selectedField?.label ?? ''"
+                  @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'label', String(v ?? ''))"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label>{{ $t('uiText.fieldTypeC22457c4') }}</Label>
+                <Select
+                  v-if="selectedIndex !== null"
+                  :model-value="selectedField?.mode ?? 'static'"
+                  @update:model-value="onModeModelValue"
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="static">
+                      {{ $t('uiText.staticList4a86d3c0') }}
+                    </SelectItem>
+                    <SelectItem value="vocab">
+                      {{ $t('uiText.dictionary2366dfdb') }}
+                    </SelectItem>
+                    <SelectItem value="date">
+                      {{ $t('uiText.onlyDate1620af28') }}
+                    </SelectItem>
+                    <SelectItem value="time">
+                      {{ $t('uiText.onlyTime67776558') }}
+                    </SelectItem>
+                    <SelectItem value="datetime">
+                      {{ $t('uiText.dateAndTime0011621b') }}
+                    </SelectItem>
+                    <SelectItem value="boolean">
+                      {{ $t('uiText.booleanE8fbe226') }}
+                    </SelectItem>
+                    <SelectItem value="string">
+                      {{ $t('uiText.text93970437') }}
+                    </SelectItem>
+                    <SelectItem value="number">
+                      {{ $t('uiText.number4d0f3e5c') }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label>{{ $t('uiText.defaultValueA027b1fa') }}</Label>
+                <div class="flex flex-wrap gap-2 items-center">
+                  <Input
+                    v-if="selectedIndex !== null"
+                    :model-value="selectedField?.defaultValue ?? (isDateLikeMode(selectedField?.mode ?? '') ? '+0d' : '*')"
+                    :type="selectedField?.mode === 'number' ? 'number' : 'text'"
+                    :placeholder="selectedField?.mode === 'number' ? '0' : (isDateLikeMode(selectedField?.mode ?? '') ? '+0d' : undefined)"
+                    class="flex-1 min-w-[120px]"
+                    @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'defaultValue', String(v ?? '*'))"
+                  />
+                  <Button
+                    v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                    title="Текущая дата (+0d)"
+                    @click="setDefaultToToday"
+                  >
+                    <Clock class="size-4 mr-1" />
+                    {{ $t('uiText.text63e1a37c') }}
+                  </Button>
+                  <Button
+                    v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                    title="Минус 7 дней"
+                    @click="setDefaultToRelative(-7)"
+                  >
+                    {{ $t('uiText.text783fa7f6') }}
+                  </Button>
+                  <Button
+                    v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                    title="Плюс 7 дней"
+                    @click="setDefaultToRelative(7)"
+                  >
+                    {{ $t('uiText.text83cc015c') }}
+                  </Button>
+                </div>
+                <p
+                  v-if="selectedIndex !== null && isDateLikeMode(selectedField?.mode ?? '')"
+                  class="text-xs text-muted-foreground"
+                >
+                  {{ $t('uiText.forDates0dTodayNdDaysNwWeeksNmMon6db57c95') }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="selectedField?.mode === 'static'" class="space-y-4 border-t pt-4">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-medium text-muted-foreground">{{ $t('uiText.allowedValues968e6be8') }}</span>
+                <Button variant="outline" size="sm" class="h-7" @click="addStaticOption">
+                  <Plus class="size-3.5 mr-1" />
+                  {{ $t('uiText.addOptionEba2247e') }}
+                </Button>
+              </div>
+              <div class="space-y-2">
+                <div
+                  v-for="(opt, optIndex) in selectedStaticOptions"
+                  :key="optIndex"
+                  class="flex items-center gap-2 rounded-md border p-2"
+                >
+                  <Input
+                    :model-value="opt.value"
+                    placeholder="Значение"
+                    class="flex-1 min-w-0 font-mono text-xs"
+                    @update:model-value="(v) => updateStaticOption(optIndex, 'value', String(v ?? ''))"
+                  />
+                  <Input
+                    :model-value="opt.label ?? ''"
+                    placeholder="Подпись (необяз.)"
+                    class="flex-1 min-w-0 text-xs"
+                    @update:model-value="(v) => updateStaticOption(optIndex, 'label', String(v ?? ''))"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label="Удалить вариант"
+                    @click="removeStaticOption(optIndex)"
+                  >
+                    <Trash2 class="size-4" />
+                  </Button>
+                </div>
+                <p v-if="selectedStaticOptions.length === 0" class="text-xs text-muted-foreground">
+                  {{ $t('uiText.noOptionsClickAddOptionC1df9673') }}
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  v-if="selectedIndex !== null"
+                  :model-value="selectedField?.multiple !== false"
+                  @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'multiple', v === true)"
+                />
+                <Label>{{ $t('uiText.allowMultipleInputAae45832') }}</Label>
+              </div>
+            </div>
+
+            <div v-if="selectedField?.mode === 'vocab'" class="space-y-4 border-t pt-4">
+              <div class="text-sm font-medium text-muted-foreground">
+                {{ $t('uiText.dictionary2366dfdb') }}
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.referenceC497de39') }}</Label>
+                  <Select
+                    v-if="selectedIndex !== null"
+                    :key="`vocab-identity-${selectedIndex}-${selectedField?.vocabIdentity ?? ''}`"
+                    :model-value="selectedField?.vocabIdentity ?? ''"
+                    @update:model-value="onVocabModelValue"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите справочник" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="opt in vocabIdentityOptions"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.collectionB71a4a6a') }}</Label>
+                  <Select
+                    v-if="selectedIndex !== null"
+                    :key="`vocab-collection-${selectedIndex}-${selectedField?.vocabIdentity}-${selectedField?.vocabCollection ?? ''}`"
+                    :model-value="selectedField?.vocabCollection ?? ''"
+                    @update:model-value="onVocabCollectionModelValue"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите словарь" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="opt in getVocabCollectionOptions(selectedField?.vocabIdentity)"
+                        :key="opt.value"
+                        :value="opt.value"
+                      >
+                        {{ opt.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.pathToValueFieldValuepath0ca08187') }}</Label>
+                  <Input
+                    v-if="selectedIndex !== null"
+                    :model-value="selectedField?.valuePath ?? ''"
+                    placeholder="например: code"
+                    @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'valuePath', String(v ?? ''))"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>{{ $t('uiText.pathToDisplayNameFieldDisplaynamepathB400fec4') }}</Label>
+                  <Input
+                    v-if="selectedIndex !== null"
+                    :model-value="selectedField?.displayNamePath ?? ''"
+                    placeholder="например: name"
+                    @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'displayNamePath', String(v ?? ''))"
+                  />
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  v-if="selectedIndex !== null"
+                  :model-value="selectedField?.multiple !== false"
+                  @update:model-value="(v) => selectedIndex != null && updateField(selectedIndex, 'multiple', v === true)"
+                />
+                <Label>{{ $t('uiText.allowMultipleInputAae45832') }}</Label>
+              </div>
+            </div>
+
+            <!-- Цепочка конвертеров (в конце, перед Активно) -->
+            <div class="space-y-2 border-t pt-4">
+              <Label>{{ $t('uiText.convertersInOrder7bf4a81c') }}</Label>
+              <div class="flex flex-wrap items-center gap-2">
+                <template v-for="(id, i) in selectedConverterIds" :key="`${id}-${i}`">
+                  <span class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
+                    {{ converterOptions.find(o => o.value === id)?.label ?? id }}
+                    <button
+                      type="button"
+                      class="rounded hover:bg-muted-foreground/20 p-0.5"
+                      aria-label="Удалить"
+                      @click="removeConverterFromField(i)"
+                    >
+                      <Trash2 class="size-3.5" />
+                    </button>
+                  </span>
+                </template>
+                <DomainEntityDropTarget
+                  v-if="selectedIndex !== null"
+                  :accept-section-types="[DomainSectionType.Converter]"
+                  :show-hint="false"
+                  @update:model-value="onConverterDrop"
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button size="icon" variant="outline" class="size-8 shrink-0" aria-label="Добавить конвертер">
+                        <Plus class="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem
+                        v-for="opt in converterOptions"
+                        :key="opt.value"
+                        @select="addConverterToField(opt.value)"
+                      >
+                        {{ opt.label }}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </DomainEntityDropTarget>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  v-if="selectedIndex !== null"
+                  :model-value="activeChecked"
+                  @update:model-value="onActiveModelValue"
+                />
+                <Label>{{ $t('uiText.activeNeuter76ddd792') }}</Label>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="text-destructive shrink-0"
+                @click="selectedIndex != null && removeField(selectedIndex)"
+              >
+                <Trash2 class="size-4 mr-1" />
+                {{ $t('uiText.delete86ea33ae') }}
+              </Button>
+            </div>
+          </div>
+        </ScrollArea>
+      </Card>
+    </div>
+  </div>
+</template>

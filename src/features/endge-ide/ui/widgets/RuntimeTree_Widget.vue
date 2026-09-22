@@ -1,0 +1,485 @@
+<script setup lang="ts">
+import type { RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
+import type { RuntimeTreeExpansionPreset } from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
+
+import { ChevronsDownUp, ChevronsUpDown, ListCollapse, Pause, Play, RefreshCw, Square, Trash2 } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { toast } from 'vue-sonner'
+
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import {
+  collectRuntimeTreeExpansion,
+  createRuntimeTreeStructure,
+  readRuntimeTreeViewState,
+  runtimeTreeViewStorageKey,
+  writeRuntimeTreeViewState,
+} from '@/features/endge-ide/services/runtime-preview/runtime-tree-view-state'
+import RuntimeTreeNode from '@/features/endge-ide/ui/widgets/components/RuntimeTreeNode.vue'
+
+interface RuntimeContextMenu {
+  entryKey: string
+  node: RuntimePreviewTreeNode
+  x: number
+  y: number
+}
+
+const preview = EndgeIDE.runtimePreview
+const contextMenu = ref<RuntimeContextMenu | null>(null)
+const busy = ref(false)
+const expandedNodeKeys = shallowRef<ReadonlySet<string>>(new Set())
+const treeEntries = computed(() => preview.entries.value.map(entry => ({
+  key: entry.key,
+  tree: entry.tree.value,
+})))
+const treeStructure = computed(() => createRuntimeTreeStructure(treeEntries.value))
+const hasEntries = computed(() => preview.entries.value.length > 0)
+const hasStartableEntries = computed(() => preview.entries.value.some(entry => ['inactive', 'paused', 'stopped', 'error'].includes(entry.status.value)))
+const hasActiveEntries = computed(() => preview.entries.value.some(entry => entry.status.value === 'active'))
+const hasRunningEntries = computed(() => preview.entries.value.some(entry => ['active', 'paused', 'preparing', 'error'].includes(entry.status.value)))
+const menuState = computed(() => {
+  const menu = contextMenu.value
+  return menu ? preview.lifecycleState(menu.entryKey, menu.node) : 'inactive'
+})
+const isRootMenu = computed(() => contextMenu.value?.node.parentId == null)
+const canRunMenu = computed(() => {
+  const menu = contextMenu.value
+  if (!menu || menu.node.parentId == null) {
+    return true
+  }
+  const rootState = preview.get(menu.entryKey)?.status.value
+  return rootState !== 'stopped'
+    && rootState !== 'error'
+    && rootState !== 'preparing'
+    && rootState !== 'disposed'
+})
+const menuStyle = computed(() => ({
+  left: `${Math.min(contextMenu.value?.x ?? 0, Math.max(8, window.innerWidth - 210))}px`,
+  top: `${Math.min(contextMenu.value?.y ?? 0, Math.max(8, window.innerHeight - 230))}px`,
+}))
+let activeStorageKey = ''
+let activeStructure = ''
+let knownExpandableNodeKeys = new Set<string>()
+
+function openContextMenu(payload: RuntimeContextMenu): void {
+  if (payload.node.kind === 'group' || payload.node.kind === 'data' || payload.node.kind === 'resource') {
+    return
+  }
+  contextMenu.value = payload
+  document.addEventListener('mousedown', closeFromOutside, { once: true })
+  document.addEventListener('keydown', closeFromEscape)
+}
+
+function closeContextMenu(): void {
+  contextMenu.value = null
+  document.removeEventListener('mousedown', closeFromOutside)
+  document.removeEventListener('keydown', closeFromEscape)
+}
+
+function closeFromOutside(event: MouseEvent): void {
+  const element = event.target as HTMLElement | null
+  if (!element?.closest('[data-runtime-preview-context-menu]')) {
+    closeContextMenu()
+  }
+}
+
+function closeFromEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !contextMenu.value) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  closeContextMenu()
+}
+
+async function run(operation: (menu: RuntimeContextMenu) => Promise<void>): Promise<void> {
+  const menu = contextMenu.value
+  if (!menu || busy.value) {
+    return
+  }
+  busy.value = true
+  closeContextMenu()
+  try {
+    await operation(menu)
+  }
+  catch (error) {
+    toast.error('Не удалось изменить состояние Runtime', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally { busy.value = false }
+}
+
+async function runAll(operation: () => Promise<void>): Promise<void> {
+  if (busy.value) {
+    return
+  }
+  busy.value = true
+  closeContextMenu()
+  try {
+    await operation()
+  }
+  catch (error) {
+    toast.error('Не удалось изменить состояние Runtime', {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally { busy.value = false }
+}
+
+function setExpansion(preset: RuntimeTreeExpansionPreset): void {
+  expandedNodeKeys.value = collectRuntimeTreeExpansion(
+    treeEntries.value,
+    preset,
+  )
+  persistExpansion()
+}
+
+function toggleExpanded(nodeKey: string, expanded: boolean): void {
+  const next = new Set(expandedNodeKeys.value)
+  if (expanded) {
+    next.add(nodeKey)
+  }
+  else {
+    next.delete(nodeKey)
+  }
+  expandedNodeKeys.value = next
+  persistExpansion()
+}
+
+function persistExpansion(): void {
+  if (!activeStructure || activeStructure !== treeStructure.value) {
+    return
+  }
+  writeRuntimeTreeViewState(
+    activeStructure,
+    expandedNodeKeys.value,
+    activeStorageKey,
+  )
+}
+
+function restoreOrReconcileExpansion(structure: string): void {
+  if (!structure) {
+    activeStorageKey = ''
+    activeStructure = ''
+    knownExpandableNodeKeys = new Set()
+    expandedNodeKeys.value = new Set()
+    return
+  }
+  const storageKey = runtimeTreeViewStorageKey()
+  const expandable = collectRuntimeTreeExpansion(treeEntries.value, 'expanded')
+  const initiallyExpanded = collectRuntimeTreeExpansion(
+    treeEntries.value,
+    'expanded',
+    { includeGroups: false },
+  )
+  if (storageKey !== activeStorageKey || !activeStructure) {
+    const stored = readRuntimeTreeViewState(storageKey)
+    expandedNodeKeys.value
+      = stored?.structure === structure
+        ? new Set(
+            [...stored.expanded].filter(nodeKey => expandable.has(nodeKey)),
+          )
+        : initiallyExpanded
+  }
+  else if (structure !== activeStructure) {
+    const next = new Set(
+      [...expandedNodeKeys.value].filter(nodeKey => expandable.has(nodeKey)),
+    )
+    for (const nodeKey of initiallyExpanded) {
+      if (!knownExpandableNodeKeys.has(nodeKey)) {
+        next.add(nodeKey)
+      }
+    }
+    expandedNodeKeys.value = next
+  }
+  activeStorageKey = storageKey
+  activeStructure = structure
+  knownExpandableNodeKeys = expandable
+  persistExpansion()
+}
+
+function pause(menu: RuntimeContextMenu): Promise<void> {
+  return menu.node.parentId == null
+    ? preview.pause(menu.entryKey)
+    : preview.pauseNode(menu.entryKey, menu.node.id)
+}
+
+function resume(menu: RuntimeContextMenu): Promise<void> {
+  return menu.node.parentId == null
+    ? preview.resume(menu.entryKey)
+    : preview.resumeNode(menu.entryKey, menu.node.id)
+}
+
+function stop(menu: RuntimeContextMenu): Promise<void> {
+  return menu.node.parentId == null
+    ? preview.stop(menu.entryKey)
+    : preview.stopNode(menu.entryKey, menu.node.id)
+}
+
+function restart(menu: RuntimeContextMenu): Promise<void> {
+  return menu.node.parentId == null
+    ? preview.restart(menu.entryKey)
+    : preview.restartNode(menu.entryKey, menu.node.id)
+}
+
+watch(treeStructure, restoreOrReconcileExpansion, { immediate: true })
+watch(
+  () => preview.treeExpansionRequest.value,
+  (request) => {
+    if (!request) {
+      return
+    }
+    setExpansion(request.preset)
+    preview.consumeTreeExpansionRequest(request.id)
+  },
+  { flush: 'post', immediate: true },
+)
+onBeforeUnmount(closeContextMenu)
+</script>
+
+<template>
+  <div class="flex h-full min-h-0 flex-col bg-background">
+    <div class="flex h-9 shrink-0 items-center justify-between border-b px-1.5">
+      <TooltipProvider :delay-duration="150">
+        <div class="flex items-center">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Свернуть всё дерево Runtime"
+                :disabled="!hasEntries"
+                @click="setExpansion('collapsed')"
+              >
+                <ChevronsDownUp class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.collapseAll7786c314') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                :aria-label="$t('uiText.collapseToRootContent')"
+                :disabled="!hasEntries"
+                @click="setExpansion('root-content')"
+              >
+                <ListCollapse class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.collapseToRootContent') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Развернуть всё дерево Runtime"
+                :disabled="!hasEntries"
+                @click="setExpansion('expanded')"
+              >
+                <ChevronsUpDown class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.expandAll097a4f4c') }}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div class="flex items-center">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+                aria-label="Запустить все Runtime"
+                :disabled="busy || !hasStartableEntries"
+                @click="runAll(() => preview.startAll())"
+              >
+                <Play class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.startAll688d3c98') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Поставить все Runtime на паузу"
+                :disabled="busy || !hasActiveEntries"
+                @click="runAll(() => preview.pauseAll())"
+              >
+                <Pause class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.pauseAll2bdcc8f6') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Остановить все Runtime"
+                :disabled="busy || !hasRunningEntries"
+                @click="runAll(() => preview.stopAll())"
+              >
+                <Square class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.stopAll08fea4b0') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                aria-label="Обновить все Runtime"
+                :disabled="busy || !hasEntries"
+                @click="runAll(() => preview.restartAll())"
+              >
+                <RefreshCw class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.refreshAll29b7dd60') }}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Удалить все из Runtime Tree"
+                :disabled="busy || !hasEntries"
+                @click="runAll(() => preview.removeAll())"
+              >
+                <Trash2 class="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {{ $t('uiText.deleteAllc3df07c7') }}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-auto py-1.5">
+      <template v-for="entry in preview.entries.value" :key="entry.key">
+        <RuntimeTreeNode
+          v-for="node in entry.tree.value"
+          :key="node.id"
+          :entry-key="entry.key"
+          :node="node"
+          :depth="0"
+          :expanded-node-keys="expandedNodeKeys"
+          :selected-entry-key="preview.selectedEntryKey.value"
+          :selected-node-id="preview.selectedNode.value?.id ?? null"
+          :lifecycle-state="(key, item) => preview.lifecycleState(key, item)"
+          @select="(key, item) => preview.select(key, item.id)"
+          @contextmenu="openContextMenu"
+          @toggle-expanded="toggleExpanded"
+        />
+      </template>
+
+      <div
+        v-if="!preview.entries.value.length"
+        class="flex min-h-40 flex-col items-center justify-center gap-2 px-5 py-10 text-center text-xs text-muted-foreground"
+      >
+        <Square class="size-6 opacity-35" stroke-width="1.4" />
+        <span>{{ $t('uiText.runtimeTreeIsEmptyc273285d') }}</span>
+        <span class="max-w-52 text-[10px] leading-4 opacity-75">{{ $t('uiText.startTheDocumentUsingTheDebugPreviewButtonInItsEdito3661a402') }}</span>
+      </div>
+    </div>
+
+    <div class="shrink-0 border-t px-3 py-2 text-[10px] leading-4 text-muted-foreground">
+      {{ $t('uiText.selectingAManualNodeStartsItOtherRuntimeInstancesCond3e5a0e6') }}
+    </div>
+
+    <div
+      v-if="contextMenu"
+      data-runtime-preview-context-menu
+      class="fixed z-[240] min-w-48 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg"
+      :style="menuStyle"
+      @mousedown.stop
+      @contextmenu.prevent
+    >
+      <button
+        v-if="menuState === 'active'"
+        type="button"
+        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
+        @click="run(pause)"
+      >
+        <Pause class="size-3.5" />
+        {{ $t('uiText.pause57e32ddd') }}
+      </button>
+      <button
+        v-else-if="menuState === 'paused'"
+        type="button"
+        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
+        @click="run(resume)"
+      >
+        <Play class="size-3.5" />
+        {{ $t('uiText.resume3f75368a') }}
+      </button>
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent disabled:opacity-45"
+        :disabled="menuState === 'stopped' || menuState === 'disposed' || menuState === 'inactive'"
+        @click="run(stop)"
+      >
+        <Square class="size-3.5" />
+        {{ $t('uiText.stopd4f447c1') }}
+      </button>
+      <button
+        type="button"
+        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
+        :disabled="!canRunMenu"
+        @click="run(restart)"
+      >
+        <RefreshCw class="size-3.5" />
+        {{ $t('uiText.restart7ff2b51c') }}
+      </button>
+      <template v-if="isRootMenu">
+        <div class="my-1 h-px bg-border" />
+        <button
+          type="button"
+          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
+          @click="run(menu => preview.remove(menu.entryKey))"
+        >
+          <Trash2 class="size-3.5" />
+          {{ $t('uiText.removeFromRuntimeTree0241e1ca') }}
+        </button>
+      </template>
+    </div>
+  </div>
+</template>
