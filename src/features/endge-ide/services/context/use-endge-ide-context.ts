@@ -5,7 +5,7 @@ import { onScopeDispose, ref } from 'vue'
 
 import { Configurator } from '@/app/Configurator'
 
-/** Thin Vue bridge к IDE context reboot orchestration. */
+// Thin Vue bridge к IDE context reboot orchestration.
 export function useEndgeIDEContext() {
   const version = ref(0)
   const off = Configurator.context.subscribe(() => {

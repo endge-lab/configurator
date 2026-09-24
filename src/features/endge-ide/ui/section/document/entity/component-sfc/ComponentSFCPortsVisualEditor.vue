@@ -275,7 +275,7 @@ function saveForward(): boolean {
   return commit(patchComponentSFCPortsSource(props.source, { type: 'set-forward', declaration }))
 }
 
-/** Применяет reaction и forwarding существующих ports перед сохранением документа. */
+// Применяет reaction и forwarding существующих ports перед сохранением документа.
 async function flushPendingEdits(): Promise<boolean> {
   for (const editor of [...reactionEditorRefs.value]) {
     if (!editor.flushPendingEdits()) {

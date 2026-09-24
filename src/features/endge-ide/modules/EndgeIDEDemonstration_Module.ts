@@ -4,7 +4,7 @@ import { Endge } from '@endge/core'
 import { shallowRef } from 'vue'
 import { toast } from 'vue-sonner'
 
-/** Нормализует query response для source/document inspection. */
+// Нормализует query response для source/document inspection.
 export function normalizeQueryResult(result: unknown): Record<string, unknown[]> {
   if (result !== null && typeof result === 'object' && !Array.isArray(result)) {
     const root = result as Record<string, unknown>
@@ -38,7 +38,7 @@ export function normalizeQueryResult(result: unknown): Record<string, unknown[]>
   return {}
 }
 
-/** Результат Query сохраняется для просмотра без создания legacy runtime таблицы. */
+// Результат Query сохраняется для просмотра без создания legacy runtime таблицы.
 export interface HelpData {
   queryIdentity: string
   resultByKey: Record<string, unknown[]>
@@ -63,7 +63,9 @@ export class EndgeIDEDemonstration_Module {
     this._helpData.value = payload
   }
 
-  /** Выполняет query только для просмотра raw result в configurator. */
+  /**
+   * Выполняет query только для просмотра raw result в configurator.
+   */
   public async runQueryAndSetHelpData(queryId: string | number): Promise<HelpData | null> {
     const query = Endge.domain.getQuery(queryId)
     if (!query) {

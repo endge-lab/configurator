@@ -2,19 +2,19 @@ import type { AccessControlHttp_Adapter } from '@/features/access-control/adapte
 import type { AccessScopeType, BulkAccessGrantInput, PutAccessGrantInput } from '@/features/access-control/domain/types/access-control.type'
 
 export class AccessControl_Module {
-  /** HTTP adapter для access-control operations. */
+  // HTTP adapter для access-control operations.
   private readonly _adapter: AccessControlHttp_Adapter
 
   /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
+   * Создаёт модуль с явным access-control adapter.
    */
-
-  /** Создаёт модуль с явным access-control adapter. */
   public constructor(adapter: AccessControlHttp_Adapter) {
     this._adapter = adapter
   }
+
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
 
   public searchUsers(query: string, workspaceIdentity?: string, cursor = '', signal?: AbortSignal) {
     return this._adapter.searchUsers(query, workspaceIdentity, cursor, signal)

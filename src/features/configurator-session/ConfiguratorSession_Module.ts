@@ -3,7 +3,9 @@ import type {
   ConfiguratorSessionState,
 } from '@/features/configurator-session/domain/types/configurator-session.type'
 
-/** Единственный владелец состояния developer session Configurator. */
+/**
+ * Единственный владелец состояния developer session Configurator.
+ */
 export class ConfiguratorSession_Module {
   private _state: ConfiguratorSessionState = { status: 'idle' }
   private _checkPromise: Promise<ConfiguratorSessionState> | null = null
@@ -15,7 +17,9 @@ export class ConfiguratorSession_Module {
     return this._state
   }
 
-  /** Проверяет session с single-flight защитой. */
+  /**
+   * Проверяет session с single-flight защитой.
+   */
   public async check(): Promise<ConfiguratorSessionState> {
     if (this._checkPromise) {
       return this._checkPromise
@@ -33,7 +37,9 @@ export class ConfiguratorSession_Module {
     return this._checkPromise
   }
 
-  /** Завершает developer session и очищает локальный snapshot. */
+  /**
+   * Завершает developer session и очищает локальный snapshot.
+   */
   public async logout(): Promise<void> {
     try {
       await this._service.logout()
@@ -43,12 +49,16 @@ export class ConfiguratorSession_Module {
     }
   }
 
-  /** Сбрасывает module state без сетевого запроса. */
+  /**
+   * Сбрасывает module state без сетевого запроса.
+   */
   public reset(): void {
     this._setState({ status: 'idle' })
   }
 
-  /** Подписывает presentation adapter на изменения session state. */
+  /**
+   * Подписывает presentation adapter на изменения session state.
+   */
   public subscribe(listener: () => void): () => void {
     this._listeners.add(listener)
     return () => this._listeners.delete(listener)

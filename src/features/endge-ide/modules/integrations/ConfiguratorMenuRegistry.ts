@@ -12,7 +12,9 @@ export interface RegisteredConfiguratorMenuItem {
   item: ConfiguratorMenuItem
 }
 
-/** Хранит пункты меню интеграции верхнего уровня на протяжении жизни активной интеграции. */
+/**
+ * Хранит пункты меню интеграции верхнего уровня на протяжении жизни активной интеграции.
+ */
 export class ConfiguratorMenuRegistry {
   private readonly _registeredItems = shallowReactive(new Map<string, RegisteredConfiguratorMenuItem>())
   public readonly items = computed(() =>

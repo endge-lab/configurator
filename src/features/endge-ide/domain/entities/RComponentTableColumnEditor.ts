@@ -49,10 +49,10 @@ export class RComponentTableColumnEditor {
   // Новый массив accessors
   accessors: TableColumnAccessorEditor[] = []
 
-  /** Индекс строки привязки данных (dataPaths), на которой фокус - для инспектора */
+  // Индекс строки привязки данных (dataPaths), на которой фокус - для инспектора
   selectedAccessorIndex: number = 0
 
-  /** Настройки сортировки колонки (ColumnSortConfig) */
+  // Настройки сортировки колонки (ColumnSortConfig)
   sort: ColumnSortConfig | null = null
 
   //

@@ -6,12 +6,12 @@ export type ExtractableSFCTypeDeclaration = TypeScriptTypeDeclarationAnalysis
 
 export interface ExtractableSFCTypePlan {
   root: ExtractableSFCTypeDeclaration
-  /** Локальные объявления, упорядоченные от зависимостей. */
+  // Локальные объявления, упорядоченные от зависимостей.
   declarations: ExtractableSFCTypeDeclaration[]
   unsupportedReason: string | null
 }
 
-/** Возвращает абсолютные диапазоны SFC для каждого объявления типа верхнего уровня в script. */
+// Возвращает абсолютные диапазоны SFC для каждого объявления типа верхнего уровня в script.
 export function analyzeExtractableSFCTypeDeclarations(source: string): ExtractableSFCTypeDeclaration[] {
   const script = parseComponentSFC(source).ast?.script
   if (!script || script.lang !== 'ts') {
@@ -28,7 +28,7 @@ export function analyzeExtractableSFCTypeDeclarations(source: string): Extractab
   }))
 }
 
-/** Строит полное локальное замыкание зависимостей для одного объявления. */
+// Строит полное локальное замыкание зависимостей для одного объявления.
 export function resolveExtractableSFCTypePlan(
   source: string,
   declarationStart: number,
@@ -102,7 +102,7 @@ export function buildExtractableSFCTypePlan(
   }
 }
 
-/** Удаляет только оператор объявления и не более одной соседней пустой строки. */
+// Удаляет только оператор объявления и не более одной соседней пустой строки.
 export function removeExtractedTypeDeclaration(
   source: string,
   declaration: ExtractableSFCTypeDeclaration,
@@ -124,7 +124,7 @@ export function removeExtractedTypeDeclaration(
   return `${source.slice(0, start)}${source.slice(end)}`
 }
 
-/** Удаляет набор объявлений, не нарушая исходные абсолютные диапазоны. */
+// Удаляет набор объявлений, не нарушая исходные абсолютные диапазоны.
 export function removeExtractedTypeDeclarations(
   source: string,
   declarations: readonly ExtractableSFCTypeDeclaration[],

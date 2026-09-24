@@ -51,7 +51,9 @@ import {
   createPreviewStoreArtifact,
 } from '@/features/endge-ide/services/store-preview/store-preview-state'
 
-/** Владеет одним явно запущенным корнем preview и всеми runtime-ресурсами под ним. */
+/**
+ * Владеет одним явно запущенным корнем preview и всеми runtime-ресурсами под ним.
+ */
 export class RuntimePreviewInstance {
   public readonly key: string
   public readonly target: RuntimePreviewTarget
@@ -89,7 +91,9 @@ export class RuntimePreviewInstance {
     this.selectedNodeId.value = this.tree.value[0]?.id ?? null
   }
 
-  /** Заменяет предыдущее поколение этого документа новым runtime-деревом. */
+  /**
+   * Заменяет предыдущее поколение этого документа новым runtime-деревом.
+   */
   public launch(
     draft?: RuntimePreviewDraft,
     contextual?: RuntimePreviewContextualLaunch,

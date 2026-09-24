@@ -1,6 +1,6 @@
 import type { ComponentSFCPreviewProps } from '@endge/core'
 
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { resolveComponentPreviewInput } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'

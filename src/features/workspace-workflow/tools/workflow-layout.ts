@@ -4,7 +4,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-/** Отсутствующая раскладка означает auto layout; неизвестный формат остаётся read-only. */
+// Отсутствующая раскладка означает auto layout; неизвестный формат остаётся read-only.
 export function readWorkflowLayout(meta: Record<string, unknown>): WorkflowLayout | null {
   const configurator = meta.configurator
   if (configurator == null) {
@@ -31,7 +31,7 @@ export function readWorkflowLayout(meta: Record<string, unknown>): WorkflowLayou
   return { schemaVersion: 1, positions: Object.fromEntries(positions) }
 }
 
-/** Записывает только namespace раскладки, сохраняя чужие поля meta и configurator. */
+// Записывает только namespace раскладки, сохраняя чужие поля meta и configurator.
 export function writeWorkflowLayout(
   meta: Record<string, unknown>,
   layout: WorkflowLayout | null,

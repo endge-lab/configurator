@@ -60,7 +60,7 @@ export default defineConfig(({ mode, command }) => {
       // Без dedupe optimizeDeps может разрешить вложенные опубликованные копии:
       // Тогда Raph предоставляет более старый API, а class-transformer теряет
       // метаданные декораторов, используемые Serialize.fromJSON в @endge/core.
-      dedupe: ['@endge/core', '@endge/raph', '@endge/utils', 'class-transformer'],
+      dedupe: ['@endge/core', '@raphy-js/raph', '@endge/utils', 'class-transformer'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@axios': fileURLToPath(new URL('./src/plugins/axios', import.meta.url)),

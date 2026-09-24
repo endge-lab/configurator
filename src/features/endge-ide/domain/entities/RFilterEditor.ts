@@ -13,7 +13,7 @@ export class RFilterEditor {
   source: string = ''
   sourceVersion: number = 1
   diagnostics: unknown[] = []
-  /** Индекс выбранного поля в списке (для синхронизации с инспектором) */
+  // Индекс выбранного поля в списке (для синхронизации с инспектором)
   selectedFieldIndex: number | null = null
 
   fillFromSource(source: RFilter): void {

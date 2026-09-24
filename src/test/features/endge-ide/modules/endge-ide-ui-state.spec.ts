@@ -53,7 +53,7 @@ describe('состояние интерфейса Endge IDE', () => {
     vi.clearAllMocks()
   })
 
-  /** Переключатель изменяет персональную проекцию, не мутируя общий Workspace. */
+  // Переключатель изменяет персональную проекцию, не мутируя общий Workspace.
   it('переключает documentStructure через Context state без изменения Workspace', () => {
     const module = new EndgeIDEUIState_Module()
     module.init()
@@ -73,7 +73,7 @@ describe('состояние интерфейса Endge IDE', () => {
     expect(mocks.removeState).toHaveBeenCalledWith('configurator.domain.document-structure-override')
   })
 
-  /** Сохранённый override восстанавливается для текущего Context и синхронно обновляет consumers. */
+  // Сохранённый override восстанавливается для текущего Context и синхронно обновляет consumers.
   it('восстанавливает валидный override и реагирует на его изменение', () => {
     mocks.state = { version: 1, value: 'custom' }
     const module = new EndgeIDEUIState_Module()
@@ -92,7 +92,7 @@ describe('состояние интерфейса Endge IDE', () => {
     expect(mocks.stateListeners.size).toBe(0)
   })
 
-  /** Повреждённый persisted snapshot не подменяет сохранённую структуру Workspace. */
+  // Повреждённый persisted snapshot не подменяет сохранённую структуру Workspace.
   it('игнорирует неизвестную версию persisted override', () => {
     mocks.workspace.documentStructure = 'custom'
     mocks.state = { version: 2, value: 'frontend' }
@@ -102,7 +102,7 @@ describe('состояние интерфейса Endge IDE', () => {
 
     expect(module.documentStructure.value).toBe('custom')
   })
-  /** Debugger меняет только локальную проекцию и очищает её вместе с сессией. */
+  // Debugger меняет только локальную проекцию и очищает её вместе с сессией.
   it('переключает структуру в дебагере без записи Context и проверки authoring-доступа', () => {
     mocks.mode = 'debugger'
     const module = new EndgeIDEUIState_Module()

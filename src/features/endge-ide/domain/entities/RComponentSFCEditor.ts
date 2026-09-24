@@ -35,7 +35,9 @@ export class RComponentSFCEditor {
 
   sourceParts: RComponentSFCSource_Parts = parseSFCSourceParts('')
 
-  /** Заполняет редактор из persisted SFC-модели. */
+  /**
+   * Заполняет редактор из persisted SFC-модели.
+   */
   fillFromSource(source: any): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
@@ -51,7 +53,9 @@ export class RComponentSFCEditor {
     this.sourceParts = parseSFCSourceParts(this.source)
   }
 
-  /** Переносит редакторское состояние обратно в persisted SFC-модель. */
+  /**
+   * Переносит редакторское состояние обратно в persisted SFC-модель.
+   */
   updateSource(source: any): void {
     this.parseSource()
     source.id = this.id
@@ -67,13 +71,15 @@ export class RComponentSFCEditor {
     source.source = this.source
   }
 
-  /** Обновляет вкладки из полного source, если пользователь редактировал raw preview. */
+  /**
+   * Обновляет вкладки из полного source, если пользователь редактировал raw preview.
+   */
   parseSource(): void {
     this.sourceParts = parseSFCSourceParts(this.source)
   }
 }
 
-/** Нормализует пустой editor input в отсутствие пользовательского tag. */
+// Нормализует пустой editor input в отсутствие пользовательского tag.
 function normalizeTag(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null
@@ -81,7 +87,7 @@ function normalizeTag(raw: unknown): string | null {
   return raw.trim() || null
 }
 
-/** Оставляет только targets, которые поддерживает SFC v1. */
+// Оставляет только targets, которые поддерживает SFC v1.
 function normalizeTargets(raw: unknown): Array<'dom' | 'canvas'> {
   if (!Array.isArray(raw)) {
     return ['dom', 'canvas']

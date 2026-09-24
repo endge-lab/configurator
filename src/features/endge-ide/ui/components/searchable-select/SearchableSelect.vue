@@ -26,7 +26,7 @@ const props = withDefaults(
     contentMaxHeight?: string
     size?: 'default' | 'compact'
     disabled?: boolean
-    /** Первая опция «Все» (например { value: '*', label: 'Все' }) - только при multiple */
+    // Первая опция «Все» (например { value: '*', label: 'Все' }) - только при multiple
     allOption?: SearchableSelectOption | null
   }>(),
   {

@@ -15,7 +15,7 @@ export interface DocumentImportFolderOption {
 
 const TYPES_ROOT_IDENTITY = 'root-types'
 
-/** Строит плоские пути доступных Type folders для select без UI-зависимостей. */
+// Строит плоские пути доступных Type folders для select без UI-зависимостей.
 export function buildDocumentImportFolderOptions(
   folders: readonly DocumentImportFolderLike[],
 ): DocumentImportFolderOption[] {

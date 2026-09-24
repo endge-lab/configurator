@@ -18,10 +18,8 @@ export class RFieldEditor {
   @Expose()
   optional!: boolean
 
-  /**
-   * Важно: Map должен нормально сериализоваться/десериализоваться.
-   * Используем TypeMap, как и в доменных сущностях.
-   */
+  // Важно: Map должен нормально сериализоваться/десериализоваться.
+  // Используем TypeMap, как и в доменных сущностях.
   @Expose()
   @Type(() => RFieldEditor)
   @TypeMap(RFieldEditor, 'name')

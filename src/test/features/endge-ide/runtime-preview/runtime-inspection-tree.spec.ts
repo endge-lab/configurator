@@ -17,7 +17,7 @@ function snapshot(hosts: RuntimeHostSnapshot[], scopes: RuntimeScopeSnapshot[] =
 }
 
 describe('дерево наблюдаемого Runtime', () => {
-  /** Два экземпляра общего документа сохраняют собственный scope и независимые control targets. */
+  // Два экземпляра общего документа сохраняют собственный scope и независимые control targets.
   it('соединяет hosts и scopes по ownership и membership, сохраняя поколения', () => {
     const runtime = snapshot([host('a'), host('b'), host('store', 'store', 'a')], [scope('app', null, null, ['a', 'b']), scope('a-default', 'a', 'app', ['store']), scope('b-default', 'b', 'app')])
     runtime.scopes[1]!.state = 'paused'
@@ -32,7 +32,7 @@ describe('дерево наблюдаемого Runtime', () => {
     expect(tree.nodes.size).toBe(6)
   })
 
-  /** UI защищает рекурсивный renderer даже от смешанного цикла двух отдельных иерархий. */
+  // UI защищает рекурсивный renderer даже от смешанного цикла двух отдельных иерархий.
   it('сохраняет orphan nodes и разрывает смешанный host-scope цикл без потери узлов', () => {
     const runtime = snapshot([host('a', 'composition', 'missing'), host('b')], [scope('one', 'a', null, ['b']), scope('two', 'b', null, ['a'])])
     const tree = buildRuntimeInspectionTree(runtime)
@@ -49,7 +49,7 @@ describe('дерево наблюдаемого Runtime', () => {
     expect(buildRuntimeInspectionTree(snapshot([host('orphan', 'store', 'missing')])).roots).toHaveLength(1)
   })
 
-  /** FilterView имеет отдельную активность, хотя Core связывает его с документом Filter. */
+  // FilterView имеет отдельную активность, хотя Core связывает его с документом Filter.
   it('различает FilterView и Filter и объединяет несколько active экземпляров в Составе', () => {
     const view = { ...host('view', 'filter'), runtimeType: 'filter-view-runtime-host' }
     const tree = buildRuntimeInspectionTree(snapshot([host('a'), { ...host('b'), status: 'paused' }, view]), item => item.entityType === 'filter' ? FilterType.DefaultFilter : 'composition')
@@ -59,7 +59,7 @@ describe('дерево наблюдаемого Runtime', () => {
     expect([...active]).toEqual(['composition', 'view'])
   })
 
-  /** Канонические пути используют тот же parser, но читают переданный snapshot без singleton Raph. */
+  // Канонические пути используют тот же parser, но читают переданный snapshot без singleton Raph.
   it('читает encoded ids, индексы и фильтры в данных и не раскрывает prototype properties', () => {
     const data = { runtime: { 'a%2Eb': { rows: [{ id: 1, value: 7 }, { id: 2, value: 9 }] } } }
     expect(readRuntimeInspectionData(data, 'runtime.a%2Eb.rows[1].value')).toBe(9)

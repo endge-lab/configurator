@@ -9,7 +9,7 @@ import type {
 } from '@endge/core'
 
 import { Endge, RComposition } from '@endge/core'
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 
 export interface ComponentPreviewSource {
   id?: string | number | null
@@ -31,7 +31,7 @@ interface ComponentPreviewContextOptions {
   vocabDependencies?: readonly RComponentSFC_RuntimeVocabDependency[]
 }
 
-/** Материализует параметры definePreviewProps в runtime-контекст, общий для поверхностей preview. */
+// Материализует параметры definePreviewProps в runtime-контекст, общий для поверхностей preview.
 export async function prepareComponentPreviewContext(
   options: ComponentSFCPreviewOptions | null,
   props: ComponentSFCPreviewProps,
@@ -97,7 +97,7 @@ export async function prepareComponentPreviewContext(
   return { host, dataAliases }
 }
 
-/** Преобразует объявления literal, fromStore и fromData во входной контракт renderer. */
+// Преобразует объявления literal, fromStore и fromData во входной контракт renderer.
 export function resolveComponentPreviewInput(
   previewProps: ComponentSFCPreviewProps,
   context: ComponentPreviewContext | null,
@@ -240,11 +240,9 @@ function createPreviewComposition(
   return model
 }
 
-/**
- * Разрешает preview-only providers только из compiler-derived Composition data.
- * Прямое совпадение alias с Vocab identity используется лишь когда ни одна
- * Composition ещё не опубликовала этот alias.
- */
+// Разрешает preview-only providers только из compiler-derived Composition data.
+// Прямое совпадение alias с Vocab identity используется лишь когда ни одна
+// Composition ещё не опубликовала этот alias.
 function resolvePreviewVocabProviders(
   dependencies: readonly RComponentSFC_RuntimeVocabDependency[],
 ): Map<string, string> {

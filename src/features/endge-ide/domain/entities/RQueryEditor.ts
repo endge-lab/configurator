@@ -2,7 +2,9 @@ import type { ProgramDiagnostic, RQuery } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Source-only editor model для `RQuery`. */
+/**
+ * Source-only editor model для `RQuery`.
+ */
 export class RQueryEditor {
   id!: number
   identity!: string

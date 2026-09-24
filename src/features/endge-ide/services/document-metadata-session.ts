@@ -14,7 +14,9 @@ interface MetadataDocument {
   managedBy?: 'system' | 'integration' | 'user'
 }
 
-/** Владеет JSON draft и подготовкой metadata до общего syncBeforeSave editor-сессии. */
+/**
+ * Владеет JSON draft и подготовкой metadata до общего syncBeforeSave editor-сессии.
+ */
 export class DocumentMetadataSession {
   public draft = '{}'
   public error: string | null = null
@@ -42,7 +44,9 @@ export class DocumentMetadataSession {
     this.error = validateMetadataJSON(value)
   }
 
-  /** Подхватывает Source-изменения, пока пользователь не начал собственный metadata draft. */
+  /**
+   * Подхватывает Source-изменения, пока пользователь не начал собственный metadata draft.
+   */
   public refreshFromDocument(): void {
     const key = this._inputKey()
     if (key === this._documentKey || (this.dirty && (this.error != null || this.draft !== this._appliedDraft))) {
@@ -57,7 +61,9 @@ export class DocumentMetadataSession {
     }
   }
 
-  /** Валидирует и применяет draft к каноническому backing перед обычным editor sync. */
+  /**
+   * Валидирует и применяет draft к каноническому backing перед обычным editor sync.
+   */
   public prepareBeforeSave(): boolean {
     this.refreshFromDocument()
     if (!this.dirty) {

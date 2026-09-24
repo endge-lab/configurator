@@ -287,7 +287,9 @@ export function printUIEditorDocumentTemplate(document: UIEditorDocument): strin
   return printNode(document, document.rootId, 1)
 }
 
-/** @deprecated Используйте printUIEditorDocumentSFC. */
+/**
+ * @deprecated Используйте printUIEditorDocumentSFC.
+ */
 export function printUIEditorDocumentJsx(document: UIEditorDocument): string {
   return printUIEditorDocumentSFC(document)
 }

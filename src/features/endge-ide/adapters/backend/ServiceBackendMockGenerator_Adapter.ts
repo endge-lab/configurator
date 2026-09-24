@@ -1,6 +1,8 @@
 import type { SimulationGenerator, SimulationMockStream, StreamTransportConnection, StreamTransportFactory } from '@endge/core'
 
-/** Transport одной среды/workspace. Сервис владеет generation plan, PRNG и scheduler. */
+/**
+ * Transport одной среды/workspace. Сервис владеет generation plan, PRNG и scheduler.
+ */
 export class ServiceBackendMockGenerator_Adapter implements SimulationGenerator {
   public constructor(private readonly _baseURL: string, private readonly _workspace: string) {}
 

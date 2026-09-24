@@ -26,7 +26,7 @@ export function getDomainDocumentPresentation(
   return badgeIcon ? { ...presentation, badgeIcon } : presentation
 }
 
-/** Возвращает базовое представление persisted-коллекции без загрузки payload документа. */
+// Возвращает базовое представление persisted-коллекции без загрузки payload документа.
 export function getDomainCollectionPresentation(collection: EndgeDomainCollection): DomainDocumentPresentation {
   const explicit = DOCUMENT_COLLECTION_PRESENTATION[collection]
   if (explicit) {
@@ -37,7 +37,7 @@ export function getDomainCollectionPresentation(collection: EndgeDomainCollectio
   return descriptor ? getDomainSectionPresentation(descriptor.section) : FALLBACK_PRESENTATION
 }
 
-/** Program uses compiler family names, which can differ from authoring document types. */
+// Program uses compiler family names, which can differ from authoring document types.
 export function getProgramDocumentPresentation(entityType: string): DomainDocumentPresentation {
   const descriptor = Object.values(DOMAIN_DOCUMENT_DESCRIPTORS)
     .find(value => value.type === entityType || value.capabilities.program === entityType)

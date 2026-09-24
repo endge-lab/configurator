@@ -1,6 +1,4 @@
-/**
- * Дублирование сущности домена: получение по docType и полная копия через duplicate() / duplicateComponent().
- */
+// Дублирование сущности домена: получение по docType и полная копия через duplicate() / duplicateComponent().
 
 import type { DomainDocumentType, EndgeDomain_Module } from '@endge/core'
 
@@ -16,9 +14,7 @@ import { getQueryRootFolderId } from './query-composition-presentation'
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
-/**
- * Возвращает сущность домена по id и типу документа.
- */
+// Возвращает сущность домена по id и типу документа.
 export function getEntityByDocType(
   domain: EndgeDomain_Module,
   id: string | number,
@@ -77,9 +73,7 @@ export function getEntityByDocType(
   }
 }
 
-/**
- * Дублирует сущность: полная копия через duplicate() / duplicateComponent(), сохранение в корне.
- */
+// Дублирует сущность: полная копия через duplicate() / duplicateComponent(), сохранение в корне.
 export async function duplicateEntity(
   sourceId: string | number,
   docType: DomainDocumentType,

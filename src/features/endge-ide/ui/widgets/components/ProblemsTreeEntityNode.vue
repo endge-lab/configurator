@@ -36,7 +36,7 @@ const severityCount = computed(() => ({
   warning: props.entry.problems.filter(problem => problem.severity === 'warning').length,
 }))
 
-/** Выбирает сущность и обновляет самостоятельную Problems workspace. */
+// Выбирает сущность и обновляет самостоятельную Problems workspace.
 function selectEntity(): void {
   problems.selectEntity(props.entry.key)
 }

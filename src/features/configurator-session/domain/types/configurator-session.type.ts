@@ -1,4 +1,4 @@
-/** Разработчик, авторизованный для работы в Configurator. */
+// Разработчик, авторизованный для работы в Configurator.
 export interface ConfiguratorDeveloper {
   id: string
   providerId: string
@@ -9,7 +9,7 @@ export interface ConfiguratorDeveloper {
   active: boolean
 }
 
-/** Workspace, доступный текущему разработчику. */
+// Workspace, доступный текущему разработчику.
 export interface ConfiguratorWorkspaceAccess {
   id: string
   identity: string
@@ -18,7 +18,7 @@ export interface ConfiguratorWorkspaceAccess {
   role: 'viewer' | 'editor' | 'admin'
 }
 
-/** Безопасный snapshot developer session без token и JWT claims. */
+// Безопасный snapshot developer session без token и JWT claims.
 export interface ConfiguratorSession {
   developer: ConfiguratorDeveloper
   platformAdmin: boolean
@@ -32,7 +32,7 @@ export type ConfiguratorSessionState
     | { status: 'unauthenticated', loginUrl: string }
     | { status: 'error', code: string, message: string }
 
-/** Сетевой порт developer session. */
+// Сетевой порт developer session.
 export interface ConfiguratorSessionService {
   check: () => Promise<ConfiguratorSessionState>
   logout: () => Promise<void>

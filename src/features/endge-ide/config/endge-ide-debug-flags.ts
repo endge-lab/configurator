@@ -1,4 +1,4 @@
-/** Читает краткоживущие флаги диагностики IDE из query текущего маршрута. */
+// Читает краткоживущие флаги диагностики IDE из query текущего маршрута.
 function hasFlag(name: string): boolean {
   if (typeof window === 'undefined') {
     return false

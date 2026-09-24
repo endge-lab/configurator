@@ -72,7 +72,7 @@ const ROOT_IDS: Record<DomainSectionType, string> = {
   [DomainSectionType.AuthProfile]: 'root-auth-profiles',
 }
 
-/** entityType папок в Payload — только папки этой секции показываем в выборе. */
+// entityType папок в Payload — только папки этой секции показываем в выборе.
 const SECTION_FOLDER_ENTITY_TYPE: Partial<Record<DomainSectionType, string>> = {
   [DomainSectionType.Component]: 'components',
   [DomainSectionType.Query]: 'queries',
@@ -222,10 +222,10 @@ const formError = computed(() => {
   return null
 })
 
-/** Показывать выбор папки для секций, которые поддерживают folder placement. */
+// Показывать выбор папки для секций, которые поддерживают folder placement.
 const showFolderSelect = computed(() => activeOption.value.supportsFolder)
 
-/** Папки только текущей секции (по entityType): корень + вложенные под этим root. */
+// Папки только текущей секции (по entityType): корень + вложенные под этим root.
 const folderOptions = computed(() => {
   if (!showFolderSelect.value) {
     return []

@@ -78,7 +78,7 @@ function leafContract(input: {
   }
 }
 
-/** Локальный словарь авторинга фичи, соответствующий тегам базового адаптера Endge SFC. */
+// Локальный словарь авторинга фичи, соответствующий тегам базового адаптера Endge SFC.
 export const UI_EDITOR_SFC_DEFINITION_CONTRACTS: readonly UIEditorSFCDefinitionContract[] = [
   {
     definitionRef: 'ui.text',

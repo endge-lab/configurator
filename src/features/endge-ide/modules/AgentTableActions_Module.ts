@@ -1,6 +1,8 @@
 import type { AgentTableActionHandler, AgentTableActionName } from '@/features/endge-ide/domain/types/agent-table-actions.type'
 
-/** Владеет actions агента, зарегистрированными текущим смонтированным редактором таблицы. */
+/**
+ * Владеет actions агента, зарегистрированными текущим смонтированным редактором таблицы.
+ */
 export class AgentTableActions_Module {
   private readonly _handlers: Partial<Record<AgentTableActionName, AgentTableActionHandler>> = {}
 

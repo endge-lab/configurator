@@ -17,7 +17,7 @@ const SEVERITY_TITLES: Record<DiagnosticsProblemSeverity, string> = {
   info: 'Информация',
 }
 
-/** Строит стабильный UI-ключ сущности, не зависящий от phase-specific owner. */
+// Строит стабильный UI-ключ сущности, не зависящий от phase-specific owner.
 function getProblemEntityKey(problem: DiagnosticsProblem): string {
   const ref = problem.owner.entityRef
   if (ref) {
@@ -29,12 +29,12 @@ function getProblemEntityKey(problem: DiagnosticsProblem): string {
   return `owner:${problem.owner.key}`
 }
 
-/** Возвращает наиболее серьёзный уровень из набора проблем. */
+// Возвращает наиболее серьёзный уровень из набора проблем.
 function getHighestSeverity(problems: readonly DiagnosticsProblem[]): DiagnosticsProblemSeverity {
   return SEVERITY_ORDER.find(severity => problems.some(problem => problem.severity === severity)) ?? 'info'
 }
 
-/** Сортирует problems так, чтобы важные и ранние фазы показывались первыми. */
+// Сортирует problems так, чтобы важные и ранние фазы показывались первыми.
 function sortProblems(problems: readonly DiagnosticsProblem[]): DiagnosticsProblem[] {
   return [...problems].sort((left, right) => {
     const severity = SEVERITY_ORDER.indexOf(left.severity) - SEVERITY_ORDER.indexOf(right.severity)
@@ -49,7 +49,7 @@ function sortProblems(problems: readonly DiagnosticsProblem[]): DiagnosticsProbl
   })
 }
 
-/** Агрегирует phase-specific owners в одну запись выбранной сущности. */
+// Агрегирует phase-specific owners в одну запись выбранной сущности.
 export function buildProblemsEntityEntries(problems: readonly DiagnosticsProblem[]): ProblemsEntityEntry[] {
   const problemsByEntity = new Map<string, DiagnosticsProblem[]>()
 
@@ -81,7 +81,7 @@ export function buildProblemsEntityEntries(problems: readonly DiagnosticsProblem
     .sort((left, right) => left.title.localeCompare(right.title, 'ru'))
 }
 
-/** Строит верхний уровень Problems tree по максимальной severity сущности. */
+// Строит верхний уровень Problems tree по максимальной severity сущности.
 export function buildProblemsSeverityGroups(entries: readonly ProblemsEntityEntry[]): ProblemsSeverityGroup[] {
   return SEVERITY_ORDER.flatMap((severity) => {
     const severityEntries = entries.filter(entry => entry.highestSeverity === severity)

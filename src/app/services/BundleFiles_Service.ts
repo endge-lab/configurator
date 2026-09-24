@@ -1,6 +1,8 @@
 import type { EndgeBundle, EndgeBundleFileFormat } from '@endge/core'
 
-/** Browser file boundary shared by build export and debugger import; caller owns cancellation. */
+/**
+ * Browser file boundary shared by build export and debugger import; caller owns cancellation.
+ */
 export class BundleFiles_Service {
   public async read(file: File, signal?: AbortSignal): Promise<EndgeBundle> {
     if (file.size > 256 * 1024 * 1024) {

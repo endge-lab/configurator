@@ -128,12 +128,10 @@ async function onOpen(): Promise<void> {
   })
 }
 
-/**
- * КРИТИЧНО:
- * Закрываем по pointerdown (как раньше), НО определяем "inside" через composedPath().
- * Тогда клик по ссылкам внутри НЕ будет считаться кликом "снаружи",
- * и popover не исчезнет на mousedown.
- */
+// КРИТИЧНО:
+// Закрываем по pointerdown (как раньше), НО определяем "inside" через composedPath().
+// Тогда клик по ссылкам внутри НЕ будет считаться кликом "снаружи",
+// и popover не исчезнет на mousedown.
 function onPointerDownOutside(e: PointerEvent): void {
   if (!popover.open.value) {
     return

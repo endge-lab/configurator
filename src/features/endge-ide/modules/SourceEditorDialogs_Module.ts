@@ -12,7 +12,9 @@ interface ActiveSourceEditorDialog {
   input: unknown
 }
 
-/** Владеет определениями диалогов Source-редактора, активным запросом и его завершением. */
+/**
+ * Владеет определениями диалогов Source-редактора, активным запросом и его завершением.
+ */
 export class SourceEditorDialogs_Module {
   private readonly _active = shallowRef<ActiveSourceEditorDialog | null>(null)
   private readonly _definitions = new Map<string, SourceEditorDialogDefinition>()

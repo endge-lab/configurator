@@ -40,7 +40,7 @@ function removeArea(index: number): void {
   editor.value.areas.splice(index, 1)
 }
 
-/** Заполняет превью по умолчанию: одна колонка - одна область. */
+// Заполняет превью по умолчанию: одна колонка - одна область.
 function fillDefaultPreview(): void {
   if (!editor.value?.areas?.length) {
     return

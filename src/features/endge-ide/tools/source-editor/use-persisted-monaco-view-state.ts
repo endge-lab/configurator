@@ -28,10 +28,8 @@ function isPersistedMonacoViewState(value: unknown): value is PersistedMonacoVie
     && isEditorViewState(value.editorState)
 }
 
-/**
- * Недорогая защита идентичности содержимого. Два независимых 32-битных аккумулятора
- * вместе с длиной делают случайное восстановление для другого Source практически невозможным.
- */
+// Недорогая защита идентичности содержимого. Два независимых 32-битных аккумулятора
+// вместе с длиной делают случайное восстановление для другого Source практически невозможным.
 function sourceFingerprint(source: string): string {
   let first = 0x811C9DC5
   let second = 0x9E3779B9

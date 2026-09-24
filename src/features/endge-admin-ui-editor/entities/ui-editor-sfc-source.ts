@@ -152,7 +152,7 @@ export function patchUIEditorSFCTemplate(source: string, document: UIEditorDocum
   return `${source.slice(0, range.start)}${template}${source.slice(range.end)}`
 }
 
-/** Изменяет один литеральный атрибут без повторной печати остальной части шаблона SFC. */
+// Изменяет один литеральный атрибут без повторной печати остальной части шаблона SFC.
 export function patchUIEditorSFCStaticAttribute(
   source: string,
   location: UIEditorSourceNodeLocation,
@@ -617,7 +617,7 @@ function createPreviewRenderContext(previewProps: ComponentSFCPreviewProps | nul
   }
 }
 
-/** Создаёт runtime context для preview до и после разрешения workspace-конфигурации. */
+// Создаёт runtime context для preview до и после разрешения workspace-конфигурации.
 function createPreviewRuntimeContext(): Readonly<EndgeRuntimeContextSnapshot> {
   if (Endge.configuration.isResolved) {
     return Object.freeze(Endge.context.runtimeSnapshot())

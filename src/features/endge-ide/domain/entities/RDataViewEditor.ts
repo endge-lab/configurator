@@ -2,7 +2,9 @@ import type { RDataView } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Source-first editor model для `RDataView`. */
+/**
+ * Source-first editor model для `RDataView`.
+ */
 export class RDataViewEditor {
   id!: number | string
   identity!: string
@@ -12,7 +14,9 @@ export class RDataViewEditor {
   sourceVersion: number = 1
   diagnostics: unknown[] = []
 
-  /** Заполняет editor persisted source-полями. */
+  /**
+   * Заполняет editor persisted source-полями.
+   */
   fillFromSource(source: RDataView): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
@@ -23,7 +27,9 @@ export class RDataViewEditor {
     this.refreshDiagnostics()
   }
 
-  /** Обновляет persisted DataView из editor source-полей. */
+  /**
+   * Обновляет persisted DataView из editor source-полей.
+   */
   updateSource(target: RDataView): void {
     target.id = this.id as any
     target.identity = this.identity
@@ -34,18 +40,24 @@ export class RDataViewEditor {
     target.sourceVersion = this.sourceVersion
   }
 
-  /** Применяет ручное изменение source и обновляет diagnostics. */
+  /**
+   * Применяет ручное изменение source и обновляет diagnostics.
+   */
   applySourceText(source: string): void {
     this.source = source
     this.refreshDiagnostics()
   }
 
-  /** Сбрасывает source к базовому шаблону DataView v1. */
+  /**
+   * Сбрасывает source к базовому шаблону DataView v1.
+   */
   resetSource(): void {
     this.applySourceText(Endge.source.createDefault('data-view'))
   }
 
-  /** Обновляет diagnostics через source language strategy. */
+  /**
+   * Обновляет diagnostics через source language strategy.
+   */
   refreshDiagnostics(): void {
     this.diagnostics = Endge.source.validate('data-view', this.source).diagnostics ?? []
   }

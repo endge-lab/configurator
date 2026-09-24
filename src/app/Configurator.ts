@@ -43,7 +43,9 @@ export class ConfiguratorBootstrapError extends Error {
   }
 }
 
-/** Федерация уровня приложения и единственный владелец запуска Configurator. */
+/**
+ * Федерация уровня приложения и единственный владелец запуска Configurator.
+ */
 export class Configurator {
   private static readonly _modules: ConfiguratorModules = createConfiguratorModules(
     () => EndgeIDE.reset(),
@@ -100,7 +102,9 @@ export class Configurator {
     return this._modules.context.hasActiveWorkspace
   }
 
-  /** После создания обновляет серверный список Workspace без переключения контекста. */
+  /**
+   * После создания обновляет серверный список Workspace без переключения контекста.
+   */
   public static async createWorkspace(input: WorkspaceCreateInput): Promise<boolean> {
     const state = this.session.state
     if (state.status !== 'authenticated' || !state.session.platformAdmin) {
@@ -116,7 +120,9 @@ export class Configurator {
     }
   }
 
-  /** Мягко удаляет доступный Workspace и синхронизирует application context. */
+  /**
+   * Мягко удаляет доступный Workspace и синхронизирует application context.
+   */
   public static async deleteWorkspace(workspaceIdentity: string): Promise<boolean> {
     const state = this.session.state
     const session = state.status === 'authenticated' ? state.session : null
@@ -159,7 +165,9 @@ export class Configurator {
 
   public static get remoteDebugger() { return this._remoteDebugger }
 
-  /** Возвращает необязательную проекцию подключений текущего workspace. */
+  /**
+   * Возвращает необязательную проекцию подключений текущего workspace.
+   */
   public static get presence() { return this._modules.presence }
 
   public static async activateDebugger(): Promise<void> {
@@ -186,7 +194,9 @@ export class Configurator {
     return this._modules.oidcDiscovery
   }
 
-  /** Возвращает application-scoped access-control module для активного backend. */
+  /**
+   * Возвращает application-scoped access-control module для активного backend.
+   */
   public static get accessControl(): AccessControl_Module {
     this._accessControl ??= new AccessControl_Module(
       new AccessControlHttp_Adapter(this._modules.connections.activeBackendURL),
@@ -194,7 +204,9 @@ export class Configurator {
     return this._accessControl
   }
 
-  /** Возвращает application-owned историю версий активного workspace. */
+  /**
+   * Возвращает application-owned историю версий активного workspace.
+   */
   public static get releases(): ConfiguratorReleases_Module {
     this._releases ??= new ConfiguratorReleases_Module(
       new ConfiguratorReleasesHttp_Adapter(
@@ -214,7 +226,9 @@ export class Configurator {
     this._errorBoundary.setup()
   }
 
-  /** Проверяет сессию и однократно запускает Endge при первой навигации router. */
+  /**
+   * Проверяет сессию и однократно запускает Endge при первой навигации router.
+   */
   public static async init(mode: EndgeBootMode = 'application'): Promise<ConfiguratorStatus> {
     if (this._status !== 'idle') {
       return this._status
@@ -291,7 +305,9 @@ export class Configurator {
     this._errorBoundary = null
   }
 
-  /** Запускает route-scoped IDE и AI feature в порядке их зависимостей. */
+  /**
+   * Запускает route-scoped IDE и AI feature в порядке их зависимостей.
+   */
   public static async activateIDE(): Promise<void> {
     EndgeIDE.setup(this._modules.context)
     if (!this.hasActiveWorkspace) {
@@ -312,7 +328,9 @@ export class Configurator {
     }
   }
 
-  /** Освобождает route-scoped feature owners в обратном порядке. */
+  /**
+   * Освобождает route-scoped feature owners в обратном порядке.
+   */
   public static async deactivateIDE(): Promise<void> {
     this._remoteDebugger.dispose()
     AIWorkbench.reset()

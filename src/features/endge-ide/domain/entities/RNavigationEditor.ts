@@ -73,7 +73,9 @@ function treeFromUnknown(raw: unknown): NavigationTreeNodeEditor[] | null {
   return raw.map(readNode).filter(Boolean) as NavigationTreeNodeEditor[]
 }
 
-/** Модель редактора для RNavigation (коллекция navigations). */
+/**
+ * Модель редактора для RNavigation (коллекция navigations).
+ */
 export class RNavigationEditor {
   id!: number
   identity!: string

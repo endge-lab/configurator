@@ -3,7 +3,9 @@ import type { Router } from 'vue-router'
 import type { ConfiguratorDiagnostics_Module } from '@/app/modules/ConfiguratorDiagnostics_Module'
 import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
 
-/** Подключает границы ошибок Vue и браузера к диагностике Configurator. */
+/**
+ * Подключает границы ошибок Vue и браузера к диагностике Configurator.
+ */
 export class VueErrorBoundary_Adapter {
   private _installed = false
   private _previousVueErrorHandler: App['config']['errorHandler'] = undefined

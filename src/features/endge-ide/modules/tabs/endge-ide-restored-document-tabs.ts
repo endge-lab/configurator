@@ -43,7 +43,7 @@ const DOCUMENT_LOOKUPS: ReadonlyMap<string, (documentId: string) => unknown> = n
   ['type', documentId => Endge.domain.getType(documentId)],
 ])
 
-/** Возвращает текущий domain-документ по identity или storage id. */
+// Возвращает текущий domain-документ по identity или storage id.
 export function resolveEndgeIDEDocument(
   documentId: string | number,
   documentType: DomainDocumentType,
@@ -55,7 +55,7 @@ export function resolveEndgeIDEDocument(
   return DOCUMENT_LOOKUPS.get(String(documentType))?.(normalizedId) ?? null
 }
 
-/** Нормализует Payload id/identity документа в стабильный identity для ключа вкладки. */
+// Нормализует Payload id/identity документа в стабильный identity для ключа вкладки.
 export function resolveEndgeIDEDocumentIdentity(
   documentId: string | number,
   documentType: DomainDocumentType,
@@ -70,7 +70,7 @@ export function resolveEndgeIDEDocumentIdentity(
   return identity || normalizedId
 }
 
-/** Возвращает id восстановленных document-вкладок, отсутствующих в загруженном домене. */
+// Возвращает id восстановленных document-вкладок, отсутствующих в загруженном домене.
 export function getMissingDocumentTabIds(tabs: readonly SmartTabRef[]): string[] {
   const missingTabIds: string[] = []
   for (const tab of tabs) {

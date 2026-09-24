@@ -1,4 +1,4 @@
-/** Удаляет всё локальное состояние Configurator, доступное текущему origin. */
+// Удаляет всё локальное состояние Configurator, доступное текущему origin.
 export function clearConfiguratorBrowserState(): void {
   if (typeof window === 'undefined') {
     return

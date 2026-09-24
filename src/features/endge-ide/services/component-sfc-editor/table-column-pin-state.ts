@@ -2,7 +2,7 @@ export type TableVisualColumnPinSide = 'left' | 'right' | 'none'
 
 const PIN_SIDES = new Set<TableVisualColumnPinSide>(['left', 'right'])
 
-/** Читает статическую default-pin строку, следуя compiler semantics: первое валидное значение побеждает. */
+// Читает статическую default-pin строку, следуя compiler semantics: первое валидное значение побеждает.
 export function parseTableDefaultPin(value: string): Map<string, Exclude<TableVisualColumnPinSide, 'none'>> {
   const result = new Map<string, Exclude<TableVisualColumnPinSide, 'none'>>()
 
@@ -19,7 +19,7 @@ export function parseTableDefaultPin(value: string): Map<string, Exclude<TableVi
   return result
 }
 
-/** Точечно заменяет одну колонку в default-pin, сохраняя остальные, включая Source-owned invalid tokens. */
+// Точечно заменяет одну колонку в default-pin, сохраняя остальные, включая Source-owned invalid tokens.
 export function updateTableDefaultPin(
   value: string,
   key: string,

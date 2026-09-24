@@ -83,7 +83,7 @@ const currentLocale = ref<string>(Endge.workspace.defaultLocale)
 const activePanel = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source'] as const)
 const sourceEditorRef = ref<ScriptEditorHandle | null>(null)
 
-/** Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ-значение */
+// Режим редактирования: json — ручной JSON, table — иерархическая таблица ключ-значение
 const editMode = useSmartTabSelection('i18n.edit-mode', 'table', ['json', 'table'] as const)
 
 const panelButtons = [
@@ -91,7 +91,7 @@ const panelButtons = [
   { value: 'source', icon: Code2, label: 'Source' },
 ] as const
 
-/** Разворачивает вложенный объект в плоский список ключей в точечной нотации */
+// Разворачивает вложенный объект в плоский список ключей в точечной нотации
 function flattenObject(
   obj: Record<string, unknown>,
   prefix = '',
@@ -117,7 +117,7 @@ function flattenObject(
   return out.sort((a, b) => a.key.localeCompare(b.key))
 }
 
-/** Собирает вложенный объект из плоского списка (точечная нотация) */
+// Собирает вложенный объект из плоского списка (точечная нотация)
 function unflattenObject(
   rows: { key: string, value: string }[],
 ): Record<string, unknown> {
@@ -140,7 +140,7 @@ function unflattenObject(
   return out
 }
 
-/** Строки таблицы для текущей локали (ключ в точечной нотации, значение) */
+// Строки таблицы для текущей локали (ключ в точечной нотации, значение)
 const tableRows = ref<{ key: string, value: string }[]>([])
 
 function syncTableRowsFromLocale(): void {

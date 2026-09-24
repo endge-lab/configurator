@@ -884,7 +884,7 @@ function updateEntryKey(name: CollectionName, entry: any, value: string): void {
   notifyRootMutation()
 }
 
-/** Применяет полную diagnostics model к root/replace или переводит её в минимальный inherit patch. */
+// Применяет полную diagnostics model к root/replace или переводит её в минимальный inherit patch.
 function setDiagnosticsConfiguration(
   value: EndgeDiagnosticsConfiguration,
 ): void {
@@ -906,7 +906,7 @@ function setDiagnosticsConfiguration(
   notifyRootMutation()
 }
 
-/** Строит diagnostics contribution относительно upstream configuration. */
+// Строит diagnostics contribution относительно upstream configuration.
 function createDiagnosticsPatch(
   upstream: EndgeDiagnosticsConfiguration,
   value: EndgeDiagnosticsConfiguration,
@@ -1061,7 +1061,7 @@ function createDiagnosticsPatch(
   return hasKeys(result) ? result : undefined
 }
 
-/** Создаёт required scalar override только при фактическом отличии. */
+// Создаёт required scalar override только при фактическом отличии.
 function scalarPatch<T>(
   upstream: T,
   value: T,
@@ -1071,7 +1071,7 @@ function scalarPatch<T>(
     : { op: 'set', value: clone(value) }
 }
 
-/** Строит keyed upsert/remove operations относительно upstream collection. */
+// Строит keyed upsert/remove operations относительно upstream collection.
 function collectionPatch<T>(
   upstream: T[],
   value: T[],
@@ -1093,7 +1093,7 @@ function collectionPatch<T>(
   return entries.length ? { entries } : undefined
 }
 
-/** Удаляет отсутствующие поля из вложенного diagnostics patch. */
+// Удаляет отсутствующие поля из вложенного diagnostics patch.
 function compactObject<T extends Record<string, unknown>>(
   value: T,
 ): Partial<T> {
@@ -1102,12 +1102,12 @@ function compactObject<T extends Record<string, unknown>>(
   ) as Partial<T>
 }
 
-/** Проверяет, содержит ли patch хотя бы одну операцию. */
+// Проверяет, содержит ли patch хотя бы одну операцию.
 function hasKeys(value: object): boolean {
   return Object.keys(value).length > 0
 }
 
-/** Сравнивает JSON-safe configuration values. */
+// Сравнивает JSON-safe configuration values.
 function isEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }

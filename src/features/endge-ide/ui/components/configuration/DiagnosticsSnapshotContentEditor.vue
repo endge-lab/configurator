@@ -13,7 +13,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: EndgeDiagnosticsSnapshotContentConfiguration]
 }>()
 
-/** Заменяет один content flag, не передавая mutable ссылку владельцу configuration. */
+// Заменяет один content flag, не передавая mutable ссылку владельцу configuration.
 function setContent(
   key: keyof EndgeDiagnosticsSnapshotContentConfiguration,
   value: boolean | 'indeterminate',
@@ -21,7 +21,7 @@ function setContent(
   emit('update:modelValue', { ...props.modelValue, [key]: value === true })
 }
 
-/** Выбирает или очищает все части snapshot одной атомарной заменой model. */
+// Выбирает или очищает все части snapshot одной атомарной заменой model.
 function setAll(value: boolean): void {
   emit('update:modelValue', {
     telemetry: value,

@@ -1,6 +1,6 @@
-import { DataPath } from '@endge/raph'
+import { DataPath } from '@raphy-js/raph'
 
-/** Читает канонический путь в snapshot через чистый parser, без обращения к Raph.app. */
+// Читает канонический путь в snapshot через чистый parser, без обращения к Raph.app.
 export function readRuntimeInspectionData(data: unknown, path: string): unknown {
   let value = data
   for (const segment of DataPath.fromString(path).segments()) {

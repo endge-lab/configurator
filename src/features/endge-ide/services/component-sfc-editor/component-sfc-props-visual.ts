@@ -6,7 +6,7 @@ import type {
   TypeSourceField,
 } from '@endge/core'
 
-/** Строит временный документ схемы. Каноническим значением остаётся defineProps в Source SFC. */
+// Строит временный документ схемы. Каноническим значением остаётся defineProps в Source SFC.
 export function componentSFCPropsToVisualDocument(
   projection: ComponentSFCPropsVisualProjection,
 ): TypeSourceDocument {
@@ -18,7 +18,7 @@ export function componentSFCPropsToVisualDocument(
   }
 }
 
-/** Преобразует визуальную проекцию обратно в плоский публичный контракт props компилятора. */
+// Преобразует визуальную проекцию обратно в плоский публичный контракт props компилятора.
 export function visualDocumentToComponentSFCProps(
   document: TypeSourceDocument,
 ): RComponentSFC_IR_Prop[] {
