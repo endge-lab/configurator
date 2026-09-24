@@ -5,7 +5,7 @@ import type {
   DomainWorkingSetResult,
 } from '@/features/endge-ide/domain/types/domain-working-set.type'
 
-/** Нормализует UI document type к типу сущности compiled dependency graph. */
+// Нормализует UI document type к типу сущности compiled dependency graph.
 export function normalizeDomainWorkingSetEntityType(documentType: string): string {
   if (documentType.startsWith('query-')) {
     return 'query'
@@ -22,14 +22,14 @@ export function normalizeDomainWorkingSetEntityType(documentType: string): strin
   return documentType
 }
 
-/** Формирует стабильный ключ документа, предпочитая persisted identity. */
+// Формирует стабильный ключ документа, предпочитая persisted identity.
 export function getDomainWorkingSetRefKey(ref: DomainWorkingSetRef): string {
   const identity = String(ref.identity ?? '').trim()
   const id = String(ref.id ?? '').trim()
   return `${ref.entityType}:${identity || id}`
 }
 
-/** Сопоставляет persisted и актуальную ссылки, предпочитая stable identity. */
+// Сопоставляет persisted и актуальную ссылки, предпочитая stable identity.
 export function domainWorkingSetRefsMatch(
   left: DomainWorkingSetRef,
   right: DomainWorkingSetRef,
@@ -52,10 +52,8 @@ export function domainWorkingSetRefsMatch(
     .some(value => leftValues.has(String(value)))
 }
 
-/**
- * Строит ограниченный working set: dependencies обходятся только по исходящим
- * связям, а owner chain добавляется как context без обратного раскрытия вниз.
- */
+// Строит ограниченный working set: dependencies обходятся только по исходящим
+// связям, а owner chain добавляется как context без обратного раскрытия вниз.
 export function resolveDomainWorkingSet(
   roots: readonly DomainWorkingSetRef[],
   graph: DomainWorkingSetGraph,

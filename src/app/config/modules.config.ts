@@ -23,7 +23,7 @@ import { DomainVersionHttp_Adapter } from '@/features/domain-version/adapters/Do
 import { DomainVersions_Module } from '@/features/domain-version/DomainVersions_Module'
 import { getDefaultBackendURL } from '@/features/endge-ide/config/endge-backend'
 
-/** Создаёт единый граф модулей уровня приложения. */
+// Создаёт единый граф модулей уровня приложения.
 export function createConfiguratorModules(resetEndgeIDE: () => Promise<void>, remoteCommands?: EndgeRemoteCommandTransport): ConfiguratorModules {
   const connections = new BackendConnections_Module(
     getDefaultBackendURL(),

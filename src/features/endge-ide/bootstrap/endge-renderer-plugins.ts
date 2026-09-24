@@ -3,11 +3,9 @@ import { EndgeVuePlugin } from '@endge/ui-vue'
 
 const REQUIRED_RENDERER_MODULE_KEYS = ['vue'] as const
 
-/**
- * Плагины renderer необходимо зарегистрировать до импорта, читающего модули Endge
- * и тем самым конфигурирующего федерацию. Поэтому этот модуль намеренно
- * импортируется первым из main.ts.
- */
+// Плагины renderer необходимо зарегистрировать до импорта, читающего модули Endge
+// и тем самым конфигурирующего федерацию. Поэтому этот модуль намеренно
+// импортируется первым из main.ts.
 if (!Endge.isConfigured) {
   Endge.use(EndgeVuePlugin)
 }

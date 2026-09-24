@@ -15,7 +15,7 @@ interface WorkflowDocument {
   isTemporary?: boolean
 }
 
-/** Проекция текущего Workspace; ничего не запускает и не меняет доменные документы. */
+// Проекция текущего Workspace; ничего не запускает и не меняет доменные документы.
 export function buildWorkspaceWorkflowTree(workspace: EndgeWorkspaceDefinition): WorkflowDependency {
   const rootId = `workspace:${encodeURIComponent(workspace.identity)}`
   const address = (type: string, document: WorkflowDocument) =>

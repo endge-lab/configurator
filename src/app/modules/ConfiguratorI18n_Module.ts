@@ -8,7 +8,9 @@ import ru from '@/i18n/locales/ru.json'
 type MessageSchema = typeof en
 export type ConfiguratorLocale = string
 
-/** Синхронизирует адаптер i18n Vue с загруженным Workspace Endge. */
+/**
+ * Синхронизирует адаптер i18n Vue с загруженным Workspace Endge.
+ */
 export class ConfiguratorI18n_Module {
   private readonly _availableLocales = shallowRef<Array<{ label: string, value: ConfiguratorLocale }>>([])
   private readonly _stopHandles: Array<() => void> = []

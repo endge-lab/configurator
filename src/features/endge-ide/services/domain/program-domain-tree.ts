@@ -3,7 +3,7 @@ import type { FsFileNode, FsFolderNode, FsNode } from './domain-tree'
 import { DOMAIN_DOCUMENT_DESCRIPTORS, DomainSectionType } from '@endge/core'
 import { attachContextualCompositions, buildCustomWorkspaceProjection, getRootFolderOrder, ROOT_FOLDER_LABELS, WORKSPACE_ROOT_FOLDER_IDENTITY } from './domain-tree'
 
-/** Проекция каталога без материализации Domain, чтения Source и запуска компилятора. */
+// Проекция каталога без материализации Domain, чтения Source и запуска компилятора.
 export function buildProgramDomainTree(
   catalog: CompiledProgramCatalog,
   sections: Record<string, DomainSectionType>,

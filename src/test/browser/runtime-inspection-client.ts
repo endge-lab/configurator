@@ -1,7 +1,7 @@
 import type { EndgeDomainBundle, StoreRuntimeHost } from '@endge/core'
 import { createDefaultEndgeConfiguration, Endge } from '@endge/core'
 
-/** Ручной browser integration fixture: реальные Core/Bridge и локальный backend, только данные в памяти. */
+// Ручной browser integration fixture: реальные Core/Bridge и локальный backend, только данные в памяти.
 export async function startRuntimeInspectionClient(workspaceIdentity: string, serverUrl: string, options: { mountRuntime?: boolean } = {}): Promise<void> {
   Endge.context.configurePersistence({ context: 'disabled' })
   const keys = ['facets', 'facet-documents', 'folders', 'types', 'queries', 'data-views', 'compositions', 'stores', 'streams', 'simulations', 'updates', 'mocks', 'components', 'actions', 'filters', 'converters', 'computations', 'vocabs', 'i18n-bundles', 'auth-profiles', 'navigations', 'styles', 'configurations']

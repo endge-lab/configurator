@@ -2,7 +2,7 @@ import type { DomainDocumentType } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Разрешает executable SFC и legacy Component по общей source-ссылке. */
+// Разрешает executable SFC и legacy Component по общей source-ссылке.
 export function resolveComponentDocument(identity: string): {
   documentId: string
   documentType: DomainDocumentType

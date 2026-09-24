@@ -6,15 +6,15 @@ import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const props = withDefaults(
   defineProps<{
-    /** Какие сущности домена принимает зона (один или несколько) */
+    // Какие сущности домена принимает зона (один или несколько)
     acceptSectionTypes: DomainSectionType[]
-    /** Показывать подсказку «перетащите сюда» */
+    // Показывать подсказку «перетащите сюда»
     showHint?: boolean
-    /** Свой текст подсказки (иначе по типу сущности) */
+    // Свой текст подсказки (иначе по типу сущности)
     hintText?: string
-    /** Принимаемые виды элементов дерева. */
+    // Принимаемые виды элементов дерева.
     acceptKinds?: Array<'document' | 'folder'>
-    /** Какое поле payload сохраняется в reference value. */
+    // Какое поле payload сохраняется в reference value.
     valueField?: 'id' | 'identity'
   }>(),
   { showHint: true, acceptKinds: () => ['document'], valueField: 'id' },
@@ -31,7 +31,7 @@ const emit = defineEmits<{
 
 const DOMAIN_ENTITY_MIME = 'application/x-endge-domain-entity'
 
-/** Подписи типов сущностей для подсказки */
+// Подписи типов сущностей для подсказки
 const SECTION_LABELS: Record<string, string> = {
   [DomainSectionType.Component]: 'компонент',
   [DomainSectionType.Converter]: 'конвертер',
@@ -48,7 +48,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 const dropOver = ref(false)
 
-/** Рамка видна при наведении или пока из домена тащат подходящий тип */
+// Рамка видна при наведении или пока из домена тащат подходящий тип
 const showHighlight = computed(() => {
   if (dropOver.value) {
     return true

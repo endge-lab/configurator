@@ -146,7 +146,7 @@ function addColumn(title = ''): void {
   }
 }
 
-/** Очистить во всех колонках все привязки данных (dataPaths и конвертеры). */
+// Очистить во всех колонках все привязки данных (dataPaths и конвертеры).
 function clearAllDataPathBindings(): void {
   const ed = editor.value
   if (!ed?.columns?.length) {
@@ -179,7 +179,7 @@ function removeColumn(index: number): void {
   }
 }
 
-/** Удалить колонку по индексу. Возвращает false, если индекс некорректен. */
+// Удалить колонку по индексу. Возвращает false, если индекс некорректен.
 function removeColumnByIndex(index: number): boolean {
   if (!Number.isInteger(index) || index < 0) {
     return false
@@ -326,7 +326,7 @@ function removeAccessor(col: RComponentTableColumnEditor, idx: number): void {
   col.accessors.splice(idx, 1)
 }
 
-/** Список конвертеров домена для выбора в цепочке */
+// Список конвертеров домена для выбора в цепочке
 const converterOptions = computed(() => {
   const list = Endge.domain.getConverters()
   return list.map(c => ({
@@ -335,10 +335,10 @@ const converterOptions = computed(() => {
   }))
 })
 
-/** Значение «Выключено» для сортировки (Select не допускает пустую строку в SelectItem) */
+// Значение «Выключено» для сортировки (Select не допускает пустую строку в SelectItem)
 const SORT_BY_OFF = '__sort_off__'
 
-/** Опции полей для сортировки: ключи dataPaths текущей колонки + «Выключено» */
+// Опции полей для сортировки: ключи dataPaths текущей колонки + «Выключено»
 const sortByFieldOptions = computed(() => {
   const col = selectedColumn.value
   const keys = (col?.accessors ?? [])
@@ -350,7 +350,7 @@ const sortByFieldOptions = computed(() => {
   ]
 })
 
-/** Типы для сортировки (только примитивы) */
+// Типы для сортировки (только примитивы)
 const SORT_TYPE_OPTIONS = [
   { value: 'String', label: 'String' },
   { value: 'Number', label: 'Number' },
@@ -427,7 +427,7 @@ const mainTab = useSmartTabSelection(
   ['general', 'columns', 'data', 'settings'] as const,
 )
 
-/** Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора */
+// Рефы полей «Путь (accessor)» по индексу - для перевода фокуса из инспектора
 const accessorInputRefs = ref<Record<number, HTMLInputElement | null>>({})
 
 function setAccessorInputRef(idx: number, el: unknown): void {
@@ -442,7 +442,7 @@ function setAccessorInputRef(idx: number, el: unknown): void {
   accessorInputRefs.value[idx] = input ?? null
 }
 
-/** При смене выбранной строки accessor (в т.ч. из инспектора) - переносим фокус на неё */
+// При смене выбранной строки accessor (в т.ч. из инспектора) - переносим фокус на неё
 watch(
   () => selectedColumn.value?.selectedAccessorIndex ?? -1,
   (idx) => {

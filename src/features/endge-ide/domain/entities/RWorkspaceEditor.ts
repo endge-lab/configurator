@@ -2,7 +2,9 @@ import type { EndgeConfiguration, EndgeDataMode, EndgeWorkspaceDefinition, Endge
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { readWorkflowLayout, writeWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
-/** Черновик настроек и раскладки Workspace; metadata документов не изменяется. */
+/**
+ * Черновик настроек и раскладки Workspace; metadata документов не изменяется.
+ */
 export class RWorkspaceEditor {
   public readonly identity: string
   public displayName: string
@@ -26,7 +28,9 @@ export class RWorkspaceEditor {
     this._savedSnapshot = this.snapshot()
   }
 
-  /** Merge затрагивает только принадлежащие этому редактору поля Workspace. */
+  /**
+   * Merge затрагивает только принадлежащие этому редактору поля Workspace.
+   */
   public toDocument(workspace: EndgeWorkspaceDefinition): EndgeWorkspaceDefinition {
     return JSON.parse(JSON.stringify({
       ...workspace,

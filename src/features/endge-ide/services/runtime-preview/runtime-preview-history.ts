@@ -10,7 +10,7 @@ interface PersistedRuntimePreviewHistory {
   targets: RuntimePreviewTarget[]
 }
 
-/** Читает только корни preview IDE. Runtime-hosts и состояние lifecycle никогда не сохраняются. */
+// Читает только корни preview IDE. Runtime-hosts и состояние lifecycle никогда не сохраняются.
 export function readRuntimePreviewHistory(): RuntimePreviewTarget[] {
   try {
     const payload = Endge.context.getState<unknown>(STATE_KEY)
@@ -21,7 +21,7 @@ export function readRuntimePreviewHistory(): RuntimePreviewTarget[] {
   }
 }
 
-/** Сохраняет упорядоченный набор корней, показанных сейчас в Runtime Tree. */
+// Сохраняет упорядоченный набор корней, показанных сейчас в Runtime Tree.
 export function writeRuntimePreviewHistory(targets: readonly RuntimePreviewTarget[]): void {
   try {
     if (targets.length === 0) {

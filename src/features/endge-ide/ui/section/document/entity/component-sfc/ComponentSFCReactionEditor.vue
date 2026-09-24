@@ -137,7 +137,7 @@ function saveReaction(): boolean {
   return saved
 }
 
-/** Применяет изменённую существующую reaction перед сохранением документа. */
+// Применяет изменённую существующую reaction перед сохранением документа.
 function flushPendingEdits(): boolean {
   if (draft.value.trim() === (props.modelValue ?? '').trim()) {
     return true

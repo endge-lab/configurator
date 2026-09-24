@@ -176,12 +176,12 @@ watch(
   { deep: true },
 )
 
-/** Клонирует JSON-safe configuration без передачи mutable ссылок родителю. */
+// Клонирует JSON-safe configuration без передачи mutable ссылок родителю.
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-/** Создаёт writable model включения одного telemetry signal. */
+// Создаёт writable model включения одного telemetry signal.
 function createSignalModel(signal: DiagnosticsSignal): WritableComputedRef<boolean> {
   return computed({
     get: () => draft.value.telemetry.collection.signals.includes(signal),
@@ -192,7 +192,7 @@ function createSignalModel(signal: DiagnosticsSignal): WritableComputedRef<boole
   })
 }
 
-/** Создаёт нормализованную numeric model автоматической snapshot policy. */
+// Создаёт нормализованную numeric model автоматической snapshot policy.
 function createAutomaticNumberModel(
   key: 'errorCount' | 'windowSeconds',
   minimum: number,
@@ -203,7 +203,7 @@ function createAutomaticNumberModel(
   })
 }
 
-/** Возвращает первый свободный нумерованный id указанного типа. */
+// Возвращает первый свободный нумерованный id указанного типа.
 function nextId(prefix: string, values: readonly { id: string }[]): string {
   let index = 1
   while (values.some(value => value.id === `${prefix}-${index}`)) {
@@ -212,7 +212,7 @@ function nextId(prefix: string, values: readonly { id: string }[]): string {
   return `${prefix}-${index}`
 }
 
-/** Добавляет console output в редактируемую EndgeConfiguration. */
+// Добавляет console output в редактируемую EndgeConfiguration.
 function addOutput(): void {
   const id = nextId('output', outputs.value)
   const sequence = Number(id.split('-').at(-1)) || outputs.value.length + 1
@@ -232,7 +232,7 @@ function addOutput(): void {
   feedback.value = `Добавлен ${id}`
 }
 
-/** Переключает тип output и применяет минимальные options выбранного adapter. */
+// Переключает тип output и применяет минимальные options выбранного adapter.
 function setOutputAdapterType(output: EndgeDiagnosticsOutputConfiguration, value: unknown): void {
   const adapterType: DiagnosticsAdapterType = value === 'sentry' ? 'sentry' : 'console'
   output.adapterType = adapterType
@@ -253,7 +253,7 @@ function setOutputAdapterType(output: EndgeDiagnosticsOutputConfiguration, value
       }
 }
 
-/** Удаляет output и переводит связанные routes на первый доступный канал. */
+// Удаляет output и переводит связанные routes на первый доступный канал.
 function removeOutput(outputId: string): void {
   draft.value.telemetry.outputs = outputs.value.filter(output => output.id !== outputId)
   const fallback = outputs.value[0]?.id ?? ''
@@ -268,7 +268,7 @@ function removeOutput(outputId: string): void {
   feedback.value = 'Канал удалён'
 }
 
-/** Добавляет локальное правило доставки с безопасными начальными значениями. */
+// Добавляет локальное правило доставки с безопасными начальными значениями.
 function addRoute(): void {
   const id = nextId('diagnostics-route', routes.value)
   routes.value.push({
@@ -281,13 +281,13 @@ function addRoute(): void {
   feedback.value = 'Правило добавлено'
 }
 
-/** Удаляет правило маршрутизации из редактируемой configuration. */
+// Удаляет правило маршрутизации из редактируемой configuration.
 function removeRoute(routeId: string): void {
   draft.value.telemetry.routes = routes.value.filter(route => route.id !== routeId)
   feedback.value = 'Правило удалено'
 }
 
-/** Проверяет active runtime adapter выбранного output. */
+// Проверяет active runtime adapter выбранного output.
 async function testOutput(output: EndgeDiagnosticsOutputConfiguration): Promise<void> {
   const succeeded = await Endge.diagnostics.testOutput(output.id)
   feedback.value = succeeded
@@ -295,13 +295,13 @@ async function testOutput(output: EndgeDiagnosticsOutputConfiguration): Promise<
     : 'Канал станет доступен после применения configuration'
 }
 
-/** Создаёт snapshot текущего Core и скачивает его через общий diagnostics owner. */
+// Создаёт snapshot текущего Core и скачивает его через общий diagnostics owner.
 function prepareSnapshot(): void {
   Endge.diagnostics.downloadSnapshot(snapshotOptions(manualSnapshotContent.value))
   feedback.value = 'Диагностический снимок скачан'
 }
 
-/** Переводит редактируемый content policy в options ручного snapshot. */
+// Переводит редактируемый content policy в options ручного snapshot.
 function snapshotOptions(content: EndgeDiagnosticsSnapshotContentConfiguration) {
   return {
     includeTelemetry: content.telemetry,
@@ -316,42 +316,42 @@ function snapshotOptions(content: EndgeDiagnosticsSnapshotContentConfiguration) 
   }
 }
 
-/** Читает JSON-safe option выбранного output. */
+// Читает JSON-safe option выбранного output.
 function outputOption(output: EndgeDiagnosticsOutputConfiguration, key: string): unknown {
   return output.options[key]
 }
 
-/** Обновляет JSON-safe option выбранного output. */
+// Обновляет JSON-safe option выбранного output.
 function setOutputOption(output: EndgeDiagnosticsOutputConfiguration, key: string, value: string | number | boolean): void {
   output.options[key] = value
 }
 
-/** Возвращает единственный signal, редактируемый упрощённой формой route. */
+// Возвращает единственный signal, редактируемый упрощённой формой route.
 function routeSignal(route: EndgeDiagnosticsRoute): DiagnosticsSignal {
   return route.match.signals?.[0] ?? 'log'
 }
 
-/** Применяет выбранный signal к route filter. */
+// Применяет выбранный signal к route filter.
 function setRouteSignal(route: EndgeDiagnosticsRoute, value: unknown): void {
   route.match.signals = [value === 'span' ? 'span' : 'log']
 }
 
-/** Возвращает текстовое представление минимального severity route. */
+// Возвращает текстовое представление минимального severity route.
 function routeSeverity(route: EndgeDiagnosticsRoute): DiagnosticsSeverity {
   return SEVERITY_TEXT[route.match.minSeverity ?? 1]
 }
 
-/** Применяет выбранный OpenTelemetry severity number к route. */
+// Применяет выбранный OpenTelemetry severity number к route.
 function setRouteSeverity(route: EndgeDiagnosticsRoute, value: unknown): void {
   route.match.minSeverity = SEVERITY_NUMBER[String(value) as DiagnosticsSeverity] ?? 1
 }
 
-/** Возвращает одну phase или значение any для формы. */
+// Возвращает одну phase или значение any для формы.
 function routePhase(route: EndgeDiagnosticsRoute): DiagnosticsRoutePhase {
   return route.match.phases?.[0] ?? 'any'
 }
 
-/** Применяет optional phase filter к route. */
+// Применяет optional phase filter к route.
 function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
   route.match.phases = value === 'authoring' || value === 'build' || value === 'runtime' ? [value] : undefined
 }

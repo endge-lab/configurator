@@ -4,7 +4,7 @@ import { Endge, FilterType, QueryType } from '@endge/core'
 import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import { getDomainDocumentPresentation } from '@/features/document-presentation/tools/resolve-document-presentation'
 
-/** Readonly graph compiled Program; no Source, parser, Domain materialization or hosts. */
+// Readonly graph compiled Program; no Source, parser, Domain materialization or hosts.
 export function buildProgramWorkflowTree(): WorkflowDependency {
   const workspace = Endge.workspace.current
   const documents = Object.values(Endge.program.catalog.documents)

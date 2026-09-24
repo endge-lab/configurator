@@ -3,7 +3,7 @@ import type { RuntimePreviewLaunchRequest } from '@/features/endge-ide/domain/ty
 
 import { Endge } from '@endge/core'
 
-/** Собирает только auth profiles Query, достижимых из запускаемого preview graph. */
+// Собирает только auth profiles Query, достижимых из запускаемого preview graph.
 export function collectRuntimePreviewAuthProfiles(request: RuntimePreviewLaunchRequest): AuthProfileSchema[] {
   // Simulation выбирает overrides по occurrence. Реальные Query запрашивают auth
   // при выполнении через штатный onInteractionRequired; mocked Query не требуют сессии.

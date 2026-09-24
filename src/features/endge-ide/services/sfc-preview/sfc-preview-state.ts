@@ -38,7 +38,9 @@ export interface SFCPreviewLaunchInput {
   source: string
 }
 
-/** Владеет одним отдельным preview SFC и всеми его освобождаемыми ресурсами. */
+/**
+ * Владеет одним отдельным preview SFC и всеми его освобождаемыми ресурсами.
+ */
 export class SFCPreviewSession {
   public readonly runtime = shallowRef<ComponentSFCRuntimeHost | null>(null)
   public readonly input = shallowRef<RuntimeHostInputSource>({ kind: 'local', props: {} })

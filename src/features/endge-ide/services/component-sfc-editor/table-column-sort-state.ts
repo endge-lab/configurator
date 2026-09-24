@@ -7,18 +7,18 @@ export interface TableVisualColumnSortItem {
 
 const SORT_DIRECTIONS = new Set<TableVisualColumnSortDirection>(['asc', 'desc'])
 
-/** Читает ordered dot paths из Column sort-by. */
+// Читает ordered dot paths из Column sort-by.
 export function parseTableColumnSortPaths(value: string): string[] {
   return value.split(',').map(path => path.trim()).filter(Boolean)
 }
 
-/** Сериализует paths обратно в компактный Source attribute. */
+// Сериализует paths обратно в компактный Source attribute.
 export function serializeTableColumnSortPaths(paths: readonly string[]): string | null {
   const value = paths.map(path => path.trim()).filter(Boolean).join(',')
   return value || null
 }
 
-/** Проверяет row-relative DataPath, поддерживаемый Table renderer. */
+// Проверяет row-relative DataPath, поддерживаемый Table renderer.
 export function isTableColumnSortPath(value: string): boolean {
   const path = value.trim()
   const identifier = String.raw`[A-Z_$][\w$]*`
@@ -29,14 +29,14 @@ export function isTableColumnSortPath(value: string): boolean {
   return new RegExp(String.raw`^${segment}(?:\.${segment})*$`, 'i').test(path)
 }
 
-/** Читает default-sort в compiler order; позиция элемента является его sort priority. */
+// Читает default-sort в compiler order; позиция элемента является его sort priority.
 export function parseTableDefaultSort(value: string): TableVisualColumnSortItem[] {
   return splitSortTokens(value)
     .map(parseSortToken)
     .filter((item): item is TableVisualColumnSortItem => item != null)
 }
 
-/** Меняет направление одной колонки, сохраняя её priority и посторонние Source-токены. */
+// Меняет направление одной колонки, сохраняя её priority и посторонние Source-токены.
 export function updateTableDefaultSort(
   value: string,
   key: string,
@@ -64,7 +64,7 @@ export function updateTableDefaultSort(
   return nextTokens.join(',') || null
 }
 
-/** Переименовывает ключ в default-sort без изменения priority и direction. */
+// Переименовывает ключ в default-sort без изменения priority и direction.
 export function renameTableDefaultSortKey(
   value: string,
   oldKey: string,
@@ -94,7 +94,7 @@ export function renameTableDefaultSortKey(
   return nextTokens.join(',') || null
 }
 
-/** Перемещает сортировку на один priority выше или ниже, не нормализуя остальные токены. */
+// Перемещает сортировку на один priority выше или ниже, не нормализуя остальные токены.
 export function moveTableDefaultSort(
   value: string,
   key: string,

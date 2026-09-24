@@ -2,7 +2,7 @@ import type { TypeProgramPayload, TypeSourceDefinition } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Определяет Type Source для компиляции SFC в редакторе до или после полной сборки домена. */
+// Определяет Type Source для компиляции SFC в редакторе до или после полной сборки домена.
 export function resolveEndgeTypeDefinition(identity: string): TypeSourceDefinition | null {
   const compiled = Endge.program.getTypeArtifact(identity)?.payload.definition
   if (compiled) {

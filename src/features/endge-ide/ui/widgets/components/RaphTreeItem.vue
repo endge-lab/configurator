@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-/** Рекурсивный узел дерева Raph для вкладки «Узлы». */
+// Рекурсивный узел дерева Raph для вкладки «Узлы».
 interface NodeTree {
   id: string
   type?: string

@@ -3,7 +3,9 @@ import type { SFCRenderInspectionNode, SFCRenderInspectionTreeNode } from '@endg
 import { SFCRenderInspectionSession } from '@endge/core'
 import { computed, ref } from 'vue'
 
-/** Принадлежащие Configurator выбор и JSON-проекция над нейтральной к renderer сессией. */
+/**
+ * Принадлежащие Configurator выбор и JSON-проекция над нейтральной к renderer сессией.
+ */
 export class SFCRenderInspectionController {
   public readonly session = new SFCRenderInspectionSession()
   public readonly hoveredId = ref<string | null>(null)

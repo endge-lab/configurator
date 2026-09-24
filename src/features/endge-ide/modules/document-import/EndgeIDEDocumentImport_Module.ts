@@ -7,23 +7,27 @@ import type {
 import { Endge } from '@endge/core'
 import { reactive, readonly } from 'vue'
 
-/** Владеет состоянием пользовательского выбора поверх Core document import. */
+/**
+ * Владеет состоянием пользовательского выбора поверх Core document import.
+ */
 export class EndgeIDEDocumentImport_Module {
-  /** Единственный state import-dialog в рамках lifecycle EndgeIDE. */
+  // Единственный state import-dialog в рамках lifecycle EndgeIDE.
   private readonly _state = reactive<EndgeIDEDocumentImportState>(createInitialState())
 
-  /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
 
-  /** Открывает чистый workflow для выбранного внешнего формата. */
+  /**
+   * Открывает чистый workflow для выбранного внешнего формата.
+   */
   public open(format: DocumentImportFormat): void {
     this._replaceState({ ...createInitialState(), open: true, format })
   }
 
-  /** Закрывает диалог, если подтверждённый импорт сейчас не выполняется. */
+  /**
+   * Закрывает диалог, если подтверждённый импорт сейчас не выполняется.
+   */
   public close(): void {
     if (this._state.status === 'applying') {
       return
@@ -31,7 +35,9 @@ export class EndgeIDEDocumentImport_Module {
     this._replaceState(createInitialState())
   }
 
-  /** Передаёт текст файла в Core и выбирает все готовые кандидаты. */
+  /**
+   * Передаёт текст файла в Core и выбирает все готовые кандидаты.
+   */
   public prepareSource(input: EndgeIDEDocumentImportSource): void {
     if (!this._state.format) {
       throw new Error('Document import format is not selected.')
@@ -61,7 +67,9 @@ export class EndgeIDEDocumentImport_Module {
     }
   }
 
-  /** Изменяет выбор одного доступного кандидата. */
+  /**
+   * Изменяет выбор одного доступного кандидата.
+   */
   public setCandidateSelected(candidateId: string, selected: boolean): void {
     const candidate = this._state.plan?.candidates.find(item => item.id === candidateId)
     if (!candidate || candidate.status !== 'ready') {
@@ -77,24 +85,32 @@ export class EndgeIDEDocumentImport_Module {
     this._state.selectedCandidateIds = [...next]
   }
 
-  /** Выбирает все готовые к созданию документы текущего plan. */
+  /**
+   * Выбирает все готовые к созданию документы текущего plan.
+   */
   public selectAllReady(): void {
     this._state.selectedCandidateIds = this._state.plan?.candidates
       .filter(candidate => candidate.status === 'ready')
       .map(candidate => candidate.id) ?? []
   }
 
-  /** Снимает пользовательский выбор без изменения подготовленного plan. */
+  /**
+   * Снимает пользовательский выбор без изменения подготовленного plan.
+   */
   public clearSelection(): void {
     this._state.selectedCandidateIds = []
   }
 
-  /** Назначает существующую папку Types для выбранных документов. */
+  /**
+   * Назначает существующую папку Types для выбранных документов.
+   */
   public setDestinationFolder(folderId: string | number | null): void {
     this._state.folderId = folderId
   }
 
-  /** Применяет через Core только подтверждённые пользователем candidates. */
+  /**
+   * Применяет через Core только подтверждённые пользователем candidates.
+   */
   public async apply(): Promise<DocumentImportApplyResult> {
     const plan = this._state.plan
     if (!plan) {
@@ -120,29 +136,31 @@ export class EndgeIDEDocumentImport_Module {
     }
   }
 
-  /** Сбрасывает dialog-state вместе с lifecycle EndgeIDE. */
+  /**
+   * Сбрасывает dialog-state вместе с lifecycle EndgeIDE.
+   */
   public reset(): void {
     this._replaceState(createInitialState())
   }
 
-  /**
-   * ----------------------------------------
-   * PRIVATE
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PRIVATE
+  // ---------------------------------------------
 
-  /** Заменяет все поля reactive object без создания второго state owner. */
+  /**
+   * Заменяет все поля reactive object без создания второго state owner.
+   */
   private _replaceState(next: EndgeIDEDocumentImportState): void {
     Object.assign(this._state, next)
   }
 
-  /**
-   * ----------------------------------------
-   * ACCESS
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // ACCESS
+  // ---------------------------------------------
 
-  /** Возвращает readonly Vue-представление состояния workflow. */
+  /**
+   * Возвращает readonly Vue-представление состояния workflow.
+   */
   public get state(): Readonly<EndgeIDEDocumentImportState> {
     return readonly(this._state) as Readonly<EndgeIDEDocumentImportState>
   }

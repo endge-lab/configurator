@@ -18,7 +18,7 @@ export abstract class RComponentBaseEditor<TSource extends RComponentBase> {
   // Список входных переменных
   inputFields: RFieldEditor[] = []
 
-  /** Сохранённый legacy-source настройки. Он не выполняется. */
+  // Сохранённый legacy-source настройки. Он не выполняется.
   setupScript: string = ''
 
   /**

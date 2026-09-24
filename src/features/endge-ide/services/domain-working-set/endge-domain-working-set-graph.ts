@@ -27,7 +27,7 @@ const CONTEXTUAL_COMPOSITION_OWNER_TYPES = new Set([
   'workspace',
 ])
 
-/** Возвращает только исходящие dependencies документа. */
+// Возвращает только исходящие dependencies документа.
 function getDependencies(ref: DomainWorkingSetRef): DomainWorkingSetRef[] {
   const dependencies: DomainWorkingSetRef[] = []
   const entityType = normalizeDomainWorkingSetEntityType(ref.entityType)
@@ -63,7 +63,7 @@ function getDependencies(ref: DomainWorkingSetRef): DomainWorkingSetRef[] {
   return dependencies
 }
 
-/** Возвращает presentation owner Composition без раскрытия его дочерних сущностей. */
+// Возвращает presentation owner Composition без раскрытия его дочерних сущностей.
 function getOwner(ref: DomainWorkingSetRef): DomainWorkingSetRef | null {
   if (normalizeDomainWorkingSetEntityType(ref.entityType) !== 'composition') {
     return null
@@ -86,7 +86,7 @@ function getOwner(ref: DomainWorkingSetRef): DomainWorkingSetRef | null {
   }
 }
 
-/** Configurator adapter над текущими Endge.domain и Endge.program. */
+// Configurator adapter над текущими Endge.domain и Endge.program.
 export const ENDGE_DOMAIN_WORKING_SET_GRAPH: DomainWorkingSetGraph = {
   dependenciesOf: getDependencies,
   ownerOf: getOwner,

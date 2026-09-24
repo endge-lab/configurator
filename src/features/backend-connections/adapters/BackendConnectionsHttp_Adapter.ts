@@ -9,7 +9,9 @@ export class BackendConnectionServiceError extends Error {
   }
 }
 
-/** Единственный сетевой adapter каталога выбранной среды. */
+/**
+ * Единственный сетевой adapter каталога выбранной среды.
+ */
 export class BackendConnectionsHttp_Adapter implements BackendConnectionsService {
   public constructor(private readonly _fixedBackendURL?: string) {}
 

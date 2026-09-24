@@ -31,7 +31,7 @@ interface MonacoInjectedTextMouseTarget {
   }
 }
 
-/** Подключает cross-document props diagnostics и генерацию .withProps(...) для Composition source. */
+// Подключает cross-document props diagnostics и генерацию .withProps(...) для Composition source.
 export function createCompositionRuntimePropsContribution(): ScriptEditorExtension {
   const instanceId = ++contributionSequence
 
@@ -117,7 +117,7 @@ export function createCompositionRuntimePropsContribution(): ScriptEditorExtensi
   }
 }
 
-/** Переносит inline action в конец строки, чтобы runtime modifiers не оказывались после кнопки. */
+// Переносит inline action в конец строки, чтобы runtime modifiers не оказывались после кнопки.
 export function compositionRuntimePropsActionAnchor(source: string, callAnchor: number): number {
   const safeAnchor = Math.max(0, Math.min(callAnchor, source.length))
   const lineFeedOffset = source.indexOf('\n', safeAnchor)

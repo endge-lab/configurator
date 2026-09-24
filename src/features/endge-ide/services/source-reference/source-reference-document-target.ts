@@ -9,7 +9,7 @@ export interface SourceReferenceDocumentTarget {
   documentType: DomainDocumentType
 }
 
-/** Преобразует семантическую ссылку Source в стабильную цель authoring-документа. */
+// Преобразует семантическую ссылку Source в стабильную цель authoring-документа.
 export function resolveSourceReferenceDocumentTarget(
   reference: SourceDocumentReference,
 ): SourceReferenceDocumentTarget | null {

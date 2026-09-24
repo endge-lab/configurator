@@ -145,9 +145,9 @@ export class HubDebug {
     this._timers.set(label, performance.now())
   }
 
-  //
+  // ---------------------------------------------
   // INTERNAL
-  //
+  // ---------------------------------------------
 
   private _currentCtx(): FrameContext | undefined {
     return this._stack.at(-1)

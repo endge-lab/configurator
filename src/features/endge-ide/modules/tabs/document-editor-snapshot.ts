@@ -50,13 +50,13 @@ function captureDefaultEditorState(editor: Record<string, unknown>): unknown {
   return editor
 }
 
-/** Явный реестр покрытия для каждого семейства редакторов сохраняемых документов. */
+// Явный реестр покрытия для каждого семейства редакторов сохраняемых документов.
 export const DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS: ReadonlyMap<string, SnapshotAdapter> = new Map([
   ['RActionEditor', captureDefaultEditorState],
   ...DEFAULT_EDITOR_NAMES.map(name => [name, captureDefaultEditorState] as const),
 ])
 
-/** Строит детерминированный snapshot из authoring-полей модели редактора. */
+// Строит детерминированный snapshot из authoring-полей модели редактора.
 export function createDocumentEditorSnapshot(editor: unknown): string {
   if (!editor || typeof editor !== 'object') {
     return JSON.stringify(null)

@@ -1,6 +1,6 @@
 import type { RuntimeHostSnapshot, RuntimeInspectionSnapshot } from '@endge/core'
 import { createDefaultEndgeConfiguration, Endge, RComponentSFC } from '@endge/core'
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RuntimeInspectionRenderer } from '@/features/endge-ide/services/runtime-preview/runtime-inspection-renderer'
 
@@ -23,7 +23,7 @@ afterEach(async () => {
 })
 
 describe('визуальное превью наблюдаемого клиента', () => {
-  /** Установленный SFC artifact рендерится для разных bindings без повторной компиляции и executing hosts. */
+  // Установленный SFC artifact рендерится для разных bindings без повторной компиляции и executing hosts.
   it('читает установленный Program и разные входы двух экземпляров из снимка Raph', () => {
     const first = host('first')
     const second = host('second')

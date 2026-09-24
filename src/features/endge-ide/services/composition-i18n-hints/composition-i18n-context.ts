@@ -18,11 +18,9 @@ export interface CompositionI18nContextInput {
   source: string
 }
 
-/**
- * Определяет контекст переводов редактора из startup Composition и временного
- * артефакта Composition. Ожидаемые ошибки черновика не возвращают подсказок;
- * неожиданные ошибки проекции журналируются и не выходят в lifecycle редактора.
- */
+// Определяет контекст переводов редактора из startup Composition и временного
+// артефакта Composition. Ожидаемые ошибки черновика не возвращают подсказок;
+// неожиданные ошибки проекции журналируются и не выходят в lifecycle редактора.
 export function resolveCompositionI18nContext(
   input: CompositionI18nContextInput,
 ): SourceLanguageI18nContext | undefined {

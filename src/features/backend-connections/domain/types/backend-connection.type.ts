@@ -40,7 +40,7 @@ export interface BackendConnectionsService {
   delete: (id: string, backendURL?: string) => Promise<void>
 }
 
-/** Минимальные данные нового рабочего пространства выбранного backend. */
+// Минимальные данные нового рабочего пространства выбранного backend.
 export interface WorkspaceCreateInput {
   identity: string
   displayName: string

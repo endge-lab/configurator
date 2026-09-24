@@ -9,29 +9,29 @@ importers:
   .:
     dependencies:
       '@endge/computation-sandbox':
-        specifier: 0.5.1
-        version: 0.5.1(@endge/core@12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
+        specifier: 1.0.0-dev
+        version: 1.0.0-dev(@endge/core@1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
       '@endge/core':
-        specifier: 12.0.3
-        version: 12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+        specifier: 1.0.0-dev
+        version: 1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@endge/integration-api':
         specifier: 0.2.1
         version: 0.2.1(vue@3.5.38(typescript@6.0.3))
-      '@endge/raph':
-        specifier: 3.3.1
-        version: 3.3.1
       '@endge/ui-vue':
-        specifier: 0.35.0
-        version: 0.35.0(@endge/core@12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.1)(@endge/utils@0.27.1)(vue@3.5.38(typescript@6.0.3))
+        specifier: 1.0.0-dev
+        version: 1.0.0-dev(@endge/core@1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev)(@raphy-js/raph@1.0.0-dev.2)(vue@3.5.38(typescript@6.0.3))
       '@endge/utils':
-        specifier: 0.27.1
-        version: 0.27.1
+        specifier: 1.0.0-dev
+        version: 1.0.0-dev
       '@formatjs/intl-durationformat':
         specifier: ^0.7.6
         version: 0.7.6
       '@lucide/lab':
         specifier: ^0.1.2
         version: 0.1.2
+      '@raphy-js/raph':
+        specifier: 1.0.0-dev.2
+        version: 1.0.0-dev.2
       '@tabler/icons-webfont':
         specifier: ^3.36.1
         version: 3.44.0(chokidar@3.6.0)
@@ -146,7 +146,7 @@ importers:
         version: 9.3.0(@typescript-eslint/typescript-estree@8.68.0(typescript@6.0.3))(@typescript-eslint/utils@8.68.0(eslint@10.9.1(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.38)(eslint@10.9.1(jiti@2.7.0))(ts-declaration-location@1.0.7(typescript@6.0.3))(typescript@6.0.3)(vitest@3.2.6(@types/debug@4.1.13)(@types/node@22.20.0)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0))
       '@intlify/eslint-plugin-vue-i18n':
         specifier: 4.5.1
-        version: 4.5.1(eslint@10.9.1(jiti@2.7.0))(jsonc-eslint-parser@3.1.0)(vue-eslint-parser@10.4.1(eslint@10.9.1(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)
+        version: 4.5.1(eslint@10.9.1(jiti@2.7.0))(jsonc-eslint-parser@3.3.0)(vue-eslint-parser@10.4.1(eslint@10.9.1(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -459,15 +459,15 @@ packages:
       oxlint:
         optional: true
 
-  '@endge/computation-sandbox@0.5.1':
-    resolution: {integrity: sha512-weHjtXJRpk9aAOa+a5KawD79k9ntq2zNd4AHHRZUCPNSHC1BHX26DzBq76K51/IXSqkubcbAeJ/I15GnBLNOXA==}
+  '@endge/computation-sandbox@1.0.0-dev':
+    resolution: {integrity: sha512-IjeUTb4QOSiHJ2XEWcOB5bnpZZlRbelo2mfY+xBIwQBGMp2+x9Qn8ZZFiMV+8+KDqq5Igq01t45wpinccyD8Cg==}
     peerDependencies:
-      '@endge/core': ^12.0.0
+      '@endge/core': 1.0.0-dev
 
-  '@endge/core@12.0.3':
-    resolution: {integrity: sha512-f/zzN6P+rvPK8jwPlNWXgtCd0fJqci0RXa/w+W+f1DnebXkRSqU0yTDQVyBWxvFmdptyydegvVQX+DLmfg8wlA==}
+  '@endge/core@1.0.0-dev':
+    resolution: {integrity: sha512-trTrfEYfIsGa43bVz7OMxXrCXfp/HevA5HO8uItF2d2HCyCkCei93/YLbGKI5ttcMBWO/XP1TVSCqwa7/nfyaQ==}
     peerDependencies:
-      '@endge/raph': ^3.3.0
+      '@raphy-js/raph': 1.0.0-dev.2
       class-transformer: ^0.5.1
       class-validator: ^0.14.1
       reflect-metadata: ^0.2.2
@@ -481,19 +481,16 @@ packages:
       vue:
         optional: true
 
-  '@endge/raph@3.3.1':
-    resolution: {integrity: sha512-vshXQPSGsxfW0JozyMdfS2saZZ2U8B/nnvFA07p9R584lwrZ0AtFDG/YOKI8SJ6uohCBnLC0vYd2EwvTbtmO2w==}
-
-  '@endge/ui-vue@0.35.0':
-    resolution: {integrity: sha512-wdqjPN62u5bpxhfwUq8ciFfVOkgKzA2Jk+DSuQXRxbPcS5rPBZqi6dHbCuh5kvsCiq7IHwgdyYPM4K3WG93tnQ==}
+  '@endge/ui-vue@1.0.0-dev':
+    resolution: {integrity: sha512-PpExAZf35lO3ln6d358tLUgOIdlLThvkb5GlBoqybVM+UEEwRcqEck1BK3uJHRYyU2+mnp9RwnKkL01wDUorCQ==}
     peerDependencies:
-      '@endge/core': ^12.0.0
-      '@endge/raph': ^3.3.0
-      '@endge/utils': ^0.27.0
+      '@endge/core': 1.0.0-dev
+      '@endge/utils': 1.0.0-dev
+      '@raphy-js/raph': 1.0.0-dev.2
       vue: ^3.3.0
 
-  '@endge/utils@0.27.1':
-    resolution: {integrity: sha512-eZXsogeYnOiG+LZRqNiNhBSLXzOHMCJehbLFkQyyt9eqb+b6JDSQ50ZwqZEmkxsvWsYTHw4egk8DKEC/QaNC6Q==}
+  '@endge/utils@1.0.0-dev':
+    resolution: {integrity: sha512-4ZxT6jLyKT+YJp4m083CNLDcbC81svJXFv0hBuDGsLUPG0WqtM58DR9dhzC41Tsn+ofgiTIH+VgJuQ/UoEqcog==}
 
   '@es-joy/jsdoccomment@0.91.0':
     resolution: {integrity: sha512-vgqlMGNNhZxwDYbUNIHj3Hskb4R28iqdXx90ufHyt/NeuTQkeqjTDslAs9I0/GCAfbxP5BpH5WsL1R1fht5Lxg==}
@@ -965,6 +962,9 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@raphy-js/raph@1.0.0-dev.2':
+    resolution: {integrity: sha512-Bg6IgOypTJiMZyc/IiJpQt2jlnrPm0r+tDgDAbVCGQETL9GpIDkrjYpxIc5v6fcw+pDytlwbSjb/vpl+vN9Jsg==}
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
@@ -4650,20 +4650,20 @@ snapshots:
     optionalDependencies:
       eslint: 10.9.1(jiti@2.7.0)
 
-  '@endge/computation-sandbox@0.5.1(@endge/core@12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
+  '@endge/computation-sandbox@1.0.0-dev(@endge/core@1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
     dependencies:
-      '@endge/core': 12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/core': 1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@jitl/quickjs-ng-wasmfile-release-sync': 0.32.0
       quickjs-emscripten-core: 0.32.0
       typescript: 6.0.3
 
-  '@endge/core@12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
+  '@endge/core@1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
     dependencies:
       '@babel/generator': 7.29.7
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
-      '@endge/raph': 3.3.1
-      '@endge/utils': 0.27.1
+      '@endge/utils': 1.0.0-dev
+      '@raphy-js/raph': 1.0.0-dev.2
       '@vue/compiler-dom': 3.5.38
       '@vue/compiler-sfc': 3.5.38
       axios: 1.18.1
@@ -4690,20 +4690,18 @@ snapshots:
     optionalDependencies:
       vue: 3.5.38(typescript@6.0.3)
 
-  '@endge/raph@3.3.1': {}
-
-  '@endge/ui-vue@0.35.0(@endge/core@12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/raph@3.3.1)(@endge/utils@0.27.1)(vue@3.5.38(typescript@6.0.3))':
+  '@endge/ui-vue@1.0.0-dev(@endge/core@1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev)(@raphy-js/raph@1.0.0-dev.2)(vue@3.5.38(typescript@6.0.3))':
     dependencies:
-      '@endge/core': 12.0.3(@endge/raph@3.3.1)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
-      '@endge/raph': 3.3.1
-      '@endge/utils': 0.27.1
+      '@endge/core': 1.0.0-dev(@raphy-js/raph@1.0.0-dev.2)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/utils': 1.0.0-dev
       '@lucide/vue': 1.46.0(vue@3.5.38(typescript@6.0.3))
+      '@raphy-js/raph': 1.0.0-dev.2
       '@tanstack/vue-table': 8.21.3(vue@3.5.38(typescript@6.0.3))
       '@tanstack/vue-virtual': 3.13.29(vue@3.5.38(typescript@6.0.3))
       sortablejs: 1.15.7
       vue: 3.5.38(typescript@6.0.3)
 
-  '@endge/utils@0.27.1':
+  '@endge/utils@1.0.0-dev':
     dependencies:
       '@microsoft/fetch-event-source': 2.0.1
       class-transformer: 0.5.1
@@ -4973,7 +4971,7 @@ snapshots:
       '@intlify/core-base': 11.4.6
       '@intlify/shared': 11.4.6
 
-  '@intlify/eslint-plugin-vue-i18n@4.5.1(eslint@10.9.1(jiti@2.7.0))(jsonc-eslint-parser@3.1.0)(vue-eslint-parser@10.4.1(eslint@10.9.1(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)':
+  '@intlify/eslint-plugin-vue-i18n@4.5.1(eslint@10.9.1(jiti@2.7.0))(jsonc-eslint-parser@3.3.0)(vue-eslint-parser@10.4.1(eslint@10.9.1(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)':
     dependencies:
       '@eslint/eslintrc': 3.3.5
       '@intlify/core-base': 11.4.6
@@ -4988,7 +4986,7 @@ snapshots:
       is-language-code: 3.1.0
       js-yaml: 4.2.0
       json5: 2.2.3
-      jsonc-eslint-parser: 3.1.0
+      jsonc-eslint-parser: 3.3.0
       parse5: 7.3.0
       semver: 7.8.5
       synckit: 0.11.13
@@ -5146,6 +5144,8 @@ snapshots:
       playwright: 1.63.0
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@raphy-js/raph@1.0.0-dev.2': {}
 
   '@rolldown/pluginutils@1.0.1': {}
 

@@ -1,7 +1,9 @@
 import type { ManagedBy, RStyle } from '@endge/core'
 import { isSystemManaged } from '@endge/core'
 
-/** Состояние редактора сохранённого source-first документа EndgeCSS. */
+/**
+ * Состояние редактора сохранённого source-first документа EndgeCSS.
+ */
 export class RStyleEditor {
   id!: string | number
   identity!: string
@@ -46,7 +48,9 @@ export class RStyleEditor {
     this.refreshDiagnostics()
   }
 
-  /** Проверки структурных метаданных. Черновики EndgeCSS можно сохранять с синтаксическими диагностическими сообщениями. */
+  /**
+   * Проверки структурных метаданных. Черновики EndgeCSS можно сохранять с синтаксическими диагностическими сообщениями.
+   */
   refreshDiagnostics(): void {
     const diagnostics: string[] = []
     if (!this.identity.trim()) {

@@ -292,7 +292,7 @@ export class EndgeIDETabs_Module {
   private readonly _sourceNavigationRequest
     = shallowRef<DocumentSourceNavigationRequest | null>(null)
 
-  /** Readonly reactive views текущего editor, model и одноразовой Source navigation. */
+  // Readonly reactive views текущего editor, model и одноразовой Source navigation.
   public readonly documentEditorModel: Readonly<ShallowRef<unknown | null>>
     = this._documentEditorModel
 
@@ -315,27 +315,37 @@ export class EndgeIDETabs_Module {
     this._tabsApi = this._createTabsApi(false)
   }
 
-  /** ACCESS */
+  /**
+   * ACCESS
+   */
   public get openTabs(): SmartTabsApi['openTabs'] {
     return this._tabsApi.openTabs
   }
 
-  /** ACCESS */
+  /**
+   * ACCESS
+   */
   public get activeTab(): SmartTabsApi['activeTab'] {
     return this._tabsApi.activeTab
   }
 
-  /** ACCESS */
+  /**
+   * ACCESS
+   */
   public get activeTabId(): SmartTabsApi['activeTabId'] {
     return this._tabsApi.activeTabId
   }
 
-  /** Реестр принадлежит этому экземпляру tabs и используется SmartTabsHost. */
+  /**
+   * Реестр принадлежит этому экземпляру tabs и используется SmartTabsHost.
+   */
   public get viewRegistry(): SmartTabsApi['viewRegistry'] {
     return this._tabsApi.viewRegistry
   }
 
-  /** LIFECYCLE */
+  /**
+   * LIFECYCLE
+   */
   public init(): void {
     if (this._isRegistryBootstrapped) {
       return
@@ -359,7 +369,9 @@ export class EndgeIDETabs_Module {
     this._isRegistryBootstrapped = true
   }
 
-  /** LIFECYCLE */
+  /**
+   * LIFECYCLE
+   */
   public reset(): void {
     this._tabsApi.flushStorage()
     this._tabsApi = this._createTabsApi(false)
@@ -474,7 +486,9 @@ export class EndgeIDETabs_Module {
     this._tabsApi.clearStorage()
   }
 
-  /** Возвращает true, когда активный редактор отличается от последнего успешного сохранения. */
+  /**
+   * Возвращает true, когда активный редактор отличается от последнего успешного сохранения.
+   */
   public isTabDirty(id: string): boolean {
     if (id === 'workspace-settings') {
       return (
@@ -492,7 +506,9 @@ export class EndgeIDETabs_Module {
     )
   }
 
-  /** Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку. */
+  /**
+   * Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку.
+   */
   public closeActiveTabFromHotkey(): void {
     const id = this.activeTabId.value
     if (!id) {
@@ -567,7 +583,9 @@ export class EndgeIDETabs_Module {
     await this._busy.run(this._doSave(activeTab))
   }
 
-  /** Регистрирует подготовку UI-черновиков активной вкладки перед любым способом сохранения. */
+  /**
+   * Регистрирует подготовку UI-черновиков активной вкладки перед любым способом сохранения.
+   */
   public registerSavePreparation(
     handler: () => boolean | Promise<boolean>,
   ): () => void {
@@ -730,7 +748,9 @@ export class EndgeIDETabs_Module {
     }
   }
 
-  /** Открывает вложенный документ по составному ключу фасета и документа. */
+  /**
+   * Открывает вложенный документ по составному ключу фасета и документа.
+   */
   public openFacetDocument(
     facetIdentity: string,
     documentIdentity: string,
@@ -762,7 +782,9 @@ export class EndgeIDETabs_Module {
     this.openTab(tabRef)
   }
 
-  /** Разрешает diagnostics entity reference и открывает исходный authoring document. */
+  /**
+   * Разрешает diagnostics entity reference и открывает исходный authoring document.
+   */
   public openDiagnosticsEntity(reference: DiagnosticsEntityRef): boolean {
     const target = resolveDiagnosticsDocumentTarget(reference)
     if (!target) {
@@ -781,7 +803,9 @@ export class EndgeIDETabs_Module {
     return true
   }
 
-  /** Открывает внешний документ из semantic source reference. */
+  /**
+   * Открывает внешний документ из semantic source reference.
+   */
   public openSourceReference(reference: SourceDocumentReference): boolean {
     const target = resolveSourceReferenceDocumentTarget(reference)
     if (!target) {
@@ -823,7 +847,9 @@ export class EndgeIDETabs_Module {
     })
   }
 
-  /** Открыть SFC Playground в единственном экземпляре (при повторном вызове - активация вкладки). */
+  /**
+   * Открыть SFC Playground в единственном экземпляре (при повторном вызове - активация вкладки).
+   */
   public openSFCPlayground(): void {
     const tabRef: SmartTabRef = {
       id: 'sfc-playground',
@@ -837,7 +863,9 @@ export class EndgeIDETabs_Module {
     this.openTab(tabRef)
   }
 
-  /** Открыть вкладку «Демонстрация» в единственном экземпляре. */
+  /**
+   * Открыть вкладку «Демонстрация» в единственном экземпляре.
+   */
   public openDemonstrationTab(): void {
     const tabRef: SmartTabRef = {
       id: 'demonstration',
@@ -866,8 +894,12 @@ export class EndgeIDETabs_Module {
     return getDomainDocumentPath(payload.documentId, payload.documentType)
   }
 
-  /** Синхронизирует представление восстановленных document-вкладок с загруженным доменом. */
-  /** Открывает ту же Workspace-сессию сразу на Workflow, в том числе из её настроек. */
+  /**
+   * Синхронизирует представление восстановленных document-вкладок с загруженным доменом.
+   */
+  /**
+   * Открывает ту же Workspace-сессию сразу на Workflow, в том числе из её настроек.
+   */
   public openWorkspaceWorkflow(): void {
     this.openWorkspaceSettings()
     this._tabsApi.setTabViewState(
@@ -921,7 +953,9 @@ export class EndgeIDETabs_Module {
     }
   }
 
-  /** Удаляет восстановленные вкладки документов, которых больше нет в загруженном домене. */
+  /**
+   * Удаляет восстановленные вкладки документов, которых больше нет в загруженном домене.
+   */
   private _removeMissingDocumentTabs(): void {
     for (const tabId of getMissingDocumentTabIds(this.openTabs.value)) {
       this._tabsApi.closeTab(tabId)
@@ -1740,7 +1774,9 @@ export class EndgeIDETabs_Module {
     this._documentMetadataSession.value = session.metadata ?? null
   }
 
-  /** Синхронизирует контекст инспектора с сессией вкладки (чтобы инспектор отображал данные активной вкладки). */
+  /**
+   * Синхронизирует контекст инспектора с сессией вкладки (чтобы инспектор отображал данные активной вкладки).
+   */
   public syncContextForTab(tab: SmartTabRef | null): void {
     if (!tab) {
       return

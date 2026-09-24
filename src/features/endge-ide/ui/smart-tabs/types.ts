@@ -6,35 +6,23 @@ export type SmartTabId = string
 export interface SmartTab {
   id: string
   label: string
-  /**
-   * Идентификатор view/рендера (не обязательно "документ")
-   */
+  // Идентификатор view/рендера (не обязательно "документ")
   viewId: string
-  /**
-   * Любые сериализуемые данные (для сохранения через persistence owner).
-   * Важно: функции/компоненты сюда НЕ класть.
-   */
+  // Любые сериализуемые данные (для сохранения через persistence owner).
+  // Важно: функции/компоненты сюда НЕ класть.
   payload?: Record<string, unknown>
-  /**
-   * Любые метаданные для UI (необязательно сериализовать)
-   */
+  // Любые метаданные для UI (необязательно сериализовать)
   meta?: Record<string, unknown>
 }
 
 export interface SmartTabRef extends SmartTab {
-  /** Не включать вкладку и её view state в persisted SmartTabs snapshot. */
+  // Не включать вкладку и её view state в persisted SmartTabs snapshot.
   ephemeral?: boolean
-  /**
-   * Можно ли закрыть вкладку
-   */
+  // Можно ли закрыть вкладку
   closable?: boolean
-  /**
-   * Если true, то может быть открыта только одна вкладка с таким viewId
-   */
+  // Если true, то может быть открыта только одна вкладка с таким viewId
   singleton?: boolean
-  /**
-   * Пропсы для компонента view
-   */
+  // Пропсы для компонента view
   props?: Record<string, unknown>
 }
 
@@ -65,21 +53,15 @@ export interface SmartTabsPersistence {
 
 export interface SmartTabsOptions {
   storageKey: string
-  /**
-   * Автосоздание первой вкладки при пустом состоянии
-   */
+  // Автосоздание первой вкладки при пустом состоянии
   autoInit?: boolean
-  /**
-   * Сохранять состояние через persistence owner.
-   */
+  // Сохранять состояние через persistence owner.
   persist?: boolean
-  /** Владелец persistent storage, переданный runtime-модулем. */
+  // Владелец persistent storage, переданный runtime-модулем.
   persistence?: SmartTabsPersistence
-  /**
-   * Максимальное количество открытых вкладок
-   */
+  // Максимальное количество открытых вкладок
   maxTabs?: number
-  /** Callback lifecycle после физического удаления вкладки из состояния tabs. */
+  // Callback lifecycle после физического удаления вкладки из состояния tabs.
   onTabClosed?: (tab: SmartTabRef) => void
 }
 

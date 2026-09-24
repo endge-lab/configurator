@@ -37,7 +37,7 @@ const avatarFallback = computed(() => {
   return user.value?.name.split(' ').map(word => word.charAt(0).toUpperCase()).slice(0, 2).join('')
 })
 
-/** Завершает backend-owned session и передаёт redirect существующему auth flow. */
+// Завершает backend-owned session и передаёт redirect существующему auth flow.
 async function handleLogout(): Promise<void> {
   if (logoutPending.value) {
     return

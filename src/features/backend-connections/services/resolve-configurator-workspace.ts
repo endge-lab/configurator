@@ -1,6 +1,6 @@
 import type { ConfiguratorWorkspaceAccess } from '@/features/configurator-session/domain/types/configurator-session.type'
 
-/** Выбирает только активный Workspace: сначала сохранённый, затем необязательный env seed. */
+// Выбирает только активный Workspace: сначала сохранённый, затем необязательный env seed.
 export function resolveConfiguratorWorkspace(
   workspaces: readonly ConfiguratorWorkspaceAccess[],
   storedIdentity: string | null,

@@ -22,10 +22,8 @@ export interface GetDurationOptions {
   lang?: string
 }
 
-/**
- * Разбирает строку длительности ISO8601, например "PT1H30M" или "P1DT2H30M15S".
- * Возвращает длительность в миллисекундах.
- */
+// Разбирает строку длительности ISO8601, например "PT1H30M" или "P1DT2H30M15S".
+// Возвращает длительность в миллисекундах.
 function parseISO8601Duration(duration: string): number {
   try {
     const parsed = parseISO8601(duration)
@@ -37,9 +35,7 @@ function parseISO8601Duration(duration: string): number {
   }
 }
 
-/**
- * Преобразует значение даты во временную метку.
- */
+// Преобразует значение даты во временную метку.
 function toTimestamp(date: Date | number | string): number {
   if (typeof date === 'string') {
     const parsed = new Date(date)
@@ -56,9 +52,7 @@ function toTimestamp(date: Date | number | string): number {
   }
 }
 
-/**
- * Форматирует длительность в миллисекундах в удобочитаемую строку.
- */
+// Форматирует длительность в миллисекундах в удобочитаемую строку.
 function formatDuration(durationMs: number, lang: string): string {
   const absMs = Math.abs(durationMs)
   const isNegative = durationMs < 0
@@ -225,9 +219,7 @@ export function useDuration(
   return value
 }
 
-/**
- * Компонент отображения длительности.
- */
+// Компонент отображения длительности.
 export const Duration = defineComponent({
   name: 'Duration',
   props: {

@@ -324,9 +324,7 @@ function getActivePageTitle(
   return localizedName || identity || null
 }
 
-/**
- * Заголовок секции меню по текущему маршруту (для кнопки в хедере).
- */
+// Заголовок секции меню по текущему маршруту (для кнопки в хедере).
 export function useCurrentSectionTitle() {
   const navigation = useNavigation()
   const route = useRoute()

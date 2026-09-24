@@ -2,7 +2,9 @@ import type { AnyQuestionAnswer, Question } from '@/app/domain/types/question.ty
 
 import { computed, markRaw, ref } from 'vue'
 
-/** Владеет общей для приложения очередью подтверждений. */
+/**
+ * Владеет общей для приложения очередью подтверждений.
+ */
 export class Questions_Module {
   private readonly _questions = ref<Question[]>([])
   public readonly questions = computed(() => this._questions.value)

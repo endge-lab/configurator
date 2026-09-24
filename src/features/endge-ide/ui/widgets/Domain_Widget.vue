@@ -841,7 +841,7 @@ function canCopyVirtualAction(node: FsNode): node is FsFileNode {
 
 const selectedFileKeys = ref<Set<string>>(new Set())
 
-/** Маппинг: identity корневой папки — секция и активные документы домена. */
+// Маппинг: identity корневой папки — секция и активные документы домена.
 const ROOT_TO_SECTION = computed(() => {
   void facetRegistryVersion.value
   const compositions = withoutDeleted(domainStore.compositions)
@@ -897,7 +897,7 @@ const programTree = computed(() => props.programCatalog
     }, activeDocumentStructure.value === 'custom', Endge.workspace.isLoaded ? Endge.workspace.current : props.programCatalog.workspace)
   : [])
 
-/** Порядок корневых папок. */
+// Порядок корневых папок.
 const ROOT_FOLDER_ORDER = computed(() => {
   if (props.programCatalog) {
     return programTree.value.filter(node => node.type === 'folder').map(node => node.id)
@@ -1374,10 +1374,10 @@ const ROOT_BLOCKS = computed(() => {
   return remaining.length ? [...blocks, { id: 'other-documents', title: 'Прочие документы', rootIds: remaining }] : blocks
 })
 
-/** Дополнительная группа сохранена в модели, но скрыта как в основном Configurator. */
+// Дополнительная группа сохранена в модели, но скрыта как в основном Configurator.
 const VISIBLE_ROOT_BLOCKS = computed(() => ROOT_BLOCKS.value.filter(block => props.programCatalog || block.id !== 'other-documents'))
 
-/** Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.). */
+// Иконка и цвет для корневых папок (типы, запросы, компоненты и т.д.).
 const WORKSPACE_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.workspace
 const INACTIVE_WORKSPACE_PRESENTATION: DomainDocumentPresentation = {
   ...WORKSPACE_PRESENTATION,
@@ -1414,7 +1414,7 @@ const ROOT_FOLDER_PRESENTATION: Record<string, DomainDocumentPresentation> = {
   'root-simulations': getDomainSectionPresentation(DomainSectionType.Simulation),
 }
 
-/** Типы документов, которые можно дублировать (те же, что в «Создать»). */
+// Типы документов, которые можно дублировать (те же, что в «Создать»).
 const DUPLICATABLE_DOC_TYPES = new Set<DomainDocumentType>([
   COMPONENT_SFC_TYPE,
   QueryType.REST,
@@ -1510,10 +1510,8 @@ function nodeMatchesSearch(node: FsNode, query: string): boolean {
     .some(value => value?.toLocaleLowerCase().includes(query))
 }
 
-/**
- * Строит только отображаемую проекцию поиска, не клонируя узлы домена.
- * Совпадения раскрываются вместе с цепочкой родителей согласно настройкам фильтра.
- */
+// Строит только отображаемую проекцию поиска, не клонируя узлы домена.
+// Совпадения раскрываются вместе с цепочкой родителей согласно настройкам фильтра.
 function projectDomainSearchItems(
   nodes: readonly FsNode[],
   query: string,
@@ -1636,7 +1634,7 @@ function collapseAll(): void {
 }
 
 // ---------- выделение (множественное: Ctrl/Meta, диапазон: Shift) ----------
-/** Стабильный ключ persisted-документа: document type + id. */
+// Стабильный ключ persisted-документа: document type + id.
 function getFileSelectionKey(node: FsFileNode): string {
   if (node.isTableColumn) {
     return `table-column:${String(node.parentComponentId ?? '')}:${String(node.id)}`
@@ -1865,7 +1863,7 @@ function isSelected(item: FlatFsItem): boolean {
 }
 
 // ---------- actions ----------
-/** Закрывает вкладку документа, если она открыта. */
+// Закрывает вкладку документа, если она открыта.
 function closeDocumentTabIfOpen(id: string, docType: DomainDocumentType): void {
   tabs.closeTab(`${docType}-${id}`)
 }
@@ -2109,7 +2107,7 @@ async function createFacetDocument(): Promise<void> {
   finally { state.loading = false }
 }
 
-/** Подтверждает soft-delete Workspace и обновляет доступный session snapshot. */
+// Подтверждает soft-delete Workspace и обновляет доступный session snapshot.
 async function confirmWorkspaceDeletion(): Promise<void> {
   const state = workspaceDeletionDialog.value
   state.loading = true
@@ -2141,7 +2139,7 @@ function getContextFileNodes(node: FsFileNode): FsFileNode[] {
 }
 
 // ---------- context menu items ----------
-/** Формирует контекстные действия для узла дерева домена. */
+// Формирует контекстные действия для узла дерева домена.
 function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
   if (debuggerMode) {

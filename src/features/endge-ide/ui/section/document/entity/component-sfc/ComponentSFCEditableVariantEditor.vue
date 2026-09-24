@@ -166,7 +166,7 @@ function commitBinding(name: string): boolean {
   return saved
 }
 
-/** Проверяет и публикует все изменённые binding-черновики перед сохранением документа. */
+// Проверяет и публикует все изменённые binding-черновики перед сохранением документа.
 async function flushPendingEdits(): Promise<boolean> {
   for (const field of fields.value) {
     const binding = bindings.value.find(item => item.name === field.name)

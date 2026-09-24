@@ -5,7 +5,7 @@ import type {
   DiagnosticsTreeNode,
 } from '@/features/endge-ide/domain/types/diagnostics-presentation.type'
 
-/** Строит UI-дерево из независимых core log/span records. */
+// Строит UI-дерево из независимых core log/span records.
 export function buildDiagnosticsTree(records: readonly DiagnosticsRecord[]): DiagnosticsTreeNode[] {
   const roots: DiagnosticsTreeNode[] = []
   const spans = new Map<string, DiagnosticsSpanTreeNode>()
@@ -63,7 +63,7 @@ export function buildDiagnosticsTree(records: readonly DiagnosticsRecord[]): Dia
   return roots
 }
 
-/** Находит span subtree по id без переноса presentation helper в core. */
+// Находит span subtree по id без переноса presentation helper в core.
 export function findDiagnosticsSpanNode(
   nodes: readonly DiagnosticsTreeNode[],
   spanId: string,
@@ -83,7 +83,7 @@ export function findDiagnosticsSpanNode(
   return null
 }
 
-/** Стабильно сортирует каждый уровень дерева по времени записи. */
+// Стабильно сортирует каждый уровень дерева по времени записи.
 function sortDiagnosticsTree(nodes: DiagnosticsTreeNode[]): void {
   nodes.sort((left, right) => left.timestamp - right.timestamp)
   for (const node of nodes) {

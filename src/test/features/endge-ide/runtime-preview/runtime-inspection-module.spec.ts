@@ -5,7 +5,7 @@ import { EndgeIDERuntimeInspection_Module } from '@/features/endge-ide/modules/E
 afterEach(() => vi.restoreAllMocks())
 
 describe('lifecycle UI наблюдения Runtime', () => {
-  /** Граф IDE создаётся до boot Core; constructor не может читать ещё не настроенный Workspace. */
+  // Граф IDE создаётся до boot Core; constructor не может читать ещё не настроенный Workspace.
   it('создаёт модуль без обращения к Core и без подписок', () => {
     const runtime = vi.spyOn(Endge, 'runtime', 'get').mockImplementation(() => {
       throw new Error('Core is not booted')

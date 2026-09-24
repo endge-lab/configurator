@@ -2,7 +2,7 @@
 import type { SFCRenderInspectionTreeNode } from '@endge/core'
 import type { RuntimePreviewRenderable, RuntimePreviewTreeNode } from '@/features/endge-ide/domain/types/runtime-preview.types'
 
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 import { Boxes, Braces, CircleAlert, ListTree, LoaderCircle, Play } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'

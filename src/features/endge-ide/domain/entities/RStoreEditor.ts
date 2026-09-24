@@ -2,7 +2,9 @@ import type { RStore } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Source-first модель редактора Store. */
+/**
+ * Source-first модель редактора Store.
+ */
 export class RStoreEditor {
   id!: string | number
   identity!: string

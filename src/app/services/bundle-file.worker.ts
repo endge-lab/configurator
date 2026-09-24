@@ -1,7 +1,7 @@
 import type { EndgeBundle, EndgeBundleFileFormat } from '@endge/core'
 import { EndgeBundleCodec_Service } from '@endge/core'
 
-/** File conversion stays off the UI thread and never installs a Core federation. */
+// File conversion stays off the UI thread and never installs a Core federation.
 globalThis.onmessage = async (
   event: MessageEvent<{
     operation: 'encode' | 'decode'

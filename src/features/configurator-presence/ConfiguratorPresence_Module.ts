@@ -3,9 +3,11 @@ import type { ConfiguratorPresenceConnection } from '@/features/configurator-pre
 import { Endge } from '@endge/core'
 import { computed, readonly, shallowRef } from 'vue'
 
-/** Проецирует список Bridge для хедера, не создавая собственный транспорт. */
+/**
+ * Проецирует список Bridge для хедера, не создавая собственный транспорт.
+ */
 export class ConfiguratorPresence_Module {
-  /** Производное состояние и подписка живут только в текущем lifecycle приложения. */
+  // Производное состояние и подписка живут только в текущем lifecycle приложения.
   private readonly _connections = shallowRef<readonly ConfiguratorPresenceConnection[]>([])
   private readonly _status = shallowRef<'idle' | 'connecting' | 'connected' | 'unavailable'>('idle')
   private _unsubscribe: (() => void) | null = null
@@ -15,13 +17,13 @@ export class ConfiguratorPresence_Module {
   public readonly status = readonly(this._status)
   public readonly count = computed(() => this._connections.value.filter(connection => !connection.isCurrentInstance).length)
 
-  /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
 
-  /** Подписывается один раз; отсутствие Bridge не мешает запуску приложения. */
+  /**
+   * Подписывается один раз; отсутствие Bridge не мешает запуску приложения.
+   */
   public init(): void {
     if (this._unsubscribe) {
       return
@@ -35,7 +37,9 @@ export class ConfiguratorPresence_Module {
     }
   }
 
-  /** Изолирует ошибку необязательного UI до следующего lifecycle приложения. */
+  /**
+   * Изолирует ошибку необязательного UI до следующего lifecycle приложения.
+   */
   public hideUnavailable(): void {
     this._viewFailed = true
     this._connections.value = []
@@ -43,7 +47,9 @@ export class ConfiguratorPresence_Module {
     this._warn()
   }
 
-  /** Снимает подписку и удаляет проекцию при полном сбросе приложения. */
+  /**
+   * Снимает подписку и удаляет проекцию при полном сбросе приложения.
+   */
   public reset(): void {
     try {
       this._unsubscribe?.()
@@ -58,13 +64,13 @@ export class ConfiguratorPresence_Module {
     this._viewFailed = false
   }
 
-  /**
-   * ----------------------------------------
-   * PRIVATE
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PRIVATE
+  // ---------------------------------------------
 
-  /** Принимает только актуальные подключения; ошибочный список не выходит в UI. */
+  /**
+   * Принимает только актуальные подключения; ошибочный список не выходит в UI.
+   */
   private _sync(): void {
     if (this._viewFailed) {
       return
@@ -112,7 +118,9 @@ export class ConfiguratorPresence_Module {
     }
   }
 
-  /** Предупреждает один раз за сбой без payload, персональных данных и toast. */
+  /**
+   * Предупреждает один раз за сбой без payload, персональных данных и toast.
+   */
   private _warn(): void {
     if (!this._warned) {
       this._warned = true

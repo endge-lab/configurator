@@ -8,11 +8,15 @@ import type {
 
 type UnknownRecord = Record<string, unknown>
 
-/** HTTP service developer session нового backend. */
+/**
+ * HTTP service developer session нового backend.
+ */
 export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionService {
   public constructor(private readonly _backendURL: string | (() => string)) {}
 
-  /** Проверяет opaque browser session и возвращает безопасный developer snapshot. */
+  /**
+   * Проверяет opaque browser session и возвращает безопасный developer snapshot.
+   */
   public async check(): Promise<ConfiguratorSessionState> {
     const baseURL = this._resolveBaseURL()
     let response: Response
@@ -51,7 +55,9 @@ export class ConfiguratorSessionHttp_Adapter implements ConfiguratorSessionServi
       : { status: 'error', code: 'session_invalid_response', message: 'Backend returned malformed Configurator session' }
   }
 
-  /** Отзывает backend session и удаляет opaque cookie на стороне сервера. */
+  /**
+   * Отзывает backend session и удаляет opaque cookie на стороне сервера.
+   */
   public async logout(): Promise<void> {
     const response = await fetch(`${this._resolveBaseURL()}/auth/logout`, {
       method: 'POST',

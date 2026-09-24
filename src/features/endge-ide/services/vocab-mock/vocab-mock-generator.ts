@@ -15,7 +15,7 @@ export interface VocabMockGenerationResult {
   savedVocabs: string[]
 }
 
-/** Загружает raw Payload каждого provider-backed Vocab до начала любых записей. */
+// Загружает raw Payload каждого provider-backed Vocab до начала любых записей.
 export async function prepareVocabMockGeneration(targetIdentity: string): Promise<PreparedVocabMockGeneration> {
   const identity = normalizeIdentity(targetIdentity)
   const existingMock = Endge.domain.getMock(identity)
@@ -54,7 +54,7 @@ export async function prepareVocabMockGeneration(targetIdentity: string): Promis
   }
 }
 
-/** Сохраняет сначала Mock, затем Vocab по одному; повторный запуск идемпотентен. */
+// Сохраняет сначала Mock, затем Vocab по одному; повторный запуск идемпотентен.
 export async function commitVocabMockGeneration(prepared: PreparedVocabMockGeneration): Promise<VocabMockGenerationResult> {
   const mock = prepared.existingMock ?? createMock(prepared.targetIdentity)
   mock.source = JSON.stringify(prepared.document, null, 2)

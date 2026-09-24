@@ -7,7 +7,9 @@ import { ENDGE_IDE_DOMAIN_WIDGET_ID } from '@/features/endge-ide/domain/types/do
 import { ENDGE_IDE_PROBLEMS_WIDGET_ID } from '@/features/endge-ide/domain/types/problems-workspace.types'
 import { buildProblemsEntityEntries, buildProblemsSeverityGroups } from '@/features/endge-ide/services/diagnostics/problems-workspace-presentation'
 
-/** Presentation controller самостоятельной рабочей области Problems. */
+/**
+ * Presentation controller самостоятельной рабочей области Problems.
+ */
 export class EndgeIDEProblems_Module {
   private readonly _revision = ref(0)
   private readonly _selectedEntityKey = ref<string | null>(null)
@@ -24,7 +26,9 @@ export class EndgeIDEProblems_Module {
     return this.entries.value.find(entry => entry.key === this.selectedEntityKey.value) ?? null
   })
 
-  /** Подписывает presentation controller на core registry без копирования problems. */
+  /**
+   * Подписывает presentation controller на core registry без копирования problems.
+   */
   public init(): void {
     if (this._unsubscribe) {
       return
@@ -36,7 +40,9 @@ export class EndgeIDEProblems_Module {
     this._synchronizeSelection()
   }
 
-  /** Отписывает controller и очищает только configurator selection. */
+  /**
+   * Отписывает controller и очищает только configurator selection.
+   */
   public reset(): void {
     this._unsubscribe?.()
     this._unsubscribe = null
@@ -44,14 +50,18 @@ export class EndgeIDEProblems_Module {
     this._revision.value = 0
   }
 
-  /** Выбирает проблемную сущность для отображения в основной части workspace. */
+  /**
+   * Выбирает проблемную сущность для отображения в основной части workspace.
+   */
   public selectEntity(entityKey: string): void {
     if (this.entries.value.some(entry => entry.key === entityKey)) {
       this._selectedEntityKey.value = entityKey
     }
   }
 
-  /** Возвращает пользователя из Problems workspace к Domain widget. */
+  /**
+   * Возвращает пользователя из Problems workspace к Domain widget.
+   */
   public returnToDomain(): boolean {
     const area = getLayoutState().widgets.value.areas.left
     if (!area.expanded || area.activeWidget !== ENDGE_IDE_PROBLEMS_WIDGET_ID) {
@@ -61,7 +71,9 @@ export class EndgeIDEProblems_Module {
     return true
   }
 
-  /** Сохраняет selection, пока сущность существует, иначе выбирает первую проблемную сущность. */
+  /**
+   * Сохраняет selection, пока сущность существует, иначе выбирает первую проблемную сущность.
+   */
   private _synchronizeSelection(): void {
     const selectedExists = this.entries.value.some(entry => entry.key === this.selectedEntityKey.value)
     if (!selectedExists) {

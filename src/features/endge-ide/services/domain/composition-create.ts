@@ -5,7 +5,7 @@ export interface CompositionCreatePlacement {
   kindIdentity: string | null
 }
 
-/** Определяет размещение нового самостоятельного документа Composition. */
+// Определяет размещение нового самостоятельного документа Composition.
 export function resolveCompositionCreatePlacement(options: {
   queryComposition?: boolean
 } = {}): CompositionCreatePlacement {

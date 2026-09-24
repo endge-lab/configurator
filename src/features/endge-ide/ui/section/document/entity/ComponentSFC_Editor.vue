@@ -197,7 +197,7 @@ async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
 }
 
-/** Завершает активный field edit и применяет вложенные visual drafts до sync модели. */
+// Завершает активный field edit и применяет вложенные visual drafts до sync модели.
 async function prepareBeforeSave(): Promise<boolean> {
   const activeElement = document.activeElement
   if (activeElement instanceof HTMLElement) {
