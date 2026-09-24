@@ -3,7 +3,7 @@ import type { WorkflowGraph, WorkflowSelection } from '../tools/workflow-graph'
 
 import { buildWorkflowGraph, getWorkflowFocus, getWorkflowSelection } from '../tools/workflow-graph'
 
-/** Независимая от IDE проекция документа и конкретного места его использования. */
+// Независимая от IDE проекция документа и конкретного места его использования.
 export interface WorkflowDependency {
   id: string
   kind: string
@@ -81,7 +81,9 @@ const RESOURCE_CONTENT_Y = RESOURCE_TOGGLE_Y + 48
 const CONTENT_ROWS = 2
 const BRANCH_GAP = 80
 
-/** Черновик раскладки и временное полотно editor-сессии; transport принадлежит IDE. */
+/**
+ * Черновик раскладки и временное полотно editor-сессии; transport принадлежит IDE.
+ */
 export class WorkspaceWorkflow {
   private _roots: WorkflowDependency[] | null = null
   private readonly _layout: WorkflowLayout | null
@@ -91,17 +93,17 @@ export class WorkspaceWorkflow {
   private _layoutShift: WorkflowPoint = { x: 0, y: 0 }
   private _viewport: WorkflowViewport | null = null
 
-  /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
-   */
-
   public constructor(layout: WorkflowLayout | null = { schemaVersion: 1, positions: {} }) {
     this._layout = layout
   }
 
-  /** Обновляет структуру, сохраняя раскладку существующих мест использования. */
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
+
+  /**
+   * Обновляет структуру, сохраняя раскладку существующих мест использования.
+   */
   public replaceRoots(roots: WorkflowDependency[]): void {
     const knownOwners = new Set(this._graph.resources.keys())
     this._roots = roots
@@ -111,7 +113,9 @@ export class WorkspaceWorkflow {
       !knownOwners.has(id) || this._expandedResources.has(id)))
   }
 
-  /** Перенос меняет только визуальные координаты, а не scope или зависимости. */
+  /**
+   * Перенос меняет только визуальные координаты, а не scope или зависимости.
+   */
   public moveNodes(nodes: { id: string, position: WorkflowPoint }[]): void {
     if (!this._layout) {
       return
@@ -137,7 +141,9 @@ export class WorkspaceWorkflow {
     }
   }
 
-  /** Восстанавливает только поддержанный UI snapshot; документы и координаты не меняются. */
+  /**
+   * Восстанавливает только поддержанный UI snapshot; документы и координаты не меняются.
+   */
   public restoreViewState(value: unknown): void {
     this._viewport = null
     this._layoutShift = { x: 0, y: 0 }
@@ -165,7 +171,9 @@ export class WorkspaceWorkflow {
     }
   }
 
-  /** Меняет только видимость привязанных узлов; геометрия дерева остаётся неизменной. */
+  /**
+   * Меняет только видимость привязанных узлов; геометрия дерева остаётся неизменной.
+   */
   public toggleResources(id: string): void {
     if (!this._graph.resources.has(id)) {
       return
@@ -180,7 +188,9 @@ export class WorkspaceWorkflow {
     this._expandedResources = expanded
   }
 
-  /** Transient selection принадлежит проекции и не входит в persisted layout/view state. */
+  /**
+   * Transient selection принадлежит проекции и не входит в persisted layout/view state.
+   */
   public setSelection(ids: ReadonlySet<string>): void {
     this._selectedIds = new Set([...ids].filter(id => this._graph.nodes.has(id)))
   }
@@ -193,16 +203,16 @@ export class WorkspaceWorkflow {
     return getWorkflowFocus(this._graph, this._selectedIds)
   }
 
-  /** Возвращает выразительность логических узлов независимо от раскрытия панелей. */
+  /**
+   * Возвращает выразительность логических узлов независимо от раскрытия панелей.
+   */
   public getFocus(selected: ReadonlySet<string>): Map<string, number> {
     return getWorkflowFocus(this._graph, selected)
   }
 
-  /**
-   * ----------------------------------------
-   * PRIVATE
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PRIVATE
+  // ---------------------------------------------
 
   private _resourceRows(id: string): WorkflowResourceRow[] {
     const rows = new Map<string, WorkflowNodeData[]>()
@@ -221,7 +231,9 @@ export class WorkspaceWorkflow {
     return Math.min(RESOURCE_COLUMNS, Math.max(3, ...this._resourceRows(id).map(row => row.items.length)))
   }
 
-  /** Место под весь состав резервируется независимо от текущего раскрытия. */
+  /**
+   * Место под весь состав резервируется независимо от текущего раскрытия.
+   */
   private _blockWidth(id: string): number {
     const columns = this._resourceColumns(id)
     return this._graph.resources.has(id)
@@ -229,7 +241,9 @@ export class WorkspaceWorkflow {
       : NODE_WIDTH
   }
 
-  /** Строки по 34px дополняют укороченную на 42px шапку карточки FilterView. */
+  /**
+   * Строки по 34px дополняют укороченную на 42px шапку карточки FilterView.
+   */
   private _filterViewHeightDelta(id: string): number {
     const count = this._graph.nodes.get(id)?.filterView?.fields.length ?? 0
     return count ? count * 34 + 14 - 42 : 0
@@ -244,7 +258,9 @@ export class WorkspaceWorkflow {
     return this._filterViewHeightDelta(id) + RESOURCE_CONTENT_Y + (count - 1) * RESOURCE_ROW_HEIGHT + RESOURCE_HEIGHT
   }
 
-  /** Композиции одного уровня стоят в общей колонке; их содержимое образует компактные группы. */
+  /**
+   * Композиции одного уровня стоят в общей колонке; их содержимое образует компактные группы.
+   */
   private _buildScene(): { nodes: WorkflowNode[], edges: WorkflowEdge[] } {
     const nodes: WorkflowNode[] = []
     const edges: WorkflowEdge[] = []
@@ -367,17 +383,17 @@ export class WorkspaceWorkflow {
     return { nodes, edges }
   }
 
-  /**
-   * ----------------------------------------
-   * ACCESS
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // ACCESS
+  // ---------------------------------------------
 
   public get scene(): { nodes: WorkflowNode[], edges: WorkflowEdge[] } {
     return this._buildScene()
   }
 
-  /** Личный UI snapshot не входит в metadata и dirty-state Workspace. */
+  /**
+   * Личный UI snapshot не входит в metadata и dirty-state Workspace.
+   */
   public get viewState(): WorkflowViewState {
     return {
       version: 1,
@@ -403,7 +419,9 @@ export class WorkspaceWorkflow {
     return this._layout !== null
   }
 
-  /** Только сохраняемые данные; камера, выделение и дерево не входят в snapshot. */
+  /**
+   * Только сохраняемые данные; камера, выделение и дерево не входят в snapshot.
+   */
   public get layout(): WorkflowLayout | null {
     return this._layout && {
       schemaVersion: 1,

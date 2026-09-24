@@ -1,8 +1,12 @@
 import { Endge } from '@endge/core'
 
-/** Выполняет emergency cleanup browser state Configurator. */
+/**
+ * Выполняет emergency cleanup browser state Configurator.
+ */
 export class ConfiguratorDiagnosticsStorage_Adapter {
-  /** Удаляет persisted UI state, способный повторно вызвать render failure. */
+  /**
+   * Удаляет persisted UI state, способный повторно вызвать render failure.
+   */
   public clearEndgeIDEState(): void {
     if (typeof window === 'undefined') {
       return

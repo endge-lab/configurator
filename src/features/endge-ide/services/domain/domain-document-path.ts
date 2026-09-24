@@ -171,7 +171,7 @@ function getDocumentPath(
   return [...getFolderPath(document.folderId, rootIdentity), label].join('/')
 }
 
-/** Путь документа в той же иерархии, в которой он показан в Domain widget. */
+// Путь документа в той же иерархии, в которой он показан в Domain widget.
 export function getDomainDocumentPath(
   documentId: string,
   documentType: DomainDocumentType,

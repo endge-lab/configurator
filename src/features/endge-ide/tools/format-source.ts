@@ -39,11 +39,9 @@ const VUE_STYLE_OPEN_TAG_RE = /<style\b([^>]*)>/gi
 const STYLE_LANG_ATTRIBUTE_RE
   = /\blang\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i
 
-/**
- * Парсер Vue воспринимает `[name='value']` как присваивание JavaScript и добавляет
- * скобки. В шаблонах Endge это селектор DataPath, поэтому он должен оставаться
- * непрозрачным для Prettier при форматировании окружающего Vue-кода.
- */
+// Парсер Vue воспринимает `[name='value']` как присваивание JavaScript и добавляет
+// скобки. В шаблонах Endge это селектор DataPath, поэтому он должен оставаться
+// непрозрачным для Prettier при форматировании окружающего Vue-кода.
 function protectEndgeSelectors(source: string): ProtectedSource {
   const selectors: string[] = []
   let placeholderPrefix = '__ENDGE_FORMAT_SELECTOR_'
@@ -89,12 +87,10 @@ function protectEndgeSelectors(source: string): ProtectedSource {
   }
 }
 
-/**
- * Prettier keeps unknown SFC style languages opaque. EndgeCSS uses an
- * SCSS-compatible formatting grammar, so the formatter temporarily exposes
- * EndgeCSS blocks as SCSS and restores their original language declaration
- * afterwards. A style block without lang is also EndgeCSS by contract.
- */
+// Prettier keeps unknown SFC style languages opaque. EndgeCSS uses an
+// SCSS-compatible formatting grammar, so the formatter temporarily exposes
+// EndgeCSS blocks as SCSS and restores their original language declaration
+// afterwards. A style block without lang is also EndgeCSS by contract.
 function exposeEndgeStylesToPrettier(source: string): ProtectedSource {
   const styles: Array<{ marker: string, hadLanguage: boolean }> = []
   let markerPrefix = 'data-endge-format-style-'
@@ -177,11 +173,9 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/**
- * Нормализует Vue-совместимый control-flow syntax в канонический Endge SFC syntax.
- * Обрабатываются только атрибуты открывающих тегов внутри template, поэтому строки
- * в script и обычный текст с примерами директив остаются без изменений.
- */
+// Нормализует Vue-совместимый control-flow syntax в канонический Endge SFC syntax.
+// Обрабатываются только атрибуты открывающих тегов внутри template, поэтому строки
+// в script и обычный текст с примерами директив остаются без изменений.
 function normalizeEndgeControlFlowDirectives(source: string): string {
   return source.replace(
     VUE_TEMPLATE_BLOCK_RE,
@@ -338,7 +332,7 @@ async function loadPrettierConfig(
   }
 }
 
-/** Форматирует source согласно формату документа. Prettier загружается только по клику. */
+// Форматирует source согласно формату документа. Prettier загружается только по клику.
 export async function formatSource(
   source: string,
   language: SourceFormatLanguage,

@@ -16,7 +16,7 @@ function isWorkingSetRef(value: unknown): value is DomainWorkingSetRef {
     && (typeof candidate.id === 'string' || typeof candidate.id === 'number')
 }
 
-/** Возвращает сохранённый фильтр только если все его roots существуют в домене. */
+// Возвращает сохранённый фильтр только если все его roots существуют в домене.
 export function restoreDomainWorkingSetFilter(
   persisted: unknown,
   available: readonly DomainWorkingSetRef[],

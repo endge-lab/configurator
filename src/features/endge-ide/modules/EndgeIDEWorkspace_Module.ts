@@ -7,7 +7,9 @@ import { RWorkspaceEditor } from '@/features/endge-ide/domain/entities/RWorkspac
 import { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
 import { buildWorkspaceWorkflowTree } from '@/features/endge-ide/services/workspace-workflow/workspace-workflow-tree'
 
-/** Владеет workspace editor-сессией, её persistence и отдельным Workflow. */
+/**
+ * Владеет workspace editor-сессией, её persistence и отдельным Workflow.
+ */
 export class EndgeIDEWorkspace_Module {
   public readonly editor = shallowRef<RWorkspaceEditor | null>(null)
   public readonly root = shallowRef<WorkflowDependency | null>(null)

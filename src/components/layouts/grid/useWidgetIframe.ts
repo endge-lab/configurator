@@ -1,7 +1,5 @@
-/**
- * Сериализуемый action заголовка для обмена с iframe.
- * Иконка передаётся строкой с именем из lucide-vue-next.
- */
+// Сериализуемый action заголовка для обмена с iframe.
+// Иконка передаётся строкой с именем из lucide-vue-next.
 export interface SerializableWidgetHeaderAction {
   readonly id: string
   readonly title?: string
@@ -10,29 +8,27 @@ export interface SerializableWidgetHeaderAction {
   disabled?: boolean
 }
 
-/**
- * Composable для обмена содержимого iframe с родительским контейнером виджета.
- * Работает как для встроенного в основной layout виджета, так и для popup.
- *
- * Пример использования внутри iframe:
- * ```ts
- * const { setTitle, setLoading, addHeaderAction } = useWidgetIframe()
- *
- * // Обновление заголовка виджета
- * setTitle('Flight #123 Details')
- *
- * // Отображение или скрытие состояния загрузки
- * setLoading(true)
- *
- * // Добавление пользовательского action в заголовок
- * addHeaderAction({
- *   id: 'refresh',
- *   title: 'Refresh',
- *   icon: RefreshCw,
- *   onClick: () => fetchData()
- * })
- * ```
- */
+// Composable для обмена содержимого iframe с родительским контейнером виджета.
+// Работает как для встроенного в основной layout виджета, так и для popup.
+//
+// Пример использования внутри iframe:
+// ```ts
+// const { setTitle, setLoading, addHeaderAction } = useWidgetIframe()
+//
+// // Обновление заголовка виджета
+// setTitle('Flight #123 Details')
+//
+// // Отображение или скрытие состояния загрузки
+// setLoading(true)
+//
+// // Добавление пользовательского action в заголовок
+// addHeaderAction({
+//   id: 'refresh',
+//   title: 'Refresh',
+//   icon: RefreshCw,
+//   onClick: () => fetchData()
+// })
+// ```
 export function useWidgetIframe() {
   function postToParent(type: string, data: Record<string, unknown>) {
     if (window.parent && window.parent !== window) {

@@ -2,7 +2,9 @@ import type { RMock, RMockContentSource, RMockContentType } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Editor model persisted mock-документа. */
+/**
+ * Editor model persisted mock-документа.
+ */
 export class RMockEditor {
   id!: string | number
   identity!: string
@@ -14,7 +16,9 @@ export class RMockEditor {
   codeRef: string = ''
   diagnostics: string[] = []
 
-  /** Заполняет editor state из RMock. */
+  /**
+   * Заполняет editor state из RMock.
+   */
   fillFromSource(source: RMock): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
@@ -27,7 +31,9 @@ export class RMockEditor {
     this.refreshDiagnostics()
   }
 
-  /** Переносит editor state обратно в persisted RMock. */
+  /**
+   * Переносит editor state обратно в persisted RMock.
+   */
   updateSource(target: RMock): void {
     target.id = this.id as any
     target.identity = this.identity.trim()
@@ -40,13 +46,17 @@ export class RMockEditor {
     target.codeRef = this.codeRef.trim() || null
   }
 
-  /** Обновляет source и diagnostics. */
+  /**
+   * Обновляет source и diagnostics.
+   */
   applySourceText(value: string): void {
     this.source = value
     this.refreshDiagnostics()
   }
 
-  /** Проверяет текущий editor state без мутации доменной модели. */
+  /**
+   * Проверяет текущий editor state без мутации доменной модели.
+   */
   refreshDiagnostics(): void {
     const diagnostics: string[] = []
     if (!this.identity.trim()) {

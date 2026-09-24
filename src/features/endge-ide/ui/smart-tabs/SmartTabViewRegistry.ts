@@ -1,6 +1,8 @@
 import type { SmartTabViewFactory } from '@/features/endge-ide/ui/smart-tabs/types'
 
-/** Реестр фабрик представлений, принадлежащий экземпляру одного рабочего пространства SmartTabs. */
+/**
+ * Реестр фабрик представлений, принадлежащий экземпляру одного рабочего пространства SmartTabs.
+ */
 export class SmartTabViewRegistry {
   private readonly _views = new Map<string, SmartTabViewFactory>()
 

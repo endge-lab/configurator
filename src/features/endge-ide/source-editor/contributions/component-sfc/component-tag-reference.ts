@@ -2,7 +2,7 @@ import type { SourceDocumentReference } from '@endge/core'
 
 import { Endge, isComponentSFCBuiltInTag, parseComponentSFC } from '@endge/core'
 
-/** Преобразует сохранённый тег ComponentSFC под курсором в его authoring-документ. */
+// Преобразует сохранённый тег ComponentSFC под курсором в его authoring-документ.
 export function resolveComponentSFCTagReference(
   source: string,
   offset: number,
@@ -44,7 +44,7 @@ interface ComponentSFCTagToken {
   range: SourceDocumentReference['range']
 }
 
-/** Находит только имя открывающего или закрывающего тега внутри template-блока SFC. */
+// Находит только имя открывающего или закрывающего тега внутри template-блока SFC.
 function findComponentSFCTagAtOffset(
   source: string,
   offset: number,

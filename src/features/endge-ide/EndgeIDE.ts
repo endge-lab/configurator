@@ -6,7 +6,9 @@ import { Endge } from '@endge/core'
 import { isIDEWidgetsDisabled } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { createEndgeIDEModules } from '@/features/endge-ide/config/modules.config'
 
-/** Федерация уровня маршрута для смонтированного рабочего пространства IDE. */
+/**
+ * Федерация уровня маршрута для смонтированного рабочего пространства IDE.
+ */
 export class EndgeIDE {
   private static _modules: EndgeIDEModules | null = null
   private static _initialized = false
@@ -25,7 +27,9 @@ export class EndgeIDE {
     return this._requireModules().demonstration
   }
 
-  /** Возвращает принадлежащий IDE state owner визуального UI-редактора. */
+  /**
+   * Возвращает принадлежащий IDE state owner визуального UI-редактора.
+   */
   public static get uiEditor() {
     return this._requireModules().uiEditor
   }
@@ -120,7 +124,9 @@ export class EndgeIDE {
     return this._initialization
   }
 
-  /** Mounts only the Domain widget and creation modal without workspace Core. */
+  /**
+   * Mounts only the Domain widget and creation modal without workspace Core.
+   */
   public static async initDetached(): Promise<void> {
     if (this._initialized) {
       return

@@ -11,7 +11,7 @@ import {
   useSlots,
 } from 'vue'
 
-/** Отображает непрозрачную корневую точку входа, принадлежащую активному UI-адаптеру. */
+// Отображает непрозрачную корневую точку входа, принадлежащую активному UI-адаптеру.
 export default defineComponent({
   name: 'EndgeAdapterRoot',
   inheritAttrs: false,

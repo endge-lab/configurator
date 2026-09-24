@@ -30,7 +30,7 @@ const externallyManaged = computed(() => documentModel.value?.managedBy === 'sys
 
 const domainStore = useDomainStore()
 
-/** Шаблон страницы по выбранному templateId. */
+// Шаблон страницы по выбранному templateId.
 const pageTemplate = computed(() => {
   const templateId = editor.value?.templateId
   if (templateId == null) {
@@ -58,7 +58,7 @@ function setTemplate(value: string | null): void {
     : null
 }
 
-/** Синхронизация областей редактора с областями шаблона при смене шаблона или загрузке. */
+// Синхронизация областей редактора с областями шаблона при смене шаблона или загрузке.
 watch(
   [editor, pageTemplate],
   () => {

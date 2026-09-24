@@ -322,7 +322,7 @@ function saveActionDetails(): boolean {
   return saved
 }
 
-/** Применяет редактирование существующего пункта, но не создаёт новый пункт автоматически. */
+// Применяет редактирование существующего пункта, но не создаёт новый пункт автоматически.
 function flushPendingEdits(): boolean {
   if (editingIndex.value != null && !saveLabelEdit()) {
     return false

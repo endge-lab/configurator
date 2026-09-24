@@ -1,8 +1,6 @@
 import type { DomainDocumentType, EntityOrigin, ManagedBy, RComponentTable, RCompositionKind, ResolvedActionDescriptor, TypeProgramCatalogEntry } from '@endge/core'
-/**
- * Логика построения дерева сущностей домена для виджета Domain_Widget.
- * Вынесено из Domain_Widget.vue для переиспользования и тестирования.
- */
+// Логика построения дерева сущностей домена для виджета Domain_Widget.
+// Вынесено из Domain_Widget.vue для переиспользования и тестирования.
 
 import type { QUERY_COMPOSITION_PRESENTATION_KIND } from './query-composition-presentation'
 import {
@@ -23,11 +21,11 @@ export interface FsNodeBase {
   type: FsNodeType
   virtual?: boolean
   badges?: string[]
-  /** Проекция Workspace только для frontend; она никогда не принадлежит Endge Domain. */
+  // Проекция Workspace только для frontend; она никогда не принадлежит Endge Domain.
   workspaceIdentity?: string
   activeWorkspace?: boolean
   workspaceRole?: WorkspaceTreeProjectionInput['role']
-  /** Dynamic facet ownership; these nodes are authoring-only and bypass generic document routes. */
+  // Dynamic facet ownership; these nodes are authoring-only and bypass generic document routes.
   facetIdentity?: string
   facetColor?: string
   facetIcon?: string
@@ -39,7 +37,7 @@ export interface FsFolderNode extends FsNodeBase {
   id: string
   identity?: string
   sectionType: DomainSectionType
-  /** Группа происхождения только для runtime. Встроенная и предоставленная группы предшествуют сохранённым дочерним элементам. */
+  // Группа происхождения только для runtime. Встроенная и предоставленная группы предшествуют сохранённым дочерним элементам.
   virtualOrigin?: 'builtin' | 'derived' | 'local'
   isRoot?: boolean
   managedBy?: ManagedBy
@@ -52,7 +50,7 @@ export interface FsFolderNode extends FsNodeBase {
 }
 
 export interface FsFileNode extends FsNodeBase {
-  /** Ссылка на readonly-документ каталога Program. */
+  // Ссылка на readonly-документ каталога Program.
   compiledDocumentKey?: string
   type: 'file'
   id: string
@@ -67,12 +65,12 @@ export interface FsFileNode extends FsNodeBase {
   parentComponentId?: string
   presentationKind?: CompositionPresentationKind
   origin?: EntityOrigin
-  /** Сохраняемый authoring-документ, представленный этой виртуальной проекцией. */
+  // Сохраняемый authoring-документ, представленный этой виртуальной проекцией.
   sourceDocument?: {
     identity: string
     docType: DomainDocumentType
   }
-  /** Метаданные каталога Event только для frontend. */
+  // Метаданные каталога Event только для frontend.
   eventPort?: {
     payloadType: string
     origin: 'builtin' | 'own' | 'forwarded'
@@ -98,7 +96,7 @@ export interface ConfigurationTreeProjectionInput {
   deletedAt?: string | null
 }
 
-/** Проецирует только конфигурации активного Workspace в виде плоских дочерних элементов без папок. */
+// Проецирует только конфигурации активного Workspace в виде плоских дочерних элементов без папок.
 export function buildWorkspaceTreeNodes(
   workspaces: readonly WorkspaceTreeProjectionInput[],
   activeWorkspaceIdentity: string | null,
@@ -144,7 +142,7 @@ export interface FlatFsItem {
   rootId: string
 }
 
-/** Признак удалённой сущности по серверному tombstone. */
+// Признак удалённой сущности по серверному tombstone.
 export function isDeleted(
   e: { deletedAt?: string | null },
 ): boolean {
@@ -155,7 +153,7 @@ function isTemporaryEntity(entity: unknown): boolean {
   return (entity as { isTemporary?: boolean } | null | undefined)?.isTemporary === true
 }
 
-/** Исключаем удалённые из списков. */
+// Исключаем удалённые из списков.
 export function withoutDeleted<T>(list: T[] | undefined): T[] {
   if (!Array.isArray(list)) {
     return []
@@ -168,7 +166,7 @@ export function getFolderParent(f: { parent?: string | number | null, parentId?:
   return p == null || p === '' ? null : p
 }
 
-/** Полные русские подписи корневых разделов дерева. */
+// Полные русские подписи корневых разделов дерева.
 export const ROOT_FOLDER_LABELS: Record<string, string> = {
   'root-workspaces': 'Рабочие пространства',
   'root-configurations': 'Конфигурации',
@@ -268,7 +266,7 @@ export function getDomainTreeRootBlocks(keys: string[]): DomainTreeRootBlock[] {
     .filter(block => block.rootIds.length > 0)
 }
 
-/** Порядок корневых папок. */
+// Порядок корневых папок.
 export function getRootFolderOrder(keys: string[]): string[] {
   const ordered: string[] = []
   for (const block of getDomainTreeRootBlocks(keys)) {
@@ -355,7 +353,7 @@ export function normalizeDocType(
   return raw
 }
 
-/** Дочерние узлы компонента-таблицы: активные колонки. */
+// Дочерние узлы компонента-таблицы: активные колонки.
 export function buildTableColumnRefs(componentId: string): FsFileNode[] {
   const component = Endge.domain.getComponent(componentId) as RComponentTable | null
   if (!component || component.type !== ComponentType.Table) {
@@ -380,13 +378,13 @@ export function buildTableColumnRefs(componentId: string): FsFileNode[] {
     })
 }
 
-/** Параметры для построения дерева. */
+// Параметры для построения дерева.
 export interface BuildDomainTreeParams {
   rootToSection: Record<string, { section: DomainSectionType, items: () => unknown[] }>
   rootOrder: string[]
   rootLabels: Record<string, string>
   allFolders: any[]
-  /** Документы Composition отображаются по виду, а не по сохранённой папке. */
+  // Документы Composition отображаются по виду, а не по сохранённой папке.
   contextualCompositions?: Array<{
     id?: string | number
     identity?: string
@@ -397,7 +395,7 @@ export interface BuildDomainTreeParams {
     folderId?: string | number | null
     workspaceFolderId?: string | number | null
   }>
-  /** Updates, принадлежащие Store, отображаются только среди дочерних элементов своего Store. */
+  // Updates, принадлежащие Store, отображаются только среди дочерних элементов своего Store.
   storeUpdates?: Array<{
     id?: string | number
     identity?: string
@@ -551,9 +549,7 @@ function buildFolderNode(
   return createFolderTreeNode(folder, sectionType, folderId, folderIdentity, folderName, isRoot, children)
 }
 
-/**
- * Строит дерево секций и сущностей домена.
- */
+// Строит дерево секций и сущностей домена.
 export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   const { rootToSection, rootOrder, rootLabels, allFolders } = params
   const folders = allFolders
@@ -595,7 +591,7 @@ export function buildDomainTree(params: BuildDomainTreeParams): FsNode[] {
   return tree
 }
 
-/** Поднимает startup Composition перед соседними Composition только в UI-проекции. */
+// Поднимает startup Composition перед соседними Composition только в UI-проекции.
 export function prioritizeStartupComposition(nodes: FsNode[], identity: string | null | undefined): FsNode[] {
   const startupIdentity = String(identity ?? '').trim()
   if (!startupIdentity) {
@@ -711,10 +707,8 @@ function buildWorkspaceProjectionFolder(
   )
 }
 
-/**
- * Places generic persisted documents by their independent Workspace-folder
- * reference under a visible system root that behaves like a regular folder.
- */
+// Places generic persisted documents by their independent Workspace-folder
+// reference under a visible system root that behaves like a regular folder.
 export function buildCustomWorkspaceProjection(
   frontendTree: readonly FsNode[],
   allFolders: readonly any[],
@@ -787,7 +781,7 @@ function attachStoreUpdates(
   }
 }
 
-/** Добавляет фактические несохраняемые Actions и отмечает сохранённые переопределения. */
+// Добавляет фактические несохраняемые Actions и отмечает сохранённые переопределения.
 export function attachResolvedActionTree(
   tree: FsNode[],
   actions: readonly ResolvedActionDescriptor[],
@@ -985,7 +979,7 @@ export function attachResolvedActionTree(
   }
 }
 
-/** Добавляет встроенные Types из кода первой виртуальной группой внутри Types. */
+// Добавляет встроенные Types из кода первой виртуальной группой внутри Types.
 export function attachResolvedTypeTree(
   tree: FsNode[],
   types: readonly TypeProgramCatalogEntry[],
@@ -1146,9 +1140,7 @@ export function attachContextualCompositions(
   }
 }
 
-/**
- * Разворачивает дерево в плоский список с учётом раскрытых папок.
- */
+// Разворачивает дерево в плоский список с учётом раскрытых папок.
 export function flattenTree(
   items: FsNode[],
   expandedPaths: Set<string>,

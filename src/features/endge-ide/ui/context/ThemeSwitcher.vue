@@ -31,7 +31,7 @@ const currentTheme = computed(() => {
   return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTheme(current.value)
 })
 const currentLabel = computed(() => currentTheme.value ? Endge.workspace.getThemeLabel(currentTheme.value) : '')
-/** Изменяет тему только в интерактивном представлении. */
+// Изменяет тему только в интерактивном представлении.
 async function select(theme: string): Promise<void> {
   if (readOnly.value || pending.value) {
     return

@@ -32,7 +32,9 @@ export interface BuildProfileTransport {
   updatedAt?: string
 }
 
-/** App-owned operational build configuration; it is not a Core Domain document. */
+/**
+ * App-owned operational build configuration; it is not a Core Domain document.
+ */
 export class RBuildProfile extends REntity<string> {
   public visibility: BuildProfileVisibility = 'private'
   public ownerLogin = ''

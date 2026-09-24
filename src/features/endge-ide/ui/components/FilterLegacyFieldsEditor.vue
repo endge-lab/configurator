@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 
-/** Legacy fields editor. Он намеренно не читает и не изменяет Filter source. */
+// Legacy fields editor. Он намеренно не читает и не изменяет Filter source.
 const tabs = EndgeIDE.tabs
 interface EditorWithSelection { id: number | string, identity: string, displayName: string, fields: FilterFieldItemSchema[], selectedFieldIndex?: number | null }
 const editor = computed(() => (tabs.documentEditorModel.value as EditorWithSelection | null) ?? null)
@@ -31,7 +31,7 @@ const selectedIndex = ref<number | null>(null)
 const dragFieldIndex = ref<number | null>(null)
 const dragOverFieldIndex = ref<number | null>(null)
 
-/** Синхронизация выбранного индекса с редактором (инспектор читает для примера словаря) */
+// Синхронизация выбранного индекса с редактором (инспектор читает для примера словаря)
 watch(editor, (ed) => {
   const idx = ed?.selectedFieldIndex
   if (typeof idx === 'number' && idx >= 0) {
@@ -57,7 +57,7 @@ const selectedField = computed(() => {
   return arr[idx]
 })
 
-/** Чекбокс «Активно» - привязка через model-value для корректной реактивности */
+// Чекбокс «Активно» - привязка через model-value для корректной реактивности
 const activeChecked = computed({
   get: () => editor.value?.fields?.[selectedIndex.value ?? -1]?.active === true,
   set: (v: boolean) => {
@@ -67,7 +67,7 @@ const activeChecked = computed({
   },
 })
 
-/** Доменные документы справочников. */
+// Доменные документы справочников.
 const vocabDocs = computed(() =>
   Endge.domain.getVocabs()
     .filter(vocab => vocab.active !== false && vocab.mode === 'external_payload')
@@ -93,7 +93,7 @@ function getVocabCollectionOptions(vocabIdentity: string | undefined) {
 
 const isDateLikeMode = (mode: string) => mode === 'date' || mode === 'time' || mode === 'datetime'
 
-/** Список конвертеров домена для выбора в поле */
+// Список конвертеров домена для выбора в поле
 const converterOptions = computed(() => {
   const list = Endge.domain.getConverters()
   return list.map(c => ({
@@ -102,7 +102,7 @@ const converterOptions = computed(() => {
   }))
 })
 
-/** Текущий массив identity конвертеров выбранного поля (нормализованный) */
+// Текущий массив identity конвертеров выбранного поля (нормализованный)
 const selectedConverterIds = computed(() => {
   const f = selectedField.value
   if (!f) {
@@ -313,7 +313,7 @@ function onActiveModelValue(value: string | boolean): void {
   activeChecked.value = value === true
 }
 
-/** Текущий массив опций статического списка выбранного поля */
+// Текущий массив опций статического списка выбранного поля
 const selectedStaticOptions = computed(() => {
   const f = selectedField.value
   const raw = f?.staticOptions

@@ -12,7 +12,9 @@ import { collectRuntimeWorkflowActivity } from '@/features/endge-ide/tools/runti
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { readWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
-/** Владеет выбором и UI-проекцией debugger; runtime и данные остаются в Core Runtime. */
+/**
+ * Владеет выбором и UI-проекцией debugger; runtime и данные остаются в Core Runtime.
+ */
 export class EndgeIDERuntimeInspection_Module {
   private readonly _runtime = shallowRef<EndgeRuntimeSnapshot | null>(null)
   private readonly _revision = shallowRef(0)
@@ -112,7 +114,9 @@ export class EndgeIDERuntimeInspection_Module {
     this.workflow.value.replaceRoots(this._workflowRoots.value)
   }
 
-  /** Смена клиента снимает выбор и временное полотно, не сохраняя их в удалённом Context. */
+  /**
+   * Смена клиента снимает выбор и временное полотно, не сохраняя их в удалённом Context.
+   */
   public clearSelection(): void {
     this._selectedId.value = null
     this.workflow.value = null

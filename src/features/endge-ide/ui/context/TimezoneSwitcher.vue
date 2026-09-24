@@ -31,7 +31,7 @@ const currentTimezone = computed(() => {
   return props.value !== undefined ? props.value ?? '' : Endge.workspace.normalizeTimezone(current.value)
 })
 const currentLabel = computed(() => currentTimezone.value ? Endge.workspace.getTimezoneLabel(currentTimezone.value) : '')
-/** Изменяет временную зону только в интерактивном представлении. */
+// Изменяет временную зону только в интерактивном представлении.
 async function select(timezone: string): Promise<void> {
   if (readOnly.value || pending.value) {
     return

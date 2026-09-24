@@ -1,7 +1,9 @@
 import type { RStream } from '@endge/core'
 import { Endge } from '@endge/core'
 
-/** Source-first модель редактора Stream. */
+/**
+ * Source-first модель редактора Stream.
+ */
 export class RStreamEditor {
   readonly sourceKind = 'stream' as const
   id!: string | number

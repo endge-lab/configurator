@@ -33,7 +33,7 @@ interface State {
 }
 
 class AIWorkbench_Module {
-  /** Transport, resources и mutable state принадлежат модулю. */
+  // Transport, resources и mutable state принадлежат модулю.
   private _service: AIWorkbench_HTTP_Adapter | null = null
   private _timer: ReturnType<typeof setInterval> | null = null
   private _stream: AbortController | null = null
@@ -52,15 +52,13 @@ class AIWorkbench_Module {
     openClarification: null,
   })
 
-  /** Readonly reactive views для UI. */
+  // Readonly reactive views для UI.
   public readonly state = readonly(this._state)
   public readonly enabledModels = computed(() => this._state.capabilities?.models.filter(model => model.enabled) ?? [])
 
-  /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
 
   public async init(baseURL: string, workspaceIdentity: string): Promise<void> {
     if (this._initialized) {
@@ -215,76 +213,100 @@ class AIWorkbench_Module {
     this._state.error = ''
   }
 
-  /** Открывает общее окно настройки public/private AI connections. */
+  /**
+   * Открывает общее окно настройки public/private AI connections.
+   */
   public openManagement(): void {
     this._state.managementOpen = true
   }
 
-  /** Закрывает окно настройки AI connections. */
+  /**
+   * Закрывает окно настройки AI connections.
+   */
   public closeManagement(): void {
     this._state.managementOpen = false
   }
 
-  /** Загружает доступные provider adapters для management UI. */
+  /**
+   * Загружает доступные provider adapters для management UI.
+   */
   public listProviderAdapters(): Promise<{ items: AIAdapter[] }> {
     return this._transport.adapters()
   }
 
-  /** Загружает provider connections для management UI. */
+  /**
+   * Загружает provider connections для management UI.
+   */
   public listProviderConnections(): Promise<{ items: AIProviderConnection[], total: number }> {
     return this._transport.connections()
   }
 
-  /** Загружает model profiles для management UI. */
+  /**
+   * Загружает model profiles для management UI.
+   */
   public listModelProfiles(): Promise<{ items: AIModelProfile[], total: number }> {
     return this._transport.models()
   }
 
-  /** Создаёт provider connection через transport adapter. */
+  /**
+   * Создаёт provider connection через transport adapter.
+   */
   public createProviderConnection(value: { name: string, adapter: AIAdapter, baseUrl: string, credential: string, visibility: AIVisibility, enabled: boolean }): Promise<AIProviderConnection> {
     return this._transport.createConnection(value)
   }
 
-  /** Атомарно создаёт provider connection и первый model profile. */
+  /**
+   * Атомарно создаёт provider connection и первый model profile.
+   */
   public createProviderConnectionWithModel(value: AICreateConnectionWithModel): Promise<{ connection: AIProviderConnection, model: AIModelProfile }> {
     return this._transport.createConnectionWithModel(value)
   }
 
-  /** Изменяет provider connection через transport adapter. */
+  /**
+   * Изменяет provider connection через transport adapter.
+   */
   public updateProviderConnection(id: string, value: { name?: string, baseUrl?: string, enabled?: boolean }): Promise<AIProviderConnection> {
     return this._transport.patchConnection(id, value)
   }
 
-  /** Заменяет credential provider connection. */
+  /**
+   * Заменяет credential provider connection.
+   */
   public replaceProviderCredential(id: string, credential: string): Promise<AIProviderConnection> {
     return this._transport.replaceCredential(id, credential)
   }
 
-  /** Удаляет provider connection. */
+  /**
+   * Удаляет provider connection.
+   */
   public deleteProviderConnection(id: string): Promise<void> {
     return this._transport.deleteConnection(id)
   }
 
-  /** Создаёт model profile через transport adapter. */
+  /**
+   * Создаёт model profile через transport adapter.
+   */
   public createModelProfile(value: { connectionId: string, providerModelId: string, displayName: string, enabled: boolean, isDefault: boolean }): Promise<AIModelProfile> {
     return this._transport.createModel(value)
   }
 
-  /** Изменяет model profile через transport adapter. */
+  /**
+   * Изменяет model profile через transport adapter.
+   */
   public updateModelProfile(id: string, value: { providerModelId?: string, displayName?: string, enabled?: boolean, isDefault?: boolean }): Promise<AIModelProfile> {
     return this._transport.patchModel(id, value)
   }
 
-  /** Удаляет model profile. */
+  /**
+   * Удаляет model profile.
+   */
   public deleteModelProfile(id: string): Promise<void> {
     return this._transport.deleteModel(id)
   }
 
-  /**
-   * ----------------------------------------
-   * PRIVATE
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // PRIVATE
+  // ---------------------------------------------
 
   private async _loadLatestMessages(): Promise<void> {
     if (!this._state.conversation) {
@@ -322,19 +344,21 @@ class AIWorkbench_Module {
     createWidgetInstance(AI_AGENT_WIDGET_ID, {}, { activate: false })
   }
 
-  /** Сворачивает dock-area перед удалением недоступного AI-виджета. */
+  /**
+   * Сворачивает dock-area перед удалением недоступного AI-виджета.
+   */
   private _unregisterWidget(): void {
     hideWidget(AI_AGENT_WIDGET_ID)
     unregisterWidget(AI_AGENT_WIDGET_ID)
   }
 
-  /**
-   * ----------------------------------------
-   * ACCESS
-   * ----------------------------------------
-   */
+  // ---------------------------------------------
+  // ACCESS
+  // ---------------------------------------------
 
-  /** Возвращает transport adapter только внутренним operations модуля. */
+  /**
+   * Возвращает transport adapter только внутренним operations модуля.
+   */
   private get _transport(): AIWorkbench_HTTP_Adapter {
     if (!this._service) {
       throw new Error('AI Workbench is not initialized')

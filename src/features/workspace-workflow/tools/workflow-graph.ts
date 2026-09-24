@@ -10,7 +10,7 @@ export interface WorkflowRelation {
 
 export interface WorkflowGraph {
   nodes: Map<string, WorkflowNodeData>
-  /** Иерархия размещения; семантика ownership и dependencies хранится в relations. */
+  // Иерархия размещения; семантика ownership и dependencies хранится в relations.
   children: Map<string, string[]>
   resources: Map<string, string[]>
   resourceOwners: Map<string, string>
@@ -20,7 +20,7 @@ export interface WorkflowGraph {
 
 type Providers = Map<string, Set<string>>
 
-/** Строит визуальные экземпляры и связи использования, не создавая runtime и не меняя Source. */
+// Строит визуальные экземпляры и связи использования, не создавая runtime и не меняя Source.
 export function buildWorkflowGraph(roots: WorkflowDependency[]): WorkflowGraph {
   const graph: WorkflowGraph = {
     nodes: new Map(),
@@ -224,7 +224,7 @@ export interface WorkflowSelection {
   usages: WorkflowDependency[]
 }
 
-/** Один направленный обход; общий ресурс не связывает соседних потребителей. */
+// Один направленный обход; общий ресурс не связывает соседних потребителей.
 function traverseWorkflow(graph: WorkflowGraph, id: string, direction: 'dependencies' | 'usages') {
   const visits = new Map<string, { depth: number, parent: string | null }>()
   if (!graph.nodes.has(id)) {
@@ -249,7 +249,7 @@ function traverseWorkflow(graph: WorkflowGraph, id: string, direction: 'dependen
   return visits
 }
 
-/** Полотно и дерево панели используют одинаковые границы направленного обхода. */
+// Полотно и дерево панели используют одинаковые границы направленного обхода.
 export function getWorkflowFocus(graph: WorkflowGraph, selected: ReadonlySet<string>): Map<string, number> {
   const levels = new Map<string, number>()
   for (const id of selected) {
@@ -263,7 +263,7 @@ export function getWorkflowFocus(graph: WorkflowGraph, selected: ReadonlySet<str
   return levels
 }
 
-/** Каждое occurrence попадает в дерево один раз на направление, включая циклические графы. */
+// Каждое occurrence попадает в дерево один раз на направление, включая циклические графы.
 export function getWorkflowSelection(graph: WorkflowGraph, selected: ReadonlySet<string>): WorkflowSelection[] {
   const tree = (id: string, direction: 'dependencies' | 'usages'): WorkflowDependency[] => {
     const nodes = new Map<string, WorkflowDependency>()

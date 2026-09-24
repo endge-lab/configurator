@@ -106,14 +106,14 @@ const BUILTIN_TYPE_NAMES = new Set([
   'void',
 ])
 
-/** Строит дерево графа для документов, отличных от Composition, из Program и живой проекции черновика. */
+// Строит дерево графа для документов, отличных от Composition, из Program и живой проекции черновика.
 export function buildDocumentDependencyTree(
   input: DocumentDependencyTreeInput,
 ): DocumentDependencyTreeResult {
   return buildTree(input, false)
 }
 
-/** Добавляет обратный обход `Используется в` к обычному нисходящему дереву. */
+// Добавляет обратный обход `Используется в` к обычному нисходящему дереву.
 export function buildDocumentDependencyHierarchy(
   input: DocumentDependencyTreeInput,
 ): DocumentDependencyTreeResult {

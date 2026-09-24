@@ -1,7 +1,9 @@
 import type { RUpdate } from '@endge/core'
 import { Endge } from '@endge/core'
 
-/** Source-first модель редактора Update, принадлежащего Store. */
+/**
+ * Source-first модель редактора Update, принадлежащего Store.
+ */
 export class RUpdateEditor {
   readonly sourceKind = 'update' as const
   id!: string | number

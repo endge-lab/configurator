@@ -11,7 +11,7 @@ export interface RuntimePreviewDocumentReference {
   identity?: string | null
 }
 
-/** Сопоставляет сохранённый документ Domain tree с той же runtime-целью, которую использует его редактор. */
+// Сопоставляет сохранённый документ Domain tree с той же runtime-целью, которую использует его редактор.
 export function createRuntimePreviewLaunchRequestFromDocument(
   document: RuntimePreviewDocumentReference,
 ): RuntimePreviewLaunchRequest | null {
@@ -34,7 +34,7 @@ export function createRuntimePreviewLaunchRequestFromDocument(
   }
 }
 
-/** Преобразует в запрос запуска только документы с исполняемым runtime-контрактом. */
+// Преобразует в запрос запуска только документы с исполняемым runtime-контрактом.
 export function createRuntimePreviewLaunchRequest(editor: unknown): RuntimePreviewLaunchRequest | null {
   if (editor instanceof RSimulationEditor) {
     return {

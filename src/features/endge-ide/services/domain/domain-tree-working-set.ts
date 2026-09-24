@@ -38,7 +38,7 @@ export interface DomainWorkingSetProjectedBlock extends DomainTreeRootBlock {
   roots: DomainWorkingSetProjectedRoot[]
 }
 
-/** Преобразует file node дерева в ссылку working-set graph. */
+// Преобразует file node дерева в ссылку working-set graph.
 export function domainFileNodeToWorkingSetRef(node: FsFileNode): DomainWorkingSetRef {
   return {
     entityType: normalizeDomainWorkingSetEntityType(node.docType),
@@ -71,7 +71,7 @@ function collectFileItems(
   return items
 }
 
-/** Проецирует найденные working-set документы в плоский список или под исходные корневые папки. */
+// Проецирует найденные working-set документы в плоский список или под исходные корневые папки.
 export function projectDomainWorkingSetItems(
   tree: readonly FsNode[],
   result: DomainWorkingSetResult,
@@ -159,7 +159,7 @@ export function projectDomainWorkingSetItems(
   return items
 }
 
-/** Группирует projection независимо от режима сохранения папок. */
+// Группирует projection независимо от режима сохранения папок.
 export function groupDomainWorkingSetItems(
   items: readonly FlatFsItem[],
   rootBlocks: readonly DomainTreeRootBlock[],

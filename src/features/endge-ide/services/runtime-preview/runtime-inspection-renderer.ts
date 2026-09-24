@@ -19,7 +19,9 @@ export type RuntimeInspectionRenderable
     | { kind: 'store-snapshot', key: string, title: string, fields: { key: string, value: unknown, kind: string }[] }
     | { kind: 'unavailable', key: string, title: string, message: string }
 
-/** Только проекция UI: исходное состояние читается у Core Runtime, артефакты читаются из установленного Program. */
+/**
+ * Только проекция UI: исходное состояние читается у Core Runtime, артефакты читаются из установленного Program.
+ */
 export class RuntimeInspectionRenderer {
   private readonly _ports = new Map<string, { createdAt: number, port: ComponentSFCRenderPort }>()
   private readonly _reader: RuntimeArtifactReader = {
@@ -151,7 +153,7 @@ export class RuntimeInspectionRenderer {
   }
 }
 
-/** Порядок ключей wire JSON не меняет соответствие входа фактически вычисленному ресурсу. */
+// Порядок ключей wire JSON не меняет соответствие входа фактически вычисленному ресурсу.
 function inputSignature(value: unknown): string {
   return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
     ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))

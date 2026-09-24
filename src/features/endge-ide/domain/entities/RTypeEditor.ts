@@ -14,7 +14,9 @@ export class RTypeEditor {
   sourceVersion: number = 1
   diagnostics: ProgramDiagnostic[] = []
 
-  /** Переносит source-first данные редактора в доменную сущность. */
+  /**
+   * Переносит source-first данные редактора в доменную сущность.
+   */
   updateSource(source: RType): void {
     source.identity = this.identity
     source.name = this.name
@@ -24,7 +26,9 @@ export class RTypeEditor {
     source.sourceVersion = this.sourceVersion
   }
 
-  /** Заполняет редактор из доменной сущности. */
+  /**
+   * Заполняет редактор из доменной сущности.
+   */
   fillFromSource(source: RType): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
@@ -36,7 +40,9 @@ export class RTypeEditor {
     this.refreshDiagnostics()
   }
 
-  /** Меняет persisted Type Source. */
+  /**
+   * Меняет persisted Type Source.
+   */
   applySourceText(value: string): void {
     this.source = value
     this.refreshDiagnostics()

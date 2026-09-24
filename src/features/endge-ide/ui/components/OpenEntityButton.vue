@@ -9,9 +9,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 const props = defineProps<{
-  /** ID сущности домена */
+  // ID сущности домена
   entityId: string | number | null
-  /** Тип секции (Query или Component для открытия документа) */
+  // Тип секции (Query или Component для открытия документа)
   sectionType: DomainSectionType
 }>()
 

@@ -1,9 +1,7 @@
-/**
- * Хелпер для автозаполнения dataPaths в редакторе таблицы по данным запроса.
- * Нечёткий поиск названия поля колонки среди путей в примере данных.
- */
+// Хелпер для автозаполнения dataPaths в редакторе таблицы по данным запроса.
+// Нечёткий поиск названия поля колонки среди путей в примере данных.
 
-/** Собирает пути до примитивов в объекте в формате "a.b.c" */
+// Собирает пути до примитивов в объекте в формате "a.b.c"
 export function collectPathStrings(obj: unknown, prefix = ''): string[] {
   if (obj === null || obj === undefined) {
     return []
@@ -23,10 +21,8 @@ export function collectPathStrings(obj: unknown, prefix = ''): string[] {
   return out
 }
 
-/**
- * Разбивает строку на слова: camelCase и underscore_case.
- * Формат определяется по наличию подчёркиваний или заглавных букв.
- */
+// Разбивает строку на слова: camelCase и underscore_case.
+// Формат определяется по наличию подчёркиваний или заглавных букв.
 export function splitToWords(str: string): string[] {
   const s = String(str).trim()
   if (!s) {
@@ -42,7 +38,7 @@ export function splitToWords(str: string): string[] {
     .filter(Boolean)
 }
 
-/** Оценка совпадения двух слов: точное = 100, одно содержит другое = 50, иначе 0. */
+// Оценка совпадения двух слов: точное = 100, одно содержит другое = 50, иначе 0.
 function wordScore(a: string, b: string): number {
   const x = a.toLowerCase()
   const y = b.toLowerCase()
@@ -55,10 +51,8 @@ function wordScore(a: string, b: string): number {
   return 0
 }
 
-/**
- * Сумма очков по словам поля таблицы: для каждого слова выбирается
- * максимальное совпадение с любым словом поля данных; суммируем.
- */
+// Сумма очков по словам поля таблицы: для каждого слова выбирается
+// максимальное совпадение с любым словом поля данных; суммируем.
 function scoreByWords(tableWords: string[], dataWords: string[]): number {
   if (!tableWords.length) {
     return 0
@@ -77,11 +71,9 @@ function scoreByWords(tableWords: string[], dataWords: string[]): number {
   return sum
 }
 
-/**
- * Выбирает наиболее подходящий путь только по названию (слова, очки).
- * Типы на этапе сравнения не проверяются - сравнение по всем путям по словам.
- * Подстановка конвертера выполняется отдельно после выбора пути.
- */
+// Выбирает наиболее подходящий путь только по названию (слова, очки).
+// Типы на этапе сравнения не проверяются - сравнение по всем путям по словам.
+// Подстановка конвертера выполняется отдельно после выбора пути.
 export function fuzzyMatchPath(
   targetName: string,
   paths: string[],
@@ -132,7 +124,7 @@ export interface AccessorBuildOpts {
   hasTabs: boolean
 }
 
-/** Строит строку accessor по пути поля (как в инспекторе). */
+// Строит строку accessor по пути поля (как в инспекторе).
 export function buildAccessor(path: string, opts: AccessorBuildOpts): string {
   const { subField, tabKey, hasTabs } = opts
   const sub = subField?.trim()
@@ -153,18 +145,18 @@ export interface AccessorRow {
 export interface ColumnForFill {
   accessors: AccessorRow[]
   title?: string
-  /** Типы полей связного компонента по имени (если есть) */
+  // Типы полей связного компонента по имени (если есть)
   fieldTypes?: Record<string, string>
 }
 
 export interface AutoFillOpts extends AccessorBuildOpts {
-  /** Образец одного элемента (объект) для получения путей */
+  // Образец одного элемента (объект) для получения путей
   sample: Record<string, unknown> | null
 }
 
 export type PrimitiveKind = 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'object' | 'unknown'
 
-/** Значение по точечному пути a.b.c из объекта (sample) */
+// Значение по точечному пути a.b.c из объекта (sample)
 export function getValueByPath(obj: any, path: string): unknown {
   if (!obj || !path) {
     return undefined
@@ -177,10 +169,10 @@ export function getValueByPath(obj: any, path: string): unknown {
   }, obj)
 }
 
-/** Префикс runtime-ключей превью ячеек таблицы (виджет Демонстрация). */
+// Префикс runtime-ключей превью ячеек таблицы (виджет Демонстрация).
 export const TABLE_PREVIEW_STORE_PREFIX = 'endge:admin:table-preview:'
 
-/** Путь в строке после [$i]. из accessor (например $store.legs[$i].id - "id") */
+// Путь в строке после [$i]. из accessor (например $store.legs[$i].id - "id")
 export function pathFromAccessor(accessor: string): string | null {
   const s = String(accessor ?? '').trim()
   if (!s) {
@@ -191,10 +183,8 @@ export function pathFromAccessor(accessor: string): string | null {
   return path || null
 }
 
-/**
- * Извлечь данные для одной колонки из sample по accessors и применить конвертеры.
- * Используется в превью таблицы (инспектор и виджет Демонстрация).
- */
+// Извлечь данные для одной колонки из sample по accessors и применить конвертеры.
+// Используется в превью таблицы (инспектор и виджет Демонстрация).
 export function extractColumnDataForPreview(
   col: { accessors?: Array<{ name?: string, accessor?: string, converter?: string }> },
   sample: Record<string, unknown> | null,
@@ -228,7 +218,7 @@ export function extractColumnDataForPreview(
   return out
 }
 
-/** Регулярки и проверки для определения типа значения из запроса. */
+// Регулярки и проверки для определения типа значения из запроса.
 const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/i
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const TIME_ONLY = /^\d{1,2}:\d{2}(?::\d{2})?$/
@@ -238,9 +228,7 @@ const TIMESTAMP_MS_MAX = 2e12
 const JSON_OBJECT_START = /^\s*\{/
 const JSON_ARRAY_START = /^\s*\[/
 
-/**
- * Определяет тип примитива значения из запроса по runtime-значению и формату строки.
- */
+// Определяет тип примитива значения из запроса по runtime-значению и формату строки.
 export function detectSamplePrimitiveKind(value: unknown): PrimitiveKind {
   if (value == null) {
     return 'unknown'
@@ -288,7 +276,7 @@ export function detectSamplePrimitiveKind(value: unknown): PrimitiveKind {
   return 'unknown'
 }
 
-/** Нормализует имя типа домена к примитивному виду или any. */
+// Нормализует имя типа домена к примитивному виду или any.
 export function normalizeFieldType(typeName: string | undefined | null): PrimitiveKind | 'any' {
   if (!typeName) {
     return 'unknown'
@@ -321,13 +309,11 @@ export function normalizeFieldType(typeName: string | undefined | null): Primiti
   return 'unknown'
 }
 
-/**
- * Таблица соответствий тип_до - тип_после - identity стандартного конвертера (Payload).
- * Конвертеры: iso-string-to-date, timestamp-to-date, date-to-iso-string, date-to-iso-z,
- * string-to-date, date-to-date-string, date-to-time-string, time-string-to-date,
- * iso-string-to-time-string, weekdays-range, string-trim, default-if-empty, string-to-boolean,
- * to-array, split, string-to-number, number-to-string, json-parse, json-stringify.
- */
+// Таблица соответствий тип_до - тип_после - identity стандартного конвертера (Payload).
+// Конвертеры: iso-string-to-date, timestamp-to-date, date-to-iso-string, date-to-iso-z,
+// string-to-date, date-to-date-string, date-to-time-string, time-string-to-date,
+// iso-string-to-time-string, weekdays-range, string-trim, default-if-empty, string-to-boolean,
+// to-array, split, string-to-number, number-to-string, json-parse, json-stringify.
 const CONVERTER_MATRIX: Array<{ from: PrimitiveKind, to: PrimitiveKind, converterId: string }> = [
   // Строка - число / булево
   { from: 'string', to: 'number', converterId: 'string-to-number' },
@@ -352,7 +338,7 @@ const CONVERTER_MATRIX: Array<{ from: PrimitiveKind, to: PrimitiveKind, converte
   { from: 'string', to: 'object', converterId: 'json-parse' },
 ]
 
-/** Подобрать подходящий конвертер по типу до/после. */
+// Подобрать подходящий конвертер по типу до/после.
 export function pickConverterId(from: PrimitiveKind, to: PrimitiveKind): string | null {
   if (from === 'unknown' || to === 'unknown') {
     return null
@@ -361,10 +347,8 @@ export function pickConverterId(from: PrimitiveKind, to: PrimitiveKind): string 
   return found?.converterId ?? null
 }
 
-/**
- * Заполняет dataPaths одной колонки: для каждой строки accessors
- * подбирает путь по нечёткому совпадению имени и подставляет accessor.
- */
+// Заполняет dataPaths одной колонки: для каждой строки accessors
+// подбирает путь по нечёткому совпадению имени и подставляет accessor.
 export function autoFillColumn(column: ColumnForFill, opts: AutoFillOpts): number {
   const { sample, ...buildOpts } = opts
   if (!sample || typeof sample !== 'object') {
@@ -405,9 +389,7 @@ export interface TableEditorForFill {
   columns: ColumnForFill[]
 }
 
-/**
- * Заполняет dataPaths по всем колонкам таблицы.
- */
+// Заполняет dataPaths по всем колонкам таблицы.
 export function autoFillAllColumns(editor: TableEditorForFill, opts: AutoFillOpts): number {
   let total = 0
   const cols = editor.columns ?? []

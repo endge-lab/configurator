@@ -142,7 +142,7 @@ describe('контекст EndgeIDE', () => {
     expect(mocks.requireActive.mock.calls[0]?.[0]).not.toHaveProperty('renderer')
   })
 
-  /** Откатывает уже запущенный Core и разрешает повторный init после ошибки renderer contract. */
+  // Откатывает уже запущенный Core и разрешает повторный init после ошибки renderer contract.
   it('откатывает Core при ошибке проверки после запуска и разрешает повторную попытку', async () => {
     mocks.requireActive.mockImplementationOnce(() => {
       throw new Error('renderer unavailable')

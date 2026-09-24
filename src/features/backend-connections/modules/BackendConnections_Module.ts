@@ -9,7 +9,9 @@ import type {
 
 import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
 
-/** Владелец default/active target, локального каталога, каталога среды и per-backend Workspace. */
+/**
+ * Владелец default/active target, локального каталога, каталога среды и per-backend Workspace.
+ */
 export class BackendConnections_Module {
   public readonly defaultBackendURL: string | null
   private _activeBackendURL: string | null
@@ -32,7 +34,9 @@ export class BackendConnections_Module {
     this._state = { status: 'ready', catalog: this._catalog }
   }
 
-  /** Возвращает явно выбранный backend; до выбора transport отсутствует. */
+  /**
+   * Возвращает явно выбранный backend; до выбора transport отсутствует.
+   */
   public get activeBackendURL(): string {
     if (!this._activeBackendURL) {
       throw new Error('Backend connection is not selected')
@@ -56,7 +60,9 @@ export class BackendConnections_Module {
     return this._catalog
   }
 
-  /** Загружает общий каталог именно из выбранной среды, не блокируя локальный каталог. */
+  /**
+   * Загружает общий каталог именно из выбранной среды, не блокируя локальный каталог.
+   */
   public async load(): Promise<BackendConnectionCatalog> {
     if (!this._activeBackendURL) {
       return this._catalog
@@ -115,7 +121,9 @@ export class BackendConnections_Module {
     await this.load()
   }
 
-  /** Создаёт Workspace в выбранном backend, сохраняя текущий выбор пространства. */
+  /**
+   * Создаёт Workspace в выбранном backend, сохраняя текущий выбор пространства.
+   */
   public async createWorkspace(input: WorkspaceCreateInput): Promise<void> {
     const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces`, {
       method: 'POST',
@@ -136,7 +144,9 @@ export class BackendConnections_Module {
     }
   }
 
-  /** Мягко удаляет Workspace в выбранном backend с optimistic concurrency. */
+  /**
+   * Мягко удаляет Workspace в выбранном backend с optimistic concurrency.
+   */
   public async deleteWorkspace(workspaceIdentity: string): Promise<void> {
     const url = `${this.activeBackendURL}/api/v1/workspaces/${encodeURIComponent(workspaceIdentity)}`
     const current = await fetch(url, {
@@ -161,7 +171,9 @@ export class BackendConnections_Module {
     }
   }
 
-  /** Возвращает доступные tombstones Workspace независимо от active Workspace. */
+  /**
+   * Возвращает доступные tombstones Workspace независимо от active Workspace.
+   */
   public async listArchivedWorkspaces(): Promise<ArchivedWorkspace[]> {
     const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces/archive`, {
       credentials: 'include',
@@ -195,7 +207,9 @@ export class BackendConnections_Module {
     })
   }
 
-  /** Восстанавливает Workspace tombstone по revision из архива. */
+  /**
+   * Восстанавливает Workspace tombstone по revision из архива.
+   */
   public async restoreWorkspace(workspace: ArchivedWorkspace): Promise<void> {
     const response = await fetch(`${this.activeBackendURL}/api/v1/workspaces/${encodeURIComponent(workspace.identity)}/restore`, {
       method: 'POST',
@@ -242,7 +256,9 @@ export class BackendConnections_Module {
     this._reload()
   }
 
-  /** Сбрасывает выбор и возвращает приложение к локальному gate подключений. */
+  /**
+   * Сбрасывает выбор и возвращает приложение к локальному gate подключений.
+   */
   public clearActiveBackend(): void {
     this._storage.removeActiveBackend()
     this._activeBackendURL = null
@@ -262,7 +278,9 @@ export class BackendConnections_Module {
     this._reload()
   }
 
-  /** Удаляет сохранённый выбор текущего Workspace и перезапускает bootstrap. */
+  /**
+   * Удаляет сохранённый выбор текущего Workspace и перезапускает bootstrap.
+   */
   public clearWorkspaceAndReload(): void {
     this._storage.removeWorkspace(this.activeBackendURL)
     this._reload()
@@ -301,7 +319,9 @@ export class BackendConnections_Module {
     return sortConnections([...byURL.values()])
   }
 
-  /** Сохраняет явно использованный target в личный каталог до смены active URL. */
+  /**
+   * Сохраняет явно использованный target в личный каталог до смены active URL.
+   */
   private _rememberConnection(connection: BackendConnection | undefined): void {
     if (!connection || connection.source === 'default') {
       return
@@ -309,7 +329,9 @@ export class BackendConnections_Module {
     this._storage.writeLocalConnection({ name: connection.name, baseUrl: connection.baseUrl })
   }
 
-  /** Старый active URL не должен исчезать из selector после обновления приложения. */
+  /**
+   * Старый active URL не должен исчезать из selector после обновления приложения.
+   */
   private _rememberLegacyActiveBackend(): void {
     if (!this._activeBackendURL || this._activeBackendURL === this.defaultBackendURL) {
       return

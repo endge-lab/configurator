@@ -1,11 +1,9 @@
-/**
- * Единый модуль операций над доменным деревом в Domain Widget.
- *
- * В модуле собраны все ключевые сценарии:
- * - создание и рекурсивное удаление папок;
- * - удаление сущностей;
- * - перенос папок и сущностей внутри доменного дерева (drag-and-drop).
- */
+// Единый модуль операций над доменным деревом в Domain Widget.
+//
+// В модуле собраны все ключевые сценарии:
+// - создание и рекурсивное удаление папок;
+// - удаление сущностей;
+// - перенос папок и сущностей внутри доменного дерева (drag-and-drop).
 
 import type { DomainDocumentType } from '@endge/core'
 import type { FsFileNode, FsFolderNode } from './domain-tree'
@@ -32,7 +30,7 @@ import {
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
-/** Элемент payload при перетаскивании сущности. */
+// Элемент payload при перетаскивании сущности.
 export interface DragPayloadItem {
   kind?: 'document'
   id: string
@@ -42,7 +40,7 @@ export interface DragPayloadItem {
   rootId: string
 }
 
-/** Элемент payload при перетаскивании persisted-папки вместе с её веткой. */
+// Элемент payload при перетаскивании persisted-папки вместе с её веткой.
 export interface FolderDragPayloadItem {
   kind: 'folder'
   id: string
@@ -53,40 +51,40 @@ export interface FolderDragPayloadItem {
 
 export type DomainDragPayloadItem = DragPayloadItem | FolderDragPayloadItem
 
-/** Цель drop-операции. */
+// Цель drop-операции.
 export interface DropTarget {
   targetRootId: string
-  /** Id папки назначения или `null`, если drop в корень секции. */
+  // Id папки назначения или `null`, если drop в корень секции.
   dropFolderId: string | number | null
 }
 
-/** Итог обработки drop-операции. */
+// Итог обработки drop-операции.
 export interface DropResult {
   moved: number
   skipped: number
   errors: string[]
 }
 
-/** Документ, физически удалённый из домена (для закрытия вкладок и UI-очистки). */
+// Документ, физически удалённый из домена (для закрытия вкладок и UI-очистки).
 export interface DeletedDocumentRef {
   id: string
   docType: DomainDocumentType
 }
 
-/** Итог операции удаления сущности. */
+// Итог операции удаления сущности.
 export interface DeleteEntityResult {
   mode: 'soft' | 'hard'
   deletedDocs: DeletedDocumentRef[]
 }
 
-/** Снимок реальных папок и документов, которые входят в удаляемую ветку. */
+// Снимок реальных папок и документов, которые входят в удаляемую ветку.
 export interface FolderDeletionPlan {
   root: FsFolderNode
   folders: FsFolderNode[]
   entities: FsFileNode[]
 }
 
-/** Результат рекурсивного удаления папки. */
+// Результат рекурсивного удаления папки.
 export interface FolderDeletionResult {
   folderCount: number
   entityCount: number
@@ -130,9 +128,7 @@ const DELETABLE_DOCUMENT_TYPES = new Set<DomainDocumentType>([
   'auth-profile',
 ])
 
-/**
- * Проверяет, можно ли удалить сущность через backend API.
- */
+// Проверяет, можно ли удалить сущность через backend API.
 export function canDelete(_sectionType: DomainSectionType, docType?: DomainDocumentType): boolean {
   if (docType) {
     return DELETABLE_DOCUMENT_TYPES.has(docType)
@@ -140,9 +136,7 @@ export function canDelete(_sectionType: DomainSectionType, docType?: DomainDocum
   return true
 }
 
-/**
- * Возвращает id папки-назначения при drop в узел дерева.
- */
+// Возвращает id папки-назначения при drop в узел дерева.
 export function getDropFolderId(dropNode: FsFolderNode): string | number | null {
   return dropNode.isRoot ? null : (dropNode.folderId ?? null)
 }
@@ -151,10 +145,8 @@ function isManagedFolderNode(node: FsFolderNode): boolean {
   return isExternallyManaged(node)
 }
 
-/**
- * Создаёт подпапку в указанной папке/корне и сохраняет её в Payload.
- * В корневой (в т.ч. системной) папке создание дочерней разрешено — мы только задаём parent.
- */
+// Создаёт подпапку в указанной папке/корне и сохраняет её в Payload.
+// В корневой (в т.ч. системной) папке создание дочерней разрешено — мы только задаём parent.
 export async function createSubfolder(targetFolder: FsFolderNode, name: string): Promise<RFolder> {
   if (targetFolder.sectionType === DomainSectionType.Integration) {
     throw new Error('Глобальный реестр интеграций не поддерживает папки')
@@ -199,10 +191,8 @@ export async function createSubfolder(targetFolder: FsFolderNode, name: string):
   return folder
 }
 
-/**
- * Собирает папку, все вложенные persisted-папки и реальные документы.
- * Виртуальные проекции и колонки таблиц не являются самостоятельными сущностями.
- */
+// Собирает папку, все вложенные persisted-папки и реальные документы.
+// Виртуальные проекции и колонки таблиц не являются самостоятельными сущностями.
 export function createFolderDeletionPlan(root: FsFolderNode): FolderDeletionPlan {
   const folders: FsFolderNode[] = []
   const entities: FsFileNode[] = []
@@ -264,10 +254,8 @@ function validateFolderDeletionPlan(plan: FolderDeletionPlan): void {
   }
 }
 
-/**
- * Рекурсивно удаляет содержимое папки стандартными DELETE-запросами.
- * Сначала удаляются документы, затем папки от самых глубоких к корневой.
- */
+// Рекурсивно удаляет содержимое папки стандартными DELETE-запросами.
+// Сначала удаляются документы, затем папки от самых глубоких к корневой.
 export async function deleteFolderRecursively(
   plan: FolderDeletionPlan,
 ): Promise<FolderDeletionResult> {
@@ -317,11 +305,9 @@ export async function deleteFolderRecursively(
   }
 }
 
-/**
- * Удаляет сущность.
- *
- * Backend сохраняет удалённое состояние и ревизию документа.
- */
+// Удаляет сущность.
+//
+// Backend сохраняет удалённое состояние и ревизию документа.
 export async function deleteEntity(node: FsFileNode): Promise<DeleteEntityResult> {
   const entity = getEntityBySection(node.id, node.sectionType, node.docType)
   if (isExternallyManaged(node) || isExternallyManaged(entity)) {
@@ -335,9 +321,7 @@ export async function deleteEntity(node: FsFileNode): Promise<DeleteEntityResult
   return { mode: 'soft', deletedDocs: [] }
 }
 
-/**
- * Обновляет локальную папку сущности (без API-вызова).
- */
+// Обновляет локальную папку сущности (без API-вызова).
 export function setEntityFolderInDomain(
   id: string,
   sectionType: DomainSectionType,
@@ -362,9 +346,7 @@ export function setEntityFolderInDomain(
   return true
 }
 
-/**
- * Выполняет DnD-перенос сущностей между папками/секциями.
- */
+// Выполняет DnD-перенос сущностей между папками/секциями.
 export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: DropTarget): Promise<DropResult> {
   const result: DropResult = { moved: 0, skipped: 0, errors: [] }
   const folderMoves: DragPayloadItem[] = []
@@ -455,13 +437,11 @@ export async function executeDrop(payload: DomainDragPayloadItem[], dropTarget: 
   return result
 }
 
-/**
- * Переносит persisted-папку целой веткой.
- *
- * Дочерние папки ссылаются на неё через `parent`, а документы — на свои
- * непосредственные папки через `folderId`, поэтому изменение parent корня
- * сохраняет всю вложенную структуру без каскада document PATCH-запросов.
- */
+// Переносит persisted-папку целой веткой.
+//
+// Дочерние папки ссылаются на неё через `parent`, а документы — на свои
+// непосредственные папки через `folderId`, поэтому изменение parent корня
+// сохраняет всю вложенную структуру без каскада document PATCH-запросов.
 async function moveFolder(item: FolderDragPayloadItem, dropTarget: DropTarget): Promise<boolean> {
   if (item.rootId !== dropTarget.targetRootId) {
     throw new Error('перетаскивание между разными секциями запрещено')
@@ -538,7 +518,7 @@ function isFolderInsideBranch(target: RFolder, branchRoot: RFolder): boolean {
   return false
 }
 
-/** Переносит Composition между обычной и query presentation-ролью. */
+// Переносит Composition между обычной и query presentation-ролью.
 async function reclassifyComposition(
   id: string,
   targetRootId: string,
@@ -576,9 +556,7 @@ async function reclassifyComposition(
   }
 }
 
-/**
- * Переносит сущность в другую папку (домен + API).
- */
+// Переносит сущность в другую папку (домен + API).
 async function changeEntityFolder(
   id: string,
   sectionType: DomainSectionType,
@@ -607,7 +585,7 @@ async function changeEntityFolder(
   }
 }
 
-/** Атомарно переносит несколько сущностей в одну папку одним backend-запросом. */
+// Атомарно переносит несколько сущностей в одну папку одним backend-запросом.
 async function changeEntitiesFolder(
   items: readonly DragPayloadItem[],
   targetRootId: string,
@@ -635,10 +613,8 @@ function getTargetPlacement(
   return folder?.scope === 'workspace' ? 'workspace' : 'frontend'
 }
 
-/**
- * Возвращает identity папки для вызова `changeDocumentFolder`.
- * getFolder ищет по id и по identity — подходит для узлов из дерева (id/identity могут быть string или number).
- */
+// Возвращает identity папки для вызова `changeDocumentFolder`.
+// getFolder ищет по id и по identity — подходит для узлов из дерева (id/identity могут быть string или number).
 function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | number | null): string | null {
   if (dropFolderId == null || dropFolderId === '') {
     return targetRootId
@@ -647,9 +623,7 @@ function getFolderIdentityForApi(targetRootId: string, dropFolderId: string | nu
   return folder ? ((folder as any).identity ?? folder.id) : null
 }
 
-/**
- * Вычисляет parent для новой подпапки.
- */
+// Вычисляет parent для новой подпапки.
 function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | number | null {
   if (!targetFolder.isRoot) {
     return targetFolder.folderId ?? null
@@ -660,9 +634,7 @@ function resolveParentIdForNewFolder(targetFolder: FsFolderNode): string | numbe
   return rootFolder?.id ?? rootIdentity
 }
 
-/**
- * Конвертирует string-id в number для вызовов `get*ById`.
- */
+// Конвертирует string-id в number для вызовов `get*ById`.
 function toNumericId(id: string | number): number | null {
   if (typeof id === 'number' && Number.isFinite(id)) {
     return id
@@ -673,9 +645,7 @@ function toNumericId(id: string | number): number | null {
   return null
 }
 
-/**
- * Ищет сущность в домене по секции и id/identity.
- */
+// Ищет сущность в домене по секции и id/identity.
 function getEntityBySection(id: string, sectionType: DomainSectionType, docType?: DomainDocumentType): any | null {
   const numId = toNumericId(id)
 

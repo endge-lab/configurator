@@ -138,7 +138,9 @@ export class ConfiguratorContext_Module {
     this._notify()
   }
 
-  /** Initializes the application shell without booting workspace-bound Core. */
+  /**
+   * Initializes the application shell without booting workspace-bound Core.
+   */
   public initDetached(options: ConfiguratorDetachedContextInitOptions): void {
     if (this._isInitialized) {
       return
@@ -155,7 +157,9 @@ export class ConfiguratorContext_Module {
     this._notify()
   }
 
-  /** Полностью перезапускает Endge под новым immutable structural context. */
+  /**
+   * Полностью перезапускает Endge под новым immutable structural context.
+   */
   public async switchContext(next: Partial<EndgeExecutionContext>): Promise<void> {
     Endge.assertWritable()
     const requested = {
@@ -198,7 +202,9 @@ export class ConfiguratorContext_Module {
     this._isCoreInitialized = false
   }
 
-  /** Запускает необязательный Bridge после boot; его сбой не отменяет загрузку Core. */
+  /**
+   * Запускает необязательный Bridge после boot; его сбой не отменяет загрузку Core.
+   */
   private _startPresenceBridge(ctx: EndgeBootContext, backendConfig: EndgeBackendConfig): void {
     try {
       Endge.bridge.setup({
@@ -218,7 +224,9 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Собирает boot-контекст из единожды выбранного backend provider. */
+  /**
+   * Собирает boot-контекст из единожды выбранного backend provider.
+   */
   private _createBootContext(
     context: Partial<EndgeExecutionContext> = {},
     backendConfig: EndgeBackendConfig,
@@ -265,7 +273,9 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Привязывает команды к штатным операциям приложения; сами setters не отправляют команды обратно. */
+  /**
+   * Привязывает команды к штатным операциям приложения; сами setters не отправляют команды обратно.
+   */
   private _createCommandExecutor(): EndgeCommandExecutor {
     const context = Endge.context
     return createContextCommandExecutor({
@@ -282,7 +292,9 @@ export class ConfiguratorContext_Module {
     })
   }
 
-  /** Одинаково обновляет режим и живые preview после локальной или полученной от дебагера команды. */
+  /**
+   * Одинаково обновляет режим и живые preview после локальной или полученной от дебагера команды.
+   */
   private async _changeDataMode(mode: EndgeDataMode | null): Promise<void> {
     if (mode === null) {
       this.clearDataModeOverride()
@@ -327,13 +339,17 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Подписывает UI на boot/context-switch состояние IDE context runtime. */
+  /**
+   * Подписывает UI на boot/context-switch состояние IDE context runtime.
+   */
   public subscribe(listener: () => void): () => void {
     this._listeners.add(listener)
     return () => this._listeners.delete(listener)
   }
 
-  /** Регистрирует смонтированную поверхность приложения, владеющую runtime handles между перезапусками контекста. */
+  /**
+   * Регистрирует смонтированную поверхность приложения, владеющую runtime handles между перезапусками контекста.
+   */
   public registerSurface(id: string, lifecycle: ConfiguratorContextSurfaceLifecycle): () => void {
     const key = String(id ?? '').trim()
     if (!key) {
@@ -359,7 +375,9 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Восстанавливает переопределение Configurator после загрузки Workspace через Endge.boot(). */
+  /**
+   * Восстанавливает переопределение Configurator после загрузки Workspace через Endge.boot().
+   */
   private _restoreDataModeOverride(): void {
     const workspaceIdentity = Endge.workspace.current.identity
     const mode = configuratorDataModeRepository.read(this._activeBackendURL(), workspaceIdentity)
@@ -395,12 +413,16 @@ export class ConfiguratorContext_Module {
     }
   }
 
-  /** Пользователь локальной сессии Configurator, независимо от инспектируемого контекста. */
+  /**
+   * Пользователь локальной сессии Configurator, независимо от инспектируемого контекста.
+   */
   public get userIdentity(): string | null {
     return this._userIdentity
   }
 
-  /** Показывает, был ли уже выполнен успешный boot текущего приложения. */
+  /**
+   * Показывает, был ли уже выполнен успешный boot текущего приложения.
+   */
   public get isInitialized(): boolean {
     return this._isInitialized
   }
@@ -413,17 +435,23 @@ export class ConfiguratorContext_Module {
     return this._currentContext
   }
 
-  /** Возвращает единожды выбранную конфигурацию backend без повторного чтения env. */
+  /**
+   * Возвращает единожды выбранную конфигурацию backend без повторного чтения env.
+   */
   public get backendConfig(): Readonly<EndgeBackendConfig> | null {
     return this._backendConfig
   }
 
-  /** Эффективная роль текущего разработчика в выбранном workspace. */
+  /**
+   * Эффективная роль текущего разработчика в выбранном workspace.
+   */
   public get workspaceRole(): 'viewer' | 'editor' | 'admin' | null {
     return this._workspaceRole
   }
 
-  /** Workspace, выбранный при авторизованном запуске Configurator. */
+  /**
+   * Workspace, выбранный при авторизованном запуске Configurator.
+   */
   public get workspaceIdentity(): string {
     if (!this._workspaceIdentity) {
       throw new Error('[Configurator] Active workspace is required')
@@ -439,17 +467,23 @@ export class ConfiguratorContext_Module {
     return this._workspaceIdentity !== null
   }
 
-  /** Возвращает фактический режим данных для fixtures Store и выполнения Query. */
+  /**
+   * Возвращает фактический режим данных для fixtures Store и выполнения Query.
+   */
   public get isMockEnabled(): boolean {
     return Endge.context.isMockEnabled
   }
 
-  /** Показывает, переопределяет ли Configurator текущее значение Workspace по умолчанию. */
+  /**
+   * Показывает, переопределяет ли Configurator текущее значение Workspace по умолчанию.
+   */
   public get isDataModeOverridden(): boolean {
     return Endge.context.isDataModeOverridden
   }
 
-  /** Обновляет mock-режим без перестроения неизменяемого структурного контекста. */
+  /**
+   * Обновляет mock-режим без перестроения неизменяемого структурного контекста.
+   */
   public setMockEnabled(enabled: boolean): void {
     const mode = enabled ? 'mock' : 'live'
     configuratorDataModeRepository.write(this._activeBackendURL(), Endge.workspace.current.identity, mode)
@@ -457,7 +491,9 @@ export class ConfiguratorContext_Module {
     this._notify()
   }
 
-  /** Возвращает выполнение данных к сохранённому значению Workspace по умолчанию. */
+  /**
+   * Возвращает выполнение данных к сохранённому значению Workspace по умолчанию.
+   */
   public clearDataModeOverride(): void {
     configuratorDataModeRepository.clear(this._activeBackendURL(), Endge.workspace.current.identity)
     Endge.context.clearDataModeOverride()
@@ -469,7 +505,7 @@ export class ConfiguratorContext_Module {
   }
 }
 
-/** Допускает для auth только явно выделенный VITE_ENDGE_AUTH_* namespace host-приложения. */
+// Допускает для auth только явно выделенный VITE_ENDGE_AUTH_* namespace host-приложения.
 function readAuthVariableRecord(env: ImportMetaEnv): Readonly<Record<string, string>> {
   const variables: Record<string, string> = {}
   for (const [key, rawValue] of Object.entries(env as unknown as Record<string, unknown>)) {
@@ -492,7 +528,7 @@ function sameContext(left: Partial<EndgeExecutionContext>, right: Partial<EndgeE
   return [...keys].every(key => leftFacets[key] === rightFacets[key])
 }
 
-/** Reads optional deployment-provided facet selections without fixed facet names. */
+// Reads optional deployment-provided facet selections without fixed facet names.
 function readFacetSelections(env: ImportMetaEnv): Readonly<Record<string, string>> {
   const raw = String((env as unknown as Record<string, unknown>).VITE_ENDGE_FACETS ?? '').trim()
   if (!raw) {

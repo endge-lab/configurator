@@ -40,7 +40,9 @@ export type CompositionPreviewRenderable
     input: RuntimeHostInputSource
   }
 
-/** Владеет одним отдельным legacy-preview Composition и его runtime-ресурсами. */
+/**
+ * Владеет одним отдельным legacy-preview Composition и его runtime-ресурсами.
+ */
 export class CompositionPreviewSession {
   public readonly runtime = shallowRef<CompositionRuntimeHost | null>(null)
   public readonly error = shallowRef<string | null>(null)
@@ -182,7 +184,7 @@ export function createPreviewComposition(input: CompositionPreviewLaunchInput): 
   return model
 }
 
-/** Достраивает runtime dependencies Composition в dependency-first порядке для preview. */
+// Достраивает runtime dependencies Composition в dependency-first порядке для preview.
 export function ensureCompositionRuntimeArtifacts(source: string, visiting = new Set<string>()): void {
   const result = Endge.source.compile('composition', source)
   const payload = result.artifact
@@ -248,7 +250,7 @@ export function ensureCompositionRuntimeArtifacts(source: string, visiting = new
   }
 }
 
-/** Подставляет child definePreviewProps только в transient source, используемый preview runtime. */
+// Подставляет child definePreviewProps только в transient source, используемый preview runtime.
 export function materializeCompositionRuntimePreviewSource(source: string): string {
   return generateCompositionRuntimePreviewSource(
     source,

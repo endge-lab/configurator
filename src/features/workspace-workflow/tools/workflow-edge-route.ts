@@ -5,7 +5,7 @@ export interface WorkflowObstacle extends WorkflowPoint { id: string, width: num
 const CLEARANCE = 12
 const PORT_GAP = 24
 
-/** Выбирает короткий ортогональный маршрут по текущим границам блоков, включая drag. */
+// Выбирает короткий ортогональный маршрут по текущим границам блоков, включая drag.
 export function routeWorkflowEdge(
   source: WorkflowPoint,
   target: WorkflowPoint,

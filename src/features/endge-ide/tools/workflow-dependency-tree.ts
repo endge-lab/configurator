@@ -2,7 +2,7 @@ import type { DocumentDependencyNode, DocumentDependencyTreeResult } from '../se
 import type { WorkflowDependency, WorkflowNodeData } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import type { WorkflowSelection } from '@/features/workspace-workflow/tools/workflow-graph'
 
-/** Только presentation mapping: разрешение providers и обход принадлежат Workflow. */
+// Только presentation mapping: разрешение providers и обход принадлежат Workflow.
 export function buildWorkflowDependencyTree(
   selection: WorkflowSelection[],
   labels: { selection: string, usages: string, dependencies: string },

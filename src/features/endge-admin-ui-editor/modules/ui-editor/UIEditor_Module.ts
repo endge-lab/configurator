@@ -629,7 +629,7 @@ function readPersistedState(storage: UIEditorStoragePort): {
 }
 
 class UIEditor_Module {
-  /** Persistence adapter принадлежит модулю и не раскрывается UI. */
+  // Persistence adapter принадлежит модулю и не раскрывается UI.
   private readonly _storage: UIEditorStoragePort
 
   public document: UIEditorDocument = createDefaultDocument()
@@ -1542,7 +1542,7 @@ class UIEditor_Module {
   }
 }
 
-/** Readonly public shape не позволяет consumer-у присваивать state напрямую. */
+// Readonly public shape не позволяет consumer-у присваивать state напрямую.
 export type UIEditorModule = Readonly<UIEditor_Module>
 
 const EMPTY_STORAGE: UIEditorStoragePort = {
@@ -1550,7 +1550,7 @@ const EMPTY_STORAGE: UIEditorStoragePort = {
   write: () => undefined,
 }
 
-/** Создаёт изолированный state owner UI-редактора для composition или теста. */
+// Создаёт изолированный state owner UI-редактора для composition или теста.
 export function createUIEditorModule(storage: UIEditorStoragePort = EMPTY_STORAGE): UIEditorModule {
   return reactive(new UIEditor_Module(storage)) as UIEditorModule
 }

@@ -2,7 +2,9 @@ import type { EndgeDataMode } from '@endge/core'
 
 const STORAGE_KEY_PREFIX = 'endge-ide:data-mode-override:v2'
 
-/** Хранилище переопределения runtime-режима данных уровня Workspace только для Configurator. */
+/**
+ * Хранилище переопределения runtime-режима данных уровня Workspace только для Configurator.
+ */
 export class ConfiguratorDataModeRepository {
   public read(backendURL: string, workspaceIdentity: string): EndgeDataMode | null {
     if (typeof window === 'undefined') {

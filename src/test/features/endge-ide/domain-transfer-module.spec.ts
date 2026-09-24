@@ -35,7 +35,7 @@ const result: ServiceBackendDomainImportResult = {
 }
 
 describe('модуль переноса домена', () => {
-  /** Проверяет, что модуль остаётся единственной точкой вызова backend adapter для export/import. */
+  // Проверяет, что модуль остаётся единственной точкой вызова backend adapter для export/import.
   it('передаёт операции и contracts во внешний adapter без изменения данных', async () => {
     const adapter: ServiceBackendDomainTransferAdapter = {
       downloadExport: vi.fn().mockResolvedValue(undefined),

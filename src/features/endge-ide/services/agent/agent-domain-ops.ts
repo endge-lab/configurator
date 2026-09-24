@@ -1,7 +1,5 @@
-/**
- * Управляющие команды LLM для домена: создание, обновление (полное или по полям), удаление сущностей.
- * LLM может в конце ответа вставить блок ```domain-ops с JSON.
- */
+// Управляющие команды LLM для домена: создание, обновление (полное или по полям), удаление сущностей.
+// LLM может в конце ответа вставить блок ```domain-ops с JSON.
 
 import { DomainSectionType, Endge } from '@endge/core'
 import { Serialize } from '@endge/utils'
@@ -37,10 +35,8 @@ function parseDomainOpsFromBlock(raw: string): DomainOp[] | null {
   }
 }
 
-/**
- * Извлекает из текста ответа агента массив операций domainOps (блок ```domain-ops или ```json).
- * Поддерживает формат {"domainOps": [...]} и массив в корне [...].
- */
+// Извлекает из текста ответа агента массив операций domainOps (блок ```domain-ops или ```json).
+// Поддерживает формат {"domainOps": [...]} и массив в корне [...].
 export function parseDomainOpsFromMessage(text: string): DomainOp[] | null {
   if (!text?.trim()) {
     return null
@@ -55,7 +51,7 @@ export function parseDomainOpsFromMessage(text: string): DomainOp[] | null {
   return null
 }
 
-/** Ключ коллекции домена (merge) -> DomainSectionType для get/remove. */
+// Ключ коллекции домена (merge) -> DomainSectionType для get/remove.
 const MERGE_KEY_TO_SECTION: Record<string, DomainSectionType> = {
   queries: DomainSectionType.Query,
   components: DomainSectionType.Component,
@@ -225,9 +221,7 @@ export interface ApplyDomainOpsResult {
   errors: string[]
 }
 
-/**
- * Применяет массив операций к домену: create (merge), update (remove + merge или patch + remove + merge), delete (remove).
- */
+// Применяет массив операций к домену: create (merge), update (remove + merge или patch + remove + merge), delete (remove).
 export function applyDomainOps(ops: DomainOp[]): ApplyDomainOpsResult {
   const errors: string[] = []
   let applied = 0

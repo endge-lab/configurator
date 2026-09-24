@@ -9,7 +9,7 @@ export interface RuntimeInspectionTree {
   states: Map<string, RuntimePreviewLifecycleState>
 }
 
-/** Строит UI только из наблюдаемых экземпляров; владение host и membership scope не смешиваются. */
+// Строит UI только из наблюдаемых экземпляров; владение host и membership scope не смешиваются.
 export function buildRuntimeInspectionTree(
   runtime: EndgeRuntimeSnapshot,
   documentType: (host: RuntimeHostSnapshot) => DomainDocumentType = host => host.entityType as DomainDocumentType,
@@ -101,7 +101,7 @@ export function buildRuntimeInspectionTree(
   return { roots, nodes, targets, states }
 }
 
-/** Нормализует только фактическое состояние, без локальных lifecycle вызовов. */
+// Нормализует только фактическое состояние, без локальных lifecycle вызовов.
 export function inspectionLifecycleState(status: string): RuntimePreviewLifecycleState {
   if (status === 'active' || status === 'running') {
     return 'active'

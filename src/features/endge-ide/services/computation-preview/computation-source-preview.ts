@@ -1,6 +1,6 @@
 import { Endge } from '@endge/core'
 
-/** Выполняет transient Computation source на JSON-входе редактора. */
+// Выполняет transient Computation source на JSON-входе редактора.
 export async function runComputationSourcePreview(
   source: string,
   inputSource: string,
@@ -14,7 +14,7 @@ export async function runComputationSourcePreview(
   )
 }
 
-/** Сериализует результат preview в стабильный JSON для правой панели. */
+// Сериализует результат preview в стабильный JSON для правой панели.
 export function serializeComputationPreviewOutput(output: unknown): string {
   return JSON.stringify(output, null, 2) ?? 'null'
 }

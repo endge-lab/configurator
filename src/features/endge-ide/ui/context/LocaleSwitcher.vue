@@ -44,7 +44,7 @@ function getLocaleDisplayLabel(localeCode: string): string {
   const locale = Endge.workspace.locales.find(item => item.code === localeCode)
   return String(locale?.displayName || locale?.shortLabel || localeCode)
 }
-/** Изменяет локаль только в интерактивном представлении. */
+// Изменяет локаль только в интерактивном представлении.
 async function select(locale: string): Promise<void> {
   if (readOnly.value || pending.value) {
     return

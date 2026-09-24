@@ -58,7 +58,9 @@ export type ServiceBackendDomainErrorCode
     | 'service_backend_unavailable'
     | 'snapshot_invalid'
 
-/** Typed transport error единственного domain provider Configurator. */
+/**
+ * Typed transport error единственного domain provider Configurator.
+ */
 export class ServiceBackendDomainError extends Error {
   public constructor(
     public readonly code: ServiceBackendDomainErrorCode,
@@ -71,7 +73,9 @@ export class ServiceBackendDomainError extends Error {
   }
 }
 
-/** HTTP adapter полного live-domain API service-backend. */
+/**
+ * HTTP adapter полного live-domain API service-backend.
+ */
 export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
   public readonly id = 'service-backend'
   public readonly capabilities
@@ -156,7 +160,9 @@ export class ServiceBackendDomainHttp_Adapter implements EndgeDomainProvider {
     }
   }
 
-  /** Атомарно перемещает несколько persisted-документов в одну папку. */
+  /**
+   * Атомарно перемещает несколько persisted-документов в одну папку.
+   */
   public async moveDocuments(request: EndgeDocumentsMoveRequest): Promise<EndgeDocumentsMoveResult> {
     const response = await this._fetch('/api/v1/domain/documents/move', {
       method: 'POST',

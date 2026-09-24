@@ -5,7 +5,7 @@ import { QUERY_COMPOSITION_CREATE_KIND } from '@/features/endge-ide/services/dom
 
 import { i18n } from '@/i18n/index'
 
-/** Source нового Table Component: тот же SFC-документ, но сразу с визуально редактируемым Table root. */
+// Source нового Table Component: тот же SFC-документ, но сразу с визуально редактируемым Table root.
 export const COMPONENT_TABLE_SFC_DEFAULT_SOURCE = `<script setup lang="ts">
 </script>
 

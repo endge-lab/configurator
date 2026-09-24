@@ -25,7 +25,7 @@ export interface CompositionRuntimePropsIssue {
   actionAnchor: number
 }
 
-/** Находит обязательные props вложенных Composition, не связанные вызывающим source. */
+// Находит обязательные props вложенных Composition, не связанные вызывающим source.
 export function analyzeCompositionRuntimeProps(
   owner: CompositionProgramPayload | null,
   resolveContract: (identity: string) => CompositionRuntimePropsContract | null,
@@ -97,7 +97,7 @@ export function analyzeCompositionRuntimeProps(
   })
 }
 
-/** Добавляет отсутствующие preview-backed props в существующий runtime chain. */
+// Добавляет отсутствующие preview-backed props в существующий runtime chain.
 export function generateCompositionRuntimeProps(
   source: string,
   owner: CompositionProgramPayload,
@@ -126,7 +126,7 @@ export function generateCompositionRuntimeProps(
     : insertWithPropsModifier(source, runtime, entries)
 }
 
-/** Создаёт preview-only source overlay для всех nested Composition с доступными fixtures. */
+// Создаёт preview-only source overlay для всех nested Composition с доступными fixtures.
 export function generateCompositionRuntimePreviewSource(
   source: string,
   compile: (source: string) => CompositionProgramPayload | null,

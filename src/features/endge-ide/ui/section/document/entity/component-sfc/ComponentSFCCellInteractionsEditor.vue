@@ -105,7 +105,7 @@ function commit(complete?: (saved: boolean) => void): void {
   emit('update', completeRules.length ? serializeRules(completeRules) : null, complete)
 }
 
-/** Последовательно применяет открытые reaction-черновики, не теряя Source между patches. */
+// Последовательно применяет открытые reaction-черновики, не теряя Source между patches.
 async function flushPendingEdits(): Promise<boolean> {
   for (const editor of [...reactionEditorRefs.value]) {
     if (!editor.flushPendingEdits()) {

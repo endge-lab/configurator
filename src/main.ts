@@ -4,6 +4,7 @@ import type { ApplicationLoaderHandle } from '@/features/application-loader/serv
 import { Configurator } from '@/app/Configurator'
 
 import { installEndgeVueWarnHandler } from '@endge/ui-vue'
+import { Raph } from '@raphy-js/raph'
 import { createApp } from 'vue'
 
 import { configuratorSessionBindingKey } from '@/features/configurator-session'
@@ -19,6 +20,8 @@ import './assets/main.css'
 import '@vue-flow/core/dist/style.css'
 import '@endge/ui-vue/vue.css'
 /* eslint-enable perfectionist/sort-imports */
+
+Raph.configure({ mode: 'runtime' })
 
 const app = createApp(App)
 installEndgeVueWarnHandler(app)

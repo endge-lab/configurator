@@ -29,7 +29,7 @@ const entityIcon = computed<Component>(() => {
 })
 const entityIconClass = computed(() => entityPresentation.value?.colorClass ?? 'text-muted-foreground')
 
-/** Открывает persisted entity в Domain workspace. */
+// Открывает persisted entity в Domain workspace.
 function openSelectedEntity(): void {
   const ref = selectedEntry.value?.entityRef
   if (!ref) {

@@ -39,7 +39,7 @@ export interface RuntimePreviewTarget {
 
 export type RuntimePreviewOccurrenceKind = 'composition' | 'component-runtime'
 
-/** Статический адрес одного использования цели внутри startup Composition. */
+// Статический адрес одного использования цели внутри startup Composition.
 export interface RuntimePreviewOccurrence {
   id: string
   kind: RuntimePreviewOccurrenceKind
@@ -48,9 +48,9 @@ export interface RuntimePreviewOccurrence {
   composition: RuntimePreviewCompositionAddress
   runtimePath: string | null
   path: string[]
-  /** Вложенный SFC, который нужно закрепить в инспекторе семантического renderer после выбора его host. */
+  // Вложенный SFC, который нужно закрепить в инспекторе семантического renderer после выбора его host.
   renderComponentIdentity: string | null
-  /** Консервативный флаг: активация этой ветви может выполнить Query монтирования Composition. */
+  // Консервативный флаг: активация этой ветви может выполнить Query монтирования Composition.
   mayExecuteQueries: boolean
 }
 
@@ -59,7 +59,7 @@ export interface RuntimePreviewContextualLaunch {
   occurrence: RuntimePreviewOccurrence
 }
 
-/** Текущее состояние редактора для запуска Runtime Preview без сохранения. */
+// Текущее состояние редактора для запуска Runtime Preview без сохранения.
 export interface RuntimePreviewDraft {
   id?: string | number | null
   identity?: string | null

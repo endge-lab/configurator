@@ -44,7 +44,9 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
     }
   }
 
-  /** Перемещение колонки с fromIndex на toIndex */
+  /**
+   * Перемещение колонки с fromIndex на toIndex
+   */
   moveColumn(fromIndex: number, toIndex: number): void {
     if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) {
       return
@@ -63,7 +65,9 @@ export class RComponentTableEditor extends RComponentBaseEditor<RComponentTable>
     }
   }
 
-  /** Выбрать колонку по индексу (для нижней панели) */
+  /**
+   * Выбрать колонку по индексу (для нижней панели)
+   */
   selectColumnByIndex(index: number | null): void {
     if (index == null || index < 0 || index >= this.columns.length) {
       this.selectedColumns = []

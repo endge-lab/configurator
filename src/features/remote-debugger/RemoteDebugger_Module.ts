@@ -11,7 +11,9 @@ import { readonly, shallowRef } from 'vue'
 import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
-/** Owns one remote selection; late replies can never replace a newer client's documents. */
+/**
+ * Owns one remote selection; late replies can never replace a newer client's documents.
+ */
 export class RemoteDebugger_Module {
   public readonly playing = shallowRef(false)
   private _playTimer: ReturnType<typeof setInterval> | null = null
@@ -177,7 +179,9 @@ export class RemoteDebugger_Module {
     }
   }
 
-  /** Меняет policy отправителя, сохраняя историю и позицию просмотра. */
+  /**
+   * Меняет policy отправителя, сохраняя историю и позицию просмотра.
+   */
   public async setSkipData(value: boolean): Promise<void> {
     const session = this._session
     if (
@@ -372,7 +376,9 @@ export class RemoteDebugger_Module {
     }
   }
 
-  /** Передаёт пользовательскую команду текущему клиенту; снимки и события этот метод не вызывают. */
+  /**
+   * Передаёт пользовательскую команду текущему клиенту; снимки и события этот метод не вызывают.
+   */
   public async execute(command: EndgeCommand): Promise<void> {
     const session = this._session
     const generation = this._generation
@@ -385,7 +391,9 @@ export class RemoteDebugger_Module {
     }
   }
 
-  /** Bridge владеет частотой; этот модуль хранит только подтверждённое значение UI. */
+  /**
+   * Bridge владеет частотой; этот модуль хранит только подтверждённое значение UI.
+   */
   public async setInspectionInterval(intervalMs: number): Promise<void> {
     if (this._skipData.value) {
       return
@@ -425,7 +433,9 @@ export class RemoteDebugger_Module {
     }
   }
 
-  /** Releases selection listeners; the Core Bridge owner closes the transport. */
+  /**
+   * Releases selection listeners; the Core Bridge owner closes the transport.
+   */
   public dispose(): void {
     this.pause()
     ++this._generation

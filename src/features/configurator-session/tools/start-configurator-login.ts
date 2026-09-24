@@ -5,7 +5,7 @@ import {
   CONFIGURATOR_LOGIN_REDIRECT_GUARD_MS,
 } from '@/features/configurator-session/config/configurator-session'
 
-/** Удаляет redirect guard после успешного восстановления session. */
+// Удаляет redirect guard после успешного восстановления session.
 export function clearConfiguratorLoginRedirectGuard(backendURL: string): void {
   try {
     window.sessionStorage.removeItem(redirectGuardKey(backendURL))
@@ -15,7 +15,7 @@ export function clearConfiguratorLoginRedirectGuard(backendURL: string): void {
   }
 }
 
-/** Запускает backend-owned login flow, сохраняя текущий Configurator URL. */
+// Запускает backend-owned login flow, сохраняя текущий Configurator URL.
 export function startConfiguratorLogin(loginUrl: string, backendURL: string): ConfiguratorLoginRedirectResult {
   const now = Date.now()
   const guardKey = redirectGuardKey(backendURL)

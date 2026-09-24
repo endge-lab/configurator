@@ -9,11 +9,11 @@ export interface ConfiguratorSessionBinding {
   logout: () => Promise<void>
 }
 
-/** Vue-контекст предоставляет presentation-слою единственного владельца session. */
+// Vue-контекст предоставляет presentation-слою единственного владельца session.
 export const configuratorSessionBindingKey: InjectionKey<ConfiguratorSessionBinding>
   = Symbol('configurator-session-binding')
 
-/** Реактивный presentation-adapter над framework-neutral session module. */
+// Реактивный presentation-adapter над framework-neutral session module.
 export function useConfiguratorSession() {
   const binding = inject(configuratorSessionBindingKey, null)
   const revision = ref(0)

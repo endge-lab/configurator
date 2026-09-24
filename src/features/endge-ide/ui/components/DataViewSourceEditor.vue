@@ -69,7 +69,7 @@ defineExpose({
   formatDocument: monacoAdapter.formatDocument,
 })
 
-/** Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ. */
+// Планирует live-preview после остановки ввода, чтобы не выполнять transform на каждый символ.
 function scheduleInlinePreview(): void {
   if (previewTimer) {
     clearTimeout(previewTimer)
@@ -80,7 +80,7 @@ function scheduleInlinePreview(): void {
   }, 240)
 }
 
-/** Выполняет DataView source на preview input и показывает output только при полностью успешном результате. */
+// Выполняет DataView source на preview input и показывает output только при полностью успешном результате.
 function updateInlinePreview(): void {
   const inputSource = props.previewInput?.trim()
   if (!inputSource) {

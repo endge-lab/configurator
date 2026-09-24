@@ -17,7 +17,7 @@ function entry(node: RuntimePreviewTreeNode, state: RuntimePreviewLifecycleState
 }
 
 describe('активность Workspace Workflow', () => {
-  /** Текущий контекст не зависит от lifecycle исполняемых узлов. */
+  // Текущий контекст не зависит от lifecycle исполняемых узлов.
   it('сохраняет контекст при паузе и переносит подсветку на новый документ фасета', () => {
     const facetDocument = (id: string, facet: string, document: string): WorkflowDependency => ({
       ...diagram(id, null, document),
@@ -36,7 +36,7 @@ describe('активность Workspace Workflow', () => {
     expect([...collectRuntimeWorkflowActivity(roots, entries, { facets: { ...context.facets, region: 'b' } })]).toEqual(['region-b', 'application', 'deployment'])
   })
 
-  /** Последний active экземпляр определяет подсветку независимо от остальных запусков. */
+  // Последний active экземпляр определяет подсветку независимо от остальных запусков.
   it('объединяет дубликаты и снимает подсветку только после остановки последнего активного экземпляра', () => {
     const roots = [diagram('workspace/composition', 'composition', 'page')]
     const node = runtime('composition', 'page')
@@ -44,13 +44,13 @@ describe('активность Workspace Workflow', () => {
     expect(collectRuntimeWorkflowActivity(roots, [entry(node, 'paused'), entry(node, 'stopped'), entry(node, 'inactive')]).size).toBe(0)
   })
 
-  /** Одинаковые scope paths разных документов не обозначают один owner. */
+  // Одинаковые scope paths разных документов не обозначают один owner.
   it('различает именованные scopes в разных композициях', () => {
     const roots = [diagram('a', 'composition', 'a', [diagram('a/scope', null, 'details')]), diagram('b', 'composition', 'b', [diagram('b/scope', null, 'details')])]
     expect([...collectRuntimeWorkflowActivity(roots, [entry(runtime('composition', 'a', [runtime('scope', 'details')]), 'active')])]).toEqual(['a', 'a/scope'])
   })
 
-  /** Runtime aliases и типы ресурсов приводятся к документным identities проекции. */
+  // Runtime aliases и типы ресурсов приводятся к документным identities проекции.
   it('сопоставляет Vocab и i18n и отличает FilterView от Filter', () => {
     const view = { ...diagram('view', FilterType.DefaultFilter, 'filter'), filterView: { sourceId: 'filter', fields: [] } }
     const roots = [diagram('vocab', 'vocabs', 'airports'), diagram('i18n', 'i18n-bundles', 'labels'), diagram('filter', FilterType.DefaultFilter, 'filter'), view]

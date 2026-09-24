@@ -18,7 +18,9 @@ export type ServiceBackendDomainTransferErrorCode
     | 'import_response_invalid'
     | 'import_request_failed'
 
-/** Typed transport error полного export/import workflow. */
+/**
+ * Typed transport error полного export/import workflow.
+ */
 export class ServiceBackendDomainTransferError extends Error {
   public constructor(
     public readonly code: ServiceBackendDomainTransferErrorCode,
@@ -32,7 +34,9 @@ export class ServiceBackendDomainTransferError extends Error {
   }
 }
 
-/** Выполняет двухфазный ревизионный import нового backend. */
+/**
+ * Выполняет двухфазный ревизионный import нового backend.
+ */
 export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendDomainTransferAdapter {
   private readonly _baseURL: string
 
@@ -40,7 +44,9 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     this._baseURL = String(baseURL ?? '').trim().replace(/\/+$/, '')
   }
 
-  /** Скачивает active-only portable export, сформированный backend. */
+  /**
+   * Скачивает active-only portable export, сформированный backend.
+   */
   public async downloadExport(workspaceIdentity: string, options?: ServiceBackendDomainExportOptions): Promise<void> {
     const response = await fetch(`${this._baseURL}/api/v1/domain/export?download=true`, {
       method: options ? 'POST' : 'GET',
@@ -64,7 +70,9 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     URL.revokeObjectURL(url)
   }
 
-  /** Валидирует файл и создаёт краткоживущий server-side import plan. */
+  /**
+   * Валидирует файл и создаёт краткоживущий server-side import plan.
+   */
   public async planImport(request: ServiceBackendDomainImportPlanRequest): Promise<ServiceBackendDomainImportPlan> {
     const response = await this._request('/api/v1/domain/import/plan', {
       method: 'POST',
@@ -86,7 +94,9 @@ export class ServiceBackendDomainTransferHttp_Adapter implements ServiceBackendD
     return plan
   }
 
-  /** Атомарно применяет ранее проверенный plan с optimistic concurrency guard. */
+  /**
+   * Атомарно применяет ранее проверенный plan с optimistic concurrency guard.
+   */
   public async import(request: ServiceBackendDomainImportRequest): Promise<ServiceBackendDomainImportResult> {
     const response = await this._request('/api/v1/domain/import', {
       method: 'POST',

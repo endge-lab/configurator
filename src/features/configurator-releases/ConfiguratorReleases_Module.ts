@@ -8,7 +8,7 @@ import type {
 import type { CreateBuiltRelease } from '@/features/configurator-releases/domain/types/release-build.type'
 
 export class ConfiguratorReleases_Module {
-  /** Изменяемое состояние истории версий принадлежит только модулю. */
+  // Изменяемое состояние истории версий принадлежит только модулю.
   private _releases: ConfiguratorRelease[] = []
   private _commits: ConfiguratorCommit[] = []
   private _commitPlan: ConfiguratorCommitPlan | null = null
@@ -137,27 +137,37 @@ export class ConfiguratorReleases_Module {
     }
   }
 
-  /** Возвращает только доступную для чтения историю релизов. */
+  /**
+   * Возвращает только доступную для чтения историю релизов.
+   */
   public get releases(): readonly ConfiguratorRelease[] {
     return this._releases
   }
 
-  /** Возвращает только доступную для чтения историю коммитов. */
+  /**
+   * Возвращает только доступную для чтения историю коммитов.
+   */
   public get commits(): readonly ConfiguratorCommit[] {
     return this._commits
   }
 
-  /** Возвращает актуальный план следующего коммита. */
+  /**
+   * Возвращает актуальный план следующего коммита.
+   */
   public get commitPlan(): ConfiguratorCommitPlan | null {
     return this._commitPlan
   }
 
-  /** Показывает выполнение текущей операции с версиями. */
+  /**
+   * Показывает выполнение текущей операции с версиями.
+   */
   public get loading(): boolean {
     return this._loading
   }
 
-  /** Возвращает последнюю ошибку операции с версиями. */
+  /**
+   * Возвращает последнюю ошибку операции с версиями.
+   */
   public get error(): string | null {
     return this._error
   }

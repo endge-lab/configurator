@@ -31,7 +31,7 @@ function catalog(): CompiledProgramCatalog {
 }
 
 describe('каталог Program в общем дереве Domain', () => {
-  /** Независимые ссылки placement обязаны приводить к разным веткам одного документа. */
+  // Независимые ссылки placement обязаны приводить к разным веткам одного документа.
   it('places configurations below the single compiled workspace in both projections', () => {
     const input = catalog()
     input.workspace = { identity: 'aodb', displayName: 'AODB', startupCompositionIdentity: null }
@@ -61,7 +61,7 @@ describe('каталог Program в общем дереве Domain', () => {
     }
   })
 
-  /** Фасеты остаются в Context, вложенные Update следуют за своим Store в обеих проекциях. */
+  // Фасеты остаются в Context, вложенные Update следуют за своим Store в обеих проекциях.
   it('сохраняет группы фасетов и вложенные Update', () => {
     for (const custom of [false, true]) {
       const tree = buildProgramDomainTree(catalog(), sections, custom)
@@ -70,7 +70,7 @@ describe('каталог Program в общем дереве Domain', () => {
     }
   })
 
-  /** Старый формат не теряет верхнюю пользовательскую папку и документы без новых метаданных. */
+  // Старый формат не теряет верхнюю пользовательскую папку и документы без новых метаданных.
   it('поддерживает старые имена фасетов и Workspace без системного корня', () => {
     const input = catalog()
     input.folders.model!.identity = 'legacy-root'
@@ -82,7 +82,7 @@ describe('каталог Program в общем дереве Domain', () => {
     expect(all(tree).find(node => node.type === 'file' && node.id === 'prod')).toMatchObject({ compiledDocumentKey: 'facet-document:prod' })
   })
 
-  /** Общий helper размещает привязанную Composition под Query и сохраняет ссылку на artifact tab. */
+  // Общий helper размещает привязанную Composition под Query и сохраняет ссылку на artifact tab.
   it('сохраняет владельца contextual Composition', () => {
     const input = catalog()
     input.documents['query:query'] = document('query', 'query')

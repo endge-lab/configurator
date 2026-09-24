@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 import { computed, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ScrollArea } from '@/components/ui/scroll-area'
 import LazyJsonNode from '@/features/endge-ide/ui/widgets/components/LazyJsonNode.vue'
 
-/** Снимок данных Raph для отображения (обновляется по кнопке). */
+// Снимок данных Raph для отображения (обновляется по кнопке).
 const storageSnapshot = ref<Record<string, unknown>>({})
 
 function refresh(): void {

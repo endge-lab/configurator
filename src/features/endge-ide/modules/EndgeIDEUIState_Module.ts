@@ -10,7 +10,9 @@ interface DocumentStructureOverrideState {
 
 const DOCUMENT_STRUCTURE_OVERRIDE_KEY = 'configurator.domain.document-structure-override'
 
-/** Централизованно управляет persistent UI state текущего IDE runtime. */
+/**
+ * Централизованно управляет persistent UI state текущего IDE runtime.
+ */
 export class EndgeIDEUIState_Module {
   private readonly _debuggerState = new Map<string, unknown>()
   private readonly _workspaceDocumentStructure = ref<EndgeWorkspaceDocumentStructure>('frontend')
@@ -22,7 +24,9 @@ export class EndgeIDEUIState_Module {
     this._documentStructureOverride.value ?? this._workspaceDocumentStructure.value
   ))
 
-  /** Запускает реактивную проекцию персонального UI state для текущего Workspace. */
+  /**
+   * Запускает реактивную проекцию персонального UI state для текущего Workspace.
+   */
   public init(): void {
     if (this._offWorkspace || this._offDocumentStructureState) {
       return
@@ -35,7 +39,9 @@ export class EndgeIDEUIState_Module {
     this._restoreDocumentStructure()
   }
 
-  /** Освобождает подписки UI state при деактивации IDE. */
+  /**
+   * Освобождает подписки UI state при деактивации IDE.
+   */
   public reset(): void {
     this._offDocumentStructureState?.()
     this._offWorkspace?.()
@@ -50,7 +56,9 @@ export class EndgeIDEUIState_Module {
     this._restoreDocumentStructure()
   }
 
-  /** Возвращает сохранённое значение или переданное fallback-значение. */
+  /**
+   * Возвращает сохранённое значение или переданное fallback-значение.
+   */
   public read<T>(key: string, fallback: T): T {
     if (Endge.mode === 'debugger') {
       return (this._debuggerState.get(key) as T | undefined) ?? fallback
@@ -58,7 +66,9 @@ export class EndgeIDEUIState_Module {
     return Endge.context.getState<T>(key) ?? fallback
   }
 
-  /** Сохраняет сериализуемое UI-состояние. */
+  /**
+   * Сохраняет сериализуемое UI-состояние.
+   */
   public write(key: string, value: unknown): void {
     if (Endge.mode === 'debugger') {
       this._debuggerState.set(key, value)
@@ -67,7 +77,9 @@ export class EndgeIDEUIState_Module {
     Endge.context.setState(key, value)
   }
 
-  /** Удаляет сохранённое UI-состояние. */
+  /**
+   * Удаляет сохранённое UI-состояние.
+   */
   public remove(key: string): void {
     if (Endge.mode === 'debugger') {
       this._debuggerState.delete(key)
@@ -76,7 +88,9 @@ export class EndgeIDEUIState_Module {
     Endge.context.removeState(key)
   }
 
-  /** Однократно переносит первый найденный legacy localStorage key в context state. */
+  /**
+   * Однократно переносит первый найденный legacy localStorage key в context state.
+   */
   public migrateLegacy(key: string, legacyKeys: readonly string[]): void {
     if (Endge.mode === 'debugger') {
       return
@@ -102,7 +116,9 @@ export class EndgeIDEUIState_Module {
     }
   }
 
-  /** Переключает только проекцию дерева Configurator, не изменяя документ Workspace. */
+  /**
+   * Переключает только проекцию дерева Configurator, не изменяя документ Workspace.
+   */
   public toggleDocumentStructure(): void {
     const next = this.documentStructure.value === 'custom' ? 'frontend' : 'custom'
     const override = next === this._workspaceDocumentStructure.value ? null : next
@@ -115,7 +131,9 @@ export class EndgeIDEUIState_Module {
     }
   }
 
-  /** Синхронизирует сохранённый override и текущий Workspace с реактивной UI-проекцией. */
+  /**
+   * Синхронизирует сохранённый override и текущий Workspace с реактивной UI-проекцией.
+   */
   private _restoreDocumentStructure(): void {
     this._workspaceDocumentStructure.value = Endge.workspace.isLoaded
       ? Endge.workspace.current.documentStructure ?? 'frontend'

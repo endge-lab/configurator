@@ -86,7 +86,7 @@ defineExpose({
   formatDocument: monaco.formatDocument,
 })
 
-/** Обновляет preview после паузы ввода, не компилируя Filter на каждый символ. */
+// Обновляет preview после паузы ввода, не компилируя Filter на каждый символ.
 function scheduleInlinePreview(): void {
   if (previewTimer) {
     clearTimeout(previewTimer)
@@ -97,7 +97,7 @@ function scheduleInlinePreview(): void {
   }, 240)
 }
 
-/** Формирует единый JSON всех Filter outputs на state, полученном из defaults. */
+// Формирует единый JSON всех Filter outputs на state, полученном из defaults.
 function updateInlinePreview(): void {
   const compiled = Endge.source.compile('filter', source.value)
   const artifact = compiled.ok && isFilterArtifact(compiled.artifact)

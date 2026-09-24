@@ -2,19 +2,19 @@ import type { HotkeyManager } from '@endge/utils'
 import { Endge } from '@endge/core'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
 
-/** Один пункт горячих клавиш: описание и комбинации для UI и регистрации */
+// Один пункт горячих клавиш: описание и комбинации для UI и регистрации
 export interface EndgeIDEHotkeyItem {
-  /** Описание действия для документации */
+  // Описание действия для документации
   label: string
-  /** Комбинации для HotkeyManager: одна строка или массив (например ["ctrl+s", "meta+s"]) */
+  // Комбинации для HotkeyManager: одна строка или массив (например ["ctrl+s", "meta+s"])
   keys: string | string[]
-  /** Отображаемые клавиши в UI: например "Ctrl+S / ⌘ S" */
+  // Отображаемые клавиши в UI: например "Ctrl+S / ⌘ S"
   keysLabel: string
-  /** Привязка к колбэку; без указания - только лог в консоль */
+  // Привязка к колбэку; без указания - только лог в консоль
   action?: 'save' | 'closeTab' | 'createDocument' | 'runRuntime' | 'returnToDomain'
 }
 
-/** Единый реестр всех горячих клавиш редактора (источник правды для регистрации и документирования) */
+// Единый реестр всех горячих клавиш редактора (источник правды для регистрации и документирования)
 export const REGISTERED_HOTKEYS: readonly EndgeIDEHotkeyItem[] = [
   { label: 'Сохранить', keys: ['ctrl+s', 'meta+s'], keysLabel: 'Ctrl+S / ⌘ S', action: 'save' },
   { label: 'Закрыть сохранённую вкладку', keys: ['ctrl+w', 'meta+w'], keysLabel: 'Ctrl+W / ⌘ W', action: 'closeTab' },
@@ -37,7 +37,7 @@ export function isCloseTabShortcut(event: Pick<KeyboardEvent, 'altKey' | 'code' 
  * Все комбинации задаются в REGISTERED_HOTKEYS; подписка в init(), отписка в reset().
  */
 export class EndgeIDEHotkeys_Module {
-  /** Hotkey manager, browser adapter и lifecycle callbacks. */
+  // Hotkey manager, browser adapter и lifecycle callbacks.
   private readonly _browser: EndgeIDEHotkeysBrowser_Adapter
   private _manager: HotkeyManager | null = null
   private _onSave: (() => void | Promise<void>) | null = null
@@ -51,49 +51,63 @@ export class EndgeIDEHotkeys_Module {
   private _returnToDomainBound: ((e: KeyboardEvent) => void) | null = null
 
   /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
+   * Создаёт hotkeys-модуль с явным browser adapter.
    */
-
-  /** Создаёт hotkeys-модуль с явным browser adapter. */
   public constructor(browser: EndgeIDEHotkeysBrowser_Adapter = new EndgeIDEHotkeysBrowser_Adapter()) {
     this._browser = browser
   }
 
-  /** Колбэк сохранения документа. Задаётся из EndgeIDE.init(). */
+  // ---------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------
+
+  /**
+   * Колбэк сохранения документа. Задаётся из EndgeIDE.init().
+   */
   public setSaveHandler(handler: () => void | Promise<void>): void {
     this._onSave = handler
   }
 
-  /** Колбэк закрытия текущей вкладки. Задаётся из EndgeIDE.init(). */
+  /**
+   * Колбэк закрытия текущей вкладки. Задаётся из EndgeIDE.init().
+   */
   public setCloseTabHandler(handler: () => void): void {
     this._onCloseTab = handler
   }
 
-  /** Колбэк открытия модалки создания документа. Задаётся из EndgeIDE.init(). */
+  /**
+   * Колбэк открытия модалки создания документа. Задаётся из EndgeIDE.init().
+   */
   public setCreateDocumentHandler(handler: () => void): void {
     this._onCreateDocument = handler
   }
 
-  /** Задаёт handler запуска Runtime Preview. */
+  /**
+   * Задаёт handler запуска Runtime Preview.
+   */
   public setRunRuntimeHandler(handler: () => boolean): void {
     this._onRunRuntime = handler
   }
 
-  /** Задаёт handler возврата к Domain workspace. */
+  /**
+   * Задаёт handler возврата к Domain workspace.
+   */
   public setReturnToDomainHandler(handler: () => boolean): void {
     this._onReturnToDomain = handler
   }
 
-  /** Все зарегистрированные горячие клавиши с описаниями (для документирования в UI). */
+  /**
+   * Все зарегистрированные горячие клавиши с описаниями (для документирования в UI).
+   */
   public getAllHotkeys(): readonly EndgeIDEHotkeyItem[] {
     return Endge.mode === 'debugger'
       ? REGISTERED_HOTKEYS.filter(item => item.action === 'save' || item.action === 'closeTab')
       : REGISTERED_HOTKEYS
   }
 
-  /** Регистрирует hotkeys и browser listeners на lifecycle IDE. */
+  /**
+   * Регистрирует hotkeys и browser listeners на lifecycle IDE.
+   */
   public init(): void {
     if (this._manager) {
       return
@@ -187,7 +201,9 @@ export class EndgeIDEHotkeys_Module {
     this._browser.addKeydown(this._returnToDomainBound)
   }
 
-  /** Освобождает hotkeys и browser listeners. */
+  /**
+   * Освобождает hotkeys и browser listeners.
+   */
   public reset(): void {
     if (this._closeTabCaptureBound) {
       this._browser.removeKeydown(this._closeTabCaptureBound, true)

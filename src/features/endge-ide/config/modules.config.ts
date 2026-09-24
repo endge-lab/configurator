@@ -35,7 +35,7 @@ async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
   return modules
 }
 
-/** Создаёт полный граф модулей IDE уровня маршрута. */
+// Создаёт полный граф модулей IDE уровня маршрута.
 export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEModules {
   const busy = new EndgeIDEBusy_Module()
   const uiState = new EndgeIDEUIState_Module()

@@ -33,7 +33,9 @@ import { collectRuntimeWorkflowActivity } from '@/features/endge-ide/tools/runti
 import { WorkspaceWorkflow } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 import { readWorkflowLayout } from '@/features/workspace-workflow/tools/workflow-layout'
 
-/** Постоянное многоуровневое рабочее пространство Runtime Preview, принадлежащее EndgeIDE. */
+/**
+ * Постоянное многоуровневое рабочее пространство Runtime Preview, принадлежащее EndgeIDE.
+ */
 export class EndgeIDERuntimePreview_Module {
   private readonly _entries = shallowRef<RuntimePreviewInstance[]>([])
   private readonly _selectedEntryKey = ref<string | null>(null)
@@ -114,7 +116,9 @@ export class EndgeIDERuntimePreview_Module {
     void this.disposeAll()
   }
 
-  /** Создаёт отдельную наблюдаемую диаграмму без editor dirty-state и записи metadata. */
+  /**
+   * Создаёт отдельную наблюдаемую диаграмму без editor dirty-state и записи metadata.
+   */
   public prepareWorkflow(): void {
     if (!this._initialized || this._contextResetting || !Endge.workspace.isLoaded) {
       return
@@ -147,7 +151,9 @@ export class EndgeIDERuntimePreview_Module {
     return this._launch(rawTarget, true)
   }
 
-  /** Запускает цели сохранённых документов в порядке выбора и однократно раскрывает дерево после всей группы. */
+  /**
+   * Запускает цели сохранённых документов в порядке выбора и однократно раскрывает дерево после всей группы.
+   */
   public async launchAll(rawTargets: readonly RuntimePreviewLaunchRequest[]): Promise<number> {
     const targets = [...new Map(rawTargets.map(target => [runtimePreviewKey(target), target])).values()]
     let launched = 0
@@ -226,7 +232,9 @@ export class EndgeIDERuntimePreview_Module {
     }
   }
 
-  /** Запускает активный редактор, только если тип его документа имеет runtime-контракт. */
+  /**
+   * Запускает активный редактор, только если тип его документа имеет runtime-контракт.
+   */
   public async launchEditor(editor: unknown): Promise<boolean> {
     const request = createRuntimePreviewLaunchRequest(editor)
     if (!request) {
@@ -278,7 +286,9 @@ export class EndgeIDERuntimePreview_Module {
     return createRuntimePreviewLaunchRequest(editor) != null
   }
 
-  /** Запрашивает однократный preset раскрытия у поверхности Runtime Tree. */
+  /**
+   * Запрашивает однократный preset раскрытия у поверхности Runtime Tree.
+   */
   public requestTreeExpansion(preset: RuntimeTreeExpansionPreset): void {
     this._treeExpansionRequest.value = {
       id: ++this._treeExpansionRequestId,
@@ -299,7 +309,9 @@ export class EndgeIDERuntimePreview_Module {
     resolve?.(choice)
   }
 
-  /** Выполняет следующий OIDC popup исключительно из пользовательского клика. */
+  /**
+   * Выполняет следующий OIDC popup исключительно из пользовательского клика.
+   */
   public async authorizeNextProfile(): Promise<void> {
     const prompt = this.authPrompt.value
     if (!prompt || prompt.pending) {
@@ -338,7 +350,9 @@ export class EndgeIDERuntimePreview_Module {
     }
   }
 
-  /** Отменяет preflight и не создаёт частично запущенный Runtime Preview. */
+  /**
+   * Отменяет preflight и не создаёт частично запущенный Runtime Preview.
+   */
   public cancelAuthorization(): void {
     const resolve = this._resolveAuthPrompt
     this._resolveAuthPrompt = null
@@ -346,7 +360,9 @@ export class EndgeIDERuntimePreview_Module {
     resolve?.(false)
   }
 
-  /** Навигация по Escape: закрывает Runtime Preview без остановки его runtime. */
+  /**
+   * Навигация по Escape: закрывает Runtime Preview без остановки его runtime.
+   */
   public returnToDomain(): boolean {
     const area = getLayoutState().widgets.value.areas.left
     if (!area.expanded || area.activeWidget !== ENDGE_IDE_RUNTIME_TREE_WIDGET_ID) {
@@ -407,7 +423,9 @@ export class EndgeIDERuntimePreview_Module {
     await Promise.all(this.entries.value.map(instance => instance.pause()))
   }
 
-  /** Запускает все неактивные корни и возобновляет корни, приостановленные пользователем. */
+  /**
+   * Запускает все неактивные корни и возобновляет корни, приостановленные пользователем.
+   */
   public async startAll(): Promise<void> {
     await Promise.all(this.entries.value.map((instance) => {
       if (instance.status.value === 'paused') {
@@ -424,12 +442,16 @@ export class EndgeIDERuntimePreview_Module {
     await Promise.all(this.entries.value.map(instance => instance.stop()))
   }
 
-  /** Пересоздаёт все запомненные корни Runtime Preview и их вложенные runtime. */
+  /**
+   * Пересоздаёт все запомненные корни Runtime Preview и их вложенные runtime.
+   */
   public async restartAll(): Promise<void> {
     await Promise.all(this.entries.value.map(instance => instance.restart()))
   }
 
-  /** Пересоздаёт смонтированные корни preview, чтобы Store инициализировался в новом режиме данных. */
+  /**
+   * Пересоздаёт смонтированные корни preview, чтобы Store инициализировался в новом режиме данных.
+   */
   public async restartForDataModeChange(): Promise<void> {
     const candidates = this.entries.value
       .map(instance => ({ instance, state: instance.status.value }))
@@ -452,7 +474,9 @@ export class EndgeIDERuntimePreview_Module {
     }))
   }
 
-  /** Удаляет все запомненные корни и освобождает runtime, которыми они ещё владеют. */
+  /**
+   * Удаляет все запомненные корни и освобождает runtime, которыми они ещё владеют.
+   */
   public async removeAll(): Promise<void> {
     await this.disposeAll()
     writeRuntimePreviewHistory([])
@@ -516,7 +540,9 @@ export class EndgeIDERuntimePreview_Module {
     await Promise.all(instances.map(instance => instance.dispose()))
   }
 
-  /** Events очищается при Core reset, поэтому каждый boot получает новые подписки. */
+  /**
+   * Events очищается при Core reset, поэтому каждый boot получает новые подписки.
+   */
   private _subscribeRuntime(): void {
     this._unsubscribeRuntime()
     this._runtimeOff = [
@@ -529,7 +555,9 @@ export class EndgeIDERuntimePreview_Module {
     this._refresh()
   }
 
-  /** Текущие координаты читаются у Context; Events только инвалидирует проекцию. */
+  /**
+   * Текущие координаты читаются у Context; Events только инвалидирует проекцию.
+   */
   private _syncWorkflowContext(): void {
     this._workflowContext.value = Endge.context.getExecutionContext()
   }
@@ -607,7 +635,9 @@ export class EndgeIDERuntimePreview_Module {
     })
   }
 
-  /** Проверяет только наличие browser session, не блокируя запуск mock preview. */
+  /**
+   * Проверяет только наличие browser session, не блокируя запуск mock preview.
+   */
   private async _findMissingInteractiveProfiles(profiles: AuthProfileSchema[]): Promise<AuthProfileSchema[]> {
     const missing: AuthProfileSchema[] = []
     for (const profile of profiles) {
@@ -676,7 +706,9 @@ export class EndgeIDERuntimePreview_Module {
     await instance.restart()
   }
 
-  /** Обрабатывает авторизацию, запрошенную Query, появившимся после запуска Preview. */
+  /**
+   * Обрабатывает авторизацию, запрошенную Query, появившимся после запуска Preview.
+   */
   private _handleInteractionRequired(error: AuthInteractionRequiredError): void {
     const instance = this.selectedEntry.value
     if (!instance) {

@@ -1,4 +1,4 @@
-/** Нормализованный результат проверки безопасного ревизионного импорта. */
+// Нормализованный результат проверки безопасного ревизионного импорта.
 export interface ServiceBackendDomainImportPlan {
   planId?: string
   valid: boolean
@@ -24,7 +24,7 @@ export interface ServiceBackendDomainImportPlan {
   missingIntegrations: string[]
 }
 
-/** Результат атомарного импорта и созданный обратимый commit. */
+// Результат атомарного импорта и созданный обратимый commit.
 export interface ServiceBackendDomainImportResult {
   workspace: string
   imported: {
@@ -67,7 +67,7 @@ export interface ServiceBackendDomainImportRequest {
   signal?: AbortSignal
 }
 
-/** Контракт внешнего backend transport для export/import домена. */
+// Контракт внешнего backend transport для export/import домена.
 export interface ServiceBackendDomainTransferAdapter {
   downloadExport: (workspaceIdentity: string, options?: ServiceBackendDomainExportOptions) => Promise<void>
   planImport: (request: ServiceBackendDomainImportPlanRequest) => Promise<ServiceBackendDomainImportPlan>

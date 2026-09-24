@@ -1,7 +1,9 @@
 import type { ActionImplementation, ActionTargetSelector, EntityOrigin, ImplementationBindingScope, ProgramDiagnostic, RAction } from '@endge/core'
 import { Endge } from '@endge/core'
 
-/** Source-подобное состояние редактора для сохранённого или доступного только для чтения Action из кода. */
+/**
+ * Source-подобное состояние редактора для сохранённого или доступного только для чтения Action из кода.
+ */
 export class RActionEditor {
   id!: string | number
   identity!: string

@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { Endge } from '@endge/core'
 import { useSubscribableRefAuto } from '@endge/ui-vue'
-/**
- * Вкладка «Диагностика» показывает bounded session, которую хранит EndgeDiagnostics_Module.
- * Компонент не меняет core records и отвечает только за presentation layer.
- */
+// Вкладка «Диагностика» показывает bounded session, которую хранит EndgeDiagnostics_Module.
+// Компонент не меняет core records и отвечает только за presentation layer.
 import { Activity, Eraser } from 'lucide-vue-next'
 import { computed } from 'vue'
 
@@ -27,7 +25,7 @@ const problemCount = computed(() => {
   return Endge.diagnostics.problems.query().length
 })
 
-/** Считает количество records каждого core signal для краткой сводки. */
+// Считает количество records каждого core signal для краткой сводки.
 const signalCounters = computed(() => {
   let logs = 0
   let spans = 0
@@ -40,7 +38,7 @@ const signalCounters = computed(() => {
   return { logs, spans }
 })
 
-/** Очищает локальную diagnostics history текущей Endge session. */
+// Очищает локальную diagnostics history текущей Endge session.
 function clearDiagnostics(): void {
   Endge.diagnostics.telemetry.clear()
 }

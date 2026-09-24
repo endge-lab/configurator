@@ -7,33 +7,37 @@ import type {
   ServiceBackendDomainTransferAdapter,
 } from '@/features/endge-ide/domain/types/domain-transfer.type'
 
-/** Координирует export/import домена через внешний backend adapter. */
+/**
+ * Координирует export/import домена через внешний backend adapter.
+ */
 export class EndgeIDEDomainTransfer_Module {
-  /** Backend transport для domain transfer workflow. */
+  // Backend transport для domain transfer workflow.
   private readonly _adapter: ServiceBackendDomainTransferAdapter
 
   /**
-   * ----------------------------------------
-   * PUBLIC
-   * ----------------------------------------
+   * Создаёт module с явным backend adapter.
    */
-
-  /** Создаёт module с явным backend adapter. */
   public constructor(adapter: ServiceBackendDomainTransferAdapter) {
     this._adapter = adapter
   }
 
-  /** Скачивает portable export текущего workspace. */
+  /**
+   * Скачивает portable export текущего workspace.
+   */
   public downloadExport(workspaceIdentity: string, options?: ServiceBackendDomainExportOptions): Promise<void> {
     return this._adapter.downloadExport(workspaceIdentity, options)
   }
 
-  /** Создаёт server-side plan для выбранного snapshot. */
+  /**
+   * Создаёт server-side plan для выбранного snapshot.
+   */
   public planImport(request: ServiceBackendDomainImportPlanRequest): Promise<ServiceBackendDomainImportPlan> {
     return this._adapter.planImport(request)
   }
 
-  /** Применяет подтверждённый import plan. */
+  /**
+   * Применяет подтверждённый import plan.
+   */
   public import(request: ServiceBackendDomainImportRequest): Promise<ServiceBackendDomainImportResult> {
     return this._adapter.import(request)
   }

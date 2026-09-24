@@ -113,7 +113,7 @@ export const DOCUMENT_SECTION_BY_TYPE: Readonly<Partial<Record<string, DomainSec
   [FilterType.DefaultFilter]: DomainSectionType.Filters,
 }
 
-/** Размер зависит от поверхности, а символ и цвет остаются общими. */
+// Размер зависит от поверхности, а символ и цвет остаются общими.
 export const DOCUMENT_ICON_SIZES = {
   tree: 'size-4',
   tab: 'size-4',

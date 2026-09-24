@@ -55,7 +55,7 @@ export interface UseEndgeSourceMonacoOptions {
 
 export type SourceEditorRefreshTrigger = (refresh: () => void) => () => void
 
-/** Общий browser adapter Endge source language - Monaco. */
+// Общий browser adapter Endge source language - Monaco.
 export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
   const ui = useUI()
   const editor = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)

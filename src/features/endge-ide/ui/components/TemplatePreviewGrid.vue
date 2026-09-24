@@ -38,11 +38,11 @@ interface AreaLabel {
 const props = withDefaults(
   defineProps<{
     preview: RPageTemplatePreviewSchema | null
-    /** Для подписей ячеек: identity -> title */
+    // Для подписей ячеек: identity -> title
     areaLabels?: AreaLabel[] | Record<string, string>
-    /** Режим страницы: ячейки - дроп-зоны, показываем блоки */
+    // Режим страницы: ячейки - дроп-зоны, показываем блоки
     pageMode?: boolean
-    /** Области страницы (slotId + blocks) для pageMode */
+    // Области страницы (slotId + blocks) для pageMode
     pageAreas?: PagePreviewArea[]
   }>(),
   { pageMode: false, pageAreas: () => [] },

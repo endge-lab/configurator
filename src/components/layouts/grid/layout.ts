@@ -166,7 +166,7 @@ function getNextZIndex(): number {
 
 let _isLayoutHydrated = false
 
-/** Переключает глобальный host Grid на изолированное сохраняемое рабочее пространство layout. */
+// Переключает глобальный host Grid на изолированное сохраняемое рабочее пространство layout.
 export function setLayoutScope(scope: string): void {
   const normalized = String(scope ?? '').trim() || DEFAULT_LAYOUT_SCOPE
   if (activeLayoutScope.value === normalized) {
@@ -306,7 +306,7 @@ export function getWidgetOrder(position: WidgetPosition): string[] {
   return persistedState.value.areas[position]?.order ?? []
 }
 
-/** Переименовывает сохранённое определение виджета без сброса пользовательского layout. */
+// Переименовывает сохранённое определение виджета без сброса пользовательского layout.
 export function migratePersistedWidgetId(previousId: string, nextId: string): void {
   const previous = String(previousId ?? '').trim()
   const next = String(nextId ?? '').trim()
@@ -350,7 +350,7 @@ export function migratePersistedWidgetId(previousId: string, nextId: string): vo
   persistedState.value = state
 }
 
-/** Удаляет устаревшее определение виджета из сохранённого состояния layout. */
+// Удаляет устаревшее определение виджета из сохранённого состояния layout.
 export function removePersistedWidgetId(widgetId: string): void {
   const id = String(widgetId ?? '').trim()
   if (!id) {
@@ -835,7 +835,7 @@ export function moveWidget(definitionId: string, position: WidgetPosition): void
   }
 }
 
-/** Меняет наличие виджета на панели, не выбирая вкладку и не уничтожая экземпляры. */
+// Меняет наличие виджета на панели, не выбирая вкладку и не уничтожая экземпляры.
 export function setWidgetVisibility(definitionId: string, visible: boolean): void {
   const definition = layoutState.widgets.definitions[definitionId]
   if (!definition) {

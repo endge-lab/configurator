@@ -79,7 +79,7 @@ const harness = vi.hoisted(() => {
   }
 })
 
-vi.mock('@endge/raph', () => ({
+vi.mock('@raphy-js/raph', () => ({
   Raph: { debug: { acquire: harness.debugAcquire } },
 }))
 

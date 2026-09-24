@@ -8,7 +8,7 @@ interface ConfiguratorStateOptions<T> {
   merge?: (stored: T, defaults: T) => T
 }
 
-/** Связывает Configurator UI state с user-scoped Endge context и переносит legacy LS. */
+// Связывает Configurator UI state с user-scoped Endge context и переносит legacy LS.
 export function useConfiguratorState<T>(
   key: string,
   initialValue: T,

@@ -72,7 +72,7 @@ defineExpose({
   formatDocument: monacoAdapter.formatDocument,
 })
 
-/** Планирует live-preview после остановки ввода. */
+// Планирует live-preview после остановки ввода.
 function scheduleInlinePreview(): void {
   if (previewTimer) {
     clearTimeout(previewTimer)
@@ -83,7 +83,7 @@ function scheduleInlinePreview(): void {
   }, 240)
 }
 
-/** Выполняет несохранённый Computation source без публикации transient artifact. */
+// Выполняет несохранённый Computation source без публикации transient artifact.
 async function updateInlinePreview(): Promise<void> {
   const revision = ++previewRevision
   const inputSource = props.previewInput?.trim()

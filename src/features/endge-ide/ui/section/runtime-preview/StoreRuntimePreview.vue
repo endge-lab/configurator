@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { StoreRuntimeHost } from '@endge/core'
 
-import { Raph } from '@endge/raph'
+import { Raph } from '@raphy-js/raph'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import StoreFieldsPreview from './StoreFieldsPreview.vue'
 

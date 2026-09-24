@@ -2,7 +2,9 @@ import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge
 
 import { BackendConnectionStorage, normalizeBackendURL } from '@/features/backend-connections/services/backend-connection-storage'
 
-/** Ошибка некорректной build-time конфигурации backend. */
+/**
+ * Ошибка некорректной build-time конфигурации backend.
+ */
 export class EndgeBackendConfigurationError extends Error {
   public readonly code = 'backend_configuration_invalid'
 
@@ -12,13 +14,13 @@ export class EndgeBackendConfigurationError extends Error {
   }
 }
 
-/** Возвращает необязательное стартовое подключение из build-time env. */
+// Возвращает необязательное стартовое подключение из build-time env.
 export function getDefaultBackendURL(): string | null {
   const value = String(import.meta.env.VITE_ENDGE_SERVICE_BACKEND_URL ?? '').trim()
   return value ? normalizeHTTPURL(value) : null
 }
 
-/** Возвращает transport-конфигурацию явно выбранного backend. */
+// Возвращает transport-конфигурацию явно выбранного backend.
 export function getEndgeBackendConfig(): EndgeBackendConfig {
   const activeBackendURL = new BackendConnectionStorage().readActiveBackend()
   if (!activeBackendURL) {

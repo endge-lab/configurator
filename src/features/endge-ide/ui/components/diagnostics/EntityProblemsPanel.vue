@@ -89,7 +89,7 @@ const selectedProblem = computed(() => {
   return activeProblems.value.find(problem => problem.id === selectedProblemId.value) ?? activeProblems.value[0] ?? null
 })
 
-/** Синхронизирует выбранную phase и problem после обновления core registry. */
+// Синхронизирует выбранную phase и problem после обновления core registry.
 function synchronizeProblemSelection(): void {
   if (!phases.value.includes(activePhase.value)) {
     activePhase.value = phases.value[0] ?? 'build'
@@ -99,12 +99,12 @@ function synchronizeProblemSelection(): void {
   }
 }
 
-/** Выбирает problem внутри активной phase-вкладки. */
+// Выбирает problem внутри активной phase-вкладки.
 function selectProblem(problem: DiagnosticsProblem): void {
   selectedProblemId.value = problem.id
 }
 
-/** Возвращает icon для уровня problem severity. */
+// Возвращает icon для уровня problem severity.
 function severityIcon(severity: DiagnosticsProblemSeverity): Component {
   if (severity === 'fatal' || severity === 'error') {
     return CircleAlert
@@ -115,7 +115,7 @@ function severityIcon(severity: DiagnosticsProblemSeverity): Component {
   return Info
 }
 
-/** Возвращает цветовые классы уровня problem severity. */
+// Возвращает цветовые классы уровня problem severity.
 function severityClasses(severity: DiagnosticsProblemSeverity): string {
   if (severity === 'fatal') {
     return 'border-rose-600/35 bg-rose-600/5 text-rose-600 dark:text-rose-400'
@@ -129,12 +129,12 @@ function severityClasses(severity: DiagnosticsProblemSeverity): string {
   return 'border-sky-500/30 bg-sky-500/5 text-sky-600 dark:text-sky-400'
 }
 
-/** Форматирует flat diagnostics attribute для человекочитаемой детализации. */
+// Форматирует flat diagnostics attribute для человекочитаемой детализации.
 function formatAttribute(value: DiagnosticsAttributeValue): string {
   return Array.isArray(value) ? value.join(', ') : String(value)
 }
 
-/** Форматирует timestamp последнего обновления problem. */
+// Форматирует timestamp последнего обновления problem.
 function formatUpdatedAt(timestamp: number): string {
   return new Intl.DateTimeFormat('ru-RU', {
     hour: '2-digit',

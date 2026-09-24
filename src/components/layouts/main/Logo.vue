@@ -4,10 +4,8 @@ import { computed } from 'vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const props = withDefaults(defineProps<{
-  /**
-   * Высота иконки.
-   * Можно передать число (px) или строку (например "2.5rem", "40px", "h-10").
-   */
+  // Высота иконки.
+  // Можно передать число (px) или строку (например "2.5rem", "40px", "h-10").
   iconHeight?: number | string
 }>(), {
   iconHeight: 'h-10',

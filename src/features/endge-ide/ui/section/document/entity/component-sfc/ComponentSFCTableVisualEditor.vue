@@ -1198,7 +1198,7 @@ function applyPatch(patch: ComponentSFCTableSourcePatch): boolean {
   return applyPatches([patch])
 }
 
-/** Применяет связанные Table-настройки атомарно и публикует только итоговый Source. */
+// Применяет связанные Table-настройки атомарно и публикует только итоговый Source.
 function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
   let nextSource = props.source
   let changed = false
@@ -1223,7 +1223,7 @@ function applyPatches(patches: ComponentSFCTableSourcePatch[]): boolean {
   return true
 }
 
-/** Применяет локальные черновики вложенных визуальных редакторов перед persistence. */
+// Применяет локальные черновики вложенных визуальных редакторов перед persistence.
 async function flushPendingEdits(): Promise<boolean> {
   if (metadataSession.value?.error || Object.keys(cellBindingErrors.value).length) {
     return false
@@ -1585,7 +1585,7 @@ function updateColumnSortComparator(value: string | null): void {
   applyPatches(patches)
 }
 
-/** Сохраняет незакоммиченные chains в той же Source transaction, что и adjacent sort controls. */
+// Сохраняет незакоммиченные chains в той же Source transaction, что и adjacent sort controls.
 function collectSelectedColumnSortPathPreservationPatches(
   column: ComponentSFCTableColumnProjection,
 ): ComponentSFCTableSourcePatch[] | null {

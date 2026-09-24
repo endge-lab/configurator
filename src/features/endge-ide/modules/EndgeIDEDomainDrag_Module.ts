@@ -5,7 +5,9 @@ import type {
 
 import { ref } from 'vue'
 
-/** Владеет текущим взаимодействием перетаскивания в дереве домена, общим для источников и целей. */
+/**
+ * Владеет текущим взаимодействием перетаскивания в дереве домена, общим для источников и целей.
+ */
 export class EndgeIDEDomainDrag_Module {
   private readonly _state = ref<DomainDragState>({
     active: false,

@@ -1,6 +1,8 @@
 import type { RPageTemplate, RPageTemplatePreviewSchema } from '@endge/core'
 
-/** Модель редактора для RPageTemplate (коллекция page-templates). */
+/**
+ * Модель редактора для RPageTemplate (коллекция page-templates).
+ */
 export class RPageTemplateEditor {
   id!: number
   identity!: string

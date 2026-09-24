@@ -2,7 +2,7 @@ import type { EndgeExecutionContext } from '@endge/core'
 import type { RuntimePreviewLifecycleState, RuntimePreviewTreeNode } from '../domain/types/runtime-preview.types'
 import type { WorkflowDependency } from '@/features/workspace-workflow/domain/WorkspaceWorkflow'
 
-/** Объединяет active экземпляры по документу; scope различается внутри своего документа. */
+// Объединяет active экземпляры по документу; scope различается внутри своего документа.
 export function collectRuntimeWorkflowActivity(
   roots: readonly WorkflowDependency[],
   entries: readonly { tree: { value: RuntimePreviewTreeNode[] }, lifecycleState: (node: RuntimePreviewTreeNode) => RuntimePreviewLifecycleState }[],

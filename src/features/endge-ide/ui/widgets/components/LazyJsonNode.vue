@@ -3,20 +3,20 @@ import { computed, ref } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    /** Значение узла (объект, массив, примитив). */
+    // Значение узла (объект, массив, примитив).
     data: unknown
-    /** Имя ключа для отображения (опционально). */
+    // Имя ключа для отображения (опционально).
     name?: string
-    /** Глубина вложенности (для отступа). */
+    // Глубина вложенности (для отступа).
     depth?: number
-    /** Сколько элементов массива показывать за один раз. */
+    // Сколько элементов массива показывать за один раз.
     chunkSize?: number
   }>(),
   { depth: 0, chunkSize: 50 },
 )
 
 const expanded = ref(false)
-/** Для массивов: сколько элементов уже показано. */
+// Для массивов: сколько элементов уже показано.
 const shownCount = ref(props.chunkSize)
 
 const isArray = computed(() => Array.isArray(props.data))
@@ -29,7 +29,7 @@ const arrayLength = computed(() => (Array.isArray(props.data) ? props.data.lengt
 const allObjectKeys = computed(() =>
   isObject.value ? Object.keys(props.data as Record<string, unknown>) : [],
 )
-/** Показано ключей объекта (лениво). */
+// Показано ключей объекта (лениво).
 const objectKeysShown = ref(props.chunkSize)
 const objectKeys = computed(() => allObjectKeys.value.slice(0, objectKeysShown.value))
 const objectHasMore = computed(() => allObjectKeys.value.length > objectKeysShown.value)
@@ -43,7 +43,7 @@ function showMoreKeys(): void {
   )
 }
 
-/** Видимый срез массива. */
+// Видимый срез массива.
 const arraySlice = computed(() => {
   if (!Array.isArray(props.data)) {
     return []

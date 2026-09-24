@@ -20,7 +20,7 @@ ${template}
 `
 }
 
-/** Локальные исполняемые примеры фичи для всех примитивов библиотеки UI Editor. */
+// Локальные исполняемые примеры фичи для всех примитивов библиотеки UI Editor.
 export const UI_EDITOR_SFC_EXAMPLES: readonly UIEditorSFCExample[] = [
   {
     id: 'example-text',

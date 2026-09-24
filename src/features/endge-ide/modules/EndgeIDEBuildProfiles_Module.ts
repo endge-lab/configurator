@@ -19,7 +19,9 @@ import {
   RBuildProfile,
 } from '@/features/endge-ide/domain/entities/RBuildProfile'
 
-/** Owns operational build-profile state and serializes writes per profile. */
+/**
+ * Owns operational build-profile state and serializes writes per profile.
+ */
 export class EndgeIDEBuildProfiles_Module {
   private readonly _buildStatus = ref<
     'idle' | 'building' | 'packing' | 'ready' | 'error'

@@ -8,7 +8,7 @@ export interface MonacoReferenceNavigationOptions {
   onMissing?: () => void
 }
 
-/** Устанавливает единый жест навигации по ссылке для клавиатуры и указателя. */
+// Устанавливает единый жест навигации по ссылке для клавиатуры и указателя.
 export function installMonacoReferenceNavigation(
   options: MonacoReferenceNavigationOptions,
 ): Monaco.IDisposable {

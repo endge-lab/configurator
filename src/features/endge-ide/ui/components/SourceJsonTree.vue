@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<{
   data: unknown
   rootPath?: string
   deep?: number
-  /** Сохранено для совместимости Source; теперь пагинацией коллекции управляет eagerLimit. */
+  // Сохранено для совместимости Source; теперь пагинацией коллекции управляет eagerLimit.
   collapsedNodeLength?: number
   eagerLimit?: number
   pageSize?: number

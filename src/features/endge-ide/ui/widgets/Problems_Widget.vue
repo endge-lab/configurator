@@ -22,7 +22,7 @@ const warningCount = computed(() => problems.entries.value.reduce((total, entry)
   return total + entry.problems.filter(problem => problem.severity === 'warning').length
 }, 0))
 
-/** Запускает Domain build, который атомарно обновляет актуальные build problems. */
+// Запускает Domain build, который атомарно обновляет актуальные build problems.
 async function runDomainAnalysis(): Promise<void> {
   if (isAnalyzing.value) {
     return
@@ -36,7 +36,7 @@ async function runDomainAnalysis(): Promise<void> {
   }
 }
 
-/** Сворачивает или раскрывает severity-ветку дерева. */
+// Сворачивает или раскрывает severity-ветку дерева.
 function toggleGroup(severity: DiagnosticsProblemSeverity): void {
   const next = new Set(collapsedGroups.value)
   if (next.has(severity)) {
@@ -48,7 +48,7 @@ function toggleGroup(severity: DiagnosticsProblemSeverity): void {
   collapsedGroups.value = next
 }
 
-/** Возвращает цвет presentation-маркера для severity-ветки. */
+// Возвращает цвет presentation-маркера для severity-ветки.
 function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
   if (severity === 'fatal') {
     return 'bg-rose-600'

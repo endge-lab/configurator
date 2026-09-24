@@ -48,7 +48,7 @@ export class EndgeIDEWidgets_Module {
   private _widgetDefinitions = endgeIDEWidgetsConfig
   private _isInitialized = false
 
-  /** Проекция видимости зарегистрированных виджетов из состояния layout. */
+  // Проекция видимости зарегистрированных виджетов из состояния layout.
   private readonly _layoutWidgets = getLayoutState().widgets
   private readonly _visibilityItems = computed(() => {
     const state = this._layoutWidgets.value
@@ -61,12 +61,16 @@ export class EndgeIDEWidgets_Module {
     } as const))
   })
 
-  /** Возвращает реактивные пункты меню без отдельного состояния видимости. */
+  /**
+   * Возвращает реактивные пункты меню без отдельного состояния видимости.
+   */
   public get visibilityItems() {
     return this._visibilityItems
   }
 
-  /** Показывает или скрывает кнопку виджета без переключения активной вкладки. */
+  /**
+   * Показывает или скрывает кнопку виджета без переключения активной вкладки.
+   */
   public toggleVisibility(definitionId: string): void {
     const widget = getWidget(definitionId)
     if (!widget) {
@@ -186,7 +190,9 @@ export class EndgeIDEWidgets_Module {
     this._isInitialized = true
   }
 
-  /** Registers only the Domain widget for a shell without an active workspace. */
+  /**
+   * Registers only the Domain widget for a shell without an active workspace.
+   */
   public initDetached(): void {
     if (this._isInitialized) {
       return
@@ -208,7 +214,9 @@ export class EndgeIDEWidgets_Module {
     this._isInitialized = true
   }
 
-  /** Оставляет Runtime Tree рядом с Domain, а Problems — последним левым widget. */
+  /**
+   * Оставляет Runtime Tree рядом с Domain, а Problems — последним левым widget.
+   */
   private _ensureWorkspaceDefaultOrder(): void {
     const order = getWidgetOrder('left')
     const domainIndex = order.indexOf(ENDGE_IDE_DOMAIN_WIDGET_ID)

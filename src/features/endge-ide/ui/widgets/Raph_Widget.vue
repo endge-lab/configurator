@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { RaphPhase } from '@endge/raph'
-import { Raph } from '@endge/raph'
+import type { RaphPhase } from '@raphy-js/raph'
+import { Raph } from '@raphy-js/raph'
 import { onBeforeUnmount, onMounted, ref, triggerRef } from 'vue'
 
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import RaphTreeItem from '@/features/endge-ide/ui/widgets/components/RaphTreeItem.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
-/** Дерево узлов (Raph.debug.getTree()) */
+// Дерево узлов (Raph.debug.getTree())
 interface NodeTree {
   id: string
   type?: string
@@ -18,7 +18,7 @@ interface NodeTree {
   routes: string[]
 }
 
-/** Группа событий при записи */
+// Группа событий при записи
 interface EventGroup {
   phase: string
   path: string

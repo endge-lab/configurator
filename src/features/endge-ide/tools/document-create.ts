@@ -34,7 +34,7 @@ const CYRILLIC_TO_LATIN: Record<string, string> = {
   я: 'ya',
 }
 
-/** Создаёт редактируемое kebab-case предложение identity из названия. */
+// Создаёт редактируемое kebab-case предложение identity из названия.
 export function suggestDocumentIdentity(value: string): string {
   const transliterated = [...value.toLowerCase()]
     .map(char => CYRILLIC_TO_LATIN[char] ?? char)

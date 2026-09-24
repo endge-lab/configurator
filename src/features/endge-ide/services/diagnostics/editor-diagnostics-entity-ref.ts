@@ -5,7 +5,7 @@ interface DiagnosticsEditorIdentity {
   identity?: string | null
 }
 
-/** Создаёт нормализованную ссылку на редактируемую сущность для Problems registry. */
+// Создаёт нормализованную ссылку на редактируемую сущность для Problems registry.
 export function createEditorDiagnosticsEntityRef(
   entityType: string,
   editor: DiagnosticsEditorIdentity | null | undefined,

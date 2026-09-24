@@ -2,7 +2,9 @@ import type { RSimulation } from '@endge/core'
 
 import { Endge } from '@endge/core'
 
-/** Source-first модель редактора Simulation. */
+/**
+ * Source-first модель редактора Simulation.
+ */
 export class RSimulationEditor {
   id!: string | number
   identity!: string

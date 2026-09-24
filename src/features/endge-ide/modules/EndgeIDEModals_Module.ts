@@ -34,12 +34,16 @@ export class EndgeIDEModals_Module {
     this._vocabJsonPreviewData.value = null
   }
 
-  /** Открыта ли модалка «Создать документ» */
+  /**
+   * Открыта ли модалка «Создать документ»
+   */
   public get isCreateDocumentOpen() {
     return this._createDocumentOpen
   }
 
-  /** Контекст открытия: секция, папка или typed owner для связанного документа. */
+  /**
+   * Контекст открытия: секция, папка или typed owner для связанного документа.
+   */
   public get createDocumentContext() {
     return this._createDocumentContext
   }

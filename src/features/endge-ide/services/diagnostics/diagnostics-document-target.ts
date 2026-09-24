@@ -4,21 +4,19 @@ import { Endge, FilterType } from '@endge/core'
 
 import { resolveComponentDocument } from '@/features/endge-ide/tools/resolve-component-document'
 
-/** Редакторский document target, разрешённый из универсальной diagnostics entity reference. */
+// Редакторский document target, разрешённый из универсальной diagnostics entity reference.
 export interface DiagnosticsDocumentTarget {
   documentId: string
   documentType: DomainDocumentType
 }
 
-/** Возвращает стабильную identity или storage id как fallback для открытия документа. */
+// Возвращает стабильную identity или storage id как fallback для открытия документа.
 function getReferenceDocumentId(reference: DiagnosticsEntityRef): string {
   return String(reference.identity || reference.id || '').trim()
 }
 
-/**
- * Разрешает compiler/runtime entity type в реальный authoring document type.
- * Query и Filter требуют специализации, потому что compiler использует generic types.
- */
+// Разрешает compiler/runtime entity type в реальный authoring document type.
+// Query и Filter требуют специализации, потому что compiler использует generic types.
 export function resolveDiagnosticsDocumentTarget(reference: DiagnosticsEntityRef): DiagnosticsDocumentTarget | null {
   const fallbackId = getReferenceDocumentId(reference)
   if (!fallbackId) {

@@ -23,7 +23,7 @@ export interface CompositionDropPlan {
   unsupportedCount: number
 }
 
-/** Сопоставляет persisted document с поддерживаемым Composition dependency slot. */
+// Сопоставляет persisted document с поддерживаемым Composition dependency slot.
 export function resolveCompositionDropDescriptor(
   item: CompositionDropPayloadItem,
 ): CompositionDropDescriptor | null {
@@ -62,7 +62,7 @@ export function resolveCompositionDropDescriptor(
   return null
 }
 
-/** Строит одну атомарную пачку source operations для всех dropped documents. */
+// Строит одну атомарную пачку source operations для всех dropped documents.
 export function buildCompositionDropPlan(
   items: CompositionDropPayloadItem[],
   document: CompositionSourceDocument,

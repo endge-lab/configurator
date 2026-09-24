@@ -3,7 +3,7 @@ import type {
   RComponentContractInput,
 } from '@endge/core'
 
-/** Встроенные tags, которые могут использоваться как редактор ячейки. */
+// Встроенные tags, которые могут использоваться как редактор ячейки.
 export const TABLE_CELL_EDITOR_TAGS = [
   'Text',
   'DateTime',
@@ -14,12 +14,12 @@ export const TABLE_CELL_EDITOR_TAGS = [
   'Select',
 ] as const satisfies readonly ComponentSFCTableVisualCellTag[]
 
-/** Search option и публичный props contract компонента ячейки SFC. */
+// Search option и публичный props contract компонента ячейки SFC.
 export interface TableCellComponentOption {
   value: string
   label: string
   inputs: RComponentContractInput[]
-  /** Компонент можно выбрать как редактор значения. */
+  // Компонент можно выбрать как редактор значения.
   editorEligible: boolean
 }
 

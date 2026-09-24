@@ -169,7 +169,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     vi.unstubAllGlobals()
   })
 
-  /** Переключение контекста не оставляет Preview на очищенной шине Events. */
+  // Переключение контекста не оставляет Preview на очищенной шине Events.
   it('повторно подписывается на Runtime Events после boot и освобождает подписки при reset', async () => {
     mocks.rememberedTargets = [{ entityType: 'composition', identity: 'entry' }]
     const manager = createManager()

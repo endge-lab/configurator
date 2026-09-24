@@ -50,7 +50,7 @@ const BUILTINS = new Set([
   ...TABLE_EVENT_DEFINITIONS.map(event => event.payloadType),
 ])
 
-/** Completion, hover, навигация и live-диагностика Type Registry для SFC Monaco. */
+// Completion, hover, навигация и live-диагностика Type Registry для SFC Monaco.
 export function createTypeRegistryContribution(): ScriptEditorExtension {
   return {
     id: 'types:registry',

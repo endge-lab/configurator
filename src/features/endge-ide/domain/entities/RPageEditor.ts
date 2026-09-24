@@ -15,7 +15,9 @@ function normalizeRelationId(value: unknown): number | null {
   return Number.isFinite(id) ? id : null
 }
 
-/** Модель редактора для RPage (коллекция pages). */
+/**
+ * Модель редактора для RPage (коллекция pages).
+ */
 export class RPageEditor {
   id!: number
   identity!: string

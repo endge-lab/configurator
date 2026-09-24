@@ -24,7 +24,7 @@ const delegatedProps = reactiveOmit(props, 'class')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
-/** Не передаём mouseenter/mouseleave в reka-ui (фрагментный корень не наследует их - Vue warn). */
+// Не передаём mouseenter/mouseleave в reka-ui (фрагментный корень не наследует их - Vue warn).
 const forwardedWithoutMouse = computed(() => {
   const f = forwarded.value as Record<string, unknown>
   const { onMouseenter, onMouseleave, ...rest } = f ?? {}

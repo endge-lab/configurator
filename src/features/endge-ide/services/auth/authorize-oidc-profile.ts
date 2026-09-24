@@ -2,7 +2,7 @@ import { Endge } from '@endge/core'
 
 import { getConfiguratorOidcPopupCallbackURL } from '@/features/endge-ide/services/auth/oidc-browser-url'
 
-/** Получает browser session выбранного OIDC profile по явному действию пользователя. */
+// Получает browser session выбранного OIDC profile по явному действию пользователя.
 export async function authorizeOidcProfile(profileIdentity: string): Promise<void> {
   const profile = Endge.auth.profiles.requireActive(profileIdentity)
   if (profile.adapterId !== 'oidc') {

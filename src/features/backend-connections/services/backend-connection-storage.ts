@@ -7,7 +7,7 @@ export interface LocalBackendConnection {
   baseUrl: string
 }
 
-/** Нормализует backend URL одинаково для env, каталога и browser storage. */
+// Нормализует backend URL одинаково для env, каталога и browser storage.
 export function normalizeBackendURL(value: unknown): string {
   const raw = String(value ?? '').trim()
   let url: URL
@@ -32,7 +32,9 @@ export function workspaceStorageKey(backendURL: string): string {
   return `${ACTIVE_WORKSPACE_STORAGE_KEY_PREFIX}:${encodeURIComponent(normalizeBackendURL(backendURL))}`
 }
 
-/** Browser persistence repository. Повреждённые значения никогда не восстанавливаются. */
+/**
+ * Browser persistence repository. Повреждённые значения никогда не восстанавливаются.
+ */
 export class BackendConnectionStorage {
   public readActiveBackend(): string | null {
     if (typeof window === 'undefined') {
@@ -177,7 +179,7 @@ export class BackendConnectionStorage {
   }
 }
 
-/** Возвращает target namespace для browser state без зависимости от application kernel. */
+// Возвращает target namespace для browser state без зависимости от application kernel.
 export function currentTargetStorageNamespace(workspaceIdentity?: string): string {
   let backend = 'detached'
   try {

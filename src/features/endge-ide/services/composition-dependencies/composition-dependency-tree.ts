@@ -55,7 +55,7 @@ interface CachedCompositionUsageEdges {
 
 const compositionUsageCache = new Map<string, CachedCompositionUsageEdges>()
 
-/** Строит occurrence tree из текущего draft source без Program build и runtime side effects. */
+// Строит occurrence tree из текущего draft source без Program build и runtime side effects.
 export function buildCompositionDependencyTree(
   input: CompositionDependencyTreeInput,
 ): CompositionDependencyTreeResult {
@@ -93,7 +93,7 @@ export function buildCompositionDependencyTree(
   return { status: 'valid', root, diagnostics }
 }
 
-/** Добавляет к текущему downstream tree полный обратный обход мест использования. */
+// Добавляет к текущему downstream tree полный обратный обход мест использования.
 export function buildCompositionDependencyHierarchy(
   input: CompositionDependencyTreeInput,
 ): CompositionDependencyTreeResult {
