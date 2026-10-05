@@ -199,7 +199,7 @@ test('large artifact, chunk append and failed import preserve the session', asyn
   await ready(page, 'debugger')
   const value = JSON.parse(
     await readFile(
-      '../../packages/@endge-core/src/test/fixtures/bundles/program.json',
+      '../../packages/@endge/@endge-core/src/test/fixtures/bundles/program.json',
       'utf8',
     ),
   )
@@ -363,7 +363,7 @@ test('large history keeps the panel bounded and seeks through checkpoints', asyn
   const errors: string[] = []
   collectErrors(page, errors)
   await ready(page, 'debugger')
-  const value = JSON.parse(await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
+  const value = JSON.parse(await readFile('../../packages/@endge/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
   const snapshotValue = {
     context: value.bundle.context,
     runtime: { version: 1, runtime: { generatedAt: 0, hosts: [], scopes: [], total: 0, byStatus: {}, deletedTotal: 0, deletedHosts: [] } },
@@ -409,7 +409,7 @@ test('drop Bundle anywhere or onto the dialog without navigating away', async ({
   const errors: string[] = []
   collectErrors(page, errors)
   await ready(page, 'debugger')
-  const bytes = [...await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.gz')]
+  const bytes = [...await readFile('../../packages/@endge/@endge-core/src/test/fixtures/bundles/program.gz')]
   const drop = async (target: string, data: number[], name: string) => {
     const transfer = await page.evaluateHandle(({ data, name }) => {
       const value = new DataTransfer()
@@ -480,7 +480,7 @@ test('build result collects description and commit message for release', async (
 test('compiled catalog uses familiar sections and readonly document shell without parsing', async ({ page }, info) => {
   const errors: string[] = []
   collectErrors(page, errors)
-  const container = JSON.parse(await readFile('../../packages/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
+  const container = JSON.parse(await readFile('../../packages/@endge/@endge-core/src/test/fixtures/bundles/program.json', 'utf8'))
   const catalog = container.bundle.catalog
   const entry = Object.values(catalog.documents).find((value: any) => value.entityType === 'component-sfc') as any
   catalog.folders = {

@@ -1,4 +1,7 @@
 {
+  "tooltipCondition": {
+    "clear": "Снять условие"
+  },
   "configuratorPresence": {
     "button": "Другие подключения: {count}",
     "title": "Активные сессии",
