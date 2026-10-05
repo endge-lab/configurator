@@ -46,7 +46,7 @@ watch(
 
     collapsed.value = false
     const path = runtime.getDataPath()
-    disposeRuntimeWatch = Raph.watch([path, `${path}.*`], () => {
+    disposeRuntimeWatch = Raph.kernel.watch([path, `${path}.*`], () => {
       revision.value += 1
     })
   },

@@ -18,7 +18,7 @@ watch(
     disposeWatch?.()
     revision.value += 1
     const path = runtime.getDataPath()
-    disposeWatch = Raph.watch([path, `${path}.*`], () => {
+    disposeWatch = Raph.kernel.watch([path, `${path}.*`], () => {
       revision.value += 1
     })
   },
