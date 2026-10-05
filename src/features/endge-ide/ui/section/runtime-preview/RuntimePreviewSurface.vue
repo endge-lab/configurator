@@ -112,7 +112,7 @@ function bindPropsWatch(): void {
       : []
   })
   if (paths.length > 0) {
-    disposePropsWatch = Raph.watch(paths, () => {
+    disposePropsWatch = Raph.kernel.watch(paths, () => {
       propsRevision.value += 1
     })
   }

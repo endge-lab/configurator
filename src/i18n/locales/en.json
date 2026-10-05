@@ -1,4 +1,7 @@
 {
+  "tooltipCondition": {
+    "clear": "Clear condition"
+  },
   "configuratorPresence": {
     "button": "Other connections: {count}",
     "title": "Active sessions",

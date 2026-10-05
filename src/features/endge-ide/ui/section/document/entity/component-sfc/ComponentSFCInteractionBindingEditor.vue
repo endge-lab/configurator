@@ -267,6 +267,12 @@ function publishCondition(): void {
   emit('update:condition', Object.keys(next).length ? next : null)
 }
 
+function clearCondition(): void {
+  cancelRecording()
+  conditionDraft.value = {}
+  publishCondition()
+}
+
 function updateEvent(value: unknown): void {
   const event = String(value ?? '').trim()
   if (!event) {
@@ -670,6 +676,10 @@ function splitList(value: string): string[] {
       </button>
 
       <div class="flex items-center justify-end gap-1">
+        <Button v-if="!isTriggerMode && advancedCount" type="button" variant="ghost" size="sm" class="h-8 gap-1 px-2 text-[11px]" :disabled="disabled" @click.stop="clearCondition">
+          <X class="size-3.5" />
+          {{ $t('tooltipCondition.clear') }}
+        </Button>
         <Button v-if="hasReaction" type="button" variant="ghost" size="sm" class="h-8 px-2 text-[11px]" @click="expanded = true">
           {{ $t('uiText.reactionf996ddc3') }}
         </Button>

@@ -46,7 +46,7 @@ let eventsThisSecond = 0
 
 function refreshPhases(): void {
   try {
-    phases.value = [...Raph.runtime.phases]
+    phases.value = [...Raph.runtime().phases]
   }
   catch {
     phases.value = []
@@ -78,7 +78,7 @@ function toggleRecording(): void {
 }
 
 onMounted(() => {
-  unsubscribe.push(Raph.watch('*', ({ events: changed }) => {
+  unsubscribe.push(Raph.kernel.watch('*', ({ events: changed }) => {
     batchesThisSecond++
     eventsThisSecond += changed.length
     if (!recordingEnabled.value) {
