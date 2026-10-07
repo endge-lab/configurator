@@ -142,17 +142,29 @@ describe('пользовательская сессия Configurator', () => {
     expect(module.state).toEqual({ status: 'idle' })
   })
 
-  it('очищает браузерное хранилище Configurator при принудительном выходе', () => {
-    const localStorageClear = vi.fn()
-    const sessionStorageClear = vi.fn()
+  it('очищает состояние Configurator, сохраняя данные AODB на общем origin', () => {
+    const localValues = new Map([
+      ['endge:configurator:active-backend-url:v1', BACKEND_URL],
+      ['endge-ide:data-mode-override:v2:workspace', 'mock'],
+      ['aodb:context', 'keep'],
+    ])
+    const sessionValues = new Map([
+      [CONFIGURATOR_LOGIN_REDIRECT_GUARD_KEY, '123'],
+      ['aodb:auth:return-to', '/flights'],
+    ])
+    const storage = (values: Map<string, string>) => ({
+      get length() { return values.size },
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+    })
     vi.stubGlobal('window', {
-      localStorage: { clear: localStorageClear },
-      sessionStorage: { clear: sessionStorageClear },
+      localStorage: storage(localValues),
+      sessionStorage: storage(sessionValues),
     })
 
     clearConfiguratorBrowserState()
 
-    expect(localStorageClear).toHaveBeenCalledOnce()
-    expect(sessionStorageClear).toHaveBeenCalledOnce()
+    expect([...localValues.keys()]).toEqual(['aodb:context'])
+    expect([...sessionValues.keys()]).toEqual(['aodb:auth:return-to'])
   })
 })
