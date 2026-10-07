@@ -255,16 +255,16 @@ export class Configurator {
     }
   }
 
-  public static async logout(): Promise<void> {
-    try {
-      await this._modules.session.logout()
-    }
-    finally {
-      clearConfiguratorBrowserState()
-    }
+  public static async logout(options: { promptLogin?: boolean } = {}): Promise<void> {
+    await this._modules.session.logout()
+    clearConfiguratorBrowserState()
     const state = await this._modules.session.check()
     if (state.status === 'unauthenticated') {
-      this._startLoginOrThrow(state.loginUrl)
+      const loginUrl = new URL(state.loginUrl)
+      if (options.promptLogin) {
+        loginUrl.searchParams.set('prompt', 'login')
+      }
+      this._startLoginOrThrow(loginUrl.toString())
       return
     }
     if (state.status === 'error') {

@@ -1,4 +1,15 @@
-// Удаляет всё локальное состояние Configurator, доступное текущему origin.
+const configuratorPrefixes = [
+  'endge:configurator:',
+  'endge:configurator-login-redirect:',
+  'endge:runtime-preview:',
+  'endge-ide:',
+  'endge-editor-',
+  'endge-admin-ui-editor-',
+  'configurator.',
+]
+const configuratorKeys = new Set(['app:grid-layout-state', 'app:date-format'])
+
+// Удаляет только browser state Configurator на общем с AODB origin.
 export function clearConfiguratorBrowserState(): void {
   if (typeof window === 'undefined') {
     return
@@ -6,7 +17,13 @@ export function clearConfiguratorBrowserState(): void {
 
   for (const storageName of ['localStorage', 'sessionStorage'] as const) {
     try {
-      window[storageName].clear()
+      const storage = window[storageName]
+      const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
+      for (const key of keys) {
+        if (key && (configuratorKeys.has(key) || configuratorPrefixes.some(prefix => key.startsWith(prefix)))) {
+          storage.removeItem(key)
+        }
+      }
     }
     catch {
       // Server logout остаётся главным источником истины, даже если browser storage недоступен.
