@@ -259,7 +259,7 @@
       "error": "Не удалось выполнить импорт:",
       "fieldSummary": "Полей: {fields}, обязательных: {required}",
       "fileHint": {
-        "graphql": "Файлы .graphql, .gql или .graphqls",
+        "graphql": "SDL (.graphql, .gql, .graphqls) или JSON introspection (.json)",
         "openapi": "OpenAPI 3.x в YAML или JSON"
       },
       "found": "Найдено типов: {count}",
@@ -281,6 +281,111 @@
         "successTitle": "Типы импортированы"
       },
       "typeRoot": "Корень типов"
+    },
+    "graphqlSchema": {
+      "actions": {
+        "importTypes": "Импортировать типы из схемы",
+        "loadEndpoint": "Загрузить схему с endpoint",
+        "loadFile": "Загрузить схему из файла…",
+        "remove": "Удалить сохранённую схему"
+      },
+      "status": {
+        "details": "Типов: {count} · {date}",
+        "dynamicEndpoint": "Endpoint вычисляется из props: схему загрузить нельзя",
+        "memoryOnly": "Браузер не сохранил схему: она доступна до перезагрузки",
+        "noEndpoint": "Укажите endpoint GraphQL",
+        "none": "Схема не загружена",
+        "ready": "Схема: {source}"
+      },
+      "toast": {
+        "loaded": "Схема GraphQL загружена",
+        "loadedDescription": "Типов: {count}",
+        "loadFailed": "Не удалось загрузить схему GraphQL",
+        "removed": "Сохранённая схема удалена"
+      },
+      "trigger": "Схема GraphQL"
+    },
+    "queryRun": {
+      "quickRun": "Запустить",
+      "quickRunHint": "Выполнить Query с default props без ввода",
+      "close": "Скрыть панель запуска",
+      "compileError": "Source не компилируется: {message}",
+      "duration": "{ms} мс",
+      "errorKind": {
+        "compile": "Ошибка подготовки",
+        "graphql": "Ошибка GraphQL",
+        "responseFormat": "Некорректный ответ GraphQL",
+        "runtime": "Ошибка выполнения",
+        "transport": "Ошибка транспорта"
+      },
+      "graphqlErrors": {
+        "empty": "Ответ не содержит GraphQL errors",
+        "extensions": "extensions",
+        "locations": "locations",
+        "path": "path"
+      },
+      "httpStatus": "HTTP {status}",
+      "notSent": "HTTP-запрос не отправлялся: Query выполнен на mock-данных или в режиме mock",
+      "outputs": {
+        "empty": "Outputs не получены"
+      },
+      "props": {
+        "booleanFalse": "false",
+        "booleanTrue": "true",
+        "default": "По умолчанию: {value}",
+        "defaultFromFilter": "По умолчанию из Filter",
+        "empty": "Query не объявляет props",
+        "hint": "Пустое поле — значение по умолчанию",
+        "invalid": {
+          "boolean": "Ожидается true или false",
+          "json": "Некорректный JSON",
+          "number": "Ожидается число"
+        },
+        "optional": "необязательный",
+        "title": "Props",
+        "useDefault": "По умолчанию"
+      },
+      "request": {
+        "body": "Тело",
+        "document": "Документ",
+        "empty": "Нет",
+        "headers": "Заголовки",
+        "params": "Параметры URL",
+        "redacted": "Скрыто: {names}",
+        "variables": "Variables"
+      },
+      "response": {
+        "empty": "HTTP-ответ не получен"
+      },
+      "run": "Выполнить",
+      "status": {
+        "error": "Ошибка",
+        "success": "Успешно"
+      },
+      "tabs": {
+        "errors": "Ошибки GraphQL ({count})",
+        "outputs": "Outputs",
+        "request": "Запрос",
+        "response": "Ответ"
+      },
+      "title": "Запуск Query",
+      "trigger": "Панель запуска Query",
+      "variables": {
+        "error": "Не удалось вычислить variables: {message}",
+        "title": "Итоговые variables"
+      }
+    },
+    "typeVisual": {
+      "extends": "наследует",
+      "openBase": "Открыть базовый тип {type}",
+      "inheritedCount": "унаследовано полей: {count}",
+      "baseMissing": "базовый тип «{type}» не найден",
+      "baseInvalid": "базовый тип недоступен (цикл или не object)",
+      "inheritedFrom": "унаследовано от {type}",
+      "inheritedHint": "Поле унаследовано от {type}: только чтение, изменяется в базовом типе",
+      "ownFields": "Собственные поля",
+      "inheritedGroup": "Унаследовано от",
+      "readonlyHint": "только чтение, изменяется в базовом типе"
     }
   },
   "grid": {
@@ -1602,5 +1707,125 @@
     "format": "Формат",
     "size": "Размер файла",
     "releaseGzip": "В релизе Bundle сохраняется в Gzip."
+  },
+  "agentAccess": {
+    "button": "Для агента",
+    "title": "Доступ для агента",
+    "description": "Выпустите персональный токен, чтобы ИИ-агент работал с этим workspace от вашего имени.",
+    "tabs": {
+      "create": "Новый токен",
+      "tokens": "Токены"
+    },
+    "form": {
+      "name": "Имя токена",
+      "namePlaceholder": "Например, Codex: инспектор рейса",
+      "defaultName": "Агент · {workspace}",
+      "workspace": "Workspace",
+      "rights": "Права",
+      "read": "Чтение",
+      "write": "Запись",
+      "readHint": "Агент только читает документы.",
+      "writeHint": "Агент правит документы с вашей ролью, но не выше Editor.",
+      "writeUnavailable": "Запись недоступна для роли Viewer.",
+      "commit": "Коммиты и релизы",
+      "commitHint": "Разрешает создавать коммиты, релизы и восстанавливать их.",
+      "commitUnavailable": "Коммиты токеном доступны только Admin workspace.",
+      "delete": "Удаление",
+      "deleteHint": "Разрешает удалять документы.",
+      "expiry": "Срок действия",
+      "preset1h": "1 час",
+      "preset1d": "1 день",
+      "preset7d": "7 дней",
+      "presetCustom": "Свой",
+      "customDate": "Дата и время окончания",
+      "maxTtlDays": "Максимальный срок: {count} дн.",
+      "maxTtlHours": "Максимальный срок: {count} ч.",
+      "expiresAt": "Истекает {date}",
+      "create": "Создать токен",
+      "creating": "Создание…"
+    },
+    "expiryErrors": {
+      "required": "Выберите дату окончания.",
+      "invalid": "Некорректная дата окончания.",
+      "tooSoon": "Токен должен действовать хотя бы несколько минут.",
+      "tooLong": "Срок превышает предел backend."
+    },
+    "result": {
+      "title": "Токен создан",
+      "once": "Токен показывается один раз. Скопируйте промпт или токен сейчас: после закрытия окна его нельзя будет посмотреть.",
+      "token": "Токен",
+      "show": "Показать токен",
+      "hide": "Скрыть токен",
+      "copyPrompt": "Скопировать промпт",
+      "copyToken": "Скопировать токен",
+      "promptPreview": "Предпросмотр промпта (токен скрыт)",
+      "copied": "Скопировано в буфер обмена",
+      "copyFailed": "Не удалось скопировать в буфер обмена",
+      "docsMissing": "Адрес документации не настроен (VITE_DOCUMENTATION_URL): промпт просит агента запросить ссылку у вас.",
+      "another": "Создать ещё",
+      "done": "Готово"
+    },
+    "list": {
+      "mine": "Мои",
+      "all": "Все",
+      "refresh": "Обновить",
+      "loading": "Загрузка токенов…",
+      "empty": "Токенов пока нет",
+      "name": "Имя",
+      "prefix": "Префикс",
+      "workspace": "Workspace",
+      "rights": "Права",
+      "expires": "Истекает",
+      "lastUsed": "Последний вход",
+      "owner": "Владелец",
+      "never": "не использовался",
+      "rightsRead": "чтение",
+      "rightsWrite": "запись",
+      "rightsCommit": "коммиты",
+      "rightsDelete": "удаление",
+      "statusActive": "активен",
+      "statusExpired": "истёк",
+      "statusRevoked": "отозван",
+      "revoke": "Отозвать",
+      "confirmRevoke": "Подтвердить",
+      "cancelRevoke": "Отмена",
+      "revoked": "Токен отозван"
+    },
+    "errors": {
+      "expiryRequired": "Укажите срок действия.",
+      "expiryInvalid": "Некорректный срок действия.",
+      "expiryTooLong": "Срок превышает предел backend.",
+      "flagsRequireWrite": "Коммиты и удаление требуют права записи.",
+      "scopeInvalid": "Неизвестный уровень прав.",
+      "nameInvalid": "Имя должно быть длиной от 1 до 120 символов.",
+      "descriptionInvalid": "Описание слишком длинное.",
+      "scopeExceedsRole": "Ваша роль в workspace не позволяет выпустить токен на запись.",
+      "commitRequiresAdmin": "Флаг коммитов может выпустить только Admin workspace.",
+      "notFound": "Токен не найден.",
+      "workspaceNotFound": "Workspace не найден.",
+      "workspaceForbidden": "Нет доступа к этому workspace.",
+      "platformAdminRequired": "Все токены доступны только Platform Admin.",
+      "unavailable": "Backend недоступен.",
+      "unknown": "Запрос не выполнен. Повторите попытку."
+    },
+    "history": {
+      "section": "История",
+      "title": "История ревизий",
+      "refresh": "Обновить",
+      "loading": "Загрузка истории…",
+      "empty": "Ревизий нет",
+      "error": "Не удалось загрузить историю ревизий",
+      "unsaved": "История появится после сохранения документа",
+      "revision": "Ревизия {number}",
+      "agent": "агент: {name}",
+      "agentUnknown": "агент: токен {id}",
+      "operationCreate": "создан",
+      "operationUpdate": "изменён",
+      "operationDelete": "удалён",
+      "operationRestore": "восстановлен",
+      "operationImport": "импортирован",
+      "shown": "Показано {shown} из {total}",
+      "more": "Показать ещё"
+    }
   }
 }

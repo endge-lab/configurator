@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import SimulationSourceEditor from '@/features/endge-ide/ui/components/SimulationSourceEditor.vue'
@@ -58,7 +59,7 @@ const unsubscribeDomain = Endge.domain.subscribe(() => {
 onBeforeUnmount(unsubscribeDomain)
 const compiled = computed(() => {
   void domainVersion.value
-  return editor.value ? Endge.source.compile('simulation', editor.value.source) : null
+  return editor.value ? compilePreviewSource('simulation', editor.value.source) : null
 })
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),

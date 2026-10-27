@@ -12,8 +12,7 @@ import {
   Settings2,
   TriangleAlert,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import { toast } from 'vue-sonner'
+import { computed, nextTick, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,8 +26,12 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { collectGraphQLSchemaProblems } from '@/features/endge-ide/services/graphql-schema/graphql-schema-problems'
+import { canRunQueryWithoutInput } from '@/features/endge-ide/services/query-run/query-run-form'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import GraphQLSchemaMenu from '@/features/endge-ide/ui/components/graphql-schema/GraphQLSchemaMenu.vue'
+import QueryRunPanel from '@/features/endge-ide/ui/components/query-run/QueryRunPanel.vue'
 import QuerySourceEditor from '@/features/endge-ide/ui/components/QuerySourceEditor.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
@@ -38,6 +41,10 @@ import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface SourceEditorHandle {
   formatDocument: () => Promise<void>
+}
+
+interface QueryRunPanelHandle {
+  run: () => Promise<void>
 }
 
 const tabs = EndgeIDE.tabs
@@ -52,13 +59,22 @@ const activeTab = useSmartTabSelection(
 const diagnosticsEntityRef = computed(() =>
   createEditorDiagnosticsEntityRef('query', editor.value),
 )
-const runQueryLoading = ref(false)
+// Маркеры схемы GraphQL в панели «Диагностика»; вычисляются, только пока панель открыта.
+const schemaProblems = computed(() => editor.value
+  ? collectGraphQLSchemaProblems(EndgeIDE.graphqlSchema, Endge.source, 'query', editor.value.source)
+  : [])
+// Видимость панели запуска — локальное состояние редактора Query.
+const runPanelOpen = ref(false)
+const runPanelRef = ref<QueryRunPanelHandle | null>(null)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+const parsedSource = computed(() => Endge.source.parse<QuerySourceDocument>('query', editor.value?.source ?? ''))
 const queryDocumentType = computed(() =>
-  Endge.source.parse<QuerySourceDocument>('query', editor.value?.source ?? '').document?.kind === 'graphql'
+  parsedSource.value.document?.kind === 'graphql'
     ? QueryType.GraphQL
     : QueryType.REST,
 )
+// «Запустить» одним кликом: Source разобран и ни один prop не требует ввода.
+const quickRunAvailable = computed(() => canRunQueryWithoutInput(parsedSource.value.document?.props))
 
 async function save(): Promise<void> {
   await EndgeIDE.tabs.save()
@@ -71,65 +87,15 @@ function resetSource(): void {
   ))
 }
 
-async function runQuery(): Promise<void> {
-  const current = editor.value
-  if (!current) {
-    toast.error('Нет редактора запроса')
-    return
-  }
-
-  const query = Endge.domain.getQuery(current.id ?? current.identity)
-  if (!query) {
-    toast.error('Запрос не найден в домене')
-    return
-  }
-
-  runQueryLoading.value = true
-  try {
-    current.updateSource(query)
-    await buildQueryArtifact(query.id ?? query.identity)
-
-    const outputs = (await Endge.runtime.query.run(query, {})) as Record<
-      string,
-      unknown
-    >
-    toast.success('Запрос выполнен', {
-      description: `Получено outputs: ${Object.keys(outputs).length}`,
-    })
-  }
-  catch (error: any) {
-    console.error(`[Query_Editor] Ошибка выполнения запроса: ${error?.message ?? String(error)}`)
-    toast.error('Ошибка выполнения запроса', {
-      description: error?.message ?? String(error),
-    })
-  }
-  finally {
-    runQueryLoading.value = false
-  }
+function toggleRunPanel(): void {
+  runPanelOpen.value = !runPanelOpen.value
 }
 
-async function buildQueryArtifact(
-  idOrIdentity: string | number,
-): Promise<void> {
-  const query = Endge.domain.getQuery(idOrIdentity)
-  if (!query) {
-    throw new Error(`Query not found: "${idOrIdentity}".`)
-  }
-
-  Endge.compiler.buildQuery(query)
-
-  const artifact = Endge.program.getQueryArtifact(idOrIdentity)
-  if (!artifact) {
-    throw new Error(
-      `Query artifact is missing for "${idOrIdentity}". Compile domain before running query.`,
-    )
-  }
-  if (artifact.status === 'error') {
-    const message
-      = artifact.diagnostics[0]?.message
-        ?? `Query artifact has compile errors for "${idOrIdentity}".`
-    throw new Error(message)
-  }
+// Открывает панель запуска и сразу выполняет Query с default props.
+async function quickRun(): Promise<void> {
+  runPanelOpen.value = true
+  await nextTick()
+  await runPanelRef.value?.run()
 }
 </script>
 
@@ -220,15 +186,30 @@ async function buildQueryArtifact(
                 variant="ghost"
                 size="icon"
                 class="h-7 w-7"
-                aria-label="Выполнить запрос"
-                :disabled="runQueryLoading"
-                @click="runQuery"
+                :class="runPanelOpen ? 'bg-editor-control shadow-sm' : ''"
+                :aria-label="$t('endgeIde.queryRun.trigger')"
+                :aria-pressed="runPanelOpen"
+                @click="toggleRunPanel"
               >
-                <Loader2 v-if="runQueryLoading" class="size-4 animate-spin" />
-                <Play v-else class="size-4" />
+                <Play class="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{{ $t('uiText.executeQuery714cc835') }}</TooltipContent>
+            <TooltipContent>{{ $t('endgeIde.queryRun.trigger') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="quickRunAvailable">
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="h-7 px-2 text-xs"
+                data-testid="query-quick-run"
+                @click="quickRun"
+              >
+                {{ $t('endgeIde.queryRun.quickRun') }}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('endgeIde.queryRun.quickRunHint') }}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -258,6 +239,12 @@ async function buildQueryArtifact(
     </template>
 
     <template #right>
+      <GraphQLSchemaMenu
+        v-if="activeTab === 'source' && queryDocumentType === QueryType.GraphQL"
+        source-kind="query"
+        :source="editor.source"
+        class="mr-1"
+      />
       <TooltipProvider>
         <div
           v-if="activeTab === 'source'"
@@ -282,7 +269,7 @@ async function buildQueryArtifact(
       </TooltipProvider>
     </template>
 
-    <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div class="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <DocumentGeneralSettingsPanel v-if="activeTab === 'general'">
         <div class="max-w-2xl space-y-5">
           <DocumentIdField :document-id="editor.id" />
@@ -325,7 +312,15 @@ async function buildQueryArtifact(
       <EntityProblemsPanel
         v-else-if="diagnosticsEntityRef"
         :entity-ref="diagnosticsEntityRef"
+        :authoring-diagnostics="schemaProblems"
         class="min-h-0 flex-1"
+      />
+      <QueryRunPanel
+        v-if="runPanelOpen"
+        ref="runPanelRef"
+        :key="editor.id ?? editor.identity"
+        :editor="editor"
+        @close="runPanelOpen = false"
       />
     </div>
   </SourceDocumentEditorShell>

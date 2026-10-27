@@ -20,6 +20,7 @@ import {
   EllipsisVertical,
   ExternalLink,
   GripVertical,
+  Lock,
   Plus,
   Trash2,
 } from 'lucide-vue-next'
@@ -35,6 +36,7 @@ import {
   cloneTypeSourceDocument,
   createDefaultTypeSourceField,
   parseTypeVisualSource,
+  resolveTypeVisualExtends,
 } from '@/features/endge-ide/services/type-visual-editor'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 import { useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
@@ -48,6 +50,10 @@ interface TypeVisualRow {
   ownerIdentity: string
   hasChildren: boolean
   cycle: boolean
+  // Base Type, от которого поле корня унаследовано через extends (только чтение).
+  inheritedFrom: string | null
+  // Заголовок группы перед строкой у Type с extends: identity базы или OWN_FIELDS_GROUP.
+  groupStart: string | null
 }
 
 interface ObjectDragState {
@@ -78,6 +84,8 @@ const emit = defineEmits<{
 }>()
 
 const INLINE_OBJECT_VALUE = '__endge_inline_object__'
+// Значение groupStart строки, с которой начинаются собственные поля Type с extends.
+const OWN_FIELDS_GROUP = '__endge_own_fields__'
 const MIN_PANEL_RATIO = 0.12
 const SPLIT_KEYBOARD_STEP = 0.02
 
@@ -147,30 +155,107 @@ watch(
   { deep: true },
 )
 
+// Authored definitions Type по identity для раскрытия ссылок и extends. Кэш привязан к экземпляру
+// typeMap: чтение typeMap.value делает computed-потребителей зависимыми от списка типов.
+const authoredDefinitionCaches = new WeakMap<Map<string, VisualSchemaTypeOption>, Map<string, TypeSourceDefinition | null | undefined>>()
+
+function lookupAuthoredDefinition(identity: string): TypeSourceDefinition | null | undefined {
+  const types = typeMap.value
+  let cache = authoredDefinitionCaches.get(types)
+  if (!cache) {
+    cache = new Map()
+    authoredDefinitionCaches.set(types, cache)
+  }
+  if (cache.has(identity)) {
+    return cache.get(identity)
+  }
+  const option = types.get(identity)
+  let next: TypeSourceDefinition | null | undefined
+  if (!option) {
+    next = undefined
+  }
+  else if (!option.source?.trim()) {
+    next = option.category === 'primitive' ? null : undefined
+  }
+  else {
+    // Ветки contextSwitch базового Type не мешают показать его структуру (выбранная ветка).
+    next = parseTypeVisualSource(option.source).document?.definition ?? undefined
+  }
+  cache.set(identity, next)
+  return next
+}
+
+// Definition с развёрнутым extends для чтения (раскрытие ссылок, пример); undefined/null как у lookup.
+function lookupResolvedDefinition(identity: string): TypeSourceDefinition | null {
+  const authored = lookupAuthoredDefinition(identity)
+  return authored ? resolveTypeVisualExtends(authored, lookupAuthoredDefinition, identity).definition : null
+}
+
+// Наследование корня: базовый Type и развёрнутые поля; null без extends.
+const rootExtends = computed(() => {
+  const current = definition.value
+  if (current?.kind !== 'object' || !current.extends) {
+    return null
+  }
+  return resolveTypeVisualExtends(current, lookupAuthoredDefinition, props.identity)
+})
+
+function inheritedRootFields(): TypeSourceField[] {
+  const resolved = rootExtends.value?.definition
+  return resolved?.kind === 'object' ? resolved.fields.filter(field => field.inheritedFrom) : []
+}
+
+const inheritedFieldCount = computed(() => inheritedRootFields().length)
+
 const objectRows = computed<TypeVisualRow[]>(() => {
   if (definition.value?.kind !== 'object') {
     return []
   }
 
   const rows: TypeVisualRow[] = []
-  const cache = new Map<string, TypeSourceDefinition | null>()
 
-  const resolveDefinition = (identity: string): TypeSourceDefinition | null => {
-    if (cache.has(identity)) {
-      return cache.get(identity) ?? null
+  function appendField(
+    field: TypeSourceField,
+    index: number,
+    depth: number,
+    ownerIdentity: string,
+    parentPath: string,
+    local: boolean,
+    fieldPath: number[] | null,
+    visited: Set<string>,
+    inheritedFrom: string | null,
+  ): void {
+    const id = `${parentPath}/${field.key}:${index}`
+    const referenceIdentity = field.type.kind === 'reference' ? field.type.identity : null
+    const targetDefinition = field.type.kind === 'object'
+      ? field.type
+      : referenceIdentity
+        ? lookupResolvedDefinition(referenceIdentity)
+        : null
+    const cycle = targetDefinition?.kind === 'object' && referenceIdentity != null && visited.has(referenceIdentity)
+    const hasChildren = targetDefinition?.kind === 'object' && targetDefinition.fields.length > 0
+    rows.push({ id, depth, field, fieldPath, local, ownerIdentity, hasChildren, cycle, inheritedFrom, groupStart: null })
+
+    const expanded = hasChildren && !cycle && !collapsedIds.value.has(id)
+    if (!expanded || targetDefinition?.kind !== 'object') {
+      return
     }
-    const option = typeMap.value.get(identity)
-    if (!option?.source?.trim()) {
-      cache.set(identity, null)
-      return null
-    }
-    const resolved = parseTypeVisualSource(option.source)
-    const next = resolved.valid ? resolved.document?.definition ?? null : null
-    cache.set(identity, next)
-    return next
+
+    const nestedLocal = local && field.type.kind === 'object'
+    const nestedOwnerIdentity = referenceIdentity ?? ownerIdentity
+
+    appendFields(
+      targetDefinition.fields,
+      depth + 1,
+      nestedOwnerIdentity,
+      id,
+      nestedLocal,
+      nestedLocal ? fieldPath : null,
+      referenceIdentity ? new Set([...visited, referenceIdentity]) : visited,
+    )
   }
 
-  const appendFields = (
+  function appendFields(
     fields: TypeSourceField[],
     depth: number,
     ownerIdentity: string,
@@ -178,55 +263,63 @@ const objectRows = computed<TypeVisualRow[]>(() => {
     local: boolean,
     localParentPath: number[] | null,
     visited: Set<string>,
-  ): void => {
+  ): void {
     fields.forEach((field, index) => {
-      const id = `${parentPath}/${field.key}:${index}`
       const fieldPath = local && localParentPath ? [...localParentPath, index] : null
-      const referenceIdentity = field.type.kind === 'reference' ? field.type.identity : null
-      const targetDefinition = field.type.kind === 'object'
-        ? field.type
-        : referenceIdentity
-          ? resolveDefinition(referenceIdentity)
-          : null
-      const cycle = targetDefinition?.kind === 'object' && referenceIdentity != null && visited.has(referenceIdentity)
-      const hasChildren = targetDefinition?.kind === 'object' && targetDefinition.fields.length > 0
-      rows.push({ id, depth, field, fieldPath, local, ownerIdentity, hasChildren, cycle })
-
-      const expanded = hasChildren && !cycle && !collapsedIds.value.has(id)
-      if (!expanded || targetDefinition?.kind !== 'object') {
-        return
-      }
-
-      const nestedLocal = local && field.type.kind === 'object'
-      const nestedOwnerIdentity = referenceIdentity ?? ownerIdentity
-
-      appendFields(
-        targetDefinition.fields,
-        depth + 1,
-        nestedOwnerIdentity,
-        id,
-        nestedLocal,
-        nestedLocal ? fieldPath : null,
-        referenceIdentity ? new Set([...visited, referenceIdentity]) : visited,
-      )
+      appendField(field, index, depth, ownerIdentity, parentPath, local, fieldPath, visited, null)
     })
   }
 
-  appendFields(
-    definition.value.fields,
-    0,
-    props.identity,
-    props.identity || 'type',
-    true,
-    [],
-    new Set([props.identity]),
-  )
+  const rootPath = props.identity || 'type'
+  const rootVisited = new Set([props.identity])
+  const resolved = rootExtends.value?.definition
+  if (resolved?.kind === 'object') {
+    // Унаследованные поля — только чтение; собственные редактируются по индексу в authored document.
+    // Группы: сначала унаследованные (по базам цепочки), затем собственные, включая переопределения.
+    const ownFields = definition.value.fields
+    let group: string | null = null
+    // Строка поля корня добавляется первой (индекс rows.length до appendField), вложенные — после неё.
+    const appendRootField = (nextGroup: string, append: () => void): void => {
+      const rowIndex = rows.length
+      append()
+      if (group !== nextGroup && rows[rowIndex]) {
+        rows[rowIndex]!.groupStart = nextGroup
+      }
+      group = nextGroup
+    }
+    resolved.fields.forEach((field, index) => {
+      if (field.inheritedFrom) {
+        const base = field.inheritedFrom
+        appendRootField(base, () => appendField(field, index, 0, base, rootPath, false, null, rootVisited, base))
+      }
+    })
+    resolved.fields.forEach((field, index) => {
+      if (field.inheritedFrom) {
+        return
+      }
+      const ownIndex = ownFields.findIndex(own => own.key === field.key)
+      appendRootField(OWN_FIELDS_GROUP, () => appendField(
+        field,
+        index,
+        0,
+        props.identity,
+        rootPath,
+        ownIndex >= 0,
+        ownIndex >= 0 ? [ownIndex] : null,
+        rootVisited,
+        null,
+      ))
+    })
+    return rows
+  }
+
+  appendFields(definition.value.fields, 0, props.identity, rootPath, true, [], rootVisited)
   return rows
 })
 
 const errorDiagnostics = computed(() => (props.diagnostics ?? []).filter(item => item.severity === 'error'))
 const warningDiagnostics = computed(() => (props.diagnostics ?? []).filter(item => item.severity === 'warning'))
-const exampleJson = computed(() => JSON.stringify(buildRootExample(definition.value, new Set([props.identity])), null, 2))
+const exampleJson = computed(() => JSON.stringify(buildRootExample(rootExtends.value?.definition ?? definition.value, new Set([props.identity])), null, 2))
 
 watch(objectRows, (rows) => {
   if (selectedRowId.value && rows.some(row => row.id === selectedRowId.value)) {
@@ -295,7 +388,8 @@ function addObjectField(parentPath: number[] = [], afterIndex?: number): void {
     if (!fields) {
       return
     }
-    const key = getUniqueFieldName(fields)
+    // В корне Type с extends новое поле не должно случайно переопределить унаследованное.
+    const key = getUniqueFieldName(parentPath.length === 0 ? [...fields, ...inheritedRootFields()] : fields)
     const index = afterIndex == null ? fields.length : afterIndex + 1
     fields.splice(index, 0, createDefaultField(key))
   })
@@ -770,12 +864,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
   if (visited.has(identity)) {
     return null
   }
-  const option = typeMap.value.get(identity)
-  if (!option?.source) {
-    return null
-  }
-  const target = parseTypeVisualSource(option.source)
-  return buildRootExample(target.document?.definition ?? null, new Set([...visited, identity]))
+  return buildRootExample(lookupResolvedDefinition(identity), new Set([...visited, identity]))
 }
 </script>
 
@@ -821,6 +910,28 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
               <div class="type-visual-editor__root-row">
                 <span class="type-visual-editor__root-kind">{{ $t('uiText.typeD25691ca') }}</span>
                 <span class="type-visual-editor__root-count">({{ definitionItemCount }})</span>
+                <span v-if="rootExtends" class="type-visual-editor__extends" data-testid="type-visual-extends">
+                  <span class="type-visual-editor__extends-label">{{ $t('endgeIde.typeVisual.extends') }}</span>
+                  <button
+                    v-if="rootExtends.base"
+                    type="button"
+                    class="type-visual-editor__extends-base"
+                    :title="$t('endgeIde.typeVisual.openBase', { type: rootExtends.base })"
+                    data-testid="type-visual-extends-base"
+                    @click="emit('open:type', rootExtends.base)"
+                  >
+                    {{ rootExtends.base }}
+                  </button>
+                  <span v-if="rootExtends.missingBase" class="type-visual-editor__extends-problem">
+                    {{ $t('endgeIde.typeVisual.baseMissing', { type: rootExtends.missingBase }) }}
+                  </span>
+                  <span v-else-if="rootExtends.invalidBase" class="type-visual-editor__extends-problem">
+                    {{ $t('endgeIde.typeVisual.baseInvalid') }}
+                  </span>
+                  <span v-else-if="inheritedFieldCount" class="type-visual-editor__extends-count">
+                    {{ $t('endgeIde.typeVisual.inheritedCount', { count: inheritedFieldCount }) }}
+                  </span>
+                </span>
                 <div class="flex-1" />
                 <button
                   v-if="definition.kind === 'object'"
@@ -854,144 +965,179 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
               </div>
 
               <div v-if="definition.kind === 'object'" class="type-visual-editor__tree">
-                <div
-                  v-for="row in objectRows"
-                  :key="row.id"
-                  class="type-visual-editor__tree-row"
-                  :class="{
-                    'is-selected': selectedRowId === row.id,
-                    'is-resolved': !row.local,
-                  }"
-                  :draggable="!props.readonly && row.local && row.fieldPath != null"
-                  @click="selectedRowId = row.id"
-                  @dragstart="row.fieldPath && startObjectDrag(row.fieldPath, $event)"
-                  @dragover.prevent
-                  @drop.prevent="row.fieldPath && dropObjectField(row.fieldPath)"
-                >
-                  <div class="type-visual-editor__tree-main">
-                    <div class="type-visual-editor__field-cell" :style="{ paddingLeft: `${row.depth * 22}px` }">
-                      <GripVertical v-if="row.local && !props.readonly" class="type-visual-editor__drag size-3.5" />
-                      <span v-else class="w-3.5 shrink-0" />
+                <template v-for="row in objectRows" :key="row.id">
+                  <div
+                    v-if="row.groupStart"
+                    class="type-visual-editor__group"
+                    :class="{ 'is-own': row.groupStart === OWN_FIELDS_GROUP }"
+                    data-testid="type-visual-field-group"
+                  >
+                    <template v-if="row.groupStart === OWN_FIELDS_GROUP">
+                      {{ $t('endgeIde.typeVisual.ownFields') }}
+                    </template>
+                    <template v-else>
+                      <Lock class="size-3 shrink-0" />
+                      <span>{{ $t('endgeIde.typeVisual.inheritedGroup') }}</span>
                       <button
                         type="button"
-                        class="type-visual-editor__chevron"
-                        :class="!row.hasChildren ? 'invisible' : ''"
-                        @click.stop="toggleExpanded(row)"
+                        class="type-visual-editor__extends-base"
+                        :title="$t('endgeIde.typeVisual.openBase', { type: row.groupStart })"
+                        @click.stop="emit('open:type', row.groupStart)"
                       >
-                        <ChevronDown v-if="isExpanded(row)" class="size-3.5" />
-                        <ChevronRight v-else class="size-3.5" />
+                        {{ row.groupStart }}
                       </button>
-                      <Input
-                        v-if="row.local && !props.readonly"
-                        :model-value="row.field.key"
-                        class="type-visual-editor__name-input"
-                        @click.stop
-                        @change="updateObjectFieldName(row, ($event.target as HTMLInputElement).value)"
-                      />
-                      <button
-                        v-else
-                        type="button"
-                        class="type-visual-editor__resolved-name"
-                        @click.stop="selectedRowId = row.id"
-                      >
-                        {{ row.field.key }}
-                      </button>
-                    </div>
-                    <span class="type-visual-editor__colon">:</span>
-                    <div class="type-visual-editor__type-cell">
-                      <div
-                        v-if="row.local && !props.readonly && row.fieldPath && canSelectFieldType(row.field)"
-                        class="type-visual-editor__type-control"
-                        @click.capture="openTypeFromModifiedClick(row.field.type, $event)"
-                      >
-                        <SearchableSelect
-                          :model-value="fieldTypeSelectionValue(row.field)"
-                          :options="typeSelectOptions"
-                          :trigger-class="['type-visual-editor__type-select', 'text-[11px]', expressionTone(row.field.type)]"
-                          content-max-height="min(420px, 62vh)"
-                          size="compact"
-                          @update:model-value="value => updateObjectFieldType(row.fieldPath!, String(value))"
-                        />
-                      </div>
-                      <span
-                        v-else-if="row.local"
-                        class="type-visual-editor__type-link"
-                        :class="expressionTone(row.field.type)"
-                      >
-                        {{ expressionLabel(row.field.type) }}
-                      </span>
-                      <button
-                        v-else-if="row.field.type.kind === 'reference'"
-                        type="button"
-                        class="type-visual-editor__type-link"
-                        :class="expressionTone(row.field.type)"
-                        @click.stop="emit('open:type', row.field.type.identity)"
-                      >
-                        {{ row.field.type.identity }}
-                      </button>
-                      <span v-else class="type-visual-editor__type-link" :class="expressionTone(row.field.type)">
-                        {{ expressionLabel(row.field.type) }}
-                      </span>
-                    </div>
-                    <div class="type-visual-editor__modifiers">
-                      <span v-if="row.field.array" class="type-visual-editor__modifier">{{ $t('uiText.symbol97d170e1') }}</span>
-                      <span v-if="row.field.optional" class="type-visual-editor__modifier">{{ $t('uiText.optional48a7b888') }}</span>
-                      <span v-if="row.cycle" class="type-visual-editor__modifier">{{ $t('uiText.recursive594a4346') }}</span>
-                    </div>
-                    <div class="type-visual-editor__row-actions">
-                      <template v-if="row.local && !props.readonly">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger as-child>
-                            <button
-                              type="button"
-                              aria-label="Настройки поля"
-                              title="Настройки поля"
-                              @click.stop
-                            >
-                              <EllipsisVertical class="size-3.5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" class="w-52">
-                            <DropdownMenuCheckboxItem
-                              :model-value="row.field.array"
-                              @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { array: value === true })"
-                            >
-                              {{ $t('uiText.arraye1bef103') }}
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                              :model-value="row.field.optional"
-                              @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { optional: value === true })"
-                            >
-                              {{ $t('uiText.optional43fc627d') }}
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuSeparator v-if="props.allowFieldDescriptions" />
-                            <DropdownMenuItem v-if="props.allowFieldDescriptions" @select="openDescriptionDialog(row)">
-                              {{ $t('uiText.addDescriptionb9dd3d5b') }}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <button
-                          v-if="row.field.type.kind === 'object' && row.fieldPath"
-                          type="button"
-                          aria-label="Add nested field"
-                          title="Add nested field"
-                          @click.stop="addObjectField(row.fieldPath)"
+                      <span class="type-visual-editor__group-hint">{{ $t('endgeIde.typeVisual.readonlyHint') }}</span>
+                    </template>
+                  </div>
+                  <div
+                    class="type-visual-editor__tree-row"
+                    :class="{
+                      'is-selected': selectedRowId === row.id,
+                      'is-resolved': !row.local,
+                      'is-inherited': row.inheritedFrom != null,
+                    }"
+                    :data-inherited-from="row.inheritedFrom ?? undefined"
+                    :draggable="!props.readonly && row.local && row.fieldPath != null"
+                    @click="selectedRowId = row.id"
+                    @dragstart="row.fieldPath && startObjectDrag(row.fieldPath, $event)"
+                    @dragover.prevent
+                    @drop.prevent="row.fieldPath && dropObjectField(row.fieldPath)"
+                  >
+                    <div class="type-visual-editor__tree-main">
+                      <div class="type-visual-editor__field-cell" :style="{ paddingLeft: `${row.depth * 22}px` }">
+                        <GripVertical v-if="row.local && !props.readonly" class="type-visual-editor__drag size-3.5" />
+                        <span
+                          v-else-if="row.inheritedFrom"
+                          class="type-visual-editor__inherited-icon"
+                          role="img"
+                          :aria-label="$t('endgeIde.typeVisual.inheritedFrom', { type: row.inheritedFrom })"
+                          :title="$t('endgeIde.typeVisual.inheritedHint', { type: row.inheritedFrom })"
+                          data-testid="type-visual-inherited-marker"
                         >
-                          <Plus class="size-3.5" />
+                          <Lock class="size-3" />
+                        </span>
+                        <span v-else class="w-3.5 shrink-0" />
+                        <button
+                          type="button"
+                          class="type-visual-editor__chevron"
+                          :class="!row.hasChildren ? 'invisible' : ''"
+                          @click.stop="toggleExpanded(row)"
+                        >
+                          <ChevronDown v-if="isExpanded(row)" class="size-3.5" />
+                          <ChevronRight v-else class="size-3.5" />
                         </button>
-                        <button type="button" aria-label="Duplicate field" @click.stop="row.fieldPath && duplicateObjectField(row.fieldPath)">
-                          <Copy class="size-3.5" />
+                        <Input
+                          v-if="row.local && !props.readonly"
+                          :model-value="row.field.key"
+                          class="type-visual-editor__name-input"
+                          @click.stop
+                          @change="updateObjectFieldName(row, ($event.target as HTMLInputElement).value)"
+                        />
+                        <button
+                          v-else
+                          type="button"
+                          class="type-visual-editor__resolved-name"
+                          @click.stop="selectedRowId = row.id"
+                        >
+                          {{ row.field.key }}
                         </button>
-                        <button type="button" aria-label="Delete field" @click.stop="row.fieldPath && removeObjectField(row.fieldPath)">
-                          <Trash2 class="size-3.5" />
+                      </div>
+                      <span class="type-visual-editor__colon">:</span>
+                      <div class="type-visual-editor__type-cell">
+                        <div
+                          v-if="row.local && !props.readonly && row.fieldPath && canSelectFieldType(row.field)"
+                          class="type-visual-editor__type-control"
+                          @click.capture="openTypeFromModifiedClick(row.field.type, $event)"
+                        >
+                          <SearchableSelect
+                            :model-value="fieldTypeSelectionValue(row.field)"
+                            :options="typeSelectOptions"
+                            :trigger-class="['type-visual-editor__type-select', 'text-[11px]', expressionTone(row.field.type)]"
+                            content-max-height="min(420px, 62vh)"
+                            size="compact"
+                            @update:model-value="value => updateObjectFieldType(row.fieldPath!, String(value))"
+                          />
+                        </div>
+                        <span
+                          v-else-if="row.local"
+                          class="type-visual-editor__type-link"
+                          :class="expressionTone(row.field.type)"
+                        >
+                          {{ expressionLabel(row.field.type) }}
+                        </span>
+                        <button
+                          v-else-if="row.field.type.kind === 'reference'"
+                          type="button"
+                          class="type-visual-editor__type-link"
+                          :class="expressionTone(row.field.type)"
+                          @click.stop="emit('open:type', row.field.type.identity)"
+                        >
+                          {{ row.field.type.identity }}
                         </button>
-                      </template>
-                      <button v-else-if="!row.local" type="button" aria-label="Open referenced type" @click.stop="emit('open:type', row.ownerIdentity)">
-                        <ExternalLink class="size-3.5" />
-                      </button>
+                        <span v-else class="type-visual-editor__type-link" :class="expressionTone(row.field.type)">
+                          {{ expressionLabel(row.field.type) }}
+                        </span>
+                      </div>
+                      <div class="type-visual-editor__modifiers">
+                        <span v-if="row.field.array" class="type-visual-editor__modifier" :title="$t('uiText.symbol97d170e1')">{{ $t('uiText.symbol97d170e1') }}</span>
+                        <span v-if="row.field.optional" class="type-visual-editor__modifier" :title="$t('uiText.optional48a7b888')">{{ $t('uiText.optional48a7b888') }}</span>
+                        <span v-if="row.cycle" class="type-visual-editor__modifier" :title="$t('uiText.recursive594a4346')">{{ $t('uiText.recursive594a4346') }}</span>
+                      </div>
+                      <div class="type-visual-editor__row-actions">
+                        <template v-if="row.local && !props.readonly">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                              <button
+                                type="button"
+                                aria-label="Настройки поля"
+                                title="Настройки поля"
+                                @click.stop
+                              >
+                                <EllipsisVertical class="size-3.5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-52">
+                              <DropdownMenuCheckboxItem
+                                :model-value="row.field.array"
+                                @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { array: value === true })"
+                              >
+                                {{ $t('uiText.arraye1bef103') }}
+                              </DropdownMenuCheckboxItem>
+                              <DropdownMenuCheckboxItem
+                                :model-value="row.field.optional"
+                                @update:model-value="value => row.fieldPath && updateObjectField(row.fieldPath, { optional: value === true })"
+                              >
+                                {{ $t('uiText.optional43fc627d') }}
+                              </DropdownMenuCheckboxItem>
+                              <DropdownMenuSeparator v-if="props.allowFieldDescriptions" />
+                              <DropdownMenuItem v-if="props.allowFieldDescriptions" @select="openDescriptionDialog(row)">
+                                {{ $t('uiText.addDescriptionb9dd3d5b') }}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <button
+                            v-if="row.field.type.kind === 'object' && row.fieldPath"
+                            type="button"
+                            aria-label="Add nested field"
+                            title="Add nested field"
+                            @click.stop="addObjectField(row.fieldPath)"
+                          >
+                            <Plus class="size-3.5" />
+                          </button>
+                          <button type="button" aria-label="Duplicate field" @click.stop="row.fieldPath && duplicateObjectField(row.fieldPath)">
+                            <Copy class="size-3.5" />
+                          </button>
+                          <button type="button" aria-label="Delete field" @click.stop="row.fieldPath && removeObjectField(row.fieldPath)">
+                            <Trash2 class="size-3.5" />
+                          </button>
+                        </template>
+                        <button v-else-if="!row.local" type="button" aria-label="Open referenced type" @click.stop="emit('open:type', row.ownerIdentity)">
+                          <ExternalLink class="size-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </template>
 
                 <button v-if="!objectRows.length && !props.readonly" type="button" class="type-visual-editor__empty-row" @click="addObjectField()">
                   <Plus class="size-4" />
@@ -1133,6 +1279,9 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
                       >
                         {{ row.field.array ? `array[${expressionLabel(row.field.type)}]` : expressionLabel(row.field.type) }}
                       </button>
+                      <span v-if="row.inheritedFrom" class="type-visual-editor__inherited">
+                        {{ $t('endgeIde.typeVisual.inheritedFrom', { type: row.inheritedFrom }) }}
+                      </span>
                       <em v-if="!row.field.optional">{{ $t('uiText.required1a77d416') }}</em>
                     </div>
                     <p v-if="row.field.description">
@@ -1341,6 +1490,12 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 
 .type-visual-editor__root-kind { color: #e34e79; }
 .type-visual-editor__root-count { color: var(--muted-foreground); }
+.type-visual-editor__extends { display: inline-flex; min-width: 0; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap; }
+.type-visual-editor__extends-label { color: #e34e79; }
+.type-visual-editor__extends-base { color: #258ac3; font-weight: 600; }
+.type-visual-editor__extends-base:hover { text-decoration: underline; }
+.type-visual-editor__extends-count { color: var(--muted-foreground); font-size: 10px; }
+.type-visual-editor__extends-problem { color: var(--destructive); font-size: 10px; }
 .type-visual-editor__tiny-action { display: inline-flex; height: 24px; width: 24px; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__tiny-action:hover { background: var(--muted); color: var(--foreground); }
 
@@ -1352,7 +1507,12 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 
 .type-visual-editor__tree-main {
   display: grid;
-  grid-template-columns: minmax(160px, 2fr) 8px minmax(0, 1fr) 88px 100px;
+  /*
+   * Колонка типа не сжимается в пустой чип: у имени и типа фиксированные минимумы, модификаторы
+   * получают место только после них (minmax(0, …)). Все треки не зависят от содержимого, поэтому
+   * колонки соседних строк (отдельных grid) остаются выровненными.
+   */
+  grid-template-columns: minmax(120px, 3fr) 8px minmax(112px, 2fr) minmax(0, 76px) 100px;
   min-width: 0;
   min-height: 34px;
   align-items: center;
@@ -1381,6 +1541,12 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__name-input:hover { border-color: var(--border); }
 .type-visual-editor__resolved-name { min-width: 0; flex: 1; overflow: hidden; color: var(--foreground); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .type-visual-editor__colon { color: var(--muted-foreground); text-align: center; }
+.type-visual-editor__inherited { flex-shrink: 0; border: 1px solid color-mix(in srgb, #8b5cf6 30%, var(--border)); padding: 1px 4px; color: color-mix(in srgb, #8b5cf6 70%, var(--muted-foreground)); font-size: 9px; line-height: 1.2; white-space: nowrap; }
+.type-visual-editor__inherited-icon { display: inline-flex; width: 14px; flex-shrink: 0; justify-content: center; color: color-mix(in srgb, #8b5cf6 70%, var(--muted-foreground)); }
+.type-visual-editor__tree-row.is-inherited .type-visual-editor__resolved-name { color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground)); }
+.type-visual-editor__group { display: flex; min-height: 26px; align-items: center; gap: 5px; overflow: hidden; border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent); background: color-mix(in srgb, #8b5cf6 6%, var(--background)); padding: 0 12px; color: color-mix(in srgb, #8b5cf6 70%, var(--muted-foreground)); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; white-space: nowrap; }
+.type-visual-editor__group.is-own { background: color-mix(in srgb, var(--muted) 35%, var(--background)); color: var(--muted-foreground); }
+.type-visual-editor__group-hint { min-width: 0; overflow: hidden; color: var(--muted-foreground); text-overflow: ellipsis; }
 .type-visual-editor__type-cell { min-width: 0; }
 .type-visual-editor__type-control { min-width: 0; width: 100%; }
 .type-visual-editor__type-select { height: 25px; min-width: 0; width: 100%; border-color: transparent; background: transparent; padding: 0 5px; font-family: inherit; font-size: 11px; font-weight: 500; box-shadow: none; }
@@ -1392,7 +1558,7 @@ function sampleForExpression(expression: TypeSourceExpression, visited: Set<stri
 .type-visual-editor__type--inline { color: #8b5cf6; font-weight: 600; }
 .type-visual-editor__type--neutral { color: var(--muted-foreground); }
 .type-visual-editor__modifiers { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 4px; overflow: hidden; }
-.type-visual-editor__modifier { border: 1px solid var(--border); padding: 2px 4px; color: var(--muted-foreground); font-size: 9px; line-height: 1; }
+.type-visual-editor__modifier { min-width: 0; overflow: hidden; border: 1px solid var(--border); padding: 2px 4px; color: var(--muted-foreground); font-size: 9px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
 .type-visual-editor__row-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; opacity: .4; }
 .type-visual-editor__row-actions button { display: inline-flex; height: 25px; width: 25px; align-items: center; justify-content: center; color: var(--muted-foreground); }
 .type-visual-editor__row-actions button:hover { background: var(--muted); color: var(--foreground); }

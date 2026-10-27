@@ -1,4 +1,5 @@
 import type {
+  EndgeAuthBootOptions,
   EndgeBootContext,
   EndgeCommandExecutor,
   EndgeDataMode,
@@ -43,6 +44,9 @@ export class ConfiguratorContext_Module {
   private _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
   private _workspaceIdentity: string | null = null
   private _userIdentity: string | null = null
+  // Выбор фасетов по claims (VITE_ENDGE_FACET_CLAIMS), с которым выполнен текущий boot.
+  private _claimSelectionsKey: string | null = null
+  private _stopClaimWatch: (() => void) | null = null
   private readonly _listeners = new Set<() => void>()
   private readonly _surfaces = new Map<string, ConfiguratorContextSurfaceLifecycle>()
 
@@ -98,8 +102,16 @@ export class ConfiguratorContext_Module {
       await Endge.boot(ctx)
       bootCompleted = true
       if (this._userIdentity && Endge.mode !== 'debugger') {
+        // userId — пользователь backend; выбор фасетов по claims (VITE_ENDGE_FACET_CLAIMS)
+        // сохраняется после boot, иначе фасет тенанта перестал бы быть закреплён сессией.
         Endge.context.setSessionIdentityProvider({
-          getCurrentIdentity: () => ({ userId: this._userIdentity }),
+          getCurrentIdentity: () => {
+            const selections = Endge.auth.facetClaimResolution().selections
+            return {
+              userId: this._userIdentity,
+              ...(Object.keys(selections).length > 0 ? { facetSelections: selections } : {}),
+            }
+          },
         })
       }
       if (Endge.mode !== 'debugger') {
@@ -135,7 +147,33 @@ export class ConfiguratorContext_Module {
     this._isCoreInitialized = true
     this._currentContext = { ...Endge.context.getExecutionContext() }
     this._requestedContext = { ...this._currentContext }
+    if (options.mode !== 'debugger' && readFacetClaims(import.meta.env)) {
+      this._watchFacetClaims()
+    }
     this._notify()
+  }
+
+  /**
+   * При заданном VITE_ENDGE_FACET_CLAIMS следит за auth session Core: если после
+   * смены session выбор фасетов по claims изменился, контекст перезапускается с ним.
+   * Обновление токена с теми же claims перезапуска не вызывает.
+   */
+  private _watchFacetClaims(): void {
+    this._stopClaimWatch?.()
+    this._claimSelectionsKey = stableSelectionsKey(Endge.auth.facetClaimResolution().selections)
+    this._stopClaimWatch = Endge.auth.subscribe(() => {
+      if (this._isSwitchingContext || !this._isCoreInitialized) {
+        return
+      }
+      const selections = Endge.auth.facetClaimResolution().selections
+      const key = stableSelectionsKey(selections)
+      if (key === this._claimSelectionsKey) {
+        return
+      }
+      this._claimSelectionsKey = key
+      this.switchContext({ facets: { ...this._requestedContext.facets, ...selections } })
+        .catch(error => console.warn('[EndgeIDE] Не удалось перезапустить контекст по claims новой session.', error))
+    })
   }
 
   /**
@@ -193,6 +231,9 @@ export class ConfiguratorContext_Module {
    * Используется для полного повторного boot без пересоздания IDE context runtime.
    */
   public async reset(): Promise<void> {
+    this._stopClaimWatch?.()
+    this._stopClaimWatch = null
+    this._claimSelectionsKey = null
     this._isInitialized = false
     this._notify()
     this._events.stop()
@@ -234,6 +275,7 @@ export class ConfiguratorContext_Module {
   ): EndgeBootContext {
     const workspaceIdentity = this._workspaceIdentity ?? String(import.meta.env.VITE_ENDGE_WORKSPACE_IDENTITY || '').trim()
     const facetSelections = readFacetSelections(import.meta.env)
+    const facetClaims = readFacetClaims(import.meta.env)
     const authVariables = readAuthVariableRecord(import.meta.env)
     const commonContext = {
       scope: workspaceIdentity ? { workspaceIdentity } : {},
@@ -258,6 +300,7 @@ export class ConfiguratorContext_Module {
       },
       auth: {
         storageNamespace: backendConfig.activeBackendURL,
+        ...(facetClaims ? { facetClaims } : {}),
       },
     }
 
@@ -552,5 +595,27 @@ function readFacetSelections(env: ImportMetaEnv): Readonly<Record<string, string
   }
   catch (cause) {
     throw new Error('[EndgeIDE] VITE_ENDGE_FACETS must be a JSON object of facet selections', { cause })
+  }
+}
+
+// Reads optional deployment-provided claim mappings; Core validates their shape on boot.
+function stableSelectionsKey(selections: Readonly<Record<string, string>>): string {
+  return JSON.stringify(Object.entries(selections).sort(([left], [right]) => left.localeCompare(right)))
+}
+
+function readFacetClaims(env: ImportMetaEnv): EndgeAuthBootOptions['facetClaims'] | undefined {
+  const raw = String((env as unknown as Record<string, unknown>).VITE_ENDGE_FACET_CLAIMS ?? '').trim()
+  if (!raw) {
+    return undefined
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new TypeError('expected a JSON object')
+    }
+    return parsed as EndgeAuthBootOptions['facetClaims']
+  }
+  catch (cause) {
+    throw new Error('[EndgeIDE] VITE_ENDGE_FACET_CLAIMS must be a JSON object of facet claim mappings', { cause })
   }
 }

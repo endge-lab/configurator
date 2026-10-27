@@ -1,6 +1,7 @@
 import type { ProgramArtifact, ProgramDependency, ProgramDiagnostic, StoreSourceArtifact } from '@endge/core'
 
 import { createEmptyProgramMetadata, Endge, RStore } from '@endge/core'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 
 export interface StorePreviewLaunchInput {
   id?: string | number | null
@@ -23,7 +24,7 @@ export function createPreviewStore(input: StorePreviewLaunchInput, identity: str
 }
 
 export function createPreviewStoreArtifact(model: RStore): ProgramArtifact<StoreSourceArtifact> {
-  const result = Endge.source.compile('store', model.source)
+  const result = compilePreviewSource('store', model.source)
   const payload = result.artifact as StoreSourceArtifact | undefined
   const ref = { entityType: 'store' as const, id: model.id, identity: model.identity }
   const diagnostics = ((result.diagnostics ?? []) as Omit<ProgramDiagnostic, 'entityRef'>[])

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RComputationEditor } from '@/features/endge-ide/domain/entities/RComputationEditor'
 
-import { Endge } from '@endge/core'
 import {
   Code2,
   FileJson,
@@ -28,6 +27,7 @@ import {
   serializeComputationPreviewOutput,
 } from '@/features/endge-ide/services/computation-preview/computation-source-preview'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import ComputationSourceEditor from '@/features/endge-ide/ui/components/ComputationSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
@@ -87,7 +87,7 @@ const artifactJson = computed(() => {
     return '{}'
   }
 
-  const result = Endge.source.compile('computation', current.source)
+  const result = compilePreviewSource('computation', current.source)
   return JSON.stringify(result.artifact ?? null, null, 2)
 })
 

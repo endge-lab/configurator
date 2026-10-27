@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { FilterProgramPayload } from '@endge/core'
 
-import { Endge, evaluateSourceExpression } from '@endge/core'
+import { evaluateSourceExpression } from '@endge/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 import SourceEditorSplitView from '@/features/endge-ide/ui/components/source-document-editor/SourceEditorSplitView.vue'
 import SourceJsonTree from '@/features/endge-ide/ui/components/SourceJsonTree.vue'
@@ -99,7 +100,7 @@ function scheduleInlinePreview(): void {
 
 // Формирует единый JSON всех Filter outputs на state, полученном из defaults.
 function updateInlinePreview(): void {
-  const compiled = Endge.source.compile('filter', source.value)
+  const compiled = compilePreviewSource('filter', source.value)
   const artifact = compiled.ok && isFilterArtifact(compiled.artifact)
     ? compiled.artifact
     : null

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createGraphQLSchemaContribution } from '@/features/endge-ide/source-editor/contributions/graphql/graphql-schema.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{ modelValue: string }>()
@@ -9,6 +11,7 @@ const source = ref(props.modelValue ?? '')
 const monaco = useEndgeSourceMonaco({
   container,
   sourceKind: 'stream',
+  extensions: [createGraphQLSchemaContribution({ sourceKind: 'stream', schemas: () => EndgeIDE.graphqlSchema })],
   value: () => source.value,
   onChange: (value) => {
     source.value = value

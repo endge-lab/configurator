@@ -15,6 +15,7 @@ import type { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWidgets_Module } from '@/features/endge-ide/modules/EndgeIDEWidgets_Module'
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
+import type { EndgeIDEGraphQLSchema_Module } from '@/features/endge-ide/modules/graphql-schema/EndgeIDEGraphQLSchema_Module'
 import type { EndgeIDEIntegrations_Module } from '@/features/endge-ide/modules/integrations/EndgeIDEIntegrations_Module'
 import type { SourceEditorDialogs_Module } from '@/features/endge-ide/modules/SourceEditorDialogs_Module'
 import type { EndgeIDETabs_Module } from '@/features/endge-ide/modules/tabs/EndgeIDETabs_Module'
@@ -37,6 +38,7 @@ export interface EndgeIDEModules {
   domainDrag: EndgeIDEDomainDrag_Module
   domainTransfer: EndgeIDEDomainTransfer_Module
   documentImport: EndgeIDEDocumentImport_Module
+  graphqlSchema: EndgeIDEGraphQLSchema_Module
   modals: EndgeIDEModals_Module
   tabs: EndgeIDETabs_Module
   workspace: EndgeIDEWorkspace_Module

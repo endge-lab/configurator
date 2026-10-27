@@ -13,8 +13,20 @@ function collectErrors(page: Page, errors: string[]): void {
 }
 
 async function ready(page: Page, role: string): Promise<void> {
-  await page.goto(`/src/test/e2e/fixture.html?role=${role}`)
-  await expect(page.locator('body')).toHaveAttribute('data-ready', 'true')
+  const errors: string[] = []
+  const onError = (error: Error) => errors.push(error.message)
+  page.on('pageerror', onError)
+  try {
+    await page.goto(`/src/test/e2e/fixture.html?role=${role}`)
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true')
+  }
+  catch (error) {
+    const initializationError = await page.locator('body').getAttribute('data-error')
+    throw new Error(`${String(error)}\nFixture errors: ${initializationError ?? errors.join('\n')}`)
+  }
+  finally {
+    page.off('pageerror', onError)
+  }
 }
 async function openFile(page: Page, filename: string): Promise<void> {
   await page

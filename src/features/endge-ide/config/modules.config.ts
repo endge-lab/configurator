@@ -1,5 +1,8 @@
 import type { IntegrationModule } from '@endge/integration-api'
 import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
+import type { GraphQLSchemaCacheScope } from '@/features/endge-ide/services/graphql-schema/graphql-schema-cache-repository'
+
+import { Endge } from '@endge/core'
 
 import { UIEditorStorage_Adapter } from '@/features/endge-admin-ui-editor/modules/ui-editor/adapters/UIEditorStorage_Adapter'
 import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
@@ -23,9 +26,11 @@ import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/Endg
 import { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import { EndgeIDEWidgets_Module } from '@/features/endge-ide/modules/EndgeIDEWidgets_Module'
 import { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
+import { EndgeIDEGraphQLSchema_Module } from '@/features/endge-ide/modules/graphql-schema/EndgeIDEGraphQLSchema_Module'
 import { EndgeIDEIntegrations_Module } from '@/features/endge-ide/modules/integrations/EndgeIDEIntegrations_Module'
 import { SourceEditorDialogs_Module } from '@/features/endge-ide/modules/SourceEditorDialogs_Module'
 import { EndgeIDETabs_Module } from '@/features/endge-ide/modules/tabs/EndgeIDETabs_Module'
+import { GraphQLSchemaCacheRepository } from '@/features/endge-ide/services/graphql-schema/graphql-schema-cache-repository'
 
 async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
   if (!import.meta.env.DEV && import.meta.env.MODE !== 'test-integrations') {
@@ -33,6 +38,21 @@ async function loadConfiguratorIntegrations(): Promise<IntegrationModule[]> {
   }
   const { default: modules } = await import('virtual:endge-test-integrations')
   return modules
+}
+
+// Кэш схем GraphQL разделяется по выбранному backend и текущему Workspace.
+function graphQLSchemaCacheScope(): GraphQLSchemaCacheScope | null {
+  if (!Endge.workspace.isLoaded) {
+    return null
+  }
+  let backendURL = ''
+  try {
+    backendURL = getEndgeBackendConfig().activeBackendURL
+  }
+  catch {
+    // Без выбранного backend схема остаётся в области Workspace.
+  }
+  return { backendURL, workspaceIdentity: Endge.workspace.current.identity }
 }
 
 // Создаёт полный граф модулей IDE уровня маршрута.
@@ -58,6 +78,12 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
       new ServiceBackendDomainTransferHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
     ),
     documentImport: new EndgeIDEDocumentImport_Module(),
+    graphqlSchema: new EndgeIDEGraphQLSchema_Module({
+      storage: new GraphQLSchemaCacheRepository(),
+      scope: graphQLSchemaCacheScope,
+      resolveEndpoint: endpoint => Endge.workspace.variables.resolve(endpoint) || endpoint,
+      execute: payload => Endge.runtime.query.executeArtifact({ payload, props: {} }),
+    }),
     modals: new EndgeIDEModals_Module(),
     tabs: new EndgeIDETabs_Module(busy, uiState, workspace),
     workspace,
