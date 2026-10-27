@@ -22,10 +22,10 @@ export interface AgentPromptInput {
 
 // Разделы llms документации в порядке чтения.
 export const AGENT_DOCUMENTATION_PATHS = [
-  { path: '/llms.txt', label: 'Обзор и оглавление' },
-  { path: '/llms-full/agents.txt', label: 'Работа агента с Endge' },
-  { path: '/llms-full/reference.txt', label: 'Справочник Source' },
-  { path: '/llms-full/api.txt', label: 'HTTP API backend' },
+  { path: '/llms-agent.txt', label: 'Ядро для агента: правила, ошибки, авторинг Source и все HTTP-операции' },
+  { path: '/llms.txt', label: 'Оглавление: части API (llms-full/api/<группа>.txt), Source по типам (llms-full/reference/<тип>.txt) и страницы' },
+  { path: '/agents/scenarios.md', label: 'Сквозные сценарии с запросами и ответами' },
+  { path: '/agents/errors.md', label: 'Коды ошибок: смысл и что делать' },
 ] as const
 
 /**
@@ -75,7 +75,7 @@ export function buildAgentPrompt(input: AgentPromptInput): string {
   else {
     lines.push(
       '- Адрес документации Endge в этом Configurator не настроен. Попроси у пользователя ссылку на документацию',
-      '  (файлы `llms.txt`, `llms-full/agents.txt`, `llms-full/reference.txt`, `llms-full/api.txt`).',
+      '  (сначала файл `llms-agent.txt`, затем `llms.txt` с оглавлением частей).',
       `- Описание API: ${backendURL}/swagger/openapi3.yaml (доступно, если backend запущен не в production).`,
     )
   }

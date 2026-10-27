@@ -33,10 +33,10 @@ describe('шаблон промпта агента', () => {
 
 ## Документация
 Прочитай перед работой, начиная с первой ссылки:
-- Обзор и оглавление: https://docs.example.test/endge/llms.txt
-- Работа агента с Endge: https://docs.example.test/endge/llms-full/agents.txt
-- Справочник Source: https://docs.example.test/endge/llms-full/reference.txt
-- HTTP API backend: https://docs.example.test/endge/llms-full/api.txt
+- Ядро для агента: правила, ошибки, авторинг Source и все HTTP-операции: https://docs.example.test/endge/llms-agent.txt
+- Оглавление: части API (llms-full/api/<группа>.txt), Source по типам (llms-full/reference/<тип>.txt) и страницы: https://docs.example.test/endge/llms.txt
+- Сквозные сценарии с запросами и ответами: https://docs.example.test/endge/agents/scenarios.md
+- Коды ошибок: смысл и что делать: https://docs.example.test/endge/agents/errors.md
 
 ## Правила
 1. Документы читай через \`GET https://endge.example.test/backend/api/v1/<коллекция>/<identity>\` (например, \`https://endge.example.test/backend/api/v1/queries/<identity>\`), номер ревизии бери из поля \`revision\` или заголовка \`ETag\`.

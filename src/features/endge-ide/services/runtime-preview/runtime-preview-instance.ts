@@ -41,6 +41,7 @@ import {
   resolveComponentPreviewInput,
 } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
 import { createRuntimePreviewArtifactReader } from '@/features/endge-ide/services/runtime-preview/runtime-preview-data-mode'
+import { collectCompositionRenderables, isPreviewRenderableActive } from '@/features/endge-ide/services/runtime-preview/runtime-preview-renderables'
 import { buildRuntimePreviewTree } from '@/features/endge-ide/services/runtime-preview/runtime-preview-tree-builder'
 import {
   createPreviewArtifact,
@@ -775,11 +776,7 @@ export class RuntimePreviewInstance {
   }
 
   private _renderableChildren(host: CompositionRuntimeHost, scopePath?: string | null): RuntimeHost<any, any>[] {
-    return host.getChildren()
-      .filter(child => child.descriptor.kind !== 'composition')
-      .filter(child => !scopePath || child.descriptor.scopePath === scopePath || child.descriptor.scopePath.startsWith(`${scopePath}.`))
-      .map(child => child.runtime)
-      .filter(runtime => runtime.hasCapability('renderable') && isPreviewRenderableActive(runtime))
+    return collectCompositionRenderables(host, scopePath)
   }
 
   private _collectInactiveRenderableChildren(node: RuntimePreviewTreeNode): RuntimePreviewTreeNode[] {
@@ -903,10 +900,6 @@ function scopeState(scope: { state: string } | null): RuntimePreviewLifecycleSta
     return 'disposed'
   }
   return 'inactive'
-}
-
-function isPreviewRenderableActive(host: RuntimeHost<any, any>): boolean {
-  return !['paused', 'pausing', 'stopping', 'stopped', 'unmounted', 'destroyed', 'error'].includes(host.status)
 }
 
 function toRenderable(runtime: RuntimeHost<any, any>, index: number): RuntimePreviewRenderable {
