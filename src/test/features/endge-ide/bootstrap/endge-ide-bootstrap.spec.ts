@@ -26,6 +26,7 @@ vi.mock('@/features/endge-ide/EndgeIDE', () => ({
 }))
 vi.mock('@/features/endge-ide/config/endge-backend', () => ({
   getEndgeBackendConfig: mocks.config,
+  getDefaultBackendURL: () => 'https://backend.test',
 }))
 vi.mock('@/app/modules/ConfiguratorContext_Module', () => ({
   ConfiguratorContext_Module: class {
@@ -55,6 +56,10 @@ describe('инициализация Endge IDE через backend', () => {
     mocks.initDetached.mockReset()
     mocks.config.mockReset()
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace-a')
+    const localStorage = new MemoryStorage()
+    const { ACTIVE_BACKEND_STORAGE_KEY } = await import('@/features/backend-connections/services/backend-connection-storage')
+    localStorage.setItem(ACTIVE_BACKEND_STORAGE_KEY, 'https://backend.test')
+    vi.stubGlobal('window', { localStorage })
     mocks.config.mockReturnValue({
       serviceBackendURL: 'https://backend.test',
       primaryBackendURL: 'https://backend.test',
@@ -104,6 +109,8 @@ describe('инициализация Endge IDE через backend', () => {
     }))
     expect(mocks.init).toHaveBeenCalledWith({
       backendConfig,
+      mode: 'application',
+      userIdentity: 'developer-subject',
       domainProvider: expect.objectContaining({
         id: 'service-backend',
         capabilities: { snapshot: true, mutations: true, softDelete: true, restore: true },
@@ -246,16 +253,6 @@ describe('инициализация Endge IDE через backend', () => {
       activeBackendURL: 'https://remote.test',
     })
     vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        user: { id: 'developer-id', providerId: 'keycloak', subject: 'subject', issuer: 'https://issuer', active: true },
-        platformAdmin: true,
-        workspaces: [],
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        items: [{ id: 'remote', name: 'Remote', baseUrl: 'https://remote.test' }],
-        total: 1,
-        canManage: true,
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
       .mockRejectedValueOnce(new TypeError('Failed to fetch')))
 
     const { Configurator: RemoteConfigurator } = await import('@/app')

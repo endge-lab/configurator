@@ -12,8 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { collectGraphQLSchemaProblems } from '@/features/endge-ide/services/graphql-schema/graphql-schema-problems'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
+import GraphQLSchemaMenu from '@/features/endge-ide/ui/components/graphql-schema/GraphQLSchemaMenu.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
 import DocumentIdField from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdField.vue'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
@@ -35,10 +38,14 @@ const activeTab = useSmartTabSelection(
 )
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
 const compiled = computed(() => editor.value
-  ? Endge.source.compile(props.sourceKind, editor.value.source)
+  ? compilePreviewSource(props.sourceKind, editor.value.source)
   : null)
 const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef(props.sourceKind, editor.value))
+// Маркеры схемы GraphQL (graphqlSse) в панели «Диагностика».
+const schemaProblems = computed(() => props.sourceKind === 'stream' && editor.value
+  ? collectGraphQLSchemaProblems(EndgeIDE.graphqlSchema, Endge.source, 'stream', editor.value.source)
+  : [])
 const sourceEditor = computed(() => props.sourceKind === 'stream' ? StreamSourceEditor : UpdateSourceEditor)
 const ownerStore = computed(() =>
   props.sourceKind === 'update'
@@ -102,6 +109,11 @@ async function save(): Promise<void> {
     </template>
     <template #right>
       <div class="flex items-center gap-1">
+        <GraphQLSchemaMenu
+          v-if="sourceKind === 'stream' && activeTab === 'source'"
+          source-kind="stream"
+          :source="editor.source"
+        />
         <SourceFormatButton v-if="activeTab === 'source'" @click="sourceEditorRef?.formatDocument()" />
         <Button size="icon" variant="ghost" class="h-7 w-7" aria-label="Сбросить source" @click="resetSource">
           <RotateCcw class="size-4" />
@@ -141,6 +153,7 @@ async function save(): Promise<void> {
       <EntityProblemsPanel
         v-else-if="diagnosticsEntityRef"
         :entity-ref="diagnosticsEntityRef"
+        :authoring-diagnostics="schemaProblems"
         class="h-full"
       />
     </div>

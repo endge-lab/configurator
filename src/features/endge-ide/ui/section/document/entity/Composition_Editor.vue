@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RCompositionEditor } from '@/features/endge-ide/domain/entities/RCompositionEditor'
 
-import { Endge } from '@endge/core'
 import {
   Code2,
   FileJson,
@@ -27,6 +26,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
@@ -53,7 +53,7 @@ const launchLoading = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compiled = computed(() =>
   editor.value
-    ? Endge.source.compile('composition', editor.value.source)
+    ? compilePreviewSource('composition', editor.value.source)
     : null,
 )
 const artifactJson = computed(() =>

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
@@ -51,7 +52,7 @@ const activeTab = useSmartTabSelection(
 const launchLoading = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
 const compiled = computed(() =>
-  editor.value ? Endge.source.compile('store', editor.value.source) : null,
+  editor.value ? compilePreviewSource('store', editor.value.source) : null,
 )
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),

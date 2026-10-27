@@ -16,6 +16,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/test/**/*.spec.ts'],
+    exclude: ['src/test/e2e/**'],
     setupFiles: [path.resolve(root, 'src/test/setup.ts')],
   },
 })

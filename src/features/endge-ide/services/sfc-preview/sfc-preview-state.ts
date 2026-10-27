@@ -27,6 +27,7 @@ import {
   prepareComponentPreviewContext,
   resolveComponentPreviewInput,
 } from '@/features/endge-ide/services/preview-runtime/component-preview-runtime'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
 
 export interface SFCPreviewLaunchInput {
@@ -225,7 +226,7 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
         ? action ?? computation ?? component ?? query
         : query ?? action ?? computation ?? component
   if (target instanceof RComputation) {
-    const payload = Endge.source.compile('computation', target.source).artifact as ComputationProgramPayload | undefined
+    const payload = compilePreviewSource('computation', target.source).artifact as ComputationProgramPayload | undefined
     return {
       kind: 'computation' as const,
       identity: target.identity,
@@ -253,7 +254,7 @@ function resolvePreviewPortProvider(identity: string, expectedKind: 'computation
     }
   }
   if (target instanceof RQuery) {
-    const payload = Endge.source.compile('query', target.source).artifact as QueryProgramPayload | undefined
+    const payload = compilePreviewSource('query', target.source).artifact as QueryProgramPayload | undefined
     return {
       kind: 'query' as const,
       identity: target.identity,

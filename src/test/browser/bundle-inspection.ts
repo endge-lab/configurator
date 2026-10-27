@@ -1,6 +1,7 @@
 /* eslint-disable perfectionist/sort-imports -- Register the same application plugins before resolving Core. */
 import { Configurator } from '@/app/Configurator'
 import { Endge } from '@endge/core'
+import { Raph } from '@raphy-js/raph'
 import { createApp, defineComponent, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { BackendConnectionStorage } from '@/features/backend-connections/services/backend-connection-storage'
@@ -16,6 +17,9 @@ import '@endge/ui-vue/vue.css'
 
 const role = new URLSearchParams(location.search).get('role') ?? 'debugger'
 const server = 'http://127.0.0.1:4174'
+if (!Raph.configured) {
+  Raph.configure({ mode: 'runtime' })
+}
 new BackendConnectionStorage().writeActiveBackend(server)
 EndgeIDE.setup(Configurator.context)
 const errors: string[] = []

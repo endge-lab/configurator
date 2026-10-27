@@ -9,9 +9,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FALLBACK_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
 import DocumentIcon from '@/features/document-presentation/ui/DocumentIcon.vue'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
@@ -95,6 +96,14 @@ function rowHeightClass(rowIndex: number): string {
   return ROW_HEIGHT_MAP[h ?? 'normal'] ?? ROW_HEIGHT_MAP.normal
 }
 
+function blockTitle(block: PagePreviewBlock): string {
+  return block.displayName ?? block.entityIdentity ?? block.key
+}
+
+function blockTooltip(block: PagePreviewBlock): string {
+  return `${blockTitle(block)}\n${TOOLTIP_IDENTITY_LABEL}: ${block.entityIdentity ?? '-'}\n${TOOLTIP_ID_LABEL}: ${block.entityId ?? '-'}`
+}
+
 function label(slotId: string): string {
   return labelsByIdentity.value[slotId] ?? slotId
 }
@@ -124,49 +133,53 @@ function label(slotId: string): string {
             {{ label(slotId) }}
           </div>
           <div class="flex-1 min-h-0">
-            <TooltipProvider :delay-duration="120">
-              <div class="flex h-full flex-wrap items-start content-start gap-1.5">
-                <DropdownMenu
-                  v-for="b in (blocksBySlotId[slotId] ?? [])"
-                  :key="b.key"
-                >
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <DropdownMenuTrigger as-child>
-                        <button
-                          type="button"
-                          class="inline-flex h-6 w-6 items-center justify-center rounded border border-border bg-muted/40 hover:bg-muted/70"
-                        >
-                          <DocumentIcon
-                            :presentation="b.presentation ?? FALLBACK_PRESENTATION"
-                            size="pagePreview"
-                          />
-                        </button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" class="text-xs">
-                      <div class="font-medium">
-                        {{ b.displayName ?? b.entityIdentity ?? b.key }}
-                      </div>
-                      <div class="text-muted-foreground">
-                        {{ TOOLTIP_IDENTITY_LABEL }}: {{ b.entityIdentity ?? '-' }}
-                      </div>
-                      <div class="text-muted-foreground">
-                        {{ TOOLTIP_ID_LABEL }}: {{ b.entityId ?? '-' }}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      class="text-destructive focus:text-destructive"
-                      @click="emit('removeBlock', { slotId, blockKey: b.key })"
-                    >
-                      {{ MENU_REMOVE_LABEL }}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </TooltipProvider>
+            <!--
+              Без Tooltip вокруг триггера: TooltipTrigger — свой PopperRoot, и
+              DropdownMenuTrigger внутри него регистрировал якорь в tooltip, а не в
+              меню; меню открывалось вне экрана. Сведения о блоке — в title кнопки
+              и в заголовке меню (как в GraphQLSchemaMenu).
+            -->
+            <div class="flex h-full flex-wrap items-start content-start gap-1.5">
+              <DropdownMenu
+                v-for="b in (blocksBySlotId[slotId] ?? [])"
+                :key="b.key"
+              >
+                <DropdownMenuTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex h-6 w-6 items-center justify-center rounded border border-border bg-muted/40 hover:bg-muted/70"
+                    :aria-label="blockTitle(b)"
+                    :title="blockTooltip(b)"
+                    data-testid="template-preview-block-trigger"
+                  >
+                    <DocumentIcon
+                      :presentation="b.presentation ?? FALLBACK_PRESENTATION"
+                      size="pagePreview"
+                    />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" class="max-w-72">
+                  <DropdownMenuLabel class="space-y-0.5 text-xs">
+                    <div class="truncate font-medium">
+                      {{ blockTitle(b) }}
+                    </div>
+                    <div class="truncate font-normal text-muted-foreground">
+                      {{ TOOLTIP_IDENTITY_LABEL }}: {{ b.entityIdentity ?? '-' }}
+                    </div>
+                    <div class="truncate font-normal text-muted-foreground">
+                      {{ TOOLTIP_ID_LABEL }}: {{ b.entityId ?? '-' }}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    class="text-destructive focus:text-destructive"
+                    @click="emit('removeBlock', { slotId, blockKey: b.key })"
+                  >
+                    {{ MENU_REMOVE_LABEL }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </DomainEntityDropTarget>
         <div

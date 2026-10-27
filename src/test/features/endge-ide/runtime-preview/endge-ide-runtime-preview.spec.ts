@@ -28,6 +28,10 @@ const mocks = vi.hoisted(() => ({
   authInteractionListener: null as ((error: Error & { profileIdentity: string }) => void) | null,
 }))
 
+vi.mock('@/features/endge-ide/config/endge-backend', () => ({
+  getEndgeBackendConfig: () => ({ serviceBackendURL: 'http://localhost:5173', activeBackendURL: 'http://localhost:5173' }),
+}))
+
 vi.mock('@endge/core', () => ({
   AuthInteractionRequiredError: class AuthInteractionRequiredError extends Error {
     public constructor(public readonly profileIdentity: string) { super('Authentication required') }
@@ -175,7 +179,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     const manager = createManager()
     manager.init()
     manager.init()
-    expect(mocks.eventListeners.size).toBe(6)
+    expect(mocks.eventListeners.size).toBe(4)
     const first = mocks.instances[0]
     mocks.eventListeners.get('runtime:host-status-changed')?.()
     expect(first.refresh).toHaveBeenCalledTimes(1)
@@ -183,7 +187,7 @@ describe('менеджер Runtime Preview в EndgeIDE', () => {
     expect(mocks.eventListeners.size).toBe(0)
     mocks.eventListeners.clear()
     await mocks.surfaceLifecycle?.afterContextBoot?.()
-    expect(mocks.eventListeners.size).toBe(6)
+    expect(mocks.eventListeners.size).toBe(4)
     const restored = mocks.instances.at(-1)
     mocks.eventListeners.get('runtime:scopes-changed')?.()
     expect(restored.refresh).toHaveBeenCalledTimes(1)

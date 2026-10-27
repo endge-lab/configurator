@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { authorizeOidcProfile } from '@/features/endge-ide/services/auth/authorize-oidc-profile'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import DocumentIdentityInput from '@/features/endge-ide/ui/components/source-document-editor/DocumentIdentityInput.vue'
@@ -63,7 +64,7 @@ const activeModel = computed<boolean>({
     }
   },
 })
-const compiled = computed(() => editor.value ? Endge.source.compile('vocab', editor.value.source) : null)
+const compiled = computed(() => editor.value ? compilePreviewSource('vocab', editor.value.source) : null)
 const artifactJson = computed(() => JSON.stringify(compiled.value?.artifact ?? null, null, 2))
 const canLoadVocab = computed(() => Boolean(compiled.value?.ok && compiled.value?.artifact?.provider))
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('vocab', editor.value))

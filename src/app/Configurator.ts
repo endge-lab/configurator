@@ -27,6 +27,8 @@ import { createConfiguratorModules } from '@/app/config/modules.config'
 import { VueErrorBoundary_Adapter } from '@/app/adapters/VueErrorBoundary_Adapter'
 import { AccessControl_Module } from '@/features/access-control/AccessControl_Module'
 import { AccessControlHttp_Adapter } from '@/features/access-control/adapters/AccessControlHttp_Adapter'
+import { AgentAccess_Module } from '@/features/agent-access/AgentAccess_Module'
+import { AgentAccessHttp_Adapter } from '@/features/agent-access/adapters/AgentAccessHttp_Adapter'
 import { AIWorkbench } from '@/features/ai-assistant'
 import { ConfiguratorReleasesHttp_Adapter } from '@/features/configurator-releases/adapters/ConfiguratorReleasesHttp_Adapter'
 import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
@@ -58,6 +60,7 @@ export class Configurator {
   private static _backendConnectionFailure: ConfiguratorBackendConnectionFailure | null = null
   private static _errorBoundary: VueErrorBoundary_Adapter | null = null
   private static _accessControl: AccessControl_Module | null = null
+  private static _agentAccess: AgentAccess_Module | null = null
   private static _releases: ConfiguratorReleases_Module | null = null
   private static readonly _remoteDebugger = new RemoteDebugger_Module()
 
@@ -205,6 +208,16 @@ export class Configurator {
   }
 
   /**
+   * Возвращает application-scoped персональные токены агентов активного backend.
+   */
+  public static get agentAccess(): AgentAccess_Module {
+    this._agentAccess ??= new AgentAccess_Module(
+      new AgentAccessHttp_Adapter(this._modules.connections.activeBackendURL),
+    )
+    return this._agentAccess
+  }
+
+  /**
    * Возвращает application-owned историю версий активного workspace.
    */
   public static get releases(): ConfiguratorReleases_Module {
@@ -293,6 +306,8 @@ export class Configurator {
     this._modules.questions.reset()
     this._modules.layout.reset()
     this._accessControl = null
+    this._agentAccess?.reset()
+    this._agentAccess = null
     this._releases = null
     this._authenticationRequirement = null
     this._backendConnectionFailure = null

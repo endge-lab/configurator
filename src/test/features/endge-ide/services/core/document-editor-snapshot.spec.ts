@@ -26,6 +26,7 @@ const EXPECTED_EDITOR_FAMILIES = [
   'RPageTemplateEditor',
   'RPolicyEditor',
   'RQueryEditor',
+  'RSimulationEditor',
   'RStoreEditor',
   'RStreamEditor',
   'RStyleEditor',

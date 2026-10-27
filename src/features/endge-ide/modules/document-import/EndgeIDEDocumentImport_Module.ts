@@ -26,6 +26,14 @@ export class EndgeIDEDocumentImport_Module {
   }
 
   /**
+   * Открывает workflow с уже прочитанным документом, например сохранённой схемой GraphQL.
+   */
+  public openSource(format: DocumentImportFormat, input: EndgeIDEDocumentImportSource): void {
+    this.open(format)
+    this.prepareSource(input)
+  }
+
+  /**
    * Закрывает диалог, если подтверждённый импорт сейчас не выполняется.
    */
   public close(): void {

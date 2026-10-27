@@ -8,6 +8,8 @@ const configuratorPrefixes = [
   'configurator.',
 ]
 const configuratorKeys = new Set(['app:grid-layout-state', 'app:date-format'])
+// Базы IndexedDB Configurator: локальные кэши данных заказчика (например, схемы GraphQL).
+const configuratorDatabases = ['endge-ide-graphql-schemas']
 
 // Удаляет только browser state Configurator на общем с AODB origin.
 export function clearConfiguratorBrowserState(): void {
@@ -28,5 +30,16 @@ export function clearConfiguratorBrowserState(): void {
     catch {
       // Server logout остаётся главным источником истины, даже если browser storage недоступен.
     }
+  }
+
+  try {
+    const factory = window.indexedDB
+    for (const name of configuratorDatabases) {
+      // Удаление ставится в очередь: открытые соединения закрываются по versionchange.
+      factory?.deleteDatabase(name)
+    }
+  }
+  catch {
+    // Недоступный IndexedDB (приватный режим) не мешает выходу.
   }
 }

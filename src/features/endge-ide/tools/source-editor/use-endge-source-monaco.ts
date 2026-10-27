@@ -165,7 +165,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       return
     }
     const context = languageContext(model.getValue())
-    const diagnostics = (Endge.source.validate(options.sourceKind, model.getValue(), context).diagnostics ?? []) as EndgeSourceDiagnostic[]
+    // Фасеты и Configuration текущего boot: facet/config/contextSwitch проверяются как при сборке.
+    const sourceContext = Endge.source.currentSourceContext() ?? undefined
+    const diagnostics = (Endge.source.validate(options.sourceKind, model.getValue(), { ...context, sourceContext }).diagnostics ?? []) as EndgeSourceDiagnostic[]
     diagnosticsCount.value = diagnostics.length
     monaco.editor.setModelMarkers(model, markerOwner, diagnostics.map(item => toMarker(model, item)))
     semanticHighlights?.set(
@@ -221,6 +223,10 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     completionDisposable = monaco.languages.registerCompletionItemProvider(languageId, {
       triggerCharacters: syntax.triggerCharacters,
       provideCompletionItems(model, position) {
+        const offset = model.getOffsetAt(position)
+        if (options.extensions?.some(extension => extension.suppressesSourceCompletions?.(model, offset))) {
+          return { suggestions: [] }
+        }
         const word = model.getWordUntilPosition(position)
         const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
         const suggestions = Endge.source.completions(

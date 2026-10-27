@@ -15,14 +15,27 @@ const mocks = vi.hoisted(() => ({
   clearStoredDataModeOverride: vi.fn(),
   requireActive: vi.fn((_requirement?: Record<string, unknown>) => ({ id: 'vue-native' })),
   resolveAvailable: vi.fn(() => ({ id: 'vue-native' })),
+  claimSelections: {} as Record<string, string>,
+  authListeners: new Set<() => void>(),
+  setCurrentUser: vi.fn(),
+  setSessionIdentityProvider: vi.fn(),
 }))
 
-vi.mock('@endge/core', () => ({
+vi.mock('@endge/core', async importOriginal => ({
+  ...await importOriginal<typeof import('@endge/core')>(),
   ENDGE_CORE_MOCK_PROVIDERS: [],
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL: 'endge.sfc-render-adapter',
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION: 1,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS: [],
   Endge: {
+    assertWritable: vi.fn(),
+    auth: {
+      facetClaimResolution: () => ({ selections: { ...mocks.claimSelections }, issues: [] }),
+      subscribe: (listener: () => void) => {
+        mocks.authListeners.add(listener)
+        return () => mocks.authListeners.delete(listener)
+      },
+    },
     boot: mocks.boot,
     reset: mocks.reset,
     context: {
@@ -35,6 +48,8 @@ vi.mock('@endge/core', () => ({
       },
       setDataMode: mocks.setDataMode,
       clearDataModeOverride: mocks.clearDataModeOverride,
+      setCurrentUser: mocks.setCurrentUser,
+      setSessionIdentityProvider: mocks.setSessionIdentityProvider,
     },
     mock: {
       listProviders: () => [],
@@ -51,6 +66,10 @@ vi.mock('@endge/core', () => ({
       defaultSfcAdapterId: 'vue-native',
     },
   },
+}))
+
+vi.mock('@/features/endge-ide/config/endge-backend', () => ({
+  getEndgeBackendConfig: () => ({ serviceBackendURL: 'https://backend.test', primaryBackendURL: 'https://backend.test', activeBackendURL: 'https://backend.test' }),
 }))
 
 vi.mock('@/features/endge-ide/services/context/configurator-data-mode-repository', () => ({
@@ -86,6 +105,7 @@ describe('контекст EndgeIDE', () => {
     vi.stubEnv('VITE_ENDGE_SERVICE_BACKEND_URL', 'https://backend.test')
     vi.stubEnv('VITE_ENDGE_WORKSPACE_IDENTITY', 'workspace')
     vi.stubEnv('VITE_ENDGE_FACETS', '{"organization":"acme","application":"portal","deployment":"local"}')
+    vi.stubEnv('VITE_ENDGE_FACET_CLAIMS', '')
     vi.stubEnv('VITE_SENTRY_DSN', 'http://public@sentry.test/2')
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'local')
     vi.stubEnv('VITE_SENTRY_RELEASE', 'endge-local@1')
@@ -143,6 +163,72 @@ describe('контекст EndgeIDE', () => {
   })
 
   // Откатывает уже запущенный Core и разрешает повторный init после ошибки renderer contract.
+  it('передаёт в boot сопоставление claims фасетам из VITE_ENDGE_FACET_CLAIMS', async () => {
+    vi.stubEnv('VITE_ENDGE_FACET_CLAIMS', '{"tenant":{"claim":"/org/tenant","map":{"KZN-01":"kzn"},"missing":"error"}}')
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
+
+    expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({
+      context: { facets: { organization: 'acme', application: 'portal', deployment: 'local' } },
+      auth: expect.objectContaining({
+        facetClaims: { tenant: { claim: '/org/tenant', map: { 'KZN-01': 'kzn' }, missing: 'error' } },
+      }),
+    }))
+  })
+
+  it('перезапускает контекст, когда новая session меняет выбор фасетов по claims', async () => {
+    vi.stubEnv('VITE_ENDGE_FACET_CLAIMS', '{"tenant":{"claim":"/org/tenant","map":{"KZN-01":"kzn","AFL-01":"afl"}}}')
+    mocks.claimSelections = { tenant: 'afl' }
+    mocks.authListeners.clear()
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
+    mocks.boot.mockClear()
+
+    // Обновление токена с теми же claims не перезапускает Core.
+    mocks.authListeners.forEach(listener => listener())
+    await Promise.resolve()
+    expect(mocks.boot).not.toHaveBeenCalled()
+
+    mocks.claimSelections = { tenant: 'kzn' }
+    mocks.authListeners.forEach(listener => listener())
+    await vi.waitFor(() => expect(mocks.boot).toHaveBeenCalledOnce())
+    expect(mocks.boot).toHaveBeenCalledWith(expect.objectContaining({
+      context: expect.objectContaining({ facets: expect.objectContaining({ tenant: 'kzn', organization: 'acme' }) }),
+    }))
+    await vi.waitFor(() => expect(context.currentContext).toMatchObject({ facets: { tenant: 'kzn' } }))
+
+    // После перезапуска подписка одна (старая снята), reset снимает и её.
+    expect(mocks.authListeners.size).toBe(1)
+    await context.reset()
+    expect(mocks.authListeners.size).toBe(0)
+    mocks.claimSelections = {}
+  })
+
+  it('после boot provider identity сохраняет userId и выбор фасетов по claims', async () => {
+    mocks.setSessionIdentityProvider.mockClear()
+    mocks.claimSelections = { tenant: 'kzn' }
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor', userIdentity: ' u-7 ' })
+
+    expect(mocks.setCurrentUser).toHaveBeenCalledWith('u-7')
+    expect(mocks.setSessionIdentityProvider).toHaveBeenCalledOnce()
+    const provider = mocks.setSessionIdentityProvider.mock.calls[0][0] as { getCurrentIdentity: () => unknown }
+    // Выбор по claims читается в момент вызова: новая session видна без замены provider.
+    expect(provider.getCurrentIdentity()).toEqual({ userId: 'u-7', facetSelections: { tenant: 'kzn' } })
+    mocks.claimSelections = {}
+    expect(provider.getCurrentIdentity()).toEqual({ userId: 'u-7' })
+  })
+
+  it('без VITE_ENDGE_FACET_CLAIMS не подписывается на auth session', async () => {
+    mocks.authListeners.clear()
+    await context.init({ backendConfig, domainProvider, workspaceRole: 'editor' })
+    expect(mocks.authListeners.size).toBe(0)
+  })
+
+  it('отклоняет VITE_ENDGE_FACET_CLAIMS, если это не JSON object', async () => {
+    vi.stubEnv('VITE_ENDGE_FACET_CLAIMS', '["tenant"]')
+    await expect(context.init({ backendConfig, domainProvider, workspaceRole: 'editor' }))
+      .rejects
+      .toThrow('VITE_ENDGE_FACET_CLAIMS must be a JSON object')
+  })
+
   it('откатывает Core при ошибке проверки после запуска и разрешает повторную попытку', async () => {
     mocks.requireActive.mockImplementationOnce(() => {
       throw new Error('renderer unavailable')

@@ -259,7 +259,7 @@
       "error": "Import failed:",
       "fieldSummary": "Fields: {fields}, required: {required}",
       "fileHint": {
-        "graphql": ".graphql, .gql, or .graphqls files",
+        "graphql": "SDL (.graphql, .gql, .graphqls) or introspection JSON (.json)",
         "openapi": "OpenAPI 3.x in YAML or JSON"
       },
       "found": "Types found: {count}",
@@ -281,6 +281,111 @@
         "successTitle": "Types imported"
       },
       "typeRoot": "Type root"
+    },
+    "graphqlSchema": {
+      "actions": {
+        "importTypes": "Import types from schema",
+        "loadEndpoint": "Load schema from endpoint",
+        "loadFile": "Load schema from file…",
+        "remove": "Remove saved schema"
+      },
+      "status": {
+        "details": "Types: {count} · {date}",
+        "dynamicEndpoint": "Endpoint is computed from props: schema cannot be loaded",
+        "memoryOnly": "The browser did not save the schema: it is available until reload",
+        "noEndpoint": "Set a GraphQL endpoint",
+        "none": "Schema is not loaded",
+        "ready": "Schema: {source}"
+      },
+      "toast": {
+        "loaded": "GraphQL schema loaded",
+        "loadedDescription": "Types: {count}",
+        "loadFailed": "Failed to load GraphQL schema",
+        "removed": "Saved schema removed"
+      },
+      "trigger": "GraphQL schema"
+    },
+    "queryRun": {
+      "quickRun": "Run",
+      "quickRunHint": "Run the Query with default props, no input needed",
+      "close": "Hide run panel",
+      "compileError": "Source does not compile: {message}",
+      "duration": "{ms} ms",
+      "errorKind": {
+        "compile": "Preparation error",
+        "graphql": "GraphQL error",
+        "responseFormat": "Invalid GraphQL response",
+        "runtime": "Execution error",
+        "transport": "Transport error"
+      },
+      "graphqlErrors": {
+        "empty": "The response has no GraphQL errors",
+        "extensions": "extensions",
+        "locations": "locations",
+        "path": "path"
+      },
+      "httpStatus": "HTTP {status}",
+      "notSent": "No HTTP request was sent: the Query used mock data or mock mode",
+      "outputs": {
+        "empty": "No outputs"
+      },
+      "props": {
+        "booleanFalse": "false",
+        "booleanTrue": "true",
+        "default": "Default: {value}",
+        "defaultFromFilter": "Default from Filter",
+        "empty": "The Query declares no props",
+        "hint": "Leave a field empty to use its default",
+        "invalid": {
+          "boolean": "Expected true or false",
+          "json": "Invalid JSON",
+          "number": "Expected a number"
+        },
+        "optional": "optional",
+        "title": "Props",
+        "useDefault": "Default"
+      },
+      "request": {
+        "body": "Body",
+        "document": "Document",
+        "empty": "None",
+        "headers": "Headers",
+        "params": "URL parameters",
+        "redacted": "Hidden: {names}",
+        "variables": "Variables"
+      },
+      "response": {
+        "empty": "No HTTP response received"
+      },
+      "run": "Run",
+      "status": {
+        "error": "Error",
+        "success": "Success"
+      },
+      "tabs": {
+        "errors": "GraphQL errors ({count})",
+        "outputs": "Outputs",
+        "request": "Request",
+        "response": "Response"
+      },
+      "title": "Run Query",
+      "trigger": "Query run panel",
+      "variables": {
+        "error": "Could not evaluate variables: {message}",
+        "title": "Resolved variables"
+      }
+    },
+    "typeVisual": {
+      "extends": "extends",
+      "openBase": "Open base type {type}",
+      "inheritedCount": "inherited fields: {count}",
+      "baseMissing": "base type \"{type}\" not found",
+      "baseInvalid": "base type unavailable (cycle or not an object)",
+      "inheritedFrom": "inherited from {type}",
+      "inheritedHint": "Field inherited from {type}: read-only, edit it in the base type",
+      "ownFields": "Own fields",
+      "inheritedGroup": "Inherited from",
+      "readonlyHint": "read-only, edit it in the base type"
     }
   },
   "grid": {
@@ -1602,5 +1707,125 @@
     "format": "Format",
     "size": "File size",
     "releaseGzip": "The release stores its Bundle as Gzip."
+  },
+  "agentAccess": {
+    "button": "For agent",
+    "title": "Access for an agent",
+    "description": "Issue a personal token so an AI agent can work with this workspace on your behalf.",
+    "tabs": {
+      "create": "New token",
+      "tokens": "Tokens"
+    },
+    "form": {
+      "name": "Token name",
+      "namePlaceholder": "For example, Codex: flight inspector",
+      "defaultName": "Agent · {workspace}",
+      "workspace": "Workspace",
+      "rights": "Rights",
+      "read": "Read",
+      "write": "Write",
+      "readHint": "The agent can only read documents.",
+      "writeHint": "The agent edits documents with your role, but not above Editor.",
+      "writeUnavailable": "Write access is unavailable for the Viewer role.",
+      "commit": "Commits and releases",
+      "commitHint": "Allows creating commits, releases and restoring them.",
+      "commitUnavailable": "Token commits are available only to Workspace Admins.",
+      "delete": "Deletion",
+      "deleteHint": "Allows deleting documents.",
+      "expiry": "Expires in",
+      "preset1h": "1 hour",
+      "preset1d": "1 day",
+      "preset7d": "7 days",
+      "presetCustom": "Custom",
+      "customDate": "Expiration date and time",
+      "maxTtlDays": "Maximum term: {count} days",
+      "maxTtlHours": "Maximum term: {count} hours",
+      "expiresAt": "Expires {date}",
+      "create": "Create token",
+      "creating": "Creating…"
+    },
+    "expiryErrors": {
+      "required": "Choose the expiration date.",
+      "invalid": "The expiration date is invalid.",
+      "tooSoon": "The token must be valid for at least a few minutes.",
+      "tooLong": "The term exceeds the backend limit."
+    },
+    "result": {
+      "title": "Token created",
+      "once": "The token is shown only once. Copy the prompt or the token now: after closing the window it cannot be viewed again.",
+      "token": "Token",
+      "show": "Show token",
+      "hide": "Hide token",
+      "copyPrompt": "Copy prompt",
+      "copyToken": "Copy token",
+      "promptPreview": "Prompt preview (the token is hidden)",
+      "copied": "Copied to clipboard",
+      "copyFailed": "Could not copy to clipboard",
+      "docsMissing": "The documentation URL is not configured (VITE_DOCUMENTATION_URL): the prompt asks the agent to request the link from you.",
+      "another": "Create another",
+      "done": "Done"
+    },
+    "list": {
+      "mine": "Mine",
+      "all": "All",
+      "refresh": "Refresh",
+      "loading": "Loading tokens…",
+      "empty": "No tokens yet",
+      "name": "Name",
+      "prefix": "Prefix",
+      "workspace": "Workspace",
+      "rights": "Rights",
+      "expires": "Expires",
+      "lastUsed": "Last used",
+      "owner": "Owner",
+      "never": "never",
+      "rightsRead": "read",
+      "rightsWrite": "write",
+      "rightsCommit": "commits",
+      "rightsDelete": "deletion",
+      "statusActive": "active",
+      "statusExpired": "expired",
+      "statusRevoked": "revoked",
+      "revoke": "Revoke",
+      "confirmRevoke": "Confirm",
+      "cancelRevoke": "Cancel",
+      "revoked": "Token revoked"
+    },
+    "errors": {
+      "expiryRequired": "Specify the expiration date.",
+      "expiryInvalid": "The expiration date is invalid.",
+      "expiryTooLong": "The term exceeds the backend limit.",
+      "flagsRequireWrite": "Commits and deletion require write access.",
+      "scopeInvalid": "Unknown rights level.",
+      "nameInvalid": "The name must be 1 to 120 characters long.",
+      "descriptionInvalid": "The description is too long.",
+      "scopeExceedsRole": "Your workspace role does not allow issuing a write token.",
+      "commitRequiresAdmin": "Only a Workspace Admin can issue a token with commits.",
+      "notFound": "The token was not found.",
+      "workspaceNotFound": "The workspace was not found.",
+      "workspaceForbidden": "You have no access to this workspace.",
+      "platformAdminRequired": "Only Platform Admin can see all tokens.",
+      "unavailable": "The backend is unavailable.",
+      "unknown": "The request failed. Try again."
+    },
+    "history": {
+      "section": "History",
+      "title": "Revision history",
+      "refresh": "Refresh",
+      "loading": "Loading history…",
+      "empty": "No revisions",
+      "error": "Could not load the revision history",
+      "unsaved": "The history appears after the document is saved",
+      "revision": "Revision {number}",
+      "agent": "agent: {name}",
+      "agentUnknown": "agent: token {id}",
+      "operationCreate": "created",
+      "operationUpdate": "updated",
+      "operationDelete": "deleted",
+      "operationRestore": "restored",
+      "operationImport": "imported",
+      "shown": "Showing {shown} of {total}",
+      "more": "Load more"
+    }
   }
 }

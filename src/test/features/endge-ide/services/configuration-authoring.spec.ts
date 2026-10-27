@@ -49,8 +49,9 @@ describe('реестры редактирования Configuration', () => {
       { id: 12, identity: 'deleted', displayName: 'Deleted', deletedAt: '2026-08-20T00:00:00Z' },
     ])
 
-    expect(nodes[0]).toMatchObject({ type: 'folder', activeWorkspace: true, sectionType: DomainSectionType.Configuration })
+    expect(nodes[0]).toMatchObject({ type: 'folder', activeWorkspace: true, sectionType: DomainSectionType.Workspace })
     expect(nodes[0]?.children?.map(item => item.identity)).toEqual(['alpha', 'zeta'])
+    expect(nodes[0]?.children?.every(item => item.sectionType === DomainSectionType.Configuration)).toBe(true)
     expect(nodes[1]).toMatchObject({ type: 'file', activeWorkspace: false })
     expect(nodes[1]?.children).toBeUndefined()
   })

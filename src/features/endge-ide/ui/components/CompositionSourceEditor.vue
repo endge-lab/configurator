@@ -21,6 +21,7 @@ import {
   buildCompositionDropPlan,
   resolveCompositionDropDescriptor,
 } from '@/features/endge-ide/services/composition-source-drop'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import { createCompositionRuntimePropsContribution } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
@@ -140,7 +141,7 @@ function onEditorDrop(event: DragEvent): void {
   }
 
   const currentSource = model.getValue()
-  const compiled = Endge.source.compile('composition', currentSource)
+  const compiled = compilePreviewSource('composition', currentSource)
   const document = compiled.document as CompositionSourceDocument | undefined
   if (!document) {
     toast.error('Не удалось добавить документы', {

@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_ENDGE_SERVICE_BACKEND_URL?: string
   readonly VITE_ENDGE_WORKSPACE_IDENTITY?: string
   readonly VITE_ENDGE_FACETS?: string
+  readonly VITE_ENDGE_FACET_CLAIMS?: string
   readonly VITE_ENDPOINT_AUTH?: string
   readonly VITE_OIDC_ISSUER?: string
   readonly VITE_DOCUMENTATION_URL?: string

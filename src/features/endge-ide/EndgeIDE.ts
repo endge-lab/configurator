@@ -50,6 +50,13 @@ export class EndgeIDE {
     return this._requireModules().documentImport
   }
 
+  /**
+   * Возвращает владельца локального кэша схем GraphQL для редакторов Query и Stream.
+   */
+  public static get graphqlSchema() {
+    return this._requireModules().graphqlSchema
+  }
+
   public static get modals() {
     return this._requireModules().modals
   }
@@ -186,6 +193,7 @@ export class EndgeIDE {
       modules.busy.reset()
       modules.agentTableActions.reset()
       modules.buildProfiles.reset()
+      modules.graphqlSchema.reset()
     }
     finally {
       this._destroyedSnapshotsLease?.release()
