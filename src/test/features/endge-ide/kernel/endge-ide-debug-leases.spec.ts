@@ -8,6 +8,10 @@ const harness = vi.hoisted(() => {
   const method = () => vi.fn()
   const modules = {
     uiEditor: { reset: method() },
+    runtimeInspection: { init: method(), reset: method() },
+    workspace: { reset: method() },
+    uiState: { init: method(), reset: method() },
+    buildProfiles: { reset: method() },
     demonstration: {
       init: method(),
       reset: method(),
@@ -59,6 +63,7 @@ const harness = vi.hoisted(() => {
     authProfileEditors: { reset: method() },
     integrations: { init: method().mockResolvedValue(undefined), reset: method().mockResolvedValue(undefined) },
     documentImport: { reset: method() },
+    graphqlSchema: { reset: method() },
     busy: { state: {}, run: <T>(operation: Promise<T>) => operation, reset: method() },
     agentTableActions: { reset: method() },
   }
@@ -97,35 +102,30 @@ vi.mock('@/features/endge-ide/config/modules.config', () => ({
   createEndgeIDEModules: () => harness.modules,
 }))
 
-describe('аренды debug-инспекции EndgeIDE', () => {
-  it('владеет одной арендой Configurator на активную сессию IDE и освобождает её при reset', async () => {
+describe('аренды снимков runtime EndgeIDE', () => {
+  it('владеет одной арендой снимков на активную сессию IDE и освобождает её при reset', async () => {
     EndgeIDE.setup({} as any)
 
     await Promise.all([EndgeIDE.init(), EndgeIDE.init()])
 
-    expect(harness.debugAcquire).toHaveBeenCalledTimes(1)
     expect(harness.snapshotAcquire).toHaveBeenCalledWith(50)
     expect(harness.snapshotAcquire).toHaveBeenCalledTimes(1)
 
     await EndgeIDE.reset()
-    expect(harness.debugReleases[0]).toHaveBeenCalledTimes(1)
     expect(harness.snapshotReleases[0]).toHaveBeenCalledTimes(1)
 
     await EndgeIDE.init()
-    expect(harness.debugAcquire).toHaveBeenCalledTimes(2)
     expect(harness.snapshotAcquire).toHaveBeenCalledTimes(2)
     await EndgeIDE.reset()
-    expect(harness.debugReleases[1]).toHaveBeenCalledTimes(1)
     expect(harness.snapshotReleases[1]).toHaveBeenCalledTimes(1)
   })
 
-  it('освобождает обе аренды при ошибке инициализации IDE', async () => {
-    const leaseIndex = harness.debugReleases.length
+  it('освобождает аренду снимков при ошибке инициализации IDE', async () => {
+    const leaseIndex = harness.snapshotReleases.length
     harness.modules.integrations.init.mockRejectedValueOnce(new Error('integration init failed'))
 
     await expect(EndgeIDE.init()).rejects.toThrow('integration init failed')
 
-    expect(harness.debugReleases[leaseIndex]).toHaveBeenCalledTimes(1)
     expect(harness.snapshotReleases[leaseIndex]).toHaveBeenCalledTimes(1)
   })
 })

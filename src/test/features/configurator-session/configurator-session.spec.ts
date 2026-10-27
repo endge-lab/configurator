@@ -157,14 +157,17 @@ describe('пользовательская сессия Configurator', () => {
       key: (index: number) => [...values.keys()][index] ?? null,
       removeItem: (key: string) => values.delete(key),
     })
+    const deleteDatabase = vi.fn()
     vi.stubGlobal('window', {
       localStorage: storage(localValues),
       sessionStorage: storage(sessionValues),
+      indexedDB: { deleteDatabase },
     })
 
     clearConfiguratorBrowserState()
 
     expect([...localValues.keys()]).toEqual(['aodb:context'])
     expect([...sessionValues.keys()]).toEqual(['aodb:auth:return-to'])
+    expect(deleteDatabase).toHaveBeenCalledWith('endge-ide-graphql-schemas')
   })
 })

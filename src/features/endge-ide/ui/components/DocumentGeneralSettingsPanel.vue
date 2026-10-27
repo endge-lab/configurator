@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
-import { FileJson2, Settings2 } from 'lucide-vue-next'
+import { DOMAIN_DOCUMENT_DESCRIPTORS } from '@endge/core'
+import { FileJson2, History, Settings2 } from 'lucide-vue-next'
 import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { Configurator } from '@/app/Configurator'
 import { TabsList, TabsTrigger } from '@/components/ui/tabs'
+import DocumentRevisionHistory from '@/features/agent-access/ui/DocumentRevisionHistory.vue'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import DocumentMetadataEditor from '@/features/endge-ide/ui/components/DocumentMetadataEditor.vue'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
@@ -19,14 +22,24 @@ const props = withDefaults(defineProps<{
 })
 const { t } = useI18n()
 const session = computed(() => props.session ?? EndgeIDE.tabs.documentMetadataSession.value)
-const activeSection = useSmartTabSelection('document.general-settings-section', 'general', ['general', 'metadata'] as const)
+const activeSection = useSmartTabSelection('document.general-settings-section', 'general', ['general', 'metadata', 'history'] as const)
 const sidebarWidth = useSmartTabViewState<number>('document.general-settings-width', {
   defaultValue: () => 224,
   validate: value => typeof value === 'number' && Number.isFinite(value) && value >= 192 && value <= 420,
 })
+// Адрес истории ревизий текущего документа; null, если документ не хранится в backend.
+const revisionTarget = computed(() => {
+  const documentType = session.value?.documentType
+  const workspaceIdentity = Configurator.context.activeWorkspaceIdentity
+  const model = EndgeIDE.tabs.documentModel.value as { identity?: unknown } | null
+  const collection = documentType ? DOMAIN_DOCUMENT_DESCRIPTORS[documentType]?.persistence?.collection : undefined
+  const identity = typeof model?.identity === 'string' ? model.identity : ''
+  return workspaceIdentity && collection && identity ? { workspaceIdentity, collection, identity } : null
+})
 const sections = computed(() => [
   { id: 'general' as const, label: t('documentMetadata.general'), icon: Settings2 },
   { id: 'metadata' as const, label: t('documentMetadata.metadata'), icon: FileJson2 },
+  ...(revisionTarget.value ? [{ id: 'history' as const, label: t('agentAccess.history.section'), icon: History }] : []),
 ])
 
 watchEffect(() => session.value?.refreshFromDocument())
@@ -69,7 +82,7 @@ function commitMetadata(): void {
       </TabsList>
     </template>
 
-    <div v-show="activeSection === 'general'" class="min-h-0 flex-1 overflow-auto" :class="contentClass">
+    <div v-show="activeSection === 'general' || (activeSection === 'history' && !revisionTarget)" class="min-h-0 flex-1 overflow-auto" :class="contentClass">
       <slot />
     </div>
     <DocumentMetadataEditor
@@ -81,6 +94,11 @@ function commitMetadata(): void {
       @update:model-value="updateMetadataDraft"
       @validation="updateMetadataValidation"
       @commit="commitMetadata"
+    />
+    <DocumentRevisionHistory
+      v-if="activeSection === 'history' && revisionTarget"
+      :key="`${revisionTarget.collection}:${revisionTarget.identity}`"
+      v-bind="revisionTarget"
     />
   </SettingsNavigationPanel>
   <div v-else class="min-h-0 flex-1 overflow-auto" :class="contentClass">

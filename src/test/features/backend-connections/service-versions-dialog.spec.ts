@@ -10,15 +10,18 @@ import ru from '@/i18n/locales/ru.json'
 
 const fixture = vi.hoisted(() => ({ states: {} as Record<string, BackendVersionState> }))
 vi.mock('@/app/Configurator', () => ({ Configurator: { connections: { readWorkspaceFor: () => null } } }))
-vi.mock('@/features/backend-connections/ui/use-backend-connections', () => ({
-  useBackendConnections: () => ({
-    activeBackendURL: { value: 'http://second.test' },
-    catalog: { value: { items: [
-      { id: 'one', name: 'Первое', baseUrl: 'http://first.test' },
-      { id: 'two', name: 'Второе', baseUrl: 'http://second.test' },
-    ] } },
-  }),
-}))
+vi.mock('@/features/backend-connections/ui/use-backend-connections', async () => {
+  const { ref } = await import('vue')
+  return {
+    useBackendConnections: () => ({
+      activeBackendURL: ref('http://second.test'),
+      catalog: ref({ items: [
+        { id: 'one', name: 'Первое', baseUrl: 'http://first.test' },
+        { id: 'two', name: 'Второе', baseUrl: 'http://second.test' },
+      ] }),
+    }),
+  }
+})
 vi.mock('@/features/backend-connections/ui/use-backend-versions', () => ({
   useBackendVersions: () => ({ state: (url: string) => fixture.states[url], refreshMany: vi.fn() }),
 }))

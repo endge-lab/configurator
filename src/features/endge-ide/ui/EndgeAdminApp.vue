@@ -23,6 +23,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { canManageAccess as canManageAccessPolicy } from '@/features/access-control'
 import AccessControl_Modal from '@/features/access-control/ui/AccessControl_Modal.vue'
+import AgentAccess_Button from '@/features/agent-access/ui/AgentAccess_Button.vue'
 import AIManagement_Modal from '@/features/ai-assistant/ui/AIManagement_Modal.vue'
 import { ServiceVersionsDialog } from '@/features/backend-connections'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
@@ -397,6 +398,8 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <TooltipContent>{{ t('workspaceWorkflow.openCurrent') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      <div class="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+      <AgentAccess_Button :documentation-url="ENDGE_IDE_DOCUMENTATION_URL" />
       <ConfiguratorPresence_Button />
     </div>
   </Teleport>

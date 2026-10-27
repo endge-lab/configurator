@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RFilterEditor } from '@/features/endge-ide/domain/entities/RFilterEditor'
 
-import { Endge, FilterType } from '@endge/core'
+import { FilterType } from '@endge/core'
 import {
   Code2,
   FileJson,
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import FilterSourceEditor from '@/features/endge-ide/ui/components/FilterSourceEditor.vue'
@@ -79,7 +80,7 @@ const tabGroups = [
   ],
 ] as const
 const compiled = computed(() =>
-  editor.value ? Endge.source.compile('filter', editor.value.source) : null,
+  editor.value ? compilePreviewSource('filter', editor.value.source) : null,
 )
 const artifactJson = computed(() =>
   JSON.stringify(compiled.value?.artifact ?? null, null, 2),

@@ -15,6 +15,7 @@ import { computed, shallowRef } from 'vue'
 import {
   generateCompositionRuntimePreviewSource,
 } from '@/features/endge-ide/services/composition-runtime-props/composition-runtime-props'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 
 export interface CompositionPreviewLaunchInput {
   id?: string | number | null
@@ -186,7 +187,7 @@ export function createPreviewComposition(input: CompositionPreviewLaunchInput): 
 
 // Достраивает runtime dependencies Composition в dependency-first порядке для preview.
 export function ensureCompositionRuntimeArtifacts(source: string, visiting = new Set<string>()): void {
-  const result = Endge.source.compile('composition', source)
+  const result = compilePreviewSource('composition', source)
   const payload = result.artifact
   if (!payload) {
     return
@@ -261,7 +262,7 @@ export function materializeCompositionRuntimePreviewSource(source: string): stri
 }
 
 function compileCompositionSource(source: string): CompositionProgramPayload | null {
-  return (Endge.source.compile('composition', source).artifact as CompositionProgramPayload | undefined) ?? null
+  return (compilePreviewSource('composition', source).artifact as CompositionProgramPayload | undefined) ?? null
 }
 
 function resolveCompositionContract(identity: string): CompositionProgramPayload | null {

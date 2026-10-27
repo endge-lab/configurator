@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import DataViewSourceEditor from '@/features/endge-ide/ui/components/DataViewSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
@@ -109,7 +110,7 @@ const artifactJson = computed(() => {
     return '{}'
   }
 
-  const result = Endge.source.compile('data-view', current.source)
+  const result = compilePreviewSource('data-view', current.source)
   return JSON.stringify(result.artifact ?? null, null, 2)
 })
 

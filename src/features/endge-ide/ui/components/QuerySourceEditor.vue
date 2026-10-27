@@ -5,6 +5,8 @@ import { DomainSectionType, Endge } from '@endge/core'
 import * as monaco from 'monaco-editor'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
+import { createGraphQLSchemaContribution } from '@/features/endge-ide/source-editor/contributions/graphql/graphql-schema.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
 const props = defineProps<{
@@ -28,6 +30,7 @@ const monacoAdapter = useEndgeSourceMonaco({
   value: () => source.value,
   onChange: (value) => { source.value = value },
   owner: 'endge-query-source',
+  extensions: [createGraphQLSchemaContribution({ sourceKind: 'query', schemas: () => EndgeIDE.graphqlSchema })],
   onReady: (instance) => {
     editor = instance
     container.value?.addEventListener('dragover', onEditorDragOver, true)

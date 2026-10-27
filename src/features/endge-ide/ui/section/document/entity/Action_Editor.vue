@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { RActionEditor } from '@/features/endge-ide/domain/entities/RActionEditor'
-import { Endge } from '@endge/core'
 import { Code2, FileJson, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -13,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
+import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
 import ActionSourceEditor from '@/features/endge-ide/ui/components/ActionSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
@@ -27,7 +27,7 @@ const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection('editor.active-tab', 'source', ['general', 'source', 'artifact', 'diagnostics'] as const)
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('action', editor.value))
-const artifactJson = computed(() => JSON.stringify(editor.value ? Endge.source.compile('action', editor.value.source).artifact ?? null : null, null, 2))
+const artifactJson = computed(() => JSON.stringify(editor.value ? compilePreviewSource('action', editor.value.source).artifact ?? null : null, null, 2))
 const tabGroups = [
   [
     { value: 'general', icon: Settings2, label: 'Основное' },

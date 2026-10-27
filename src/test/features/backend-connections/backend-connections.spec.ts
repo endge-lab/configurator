@@ -272,6 +272,7 @@ describe('подключения к backend', () => {
     vi.stubGlobal('fetch', fetchMock)
     const storage = new BackendConnectionStorage()
     storage.writeWorkspace('https://primary.test', 'workspace-a')
+    storage.writeActiveBackend('https://primary.test')
     const reload = vi.fn()
     const module = new BackendConnections_Module('https://primary.test', new ServiceStub(), storage, reload)
 

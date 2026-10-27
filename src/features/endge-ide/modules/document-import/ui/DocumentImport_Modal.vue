@@ -61,7 +61,7 @@ const canApply = computed(() => state.status === 'ready'
   && !state.plan?.diagnostics.some(diagnostic => diagnostic.severity === 'error'))
 const formatLabel = computed(() => state.format === 'graphql' ? 'GraphQL' : 'OpenAPI')
 const acceptedFiles = computed(() => state.format === 'graphql'
-  ? '.graphql,.gql,.graphqls,text/plain'
+  ? '.graphql,.gql,.graphqls,.json,text/plain,application/json'
   : '.yaml,.yml,.json,application/yaml,application/json,text/yaml')
 const fileHint = computed(() => state.format === 'graphql'
   ? t('endgeIde.documentImport.fileHint.graphql')

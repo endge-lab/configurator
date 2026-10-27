@@ -10,4 +10,6 @@ export interface ScriptEditorMonacoContext {
 export interface ScriptEditorExtension {
   id: string
   install: (context: ScriptEditorMonacoContext) => Monaco.IDisposable | void
+  // Расширение владеет подсказками в этой позиции: подсказки Endge Source там не показываются.
+  suppressesSourceCompletions?: (model: Monaco.editor.ITextModel, offset: number) => boolean
 }
