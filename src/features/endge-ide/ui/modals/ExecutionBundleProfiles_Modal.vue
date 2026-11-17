@@ -341,12 +341,17 @@ async function updateSettings(
   patch: Partial<
     Pick<
       BuildProfileSettings,
-      'diagnostics' | 'debuggerStructure' | 'includeAst' | 'fileFormat'
+      'diagnostics' | 'debuggerStructure' | 'includeAst' | 'fileFormat' | 'buildScope' | 'contexts'
     >
   >,
 ): Promise<void> {
   const settings = cloneBuildProfileSettings(selectedSettings.value)
   Object.assign(settings, patch)
+  if (settings.buildScope === 'startup-composition') {
+    settings.contexts = 'effective-context'
+    settings.includeAst = false
+  }
+  else { settings.contexts = 'all-contexts' }
   const profile = selectedProfile.value
   if (!profile) {
     module.draftSettings.value = settings
@@ -460,7 +465,11 @@ const copy = {
   contents: 'Содержимое',
   topology: 'Топология',
   buildScope: 'Область сборки',
-  completeModel: 'Вся модель',
+  completeModel: 'Вся модель — для инспекции',
+  startupScope: 'Стартовая композиция и её зависимости',
+  fullModelHelp: 'Этот режим включает документы других контекстов. Для поставки одному заказчику выберите стартовую композицию и её зависимости.',
+  effectiveContext: 'Только выбранный контекст',
+  scopedAstHelp: 'AST исключён: он может содержать невыбранные варианты. Полная модель предназначена для инспекции и может содержать данные других контекстов.',
   contexts: 'Контексты',
   allContexts: 'Текущий effective context',
   diagnostics: 'Диагностика',
@@ -772,23 +781,36 @@ const { t } = useI18n()
                   <div class="space-y-2">
                     <label class="block text-xs text-muted-foreground">{{
                       copy.buildScope
-                    }}</label><Select model-value="complete-model" disabled>
+                    }}</label><Select
+                      :model-value="selectedSettings.buildScope"
+                      :disabled="isBuilding || (!!selectedProfile && !selectedProfile.canManage)"
+                      @update:model-value="value => updateSettings({ buildScope: value === 'startup-composition' ? 'startup-composition' : 'complete-model' })"
+                    >
                       <SelectTrigger size="sm" class="w-full">
                         <SelectValue />
                       </SelectTrigger><SelectContent>
+                        <SelectItem value="startup-composition">
+                          {{ copy.startupScope }}
+                        </SelectItem>
                         <SelectItem value="complete-model">
                           {{ copy.completeModel }}
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  <p v-if="selectedSettings.buildScope === 'complete-model'" class="col-span-2 text-sm text-amber-600">
+                    {{ copy.fullModelHelp }}
+                  </p>
                   <div class="space-y-2">
                     <label class="block text-xs text-muted-foreground">{{
                       copy.contexts
-                    }}</label><Select model-value="all-contexts" disabled>
+                    }}</label><Select :model-value="selectedSettings.contexts" disabled>
                       <SelectTrigger size="sm" class="w-full">
                         <SelectValue />
                       </SelectTrigger><SelectContent>
+                        <SelectItem value="effective-context">
+                          {{ copy.effectiveContext }}
+                        </SelectItem>
                         <SelectItem value="all-contexts">
                           {{ copy.allContexts }}
                         </SelectItem>
@@ -884,7 +906,7 @@ const { t } = useI18n()
                     <label class="flex items-center gap-2 text-sm"><Checkbox
                       :model-value="selectedSettings.includeAst"
                       :disabled="
-                        isBuilding
+                        selectedSettings.buildScope === 'startup-composition' || isBuilding
                           || (!!selectedProfile && !selectedProfile.canManage)
                       "
                       @update:model-value="
@@ -893,7 +915,12 @@ const { t } = useI18n()
                       "
                     /> {{ t('bundleInspection.includeAst') }} </label>
                     <p class="text-xs text-muted-foreground">
-                      {{ t('bundleInspection.astHelp') }}
+                      <template v-if="selectedSettings.buildScope === 'startup-composition'">
+                        {{ copy.scopedAstHelp }}
+                      </template>
+                      <template v-else>
+                        {{ t('bundleInspection.astHelp') }}
+                      </template>
                     </p>
                   </div>
                   <p

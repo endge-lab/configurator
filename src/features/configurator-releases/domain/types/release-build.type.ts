@@ -4,7 +4,7 @@ export interface ReleaseBuildMetadata {
   compilerVersion: string
   profile?: { identity: string, displayName: string, revision: number }
   runtime: 'ts-browser'
-  scope: 'complete-model'
+  scope: 'complete-model' | 'startup-composition'
   contextMode: 'effective-context'
   context: unknown
   includeAst: boolean

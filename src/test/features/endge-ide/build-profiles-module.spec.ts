@@ -7,13 +7,25 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Configurator } from '@/app/Configurator'
 import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
 import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
-import { cloneBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
+import { cloneBuildProfileSettings, createDefaultBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
 
 import { EndgeIDEBuildProfiles_Module } from '@/features/endge-ide/modules/EndgeIDEBuildProfiles_Module'
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('модуль профилей сборки', () => {
+  it('defaults to the startup graph and publishes its actual scope without AST', async () => {
+    const settings = createDefaultBuildProfileSettings()
+    expect(settings).toMatchObject({ buildScope: 'startup-composition', contexts: 'effective-context', includeAst: false })
+    expect(cloneBuildProfileSettings({ ...settings, includeAst: true }).includeAst).toBe(false)
+    vi.spyOn(Endge, 'buildSavedProgram').mockResolvedValue(null)
+    const pack = vi.spyOn(Endge.program, 'exportBundle').mockReturnValue({ programId: 'scoped', compilerVersion: 'program-v4', context: {} } as ReturnType<typeof Endge.program.exportBundle>)
+    vi.spyOn(BundleFiles_Service.prototype, 'encode').mockResolvedValue(new Uint8Array([1]))
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    await module.buildBundle(settings)
+    expect(pack).toHaveBeenCalledWith({ scope: 'startup-composition', includeAst: false })
+    expect(module.result.value?.metadata).toMatchObject({ scope: 'startup-composition', contextMode: 'effective-context', includeAst: false })
+  })
   it('builds once, freezes export options and does not start runtime', async () => {
     const module = new EndgeIDEBuildProfiles_Module(adapterStub())
     let finish!: () => void
@@ -43,7 +55,7 @@ describe('модуль профилей сборки', () => {
     finish()
     await pending
     expect(build).toHaveBeenCalledTimes(1)
-    expect(pack).toHaveBeenCalledWith({ includeAst: false })
+    expect(pack).toHaveBeenCalledWith({ includeAst: false, scope: 'complete-model' })
     expect(download).toHaveBeenCalledWith(
       { format: 'endge-bundle', version: 1, bundle: exported },
       'gzip',

@@ -69,7 +69,7 @@ export class EndgeIDEBuildProfiles_Module {
       this._buildStatus.value = 'building'
       const snapshot = await Endge.buildSavedProgram(controller.signal)
       controller.signal.throwIfAborted()
-      const bundle = Endge.program.exportBundle({ includeAst: options.includeAst })
+      const bundle = Endge.program.exportBundle({ includeAst: options.includeAst, scope: options.buildScope })
       this._buildStatus.value = 'packing'
       const { configuration: _configuration, ...buildContext } = bundle.context
       const files = new BundleFiles_Service()
@@ -82,7 +82,7 @@ export class EndgeIDEBuildProfiles_Module {
         fileFormat: options.fileFormat,
         sizeBytes: bytes.byteLength,
         source: snapshot ? { workspaceId: snapshot.workspace.state.id, workspaceIdentity: snapshot.workspace.identity, headSequence: snapshot.workspace.state.headSequence, generation: snapshot.workspace.state.generation } : null,
-        metadata: { version: 1, profile: profileSnapshot, programId: bundle.programId, compilerVersion: bundle.compilerVersion, runtime: 'ts-browser', scope: 'complete-model', contextMode: 'effective-context', context: buildContext, includeAst: options.includeAst, fileFormat: 'gzip', sizeBytes: gzip.byteLength },
+        metadata: { version: 1, profile: profileSnapshot, programId: bundle.programId, compilerVersion: bundle.compilerVersion, runtime: 'ts-browser', scope: options.buildScope, contextMode: 'effective-context', context: buildContext, includeAst: options.includeAst, fileFormat: 'gzip', sizeBytes: gzip.byteLength },
       }
       this._prepared = { bytes, gzip, result }
       this._result.value = result
