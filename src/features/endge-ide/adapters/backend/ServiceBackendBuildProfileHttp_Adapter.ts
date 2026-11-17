@@ -78,11 +78,14 @@ function normalizeBuildProfile(value: unknown): BuildProfileTransport {
   const fileFormat = settings.fileFormat ?? 'gzip'
   const includeAst = settings.includeAst ?? false
   const debuggerStructure = text(settings.debuggerStructure)
+  const buildScope = text(settings.buildScope)
+  const contexts = text(settings.contexts)
+  const scoped = buildScope === 'startup-composition' && contexts === 'effective-context' && includeAst === false
   if (!text(source.id) || !text(source.identity) || !text(source.displayName)
     || (visibility !== 'shared' && visibility !== 'private')
     || (diagnostics !== 'minimal' && diagnostics !== 'standard' && diagnostics !== 'detailed')
     || (debuggerStructure !== 'complete-catalog' && debuggerStructure !== 'extended-catalog')
-    || text(settings.buildScope) !== 'complete-model' || text(settings.contexts) !== 'all-contexts'
+    || (!scoped && (buildScope !== 'complete-model' || contexts !== 'all-contexts'))
     || topology.length !== 1 || text(node.node) !== 'frontend' || text(node.runtime) !== 'ts-browser'
     || (fileFormat !== 'gzip' && fileFormat !== 'json') || typeof includeAst !== 'boolean'
     || number(source.settingsVersion) !== 1 || number(source.revision) < 1) {
@@ -98,8 +101,8 @@ function normalizeBuildProfile(value: unknown): BuildProfileTransport {
     settings: {
       includeAst,
       fileFormat,
-      buildScope: 'complete-model',
-      contexts: 'all-contexts',
+      buildScope: scoped ? 'startup-composition' : 'complete-model',
+      contexts: scoped ? 'effective-context' : 'all-contexts',
       diagnostics,
       debuggerStructure,
       topology: [{ node: 'frontend', runtime: 'ts-browser' }],

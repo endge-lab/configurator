@@ -7,8 +7,8 @@ export type BuildProfileDebuggerStructure = 'complete-catalog' | 'extended-catal
 export interface BuildProfileSettings {
   includeAst: boolean
   fileFormat: 'gzip' | 'json'
-  buildScope: 'complete-model'
-  contexts: 'all-contexts'
+  buildScope: 'complete-model' | 'startup-composition'
+  contexts: 'all-contexts' | 'effective-context'
   diagnostics: BuildProfileDiagnostics
   debuggerStructure: BuildProfileDebuggerStructure
   topology: [{ node: 'frontend', runtime: 'ts-browser' }]
@@ -86,8 +86,8 @@ export function createDefaultBuildProfileSettings(): BuildProfileSettings {
   return {
     includeAst: false,
     fileFormat: 'gzip',
-    buildScope: 'complete-model',
-    contexts: 'all-contexts',
+    buildScope: 'startup-composition',
+    contexts: 'effective-context',
     diagnostics: 'detailed',
     debuggerStructure: 'complete-catalog',
     topology: [{ node: 'frontend', runtime: 'ts-browser' }],
@@ -95,11 +95,14 @@ export function createDefaultBuildProfileSettings(): BuildProfileSettings {
 }
 
 export function cloneBuildProfileSettings(value: BuildProfileSettings): BuildProfileSettings {
+  if (value.buildScope !== 'complete-model' && value.buildScope !== 'startup-composition') {
+    throw new Error('Неизвестная область сборки')
+  }
   return {
-    includeAst: value.includeAst === true,
+    includeAst: value.buildScope !== 'startup-composition' && value.includeAst === true,
     fileFormat: value.fileFormat === 'json' ? 'json' : 'gzip',
-    buildScope: 'complete-model',
-    contexts: 'all-contexts',
+    buildScope: value.buildScope === 'startup-composition' ? 'startup-composition' : 'complete-model',
+    contexts: value.buildScope === 'startup-composition' ? 'effective-context' : 'all-contexts',
     diagnostics: value.diagnostics,
     debuggerStructure: value.debuggerStructure,
     topology: [{ node: 'frontend', runtime: 'ts-browser' }],
