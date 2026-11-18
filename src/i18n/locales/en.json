@@ -1830,11 +1830,6 @@
   },
   "controllers": {
     "refreshPending": "Page order changed. Refresh explicitly to rebuild the window.",
-    "catalog": "Controllers · runtime-only · read-only",
-    "hint": "Code-owned definitions. Bind in Composition Source; no backend documents.",
-    "origin": "Origin",
-    "catalogPath": "Catalog path",
-    "provider": "Required provider",
     "preview": "Controller · runtime-only · read-only"
   }
 }

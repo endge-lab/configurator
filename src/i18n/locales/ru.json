@@ -1830,11 +1830,6 @@
   },
   "controllers": {
     "refreshPending": "Порядок страниц изменился. Выполните refresh, чтобы перестроить окно.",
-    "catalog": "Controllers · только runtime · чтение",
-    "hint": "Определения принадлежат коду. Подключение в Source Composition; backend-документов нет.",
-    "origin": "Происхождение",
-    "catalogPath": "Путь каталога",
-    "provider": "Необходимый provider",
     "preview": "Controller · только runtime · чтение"
   }
 }
