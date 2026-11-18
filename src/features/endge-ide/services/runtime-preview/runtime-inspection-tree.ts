@@ -52,6 +52,17 @@ export function buildRuntimeInspectionTree(
     node.runtimeKind = host.runtimeType === 'filter-view-runtime-host' ? 'filter-view' : undefined
     node.parentId = scope && scope.ownerRuntimeId !== host.id ? `scope:${scope.id}` : host.parentId ? `host:${host.parentId}` : null
     node.presentation = { ...getDomainDocumentPresentation(type), documentType: type, badgeIcon: getDomainDocumentPresentation(type).badgeIcon ?? null, runtimeName: null }
+    if (host.entityType === 'controller') {
+      node.entityType = 'controller'
+      node.runtimeKind = 'controller'
+      node.presentation = {
+        documentType: null,
+        icon: 'Cpu',
+        colorClass: 'text-violet-500',
+        badgeIcon: null,
+        runtimeName: null,
+      }
+    }
     nodes.set(id, node)
     targets.set(id, { kind: 'host', id: host.id, createdAt: host.createdAt })
     const graphScope = scopes.get(ownScope.get(host.id) ?? '')

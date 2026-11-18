@@ -11,12 +11,14 @@ import type {
   VocabRuntimeCatalog,
 } from '@endge/core'
 import { Endge, resolveRuntimeTranslation, resolveRuntimeVocabOptions, runtimeInspectionMetaKey } from '@endge/core'
+import { resolveControllerCatalogDefinition } from '@/features/endge-ide/services/controllers/controller-catalog'
 import { readRuntimeInspectionData } from '@/features/endge-ide/tools/read-runtime-inspection-data'
 
 export type RuntimeInspectionRenderable
   = { kind: 'component-sfc', key: string, title: string, runtime: ComponentSFCRenderPort, input: { kind: 'local', props: Record<string, unknown> } }
     | { kind: 'filter-view', key: string, title: string, model: Extract<RuntimeRenderableInspection, { kind: 'filter-view' }>['model'] }
     | { kind: 'store-snapshot', key: string, title: string, fields: { key: string, value: unknown, kind: string }[] }
+    | { kind: 'controller-snapshot', key: string, title: string, fields: { key: string, value: unknown, kind: string }[] }
     | { kind: 'unavailable', key: string, title: string, message: string }
 
 /**
@@ -47,6 +49,25 @@ export class RuntimeInspectionRenderer {
     const key = `${host.id}:${host.createdAt}`
     const title = host.title
     const snapshot = this._snapshot()
+    if (host.entityType === 'controller') {
+      return {
+        kind: 'controller-snapshot',
+        key,
+        title,
+        fields: Object.entries({
+          lifecycle: host.status,
+          props: host.meta.props,
+          outputs: readRuntimeInspectionData(
+            snapshot.data,
+            `${host.basePath}.outputs`,
+          ),
+          context: host.context,
+          dependencies: host.meta.controllerDependencies,
+          provider: resolveControllerCatalogDefinition(host.entityIdentity)
+            ?.defaultProviderKey,
+        }).map(([key, value]) => ({ key, value, kind: 'snapshot' })),
+      }
+    }
     if (host.entityType === 'store') {
       const data = readRuntimeInspectionData(snapshot.data, host.basePath)
       const derived = new Set(Array.isArray(host.context.derivedFields) ? host.context.derivedFields : [])

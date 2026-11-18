@@ -3,6 +3,7 @@ import type { SFCRenderInspectionSessionLike } from '@endge/core'
 import type { RuntimePreviewRenderable } from '@/features/endge-ide/domain/types/runtime-preview.types'
 import type { RuntimeInspectionRenderable } from '@/features/endge-ide/services/runtime-preview/runtime-inspection-renderer'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
+import ControllerRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/ControllerRuntimePreview.vue'
 import StoreFieldsPreview from '@/features/endge-ide/ui/section/runtime-preview/StoreFieldsPreview.vue'
 import StoreRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/StoreRuntimePreview.vue'
 
@@ -14,6 +15,8 @@ defineProps<{ item: RuntimePreviewRenderable | RuntimeInspectionRenderable, insp
   <EndgeAdapterRoot v-else-if="item.kind === 'component-sfc'" root-key="sfc-runtime" :host="item.runtime" :input="item.input" :inspection="inspection ?? null" />
   <StoreRuntimePreview v-else-if="item.kind === 'store'" :runtime="item.runtime" />
   <StoreFieldsPreview v-else-if="item.kind === 'store-snapshot'" :fields="item.fields" :value-label="$t('runtimeInspection.snapshotValue')" />
+  <ControllerRuntimePreview v-else-if="item.kind === 'runtime' && item.runtime.entityType === 'controller'" :runtime="item.runtime" />
+  <StoreFieldsPreview v-else-if="item.kind === 'controller-snapshot'" :fields="item.fields" value-label="Controller snapshot" />
   <p v-else-if="item.kind === 'unavailable'" class="whitespace-pre-wrap p-4 text-xs text-muted-foreground" role="status">
     {{ item.message }}
   </p>

@@ -98,7 +98,7 @@ export interface RuntimePreviewTreeNode {
   id: string
   parentId: string | null
   kind: RuntimePreviewTreeNodeKind
-  runtimeKind?: 'composition' | 'component' | 'filter' | 'filter-view' | 'query' | 'stream'
+  runtimeKind?: 'composition' | 'component' | 'filter' | 'filter-view' | 'query' | 'stream' | 'controller'
   title: string
   subtitle: string | null
   entityType: string
