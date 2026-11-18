@@ -1,4 +1,29 @@
 {
+  "timelineEditor": {
+    "templateSuffix": "(template)",
+    "sourceSuffix": "· Source",
+    "id": "ID",
+    "settings": "Timeline settings",
+    "group": "Group",
+    "template": "template",
+    "runtimePreview": "Data is resolved at runtime. Choose Run to open Runtime Preview.",
+    "data": "Data",
+    "localData": "Inline data",
+    "chooseInput": "Choose a component input",
+    "setData": "Set data",
+    "groupRange": "Group range",
+    "initialRange": "Initial range",
+    "columns": "Columns",
+    "field": "Group field",
+    "title": "Title",
+    "width": "Width, px",
+    "sort": "Sortable",
+    "addColumn": "Add column",
+    "preset": "Preset",
+    "standard": "Standard",
+    "unavailable": "unavailable",
+    "default": "Default"
+  },
   "tooltipCondition": {
     "clear": "Clear condition"
   },

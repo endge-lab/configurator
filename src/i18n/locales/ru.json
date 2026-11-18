@@ -1,4 +1,29 @@
 {
+  "timelineEditor": {
+    "templateSuffix": "(шаблон)",
+    "sourceSuffix": "· Source",
+    "id": "ID",
+    "settings": "Настройки Timeline",
+    "group": "Группа",
+    "template": "шаблон",
+    "runtimePreview": "Данные вычисляются в рантайме. Нажмите «Запуск», чтобы открыть Runtime Preview.",
+    "data": "Данные",
+    "localData": "Локальные данные",
+    "chooseInput": "Выберите вход компонента",
+    "setData": "Задать данные",
+    "groupRange": "Диапазон группы",
+    "initialRange": "Начальный диапазон",
+    "columns": "Колонки",
+    "field": "Поле группы",
+    "title": "Заголовок",
+    "width": "Ширина, px",
+    "sort": "Сортировка",
+    "addColumn": "Добавить колонку",
+    "preset": "Пресет",
+    "standard": "Стандартный",
+    "unavailable": "недоступен",
+    "default": "По умолчанию"
+  },
   "tooltipCondition": {
     "clear": "Снять условие"
   },

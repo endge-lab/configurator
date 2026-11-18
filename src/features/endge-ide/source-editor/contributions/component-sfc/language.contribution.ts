@@ -58,6 +58,28 @@ interface SFCAttributeReference {
   attribute: RComponentSFC_AST_Attribute
 }
 
+const TIMELINE_COMPLETIONS: Record<string, SFCEditableCompletionSpec[]> = {
+  TimelineChart: [
+    { label: ':data', detail: 'Timeline data from an SFC input', insertText: `:data="\${1:props.data}"` },
+    { label: ':columns', detail: 'Timeline group columns', insertText: `:columns="\${1:props.columns}"` },
+    { label: ':options', detail: 'Timeline options', insertText: `:options="\${1:props.options}"` },
+    { label: 'preset', detail: 'Timeline preset registered by the application', insertText: `preset="\${1:name}"` },
+    { label: ':settings', detail: 'Timeline preset parameters', insertText: `:settings="\${1:props.settings}"` },
+    { label: ':height', detail: 'Timeline height in pixels', insertText: `:height="\${1:320}"` },
+    { label: '@taskSelected', detail: 'TimelineTaskSelectedEvent', insertText: `@taskSelected="\${1:emit(&apos;taskSelected&apos;, event())}"` },
+  ],
+  TimelineGroup: [
+    { label: ':label-width', detail: 'Shared group column width in pixels', insertText: `:label-width="\${1:160}"` },
+    { label: 'leader', detail: 'Key of the leading TimelineChart', insertText: `leader="\${1:key}"` },
+    { label: ':range', detail: 'Shared viewport in milliseconds', insertText: `:range="\${1:props.range}"` },
+    { label: '@rangeChanged', detail: 'TimelineRangeChangedEvent', insertText: `@rangeChanged="\${1:emit(&apos;rangeChanged&apos;, event())}"` },
+  ],
+}
+const TIMELINE_TAG_COMPLETIONS: SFCEditableCompletionSpec[] = [
+  { label: 'TimelineChart', detail: 'Render a standalone chart', insertText: `<TimelineChart :data="\${1:props.data}" />` },
+  { label: 'TimelineGroup', detail: 'Link the time axis of multiple charts', insertText: `<TimelineGroup sync="time" splitter>\n  \${1}\n</TimelineGroup>` },
+]
+
 const SFC_EDITABLE_COMPLETIONS: readonly SFCEditableCompletionSpec[] = [
   {
     label: 'Editable',
@@ -310,18 +332,30 @@ export function createSFCLanguageContribution(
                     kind: monaco.languages.CompletionItemKind.Property,
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                   })),
+                ...(TIMELINE_COMPLETIONS[attributeContext.tag] ?? [])
+                  .filter(item => !attributeContext.existingAttributes.has(item.label.replace(/^[:@]/, '')))
+                  .map(item => ({
+                    ...item,
+                    range,
+                    kind: monaco.languages.CompletionItemKind.Snippet,
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  })),
                 ...genericAttributes,
               ],
             }
           }
           const word = model.getWordUntilPosition(position)
           const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn)
+          const openingTag = /<[\w-]*$/.exec(model.getValue().slice(template.start, offset))
+          const tagRange = openingTag
+            ? monaco.Range.fromPositions(model.getPositionAt(offset - openingTag[0].length), position)
+            : range
           return {
-            suggestions: SFC_EDITABLE_COMPLETIONS.map(item => ({
+            suggestions: [...SFC_EDITABLE_COMPLETIONS, ...TIMELINE_TAG_COMPLETIONS].map(item => ({
               label: item.label,
               detail: item.detail,
               insertText: item.insertText,
-              range,
+              range: item.label.startsWith('Timeline') ? tagRange : range,
               kind: monaco.languages.CompletionItemKind.Snippet,
               insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
             })),
@@ -532,7 +566,9 @@ function resolveAttributeCompletionContext(
     }
   }
 
-  const nameMatch = afterTag.match(/(?:^|\s)([A-Z_][\w.-]*)$/i)
+  const nameMatch = afterTag.match(tag === 'TimelineChart' || tag === 'TimelineGroup'
+    ? /(?:^|\s)([:@]?[A-Z_][\w.-]*|[:@])$/i
+    : /(?:^|\s)([A-Z_][\w.-]*)$/i)
   const emptyName = /\s$/.test(afterTag)
   if (!nameMatch && !emptyName) {
     return null
