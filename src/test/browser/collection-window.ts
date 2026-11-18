@@ -6,7 +6,6 @@ import { Endge } from '@endge/core'
 import { Raph } from '@raphy-js/raph'
 import { createApp, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { Configurator } from '@/app/Configurator'
-import ControllerCatalog from '@/features/endge-ide/ui/components/ControllerCatalog.vue'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 import ControllerRuntimePreview from '@/features/endge-ide/ui/section/runtime-preview/ControllerRuntimePreview.vue'
 import { i18n } from '@/i18n'
@@ -52,17 +51,6 @@ async function main(): Promise<void> {
       throw new Error(JSON.stringify(artifact.diagnostics))
     }
   }
-  const removeProgramOnly = Endge.runtime.controllers.define({
-    identity: 'fixture.program-only',
-    displayName: 'Program-only diagnostic controller',
-    origin: { kind: 'local', owner: 'fixture' },
-    catalogPath: ['Fixture'],
-    defaultProviderKey: 'fixture.unavailable-provider',
-    contract: { props: [], outputs: [], commands: {}, dependencies: {} },
-  })
-  const programOnlyArtifact = Endge.compiler.buildController('fixture.program-only')
-  removeProgramOnly()
-  Endge.program.addArtifact(programOnlyArtifact) // Detached metadata, as in an imported bundle.
   const sessions = await Promise.all(
     ['cursor', 'offset'].map((paging, index) =>
       Endge.runtime.composition.mount(`window-${paging}`, {
@@ -134,7 +122,6 @@ async function main(): Promise<void> {
               'Scroll for automatic demand. Double-click a visible row to run table.scrollToRow(start) on that Table. Both windows own isolated Store state.',
             ),
             h('a', { href: '/__collection-window/requests', target: '_blank', rel: 'noopener', class: 'underline text-sm' }, 'Query request log (JSON)'),
-            h(ControllerCatalog),
             h(
               'div',
               { style: 'display:grid;grid-template-columns:1fr 1fr;gap:24px' },

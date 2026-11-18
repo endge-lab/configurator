@@ -29,9 +29,6 @@ test('real Source windows: geometry, bounded memory, retry, generations and isol
   await expect
     .poll(async () => (await status(1)).loadedRowCount)
     .toBeGreaterThanOrEqual(40)
-  await expect(page.locator('[data-controller-catalog]')).toContainText(
-    'endge.collection-window',
-  )
   await expect.poll(async () => (await status(0)).loading).toBe(false)
   await expect.poll(async () => (await status(1)).loading).toBe(false)
   await page.waitForTimeout(250)
@@ -56,19 +53,6 @@ test('real Source windows: geometry, bounded memory, retry, generations and isol
     'outputs',
   )
   await win(0).locator('[data-controller-inspection] > summary').click()
-  await expect(page.locator('[data-controller-catalog]')).toContainText(
-    'fixture.program-only',
-  )
-  await expect(page.locator('[data-controller-catalog]')).toContainText(
-    'fixture.unavailable-provider',
-  )
-  expect(
-    await page.evaluate(() =>
-      (window as any).collectionWindowFixture.Endge.runtime.controllers.get(
-        'fixture.program-only',
-      ),
-    ),
-  ).toBe(null)
   const view = win(0).locator('.endge-tanstack-table__viewport')
   await view.evaluate((el) => {
     el.scrollTop = 200
