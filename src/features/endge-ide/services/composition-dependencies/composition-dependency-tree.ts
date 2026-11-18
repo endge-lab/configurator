@@ -13,10 +13,11 @@ import type {
   DocumentDependencyNodeKind,
   DocumentDependencyTreeResult,
 } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
-
 import { compileComponentSFC, ComponentType, Endge, FilterType, QueryType } from '@endge/core'
 
 import { DOCUMENT_AUXILIARY_PRESENTATION } from '@/features/document-presentation/config/document-presentation'
+
+import { resolveControllerCatalogDefinition } from '@/features/endge-ide/services/controllers/controller-catalog'
 import { countDocumentDependencies } from '@/features/endge-ide/services/document-dependencies/document-dependency-types'
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 
@@ -452,6 +453,69 @@ function buildRuntimeNode(
   runtime: CompositionRuntimeDescriptor,
   occurrenceId: string,
 ): CompositionDependencyNode {
+  if (runtime.kind === 'controller') {
+    const definition = resolveControllerCatalogDefinition(runtime.identity)
+    const id = `${occurrenceId}/runtime:${runtime.path}`
+    const node: CompositionDependencyNode = {
+      id,
+      kind: 'runtime',
+      identity: runtime.identity,
+      alias: runtime.name,
+      title: definition?.displayName ?? runtime.identity,
+      documentType: null,
+      icon: 'Cpu',
+      colorClass: 'text-violet-500',
+      badgeIcon: null,
+      activationMode: runtime.effectiveActivation.mode,
+      status: definition ? 'valid' : 'missing',
+      diagnosticCount: 0,
+      children: [],
+      dataDependencies: Object.values(
+        runtime.controllerDependencies ?? {},
+      ).flatMap(binding => ('store' in binding ? [binding.store] : [])),
+    }
+    for (const [name, binding] of Object.entries(
+      runtime.controllerDependencies ?? {},
+    )) {
+      if ('query' in binding) {
+        const query = Endge.domain.getQuery(binding.query)
+        node.children.push(
+          makeDocumentNode({
+            id: `${id}/dependency:${name}`,
+            kind: 'runtime',
+            identity: binding.query,
+            alias: name,
+            documentType: query?.type ?? QueryType.REST,
+            exists: Boolean(query),
+          }),
+        )
+      }
+      else {
+        const data = payload.data.find(data => data.kind === 'store' && (data.path === binding.store || data.name === binding.store))
+        node.children.push(
+          makeDocumentNode({
+            id: `${id}/dependency:${name}`,
+            kind: 'data',
+            identity: data?.identity ?? binding.store,
+            alias: `${name}: ${binding.path}`,
+            documentType: 'store',
+            exists: Boolean(data && Endge.domain.getStore(data.identity)),
+          }),
+        )
+        node.children.push(
+          makeDocumentNode({
+            id: `${id}/update:${name}`,
+            kind: 'runtime',
+            identity: binding.update,
+            alias: 'atomic Update',
+            documentType: 'update',
+            exists: Boolean(Endge.domain.getUpdate(binding.update)),
+          }),
+        )
+      }
+    }
+    return node
+  }
   const target = runtimeDocumentTarget(payload, runtime)
   const node = makeDocumentNode({
     id: `${occurrenceId}/runtime:${runtime.path}`,

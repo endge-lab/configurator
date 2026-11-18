@@ -22,6 +22,7 @@ import {
   resolveCompositionDropDescriptor,
 } from '@/features/endge-ide/services/composition-source-drop'
 import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
+import { createControllerSourceContribution } from '@/features/endge-ide/source-editor/contributions/composition/controllers/controller-source.contribution'
 import { createCompositionRuntimePropsContribution } from '@/features/endge-ide/source-editor/contributions/composition/runtime-props/composition-runtime-props.contribution'
 import { useEndgeSourceMonaco } from '@/features/endge-ide/tools/source-editor/use-endge-source-monaco'
 
@@ -52,13 +53,14 @@ const monacoAdapter = useEndgeSourceMonaco({
   refreshTriggers: [
     refresh => Endge.context.subscribe(refresh),
     refresh => Endge.program.subscribe(refresh),
+    refresh => Endge.runtime.controllers.subscribe(refresh),
     refresh => Endge.domain.subscribe(refresh),
   ],
   onChange: (value) => {
     source.value = value
     emit('update:modelValue', value)
   },
-  extensions: [createCompositionRuntimePropsContribution()],
+  extensions: [createCompositionRuntimePropsContribution(), createControllerSourceContribution()],
   onReady: (instance) => {
     editor = instance
     container.value?.addEventListener('dragover', onEditorDragOver, true)

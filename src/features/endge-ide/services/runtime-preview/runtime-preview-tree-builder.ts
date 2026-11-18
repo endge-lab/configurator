@@ -10,8 +10,9 @@ import type {
   RuntimePreviewTarget,
   RuntimePreviewTreeNode,
 } from '@/features/endge-ide/domain/types/runtime-preview.types'
-
 import { ComponentType, Endge, FilterType, QueryType } from '@endge/core'
+
+import { resolveControllerCatalogDefinition } from '@/features/endge-ide/services/controllers/controller-catalog'
 
 import { resolveDomainEntityPresentation } from '@/features/endge-ide/services/domain/domain-entity-presentation'
 
@@ -225,6 +226,33 @@ function buildScopeContents(
         runtime.name,
         artifacts,
       ))
+      continue
+    }
+    if (runtime.kind === 'controller') {
+      const definition = resolveControllerCatalogDefinition(runtime.identity)
+      result.push(
+        makeNode({
+          id: `${compositionNodeId(address)}:runtime:${runtime.path}`,
+          parentId,
+          kind: 'runtime',
+          runtimeKind: 'controller',
+          entityType: 'controller',
+          identity: runtime.identity,
+          title: definition?.displayName ?? runtime.identity,
+          subtitle: `${runtime.name} · runtime-only`,
+          activationMode: runtime.effectiveActivation.mode,
+          composition: address,
+          runtimePath: runtime.path,
+          scopePath,
+          presentation: {
+            documentType: null,
+            icon: 'Cpu',
+            colorClass: 'text-violet-500',
+            badgeIcon: null,
+            runtimeName: runtime.name,
+          },
+        }),
+      )
       continue
     }
     const target = runtimeDocumentTarget(payload, runtime)

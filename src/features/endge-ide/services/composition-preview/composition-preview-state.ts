@@ -188,7 +188,7 @@ export function createPreviewComposition(input: CompositionPreviewLaunchInput): 
 // Достраивает runtime dependencies Composition в dependency-first порядке для preview.
 export function ensureCompositionRuntimeArtifacts(source: string, visiting = new Set<string>()): void {
   const result = compilePreviewSource('composition', source)
-  const payload = result.artifact
+  const payload = result.artifact as CompositionProgramPayload | null
   if (!payload) {
     return
   }
@@ -204,6 +204,26 @@ export function ensureCompositionRuntimeArtifacts(source: string, visiting = new
   }
 
   for (const runtime of payload.runtimes) {
+    if (runtime.kind === 'controller') {
+      Endge.compiler.buildController(runtime.identity)
+      for (const binding of Object.values(
+        runtime.controllerDependencies ?? {},
+      )) {
+        if ('query' in binding) {
+          const model = Endge.domain.getQuery(binding.query)
+          if (model) {
+            Endge.compiler.buildQuery(model)
+          }
+        }
+        else {
+          const model = Endge.domain.getUpdate(binding.update)
+          if (model) {
+            Endge.compiler.buildUpdate(model)
+          }
+        }
+      }
+      continue
+    }
     if (runtime.kind === 'filter') {
       const model = Endge.domain.getFilter(runtime.identity)
       if (model && !Endge.program.getFilterArtifact(runtime.identity)) {

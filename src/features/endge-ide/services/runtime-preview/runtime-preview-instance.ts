@@ -760,7 +760,7 @@ export class RuntimePreviewInstance {
       if (composition) {
         if (selected.kind === 'runtime') {
           const runtime = composition.getRuntimeHandle(selected.runtimePath ?? '')?.runtime
-          if (runtime?.hasCapability('renderable') && isPreviewRenderableActive(runtime)) {
+          if (runtime && (runtime.entityType === 'controller' || (runtime.hasCapability('renderable') && isPreviewRenderableActive(runtime)))) {
             runtimes.push(runtime)
           }
         }

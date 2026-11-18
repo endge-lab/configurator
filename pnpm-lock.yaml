@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@endge/computation-sandbox':
         specifier: 1.0.1-dev.9
-        version: 1.0.1-dev.9(@endge/core@1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
+        version: 1.0.1-dev.9(@endge/core@1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))
       '@endge/core':
-        specifier: 1.1.0-dev.13
-        version: 1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+        specifier: 1.2.0-dev.15
+        version: 1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@endge/integration-api':
         specifier: 0.2.1
         version: 0.2.1(vue@3.5.43(typescript@6.0.3))
       '@endge/ui-vue':
-        specifier: 1.0.1-dev.12
-        version: 1.0.1-dev.12(@endge/core@1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.6)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))
+        specifier: 2.0.0-dev.14
+        version: 2.0.0-dev.14(@endge/core@1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.6)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))
       '@endge/utils':
         specifier: 1.0.0-dev.6
         version: 1.0.0-dev.6
@@ -475,8 +475,8 @@ packages:
     peerDependencies:
       '@endge/core': '>=1.0.0-dev.4 <2 || >=1.1.0-dev.13 <2'
 
-  '@endge/core@1.1.0-dev.13':
-    resolution: {integrity: sha512-8ZrQ6N6Cye3JITe4etngd81/Kp7jp7MYS6FCx3iq0rldSL+W/NU7n26TlRQtaKr40jYxuKJnhUKI2d+aaph0bw==}
+  '@endge/core@1.2.0-dev.15':
+    resolution: {integrity: sha512-N9ofxwyhgl+5mrPc4qkbFCN5geGVTvo6zgrtlkhDI50eNmrOkifSEkoqqeyt8tVOQfmwOkIzCncHqvqsG6DuFQ==}
     peerDependencies:
       '@raphy-js/raph': '>=1.0.0-dev.18 <2 || >=1.0.1-dev.25 <2'
       class-transformer: ^0.5.1
@@ -492,10 +492,10 @@ packages:
       vue:
         optional: true
 
-  '@endge/ui-vue@1.0.1-dev.12':
-    resolution: {integrity: sha512-tcnbnWeG95LYb3aLPrnc/cQGtJfGvYH7iBx1PygqItZJ7cZB1K+aAojgx+wmUGpS2KLetFQiJgsnRhByoBV1lQ==}
+  '@endge/ui-vue@2.0.0-dev.14':
+    resolution: {integrity: sha512-PjaFhJON8ZfZ6g1cjO6lirN3EE5OtmOZprh3c9DAEZgQYLTUCKAqC4F4hdSh/8HgVWFj946pdLVdCAAxSlJhhg==}
     peerDependencies:
-      '@endge/core': '>=1.0.0-dev.4 <2 || >=1.1.0-dev.13 <2'
+      '@endge/core': 1.2.0-dev.15
       '@endge/utils': '>=1.0.0-dev <2'
       '@raphy-js/raph': '>=1.0.0-dev.18 <2 || >=1.0.1-dev.25 <2'
       vue: ^3.3.0
@@ -4745,14 +4745,14 @@ snapshots:
     optionalDependencies:
       eslint: 10.9.1(jiti@2.7.0)
 
-  '@endge/computation-sandbox@1.0.1-dev.9(@endge/core@1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
+  '@endge/computation-sandbox@1.0.1-dev.9(@endge/core@1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))':
     dependencies:
-      '@endge/core': 1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/core': 1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@jitl/quickjs-ng-wasmfile-release-sync': 0.32.0
       quickjs-emscripten-core: 0.32.0
       typescript: 6.0.3
 
-  '@endge/core@1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
+  '@endge/core@1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)':
     dependencies:
       '@babel/generator': 7.29.7
       '@babel/parser': 7.29.9
@@ -4768,6 +4768,7 @@ snapshots:
       date-fns: 4.4.0
       fflate: 0.8.3
       graphql: 16.14.2
+      idb: 8.0.3
       lodash: 4.18.1
       mitt: 3.0.1
       oidc-client-ts: 3.5.0
@@ -4786,9 +4787,9 @@ snapshots:
     optionalDependencies:
       vue: 3.5.43(typescript@6.0.3)
 
-  '@endge/ui-vue@1.0.1-dev.12(@endge/core@1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.6)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))':
+  '@endge/ui-vue@2.0.0-dev.14(@endge/core@1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.6)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))':
     dependencies:
-      '@endge/core': 1.1.0-dev.13(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
+      '@endge/core': 1.2.0-dev.15(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@endge/utils': 1.0.0-dev.6
       '@lucide/vue': 1.46.0(vue@3.5.43(typescript@6.0.3))
       '@raphy-js/raph': 1.0.1-dev.55

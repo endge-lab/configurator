@@ -103,6 +103,7 @@ import {
   prepareVocabMockGeneration,
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
+import ControllerCatalog from '@/features/endge-ide/ui/components/ControllerCatalog.vue'
 import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
@@ -2691,6 +2692,7 @@ function rowClasses(item: FlatFsItem): string {
     <div v-else class="flex-1 min-h-0" @click="closeContextMenu">
       <ScrollArea class="h-full">
         <div class="p-2 text-[13px] leading-5" :role="programCatalog ? 'tree' : undefined" :aria-label="programCatalog ? 'Структура сборки' : undefined">
+          <ControllerCatalog />
           <p v-if="programCatalog && !Object.keys(programCatalog.documents).length" class="p-3 text-xs text-muted-foreground">
             {{ Endge.program.programId ? t('bundleInspection.noDocuments') : t('bundleInspection.loadHint') }}
           </p>
