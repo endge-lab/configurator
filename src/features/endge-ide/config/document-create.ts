@@ -1,8 +1,9 @@
 import type { DocumentCreateDescriptor } from '@/features/endge-ide/domain/types/document-create.type'
 import { ComponentType, DomainSectionType, FilterType, QueryType } from '@endge/core'
 
-import { QUERY_COMPOSITION_CREATE_KIND } from '@/features/endge-ide/services/domain/query-composition-presentation'
+import { TIMELINE_CHART_CREATE_KIND, TIMELINE_GROUP_CREATE_KIND } from '@/features/endge-ide/config/timeline-examples'
 
+import { QUERY_COMPOSITION_CREATE_KIND } from '@/features/endge-ide/services/domain/query-composition-presentation'
 import { i18n } from '@/i18n/index'
 
 // Source нового Table Component: тот же SFC-документ, но сразу с визуально редактируемым Table root.
@@ -54,6 +55,26 @@ export const DOCUMENT_CREATE_DESCRIPTORS: DocumentCreateDescriptor[] = [
     description: 'Single-file компонент с заранее добавленным корневым Table-тегом.',
     keywords: ['component', 'table', 'columns', 'таблица', 'sfc'],
     defaultName: 'Новый Table Component',
+    section: DomainSectionType.Component,
+    supportsFolder: true,
+    supportsDescription: false,
+  },
+  {
+    type: TIMELINE_CHART_CREATE_KIND,
+    label: 'Timeline Chart',
+    description: 'Component SFC с корневой диаграммой времени.',
+    keywords: ['timeline', 'chart', 'график', 'диаграмма'],
+    defaultName: 'Новый Timeline Chart',
+    section: DomainSectionType.Component,
+    supportsFolder: true,
+    supportsDescription: false,
+  },
+  {
+    type: TIMELINE_GROUP_CREATE_KIND,
+    label: 'Timeline Group',
+    description: 'Component SFC с общей шкалой и несколькими диаграммами.',
+    keywords: ['timeline', 'group', 'группа', 'диаграмма'],
+    defaultName: 'Новый Timeline Group',
     section: DomainSectionType.Component,
     supportsFolder: true,
     supportsDescription: false,

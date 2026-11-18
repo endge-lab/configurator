@@ -8,6 +8,7 @@ import {
   DomainSectionType,
   Endge,
   FilterType,
+  parseComponentSFC,
 } from '@endge/core'
 
 import { i18n } from '@/i18n/index'
@@ -63,7 +64,7 @@ export interface FsFileNode extends FsNodeBase {
   children?: FsNode[]
   isTableColumn?: boolean
   parentComponentId?: string
-  presentationKind?: CompositionPresentationKind
+  presentationKind?: CompositionPresentationKind | 'timeline-chart' | 'timeline-group'
   origin?: EntityOrigin
   // Сохраняемый authoring-документ, представленный этой виртуальной проекцией.
   sourceDocument?: {
@@ -532,6 +533,21 @@ function buildFolderNode(
         workspaceFolderId: (c as { workspaceFolderId?: string | number | null }).workspaceFolderId ?? null,
         ...((c as { presentationKind?: unknown }).presentationKind != null
           && { presentationKind: String((c as { presentationKind?: unknown }).presentationKind) as CompositionPresentationKind }),
+      }
+      if (fileNode.docType === ComponentType.SFC) {
+        const source = (c as { source?: string }).source ?? Endge.domain.getComponentSFC(identity || id)?.source
+        if (source?.includes('<Timeline')) {
+          const root = parseComponentSFC(source).ast?.template?.roots.filter(node =>
+            node.kind !== 'comment' && (node.kind !== 'text' || Boolean(node.content.trim()))) ?? []
+          if (root.length === 1 && root[0]?.kind === 'element') {
+            if (root[0].tag === 'TimelineChart') {
+              fileNode.presentationKind = 'timeline-chart'
+            }
+            if (root[0].tag === 'TimelineGroup') {
+              fileNode.presentationKind = 'timeline-group'
+            }
+          }
+        }
       }
       if (
         itemSectionType === DomainSectionType.Component

@@ -23,6 +23,7 @@ import {
   COMPONENT_TABLE_SFC_DEFAULT_SOURCE,
   DOCUMENT_CREATE_DESCRIPTORS,
 } from '@/features/endge-ide/config/document-create'
+import { timelineTemplateFor } from '@/features/endge-ide/config/timeline-examples'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { resolveCompositionCreatePlacement } from '@/features/endge-ide/services/domain/composition-create'
 import {
@@ -162,7 +163,7 @@ const dialogTitle = computed(() => isWorkspaceSelected.value
 const documentType = computed<DomainDocumentType>(() =>
   activeType.value === QUERY_COMPOSITION_CREATE_KIND
     ? 'composition'
-    : activeType.value === ComponentType.Table
+    : activeType.value === ComponentType.Table || timelineTemplateFor(activeType.value) != null
       ? COMPONENT_SFC_TYPE
       : activeType.value as DomainDocumentType,
 )
@@ -337,6 +338,11 @@ function buildPayloadTemplate(): Record<string, unknown> {
     displayName,
     ...(folder != null && { folder }),
     ...(activeOption.value.supportsDescription && { description: normalizedDescription }),
+  }
+
+  const timelineTemplate = timelineTemplateFor(activeType.value)
+  if (timelineTemplate) {
+    return { ...base, source: timelineTemplate, supportedTargets: ['dom'], modelVersion: 1, meta: {} }
   }
 
   if (activeType.value === ComponentType.Table) {
@@ -719,6 +725,12 @@ async function onSubmit(): Promise<void> {
     if (activeType.value === ComponentType.Table) {
       ;(draft as RComponentSFC).source = COMPONENT_TABLE_SFC_DEFAULT_SOURCE
     }
+    const timelineTemplate = timelineTemplateFor(activeType.value)
+    if (timelineTemplate) {
+      const component = draft as RComponentSFC
+      component.source = timelineTemplate
+      component.supportedTargets = ['dom']
+    }
     applyFormFields(draft)
     if (targetDocumentType === 'composition') {
       const placement = resolveCompositionCreatePlacement({
@@ -823,8 +835,8 @@ function onCancel(): void {
                   :presentation="doc.type === 'workspace'
                     ? DOCUMENT_AUXILIARY_PRESENTATION.workspace
                     : getDomainDocumentPresentation(
-                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : doc.type,
-                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : undefined,
+                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? 'composition' : timelineTemplateFor(doc.type) ? COMPONENT_SFC_TYPE : doc.type as DomainDocumentType,
+                      doc.type === QUERY_COMPOSITION_CREATE_KIND ? QUERY_COMPOSITION_PRESENTATION_KIND : doc.type,
                     )"
                   size="picker"
                 />

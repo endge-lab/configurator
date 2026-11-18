@@ -1,6 +1,8 @@
 import { Endge } from '@endge/core'
 import { EndgeVuePlugin } from '@endge/ui-vue'
 
+import './timeline-demo-preset'
+
 const REQUIRED_RENDERER_MODULE_KEYS = ['vue'] as const
 
 // Плагины renderer необходимо зарегистрировать до импорта, читающего модули Endge

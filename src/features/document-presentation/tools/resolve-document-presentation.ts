@@ -16,9 +16,17 @@ export function getDomainSectionPresentation(sectionType: DomainSectionType): Do
 
 export function getDomainDocumentPresentation(
   docType: DomainDocumentType,
-  _presentationKind?: string,
+  presentationKind?: string,
 ): DomainDocumentPresentation {
   const key = String(docType)
+  if (key === 'component-sfc') {
+    if (presentationKind === 'timeline-chart') {
+      return { icon: 'ChartGantt', colorClass: 'text-sky-500' }
+    }
+    if (presentationKind === 'timeline-group') {
+      return { icon: 'Layers3', colorClass: 'text-violet-500' }
+    }
+  }
   const sectionType = DOCUMENT_SECTION_BY_TYPE[key]
   const presentation = DOCUMENT_TYPE_PRESENTATION[key]
     ?? (sectionType == null ? FALLBACK_PRESENTATION : getDomainSectionPresentation(sectionType))

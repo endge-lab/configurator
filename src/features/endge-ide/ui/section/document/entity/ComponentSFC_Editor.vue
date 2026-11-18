@@ -11,7 +11,7 @@ import {
   inspectComponentSFCVisual,
 } from '@endge/core'
 import { useDomainStore } from '@endge/ui-vue'
-import { AlertCircle, Code2, Columns3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
+import { AlertCircle, ChartGantt, Code2, Columns3, Layers3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +42,7 @@ import DocumentIdField from '@/features/endge-ide/ui/components/source-document-
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import SourceFormatButton from '@/features/endge-ide/ui/components/source-document-editor/SourceFormatButton.vue'
 import ComponentSFCTableVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTableVisualEditor.vue'
+import ComponentSFCTimelineVisualEditor from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCTimelineVisualEditor.vue'
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface ScriptEditorHandle {
@@ -96,6 +97,7 @@ const visualInspection = computed(() => {
     : null
 })
 const tableVisualProjection = computed(() => visualInspection.value?.projection ?? null)
+const timelineProjection = computed(() => visualInspection.value?.timeline ?? null)
 const hasTableVisual = computed(() => visualInspection.value?.support.kind === 'table' && tableVisualProjection.value != null)
 const tableVisualDiagnostics = computed(() => (
   visualInspection.value?.diagnostics.filter(item => (
@@ -183,7 +185,7 @@ const sourceEditorExtensions = [
   }),
 ]
 
-watch(hasTableVisual, (supported) => {
+watch(() => hasTableVisual.value || timelineProjection.value != null, (supported) => {
   if (supported && activeTab.value === 'general') {
     activeTab.value = 'visual'
     return
@@ -310,6 +312,19 @@ async function launchPreview(): Promise<void> {
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ $t('uiText.basic127492c2') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip v-if="timelineProjection">
+            <TooltipTrigger as-child>
+              <Button
+                size="icon" variant="ghost" class="h-7 w-7"
+                :class="activeTab === 'visual' ? 'bg-editor-control shadow-sm' : 'text-muted-foreground'"
+                aria-label="Настройки Timeline" @click="activeTab = 'visual'"
+              >
+                <Layers3 v-if="timelineProjection.tag === 'TimelineGroup'" class="size-4" />
+                <ChartGantt v-else class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('timelineEditor.settings') }}</TooltipContent>
           </Tooltip>
           <Tooltip v-if="hasTableVisual">
             <TooltipTrigger as-child>
@@ -490,6 +505,15 @@ async function launchPreview(): Promise<void> {
         </div>
       </div>
     </DocumentGeneralSettingsPanel>
+
+    <ComponentSFCTimelineVisualEditor
+      v-else-if="activeTab === 'visual' && timelineProjection"
+      :key="editor.id"
+      :source="editor.source"
+      :projection="timelineProjection"
+      @update:source="updateVisualSource"
+      @open-source="openSourceAt"
+    />
 
     <ComponentSFCTableVisualEditor
       v-else-if="activeTab === 'visual' && tableVisualProjection"
