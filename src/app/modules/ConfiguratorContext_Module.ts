@@ -23,6 +23,7 @@ import {
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
 } from '@endge/core'
 
+import { createConfiguratorModuleLoader } from '@/features/endge-ide/bootstrap/create-configurator-module-loader'
 import { registerEndgeMockProviders } from '@/features/endge-ide/bootstrap/endge-mock-providers'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { configuratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
@@ -310,6 +311,7 @@ export class ConfiguratorContext_Module {
 
     return {
       ...commonContext,
+      moduleLoader: createConfiguratorModuleLoader(backendConfig.serviceBackendURL),
       commands: { local: this._createCommandExecutor() },
       dataProvider: 'default',
       domainProvider,

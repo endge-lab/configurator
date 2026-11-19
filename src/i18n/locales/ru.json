@@ -1856,5 +1856,23 @@
   "controllers": {
     "refreshPending": "Порядок страниц изменился. Выполните refresh, чтобы перестроить окно.",
     "preview": "Controller · только runtime · чтение"
+  },
+  "moduleCatalog": {
+    "title": "Модули",
+    "infrastructure": "Инфраструктура",
+    "description": "Версии из этого каталога доступны во всех рабочих пространствах Backend.",
+    "identity": "Идентификатор",
+    "name": "Название",
+    "details": "Описание",
+    "archive": "ZIP сборки",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "upload": "Загрузить",
+    "create": "Создать",
+    "loading": "Загрузка…",
+    "empty": "В каталоге пока нет модулей",
+    "addVersion": "Добавить версию",
+    "edit": "Редактировать",
+    "download": "Скачать ZIP"
   }
 }

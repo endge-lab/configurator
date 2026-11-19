@@ -3,9 +3,10 @@ import type { ComponentSFCTimelineVisualNode, ComponentSFCVisualAttribute } from
 import { compileComponentSFC, Endge, parseComponentSFC, patchComponentSFCTimelineSource } from '@endge/core'
 import { listTimelinePresets } from '@endge/ui-vue'
 import { ArrowDown, ArrowUp, X } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 
@@ -25,14 +26,20 @@ interface Column {
   sortable?: boolean
 }
 
-const props = defineProps<{ source: string, projection: ComponentSFCTimelineVisualNode }>()
+const props = defineProps<{ source: string, identity: string, projection: ComponentSFCTimelineVisualNode }>()
 const emit = defineEmits<{ 'update:source': [source: string], 'openSource': [offset: number] }>()
 const chartIndex = ref<number>()
 const error = ref('')
 const selected = computed(() => props.projection.charts[chartIndex.value ?? -1] ?? props.projection)
 const groupSelected = computed(() => selected.value.tag === 'TimelineGroup')
-const presets = listTimelinePresets()
-const preset = computed(() => presets.find(item => item.name === literal('preset')))
+const moduleRevision = ref(0)
+onScopeDispose(Endge.runtime.modules.subscribe(() => moduleRevision.value++))
+const moduleScope = computed(() => EndgeIDE.runtimePreview.selectedEntry.value?.selectedModuleScope(props.identity))
+const presets = computed(() => {
+  void moduleRevision.value
+  return listTimelinePresets(moduleScope.value)
+})
+const preset = computed(() => presets.value.find(item => item.name === literal('preset')))
 const compileOptions = {
   resolveComponentTag: (tag: string) => Endge.program.resolveComponentTag(tag),
   resolveTypeDefinition: resolveEndgeTypeDefinition,
@@ -244,7 +251,7 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
         <p v-else-if="runtimePreviewNeeded" class="text-sm text-muted-foreground">
           {{ $t('timelineEditor.runtimePreview') }}
         </p>
-        <EndgeAdapterRoot v-else-if="compilation.ir" root-key="sfc" :ir="compilation.ir" :props="previewData" />
+        <EndgeAdapterRoot v-else-if="compilation.ir" root-key="sfc" :ir="compilation.ir" :props="previewData" :runtime-scope-id="moduleScope?.id" />
       </div>
     </section>
     <aside class="min-h-0 space-y-4 overflow-auto border-l p-4">

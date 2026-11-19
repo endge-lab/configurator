@@ -1856,5 +1856,23 @@
   "controllers": {
     "refreshPending": "Page order changed. Refresh explicitly to rebuild the window.",
     "preview": "Controller · runtime-only · read-only"
+  },
+  "moduleCatalog": {
+    "title": "Modules",
+    "infrastructure": "Infrastructure",
+    "description": "Versions in this catalog are available to all workspaces on this Backend.",
+    "identity": "Identity",
+    "name": "Name",
+    "details": "Description",
+    "archive": "Build ZIP",
+    "cancel": "Cancel",
+    "save": "Save",
+    "upload": "Upload",
+    "create": "Create",
+    "loading": "Loading…",
+    "empty": "The catalog has no modules yet",
+    "addVersion": "Add version",
+    "edit": "Edit",
+    "download": "Download ZIP"
   }
 }
