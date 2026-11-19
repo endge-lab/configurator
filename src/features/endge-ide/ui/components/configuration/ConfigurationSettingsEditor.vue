@@ -8,6 +8,7 @@ import type {
   EndgeConfigurationSchemaEntry,
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsConfigurationPatch,
+  EndgeDiagnosticsSnapshotContentConfiguration,
   EndgeJSONValue,
   EndgeTooltipConfiguration,
 } from '@endge/core'
@@ -17,8 +18,10 @@ import type { DocumentMetadataSession } from '@/features/endge-ide/services/docu
 import {
   applyEndgeConfigurationContribution,
   createDefaultEndgeConfiguration,
+  DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT,
+  DIAGNOSTICS_SHORTCUT_OPERATIONS,
   Endge,
-  ENDGE_VUE_SFC_ADAPTER_ID,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
   validateConfigurationValue,
 } from '@endge/core'
 import {
@@ -71,13 +74,14 @@ import WorkspaceRendererSettings from './WorkspaceRendererSettings.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName
-  = 'vars' | 'locales' | 'themes' | 'timezones'
+  = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
 type ScalarName
   = | 'defaultLocale'
     | 'fallbackLocale'
     | 'defaultTheme'
     | 'defaultTimezone'
     | 'defaultAuthProfileIdentity'
+    | 'defaultSfcAdapterId'
 type SystemConfigurationSection
   = | 'general'
     | 'environment'
@@ -346,6 +350,47 @@ const defaultRenderers = computed<EndgeConfiguration['defaultRenderers']>({
   },
 })
 
+const rendererOverrides = computed({
+  get: () => patch.value?.defaultRenderers,
+  set: (value) => {
+    if (patch.value) {
+      if (value) {
+        patch.value.defaultRenderers = value
+      }
+      else {
+        delete patch.value.defaultRenderers
+      }
+      notifyRootMutation()
+    }
+  },
+})
+
+const rootAdapterOptions = computed(() => [...new Set([
+  scalarValue('defaultSfcAdapterId'),
+  ...editableConfiguration.value.sfcAdapterIds,
+  ...Endge.uiRegistry.adapters.list()
+    .filter(adapter => adapter.protocol === ENDGE_SFC_RENDER_ADAPTER_PROTOCOL && adapter.renderer === 'vue')
+    .map(adapter => adapter.id),
+].filter(Boolean))])
+
+function setRootAdapter(id: unknown): void {
+  if (typeof id !== 'string' || !rootAdapterOptions.value.includes(id) || id === scalarValue('defaultSfcAdapterId')) {
+    return
+  }
+  if (isInherit.value && patch.value) {
+    const entries = patch.value.sfcAdapterIds?.entries ?? []
+    if (!contributionUpstream.value.sfcAdapterIds.includes(id) || entries.some(item => item.key === id && item.op === 'remove')) {
+      patch.value.sfcAdapterIds = {
+        entries: [...entries.filter(item => item.key !== id), { key: id, op: 'upsert', value: id }],
+      }
+    }
+  }
+  else if (!editableConfiguration.value.sfcAdapterIds.includes(id)) {
+    editableConfiguration.value.sfcAdapterIds.push(id)
+  }
+  setScalar('defaultSfcAdapterId', id)
+}
+
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
   const known = new Map(
     configurationCategories.value.map(category => [
@@ -438,7 +483,7 @@ const diagnosticsSections = [
   { id: 'outputs', label: 'Каналы вывода' },
   { id: 'routing', label: 'Маршрутизация' },
   { id: 'manual-snapshot', label: 'Ручной снимок' },
-  { id: 'hotkey-snapshot', label: 'Хоткей снимок' },
+  { id: 'hotkey-snapshot', label: 'Горячие клавиши' },
   { id: 'automatic-snapshots', label: 'Автоматические снимки' },
 ] as const
 const activeEditingSection = computed(
@@ -957,44 +1002,7 @@ function createDiagnosticsPatch(
       item => item.id,
     ),
   })
-  const content = compactObject({
-    telemetry: scalarPatch(
-      upstream.snapshots.content.telemetry,
-      value.snapshots.content.telemetry,
-    ),
-    problems: scalarPatch(
-      upstream.snapshots.content.problems,
-      value.snapshots.content.problems,
-    ),
-    configuration: scalarPatch(
-      upstream.snapshots.content.configuration,
-      value.snapshots.content.configuration,
-    ),
-    effectiveConfiguration: scalarPatch(
-      upstream.snapshots.content.effectiveConfiguration,
-      value.snapshots.content.effectiveConfiguration,
-    ),
-    domain: scalarPatch(
-      upstream.snapshots.content.domain,
-      value.snapshots.content.domain,
-    ),
-    program: scalarPatch(
-      upstream.snapshots.content.program,
-      value.snapshots.content.program,
-    ),
-    runtime: scalarPatch(
-      upstream.snapshots.content.runtime,
-      value.snapshots.content.runtime,
-    ),
-    raphData: scalarPatch(
-      upstream.snapshots.content.raphData,
-      value.snapshots.content.raphData,
-    ),
-    raphGraph: scalarPatch(
-      upstream.snapshots.content.raphGraph,
-      value.snapshots.content.raphGraph,
-    ),
-  })
+  const content = createDiagnosticsContentPatch(upstream.snapshots.content, value.snapshots.content)
   const automatic = compactObject({
     enabled: scalarPatch(
       upstream.snapshots.automatic.enabled,
@@ -1018,61 +1026,56 @@ function createDiagnosticsPatch(
       item => item,
     ),
   })
-  const shortcutContent = compactObject({
-    telemetry: scalarPatch(
-      upstream.snapshots.shortcut.content.telemetry,
-      value.snapshots.shortcut.content.telemetry,
-    ),
-    problems: scalarPatch(
-      upstream.snapshots.shortcut.content.problems,
-      value.snapshots.shortcut.content.problems,
-    ),
-    configuration: scalarPatch(
-      upstream.snapshots.shortcut.content.configuration,
-      value.snapshots.shortcut.content.configuration,
-    ),
-    effectiveConfiguration: scalarPatch(
-      upstream.snapshots.shortcut.content.effectiveConfiguration,
-      value.snapshots.shortcut.content.effectiveConfiguration,
-    ),
-    domain: scalarPatch(
-      upstream.snapshots.shortcut.content.domain,
-      value.snapshots.shortcut.content.domain,
-    ),
-    program: scalarPatch(
-      upstream.snapshots.shortcut.content.program,
-      value.snapshots.shortcut.content.program,
-    ),
-    runtime: scalarPatch(
-      upstream.snapshots.shortcut.content.runtime,
-      value.snapshots.shortcut.content.runtime,
-    ),
-    raphData: scalarPatch(
-      upstream.snapshots.shortcut.content.raphData,
-      value.snapshots.shortcut.content.raphData,
-    ),
-    raphGraph: scalarPatch(
-      upstream.snapshots.shortcut.content.raphGraph,
-      value.snapshots.shortcut.content.raphGraph,
-    ),
-  })
+  const shortcutContent = createDiagnosticsContentPatch(
+    upstream.snapshots.shortcut.content,
+    value.snapshots.shortcut.content,
+  )
+  const upstreamAction = upstream.snapshots.shortcut.action
+  const currentAction = value.snapshots.shortcut.action
+  const bindings = compactObject(Object.fromEntries(DIAGNOSTICS_SHORTCUT_OPERATIONS.map((operation) => {
+    const previous = upstream.snapshots.shortcut.bindings?.[operation]
+    const current = value.snapshots.shortcut.bindings?.[operation]
+    return [operation, current !== undefined ? scalarPatch(previous, current) : previous && { op: 'remove' as const }]
+  })))
   const shortcut = compactObject({
     triggerSet: scalarPatch(
       upstream.snapshots.shortcut.triggerSet,
       value.snapshots.shortcut.triggerSet,
     ),
-    content: hasKeys(shortcutContent) ? shortcutContent : undefined,
+    content: shortcutContent,
+    action: currentAction
+      ? scalarPatch(upstreamAction, currentAction)
+      : upstreamAction && { op: 'remove' as const },
+    bindings: hasKeys(bindings) ? bindings : undefined,
   })
   const snapshots = compactObject({
-    content: hasKeys(content) ? content : undefined,
+    content,
     shortcut: hasKeys(shortcut) ? shortcut : undefined,
     automatic: hasKeys(automatic) ? automatic : undefined,
   })
+  const recording = compactObject({
+    enabled: scalarPatch(upstream.recording?.enabled ?? false, value.recording?.enabled ?? false),
+    content: createDiagnosticsContentPatch(
+      upstream.recording?.content ?? DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT,
+      value.recording?.content ?? DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT,
+    ),
+  })
   const result = compactObject({
+    recording: hasKeys(recording) ? recording : undefined,
     telemetry: hasKeys(telemetry) ? telemetry : undefined,
     snapshots: hasKeys(snapshots) ? snapshots : undefined,
   }) as EndgeDiagnosticsConfigurationPatch
   return hasKeys(result) ? result : undefined
+}
+
+// Сравнивает состав снимка по полям, сохраняя наследование остальных флагов.
+function createDiagnosticsContentPatch(
+  upstream: EndgeDiagnosticsSnapshotContentConfiguration,
+  value: EndgeDiagnosticsSnapshotContentConfiguration,
+) {
+  const keys = Object.keys(DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT) as (keyof EndgeDiagnosticsSnapshotContentConfiguration)[]
+  const patch = compactObject(Object.fromEntries(keys.map(key => [key, scalarPatch(upstream[key], value[key])])))
+  return hasKeys(patch) ? patch : undefined
 }
 
 // Создаёт required scalar override только при фактическом отличии.
@@ -1549,22 +1552,41 @@ function isEqual(left: unknown, right: unknown): boolean {
           </TabsContent>
 
           <TabsContent value="ui" class="m-0 space-y-6 p-5 outline-none">
-            <div class="space-y-2">
-              <Label>{{ $t('moduleCatalog.rootSfcAdapter') }}</Label>
-              <Select :model-value="ENDGE_VUE_SFC_ADAPTER_ID" :disabled="disabled">
-                <SelectTrigger :aria-label="$t('moduleCatalog.rootSfcAdapter')">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem :value="ENDGE_VUE_SFC_ADAPTER_ID">
-                    {{ ENDGE_VUE_SFC_ADAPTER_ID }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <ConfigurationOverrideField
+              :label="$t('moduleCatalog.rootSfcAdapter')"
+              :uses-parent-value="isInherit"
+              :overridden="hasScalarOverride('defaultSfcAdapterId')"
+              @enable="enableScalar('defaultSfcAdapterId')"
+              @reset="resetScalar('defaultSfcAdapterId')"
+            >
+              <template
+                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
+              >
+                <Select
+                  :model-value="scalarValue('defaultSfcAdapterId') || undefined"
+                  :disabled="disabled || fieldDisabled"
+                  @update:model-value="setRootAdapter"
+                >
+                  <SelectTrigger :aria-label="$t('moduleCatalog.rootSfcAdapter')" class="w-full bg-background">
+                    <SelectValue :placeholder="fieldDisabled ? parentValuePlaceholder : undefined" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="adapter in rootAdapterOptions" :key="adapter" :value="adapter">
+                      {{ adapter }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </template>
+            </ConfigurationOverrideField>
             <WorkspaceRendererSettings
               v-if="variant === 'root' && activeSection === 'ui'"
               v-model="defaultRenderers"
+              :disabled="disabled"
+            />
+            <WorkspaceRendererSettings
+              v-else-if="isInherit && activeSection === 'ui'"
+              v-model:overrides="rendererOverrides"
+              facet
               :disabled="disabled"
             />
           </TabsContent>

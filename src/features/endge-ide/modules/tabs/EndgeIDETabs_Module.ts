@@ -508,6 +508,35 @@ export class EndgeIDETabs_Module {
     )
   }
 
+  public getDirtySourceDocuments() {
+    return this.openTabs.value.flatMap((tab) => {
+      if (tab.viewId !== VIEW_ID_DOCUMENT || !this.isTabDirty(tab.id)) {
+        return []
+      }
+      const documentType = tab.payload?.documentType
+      if (typeof documentType !== 'string') {
+        return []
+      }
+      const type = documentType as DomainDocumentType
+      const session = this._sessionByTabId.get(tab.id)
+      const editor = session?.editor as { source?: unknown } | undefined
+      const model = session?.model as { id?: number | string, identity?: string } | undefined
+      const capabilities = getDomainDocumentDescriptor(type)?.capabilities
+      if (typeof editor?.source !== 'string' || !capabilities?.source || !model?.identity) {
+        return []
+      }
+      return [{
+        ref: {
+          entityType: capabilities.program ?? type,
+          identity: model.identity,
+          id: model.id ?? model.identity,
+        },
+        source: editor.source,
+        sourceKind: capabilities.source,
+      }]
+    })
+  }
+
   /**
    * Защита Ctrl/Cmd+W. Обычная кнопка закрытия намеренно обходит эту проверку.
    */
@@ -787,7 +816,17 @@ export class EndgeIDETabs_Module {
   /**
    * Разрешает diagnostics entity reference и открывает исходный authoring document.
    */
-  public openDiagnosticsEntity(reference: DiagnosticsEntityRef): boolean {
+  public openDiagnosticsEntity(reference: DiagnosticsEntityRef, sourceOffset?: number): boolean {
+    if (reference.entityType === 'facet-document') {
+      for (const facet of Endge.domain.getFacets()) {
+        const document = Endge.domain.getFacetDocuments(facet.identity)
+          .find(item => String(item.id) === String(reference.id))
+        if (document) {
+          this.openFacetDocument(facet.identity, document.identity)
+          return true
+        }
+      }
+    }
     const target = resolveDiagnosticsDocumentTarget(reference)
     if (!target) {
       toast.warning('Сущность не найдена', {
@@ -801,7 +840,7 @@ export class EndgeIDETabs_Module {
       })
       return false
     }
-    this.openDocument(target.documentId, target.documentType)
+    this.openDocument(target.documentId, target.documentType, { sourceOffset })
     return true
   }
 

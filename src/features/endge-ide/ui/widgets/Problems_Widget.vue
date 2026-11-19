@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { DiagnosticsProblemSeverity } from '@endge/core'
 
-import { Endge } from '@endge/core'
 import { ChevronRight, CircleCheck, RefreshCw, ShieldAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -11,7 +11,15 @@ import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import ProblemsTreeEntityNode from '@/features/endge-ide/ui/widgets/components/ProblemsTreeEntityNode.vue'
 
 const problems = EndgeIDE.problems
-const isAnalyzing = ref(false)
+const { t } = useI18n()
+const statusText = computed(() => ({
+  idle: t('workspaceAnalysis.idle'),
+  running: t('workspaceAnalysis.running'),
+  complete: t('workspaceAnalysis.complete'),
+  incomplete: t('workspaceAnalysis.incomplete'),
+  stale: t('workspaceAnalysis.stale'),
+})[problems.analysisStatus.value])
+const isAnalyzing = computed(() => problems.analysisStatus.value === 'running')
 const collapsedGroups = ref(new Set<DiagnosticsProblemSeverity>())
 
 const problemCount = computed(() => problems.entries.value.reduce((total, entry) => total + entry.problems.length, 0))
@@ -21,20 +29,6 @@ const errorCount = computed(() => problems.entries.value.reduce((total, entry) =
 const warningCount = computed(() => problems.entries.value.reduce((total, entry) => {
   return total + entry.problems.filter(problem => problem.severity === 'warning').length
 }, 0))
-
-// Запускает Domain build, который атомарно обновляет актуальные build problems.
-async function runDomainAnalysis(): Promise<void> {
-  if (isAnalyzing.value) {
-    return
-  }
-  isAnalyzing.value = true
-  try {
-    await Endge.build()
-  }
-  finally {
-    isAnalyzing.value = false
-  }
-}
 
 // Сворачивает или раскрывает severity-ветку дерева.
 function toggleGroup(severity: DiagnosticsProblemSeverity): void {
@@ -83,7 +77,7 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
               size="icon"
               class="size-7"
               :disabled="isAnalyzing"
-              @click="runDomainAnalysis"
+              @click="problems.analyze()"
             >
               <RefreshCw class="size-3.5" :class="isAnalyzing && 'animate-spin'" />
             </Button>
@@ -91,6 +85,10 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
           <TooltipContent>{{ $t('uiText.reanalyzeDomain36a10b6c') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+    </div>
+
+    <div class="shrink-0 border-b px-2.5 py-1.5 text-[11px] text-muted-foreground" aria-live="polite">
+      {{ statusText }}
     </div>
 
     <div v-if="problems.groups.value.length" class="min-h-0 flex-1 overflow-auto py-1">
@@ -122,13 +120,10 @@ function severityMarkerClass(severity: DiagnosticsProblemSeverity): string {
     <div v-else class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-5 py-10 text-center text-muted-foreground">
       <span class="relative">
         <ShieldAlert class="size-9 opacity-20" stroke-width="1.25" />
-        <CircleCheck class="absolute -bottom-1 -right-1 size-4 text-emerald-500" />
+        <CircleCheck v-if="problems.analysisStatus.value === 'complete'" class="absolute -bottom-1 -right-1 size-4 text-emerald-500" />
       </span>
-      <div class="text-xs font-medium text-foreground">
+      <div v-if="problems.analysisStatus.value === 'complete'" class="text-xs font-medium text-foreground">
         {{ $t('uiText.noIssuesDetectedae658e4c') }}
-      </div>
-      <div class="max-w-52 text-[10px] leading-4">
-        {{ $t('uiText.registryIsUpToDateReanalyzeAfterDomainChangesfc0faf0e') }}
       </div>
     </div>
 

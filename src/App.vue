@@ -16,6 +16,7 @@ import BackendSelectionGate from '@/features/backend-connections/ui/BackendSelec
 import { isIDEPlainMode } from '@/features/endge-ide/config/endge-ide-debug-flags'
 import { useEndgeIDEContext } from '@/features/endge-ide/services/context/use-endge-ide-context'
 import { warnDebuggerReadOnly } from '@/features/endge-ide/tools/warn-debugger-read-only'
+import DiagnosticsRecordingIndicator from '@/features/endge-ide/ui/components/diagnostics/DiagnosticsRecordingIndicator.vue'
 import EndgeDetachedApp from '@/features/endge-ide/ui/EndgeDetachedApp.vue'
 import EndgeIDEErrorView from '@/features/endge-ide/ui/error/EndgeIDEErrorView.vue'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
@@ -152,6 +153,7 @@ onErrorCaptured((err, instance, info) => {
     </component>
   </EndgeAdapterRoot>
 
+  <DiagnosticsRecordingIndicator v-if="hasActiveWorkspace && Endge.mode !== 'debugger' && !isOidcPopupCallback" />
   <Toaster
     position="top-center"
     rich-colors

@@ -47,6 +47,10 @@ describe('разрешённое дерево Actions домена', () => {
         ...descriptor('built-in-console-log', { kind: 'builtin', owner: '@endge/core' }),
         catalogPath: ['Debug'],
       },
+      {
+        ...descriptor('built-in-diagnostics-download', { kind: 'builtin', owner: '@endge/core' }),
+        catalogPath: ['Debug', 'Диагностика'],
+      },
       descriptor('app.debug', { kind: 'local', owner: 'app' }),
       descriptor('orders-table.refresh', {
         kind: 'derived',
@@ -72,11 +76,10 @@ describe('разрешённое дерево Actions домена', () => {
       virtual: true,
     })
     const debugFolder = builtIn.children?.find(node => node.name === 'Debug') as FsFolderNode
-    expect(debugFolder.children?.[0]).toMatchObject({
-      type: 'file',
-      identity: 'built-in-console-log',
-      docType: 'action',
-    })
+    expect(debugFolder.children).toMatchObject([
+      { type: 'folder', name: 'Диагностика', children: [{ identity: 'built-in-diagnostics-download' }] },
+      { type: 'file', identity: 'built-in-console-log', docType: 'action' },
+    ])
     const provided = root.children?.[1] as FsFolderNode
     expect(provided.virtualOrigin).toBe('derived')
     const components = provided.children?.[0] as FsFolderNode
@@ -94,7 +97,7 @@ describe('разрешённое дерево Actions домена', () => {
     })
     expect(tableOwner).not.toHaveProperty('sourceDocument')
     const virtualActions = flatten(root).filter(node => node.type === 'file' && node.virtual && node.docType === 'action')
-    expect(virtualActions).toHaveLength(4)
+    expect(virtualActions).toHaveLength(5)
     expect(virtualActions.find(node => node.identity === 'table.column.pinLeft')?.badges).toBeUndefined()
     expect(virtualActions.find(node => node.identity === 'orders-table.refresh')?.badges).toEqual(['provided'])
   })

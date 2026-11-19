@@ -20,9 +20,10 @@ test('publishes versions and renders the selected composition with its module', 
     await folder.click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Добавить модуль' }).click()
     const create = page.getByRole('dialog', { name: 'Добавить модуль' })
-    await create.getByLabel('Идентификатор').fill('slot-ui-preview')
     await create.getByLabel('Название').fill(moduleName)
     await create.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.1.zip'))
+    await expect(create.getByText('slot-ui-preview', { exact: true })).toBeVisible()
+    await expect(create.getByText('0.1.0-dev.1', { exact: true })).toBeVisible()
     await create.getByRole('button', { name: 'Загрузить', exact: true }).click()
     await expect(create).toBeHidden()
   }
@@ -35,7 +36,16 @@ test('publishes versions and renders the selected composition with its module', 
   await publish.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.2.zip'))
   await publish.getByRole('button', { name: 'Загрузить', exact: true }).click()
   await expect(editor.getByText('0.1.0-dev.2', { exact: true })).toBeVisible()
-  await expect(editor.getByRole('link', { name: 'Скачать ZIP' })).toHaveCount(2)
+  for (const version of ['0.1.0-dev.1', '0.1.0-dev.2']) {
+    const title = `Сведения о версии ${version}`
+    const trigger = editor.getByRole('button', { name: title, exact: true })
+    await trigger.click()
+    const details = page.getByRole('dialog', { name: title })
+    await expect(details.getByText('slot-ui-preview', { exact: true })).toBeVisible()
+    await expect(details.getByRole('link', { name: 'Скачать ZIP' })).toHaveAttribute('href', new RegExp(`/versions/${version.replaceAll('.', '\\.')}\\/archive$`))
+    await page.keyboard.press('Escape')
+    await expect(details).toBeHidden()
+  }
 
   async function launchPreview() {
     await openDocument(page, 'Композиции', 'Slot Preview (модуль)')

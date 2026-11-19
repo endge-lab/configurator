@@ -24,10 +24,21 @@ export function collectGraphQLSchemaProblems(
   compiler: SourceCompiler,
   sourceKind: GraphQLSchemaSourceKind,
   source: string,
+  reportUnavailable = false,
 ): ProgramDiagnostic[] {
-  const entry = schemas.entryFor(resolveGraphQLSchemaTarget(compiler, sourceKind, source))
+  const target = resolveGraphQLSchemaTarget(compiler, sourceKind, source)
+  const entry = schemas.entryFor(target)
   if (!entry) {
-    return []
+    return target && reportUnavailable
+      ? [{
+          severity: 'warning',
+          code: 'graphql-schema-not-checked',
+          message: target.dynamicEndpoint
+            ? 'Схема GraphQL не проверена: endpoint зависит от входных параметров.'
+            : 'Схема GraphQL не проверена: для endpoint нет сохранённой схемы.',
+          sourcePath: GRAPHQL_SCHEMA_PROBLEM_SOURCE_PATH,
+        }]
+      : []
   }
   return validateGraphQLSourceTemplates(entry.schema, source).map(diagnostic => ({
     severity: diagnostic.severity,

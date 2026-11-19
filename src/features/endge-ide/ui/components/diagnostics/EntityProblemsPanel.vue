@@ -23,6 +23,7 @@ import {
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
@@ -30,6 +31,7 @@ const props = defineProps<{
   entityRef?: DiagnosticsEntityRef
   problems?: readonly DiagnosticsProblem[]
   authoringDiagnostics?: readonly ProgramDiagnostic[]
+  openProblem?: (problem: DiagnosticsProblem) => void
 }>()
 
 const problemsRevision = useSubscribableRefAuto(Endge.diagnostics.problems)
@@ -214,6 +216,9 @@ watch(activePhase, synchronizeProblemSelection)
                   <h2 class="text-base font-semibold leading-6 text-foreground">
                     {{ selectedProblem.message }}
                   </h2>
+                  <Button v-if="openProblem && selectedProblem.start != null" variant="outline" size="sm" class="mt-2" @click="openProblem(selectedProblem)">
+                    {{ $t('workspaceAnalysis.openSource') }}
+                  </Button>
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EndgeConfiguration, EndgeSFCRendererTag, ModuleRendererReference } from '@endge/core'
+import type { EndgeConfiguration, EndgeConfigurationPatch, EndgeSFCRendererTag, ModuleRendererReference } from '@endge/core'
 import { ENDGE_SFC_RENDERER_TAGS, isEndgeSFCRendererTag } from '@endge/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
-defineProps<{ disabled?: boolean }>()
+const props = defineProps<{ disabled?: boolean, facet?: boolean }>()
 const model = defineModel<EndgeConfiguration['defaultRenderers']>()
+const overrides = defineModel<EndgeConfigurationPatch['defaultRenderers']>('overrides')
 interface RendererOption {
   reference: ModuleRendererReference
   label: string
@@ -18,7 +19,6 @@ const search = ref('')
 const catalog = EndgeIDE.moduleCatalog
 const error = ref('')
 const { t } = useI18n()
-const DEFAULT_RENDERER = 'default'
 
 function selectionKey(reference: ModuleRendererReference): string {
   return `${reference.identity}@${reference.version}:${reference.rendererId}`
@@ -36,21 +36,43 @@ const tags = computed(() => {
 })
 
 function selection(tag: EndgeSFCRendererTag): string {
+  if (props.facet) {
+    const override = overrides.value?.[tag]
+    if (!override) {
+      return 'inherit'
+    }
+    return override.op === 'remove' ? 'adapter' : selectionKey(override.value)
+  }
   const reference = model.value?.[tag]
-  return reference ? selectionKey(reference) : DEFAULT_RENDERER
+  return reference ? selectionKey(reference) : 'adapter'
 }
 
 function isUnavailable(tag: EndgeSFCRendererTag): boolean {
-  return Boolean(model.value?.[tag]) && !options.value[tag]?.some(entry => selectionKey(entry.reference) === selection(tag))
+  const value = selection(tag)
+  return value !== 'adapter' && value !== 'inherit' && !options.value[tag]?.some(entry => selectionKey(entry.reference) === value)
 }
 
 function select(tag: EndgeSFCRendererTag, value: unknown): void {
+  const chosen = options.value[tag]?.find(entry => selectionKey(entry.reference) === value)
+  if (props.facet) {
+    const next = { ...overrides.value }
+    if (value === 'inherit') {
+      delete next[tag]
+    }
+    else if (value === 'adapter') {
+      next[tag] = { op: 'remove' }
+    }
+    else if (chosen) {
+      next[tag] = { op: 'set', value: chosen.reference }
+    }
+    overrides.value = Object.keys(next).length ? next : undefined
+    return
+  }
   const next = { ...model.value }
-  if (value === DEFAULT_RENDERER) {
+  if (value === 'adapter') {
     delete next[tag]
   }
   else {
-    const chosen = options.value[tag]?.find(entry => selectionKey(entry.reference) === value)
     if (!chosen) {
       return
     }
@@ -119,8 +141,11 @@ watch(catalog.state, async (state, _previous, onCleanup) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem :value="DEFAULT_RENDERER">
-              {{ DEFAULT_RENDERER }}
+            <SelectItem v-if="facet" value="inherit">
+              {{ t('moduleCatalog.inheritRenderer') }}
+            </SelectItem>
+            <SelectItem value="adapter">
+              {{ t('moduleCatalog.adapterRenderer') }}
             </SelectItem>
             <SelectItem v-if="isUnavailable(tag)" :value="selection(tag)" disabled>
               {{ selection(tag) }}

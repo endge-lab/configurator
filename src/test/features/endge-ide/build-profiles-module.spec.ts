@@ -7,13 +7,42 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Configurator } from '@/app/Configurator'
 import { BundleFiles_Service } from '@/app/services/BundleFiles_Service'
 import { ConfiguratorReleases_Module } from '@/features/configurator-releases/ConfiguratorReleases_Module'
+import { ServiceBackendModulesHttpAdapter } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 import { cloneBuildProfileSettings, createDefaultBuildProfileSettings } from '@/features/endge-ide/domain/entities/RBuildProfile'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 import { EndgeIDEBuildProfiles_Module } from '@/features/endge-ide/modules/EndgeIDEBuildProfiles_Module'
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('модуль профилей сборки', () => {
+  it('requests one exact module version shared by the selected contexts and packs it once', async () => {
+    const settings = createDefaultBuildProfileSettings()
+    const module = new EndgeIDEBuildProfiles_Module(adapterStub())
+    const reference = { identity: 'visual-a', version: '1.1.0' }
+    const manifest = { ...reference, formatVersion: 1, hostApi: 1 } as const
+    const transport = new ServiceBackendModulesHttpAdapter('http://example.test')
+    const load = vi.spyOn(transport, 'readDeliveryModule').mockResolvedValue({ manifest, js: 'export default () => ({})' })
+    vi.spyOn(EndgeIDE, 'moduleCatalog', 'get').mockReturnValue({ transport } as typeof EndgeIDE.moduleCatalog)
+    const bundles = ['web', 'mobile'].map(channel => ({
+      programId: channel,
+      compilerVersion: 'program-v5',
+      context: { facets: { tenant: 'customer-a', channel }, configuration: { defaultRenderers: { Table: { ...reference, rendererId: 'visual' } } } },
+      artifacts: {},
+    })) as unknown as Awaited<ReturnType<typeof Endge.buildSavedDelivery>>['bundles']
+    vi.spyOn(Endge, 'buildSavedDelivery').mockResolvedValue({ snapshot: null, bundles })
+    const encode = vi.spyOn(BundleFiles_Service.prototype, 'encode').mockResolvedValue(new Uint8Array([1]))
+    const facets = { tenant: { mode: 'one', identity: 'customer-a' }, channel: { mode: 'all' } } as const
+    await module.buildBundle(settings, undefined, { facets, includeModules: true })
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledWith(reference, expect.any(AbortSignal))
+    expect(encode).toHaveBeenCalledWith(expect.objectContaining({
+      version: 2,
+      delivery: { variants: [bundles[1]], modules: [{ manifest, js: 'export default () => ({})' }] },
+    }), 'gzip', expect.any(AbortSignal))
+    expect(module.result.value?.delivery?.embeddedModules).toEqual(['visual-a@1.1.0'])
+  })
+
   it('defaults to the startup graph and publishes its actual scope without AST', async () => {
     const settings = createDefaultBuildProfileSettings()
     expect(settings).toMatchObject({ buildScope: 'startup-composition', contexts: 'effective-context', includeAst: false })

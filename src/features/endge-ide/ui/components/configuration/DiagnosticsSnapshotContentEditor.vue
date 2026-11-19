@@ -48,7 +48,7 @@ function setAll(value: boolean): void {
       </Button>
     </div>
 
-    <div class="grid gap-3 xl:grid-cols-2">
+    <div class="snapshot-grid grid gap-3">
       <div class="snapshot-group">
         <div>
           <p class="snapshot-group-title">
@@ -77,7 +77,7 @@ function setAll(value: boolean): void {
         <label class="snapshot-option"><Checkbox :model-value="modelValue.program" :disabled="disabled" @update:model-value="setContent('program', $event)" />{{ $t('diagnostics.snapshot.program') }}</label>
       </div>
 
-      <div class="snapshot-group xl:col-span-2">
+      <div class="snapshot-group col-span-full">
         <div>
           <p class="snapshot-group-title">
             {{ $t('diagnostics.snapshot.groups.runtime.title') }}
@@ -86,7 +86,7 @@ function setAll(value: boolean): void {
             {{ $t('diagnostics.snapshot.groups.runtime.description') }}
           </p>
         </div>
-        <div class="grid gap-3 sm:grid-cols-3">
+        <div class="snapshot-grid grid gap-3">
           <label class="snapshot-option"><Checkbox :model-value="modelValue.runtime" :disabled="disabled" @update:model-value="setContent('runtime', $event)" />{{ $t('diagnostics.snapshot.runtime') }}</label>
           <label class="snapshot-option"><Checkbox :model-value="modelValue.raphData" :disabled="disabled" @update:model-value="setContent('raphData', $event)" />{{ $t('diagnostics.snapshot.raphData') }}</label>
           <label class="snapshot-option"><Checkbox :model-value="modelValue.raphGraph" :disabled="disabled" @update:model-value="setContent('raphGraph', $event)" />{{ $t('diagnostics.snapshot.raphGraph') }}</label>
@@ -97,6 +97,10 @@ function setAll(value: boolean): void {
 </template>
 
 <style scoped>
+.snapshot-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
 .settings-hint {
   margin-top: 0.25rem;
   color: var(--muted-foreground);
@@ -105,6 +109,7 @@ function setAll(value: boolean): void {
 }
 
 .snapshot-group {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

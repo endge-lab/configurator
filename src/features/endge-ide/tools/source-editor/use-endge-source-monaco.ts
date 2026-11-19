@@ -389,7 +389,18 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
     editor.value = null
   })
 
-  return { editor, diagnosticsCount, setValue, validate, formatDocument, languageId }
+  function focusOffset(offset: number): void {
+    const instance = editor.value
+    const model = instance?.getModel()
+    if (instance && model) {
+      const position = model.getPositionAt(offset)
+      instance.setPosition(position)
+      instance.revealPositionInCenterIfOutsideViewport(position)
+      instance.focus()
+    }
+  }
+
+  return { editor, diagnosticsCount, setValue, validate, formatDocument, focusOffset, languageId }
 
   function openReference(model: Monaco.editor.ITextModel | null, position: Monaco.Position): boolean {
     if (!model) {

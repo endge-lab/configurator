@@ -6,4 +6,8 @@ export interface BuildResult {
   sizeBytes: number
   source: ReleaseBuildSource | null
   metadata: ReleaseBuildMetadata
+  delivery?: {
+    facets: Readonly<Record<string, string>>[]
+    embeddedModules: string[] | null
+  }
 }

@@ -19,7 +19,7 @@ watch(() => props.modelValue, (value) => {
   source.value = value ?? ''
   monaco.setValue(source.value)
 })
-defineExpose({ formatDocument: monaco.formatDocument })
+defineExpose({ formatDocument: monaco.formatDocument, focusOffset: monaco.focusOffset })
 </script>
 
 <template>

@@ -82,7 +82,29 @@ async function publish(): Promise<void> {
             </dt><dd>{{ result.source.headSequence }}</dd>
           </template>
         </dl>
-        <p class="text-xs text-muted-foreground">
+        <div v-if="result.delivery" class="space-y-2 rounded border p-3 text-xs">
+          <details>
+            <summary class="cursor-pointer">
+              {{ t('releaseBuild.deliveryContexts', { count: result.delivery.facets.length }) }}
+            </summary>
+            <ul class="mt-2 max-h-36 space-y-1 overflow-y-auto font-mono">
+              <li v-for="facets in result.delivery.facets" :key="JSON.stringify(facets)">
+                {{ Object.entries(facets).map(([facet, value]) => `${facet}=${value}`).join(', ') || t('releaseBuild.noFacets') }}
+              </li>
+            </ul>
+          </details>
+          <details v-if="result.delivery.embeddedModules">
+            <summary class="cursor-pointer">
+              {{ t('releaseBuild.embeddedModules', { count: result.delivery.embeddedModules.length }) }}
+            </summary>
+            <ul class="mt-2 max-h-36 space-y-1 overflow-y-auto font-mono">
+              <li v-for="reference in result.delivery.embeddedModules" :key="reference">
+                {{ reference }}
+              </li>
+            </ul>
+          </details>
+        </div>
+        <p v-else class="text-xs text-muted-foreground">
           {{ t('releaseBuild.currentContext') }}
         </p>
         <p v-if="!result.source" class="text-xs text-muted-foreground">

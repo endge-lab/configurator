@@ -49,7 +49,7 @@ import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Configurator } from '@/app/Configurator'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -114,7 +114,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 const MODULE_CATALOG_FOLDER_PATH = 'root-module-catalog'
 const MODULE_CATALOG_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.catalogModule
 const MODULE_CATALOG_TARGET = { type: 'module-catalog-folder' } as const
-type DomainContextMenuTarget = FsNode | typeof MODULE_CATALOG_TARGET
+type DomainContextMenuTarget = FsNode | typeof MODULE_CATALOG_TARGET | { type: 'catalog-module', entry: CatalogModule }
 const DOMAIN_ROW_LAYOUT = 'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none'
 const DOMAIN_ROW_COLORS = 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30'
 
@@ -124,6 +124,7 @@ function facetRootId(identity: string): string {
 
 const tabs = EndgeIDE.tabs
 const createModuleOpen = ref(false)
+const moduleDeletionDialog = ref({ open: false, entry: null as CatalogModule | null, loading: false })
 const catalog = EndgeIDE.moduleCatalog
 const moduleCatalogState = catalog.state
 const hasActiveWorkspace = computed(() => props.programCatalog !== undefined || Configurator.hasActiveWorkspace)
@@ -134,6 +135,7 @@ const canPublishModules = computed(() => sessionState.value.status === 'authenti
 type ArchiveEntry
   = | (EndgeArchivedDocument & { kind: 'document' })
     | (ArchivedWorkspace & { kind: 'workspace' })
+    | { kind: 'module', identity: string, displayName: string, revision: number, deletedAt: string }
 
 const archiveMode = ref(false)
 const archiveLoading = ref(false)
@@ -145,10 +147,13 @@ const archiveContextMenuRef = ref<HTMLElement | null>(null)
 const archiveContextMenu = ref({ open: false, x: 0, y: 0 })
 
 function archiveKey(item: ArchiveEntry): string {
-  return `${item.kind === 'document' ? item.type : 'workspace'}:${item.identity}`
+  return `${item.kind === 'document' ? item.type : item.kind}:${item.identity}`
 }
 
 function getArchiveEntryPresentation(item: ArchiveEntry): DomainDocumentPresentation {
+  if (item.kind === 'module') {
+    return MODULE_CATALOG_PRESENTATION
+  }
   return item.kind === 'workspace'
     ? DOCUMENT_AUXILIARY_PRESENTATION.workspace
     : getDomainCollectionPresentation(item.type)
@@ -165,18 +170,33 @@ async function loadArchive(reset = true): Promise<void> {
   }
   archiveLoading.value = true
   try {
-    const [documentPage, workspaces] = await Promise.all([
+    const [documentPage, workspaces, modules] = await Promise.all([
       hasActiveWorkspace.value
         ? Endge.domainRepository.listArchivedDocuments(reset ? undefined : archiveNextCursor.value ?? undefined)
         : Promise.resolve({ items: [] as EndgeArchivedDocument[], nextCursor: undefined }),
       reset ? Configurator.connections.listArchivedWorkspaces() : Promise.resolve([]),
+      reset && canPublishModules.value
+        ? catalog.listArchived().catch((error: unknown) => {
+            toast.error(t('moduleCatalog.archiveLoadFailed'), {
+              description: error instanceof Error ? error.message : String(error),
+            })
+            return []
+          })
+        : Promise.resolve([]),
     ])
     const documents = documentPage.items
       .filter(item => item.type !== 'folders')
       .map(item => ({ ...item, kind: 'document' as const }))
     const workspaceEntries = workspaces.map(item => ({ ...item, kind: 'workspace' as const }))
+    const moduleEntries = modules.map(item => ({
+      kind: 'module' as const,
+      identity: item.identity,
+      displayName: item.name,
+      revision: item.revision,
+      deletedAt: item.deletedAt,
+    }))
     archiveEntries.value = sortArchiveEntries(reset
-      ? [...workspaceEntries, ...documents]
+      ? [...workspaceEntries, ...documents, ...moduleEntries]
       : [...archiveEntries.value, ...documents])
     archiveNextCursor.value = documentPage.nextCursor ?? null
     if (reset) {
@@ -244,6 +264,9 @@ const canRestoreArchiveSelection = computed(() => selectedArchiveEntries.value.l
     if (item.kind === 'document') {
       return item.type !== 'folders'
     }
+    if (item.kind === 'module') {
+      return canPublishModules.value
+    }
     return item.role === 'admin'
       || (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)
   }))
@@ -262,6 +285,9 @@ async function restoreArchiveSelection(): Promise<void> {
       if (item.kind === 'document') {
         await Endge.domainRepository.restoreArchivedDocument(item)
         restoredDocuments = true
+      }
+      else if (item.kind === 'module') {
+        await catalog.restore(item)
       }
       else {
         await Configurator.connections.restoreWorkspace(item)
@@ -306,6 +332,7 @@ type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
     | { type: 'create-workspace' }
     | { type: 'create-module' }
+    | { type: 'delete-module', entry: CatalogModule }
     | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, active: boolean }
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
@@ -1716,6 +1743,29 @@ function openCreatedModule(entry: CatalogModule): void {
   openCatalogModule(entry)
 }
 
+async function confirmModuleDeletion(): Promise<void> {
+  const state = moduleDeletionDialog.value
+  if (!state.entry || state.loading) {
+    return
+  }
+  const entry = state.entry
+  state.loading = true
+  try {
+    await catalog.softDelete(entry)
+    tabs.closeTab(tabs.catalogModuleTabId(entry.identity))
+    state.open = false
+    toast.success(t('moduleCatalog.deleted'))
+  }
+  catch (error) {
+    toast.error(t('moduleCatalog.deleteFailed'), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+  finally {
+    state.loading = false
+  }
+}
+
 const selectedExportNodes = computed<FsFileNode[]>(() => {
   const selected = new Map<string, FsFileNode>()
   for (const item of allDomainFileItems.value) {
@@ -2207,6 +2257,11 @@ function getMenuActions(node: DomainContextMenuTarget): Array<{ label: string, i
       ? [{ label: t('moduleCatalog.create'), icon: Plus, action: { type: 'create-module' } }]
       : items
   }
+  if (node.type === 'catalog-module') {
+    return canPublishModules.value
+      ? [{ label: t('moduleCatalog.delete'), icon: Trash2, action: { type: 'delete-module', entry: node.entry }, destructive: true }]
+      : items
+  }
   if (node.type === 'folder' && node.id === 'root-workspaces') {
     if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
       items.push({ label: t('workspaceTree.create'), icon: Plus, action: { type: 'create-workspace' } })
@@ -2387,6 +2442,10 @@ async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<voi
   if (a.type === 'create-module') {
     closeContextMenu()
     createModuleOpen.value = true
+    return
+  }
+  if (a.type === 'delete-module') {
+    moduleDeletionDialog.value = { open: true, entry: a.entry, loading: false }
     return
   }
   if (a.type === 'create-facet-document') {
@@ -2810,6 +2869,7 @@ function rowClasses(item: FlatFsItem): string {
                   :style="rowPaddingStyle(1)"
                   :title="entry.identity"
                   @click.stop="openCatalogModule(entry)"
+                  @contextmenu="openContextMenu($event, { type: 'catalog-module', entry }, MODULE_CATALOG_FOLDER_PATH)"
                 >
                   <span class="size-4 shrink-0" aria-hidden="true" />
                   <DocumentIcon :presentation="MODULE_CATALOG_PRESENTATION" size="tree" />
@@ -2953,6 +3013,23 @@ function rowClasses(item: FlatFsItem): string {
     </Teleport>
 
     <ModuleFormDialog v-if="showModuleCatalog && canPublishModules && createModuleOpen" mode="create" @saved="openCreatedModule" @close="createModuleOpen = false" />
+    <Dialog :open="moduleDeletionDialog.open" @update:open="open => { if (!moduleDeletionDialog.loading) moduleDeletionDialog.open = open }">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ t('moduleCatalog.deleteTitle', { name: moduleDeletionDialog.entry?.name }) }}</DialogTitle>
+          <DialogDescription>{{ t('moduleCatalog.deleteDescription') }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" :disabled="moduleDeletionDialog.loading" @click="moduleDeletionDialog.open = false">
+            {{ t('moduleCatalog.cancel') }}
+          </Button>
+          <Button variant="destructive" :disabled="moduleDeletionDialog.loading" @click="confirmModuleDeletion">
+            <Loader2 v-if="moduleDeletionDialog.loading" class="size-4 animate-spin" />
+            {{ t('moduleCatalog.deleteConfirm') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <Dialog v-model:open="facetDocumentDialog.open">
       <DialogContent class="sm:max-w-md">
         <DialogHeader><DialogTitle>{{ $t('facets.newDocument') }}</DialogTitle></DialogHeader>

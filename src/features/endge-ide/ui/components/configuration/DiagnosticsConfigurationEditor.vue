@@ -3,6 +3,7 @@ import type {
   ComponentSFCInteractionTriggerActivation,
   DiagnosticsPhase,
   DiagnosticsSeverityNumber,
+  DiagnosticsShortcutOperation,
   DiagnosticsSignal,
   EndgeDiagnosticsConfiguration,
   EndgeDiagnosticsOutputConfiguration,
@@ -11,7 +12,19 @@ import type {
 } from '@endge/core'
 import type { WritableComputedRef } from 'vue'
 
-import { Endge } from '@endge/core'
+import {
+  BUILTIN_ACTION_IDS,
+  ComponentSFCInteractionTriggerActivationMatcher,
+  DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT,
+  DIAGNOSTICS_SHORTCUT_OPERATIONS,
+  Endge,
+  hasComponentSFCInteractionTriggerActivation,
+  legacyDiagnosticsShortcutOperation,
+  normalizeComponentSFCInteractionTriggerActivation,
+  resolveComponentSFCInteractionTriggerPlatform,
+} from '@endge/core'
+import { useSubscribableRefAuto } from '@endge/ui-vue'
+import { getKeyboardStateSnapshot } from '@endge/utils'
 import { CircleHelp, Download, Plus, Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -86,6 +99,97 @@ const diagnosticsEnabled = computed({
   get: () => draft.value.telemetry.collection.enabled,
   set: (value) => { draft.value.telemetry.collection.enabled = value },
 })
+const recordingEnabled = computed({
+  get: () => draft.value.recording?.enabled ?? false,
+  set: (enabled: boolean) => {
+    draft.value.recording = { enabled, content: clone(draft.value.recording?.content ?? DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT) }
+  },
+})
+const recordingContent = computed({
+  get: () => draft.value.recording?.content ?? DEFAULT_ENDGE_DIAGNOSTICS_RECORDING_CONTENT,
+  set: (content: EndgeDiagnosticsSnapshotContentConfiguration) => {
+    draft.value.recording = { enabled: recordingEnabled.value, content: clone(content) }
+  },
+})
+const recordingRevision = useSubscribableRefAuto(Endge.diagnostics.snapshots)
+const recordingState = computed(() => {
+  void recordingRevision.value
+  return Endge.diagnostics.recordingState
+})
+const canStartRecording = computed(() => {
+  void recordingRevision.value
+  return Endge.isConfigured && Endge.mode !== 'debugger' && Endge.diagnostics.configuration.recording?.enabled === true
+})
+
+async function runRecordingAction(action: string, input?: unknown): Promise<void> {
+  try {
+    await Endge.actions.execute(action, { input })
+  }
+  catch (error) {
+    feedback.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
+const shortcut = computed(() => draft.value.snapshots.shortcut)
+const shortcutLabels = computed(() => ({
+  download: t('diagnostics.hotkeys.actions.download'),
+  start: t('diagnostics.hotkeys.actions.start'),
+  stop: t('diagnostics.hotkeys.actions.stop'),
+}))
+const legacyOperation = computed(() => legacyDiagnosticsShortcutOperation(shortcut.value))
+const legacyCustomAction = computed(() =>
+  legacyOperation.value === null && hasComponentSFCInteractionTriggerActivation(shortcut.value.triggerSet)
+    ? shortcut.value.action?.identity
+    : undefined,
+)
+
+function shortcutActivation(operation: DiagnosticsShortcutOperation): ComponentSFCInteractionTriggerActivation {
+  return shortcut.value.bindings?.[operation]
+    ?? (legacyOperation.value === operation ? shortcut.value.triggerSet : [])
+}
+
+function setShortcut(operation: DiagnosticsShortcutOperation, activation: ComponentSFCInteractionTriggerActivation): void {
+  shortcut.value.bindings = { ...shortcut.value.bindings, [operation]: clone(activation) }
+}
+
+function clearLegacyShortcut(): void {
+  shortcut.value.triggerSet = []
+  delete shortcut.value.action
+}
+
+function isShortcutAvailable(operation: DiagnosticsShortcutOperation, event: KeyboardEvent): boolean {
+  const activations = DIAGNOSTICS_SHORTCUT_OPERATIONS
+    .filter(other => other !== operation)
+    .map(shortcutActivation)
+  if (legacyCustomAction.value) {
+    activations.push(shortcut.value.triggerSet)
+  }
+  const keyboard = getKeyboardStateSnapshot(document)
+  const platform = resolveComponentSFCInteractionTriggerPlatform(keyboard.platform)
+  return activations.every((activation) => {
+    const parsed = normalizeComponentSFCInteractionTriggerActivation(activation)
+    const matcher = new ComponentSFCInteractionTriggerActivationMatcher(parsed)
+    return matcher.match('keydown', {
+      key: event.key,
+      code: event.code,
+      repeat: false,
+      composing: false,
+      targetIsCurrentTarget: false,
+      held: {
+        key: keyboard.held.key.filter(key => key.toLowerCase() !== event.key.toLowerCase()),
+        code: keyboard.held.code.filter(code => code !== event.code),
+      },
+      modifiers: {
+        ctrl: event.ctrlKey,
+        alt: event.altKey,
+        shift: event.shiftKey,
+        meta: event.metaKey,
+        altGraph: event.getModifierState('AltGraph'),
+      },
+    }, platform).status === 'none'
+  })
+}
+
 const collectLogs = createSignalModel('log')
 const collectSpans = createSignalModel('span')
 const minSeverity = computed<DiagnosticsSeverity>({
@@ -99,14 +203,6 @@ const maxRecords = computed({
 const manualSnapshotContent = computed({
   get: () => draft.value.snapshots.content,
   set: (value: EndgeDiagnosticsSnapshotContentConfiguration) => { draft.value.snapshots.content = clone(value) },
-})
-const shortcutSnapshotActivation = computed({
-  get: () => draft.value.snapshots.shortcut.triggerSet,
-  set: (value: ComponentSFCInteractionTriggerActivation) => { draft.value.snapshots.shortcut.triggerSet = clone(value) },
-})
-const shortcutSnapshotContent = computed({
-  get: () => draft.value.snapshots.shortcut.content,
-  set: (value: EndgeDiagnosticsSnapshotContentConfiguration) => { draft.value.snapshots.shortcut.content = clone(value) },
 })
 const automaticSnapshotEnabled = computed({
   get: () => draft.value.snapshots.automatic.enabled,
@@ -359,11 +455,11 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
 <template>
   <TooltipProvider :delay-duration="200">
-    <div class="min-h-full">
-      <header class="border-b bg-background px-6 py-5">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2">
+    <div class="diagnostics-layout min-h-full">
+      <header class="diagnostics-padding border-b bg-background py-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
               <h2 class="text-base font-semibold">
                 {{ sectionTitle }}
               </h2>
@@ -375,7 +471,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               {{ sectionDescription }}
             </p>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3">
             <span class="text-[10px] text-muted-foreground">{{ feedback }}</span>
             <Button v-if="section === 'outputs'" size="sm" variant="outline" :disabled="disabled" @click="addOutput">
               <Plus class="mr-1.5 size-3.5" /> {{ $t('uiText.add559a87f7') }}
@@ -387,17 +483,27 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
         </div>
       </header>
 
-      <div class="w-full p-6">
+      <div class="diagnostics-padding w-full min-w-0 py-5">
         <div v-if="section === 'collection'">
           <section class="settings-section">
-            <div class="settings-row items-center">
+            <div class="settings-row settings-toggle">
               <div>
-                <Label class="text-sm font-medium">{{ $t('uiText.collectTelemetry48f6524c') }}</Label>
+                <Label for="diagnostics-background" class="text-sm font-medium">{{ $t('diagnostics.recording.background') }}</Label>
                 <p class="settings-hint">
                   {{ $t('uiText.logsAndOperationsWillBeSavedInLocalHistory401d8f4b') }}
                 </p>
               </div>
-              <Switch v-model:checked="diagnosticsEnabled" :disabled="disabled" aria-label="Включить сбор телеметрии" />
+              <Switch id="diagnostics-background" v-model:checked="diagnosticsEnabled" :disabled="disabled" />
+            </div>
+
+            <div class="settings-row settings-toggle">
+              <div>
+                <Label for="diagnostics-allow-recording" class="text-sm font-medium">{{ $t('diagnostics.recording.allow') }}</Label>
+                <p class="settings-hint">
+                  {{ $t('diagnostics.recording.allowHint') }}
+                </p>
+              </div>
+              <Switch id="diagnostics-allow-recording" v-model:checked="recordingEnabled" :disabled="disabled" />
             </div>
 
             <div class="settings-row">
@@ -407,7 +513,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               <div class="space-y-3">
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
-                    <Checkbox v-model="collectLogs" :disabled="disabled || !diagnosticsEnabled" />
+                    <Checkbox v-model="collectLogs" :disabled="disabled || (!diagnosticsEnabled && !recordingEnabled)" />
                     {{ $t('uiText.logs853d620e') }}
                   </label>
                   <Tooltip>
@@ -423,7 +529,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
                 <div class="flex min-h-7 items-center gap-2.5">
                   <label class="flex items-center gap-2.5 text-sm">
-                    <Checkbox v-model="collectSpans" :disabled="disabled || !diagnosticsEnabled" />
+                    <Checkbox v-model="collectSpans" :disabled="disabled || (!diagnosticsEnabled && !recordingEnabled)" />
                     {{ $t('uiText.operationsaa0afc4b') }}
                   </label>
                   <Tooltip>
@@ -447,8 +553,8 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   {{ $t('uiText.recordsBelowThisLevelAreNotSaved18ef956c') }}
                 </p>
               </div>
-              <Select v-model="minSeverity" :disabled="disabled || !diagnosticsEnabled">
-                <SelectTrigger id="diagnostics-min-severity" class="w-56">
+              <Select v-model="minSeverity" :disabled="disabled || (!diagnosticsEnabled && !recordingEnabled)">
+                <SelectTrigger id="diagnostics-min-severity" class="w-full max-w-56">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -470,8 +576,8 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                   {{ $t('uiText.oldRecordsAreDeletedWhenTheLimitIsReached7f977438') }}
                 </p>
               </div>
-              <div class="w-64">
-                <Input id="diagnostics-max-records" v-model.number="maxRecords" type="number" min="1" step="100" :disabled="disabled || !diagnosticsEnabled" />
+              <div class="w-full max-w-64">
+                <Input id="diagnostics-max-records" v-model.number="maxRecords" type="number" min="1" step="100" :disabled="disabled || (!diagnosticsEnabled && !recordingEnabled)" />
                 <div class="mt-2 flex items-center gap-3">
                   <div class="h-1 flex-1 overflow-hidden rounded bg-muted">
                     <div class="h-full bg-foreground/40" :style="{ width: `${historyUsage}%` }" />
@@ -486,31 +592,35 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
         <div v-else-if="section === 'outputs'">
           <div v-if="outputs.length" class="space-y-3">
             <article v-for="output in outputs" :key="output.id" class="rounded-md border bg-background">
-              <div class="flex items-center gap-3 border-b px-4 py-3">
-                <Switch v-model:checked="output.enabled" :disabled="disabled" :aria-label="`Включить ${output.name}`" />
-                <Input v-model="output.name" class="h-8 min-w-0 flex-1 border-transparent bg-transparent px-1 font-medium shadow-none" :disabled="disabled" />
-                <Select :model-value="output.adapterType" :disabled="disabled" @update:model-value="setOutputAdapterType(output, $event)">
-                  <SelectTrigger class="h-8 w-32 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="console">
-                      {{ $t('uiText.console9f3341d3') }}
-                    </SelectItem>
-                    <SelectItem value="sentry">
-                      {{ $t('uiText.sentry17f228be') }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="sm" variant="ghost" :disabled="disabled || !output.enabled" @click="testOutput(output)">
-                  {{ $t('uiText.check52dec92e') }}
-                </Button>
-                <Button size="icon" variant="ghost" class="size-8 text-muted-foreground" :disabled="disabled" :aria-label="`Удалить ${output.name}`" @click="removeOutput(output.id)">
-                  <Trash2 class="size-3.5" />
-                </Button>
+              <div class="settings-output-header grid items-center gap-2.5 border-b px-4 py-3">
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <Switch v-model:checked="output.enabled" :disabled="disabled" :aria-label="`Включить ${output.name}`" />
+                  <Input v-model="output.name" class="h-8 min-w-0 flex-1 border-transparent bg-transparent px-1 font-medium shadow-none" :disabled="disabled" />
+                </div>
+                <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <Select :model-value="output.adapterType" :disabled="disabled" @update:model-value="setOutputAdapterType(output, $event)">
+                    <SelectTrigger class="h-8 w-28 flex-1 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="console">
+                        {{ $t('uiText.console9f3341d3') }}
+                      </SelectItem>
+                      <SelectItem value="sentry">
+                        {{ $t('uiText.sentry17f228be') }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" variant="ghost" :disabled="disabled || !output.enabled" @click="testOutput(output)">
+                    {{ $t('uiText.check52dec92e') }}
+                  </Button>
+                  <Button size="icon" variant="ghost" class="size-8 text-muted-foreground" :disabled="disabled" :aria-label="`Удалить ${output.name}`" @click="removeOutput(output.id)">
+                    <Trash2 class="size-3.5" />
+                  </Button>
+                </div>
               </div>
 
-              <div v-if="output.adapterType === 'console'" class="grid gap-5 p-4 md:grid-cols-[12rem_1fr]">
+              <div v-if="output.adapterType === 'console'" class="settings-fields grid gap-5 p-4">
                 <div>
                   <Label class="text-xs">{{ $t('uiText.formatb9563c38') }}</Label>
                   <Select :model-value="String(outputOption(output, 'format') ?? 'pretty')" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'format', String($event))">
@@ -529,7 +639,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
                 <div>
                   <Label class="text-xs">{{ $t('uiText.recordFields829af3a9') }}</Label>
-                  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div class="settings-fields mt-3 grid gap-3">
                     <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeTimestamp') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeTimestamp', $event === true)" />{{ $t('uiText.timeC80d7e81') }}</label>
                     <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeScope') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeScope', $event === true)" />{{ $t('uiText.scope4651a34e') }}</label>
                     <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="outputOption(output, 'includeAttributes') !== false" :disabled="disabled || !output.enabled" @update:model-value="setOutputOption(output, 'includeAttributes', $event === true)" />{{ $t('uiText.attributesa6652617') }}</label>
@@ -538,8 +648,8 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </div>
               </div>
 
-              <div v-else-if="output.adapterType === 'sentry'" class="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="md:col-span-2 xl:col-span-2">
+              <div v-else-if="output.adapterType === 'sentry'" class="settings-fields grid gap-4 p-4">
+                <div class="col-span-full">
                   <Label class="text-xs">{{ $t('uiText.dsn3914c8b1') }}</Label>
                   <Input
                     :model-value="String(outputOption(output, 'dsn') ?? '')"
@@ -580,7 +690,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                     @update:model-value="setOutputOption(output, 'requestTimeoutMs', Math.max(1, Number($event) || 10000))"
                   />
                 </div>
-                <label class="flex items-end gap-2 pb-2 text-xs md:col-span-1 xl:col-span-3">
+                <label class="col-span-full flex items-center gap-2 text-xs">
                   <Checkbox
                     :model-value="outputOption(output, 'sendSnapshots') !== false"
                     :disabled="disabled || !output.enabled"
@@ -608,7 +718,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
                 </Button>
               </div>
 
-              <div class="mt-4 grid gap-3 pl-11 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="settings-fields mt-4 grid gap-3">
                 <div>
                   <Label class="field-label">{{ $t('uiText.typeD25691ca') }}</Label>
                   <Select :model-value="routeSignal(routeItem)" :disabled="disabled || !routeItem.enabled" @update:model-value="setRouteSignal(routeItem, $event)">
@@ -682,9 +792,9 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
           </div>
         </div>
 
-        <div v-else-if="section === 'manual-snapshot'">
+        <div v-else-if="section === 'manual-snapshot'" class="space-y-4">
           <section class="settings-section">
-            <div class="settings-row">
+            <div class="settings-row settings-row-stacked">
               <div>
                 <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.contentTitle') }}</Label>
                 <p class="settings-hint">
@@ -705,39 +815,77 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               </div>
             </div>
           </section>
-        </div>
-
-        <div v-else-if="section === 'hotkey-snapshot'">
           <section class="settings-section">
-            <div class="settings-row">
+            <div class="settings-row settings-row-stacked">
               <div>
-                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.shortcut.triggerTitle') }}</Label>
+                <Label class="text-sm font-medium">{{ $t('diagnostics.recording.title') }}</Label>
                 <p class="settings-hint">
-                  {{ $t('diagnostics.snapshot.shortcut.description') }}
+                  {{ $t('diagnostics.recording.contentHint') }}
                 </p>
               </div>
-              <SFCInteractionTriggerActivationEditor
-                v-model="shortcutSnapshotActivation"
-                kind="shortcut"
-                :disabled="disabled"
-              />
-            </div>
-
-            <div class="settings-row">
-              <div>
-                <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.shortcut.contentTitle') }}</Label>
-                <p class="settings-hint">
-                  {{ $t('diagnostics.snapshot.shortcut.contentDescription') }}
-                </p>
+              <DiagnosticsSnapshotContentEditor v-model="recordingContent" :disabled="disabled" />
+              <div class="flex flex-wrap items-center gap-2">
+                <Button
+                  v-if="recordingState.status === 'recording'"
+                  size="sm"
+                  variant="outline"
+                  @click="runRecordingAction(BUILTIN_ACTION_IDS.diagnosticsStopRecording)"
+                >
+                  {{ $t('diagnostics.recording.stop') }}
+                </Button>
+                <Button
+                  v-else
+                  size="sm"
+                  variant="outline"
+                  :disabled="!canStartRecording"
+                  @click="runRecordingAction(BUILTIN_ACTION_IDS.diagnosticsStartRecording)"
+                >
+                  {{ $t('diagnostics.recording.start') }}
+                </Button>
+                <Button
+                  v-if="recordingState.status === 'stopped'"
+                  size="sm"
+                  variant="outline"
+                  @click="runRecordingAction(BUILTIN_ACTION_IDS.diagnosticsDownload, { source: 'recording', recordingId: recordingState.id })"
+                >
+                  <Download class="mr-1.5 size-3.5" /> {{ $t('diagnostics.recording.download') }}
+                </Button>
               </div>
-              <DiagnosticsSnapshotContentEditor v-model="shortcutSnapshotContent" :disabled="disabled" />
             </div>
           </section>
         </div>
 
+        <div v-else-if="section === 'hotkey-snapshot'" class="space-y-3">
+          <section class="settings-section">
+            <div
+              v-for="operation in DIAGNOSTICS_SHORTCUT_OPERATIONS"
+              :key="operation"
+              class="settings-row settings-toggle"
+            >
+              <span class="text-sm font-medium">{{ shortcutLabels[operation] }}</span>
+              <SFCInteractionTriggerActivationEditor
+                :model-value="shortcutActivation(operation)"
+                kind="shortcut"
+                :compact-label="shortcutLabels[operation]"
+                :disabled="disabled"
+                :is-shortcut-available="event => isShortcutAvailable(operation, event)"
+                @update:model-value="setShortcut(operation, $event)"
+              />
+            </div>
+          </section>
+          <div v-if="legacyCustomAction" class="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2">
+            <p class="min-w-0 break-all text-xs text-muted-foreground">
+              {{ $t('diagnostics.hotkeys.legacy', { action: legacyCustomAction }) }}
+            </p>
+            <Button type="button" size="sm" variant="ghost" :disabled="disabled" @click="clearLegacyShortcut">
+              {{ $t('diagnostics.hotkeys.clear') }}
+            </Button>
+          </div>
+        </div>
+
         <div v-else-if="section === 'automatic-snapshots'">
           <section class="settings-section">
-            <div class="settings-row items-center">
+            <div class="settings-row settings-toggle">
               <div>
                 <Label class="text-sm font-medium">{{ $t('diagnostics.snapshot.automatic.enabledTitle') }}</Label>
                 <p class="settings-hint">
@@ -755,7 +903,7 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               <div>
                 <Label class="text-sm font-medium">{{ $t('uiText.condition1d10d9c5') }}</Label>
               </div>
-              <div class="grid max-w-xl gap-4 sm:grid-cols-2">
+              <div class="settings-fields grid max-w-xl gap-4">
                 <div><Label class="field-label">{{ $t('uiText.numberOfErrors202f5f20') }}</Label><Input v-model.number="snapshotErrorCount" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
                 <div><Label class="field-label">{{ $t('uiText.withinSec871873f4') }}</Label><Input v-model.number="snapshotWindowSeconds" type="number" min="1" class="mt-1.5" :disabled="disabled" /></div>
                 <div><Label class="field-label">{{ $t('uiText.pauseAfterSnapshotMin6f39325d') }}</Label><Input v-model.number="snapshotCooldownMinutes" type="number" min="0" class="mt-1.5" :disabled="disabled" /></div>
@@ -782,6 +930,15 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 </template>
 
 <style scoped>
+.diagnostics-layout {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.diagnostics-padding {
+  padding-inline: clamp(0.75rem, 3cqi, 1.5rem);
+}
+
 .settings-section {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -791,9 +948,40 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
 
 .settings-row {
   display: grid;
-  gap: 1.25rem;
-  padding: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+  padding: clamp(0.75rem, 3cqi, 1.25rem);
   border-bottom: 1px solid var(--border);
+}
+
+.settings-row.settings-toggle {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.settings-fields {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.settings-output-header {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-row > *,
+.settings-fields > * {
+  min-width: 0;
+}
+
+.diagnostics-layout :deep([data-slot='select-trigger']) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.diagnostics-layout :deep([data-slot='select-value']) {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .settings-row:last-child {
@@ -823,9 +1011,13 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
   text-align: center;
 }
 
-@media (min-width: 768px) {
-  .settings-row {
-    grid-template-columns: 15rem minmax(0, 1fr);
+@container (min-width: 43rem) {
+  .settings-output-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .settings-row:not(.settings-toggle, .settings-row-stacked) {
+    grid-template-columns: minmax(10rem, 1fr) minmax(0, 2fr);
   }
 }
 </style>

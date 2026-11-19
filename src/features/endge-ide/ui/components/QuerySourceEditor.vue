@@ -161,7 +161,7 @@ watch(
   },
 )
 
-defineExpose({ formatDocument: monacoAdapter.formatDocument })
+defineExpose({ formatDocument: monacoAdapter.formatDocument, focusOffset: monacoAdapter.focusOffset })
 
 onBeforeUnmount(() => {
   container.value?.removeEventListener('dragover', onEditorDragOver, true)
