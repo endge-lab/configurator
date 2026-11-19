@@ -18,6 +18,7 @@ import type {
   SourceDocumentReference,
 } from '@endge/core'
 import type { Component, ShallowRef } from 'vue'
+import type { CatalogModule } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 import type { EndgeIDEBusy_Module } from '@/features/endge-ide/modules/EndgeIDEBusy_Module'
 import type { EndgeIDEUIState_Module } from '@/features/endge-ide/modules/EndgeIDEUIState_Module'
 import type { EndgeIDEWorkspace_Module } from '@/features/endge-ide/modules/EndgeIDEWorkspace_Module'
@@ -231,6 +232,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_FACET_DOCUMENT = 'endge-facet-document' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
+const VIEW_ID_CATALOG_MODULE = 'endge-catalog-module' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
 const VIEW_ID_DEMONSTRATION = 'endge-demonstration' as const
 
@@ -847,6 +849,22 @@ export class EndgeIDETabs_Module {
     })
   }
 
+  public catalogModuleTabId(identity: string): string {
+    return `catalog-module:${identity}`
+  }
+
+  public openCatalogModule(entry: CatalogModule, activate = true): void {
+    const presentation = DOCUMENT_AUXILIARY_PRESENTATION.catalogModule
+    this.openTab({
+      id: this.catalogModuleTabId(entry.identity),
+      label: entry.name,
+      viewId: VIEW_ID_CATALOG_MODULE,
+      payload: { identity: entry.identity },
+      closable: true,
+      meta: { icon: presentation.icon, iconClass: `${DOCUMENT_ICON_SIZES.tab} ${presentation.colorClass}` },
+    }, { activate })
+  }
+
   /**
    * Открыть SFC Playground в единственном экземпляре (при повторном вызове - активация вкладки).
    */
@@ -1046,6 +1064,11 @@ export class EndgeIDETabs_Module {
         props: {},
       }),
     )
+    const ModuleEditor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/modules/Module_Editor.vue'))
+    this._tabsApi.viewRegistry.register(VIEW_ID_CATALOG_MODULE, tab => ({
+      component: markRaw(ModuleEditor),
+      props: { identity: tab.payload?.identity },
+    }))
     this._tabsApi.viewRegistry.register(
       VIEW_ID_SFC_PLAYGROUND,
       (): SmartTabViewResolved => ({

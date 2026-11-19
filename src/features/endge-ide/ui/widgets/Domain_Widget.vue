@@ -2,6 +2,7 @@
 import type { CompiledProgramCatalog, ComponentSFCProgramPayload, DomainDocumentType, EndgeArchivedDocument, RCompositionKind, RFacetDocument } from '@endge/core'
 import type { ArchivedWorkspace } from '@/features/backend-connections/domain/types/backend-connection.type'
 import type { DomainDocumentPresentation } from '@/features/document-presentation/types/document-presentation'
+import type { CatalogModule } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 import type { DomainDragTreeItem } from '@/features/endge-ide/domain/types/domain-drag.type'
 import type {
   DomainWorkingSetFilterState,
@@ -32,7 +33,6 @@ import {
   Layers3,
   ListFilter,
   Loader2,
-  Package,
   Palette,
   Pencil,
   Play,
@@ -105,19 +105,27 @@ import {
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
-import ModuleCatalogDialog from '@/features/endge-ide/ui/section/modules/ModuleCatalogDialog.vue'
+import ModuleFormDialog from '@/features/endge-ide/ui/section/modules/ModuleFormDialog.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const props = defineProps<{ programCatalog?: CompiledProgramCatalog }>()
 
 const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
+const MODULE_CATALOG_FOLDER_PATH = 'root-module-catalog'
+const MODULE_CATALOG_PRESENTATION = DOCUMENT_AUXILIARY_PRESENTATION.catalogModule
+const MODULE_CATALOG_TARGET = { type: 'module-catalog-folder' } as const
+type DomainContextMenuTarget = FsNode | typeof MODULE_CATALOG_TARGET
+const DOMAIN_ROW_LAYOUT = 'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none'
+const DOMAIN_ROW_COLORS = 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30'
 
 function facetRootId(identity: string): string {
   return `root-facet:${encodeURIComponent(identity)}`
 }
 
 const tabs = EndgeIDE.tabs
-const moduleCatalogOpen = ref(false)
+const createModuleOpen = ref(false)
+const catalog = EndgeIDE.moduleCatalog
+const moduleCatalogState = catalog.state
 const hasActiveWorkspace = computed(() => props.programCatalog !== undefined || Configurator.hasActiveWorkspace)
 const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
@@ -297,6 +305,7 @@ function openCreateFromToolbar(): void {
 type MenuAction
   = | { type: 'switch-workspace', workspaceIdentity: string }
     | { type: 'create-workspace' }
+    | { type: 'create-module' }
     | { type: 'delete-workspace', workspaceIdentity: string, displayName: string, active: boolean }
     | { type: 'create-configuration' }
     | { type: 'remove-folder', node: FsFolderNode }
@@ -324,7 +333,7 @@ const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
 })
 const debuggerMode = Endge.mode === 'debugger' || props.programCatalog !== undefined
-const showModuleCatalog = computed(() => !debuggerMode && !props.programCatalog && sessionState.value.status === 'authenticated')
+const showModuleCatalog = computed(() => !debuggerMode && hasActiveWorkspace.value && sessionState.value.status === 'authenticated')
 const activeDocumentStructure = EndgeIDE.uiState.documentStructure
 const vocabMockDialog = ref({
   open: false,
@@ -721,7 +730,7 @@ const contextMenu = ref<{
   open: boolean
   x: number
   y: number
-  node: FsNode | null
+  node: DomainContextMenuTarget | null
   path: string | null
 }>({
   open: false,
@@ -731,7 +740,7 @@ const contextMenu = ref<{
   path: null,
 })
 
-function openContextMenu(e: MouseEvent, node: FsNode, path: string): void {
+function openContextMenu(e: MouseEvent, node: DomainContextMenuTarget, path: string): void {
   const folderNode = node.type === 'folder' ? (node as FsFolderNode) : null
   if (folderNode && isManagedTypeFolder(folderNode) && !folderNode.isRoot) {
     return
@@ -1588,6 +1597,27 @@ const groupedFlatFs = computed(() => {
   return groups.filter(block => block.roots.length > 0 || (showModuleCatalog.value && block.id === 'infrastructure'))
 })
 
+const moduleCatalogExpanded = computed(() =>
+  folderIsExpanded(MODULE_CATALOG_FOLDER_PATH) || searchFilteringEnabled.value)
+const visibleCatalogModules = computed(() => {
+  const entries = moduleCatalogState.value.entries
+  const query = normalizedSearchQuery.value
+  if (!searchFilteringEnabled.value || t('moduleCatalog.title').toLocaleLowerCase().includes(query)) {
+    return entries
+  }
+  return entries.filter(entry => [entry.name, entry.identity].some(value => value.toLocaleLowerCase().includes(query)))
+})
+
+watch(
+  () => showModuleCatalog.value && !workingSetFilterEnabled.value && moduleCatalogExpanded.value,
+  (opened) => {
+    if (opened) {
+      void catalog.refresh()
+    }
+  },
+  { immediate: true },
+)
+
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
   const out: string[] = []
   for (const node of items) {
@@ -1634,7 +1664,11 @@ function expandAll(): void {
     return
   }
 
-  expandedFolders.value = new Set(allExpandablePaths.value)
+  const paths = new Set(allExpandablePaths.value)
+  if (showModuleCatalog.value) {
+    paths.add(MODULE_CATALOG_FOLDER_PATH)
+  }
+  expandedFolders.value = paths
 }
 
 function collapseAll(): void {
@@ -1666,6 +1700,21 @@ function getTreeItemRenderKey(item: FlatFsItem): string {
   return `folder:${item.rootId}:${String(folder.folderId ?? folder.id)}:${item.path}`
 }
 const lastClickedSelection = ref<{ key: string, rootId: string } | null>(null)
+
+function openCatalogModule(entry: CatalogModule): void {
+  closeContextMenu()
+  selectedFileKeys.value = new Set()
+  lastClickedSelection.value = null
+  tabs.openCatalogModule(entry)
+}
+
+function openCreatedModule(entry: CatalogModule): void {
+  createModuleOpen.value = false
+  if (!folderIsExpanded(MODULE_CATALOG_FOLDER_PATH)) {
+    toggleFolder(MODULE_CATALOG_FOLDER_PATH)
+  }
+  openCatalogModule(entry)
+}
 
 const selectedExportNodes = computed<FsFileNode[]>(() => {
   const selected = new Map<string, FsFileNode>()
@@ -2148,10 +2197,15 @@ function getContextFileNodes(node: FsFileNode): FsFileNode[] {
 
 // ---------- context menu items ----------
 // Формирует контекстные действия для узла дерева домена.
-function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
+function getMenuActions(node: DomainContextMenuTarget): Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> {
   const items: Array<{ label: string, icon: any, action: MenuAction, destructive?: boolean }> = []
   if (debuggerMode) {
     return items
+  }
+  if (node.type === 'module-catalog-folder') {
+    return canPublishModules.value
+      ? [{ label: t('moduleCatalog.create'), icon: Plus, action: { type: 'create-module' } }]
+      : items
   }
   if (node.type === 'folder' && node.id === 'root-workspaces') {
     if (sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin) {
@@ -2330,6 +2384,11 @@ function getMenuActions(node: FsNode): Array<{ label: string, icon: any, action:
 }
 
 async function runMenuAction(a: MenuAction, ctxPath: string | null): Promise<void> {
+  if (a.type === 'create-module') {
+    closeContextMenu()
+    createModuleOpen.value = true
+    return
+  }
   if (a.type === 'create-facet-document') {
     facetDocumentDialog.value = { open: true, facetIdentity: a.facetIdentity, identity: '', displayName: '', description: '', loading: false }
     return
@@ -2493,10 +2552,10 @@ function rowClasses(item: FlatFsItem): string {
       && isManagedTypeFolder(item.node as FsFolderNode)
       && (item.node as FsFolderNode).isRoot !== true
   return [
-    'flex items-center gap-1 py-px px-1 rounded cursor-pointer select-none',
+    DOMAIN_ROW_LAYOUT,
     isMutedSystemFolder
       ? 'text-slate-600'
-      : 'text-foreground dark:text-[oklch(0.89_0_0)] hover:bg-primary/30',
+      : DOMAIN_ROW_COLORS,
     selected ? 'bg-primary/30 ring-1 ring-secondary/70' : '',
     isOver ? 'bg-primary/30 ring-1 ring-primary/70' : '',
   ].filter(Boolean).join(' ')
@@ -2715,15 +2774,58 @@ function rowClasses(item: FlatFsItem): string {
               {{ block.title }}
             </div>
 
-            <button
+            <div
               v-if="block.id === 'infrastructure' && showModuleCatalog && !workingSetFilterEnabled"
-              type="button"
-              class="mb-1 flex w-full items-center gap-1 rounded px-1 text-left hover:bg-primary/20"
-              @click.stop="moduleCatalogOpen = true"
+              class="domain-root-hierarchy mb-1 last:mb-0"
+              :class="[
+                MODULE_CATALOG_PRESENTATION.colorClass,
+                domainTreeHighlightMode === 'root' ? 'domain-root-hierarchy--root-highlighted' : '',
+                domainTreeHighlightMode === 'block' ? 'domain-root-hierarchy--highlighted' : '',
+              ]"
             >
-              <Package class="size-3.5 shrink-0 text-muted-foreground" />
-              {{ t('moduleCatalog.title') }}
-            </button>
+              <button
+                type="button"
+                class="w-full text-left"
+                :class="[DOMAIN_ROW_LAYOUT, DOMAIN_ROW_COLORS]"
+                :style="rowPaddingStyle(0)"
+                :aria-expanded="moduleCatalogExpanded"
+                :aria-busy="moduleCatalogState.status === 'loading'"
+                @click.stop="toggleFolder(MODULE_CATALOG_FOLDER_PATH)"
+                @contextmenu="openContextMenu($event, MODULE_CATALOG_TARGET, MODULE_CATALOG_FOLDER_PATH)"
+              >
+                <span class="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
+                  <ChevronDown v-if="moduleCatalogExpanded" class="size-4" />
+                  <ChevronRight v-else class="size-4" />
+                </span>
+                <DocumentIcon :presentation="MODULE_CATALOG_PRESENTATION" size="tree" />
+                <span class="truncate">{{ t('moduleCatalog.title') }}</span>
+              </button>
+              <template v-if="moduleCatalogExpanded">
+                <button
+                  v-for="entry in visibleCatalogModules"
+                  :key="entry.identity"
+                  type="button"
+                  class="w-full text-left"
+                  :class="[DOMAIN_ROW_LAYOUT, DOMAIN_ROW_COLORS, tabs.activeTabId.value === tabs.catalogModuleTabId(entry.identity) ? 'bg-primary/30 ring-1 ring-secondary/70' : '']"
+                  :style="rowPaddingStyle(1)"
+                  :title="entry.identity"
+                  @click.stop="openCatalogModule(entry)"
+                >
+                  <span class="size-4 shrink-0" aria-hidden="true" />
+                  <DocumentIcon :presentation="MODULE_CATALOG_PRESENTATION" size="tree" />
+                  <span class="truncate">{{ entry.name }}</span>
+                </button>
+                <div v-if="moduleCatalogState.status === 'error'" class="pl-8 text-xs text-destructive" role="alert">
+                  <p>{{ moduleCatalogState.message }}</p>
+                  <button type="button" class="underline" @click.stop="catalog.refresh()">
+                    {{ t('moduleCatalog.retry') }}
+                  </button>
+                </div>
+                <p v-else-if="!visibleCatalogModules.length" class="pl-8 text-xs text-muted-foreground" role="status">
+                  {{ moduleCatalogState.status !== 'ready' ? t('moduleCatalog.loading') : searchFilteringEnabled ? t('moduleCatalog.noMatches') : t('moduleCatalog.empty') }}
+                </p>
+              </template>
+            </div>
 
             <div
               v-for="root in block.roots"
@@ -2850,7 +2952,7 @@ function rowClasses(item: FlatFsItem): string {
       </div>
     </Teleport>
 
-    <ModuleCatalogDialog v-if="showModuleCatalog" v-model:open="moduleCatalogOpen" :can-publish="canPublishModules" />
+    <ModuleFormDialog v-if="showModuleCatalog && canPublishModules && createModuleOpen" mode="create" @saved="openCreatedModule" @close="createModuleOpen = false" />
     <Dialog v-model:open="facetDocumentDialog.open">
       <DialogContent class="sm:max-w-md">
         <DialogHeader><DialogTitle>{{ $t('facets.newDocument') }}</DialogTitle></DialogHeader>

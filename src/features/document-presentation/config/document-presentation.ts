@@ -59,6 +59,7 @@ export const DOCUMENT_AUXILIARY_PRESENTATION = {
   filterView: { icon: 'SlidersHorizontal', colorClass: DOCUMENT_COLORS.blue },
   scope: { icon: 'Layers3', colorClass: DOCUMENT_COLORS.slate },
   workspace: { icon: 'Orbit', colorClass: DOCUMENT_COLORS.orange },
+  catalogModule: { icon: 'Package', colorClass: DOCUMENT_COLORS.teal },
   tableColumn: { icon: 'Columns', colorClass: DOCUMENT_COLORS.sky },
   folder: { icon: 'Folder', colorClass: 'fill-current text-yellow-500 dark:text-slate-400' },
   derivedFolder: { icon: 'Folder', colorClass: 'fill-sky-500/30 text-sky-600 dark:text-sky-400' },

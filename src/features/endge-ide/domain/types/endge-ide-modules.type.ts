@@ -9,6 +9,7 @@ import type { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/modules/End
 import type { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/modules/EndgeIDEDomainTransfer_Module'
 import type { EndgeIDEHotkeys_Module } from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 import type { EndgeIDEModals_Module } from '@/features/endge-ide/modules/EndgeIDEModals_Module'
+import type { EndgeIDEModuleCatalog_Module } from '@/features/endge-ide/modules/EndgeIDEModuleCatalog_Module'
 import type { EndgeIDEProblems_Module } from '@/features/endge-ide/modules/EndgeIDEProblems_Module'
 import type { EndgeIDERuntimeInspection_Module } from '@/features/endge-ide/modules/EndgeIDERuntimeInspection_Module'
 import type { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
@@ -40,6 +41,7 @@ export interface EndgeIDEModules {
   documentImport: EndgeIDEDocumentImport_Module
   graphqlSchema: EndgeIDEGraphQLSchema_Module
   modals: EndgeIDEModals_Module
+  moduleCatalog: EndgeIDEModuleCatalog_Module
   tabs: EndgeIDETabs_Module
   workspace: EndgeIDEWorkspace_Module
   uiState: EndgeIDEUIState_Module
