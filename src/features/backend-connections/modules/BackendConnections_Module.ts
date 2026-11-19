@@ -153,14 +153,22 @@ export class BackendConnections_Module {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     })
-    const revision = current.headers.get('ETag')
-    if (!current.ok || !revision) {
+    if (!current.ok) {
       throw new Error(current.status === 403 ? 'workspace_deletion_forbidden' : 'workspace_deletion_failed')
+    }
+    let ifMatch = current.headers.get('ETag')
+    if (!ifMatch) {
+      const payload: unknown = await current.json().catch(() => null)
+      const revision = isRecord(payload) ? payload.revision : undefined
+      if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision <= 0) {
+        throw new Error('workspace_deletion_failed')
+      }
+      ifMatch = `"${revision}"`
     }
     const response = await fetch(url, {
       method: 'DELETE',
       credentials: 'include',
-      headers: { 'Accept': 'application/json', 'If-Match': revision },
+      headers: { 'Accept': 'application/json', 'If-Match': ifMatch },
     })
     if (!response.ok) {
       throw new Error(response.status === 403
