@@ -1863,7 +1863,6 @@
     "tagRenderers": "Tag renderers",
     "searchRenderers": "Search tags and renderers",
     "noRendererMatches": "No renderers found",
-    "adapterRenderer": "From the root adapter",
     "versions": "Versions",
     "retry": "Retry",
     "noMatches": "No modules match your search",

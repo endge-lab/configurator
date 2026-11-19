@@ -1863,7 +1863,6 @@
     "tagRenderers": "Рендереры тегов",
     "searchRenderers": "Поиск по тегам и рендерерам",
     "noRendererMatches": "Рендереры не найдены",
-    "adapterRenderer": "Из корневого адаптера",
     "versions": "Версии",
     "retry": "Повторить",
     "noMatches": "Модули не найдены",

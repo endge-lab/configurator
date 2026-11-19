@@ -21,6 +21,7 @@ import {
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
   ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
   ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
+  ENDGE_VUE_SFC_ADAPTER_ID,
 } from '@endge/core'
 
 import { createConfiguratorModuleLoader } from '@/features/endge-ide/bootstrap/create-configurator-module-loader'
@@ -28,7 +29,7 @@ import { registerEndgeMockProviders } from '@/features/endge-ide/bootstrap/endge
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { configuratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
 
-const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-native'] as const
+const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = [ENDGE_VUE_SFC_ADAPTER_ID] as const
 
 /**
  * Управляет boot и immutable execution context всей IDE.
