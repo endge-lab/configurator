@@ -259,11 +259,14 @@ describe('подключения к backend', () => {
     expect(resolveConfiguratorWorkspace(workspaces, 'workspace-b', 'workspace-b')).toBeNull()
   })
 
-  it('мягко удаляет выбранный Workspace с If-Match и очищает его локальный выбор перед reload', async () => {
+  it.each([
+    { source: 'ETag', etag: '"7"', revision: 6 },
+    { source: 'revision из JSON', etag: null, revision: 7 },
+  ])('мягко удаляет выбранный Workspace с If-Match из $source и очищает его локальный выбор перед reload', async ({ etag, revision }) => {
     const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ identity: 'workspace-a' }), {
+      .mockResolvedValueOnce(new Response(JSON.stringify({ identity: 'workspace-a', revision }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'ETag': '"7"' },
+        headers: { 'Content-Type': 'application/json', ...(etag ? { ETag: etag } : {}) },
       }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ deletedAt: '2026-09-13T00:00:00Z' }), {
         status: 200,
