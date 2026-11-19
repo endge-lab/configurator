@@ -18,6 +18,7 @@ const search = ref('')
 const catalog = EndgeIDE.moduleCatalog
 const error = ref('')
 const { t } = useI18n()
+const DEFAULT_RENDERER = 'default'
 
 function selectionKey(reference: ModuleRendererReference): string {
   return `${reference.identity}@${reference.version}:${reference.rendererId}`
@@ -36,7 +37,7 @@ const tags = computed(() => {
 
 function selection(tag: EndgeSFCRendererTag): string {
   const reference = model.value?.[tag]
-  return reference ? selectionKey(reference) : 'adapter'
+  return reference ? selectionKey(reference) : DEFAULT_RENDERER
 }
 
 function isUnavailable(tag: EndgeSFCRendererTag): boolean {
@@ -45,7 +46,7 @@ function isUnavailable(tag: EndgeSFCRendererTag): boolean {
 
 function select(tag: EndgeSFCRendererTag, value: unknown): void {
   const next = { ...model.value }
-  if (value === 'adapter') {
+  if (value === DEFAULT_RENDERER) {
     delete next[tag]
   }
   else {
@@ -118,8 +119,8 @@ watch(catalog.state, async (state, _previous, onCleanup) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="adapter">
-              {{ t('moduleCatalog.adapterRenderer') }}
+            <SelectItem :value="DEFAULT_RENDERER">
+              {{ DEFAULT_RENDERER }}
             </SelectItem>
             <SelectItem v-if="isUnavailable(tag)" :value="selection(tag)" disabled>
               {{ selection(tag) }}

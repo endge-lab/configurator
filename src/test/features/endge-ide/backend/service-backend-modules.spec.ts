@@ -1,4 +1,5 @@
 import type { VueModuleHost } from '@endge/ui-vue'
+import { createVueModuleCatalogLoader } from '@endge/ui-vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ServiceBackendModulesHttpAdapter } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 
@@ -34,18 +35,17 @@ describe('global module catalog transport', () => {
   it('rejects another version or origin before importing the JavaScript', async () => {
     const reference = { identity: 'example', version: '1.0.0' }
     const manifest = { ...reference, formatVersion: 1, hostApi: 1 }
-    const adapter = new ServiceBackendModulesHttpAdapter(base)
     const request = vi.fn()
-      .mockResolvedValueOnce(Response.json({ manifest: { ...manifest, version: '2.0.0' } }))
-      .mockResolvedValueOnce(Response.json({ manifest, assets: { js: 'https://other.test/module.js' } }))
+      .mockResolvedValueOnce(Response.json({ version: '1.0.0', manifest: { ...manifest, version: '2.0.0' } }))
+      .mockResolvedValueOnce(Response.json({ version: '1.0.0', manifest, assets: { js: 'https://other.test/module.js' } }))
     vi.stubGlobal('location', new URL(base))
     vi.stubGlobal('fetch', request)
     const host = vi.fn<() => Promise<VueModuleHost>>()
-    const loader = adapter.loader(host)
+    const loader = createVueModuleCatalogLoader({ backendURL: base, host })
     const signal = new AbortController().signal
     await expect(loader(reference, signal)).rejects.toThrow('Incompatible module manifest')
-    await expect(loader(reference, signal)).rejects.toThrow('use the Configurator origin')
+    await expect(loader(reference, signal)).rejects.toThrow('use the configured Backend origin')
     expect(host).not.toHaveBeenCalled()
-    expect(request.mock.calls[0]).toEqual([`${catalog}/example/versions/1.0.0`, expect.objectContaining({ credentials: 'include', signal })])
+    expect(request.mock.calls[0]).toEqual([`${catalog}/example/versions/1.0.0`, expect.objectContaining({ credentials: 'same-origin', signal })])
   })
 })

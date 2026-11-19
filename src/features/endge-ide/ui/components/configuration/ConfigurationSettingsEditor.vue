@@ -18,7 +18,7 @@ import {
   applyEndgeConfigurationContribution,
   createDefaultEndgeConfiguration,
   Endge,
-  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
+  ENDGE_VUE_SFC_ADAPTER_ID,
   validateConfigurationValue,
 } from '@endge/core'
 import {
@@ -37,7 +37,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-vue-next'
-import { computed, provide, useId, watch, watchEffect } from 'vue'
+import { computed, provide, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -71,14 +71,13 @@ import WorkspaceRendererSettings from './WorkspaceRendererSettings.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName
-  = 'vars' | 'locales' | 'themes' | 'timezones' | 'sfcAdapterIds'
+  = 'vars' | 'locales' | 'themes' | 'timezones'
 type ScalarName
   = | 'defaultLocale'
     | 'fallbackLocale'
     | 'defaultTheme'
     | 'defaultTimezone'
     | 'defaultAuthProfileIdentity'
-    | 'defaultSfcAdapterId'
 type SystemConfigurationSection
   = | 'general'
     | 'environment'
@@ -346,39 +345,6 @@ const defaultRenderers = computed<EndgeConfiguration['defaultRenderers']>({
     notifyRootMutation()
   },
 })
-
-const rootAdapterListId = useId()
-const rootAdapterOptions = computed(() => [...new Set([
-  ...editableConfiguration.value.sfcAdapterIds,
-  ...Endge.uiRegistry.adapters.list()
-    .filter(adapter => adapter.protocol === ENDGE_SFC_RENDER_ADAPTER_PROTOCOL && adapter.renderer === 'vue')
-    .map(adapter => adapter.id),
-])])
-
-function setRootAdapter(event: Event): void {
-  const field = event.currentTarget as HTMLInputElement
-  const id = field.value.trim()
-  if (!id) {
-    field.value = scalarValue('defaultSfcAdapterId')
-    return
-  }
-  field.value = id
-  if (id === scalarValue('defaultSfcAdapterId')) {
-    return
-  }
-  if (isInherit.value && patch.value) {
-    const entries = patch.value.sfcAdapterIds?.entries ?? []
-    if (!contributionUpstream.value.sfcAdapterIds.includes(id) || entries.some(item => item.key === id && item.op === 'remove')) {
-      patch.value.sfcAdapterIds = {
-        entries: [...entries.filter(item => item.key !== id), { key: id, op: 'upsert', value: id }],
-      }
-    }
-  }
-  else if (!editableConfiguration.value.sfcAdapterIds.includes(id)) {
-    editableConfiguration.value.sfcAdapterIds.push(id)
-  }
-  setScalar('defaultSfcAdapterId', id)
-}
 
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
   const known = new Map(
@@ -1583,30 +1549,19 @@ function isEqual(left: unknown, right: unknown): boolean {
           </TabsContent>
 
           <TabsContent value="ui" class="m-0 space-y-6 p-5 outline-none">
-            <ConfigurationOverrideField
-              :label="$t('moduleCatalog.rootSfcAdapter')"
-              :uses-parent-value="isInherit"
-              :overridden="hasScalarOverride('defaultSfcAdapterId')"
-              @enable="enableScalar('defaultSfcAdapterId')"
-              @reset="resetScalar('defaultSfcAdapterId')"
-            >
-              <template
-                #default="{ disabled: fieldDisabled, parentValuePlaceholder }"
-              >
-                <Input
-                  :model-value="scalarValue('defaultSfcAdapterId')"
-                  :list="rootAdapterListId"
-                  :aria-label="$t('moduleCatalog.rootSfcAdapter')"
-                  :disabled="disabled || fieldDisabled"
-                  :placeholder="fieldDisabled ? parentValuePlaceholder : undefined"
-                  @blur="setRootAdapter"
-                  @change="setRootAdapter"
-                />
-                <datalist :id="rootAdapterListId">
-                  <option v-for="adapter in rootAdapterOptions" :key="adapter" :value="adapter" />
-                </datalist>
-              </template>
-            </ConfigurationOverrideField>
+            <div class="space-y-2">
+              <Label>{{ $t('moduleCatalog.rootSfcAdapter') }}</Label>
+              <Select :model-value="ENDGE_VUE_SFC_ADAPTER_ID" :disabled="disabled">
+                <SelectTrigger :aria-label="$t('moduleCatalog.rootSfcAdapter')">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="ENDGE_VUE_SFC_ADAPTER_ID">
+                    {{ ENDGE_VUE_SFC_ADAPTER_ID }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <WorkspaceRendererSettings
               v-if="variant === 'root' && activeSection === 'ui'"
               v-model="defaultRenderers"
