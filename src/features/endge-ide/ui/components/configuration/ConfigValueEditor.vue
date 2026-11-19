@@ -12,10 +12,11 @@ import {
   inferConfigurationDefault,
   validateConfigurationValue,
 } from '@endge/core'
-import { Plus, Trash2 } from 'lucide-vue-next'
+import { Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -39,6 +40,7 @@ const props = defineProps<{
   max?: number
   step?: number
   disabled?: boolean
+  compact?: boolean
   catalog?: readonly TypeProgramCatalogEntry[]
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: EndgeJSONValue] }>()
@@ -86,6 +88,9 @@ const unionIndex = computed(() =>
 const referenceType = computed(() =>
   registeredType.value?.category === 'reference' ? registeredType.value : null,
 )
+const editInDialog = computed(() => props.compact && !referenceType.value
+  && ['trigger-set', 'trigger-activation', 'json', 'array', 'object', 'record', 'union'].includes(kind.value))
+const valuePreview = computed(() => JSON.stringify(props.modelValue)?.slice(0, 180) ?? '')
 function emitText(value: unknown): void {
   emit('update:modelValue', String(value ?? ''))
 }
@@ -200,8 +205,38 @@ function fieldType(
 </script>
 
 <template>
+  <Dialog v-if="editInDialog">
+    <DialogTrigger as-child>
+      <Button
+        type="button"
+        variant="outline"
+        class="w-full min-w-0 justify-between px-2"
+        :aria-label="$t('configurationEditor.editDefaultValue')"
+        :title="$t('configurationEditor.editDefaultValue')"
+        :disabled="disabled"
+      >
+        <span class="min-w-0 truncate font-mono text-xs">{{ valuePreview }}</span>
+        <Pencil class="size-3.5 text-muted-foreground" />
+      </Button>
+    </DialogTrigger>
+    <DialogContent class="max-h-[85dvh] overflow-auto sm:max-w-3xl" :aria-describedby="undefined">
+      <DialogHeader>
+        <DialogTitle>{{ $t('configurationEditor.editDefaultValue') }}</DialogTitle>
+      </DialogHeader>
+      <ConfigValueEditor
+        :model-value="modelValue"
+        :type="type"
+        :catalog="catalog"
+        :disabled="disabled"
+        :min="min"
+        :max="max"
+        :step="step"
+        @update:model-value="$emit('update:modelValue', $event)"
+      />
+    </DialogContent>
+  </Dialog>
   <Switch
-    v-if="kind === 'boolean'"
+    v-else-if="kind === 'boolean'"
     :checked="Boolean(modelValue)"
     :disabled="disabled"
     @update:checked="$emit('update:modelValue', Boolean($event))"

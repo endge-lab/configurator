@@ -114,6 +114,12 @@
     "hideCSSPreview": "Скрыть производный CSS",
     "showCSSPreview": "Показать производный CSS"
   },
+  "configurationEditor": {
+    "actions": "Действия",
+    "editDefaultValue": "Изменить значение по умолчанию",
+    "fieldSettings": "Настройки поля · {key}",
+    "removeField": "Удалить поле {key}"
+  },
   "workspaceTree": {
     "active": "Активный",
     "label": "Рабочее пространство",
