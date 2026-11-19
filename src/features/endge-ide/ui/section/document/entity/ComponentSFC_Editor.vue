@@ -510,6 +510,7 @@ async function launchPreview(): Promise<void> {
       v-else-if="activeTab === 'visual' && timelineProjection"
       :key="editor.id"
       :source="editor.source"
+      :identity="editor.identity"
       :projection="timelineProjection"
       @update:source="updateVisualSource"
       @open-source="openSourceAt"

@@ -252,6 +252,17 @@ export class RuntimePreviewInstance {
     }
   }
 
+  public selectedModuleScope(componentIdentity: string) {
+    void this.revision.value
+    const renderable = this.renderables.value.find(entry => entry.kind === 'component-sfc' && entry.runtime.entityIdentity === componentIdentity)
+    if (renderable?.kind === 'component-sfc') {
+      return Endge.runtime.getRuntimeScopeByHost(renderable.runtime.id)
+    }
+    const node = this.selectedNode.value
+    const composition = node?.composition ? this._resolveComposition(node.composition) : null
+    return composition?.getScope(node?.scopePath ?? 'scope_default') ?? null
+  }
+
   public async pause(): Promise<void> {
     await this._waitForCurrentOperation()
     if (this.status.value !== 'active') {

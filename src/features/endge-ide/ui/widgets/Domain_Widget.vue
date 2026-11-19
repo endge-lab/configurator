@@ -32,6 +32,7 @@ import {
   Layers3,
   ListFilter,
   Loader2,
+  Package,
   Palette,
   Pencil,
   Play,
@@ -104,6 +105,7 @@ import {
 } from '@/features/endge-ide/services/vocab-mock/vocab-mock-generator'
 import { resolveDomainWorkingSet } from '@/features/endge-ide/tools/resolve-domain-working-set'
 import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
+import ModuleCatalogDialog from '@/features/endge-ide/ui/section/modules/ModuleCatalogDialog.vue'
 import { useConfiguratorState } from '@/shared/tools/use-configurator-state'
 
 const props = defineProps<{ programCatalog?: CompiledProgramCatalog }>()
@@ -115,9 +117,11 @@ function facetRootId(identity: string): string {
 }
 
 const tabs = EndgeIDE.tabs
+const moduleCatalogOpen = ref(false)
 const hasActiveWorkspace = computed(() => props.programCatalog !== undefined || Configurator.hasActiveWorkspace)
 const { t } = useI18n()
 const { state: sessionState } = useConfiguratorSession()
+const canPublishModules = computed(() => sessionState.value.status === 'authenticated' && sessionState.value.session.platformAdmin)
 
 type ArchiveEntry
   = | (EndgeArchivedDocument & { kind: 'document' })
@@ -320,6 +324,7 @@ const unsubscribeDomainFacets = Endge.domain.subscribe(() => {
   facetRegistryVersion.value += 1
 })
 const debuggerMode = Endge.mode === 'debugger' || props.programCatalog !== undefined
+const showModuleCatalog = computed(() => !debuggerMode && !props.programCatalog && sessionState.value.status === 'authenticated')
 const activeDocumentStructure = EndgeIDE.uiState.documentStructure
 const vocabMockDialog = ref({
   open: false,
@@ -1562,22 +1567,25 @@ const groupedFlatFs = computed(() => {
     )
   }
 
-  const groups = VISIBLE_ROOT_BLOCKS.value
-    .map(block => ({
-      ...block,
-      roots: block.rootIds
-        .map(rootId => ({
-          rootId,
-          items: flatFs.value.filter(item => item.rootId === rootId),
-        }))
-        .filter(root => root.items.length > 0),
-    }))
+  const candidates = VISIBLE_ROOT_BLOCKS.value
+  const blocks = showModuleCatalog.value && !candidates.some(block => block.id === 'infrastructure')
+    ? [...candidates, { id: 'infrastructure', title: t('moduleCatalog.infrastructure'), rootIds: [] }]
+    : candidates
+  const groups = blocks.map(block => ({
+    ...block,
+    roots: block.rootIds
+      .map(rootId => ({
+        rootId,
+        items: flatFs.value.filter(item => item.rootId === rootId),
+      }))
+      .filter(root => root.items.length > 0),
+  }))
 
   if (searchFilteringEnabled.value && PROJECT_SEARCH_FILTER_OPTIONS.showEmptyGroups) {
     return groups
   }
 
-  return groups.filter(block => block.roots.length > 0)
+  return groups.filter(block => block.roots.length > 0 || (showModuleCatalog.value && block.id === 'infrastructure'))
 })
 
 function collectExpandablePaths(items: FsNode[], parentPath = ''): string[] {
@@ -2707,6 +2715,16 @@ function rowClasses(item: FlatFsItem): string {
               {{ block.title }}
             </div>
 
+            <button
+              v-if="block.id === 'infrastructure' && showModuleCatalog && !workingSetFilterEnabled"
+              type="button"
+              class="mb-1 flex w-full items-center gap-1 rounded px-1 text-left hover:bg-primary/20"
+              @click.stop="moduleCatalogOpen = true"
+            >
+              <Package class="size-3.5 shrink-0 text-muted-foreground" />
+              {{ t('moduleCatalog.title') }}
+            </button>
+
             <div
               v-for="root in block.roots"
               :key="root.rootId"
@@ -2832,6 +2850,7 @@ function rowClasses(item: FlatFsItem): string {
       </div>
     </Teleport>
 
+    <ModuleCatalogDialog v-if="showModuleCatalog" v-model:open="moduleCatalogOpen" :can-publish="canPublishModules" />
     <Dialog v-model:open="facetDocumentDialog.open">
       <DialogContent class="sm:max-w-md">
         <DialogHeader><DialogTitle>{{ $t('facets.newDocument') }}</DialogTitle></DialogHeader>
