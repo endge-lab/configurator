@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -305,84 +306,174 @@ async function save(): Promise<void> {
       </div>
     </DocumentGeneralSettingsPanel>
 
-    <div v-else-if="activeTab === 'visual'" class="min-h-0 flex-1 overflow-auto p-5">
-      <div class="mx-auto max-w-4xl space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-semibold">
-              {{ $t('uiText.categoryValues41961e86') }}
-            </h3><p class="text-xs text-muted-foreground">
-              {{ $t('uiText.orderMatchesSourcea911e685') }}
-            </p>
-          </div><Button size="sm" variant="outline" @click="addValue">
-            <Plus class="mr-1.5 size-4" />{{ $t('uiText.add559a87f7') }}
-          </Button>
-        </div>
-        <div v-if="!editor.values.length" class="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
-          {{ $t('uiText.valuesNotDeclaredbcad8c5b') }}
-        </div>
-        <section v-for="value in editor.values" :key="value.key" class="space-y-4 rounded-lg border p-4">
-          <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem_auto]">
-            <div class="space-y-1.5">
-              <Label>{{ $t('uiText.keyc67dd20e') }}</Label><Input :model-value="value.key" spellcheck="false" @change="renameValueFromEvent(value, $event)" />
-            </div>
-            <div class="space-y-1.5">
-              <Label>{{ $t('uiText.typeD25691ca') }}</Label><TypeRegistrySelect :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind" :additional-options="configurationInlineTypeOptions" @update:model-value="updateType(value, $event)" />
-            </div>
-            <Button size="icon" variant="ghost" class="mt-6 text-muted-foreground hover:text-destructive" @click="editor.removeValue(value.key)">
-              <Trash2 class="size-4" />
-            </Button>
-          </div>
-          <div class="grid gap-3 md:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label>{{ $t('uiText.label4341e3c2') }}</Label><Input :model-value="value.label" @update:model-value="updateValue(value, { label: String($event ?? '') })" />
-            </div><div class="space-y-1.5">
-              <Label>{{ $t('uiText.description55f8ebc8') }}</Label><Input :model-value="value.description ?? ''" @update:model-value="updateValue(value, { description: String($event ?? '') || undefined })" />
-            </div>
-          </div>
-          <div v-if="value.type.kind === 'enum'" class="space-y-3 rounded-md border p-3">
-            <div class="flex items-end justify-between gap-3">
-              <div class="w-48 space-y-1.5">
-                <Label>{{ $t('uiText.valueTypeEnum40e5a11b') }}</Label>
-                <Select :model-value="enumValueKind(value)" @update:model-value="updateEnumValueKind(value, String($event) as EnumValueKind)">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in enumValueKindOptions" :key="option.value" :value="option.value">
-                      {{ option.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button size="sm" variant="outline" :disabled="!canAddEnumValue(value)" @click="addEnumValue(value)">
-                <Plus class="mr-1.5 size-4" />{{ $t('uiText.addOptionEba2247e') }}
-              </Button>
-            </div>
-            <div class="space-y-2">
-              <div v-for="(item, index) in value.type.values" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                <Select v-if="typeof item === 'boolean'" :model-value="String(item)" @update:model-value="updateEnumValue(value, index, $event)">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">
-                      {{ $t('uiText.true5ffe533b') }}
-                    </SelectItem><SelectItem value="false">
-                      {{ $t('uiText.false7cb6efb9') }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input v-else :model-value="String(item)" :type="typeof item === 'number' ? 'number' : 'text'" spellcheck="false" @change="updateEnumValue(value, index, ($event.target as HTMLInputElement).value)" />
-                <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :disabled="value.type.values.length <= 1" @click="removeEnumValue(value, index)">
-                  <Trash2 class="size-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <Label>{{ $t('uiText.default808d7dca') }}</Label><ConfigValueEditor :model-value="value.defaultValue" :type="value.type" :min="value.min" :max="value.max" :step="value.step" @update:model-value="updateDefault(value, $event)" />
-          </div>
-          <div v-if="value.type.kind === 'reference' && value.type.identity === 'Number'" class="grid grid-cols-3 gap-3">
-            <div><Label>{{ $t('uiText.min7eb0cee8') }}</Label><Input :model-value="value.min" type="number" @update:model-value="updateValue(value, { min: $event === '' ? undefined : Number($event) })" /></div><div><Label>{{ $t('uiText.maxa95e85ae') }}</Label><Input :model-value="value.max" type="number" @update:model-value="updateValue(value, { max: $event === '' ? undefined : Number($event) })" /></div><div><Label>{{ $t('uiText.stepdc416e10') }}</Label><Input :model-value="value.step" type="number" @update:model-value="updateValue(value, { step: $event === '' ? undefined : Number($event) })" /></div>
-          </div>
-        </section>
+    <div v-else-if="activeTab === 'visual'" class="min-h-0 min-w-0 flex-1 space-y-3 overflow-auto p-4">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-sm font-semibold">
+          {{ $t('uiText.categoryValues41961e86') }}
+        </h3>
+        <Button size="sm" variant="outline" @click="addValue">
+          <Plus class="size-4" />{{ $t('uiText.add559a87f7') }}
+        </Button>
+      </div>
+      <div v-if="!editor.values.length" class="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
+        {{ $t('uiText.valuesNotDeclaredbcad8c5b') }}
+      </div>
+      <div v-else class="overflow-x-auto rounded-md border">
+        <table class="w-full min-w-[49rem] table-fixed text-sm" :aria-label="$t('uiText.categoryValues41961e86')">
+          <colgroup>
+            <col class="w-[18%]">
+            <col class="w-[20%]">
+            <col class="w-[14%]">
+            <col class="w-[22%]">
+            <col>
+            <col class="w-24">
+          </colgroup>
+          <thead class="border-b bg-muted/40 text-xs text-muted-foreground [&_th]:px-2 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium">
+            <tr>
+              <th scope="col">
+                {{ $t('uiText.keyc67dd20e') }}
+              </th>
+              <th scope="col">
+                {{ $t('uiText.label4341e3c2') }}
+              </th>
+              <th scope="col">
+                {{ $t('uiText.typeD25691ca') }}
+              </th>
+              <th scope="col">
+                {{ $t('uiText.default808d7dca') }}
+              </th>
+              <th scope="col">
+                {{ $t('uiText.description55f8ebc8') }}
+              </th>
+              <th scope="col">
+                <span class="sr-only">{{ $t('configurationEditor.actions') }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y [&_td]:px-2 [&_td]:py-1.5 [&_td]:align-top">
+            <tr v-for="value in editor.values" :key="value.key" class="hover:bg-muted/20 focus-within:bg-muted/20">
+              <td>
+                <Input
+                  :model-value="value.key"
+                  :aria-label="$t('uiText.keyc67dd20e')"
+                  class="px-2 font-mono text-xs"
+                  spellcheck="false"
+                  @change="renameValueFromEvent(value, $event)"
+                />
+              </td>
+              <td>
+                <Input
+                  :model-value="value.label"
+                  :aria-label="$t('uiText.label4341e3c2')"
+                  class="px-2"
+                  @update:model-value="updateValue(value, { label: String($event ?? '') })"
+                />
+              </td>
+              <td>
+                <TypeRegistrySelect
+                  :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind"
+                  :additional-options="configurationInlineTypeOptions"
+                  trigger-class="px-2"
+                  @update:model-value="updateType(value, $event)"
+                />
+              </td>
+              <td>
+                <ConfigValueEditor
+                  :model-value="value.defaultValue"
+                  :type="value.type"
+                  :min="value.min"
+                  :max="value.max"
+                  :step="value.step"
+                  compact
+                  @update:model-value="updateDefault(value, $event)"
+                />
+              </td>
+              <td>
+                <Textarea
+                  :model-value="value.description ?? ''"
+                  :aria-label="$t('uiText.description55f8ebc8')"
+                  :rows="1"
+                  class="min-h-9 px-2 py-1.5 text-sm leading-5 [field-sizing:content]"
+                  @update:model-value="updateValue(value, { description: $event || undefined })"
+                />
+              </td>
+              <td>
+                <div class="flex justify-end gap-1">
+                  <Dialog v-if="value.type.kind === 'enum' || (value.type.kind === 'reference' && value.type.identity === 'Number')">
+                    <DialogTrigger as-child>
+                      <Button size="icon" variant="ghost" class="text-muted-foreground" :aria-label="$t('configurationEditor.fieldSettings', { key: value.key })" :title="$t('configurationEditor.fieldSettings', { key: value.key })">
+                        <Settings2 class="size-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent class="max-h-[85dvh] overflow-auto" :aria-describedby="undefined">
+                      <DialogHeader>
+                        <DialogTitle class="pr-6 break-words">
+                          {{ $t('configurationEditor.fieldSettings', { key: value.key }) }}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <template v-if="value.type.kind === 'enum'">
+                        <div class="flex flex-wrap items-end justify-between gap-3">
+                          <div class="space-y-1.5">
+                            <Label>{{ $t('uiText.valueTypeEnum40e5a11b') }}</Label>
+                            <Select :model-value="enumValueKind(value)" @update:model-value="updateEnumValueKind(value, String($event) as EnumValueKind)">
+                              <SelectTrigger class="w-32" :aria-label="$t('uiText.valueTypeEnum40e5a11b')">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem v-for="option in enumValueKindOptions" :key="option.value" :value="option.value">
+                                  {{ option.label }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button size="sm" variant="outline" :disabled="!canAddEnumValue(value)" @click="addEnumValue(value)">
+                            <Plus class="size-4" />{{ $t('uiText.addOptionEba2247e') }}
+                          </Button>
+                        </div>
+                        <div class="space-y-2">
+                          <div v-for="(item, index) in value.type.values" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                            <Select v-if="typeof item === 'boolean'" :model-value="String(item)" @update:model-value="updateEnumValue(value, index, $event)">
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="true">
+                                  {{ $t('uiText.true5ffe533b') }}
+                                </SelectItem>
+                                <SelectItem value="false">
+                                  {{ $t('uiText.false7cb6efb9') }}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input v-else :model-value="String(item)" :type="typeof item === 'number' ? 'number' : 'text'" spellcheck="false" @change="updateEnumValue(value, index, ($event.target as HTMLInputElement).value)" />
+                            <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :aria-label="$t('uiText.delete86ea33ae')" :disabled="value.type.values.length <= 1" @click="removeEnumValue(value, index)">
+                              <Trash2 class="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </template>
+                      <div v-else class="grid grid-cols-3 gap-3">
+                        <label class="space-y-1.5 text-sm">
+                          <span>{{ $t('uiText.min7eb0cee8') }}</span>
+                          <Input :model-value="value.min" type="number" @update:model-value="updateValue(value, { min: $event === '' ? undefined : Number($event) })" />
+                        </label>
+                        <label class="space-y-1.5 text-sm">
+                          <span>{{ $t('uiText.maxa95e85ae') }}</span>
+                          <Input :model-value="value.max" type="number" @update:model-value="updateValue(value, { max: $event === '' ? undefined : Number($event) })" />
+                        </label>
+                        <label class="space-y-1.5 text-sm">
+                          <span>{{ $t('uiText.stepdc416e10') }}</span>
+                          <Input :model-value="value.step" type="number" @update:model-value="updateValue(value, { step: $event === '' ? undefined : Number($event) })" />
+                        </label>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :aria-label="$t('configurationEditor.removeField', { key: value.key })" :title="$t('configurationEditor.removeField', { key: value.key })" @click="editor.removeValue(value.key)">
+                    <Trash2 class="size-4" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

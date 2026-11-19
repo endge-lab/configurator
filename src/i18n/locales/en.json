@@ -114,6 +114,12 @@
     "hideCSSPreview": "Hide generated CSS",
     "showCSSPreview": "Show generated CSS"
   },
+  "configurationEditor": {
+    "actions": "Actions",
+    "editDefaultValue": "Edit default value",
+    "fieldSettings": "Field settings · {key}",
+    "removeField": "Remove field {key}"
+  },
   "workspaceTree": {
     "active": "Active",
     "label": "Workspace",
