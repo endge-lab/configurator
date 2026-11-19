@@ -62,6 +62,28 @@ export class EndgeIDEModuleCatalog_Module {
     return entry
   }
 
+  public listArchived() {
+    return this._transport.listArchived()
+  }
+
+  public async softDelete(input: CatalogModule): Promise<void> {
+    const generation = this._generation
+    await this._transport.softDelete(input)
+    if (generation === this._generation) {
+      const state = this._state.value
+      this._state.value = { ...state, entries: state.entries.filter(entry => entry.identity !== input.identity) }
+      void this.refresh()
+    }
+  }
+
+  public async restore(input: Pick<CatalogModule, 'identity' | 'revision'>): Promise<void> {
+    const generation = this._generation
+    await this._transport.restore(input)
+    if (generation === this._generation) {
+      void this.refresh()
+    }
+  }
+
   public reset(): void {
     this._generation += 1
     this._request?.abort()

@@ -160,6 +160,31 @@
     "selectedCount": "Selected: {count}"
   },
   "diagnostics": {
+    "hotkeys": {
+      "actions": {
+        "download": "Download JSON",
+        "start": "Start recording",
+        "stop": "Stop recording"
+      },
+      "record": "Record",
+      "clear": "Clear",
+      "press": "Press a shortcut",
+      "conflict": "Shortcut already assigned",
+      "legacy": "Previously saved shortcut for Action “{action}”"
+    },
+    "recording": {
+      "background": "Continuous telemetry collection",
+      "allow": "Allow manual recording",
+      "allowHint": "Recording starts on demand and stays local, even when continuous collection is off.",
+      "title": "Scenario recording",
+      "contentHint": "Choose the sections to capture when the recording stops.",
+      "start": "Start recording",
+      "stop": "Stop recording",
+      "download": "Download recording",
+      "active": "Recording diagnostics",
+      "stopAndDownload": "Stop and download",
+      "actionFailed": "Could not finish or download the recording."
+    },
     "configuration": {
       "history": {
         "recordLimit": "Record limit"
@@ -186,8 +211,8 @@
           "title": "Automatic snapshots"
         },
         "hotkeySnapshot": {
-          "description": "Configure the keyboard shortcut and contents of the snapshot downloaded by Core.",
-          "title": "Hotkey snapshot"
+          "description": "The download uses the finished recording when available, or the current snapshot.",
+          "title": "Keyboard shortcuts"
         },
         "manualSnapshot": {
           "description": "Configure the JSON snapshot that can be downloaded from Configurator.",
@@ -242,8 +267,8 @@
       "shortcut": {
         "contentDescription": "These sections are used only for downloads started by the configured shortcut.",
         "contentTitle": "Shortcut snapshot contents",
-        "description": "Core listens for keyboard events globally and downloads a snapshot when a shortcut or the full sequence matches.",
-        "empty": "No shortcut is configured. Hotkey download is disabled.",
+        "description": "The action runs when the shortcut or the full key sequence matches.",
+        "empty": "No shortcut is configured.",
         "title": "Keyboard shortcut snapshot",
         "triggerTitle": "Keyboard shortcut"
       }
@@ -1711,6 +1736,11 @@
     "catalogDetails": "Build descriptor"
   },
   "releaseBuild": {
+    "allFacetValues": "All values",
+    "includeModules": "Include modules in the artifact",
+    "deliveryContexts": "Contexts in the artifact — {count}",
+    "embeddedModules": "Embedded module versions — {count}",
+    "noFacets": "No facets",
     "ready": "Build ready",
     "help": "Download the file or create a release from this build.",
     "parameters": "Build parameters",
@@ -1863,12 +1893,22 @@
     "refreshPending": "Page order changed. Refresh explicitly to rebuild the window.",
     "preview": "Controller · runtime-only · read-only"
   },
+  "workspaceAnalysis": {
+    "openSource": "Open in Source",
+    "idle": "Run an analysis of the current build",
+    "running": "Checking the current context…",
+    "complete": "Current context check completed",
+    "incomplete": "Some checks could not be completed",
+    "stale": "The domain changed. Run the analysis again"
+  },
   "moduleCatalog": {
+    "inheritRenderer": "Inherit",
     "title": "Modules",
     "rootSfcAdapter": "Root SFC adapter",
     "tagRenderers": "Tag renderers",
     "searchRenderers": "Search tags and renderers",
     "noRendererMatches": "No renderers found",
+    "adapterRenderer": "From the root adapter",
     "versions": "Versions",
     "retry": "Retry",
     "noMatches": "No modules match your search",
@@ -1878,6 +1918,17 @@
     "name": "Name",
     "details": "Description",
     "archive": "Build ZIP",
+    "version": "Version",
+    "versionDetails": "Version {version} details",
+    "formatVersion": "Format version",
+    "hostApi": "Host API version",
+    "manifestRenderers": "Renderers declared in the manifest",
+    "rendererTag": "Tag",
+    "rendererId": "ID",
+    "noManifestRenderers": "This version’s manifest declares no tag renderers.",
+    "invalidArchiveSize": "Choose a non-empty ZIP file up to 15 MiB.",
+    "invalidArchiveManifest": "Check manifest.json at the root of the ZIP. It must specify a module identity, an exact SemVer version, formatVersion 1, and hostApi 1.",
+    "archiveIdentityMismatch": "The ZIP identifies module “{actual}”. Choose a ZIP for “{expected}” to publish a version here.",
     "cancel": "Cancel",
     "save": "Save",
     "upload": "Upload",
@@ -1886,6 +1937,13 @@
     "empty": "The catalog has no modules yet",
     "addVersion": "Add version",
     "edit": "Edit",
-    "download": "Download ZIP"
+    "download": "Download ZIP",
+    "delete": "Delete module",
+    "deleteTitle": "Move “{name}” to the archive?",
+    "deleteDescription": "The module will disappear from the catalog and can be restored from the archive. Existing references are not removed automatically and continue to use their pinned versions.",
+    "deleteConfirm": "Move to archive",
+    "deleted": "Module moved to the archive",
+    "deleteFailed": "Could not move the module to the archive",
+    "archiveLoadFailed": "Could not load archived modules"
   }
 }

@@ -53,6 +53,10 @@ export class EndgeIDEIntegrations_Module {
     return this._menu.items
   }
 
+  public hasLoadedVersion(identity: string, version: string): boolean {
+    return this._modules.some(({ manifest }) => manifest.identity === identity && manifest.version === version)
+  }
+
   public async init(): Promise<void> {
     if (this._initialized) {
       return

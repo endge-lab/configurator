@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test'
  * - backend (AUTH_MODE=dev, временная БД) с импортированным workspace tenant-inspector;
  * - поддельный сервер рейсов (GraphQL + graphql-sse + REST);
  * - dev-сервер Configurator, указывающий на этот backend.
- * Подготовка — workspace/@endge/reports/2026-10-26-tenant-platform/W12b-ui.md.
+ * Подготовка — ../egorkozelskij-jarvis/projects/endge/reports/2026-10-26-tenant-platform/W12b-ui.md.
  */
 export const E2E_ENABLED = process.env.ENDGE_TENANT_E2E === '1'
 export const BACKEND_URL = process.env.ENDGE_E2E_BACKEND_URL ?? 'http://localhost:18080'

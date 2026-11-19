@@ -1,3 +1,4 @@
+import type { DeliveryFacetSelection, DeliveryModule, EndgeBundle } from '@endge/core'
 import type {
   BuildProfileSettings,
   BuildProfileVisibility,
@@ -7,7 +8,7 @@ import type {
   BuildProfilePatch,
 } from '@/features/endge-ide/domain/types/build-profile.type'
 import type { BuildResult } from '@/features/endge-ide/domain/types/build-result.type'
-import { Endge } from '@endge/core'
+import { collectDeliveryModules, Endge, moduleReferenceKey } from '@endge/core'
 
 import { readonly, ref, shallowRef } from 'vue'
 import { Configurator } from '@/app/Configurator'
@@ -18,6 +19,7 @@ import {
   createDefaultBuildProfileSettings,
   RBuildProfile,
 } from '@/features/endge-ide/domain/entities/RBuildProfile'
+import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 
 /**
  * Owns operational build-profile state and serializes writes per profile.
@@ -50,7 +52,11 @@ export class EndgeIDEBuildProfiles_Module {
     }
   }
 
-  public async buildBundle(settings: BuildProfileSettings, profile?: RBuildProfile): Promise<void> {
+  public async buildBundle(
+    settings: BuildProfileSettings,
+    profile?: RBuildProfile,
+    delivery?: { facets: DeliveryFacetSelection, includeModules: boolean },
+  ): Promise<void> {
     if (this._buildController || this._publishing.value) {
       throw new Error('Сборка или создание релиза уже выполняется')
     }
@@ -67,13 +73,38 @@ export class EndgeIDEBuildProfiles_Module {
     this._sourceCommitId.value = null
     try {
       this._buildStatus.value = 'building'
-      const snapshot = await Endge.buildSavedProgram(controller.signal)
+      const scoped = options.buildScope === 'startup-composition' && delivery
+        ? await Endge.buildSavedDelivery(delivery.facets, controller.signal)
+        : undefined
+      const snapshot = scoped ? scoped.snapshot : await Endge.buildSavedProgram(controller.signal)
       controller.signal.throwIfAborted()
-      const bundle = Endge.program.exportBundle({ includeAst: options.includeAst, scope: options.buildScope })
+      const bundle = scoped?.bundles[0] ?? Endge.program.exportBundle({ includeAst: options.includeAst, scope: options.buildScope })
       this._buildStatus.value = 'packing'
       const { configuration: _configuration, ...buildContext } = bundle.context
       const files = new BundleFiles_Service()
-      const container = { format: 'endge-bundle' as const, version: 1 as const, bundle }
+      const container: EndgeBundle = { format: 'endge-bundle', version: 1, bundle }
+      if (scoped) {
+        container.version = 2
+        container.delivery = { variants: scoped.bundles.slice(1) }
+        if (delivery?.includeModules) {
+          const transport = EndgeIDE.moduleCatalog.transport
+          const modules = new Map<string, DeliveryModule>()
+          for (const variant of scoped.bundles) {
+            for (const reference of collectDeliveryModules(variant)) {
+              const key = moduleReferenceKey(reference)
+              if (!modules.has(key)) {
+                try {
+                  modules.set(key, await transport.readDeliveryModule(reference, controller.signal))
+                }
+                catch (error) {
+                  throw new Error(`Не удалось включить модуль ${key} для ${JSON.stringify(variant.context.facets)}: ${error instanceof Error ? error.message : String(error)}`)
+                }
+              }
+            }
+          }
+          container.delivery.modules = [...modules.values()]
+        }
+      }
       const gzip = await files.encode(container, 'gzip', controller.signal)
       const bytes = options.fileFormat === 'gzip' ? gzip : await files.encode(container, 'json', controller.signal)
       controller.signal.throwIfAborted()
@@ -83,6 +114,14 @@ export class EndgeIDEBuildProfiles_Module {
         sizeBytes: bytes.byteLength,
         source: snapshot ? { workspaceId: snapshot.workspace.state.id, workspaceIdentity: snapshot.workspace.identity, headSequence: snapshot.workspace.state.headSequence, generation: snapshot.workspace.state.generation } : null,
         metadata: { version: 1, profile: profileSnapshot, programId: bundle.programId, compilerVersion: bundle.compilerVersion, runtime: 'ts-browser', scope: options.buildScope, contextMode: 'effective-context', context: buildContext, includeAst: options.includeAst, fileFormat: 'gzip', sizeBytes: gzip.byteLength },
+        ...(scoped
+          ? {
+              delivery: {
+                facets: scoped.bundles.map(variant => variant.context.facets),
+                embeddedModules: container.delivery?.modules?.map(module => moduleReferenceKey(module.manifest)) ?? null,
+              },
+            }
+          : {}),
       }
       this._prepared = { bytes, gzip, result }
       this._result.value = result

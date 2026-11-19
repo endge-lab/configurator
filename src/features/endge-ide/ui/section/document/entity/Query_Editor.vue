@@ -28,6 +28,7 @@ import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import { collectGraphQLSchemaProblems } from '@/features/endge-ide/services/graphql-schema/graphql-schema-problems'
 import { canRunQueryWithoutInput } from '@/features/endge-ide/services/query-run/query-run-form'
+import { useDiagnosticSourceLocation } from '@/features/endge-ide/tools/source-editor/use-diagnostic-source-location'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import GraphQLSchemaMenu from '@/features/endge-ide/ui/components/graphql-schema/GraphQLSchemaMenu.vue'
@@ -41,6 +42,7 @@ import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface SourceEditorHandle {
   formatDocument: () => Promise<void>
+  focusOffset: (offset: number) => void
 }
 
 interface QueryRunPanelHandle {
@@ -67,6 +69,12 @@ const schemaProblems = computed(() => editor.value
 const runPanelOpen = ref(false)
 const runPanelRef = ref<QueryRunPanelHandle | null>(null)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+useDiagnosticSourceLocation(kind => kind.startsWith('query-'), editor, async (offset) => {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset?.(offset)
+})
+
 const parsedSource = computed(() => Endge.source.parse<QuerySourceDocument>('query', editor.value?.source ?? ''))
 const queryDocumentType = computed(() =>
   parsedSource.value.document?.kind === 'graphql'

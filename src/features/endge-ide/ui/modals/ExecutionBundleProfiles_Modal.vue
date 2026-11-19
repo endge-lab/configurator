@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DeliveryFacetSelection } from '@endge/core'
 import type {
   BuildProfileDebuggerStructure,
   BuildProfileDiagnostics,
@@ -7,6 +8,7 @@ import type {
   RBuildProfile,
 } from '@/features/endge-ide/domain/entities/RBuildProfile'
 
+import { Endge } from '@endge/core'
 import {
   FileClock,
   Globe2,
@@ -127,9 +129,25 @@ const isBuilding = computed(() =>
 const hasUnsavedChanges = computed(() =>
   EndgeIDE.tabs.openTabs.value.some(tab => EndgeIDE.tabs.isTabDirty(tab.id)),
 )
+const includeModules = ref(true)
+const facetChoices = ref<Record<string, string>>({})
+const buildFacets = computed(() => Endge.domain.getFacets()
+  .filter(facet => facet.active !== false && !facet.deletedAt)
+  .map(facet => ({
+    identity: facet.identity,
+    label: facet.displayName || facet.identity,
+    locked: Endge.context.isFacetLockedBySession(facet.identity),
+    documents: Endge.domain.getFacetDocuments(facet.identity).filter(document => document.active !== false && !document.deletedAt),
+  }))
+  .filter(facet => facet.documents.length > 0))
+
 async function build(): Promise<void> {
   try {
-    await module.buildBundle(selectedSettings.value, selectedProfile.value ?? undefined)
+    const facets: DeliveryFacetSelection = Object.fromEntries(Object.entries(facetChoices.value).map(([facet, value]) => [
+      facet,
+      value === '*all*' ? { mode: 'all' } : { mode: 'one', identity: value },
+    ]))
+    await module.buildBundle(selectedSettings.value, selectedProfile.value ?? undefined, { facets, includeModules: includeModules.value })
     openState.value = false
   }
   catch (error) {
@@ -177,6 +195,9 @@ async function open(): Promise<void> {
   selectedIdentity.value = 'current'
   activeTab.value = 'contents'
   draftVisibility.value = 'private'
+  const current = Endge.context.getExecutionContext().facets
+  facetChoices.value = Object.fromEntries(buildFacets.value.map(facet => [facet.identity, current[facet.identity] ?? facet.documents[0]!.identity]))
+  includeModules.value = true
   openState.value = true
   await nextTick()
   syncSplitContainerWidth()
@@ -801,7 +822,7 @@ const { t } = useI18n()
                   <p v-if="selectedSettings.buildScope === 'complete-model'" class="col-span-2 text-sm text-amber-600">
                     {{ copy.fullModelHelp }}
                   </p>
-                  <div class="space-y-2">
+                  <div v-if="selectedSettings.buildScope === 'complete-model'" class="space-y-2">
                     <label class="block text-xs text-muted-foreground">{{
                       copy.contexts
                     }}</label><Select :model-value="selectedSettings.contexts" disabled>
@@ -816,6 +837,28 @@ const { t } = useI18n()
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div v-else class="col-span-2 space-y-4">
+                    <div v-for="facet in buildFacets" :key="facet.identity" class="grid grid-cols-2 items-center gap-3">
+                      <span class="text-sm">{{ facet.label }}</span>
+                      <Select v-model="facetChoices[facet.identity]" :disabled="isBuilding || facet.locked">
+                        <SelectTrigger :aria-label="facet.label">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="document in facet.documents" :key="document.identity" :value="document.identity">
+                            {{ document.displayName || document.identity }}
+                          </SelectItem>
+                          <SelectItem v-if="facet.identity !== 'tenant'" value="*all*">
+                            {{ t('releaseBuild.allFacetValues') }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm">
+                      <Checkbox v-model="includeModules" :disabled="isBuilding" />
+                      {{ t('releaseBuild.includeModules') }}
+                    </label>
                   </div>
                   <div class="space-y-2">
                     <label class="block text-xs text-muted-foreground">{{

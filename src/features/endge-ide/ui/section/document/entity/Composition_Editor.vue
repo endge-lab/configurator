@@ -11,7 +11,7 @@ import {
   Settings2,
   TriangleAlert,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,7 @@ import {
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
+import { useDiagnosticSourceLocation } from '@/features/endge-ide/tools/source-editor/use-diagnostic-source-location'
 import CompositionSourceEditor from '@/features/endge-ide/ui/components/CompositionSourceEditor.vue'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
@@ -38,6 +39,7 @@ import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 interface SourceEditorHandle {
   formatDocument: () => Promise<void>
+  focusOffset: (offset: number) => void
 }
 
 const editor = computed(
@@ -51,6 +53,12 @@ const activeTab = useSmartTabSelection('editor.active-tab', 'source', [
 ] as const)
 const launchLoading = ref(false)
 const sourceEditorRef = ref<SourceEditorHandle | null>(null)
+useDiagnosticSourceLocation(kind => kind === 'composition', editor, async (offset) => {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset?.(offset)
+})
+
 const compiled = computed(() =>
   editor.value
     ? compilePreviewSource('composition', editor.value.source)

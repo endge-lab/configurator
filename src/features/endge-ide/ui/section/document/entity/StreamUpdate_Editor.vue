@@ -4,7 +4,7 @@ import type { RUpdateEditor } from '@/features/endge-ide/domain/entities/RUpdate
 
 import { Endge } from '@endge/core'
 import { Code2, FileJson, Loader2, RotateCcw, Save, Settings2, TriangleAlert } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { createEditorDiagnosticsEntityRef } from '@/features/endge-ide/services/diagnostics/editor-diagnostics-entity-ref'
 import { collectGraphQLSchemaProblems } from '@/features/endge-ide/services/graphql-schema/graphql-schema-problems'
 import { compilePreviewSource } from '@/features/endge-ide/services/source-preview/compile-preview-source'
+import { useDiagnosticSourceLocation } from '@/features/endge-ide/tools/source-editor/use-diagnostic-source-location'
 import EntityProblemsPanel from '@/features/endge-ide/ui/components/diagnostics/EntityProblemsPanel.vue'
 import DocumentGeneralSettingsPanel from '@/features/endge-ide/ui/components/DocumentGeneralSettingsPanel.vue'
 import GraphQLSchemaMenu from '@/features/endge-ide/ui/components/graphql-schema/GraphQLSchemaMenu.vue'
@@ -36,7 +37,13 @@ const activeTab = useSmartTabSelection(
   'source',
   ['general', 'source', 'artifact', 'diagnostics'] as const,
 )
-const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
+const sourceEditorRef = ref<{ formatDocument: () => Promise<void>, focusOffset?: (offset: number) => void } | null>(null)
+useDiagnosticSourceLocation(kind => kind === props.sourceKind, editor, async (offset) => {
+  activeTab.value = 'source'
+  await nextTick()
+  sourceEditorRef.value?.focusOffset?.(offset)
+})
+
 const compiled = computed(() => editor.value
   ? compilePreviewSource(props.sourceKind, editor.value.source)
   : null)

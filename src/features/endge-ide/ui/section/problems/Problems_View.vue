@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DomainDocumentType } from '@endge/core'
+import type { DiagnosticsProblem, DomainDocumentType } from '@endge/core'
 import type { Component } from 'vue'
 
 import { Bug, CircleCheck, ExternalLink, ShieldAlert } from 'lucide-vue-next'
@@ -28,14 +28,25 @@ const entityIcon = computed<Component>(() => {
   return getIconComponent(entityPresentation.value?.icon) as Component | null ?? Bug
 })
 const entityIconClass = computed(() => entityPresentation.value?.colorClass ?? 'text-muted-foreground')
+const openProblemSource = computed(() => {
+  const reference = selectedEntry.value?.entityRef
+  const type = reference ? resolveDiagnosticsDocumentTarget(reference)?.documentType : null
+  return type && (type.startsWith('query-') || ['component-sfc', 'composition', 'stream', 'update'].includes(type))
+    ? openEntity
+    : undefined
+})
 
 // Открывает persisted entity в Domain workspace.
 function openSelectedEntity(): void {
+  openEntity()
+}
+
+function openEntity(problem?: DiagnosticsProblem): void {
   const ref = selectedEntry.value?.entityRef
   if (!ref) {
     return
   }
-  if (EndgeIDE.tabs.openDiagnosticsEntity(ref)) {
+  if (EndgeIDE.tabs.openDiagnosticsEntity(ref, problem?.start)) {
     showWidget(ENDGE_IDE_DOMAIN_WIDGET_ID)
   }
 }
@@ -69,7 +80,7 @@ function openSelectedEntity(): void {
         </Button>
       </header>
 
-      <EntityProblemsPanel :problems="selectedEntry.problems" class="min-h-0 flex-1" />
+      <EntityProblemsPanel :problems="selectedEntry.problems" :open-problem="openProblemSource" class="min-h-0 flex-1" />
     </template>
 
     <div v-else class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">

@@ -260,7 +260,7 @@ watch(() => EndgeIDE.domainDrag.state.value.active, (active) => {
   }
 })
 
-defineExpose({ formatDocument: monacoAdapter.formatDocument })
+defineExpose({ formatDocument: monacoAdapter.formatDocument, focusOffset: monacoAdapter.focusOffset })
 
 onBeforeUnmount(() => {
   container.value?.removeEventListener('dragover', onEditorDragOver, true)

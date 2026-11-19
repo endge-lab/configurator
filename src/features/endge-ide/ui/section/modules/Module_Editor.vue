@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CatalogModuleDetail } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
-import { Download, Loader2, Pencil, Plus } from 'lucide-vue-next'
+import { Loader2, Pencil, Plus } from 'lucide-vue-next'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { useConfiguratorSession } from '@/features/configurator-session/ui/confi
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import SourceDocumentEditorShell from '@/features/endge-ide/ui/components/source-document-editor/SourceDocumentEditorShell.vue'
 import ModuleFormDialog from './ModuleFormDialog.vue'
+import ModuleVersionDialog from './ModuleVersionDialog.vue'
 
 const props = defineProps<{ identity: string }>()
 const { t } = useI18n()
@@ -86,11 +87,7 @@ function onSaved(detail: CatalogModuleDetail): void {
           </h2>
           <div v-for="version in entry.versions" :key="version.version" class="flex items-center justify-between gap-2 rounded border px-3 py-2">
             <code class="break-all text-sm">{{ version.version }}</code>
-            <Button as-child size="sm" variant="ghost">
-              <a :href="catalog.transport.archiveURL(version.manifest)" download>
-                <Download /> {{ t('moduleCatalog.download') }}
-              </a>
-            </Button>
+            <ModuleVersionDialog :manifest="version.manifest" :archive-url="catalog.transport.archiveURL(version.manifest)" />
           </div>
         </section>
       </section>

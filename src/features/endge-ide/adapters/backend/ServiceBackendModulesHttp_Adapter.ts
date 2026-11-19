@@ -1,4 +1,7 @@
-import type { ModuleManifest, ModuleReference } from '@endge/core'
+import type { DeliveryModule, ModuleArtifactLoader, ModuleManifest, ModuleReference } from '@endge/core'
+import type { VueModuleExports, VueModuleHost } from '@endge/ui-vue'
+import { createVueModuleArtifact } from '@endge/ui-vue'
+import { unzipSync } from 'fflate'
 
 export interface CatalogModule {
   id: string
@@ -6,6 +9,10 @@ export interface CatalogModule {
   name: string
   description: string
   revision: number
+}
+
+export interface ArchivedCatalogModule extends CatalogModule {
+  deletedAt: string
 }
 
 export interface CatalogModuleVersion {
@@ -22,12 +29,27 @@ export interface CatalogModuleDetail extends CatalogModule {
   versions: CatalogModuleVersion[]
 }
 
+interface CatalogVersionDescriptor extends CatalogModuleVersion {
+  moduleArchived?: boolean
+  archiveUrl: string
+  assets: { js: string, css?: string }
+}
+
 export class ServiceBackendModulesHttpAdapter {
   public constructor(private readonly _baseURL: string) {}
 
   public async list(signal?: AbortSignal): Promise<CatalogModule[]> {
     const result = await this._json<{ items: CatalogModule[] }>('', { signal })
     return result.items
+  }
+
+  public async listArchived(): Promise<ArchivedCatalogModule[]> {
+    const response = await this._request(this._url('?deleted=true'), {}, true)
+    if (response.status === 404) {
+      return []
+    }
+    const result = await response.json() as { items: (CatalogModule & { deletedAt?: string })[] }
+    return result.items.filter((item): item is ArchivedCatalogModule => typeof item.deletedAt === 'string' && item.deletedAt.length > 0)
   }
 
   public detail(identity: string, signal?: AbortSignal): Promise<CatalogModuleDetail> {
@@ -51,6 +73,20 @@ export class ServiceBackendModulesHttpAdapter {
     })
   }
 
+  public softDelete(value: Pick<CatalogModule, 'identity' | 'revision'>): Promise<CatalogModule> {
+    return this._json(this._identity(value.identity), {
+      method: 'DELETE',
+      headers: { 'If-Match': `"${value.revision}"` },
+    })
+  }
+
+  public restore(value: Pick<CatalogModule, 'identity' | 'revision'>): Promise<CatalogModule> {
+    return this._json(`${this._identity(value.identity)}/restore`, {
+      method: 'POST',
+      headers: { 'If-Match': `"${value.revision}"` },
+    })
+  }
+
   public publish(identity: string, archive: File): Promise<CatalogModuleVersion> {
     const body = new FormData()
     body.set('archive', archive)
@@ -59,6 +95,72 @@ export class ServiceBackendModulesHttpAdapter {
 
   public archiveURL(reference: ModuleReference): string {
     return this._url(`${this._version(reference)}/archive`)
+  }
+
+  public async describeVersion(reference: ModuleReference, signal?: AbortSignal): Promise<CatalogVersionDescriptor | null> {
+    const timeout = AbortSignal.timeout(15000)
+    const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout
+    const response = await this._request(this._url(this._version(reference)), { signal: requestSignal }, true)
+    return response.status === 404 ? null : response.json() as Promise<CatalogVersionDescriptor>
+  }
+
+  public isCompatibleManifest(manifest: ModuleManifest | undefined, reference: ModuleReference): boolean {
+    return manifest?.identity === reference.identity && manifest.version === reference.version
+      && manifest.formatVersion === 1 && manifest.hostApi === 1
+  }
+
+  public async readDeliveryModule(reference: ModuleReference, signal: AbortSignal): Promise<DeliveryModule> {
+    const descriptor = await this._json<CatalogVersionDescriptor>(this._version(reference), { signal })
+    if (!this.isCompatibleManifest(descriptor.manifest, reference)) {
+      throw new Error('Incompatible module manifest')
+    }
+    const archive = await (await this._request(this.archiveURL(reference), { signal })).arrayBuffer()
+    const hash = await crypto.subtle.digest('SHA-256', archive)
+    const sha256 = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('')
+    if (sha256 !== descriptor.sha256 || archive.byteLength !== descriptor.size || archive.byteLength > 15 * 1024 * 1024) {
+      throw new Error('Module archive failed integrity validation')
+    }
+    signal.throwIfAborted()
+    const files = unzipSync(new Uint8Array(archive), { filter: entry => entry.name === 'module.js' || entry.name === 'module.css' })
+    const decoder = new TextDecoder('utf-8', { fatal: true })
+    if (!files['module.js']?.length || Boolean(files['module.css']) !== descriptor.hasCss) {
+      throw new Error('Module archive assets disagree with the catalog')
+    }
+    return {
+      manifest: descriptor.manifest,
+      js: decoder.decode(files['module.js']),
+      ...(files['module.css'] ? { css: decoder.decode(files['module.css']) } : {}),
+    }
+  }
+
+  public loader(host: () => Promise<VueModuleHost>): ModuleArtifactLoader {
+    return async (reference, signal) => {
+      const descriptor = await this._json<CatalogVersionDescriptor>(this._version(reference), { signal })
+      const manifest = descriptor.manifest
+      if (!this.isCompatibleManifest(manifest, reference)) {
+        throw new Error(`Incompatible module manifest for "${reference.identity}@${reference.version}".`)
+      }
+      const js = this._assetURL(descriptor.assets.js, reference, 'module.js')
+      const cssURL = descriptor.assets.css && this._assetURL(descriptor.assets.css, reference, 'module.css')
+      const [dependencies, css] = await Promise.all([
+        host(),
+        cssURL ? this._request(cssURL, { signal }).then(response => response.text()) : undefined,
+      ])
+      signal.throwIfAborted()
+      const module = await import(/* @vite-ignore */ js) as VueModuleExports
+      signal.throwIfAborted()
+      return createVueModuleArtifact(module, dependencies, css)
+    }
+  }
+
+  private _assetURL(path: string, reference: ModuleReference, filename: string): string {
+    const expected = new URL(this._url(`${this._version(reference)}/assets/${filename}`))
+    const resolve = new URL(path, expected.origin)
+    if (resolve.origin !== location.origin || resolve.origin !== expected.origin
+      || decodeURIComponent(resolve.pathname) !== decodeURIComponent(expected.pathname) || resolve.search || resolve.hash) {
+      throw new Error(`The module asset must use the Configurator origin and catalog path: ${filename}.`)
+    }
+    return resolve.href
   }
 
   private _identity(identity: string): string {
@@ -78,9 +180,9 @@ export class ServiceBackendModulesHttpAdapter {
     return response.json() as Promise<T>
   }
 
-  private async _request(url: string, init: RequestInit): Promise<Response> {
+  private async _request(url: string, init: RequestInit, allowNotFound = false): Promise<Response> {
     const response = await fetch(url, { ...init, credentials: 'include', cache: 'no-store' })
-    if (!response.ok) {
+    if (!response.ok && !(allowNotFound && response.status === 404)) {
       const error = await response.json().catch(() => null)
       throw new Error(error?.error?.message ?? error?.message ?? `Module catalog request failed (${response.status}).`)
     }

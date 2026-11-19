@@ -1,13 +1,14 @@
 import type { IntegrationModule } from '@endge/integration-api'
 import type { EndgeIDEContextPort, EndgeIDEModules } from '@/features/endge-ide/domain/types/endge-ide-modules.type'
 import type { GraphQLSchemaCacheScope } from '@/features/endge-ide/services/graphql-schema/graphql-schema-cache-repository'
-
 import { Endge } from '@endge/core'
 
 import { UIEditorStorage_Adapter } from '@/features/endge-admin-ui-editor/modules/ui-editor/adapters/UIEditorStorage_Adapter'
+
 import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import { ServiceBackendBuildProfileHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendBuildProfileHttp_Adapter'
 import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
+import { ServiceBackendIntegrationCatalogHttpAdapter } from '@/features/endge-ide/adapters/backend/ServiceBackendIntegrationCatalogHttp_Adapter'
 import { ServiceBackendModulesHttpAdapter } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
@@ -67,6 +68,16 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
     uiState,
     () => runtimePreview.restartForDataModeChange(),
   )
+  const tabs = new EndgeIDETabs_Module(busy, uiState, workspace)
+  const backendURL = getEndgeBackendConfig().activeBackendURL
+  const moduleTransport = new ServiceBackendModulesHttpAdapter(backendURL)
+  const integrations = new EndgeIDEIntegrations_Module(loadConfiguratorIntegrations, context)
+  const graphqlSchema = new EndgeIDEGraphQLSchema_Module({
+    storage: new GraphQLSchemaCacheRepository(),
+    scope: graphQLSchemaCacheScope,
+    resolveEndpoint: endpoint => Endge.workspace.variables.resolve(endpoint) || endpoint,
+    execute: payload => Endge.runtime.query.executeArtifact({ payload, props: {} }),
+  })
   return {
     uiEditor: createUIEditorModule(new UIEditorStorage_Adapter()),
     busy,
@@ -80,26 +91,19 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
       new ServiceBackendDomainTransferHttp_Adapter(getEndgeBackendConfig().serviceBackendURL),
     ),
     documentImport: new EndgeIDEDocumentImport_Module(),
-    graphqlSchema: new EndgeIDEGraphQLSchema_Module({
-      storage: new GraphQLSchemaCacheRepository(),
-      scope: graphQLSchemaCacheScope,
-      resolveEndpoint: endpoint => Endge.workspace.variables.resolve(endpoint) || endpoint,
-      execute: payload => Endge.runtime.query.executeArtifact({ payload, props: {} }),
-    }),
+    graphqlSchema,
     modals: new EndgeIDEModals_Module(),
-    moduleCatalog: new EndgeIDEModuleCatalog_Module(
-      new ServiceBackendModulesHttpAdapter(getEndgeBackendConfig().activeBackendURL),
-    ),
-    tabs: new EndgeIDETabs_Module(busy, uiState, workspace),
+    moduleCatalog: new EndgeIDEModuleCatalog_Module(moduleTransport),
+    tabs,
     workspace,
     uiState,
     widgets: new EndgeIDEWidgets_Module(),
     hotkeys: new EndgeIDEHotkeys_Module(new EndgeIDEHotkeysBrowser_Adapter()),
     runtimePreview,
     runtimeInspection: new EndgeIDERuntimeInspection_Module(),
-    problems: new EndgeIDEProblems_Module(),
+    problems: new EndgeIDEProblems_Module(graphqlSchema, moduleTransport, tabs, integrations, new ServiceBackendIntegrationCatalogHttpAdapter(backendURL)),
     sourceEditorDialogs: new SourceEditorDialogs_Module(),
     authProfileEditors: new AuthProfileEditorRegistry_Module(),
-    integrations: new EndgeIDEIntegrations_Module(loadConfiguratorIntegrations, context),
+    integrations,
   }
 }

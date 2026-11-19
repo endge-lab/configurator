@@ -18,6 +18,8 @@ const props = defineProps<{
   modelValue: ComponentSFCInteractionTriggerActivation
   kind: 'generic' | 'shortcut'
   disabled?: boolean
+  compactLabel?: string
+  isShortcutAvailable?: (event: KeyboardEvent) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const recording = ref(false)
+const compactConflict = ref(false)
 const recordedSteps = ref<ComponentSFCInteractionTriggerSequenceStep[]>([])
 let recordingSurface: HTMLElement | null = null
 let lastRecordedAt: number | null = null
@@ -34,6 +37,12 @@ const triggerSet = computed(() => Array.isArray(props.modelValue)
   ? props.modelValue
   : props.modelValue.steps[0]?.triggerSet ?? [])
 const sequenceSteps = computed(() => Array.isArray(props.modelValue) ? [] : props.modelValue.steps)
+const compactValue = computed(() => {
+  const label = (triggers: readonly ComponentSFCInteractionTrigger[]) => triggers.map(triggerLabel).join(' / ')
+  return Array.isArray(props.modelValue)
+    ? label(props.modelValue)
+    : props.modelValue.steps.map(step => label(step.triggerSet)).filter(Boolean).join(' → ')
+})
 
 function selectMode(value: 'set' | 'sequence'): void {
   if (value === mode.value) {
@@ -129,6 +138,7 @@ function finishRecording(): void {
 
 function cancelRecording(): void {
   recording.value = false
+  compactConflict.value = false
   recordedSteps.value = []
   lastRecordedAt = null
   recordingSurface = null
@@ -142,9 +152,37 @@ function recordKey(event: KeyboardEvent): void {
   if (!recording.value) {
     return
   }
+  if (props.compactLabel && event.key === 'Tab') {
+    return
+  }
   event.preventDefault()
   event.stopPropagation()
+  if (props.compactLabel && event.key === 'Escape') {
+    cancelRecording()
+    return
+  }
   if (event.repeat || isModifierKey(event)) {
+    return
+  }
+
+  const trigger: ComponentSFCInteractionTrigger = {
+    event: 'keydown',
+    code: [event.code || event.key],
+    modifiers: capturePortableModifiers(event),
+    repeat: false,
+    composing: false,
+    prevent: true,
+    stop: true,
+  }
+  if (props.compactLabel) {
+    if (event.isComposing || !event.code) {
+      return
+    }
+    compactConflict.value = props.isShortcutAvailable?.(event) === false
+    if (!compactConflict.value) {
+      emit('update:modelValue', [trigger])
+      cancelRecording()
+    }
     return
   }
 
@@ -153,15 +191,7 @@ function recordKey(event: KeyboardEvent): void {
     ? undefined
     : clampInterval(Math.ceil((now - lastRecordedAt) / 100) * 100 + 250)
   recordedSteps.value.push({
-    triggerSet: [{
-      event: 'keydown',
-      code: [event.code || event.key],
-      modifiers: capturePortableModifiers(event),
-      repeat: false,
-      composing: false,
-      prevent: true,
-      stop: true,
-    }],
+    triggerSet: [trigger],
     ...(interval != null ? { maxIntervalMs: interval } : {}),
   })
   lastRecordedAt = now
@@ -208,9 +238,10 @@ function isModifierKey(event: KeyboardEvent): boolean {
 
 function stepLabel(step: ComponentSFCInteractionTriggerSequenceStep): string {
   const trigger = step.triggerSet[0]
-  if (!trigger) {
-    return '—'
-  }
+  return trigger ? triggerLabel(trigger) : '—'
+}
+
+function triggerLabel(trigger: ComponentSFCInteractionTrigger): string {
   const modifiers = trigger.modifiers ?? {}
   const parts = [
     modifiers.mod ? 'Mod' : '',
@@ -218,7 +249,8 @@ function stepLabel(step: ComponentSFCInteractionTriggerSequenceStep): string {
     modifiers.meta ? 'Meta' : '',
     modifiers.alt ? 'Alt' : '',
     modifiers.shift ? 'Shift' : '',
-    trigger.code?.[0] ?? trigger.key?.[0] ?? trigger.event,
+    modifiers.altGraph ? 'AltGr' : '',
+    trigger.code?.join(' / ').replace(/\b(?:Key|Digit)(?=[A-Z0-9]\b)/g, '') ?? trigger.key?.join(' / ') ?? trigger.event,
   ].filter(Boolean)
   return parts.join(' + ')
 }
@@ -229,7 +261,53 @@ function clone<T>(value: T): T {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div v-if="compactLabel" class="flex min-w-0 items-center justify-end gap-1.5">
+    <div
+      v-if="recording"
+      :ref="setRecordingSurface"
+      tabindex="0"
+      data-endge-trigger-recording="true"
+      class="min-w-0 rounded border px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-primary"
+      @keydown.capture="recordKey"
+      @keyup.capture.stop
+      @blur="cancelRecording"
+    >
+      <span v-if="compactConflict" class="text-destructive" role="alert">{{ $t('diagnostics.hotkeys.conflict') }}</span>
+      <span v-else>{{ $t('diagnostics.hotkeys.press') }}</span>
+    </div>
+    <template v-else>
+      <kbd v-if="compactValue" :title="compactValue" class="max-w-44 truncate rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">
+        {{ compactValue }}
+      </kbd>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        class="h-8 shrink-0"
+        :aria-label="`${compactLabel}: ${$t('diagnostics.hotkeys.record')}`"
+        :title="$t('diagnostics.hotkeys.record')"
+        :disabled="disabled"
+        @click="startRecording"
+      >
+        <Keyboard class="size-3.5" />
+        <span class="compact-shortcut-action-label">{{ $t('diagnostics.hotkeys.record') }}</span>
+      </Button>
+      <Button
+        v-if="compactValue"
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="size-8 shrink-0"
+        :aria-label="`${compactLabel}: ${$t('diagnostics.hotkeys.clear')}`"
+        :title="$t('diagnostics.hotkeys.clear')"
+        :disabled="disabled"
+        @click="emit('update:modelValue', [])"
+      >
+        <X class="size-3.5" />
+      </Button>
+    </template>
+  </div>
+  <div v-else class="space-y-4">
     <div class="inline-flex rounded-md border bg-muted/40 p-1">
       <Button
         type="button"
@@ -366,3 +444,11 @@ function clone<T>(value: T): T {
     </template>
   </div>
 </template>
+
+<style scoped>
+@container (max-width: 28rem) {
+  .compact-shortcut-action-label {
+    display: none;
+  }
+}
+</style>

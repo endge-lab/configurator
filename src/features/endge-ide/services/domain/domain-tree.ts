@@ -896,6 +896,10 @@ export function attachResolvedActionTree(
       )
       children.splice(builtInIndex >= 0 ? builtInIndex + 1 : 0, 0, folder)
     }
+    else if (!virtualOrigin) {
+      const firstFile = children.findIndex(node => node.type === 'file')
+      children.splice(firstFile < 0 ? children.length : firstFile, 0, folder)
+    }
     else {
       children.push(folder)
     }
