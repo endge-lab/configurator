@@ -61,6 +61,10 @@ export class EndgeIDE {
     return this._requireModules().modals
   }
 
+  public static get moduleCatalog() {
+    return this._requireModules().moduleCatalog
+  }
+
   public static get tabs() {
     return this._requireModules().tabs
   }
@@ -163,6 +167,7 @@ export class EndgeIDE {
 
   private static async _resetModules(): Promise<void> {
     const modules = this._requireModules()
+    modules.moduleCatalog.reset()
     if (this._detached) {
       modules.widgets.reset()
       modules.modals.reset()

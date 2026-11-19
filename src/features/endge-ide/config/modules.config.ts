@@ -8,6 +8,7 @@ import { UIEditorStorage_Adapter } from '@/features/endge-admin-ui-editor/module
 import { createUIEditorModule } from '@/features/endge-admin-ui-editor/modules/ui-editor/UIEditor_Module'
 import { ServiceBackendBuildProfileHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendBuildProfileHttp_Adapter'
 import { ServiceBackendDomainTransferHttp_Adapter } from '@/features/endge-ide/adapters/backend/ServiceBackendDomainTransferHttp_Adapter'
+import { ServiceBackendModulesHttpAdapter } from '@/features/endge-ide/adapters/backend/ServiceBackendModulesHttp_Adapter'
 import { EndgeIDEHotkeysBrowser_Adapter } from '@/features/endge-ide/adapters/EndgeIDEHotkeysBrowser_Adapter'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { AgentTableActions_Module } from '@/features/endge-ide/modules/AgentTableActions_Module'
@@ -20,6 +21,7 @@ import { EndgeIDEDomainDrag_Module } from '@/features/endge-ide/modules/EndgeIDE
 import { EndgeIDEDomainTransfer_Module } from '@/features/endge-ide/modules/EndgeIDEDomainTransfer_Module'
 import { EndgeIDEHotkeys_Module } from '@/features/endge-ide/modules/EndgeIDEHotkeys_Module'
 import { EndgeIDEModals_Module } from '@/features/endge-ide/modules/EndgeIDEModals_Module'
+import { EndgeIDEModuleCatalog_Module } from '@/features/endge-ide/modules/EndgeIDEModuleCatalog_Module'
 import { EndgeIDEProblems_Module } from '@/features/endge-ide/modules/EndgeIDEProblems_Module'
 import { EndgeIDERuntimeInspection_Module } from '@/features/endge-ide/modules/EndgeIDERuntimeInspection_Module'
 import { EndgeIDERuntimePreview_Module } from '@/features/endge-ide/modules/EndgeIDERuntimePreview_Module'
@@ -85,6 +87,9 @@ export function createEndgeIDEModules(context: EndgeIDEContextPort): EndgeIDEMod
       execute: payload => Endge.runtime.query.executeArtifact({ payload, props: {} }),
     }),
     modals: new EndgeIDEModals_Module(),
+    moduleCatalog: new EndgeIDEModuleCatalog_Module(
+      new ServiceBackendModulesHttpAdapter(getEndgeBackendConfig().activeBackendURL),
+    ),
     tabs: new EndgeIDETabs_Module(busy, uiState, workspace),
     workspace,
     uiState,

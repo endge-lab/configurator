@@ -18,6 +18,7 @@ import {
   applyEndgeConfigurationContribution,
   createDefaultEndgeConfiguration,
   Endge,
+  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
   validateConfigurationValue,
 } from '@endge/core'
 import {
@@ -36,7 +37,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-vue-next'
-import { computed, provide, watch, watchEffect } from 'vue'
+import { computed, provide, useId, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -66,6 +67,7 @@ import ConfigurationOverrideField from './ConfigurationOverrideField.vue'
 import ConfigValueEditor from './ConfigValueEditor.vue'
 import DiagnosticsConfigurationEditor from './DiagnosticsConfigurationEditor.vue'
 import SFCEditingTriggerListEditor from './SFCEditingTriggerListEditor.vue'
+import WorkspaceRendererSettings from './WorkspaceRendererSettings.vue'
 
 type ConfigurationModel = EndgeConfiguration | EndgeConfigurationContribution
 type CollectionName
@@ -331,6 +333,52 @@ const editableConfiguration = computed(() =>
       ? contribution.value.value
       : contributionUpstream.value,
 )
+
+const defaultRenderers = computed<EndgeConfiguration['defaultRenderers']>({
+  get: () => editableConfiguration.value.defaultRenderers,
+  set: (value) => {
+    if (value) {
+      editableConfiguration.value.defaultRenderers = value
+    }
+    else {
+      delete editableConfiguration.value.defaultRenderers
+    }
+    notifyRootMutation()
+  },
+})
+
+const rootAdapterListId = useId()
+const rootAdapterOptions = computed(() => [...new Set([
+  ...editableConfiguration.value.sfcAdapterIds,
+  ...Endge.uiRegistry.adapters.list()
+    .filter(adapter => adapter.protocol === ENDGE_SFC_RENDER_ADAPTER_PROTOCOL && adapter.renderer === 'vue')
+    .map(adapter => adapter.id),
+])])
+
+function setRootAdapter(event: Event): void {
+  const field = event.currentTarget as HTMLInputElement
+  const id = field.value.trim()
+  if (!id) {
+    field.value = scalarValue('defaultSfcAdapterId')
+    return
+  }
+  field.value = id
+  if (id === scalarValue('defaultSfcAdapterId')) {
+    return
+  }
+  if (isInherit.value && patch.value) {
+    const entries = patch.value.sfcAdapterIds?.entries ?? []
+    if (!contributionUpstream.value.sfcAdapterIds.includes(id) || entries.some(item => item.key === id && item.op === 'remove')) {
+      patch.value.sfcAdapterIds = {
+        entries: [...entries.filter(item => item.key !== id), { key: id, op: 'upsert', value: id }],
+      }
+    }
+  }
+  else if (!editableConfiguration.value.sfcAdapterIds.includes(id)) {
+    editableConfiguration.value.sfcAdapterIds.push(id)
+  }
+  setScalar('defaultSfcAdapterId', id)
+}
 
 const configurationValueIssues = computed<ConfigurationValueIssue[]>(() => {
   const known = new Map(
@@ -1535,74 +1583,8 @@ function isEqual(left: unknown, right: unknown): boolean {
           </TabsContent>
 
           <TabsContent value="ui" class="m-0 space-y-6 p-5 outline-none">
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <Label>{{ $t('uiText.availableSfcAdapters49d716ec') }}</Label>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  :disabled="disabled"
-                  @click="addCollectionValue('sfcAdapterIds')"
-                >
-                  <Plus class="mr-2 size-4" />{{ $t('uiText.add559a87f7') }}
-                </Button>
-              </div>
-              <div class="rounded-md border">
-                <div
-                  v-for="(row, index) in collectionRows('sfcAdapterIds')"
-                  :key="index"
-                  class="grid grid-cols-[1fr_1fr_auto] gap-2 border-b p-2 last:border-0"
-                >
-                  <Input
-                    v-if="isInherit"
-                    :model-value="row.key"
-                    :disabled="disabled"
-                    placeholder="Adapter id"
-                    @update:model-value="
-                      updateEntryKey('sfcAdapterIds', row, String($event ?? ''))
-                    "
-                  />
-                  <Input
-                    v-else
-                    class="col-span-2"
-                    :model-value="String(row)"
-                    :disabled="disabled"
-                    placeholder="Adapter id"
-                    @update:model-value="
-                      editableConfiguration.sfcAdapterIds[index] = String(
-                        $event ?? '',
-                      )
-                    "
-                  />
-                  <Input
-                    v-if="isInherit"
-                    :model-value="
-                      isCollectionRowExcluded(row)
-                        ? EXCLUDED_VALUE_LABEL
-                        : 'Добавляется или переопределяется'
-                    "
-                    disabled
-                    :class="
-                      isCollectionRowExcluded(row)
-                        ? 'text-destructive'
-                        : 'text-muted-foreground'
-                    "
-                  />
-                  <ConfigurationCollectionRowActions
-                    :excluded="isCollectionRowExcluded(row)"
-                    :excludable="isInherit"
-                    :disabled="disabled"
-                    @toggle-excluded="
-                      toggleCollectionRowExclusion('sfcAdapterIds', row)
-                    "
-                    @remove="removeCollectionRow('sfcAdapterIds', index)"
-                  />
-                </div>
-              </div>
-            </div>
-
             <ConfigurationOverrideField
-              label="SFC-адаптер по умолчанию"
+              :label="$t('moduleCatalog.rootSfcAdapter')"
               :uses-parent-value="isInherit"
               :overridden="hasScalarOverride('defaultSfcAdapterId')"
               @enable="enableScalar('defaultSfcAdapterId')"
@@ -1613,16 +1595,23 @@ function isEqual(left: unknown, right: unknown): boolean {
               >
                 <Input
                   :model-value="scalarValue('defaultSfcAdapterId')"
+                  :list="rootAdapterListId"
+                  :aria-label="$t('moduleCatalog.rootSfcAdapter')"
                   :disabled="disabled || fieldDisabled"
-                  :placeholder="
-                    fieldDisabled ? parentValuePlaceholder : undefined
-                  "
-                  @update:model-value="
-                    setScalar('defaultSfcAdapterId', String($event ?? ''))
-                  "
+                  :placeholder="fieldDisabled ? parentValuePlaceholder : undefined"
+                  @blur="setRootAdapter"
+                  @change="setRootAdapter"
                 />
+                <datalist :id="rootAdapterListId">
+                  <option v-for="adapter in rootAdapterOptions" :key="adapter" :value="adapter" />
+                </datalist>
               </template>
             </ConfigurationOverrideField>
+            <WorkspaceRendererSettings
+              v-if="variant === 'root' && activeSection === 'ui'"
+              v-model="defaultRenderers"
+              :disabled="disabled"
+            />
           </TabsContent>
 
           <TabsContent value="editing" class="m-0 space-y-5 p-5 outline-none">

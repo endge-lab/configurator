@@ -9,29 +9,33 @@ test('publishes versions and renders the selected composition with its module', 
   test.skip(!artifactDirectory, 'Requires an isolated workspace and ZIP fixtures for the module preview.')
   const directory = artifactDirectory!
   await openConfigurator(page)
-  await page.getByRole('button', { name: 'Модули', exact: true }).click()
-  const catalog = page.getByRole('dialog', { name: 'Модули' })
-
+  const folder = page.getByRole('button', { name: 'Модули', exact: true })
+  if (await folder.getAttribute('aria-expanded') === 'false') {
+    await folder.click()
+  }
   const moduleName = 'Slot UI Preview'
-  const existing = catalog.getByRole('button', { name: moduleName, exact: true })
-  await expect(catalog.getByRole('button', { name: 'Создать', exact: true })).toBeEnabled()
-  if (await existing.count()) {
-    await existing.click()
+  const moduleNode = page.getByRole('button', { name: moduleName, exact: true })
+  await expect(folder).toHaveAttribute('aria-busy', 'false')
+  if (!await moduleNode.isVisible()) {
+    await folder.click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Добавить модуль' }).click()
+    const create = page.getByRole('dialog', { name: 'Добавить модуль' })
+    await create.getByLabel('Идентификатор').fill('slot-ui-preview')
+    await create.getByLabel('Название').fill(moduleName)
+    await create.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.1.zip'))
+    await create.getByRole('button', { name: 'Загрузить', exact: true }).click()
+    await expect(create).toBeHidden()
   }
-  else {
-    await catalog.getByRole('button', { name: 'Создать', exact: true }).click()
-    await catalog.getByLabel('Идентификатор').fill('slot-ui-preview')
-    await catalog.getByLabel('Название').fill(moduleName)
-    await catalog.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.1.zip'))
-    await catalog.getByRole('button', { name: 'Загрузить', exact: true }).click()
-  }
-  await expect(catalog.getByText('0.1.0-dev.1', { exact: true })).toBeVisible()
-  await catalog.getByRole('button', { name: 'Добавить версию' }).click()
-  await catalog.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.2.zip'))
-  await catalog.getByRole('button', { name: 'Загрузить', exact: true }).click()
-  await expect(catalog.getByText('0.1.0-dev.2', { exact: true })).toBeVisible()
-  await expect(catalog.getByRole('link', { name: 'Скачать ZIP' })).toHaveCount(2)
-  await page.keyboard.press('Escape')
+  await moduleNode.click()
+  await expect(page.getByRole('tab', { name: moduleName, exact: true })).toBeVisible()
+  const editor = page.getByRole('tabpanel', { name: moduleName })
+  await expect(editor.getByText('0.1.0-dev.1', { exact: true })).toBeVisible()
+  await editor.getByRole('button', { name: 'Добавить версию' }).click()
+  const publish = page.getByRole('dialog', { name: 'Добавить версию' })
+  await publish.getByLabel('ZIP сборки').setInputFiles(join(directory, 'slot-ui-preview-0.1.0-dev.2.zip'))
+  await publish.getByRole('button', { name: 'Загрузить', exact: true }).click()
+  await expect(editor.getByText('0.1.0-dev.2', { exact: true })).toBeVisible()
+  await expect(editor.getByRole('link', { name: 'Скачать ZIP' })).toHaveCount(2)
 
   async function launchPreview() {
     await openDocument(page, 'Композиции', 'Slot Preview (модуль)')

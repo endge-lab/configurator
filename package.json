@@ -1,7 +1,7 @@
 {
   "name": "@endge/configurator",
   "type": "module",
-  "version": "2.17.0",
+  "version": "2.18.0",
   "version_updated": "19.11.2026",
   "private": true,
   "packageManager": "pnpm@10.18.2",
@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "@endge/computation-sandbox": "1.0.1-dev.9",
-    "@endge/core": "1.3.0-dev.17",
+    "@endge/core": "1.5.0-dev.21",
     "@endge/integration-api": "0.2.1",
-    "@endge/ui-vue": "2.1.0-dev.16",
-    "@endge/utils": "1.0.0-dev.6",
+    "@endge/ui-vue": "2.2.0-dev.20",
+    "@endge/utils": "1.0.0-dev.9",
     "@formatjs/intl-durationformat": "^0.7.6",
     "@lucide/lab": "^0.1.2",
     "@raphy-js/raph": "1.0.1-dev.55",
