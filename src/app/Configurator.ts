@@ -415,6 +415,7 @@ export class Configurator {
       workspaceRole: role,
       workspaceIdentity,
       userIdentity: sessionState.session.developer.subject,
+      backendUserId: sessionState.session.developer.id,
     })
     this._modules.presence.init()
     this._modules.i18n.init()

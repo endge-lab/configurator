@@ -1859,13 +1859,14 @@ function selectRange(anchorKey: string, targetKey: string, rootId: string): void
 
 function onRowClick(e: MouseEvent, item: FlatFsItem): void {
   closeContextMenu()
+  const preview = e.detail === 1 && !e.shiftKey && !e.ctrlKey && !e.metaKey
 
   if (props.programCatalog) {
     if (item.node.type === 'folder') {
       toggleFolder(item.path)
     }
     else if (item.node.compiledDocumentKey) {
-      EndgeIDE.tabs.openCompiledDocument(item.node.compiledDocumentKey)
+      EndgeIDE.tabs.openCompiledDocument(item.node.compiledDocumentKey, { preview })
     }
     return
   }
@@ -1894,7 +1895,7 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
 
   const node = item.node as FsFileNode
   if (node.facetIdentity) {
-    EndgeIDE.tabs.openFacetDocument(node.facetIdentity, node.identity ?? node.id)
+    EndgeIDE.tabs.openFacetDocument(node.facetIdentity, node.identity ?? node.id, { preview })
     return
   }
   if (node.virtual) {
@@ -1904,6 +1905,7 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
         ? Endge.domain.getComponentSFC(identity)
         : Endge.domain.getComponent(identity)
       EndgeIDE.tabs.openDocument(source?.id ?? identity, docType, {
+        preview,
         sourceOffset: node.eventPort?.sourceRange?.start,
       })
       return
@@ -1959,7 +1961,7 @@ function onRowClick(e: MouseEvent, item: FlatFsItem): void {
     toast.warning('Нет идентификатора документа')
     return
   }
-  EndgeIDE.tabs.openDocument(targetId, node.docType)
+  EndgeIDE.tabs.openDocument(targetId, node.docType, { preview })
 }
 
 function isSelected(item: FlatFsItem): boolean {

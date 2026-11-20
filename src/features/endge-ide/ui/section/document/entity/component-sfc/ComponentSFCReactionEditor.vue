@@ -19,8 +19,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import { usePinTabOnEdit, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = withDefaults(defineProps<{
+  draftKey?: string
   modelValue: string | null
   eventName?: string
   variant?: 'field' | 'section'
@@ -36,12 +38,30 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'save', value: string | null, complete?: (saved: boolean) => void): void
 }>()
+const ruleDraft = defineModel<string>('draft')
 
+const pinTabOnEdit = usePinTabOnEdit()
 const domainStore = useDomainStore()
 const actionsRevision = ref(0)
 const unsubscribeActions = Endge.actions.subscribe(() => actionsRevision.value += 1)
-const draft = ref(props.modelValue ?? '')
-const expanded = ref(false)
+const reactionDraft = props.draftKey
+  ? useSmartTabVolatileViewState(`sfc.reaction.${props.draftKey}`, {
+      defaultValue: () => ({ source: props.modelValue, value: props.modelValue ?? '' }),
+      validate: value => (value as { source?: unknown } | null)?.source === props.modelValue,
+    })
+  : null
+const draft = computed({
+  get: () => reactionDraft?.value.value ?? ruleDraft.value ?? props.modelValue ?? '',
+  set: (value) => {
+    if (reactionDraft) {
+      reactionDraft.value = { source: props.modelValue, value }
+    }
+    else {
+      ruleDraft.value = value
+    }
+  },
+})
+const expanded = ref(draft.value !== (props.modelValue ?? ''))
 const error = ref<string | null>(null)
 
 const actions = computed(() => (void actionsRevision.value, Endge.actions.listResolved())
@@ -172,6 +192,7 @@ function insertTemplate(value: string | string[] | null): 'action' | 'query' | '
   if (!identity) {
     return null
   }
+  pinTabOnEdit()
   draft.value = kind === 'action'
     ? serializeAction(identity)
     : kind === 'query'
@@ -430,6 +451,7 @@ function quote(value: string): string {
               class="editor-control min-h-32 resize-y font-mono text-xs leading-relaxed"
               placeholder="query({ identity: '...', input: {} })"
               spellcheck="false"
+              @update:model-value="pinTabOnEdit"
               @keydown="handleReactionKeydown"
             />
             <div class="flex items-start justify-between gap-3 text-[10px]">

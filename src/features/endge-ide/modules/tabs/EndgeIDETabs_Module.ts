@@ -38,7 +38,7 @@ import {
   QueryType,
   readOnlyDocument,
 } from '@endge/core'
-import { defineAsyncComponent, markRaw, reactive, shallowRef } from 'vue'
+import { defineAsyncComponent, effectScope, markRaw, reactive, shallowRef, watch } from 'vue'
 
 import { toast } from 'vue-sonner'
 import {
@@ -231,6 +231,7 @@ const COMPONENT_SFC_TYPE = 'component-sfc' as DomainDocumentType
 
 const VIEW_ID_DOCUMENT = ENDGE_IDE_DOCUMENT_VIEW_ID
 const VIEW_ID_FACET_DOCUMENT = 'endge-facet-document' as const
+const VIEW_ID_USER_SETTINGS = 'endge-user-settings' as const
 const VIEW_ID_WORKSPACE_SETTINGS = 'endge-workspace-settings' as const
 const VIEW_ID_CATALOG_MODULE = 'endge-catalog-module' as const
 const VIEW_ID_SFC_PLAYGROUND = 'endge-sfc-playground' as const
@@ -285,6 +286,7 @@ export class EndgeIDETabs_Module {
   private _tabsApi: SmartTabsApi
   private _isRegistryBootstrapped = false
   private _sessionByTabId = new Map<string, EditorSession>()
+  private _stopPreviewWatch?: () => void
   private _sourceNavigationToken = 0
   private readonly _documentEditorModel = shallowRef<unknown | null>(null)
   private readonly _documentModel = shallowRef<unknown | null>(null)
@@ -375,6 +377,8 @@ export class EndgeIDETabs_Module {
    * LIFECYCLE
    */
   public reset(): void {
+    this._stopPreviewWatch?.()
+    this._stopPreviewWatch = undefined
     this._tabsApi.flushStorage()
     this._tabsApi = this._createTabsApi(false)
     this._isRegistryBootstrapped = false
@@ -394,19 +398,35 @@ export class EndgeIDETabs_Module {
       persist,
       maxTabs: config.maxTabs,
       persistence: this._uiState,
-      onTabClosed: tab => this._sessionByTabId.delete(tab.id),
+      onTabClosed: (tab) => {
+        if (tab.preview) {
+          this._stopPreviewWatch?.()
+          this._stopPreviewWatch = undefined
+        }
+        this._sessionByTabId.delete(tab.id)
+      },
     })
   }
 
   public openTab(
     tab: SmartTabRef,
-    opts?: { activate?: boolean, replace?: boolean },
+    opts?: { activate?: boolean },
   ): void {
     this._tabsApi.openTab(tab, opts)
   }
 
   public activateTab(id: string): void {
     this._tabsApi.activateTab(id)
+  }
+
+  /** Закрепляет временную вкладку, сохраняя её текущую сессию. */
+  public pinTab(id: string): void {
+    if (!this.openTabs.value.some(tab => tab.id === id && tab.preview)) {
+      return
+    }
+    this._stopPreviewWatch?.()
+    this._stopPreviewWatch = undefined
+    this._tabsApi.pinTab(id)
   }
 
   public closeTab(id: string): void {
@@ -737,7 +757,7 @@ export class EndgeIDETabs_Module {
   public openDocument(
     id: string | number,
     docType: DomainDocumentType,
-    options: { sourceOffset?: number } = {},
+    options: { sourceOffset?: number, preview?: boolean } = {},
   ): void {
     const documentId = resolveEndgeIDEDocumentIdentity(id, docType)
     const presentationKind = this._getDocumentPresentationKind(
@@ -768,7 +788,7 @@ export class EndgeIDETabs_Module {
         iconBadgeClass: `${DOCUMENT_ICON_BADGE_SIZE} ${presentation.colorClass}`,
       },
     }
-    this.openTab(tabRef)
+    this._openDocumentTab(tabRef, options.preview)
     if (Number.isFinite(options.sourceOffset)) {
       this._sourceNavigationRequest.value = {
         documentId,
@@ -785,6 +805,7 @@ export class EndgeIDETabs_Module {
   public openFacetDocument(
     facetIdentity: string,
     documentIdentity: string,
+    options: { preview?: boolean } = {},
   ): void {
     const facet = Endge.domain.getFacet(facetIdentity)
     const document = Endge.domain.getFacetDocument(
@@ -810,7 +831,43 @@ export class EndgeIDETabs_Module {
         iconColor: facet.color,
       },
     }
-    this.openTab(tabRef)
+    this._openDocumentTab(tabRef, options.preview)
+  }
+
+  private _openDocumentTab(tab: SmartTabRef, preview = false): void {
+    const existing = this.openTabs.value.find(openTab => openTab.id === tab.id)
+    if (existing && (preview || existing.preview)) {
+      this.activateTab(tab.id)
+      if (!preview) {
+        this.pinTab(tab.id)
+      }
+      return
+    }
+    if (!preview) {
+      this.openTab(tab)
+      return
+    }
+    const previous = this.openTabs.value.find(openTab => openTab.preview)
+    if (previous && this.isTabDirty(previous.id)) {
+      this.pinTab(previous.id)
+    }
+    this._tabsApi.openTab({ ...tab, preview: true }, { replaceTabId: previous?.id })
+  }
+
+  private _watchPreviewEdits(tab: SmartTabRef): void {
+    if (!tab.preview || Endge.mode === 'debugger') {
+      return
+    }
+    const scope = effectScope(true)
+    this._stopPreviewWatch = () => scope.stop()
+    scope.run(() => watch(
+      () => this.isTabDirty(tab.id),
+      (dirty) => {
+        if (dirty) {
+          this.pinTab(tab.id)
+        }
+      },
+    ))
   }
 
   /**
@@ -863,6 +920,18 @@ export class EndgeIDETabs_Module {
     }
     this.openDocument(target.documentId, target.documentType)
     return true
+  }
+
+  public openUserSettings(label: string): void {
+    this.openTab({
+      id: 'user-settings',
+      label,
+      viewId: VIEW_ID_USER_SETTINGS,
+      payload: {},
+      closable: true,
+      ephemeral: true,
+      meta: { icon: 'ti ti-users' },
+    })
   }
 
   public openWorkspaceSettings(): void {
@@ -1058,12 +1127,12 @@ export class EndgeIDETabs_Module {
     }[target]
   }
 
-  public openCompiledDocument(key: string): void {
+  public openCompiledDocument(key: string, options: { preview?: boolean } = {}): void {
     const document = Endge.program.catalog.documents[key]
     if (!document) {
       return
     }
-    this.openTab({
+    this._openDocumentTab({
       id: `compiled:${key}`,
       meta: {
         icon: getProgramDocumentPresentation(document.entityType).icon,
@@ -1074,7 +1143,7 @@ export class EndgeIDETabs_Module {
       payload: { documentKey: key },
       ephemeral: true,
       closable: true,
-    })
+    }, options.preview)
   }
 
   private _registerSystemViews(): void {
@@ -1103,6 +1172,11 @@ export class EndgeIDETabs_Module {
         props: {},
       }),
     )
+    const UserSettingsView = defineAsyncComponent(() => import('@/features/user-settings/ui/UserSettingsView.vue'))
+    this._tabsApi.viewRegistry.register(VIEW_ID_USER_SETTINGS, () => ({
+      component: markRaw(UserSettingsView),
+      props: {},
+    }))
     const ModuleEditor = defineAsyncComponent(() => import('@/features/endge-ide/ui/section/modules/Module_Editor.vue'))
     this._tabsApi.viewRegistry.register(VIEW_ID_CATALOG_MODULE, tab => ({
       component: markRaw(ModuleEditor),
@@ -1151,6 +1225,10 @@ export class EndgeIDETabs_Module {
       session.editor = readOnlyDocument(session.editor as object)
       session.view.props.tabContext = { editor: session.editor }
     }
+    else if (tab.preview && session.editor && typeof session.editor === 'object') {
+      session.editor = reactive(session.editor)
+      session.view.props.tabContext = { editor: session.editor }
+    }
     if (
       getDomainDocumentDescriptor(documentType).capabilities.metadata
       && session.editor
@@ -1176,6 +1254,7 @@ export class EndgeIDETabs_Module {
       session.savedSnapshot = createDocumentEditorSnapshot(session.editor)
     }
     this._sessionByTabId.set(tab.id, session)
+    this._watchPreviewEdits(tab)
     this._setCurrentFromSession(session)
     return session.view
   }
@@ -1214,6 +1293,7 @@ export class EndgeIDETabs_Module {
       savedSnapshot: createDocumentEditorSnapshot(editor),
     }
     this._sessionByTabId.set(tab.id, session)
+    this._watchPreviewEdits(tab)
     this._setCurrentFromSession(session)
     return session.view
   }

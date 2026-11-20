@@ -2,7 +2,7 @@
 import type { RegisteredConfiguratorMenuItem } from '@/features/endge-ide/modules/integrations/ConfiguratorMenuRegistry'
 
 import { Endge } from '@endge/core'
-import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Hammer, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, BookOpen, Bot, Boxes, Braces, Download, FileCode2, Hammer, LayoutDashboard, Loader2, Play, Settings2, ShieldCheck, Upload, UsersRound } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -282,6 +282,13 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
           <DropdownMenuItem v-if="canManageAccess" @click="openAccessControl">
             <ShieldCheck class="size-3.5" />
             {{ t('endgeIde.headerMenu.settings.access') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            v-if="canManageAccess && Endge.workspace.isLoaded"
+            @click="tabs.openUserSettings(t('userSettings.title'))"
+          >
+            <UsersRound class="size-3.5" />
+            {{ t('userSettings.title') }}
           </DropdownMenuItem>
           <DropdownMenuItem v-if="canConfigureAI" @click="openAIManagement">
             <Bot class="size-3.5 text-fuchsia-500" />

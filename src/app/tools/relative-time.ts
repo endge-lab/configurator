@@ -100,7 +100,7 @@ function readDateFormat(): 'human' | 'robot' {
   if (stored === 'human' || stored === 'robot') {
     return stored
   }
-  if (typeof localStorage === 'undefined') {
+  if (Endge.context.workspaceStateDriver !== 'local' || typeof localStorage === 'undefined') {
     return 'human'
   }
   try {

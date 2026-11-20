@@ -25,7 +25,7 @@ import {
   X,
   Zap,
 } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, ref, toRefs, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/tooltip'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 import ComponentSFCExpressionInput from '@/features/endge-ide/ui/section/document/entity/component-sfc/ComponentSFCExpressionInput.vue'
+import { usePinTabOnEdit, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 interface MenuItemDraft {
   labelMode: 'text' | 'translation'
@@ -67,6 +68,7 @@ interface MenuLabelUpdate {
 
 const props = defineProps<{
   kind: ComponentSFCTableVisualMenuKind
+  columnId?: string
   menu: ComponentSFCTableMenuProjection
   actions: ComponentSFCTableMenuActionOption[]
   allowInherit?: boolean
@@ -84,30 +86,40 @@ const emit = defineEmits<{
   (event: 'openSource', item?: ComponentSFCTableMenuNodeProjection): void
 }>()
 
+const pinTabOnEdit = usePinTabOnEdit()
 const root = ref<HTMLElement | null>(null)
-const selectedIndex = ref<number | null>(null)
-const editingIndex = ref<number | null>(null)
-const actionInspectorIndex = ref<number | null>(null)
 const dragIndex = ref<number | null>(null)
 const dragOverIndex = ref<number | null>(null)
-const labelDraft = ref('')
-const translationKeyDraft = ref('')
-const translationDraft = ref(false)
-const inputDraft = ref('')
-const iconDraft = ref('')
-const visibleDraft = ref('')
-const disabledDraft = ref('')
-const creatingItem = ref(false)
-const newItemDraft = reactive<MenuItemDraft>({
-  labelMode: 'text',
-  label: 'Новый пункт',
-  translationKey: 'table:menu.new-item',
-  action: '',
-  input: '',
-  icon: '',
-  visible: '',
-  disabled: '',
+const menuSource = computed(() => JSON.stringify(props.menu))
+const menuDraft = useSmartTabVolatileViewState(`sfc.menu.${props.columnId == null ? 'table' : `column.${props.columnId}`}.${props.kind}`, {
+  defaultValue: () => ({
+    source: menuSource.value,
+    selectedIndex: null as number | null,
+    editingIndex: null as number | null,
+    actionInspectorIndex: null as number | null,
+    labelDraft: '',
+    translationKeyDraft: '',
+    translationDraft: false,
+    inputDraft: '',
+    iconDraft: '',
+    visibleDraft: '',
+    disabledDraft: '',
+    creatingItem: false,
+    newItemDraft: {
+      labelMode: 'text',
+      label: 'Новый пункт',
+      translationKey: 'table:menu.new-item',
+      action: '',
+      input: '',
+      icon: '',
+      visible: '',
+      disabled: '',
+    } as MenuItemDraft,
+  }),
+  validate: value => (value as { source?: unknown } | null)?.source === menuSource.value,
 })
+const { selectedIndex, editingIndex, actionInspectorIndex, labelDraft, translationKeyDraft, translationDraft, inputDraft, iconDraft, visibleDraft, disabledDraft, creatingItem } = toRefs(menuDraft.value)
+const newItemDraft = menuDraft.value.newItemDraft
 
 const menuIsCustom = computed(() => props.menu.mode === 'custom')
 const expressionScope = computed<ComponentSFCExpressionCompletionScope>(() => props.kind === 'row'
@@ -128,8 +140,9 @@ const actionOptions = computed<SearchableSelectOption[]>(() => props.actions.map
 const canCreateItem = computed(() => Boolean(newItemDraft.label.trim() && newItemDraft.action.trim()))
 
 watch(
-  () => props.menu,
-  () => {
+  menuSource,
+  (source) => {
+    menuDraft.value.source = source
     if (props.menu.mode !== 'custom') {
       creatingItem.value = false
       selectedIndex.value = null
@@ -252,6 +265,7 @@ function cancelLabelEdit(): void {
 }
 
 function toggleTranslationDraft(item: ComponentSFCTableMenuNodeProjection): void {
+  pinTabOnEdit()
   translationDraft.value = !translationDraft.value
   if (translationDraft.value && !translationKeyDraft.value.trim()) {
     translationKeyDraft.value = itemTranslationKey(item)
@@ -347,6 +361,11 @@ function startCreateItem(): void {
     disabled: '',
   } satisfies MenuItemDraft)
   void nextTick(() => root.value?.querySelector<HTMLInputElement>('[data-menu-new-label]')?.select())
+}
+
+function toggleNewItemLabelMode(): void {
+  newItemDraft.labelMode = newItemDraft.labelMode === 'translation' ? 'text' : 'translation'
+  pinTabOnEdit()
 }
 
 function createItem(): void {
@@ -522,6 +541,7 @@ function resetDrag(): void {
                       :data-menu-label="itemIndex"
                       class="editor-control h-8 min-w-0 flex-1"
                       :placeholder="translationDraft ? 'Fallback' : 'Название пункта'"
+                      @update:model-value="pinTabOnEdit"
                       @keydown.enter.prevent="saveLabelEdit"
                       @keydown.esc.prevent="cancelLabelEdit"
                     />
@@ -537,6 +557,7 @@ function resetDrag(): void {
                     v-model="translationKeyDraft"
                     class="editor-control mt-2 h-8 font-mono text-xs"
                     placeholder="bundle:menu.key"
+                    @update:model-value="pinTabOnEdit"
                     @keydown.enter.prevent="saveLabelEdit"
                     @keydown.esc.prevent="cancelLabelEdit"
                   />
@@ -614,7 +635,7 @@ function resetDrag(): void {
                   class="size-7 shrink-0"
                   :class="newItemDraft.labelMode === 'translation' ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300' : 'text-muted-foreground'"
                   aria-label="Переключить режим перевода"
-                  @click="newItemDraft.labelMode = newItemDraft.labelMode === 'translation' ? 'text' : 'translation'"
+                  @click="toggleNewItemLabelMode"
                 >
                   <Languages class="size-3.5" />
                 </Button>
@@ -623,6 +644,7 @@ function resetDrag(): void {
                   data-menu-new-label
                   class="editor-control h-8 min-w-0 flex-1"
                   :placeholder="newItemDraft.labelMode === 'translation' ? 'Fallback' : 'Название пункта'"
+                  @update:model-value="pinTabOnEdit"
                   @keydown.esc.prevent="creatingItem = false"
                 />
               </div>
@@ -631,6 +653,7 @@ function resetDrag(): void {
                 v-model="newItemDraft.translationKey"
                 class="editor-control mt-2 h-8 font-mono text-xs"
                 placeholder="bundle:menu.key"
+                @update:model-value="pinTabOnEdit"
               />
               <SearchableSelect
                 v-model="newItemDraft.action"
@@ -638,10 +661,11 @@ function resetDrag(): void {
                 placeholder="Выберите обязательный Action…"
                 size="compact"
                 trigger-class="editor-control mt-2 h-8 font-mono text-xs"
+                @update:model-value="pinTabOnEdit"
               />
               <div class="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
-                <Input v-model="newItemDraft.input" class="editor-control h-8 font-mono text-xs" placeholder="Input expression" />
-                <Input v-model="newItemDraft.icon" class="editor-control h-8 font-mono text-xs" placeholder="Icon" />
+                <Input v-model="newItemDraft.input" class="editor-control h-8 font-mono text-xs" placeholder="Input expression" @update:model-value="pinTabOnEdit" />
+                <Input v-model="newItemDraft.icon" class="editor-control h-8 font-mono text-xs" placeholder="Icon" @update:model-value="pinTabOnEdit" />
               </div>
               <div class="mt-2 grid gap-2 sm:grid-cols-2">
                 <ComponentSFCExpressionInput
@@ -649,12 +673,14 @@ function resetDrag(): void {
                   :scope="expressionScope"
                   input-class="editor-control h-8 font-mono text-xs"
                   placeholder="Показывать, когда"
+                  @update:model-value="pinTabOnEdit"
                 />
                 <ComponentSFCExpressionInput
                   v-model="newItemDraft.disabled"
                   :scope="expressionScope"
                   input-class="editor-control h-8 font-mono text-xs"
                   placeholder="Отключать, когда"
+                  @update:model-value="pinTabOnEdit"
                 />
               </div>
               <div class="mt-3 flex justify-end gap-2">
@@ -710,6 +736,7 @@ function resetDrag(): void {
               :scope="expressionScope"
               input-class="editor-control h-8 font-mono text-xs"
               placeholder="$row.data.status === 'active'"
+              @update:model-value="pinTabOnEdit"
             />
           </div>
 
@@ -720,6 +747,7 @@ function resetDrag(): void {
               :scope="expressionScope"
               input-class="editor-control h-8 font-mono text-xs"
               placeholder="!$row.data.canEdit"
+              @update:model-value="pinTabOnEdit"
             />
           </div>
 
@@ -740,7 +768,7 @@ function resetDrag(): void {
               <Label class="text-[11px]">{{ $t('uiText.inputMappinge48882e5') }}</Label>
               <Braces class="size-3.5 text-muted-foreground" />
             </div>
-            <Input v-model="inputDraft" class="editor-control h-8 font-mono text-xs" placeholder="{ id: $row.id, value: $cell.value }" />
+            <Input v-model="inputDraft" class="editor-control h-8 font-mono text-xs" placeholder="{ id: $row.id, value: $cell.value }" @update:model-value="pinTabOnEdit" />
             <div class="flex flex-wrap gap-1">
               <code v-for="token in ['$table', '$row', '$column', '$cell', '$context', 'props']" :key="token" class="rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
                 {{ token }}
@@ -750,7 +778,7 @@ function resetDrag(): void {
 
           <div class="space-y-1.5">
             <Label class="text-[11px]">{{ $t('uiText.iconIdentity2ac4b4f5') }}</Label>
-            <Input v-model="iconDraft" class="editor-control h-8 font-mono text-xs" placeholder="icon identity" />
+            <Input v-model="iconDraft" class="editor-control h-8 font-mono text-xs" placeholder="icon identity" @update:model-value="pinTabOnEdit" />
           </div>
 
           <div class="flex items-center justify-between gap-2 border-t pt-3">

@@ -4,6 +4,7 @@ import type { SmartTabViewStateSlice } from '@/features/endge-ide/ui/smart-tabs/
 import { inject, ref, watch } from 'vue'
 
 export interface SmartTabViewStateScope {
+  pin: () => void
   read: (key: string) => SmartTabViewStateSlice | undefined
   write: (key: string, slice: SmartTabViewStateSlice) => void
   clear: (key: string) => void
@@ -25,6 +26,11 @@ export interface SmartTabViewStateOptions<T> {
 
 export const SMART_TAB_VIEW_STATE_SCOPE: InjectionKey<SmartTabViewStateScope>
   = Symbol('smart-tab-view-state-scope')
+
+export function usePinTabOnEdit(): () => void {
+  const scope = inject(SMART_TAB_VIEW_STATE_SCOPE, null)
+  return () => scope?.pin()
+}
 
 type SmartTabViewStateSliceScope = Pick<SmartTabViewStateScope, 'read' | 'write' | 'clear'>
 

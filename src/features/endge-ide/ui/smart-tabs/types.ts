@@ -16,6 +16,7 @@ export interface SmartTab {
 }
 
 export interface SmartTabRef extends SmartTab {
+  preview?: boolean
   // Не включать вкладку и её view state в persisted SmartTabs snapshot.
   ephemeral?: boolean
   // Можно ли закрыть вкладку
@@ -78,7 +79,8 @@ export interface SmartTabsApi {
   activeTab: ComputedRef<SmartTabRef | null>
   activeTabId: ComputedRef<SmartTabId | null>
 
-  openTab: (tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }) => void
+  openTab: (tab: SmartTabRef, opts?: { activate?: boolean, replaceTabId?: SmartTabId }) => void
+  pinTab: (id: SmartTabId) => void
   activateTab: (id: SmartTabId) => void
   closeTab: (id: SmartTabId) => void
   closeAll: () => void
