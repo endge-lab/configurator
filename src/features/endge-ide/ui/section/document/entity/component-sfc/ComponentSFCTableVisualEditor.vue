@@ -63,7 +63,7 @@ import {
   Trash2,
   Unplug,
 } from 'lucide-vue-next'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import {
@@ -124,7 +124,7 @@ import ComponentSFCPropsVisualEditor from '@/features/endge-ide/ui/components/Co
 import DocumentMetadataEditor from '@/features/endge-ide/ui/components/DocumentMetadataEditor.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
-import { useSmartTabSelection, useSmartTabViewState } from '@/features/endge-ide/ui/smart-tabs'
+import { usePinTabOnEdit, useSmartTabSelection, useSmartTabViewState, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 import ComponentSFCCellInteractionsEditor from './ComponentSFCCellInteractionsEditor.vue'
 import ComponentSFCEditableVariantEditor from './ComponentSFCEditableVariantEditor.vue'
@@ -149,6 +149,8 @@ const emit = defineEmits<{
   (event: 'openSource', offset: number): void
   (event: 'open:type', identity: string): void
 }>()
+
+const pinTabOnEdit = usePinTabOnEdit()
 
 const mainTab = defineModel<'table' | 'columns'>('mode', { default: 'table' })
 
@@ -320,20 +322,40 @@ const dataSplitRatioDraft = ref(dataSplitRatio.value)
 const isDataSplitResizing = ref(false)
 const removeAllColumnsDialogOpen = ref(false)
 const columnContextMenu = ref<{ columnIndex: number, x: number, y: number } | null>(null)
-const selectedColumnIndex = ref<number | null>(null)
 const dragColumnIndex = ref<number | null>(null)
 const dragOverColumnIndex = ref<number | null>(null)
-const titleDraft = ref('')
-const keyDraft = ref('')
-const widthDraft = ref('')
-const pageSizeDraft = ref('')
-const pageSizesDraft = ref('')
 const cellEditorMode = ref<'component' | 'tag' | 'source'>('tag')
-const cellBindingDrafts = ref<Record<string, string>>({})
-const cellBindingKinds = ref<Record<string, TableCellBindingValueKind>>({})
-const cellBindingErrors = ref<Record<string, string>>({})
-const sortPathDrafts = ref<string[]>([])
-const pendingEditingColumnId = ref<string | null>(null)
+const tableDraft = useSmartTabVolatileViewState('sfc.table.draft', {
+  defaultValue: () => ({
+    source: props.source,
+    selectedColumnIndex: null as number | null,
+    columnId: null as string | null,
+    titleDraft: '',
+    keyDraft: '',
+    widthDraft: '',
+    pageSizeDraft: sourceValueText(props.projection.pageSize),
+    pageSizesDraft: sourceValueText(props.projection.pageSizes),
+    cellBindingDrafts: {} as Record<string, string>,
+    cellBindingKinds: {} as Record<string, TableCellBindingValueKind>,
+    cellBindingErrors: {} as Record<string, string>,
+    sortPathDrafts: [] as string[],
+    pendingEditingColumnId: null as string | null,
+  }),
+  validate: value => (value as { source?: unknown } | null)?.source === props.source,
+})
+const {
+  selectedColumnIndex,
+  titleDraft,
+  keyDraft,
+  widthDraft,
+  pageSizeDraft,
+  pageSizesDraft,
+  cellBindingDrafts,
+  cellBindingKinds,
+  cellBindingErrors,
+  sortPathDrafts,
+  pendingEditingColumnId,
+} = toRefs(tableDraft.value)
 const portsVisualEditorRef = ref<PendingEditsHandle | null>(null)
 const tableMenuEditorRefs = ref<PendingEditsHandle[]>([])
 const editableVariantEditorRef = ref<PendingEditsHandle | null>(null)
@@ -547,6 +569,15 @@ watch(
 watch(
   selectedColumn,
   (column, previousColumn) => {
+    cellEditorMode.value = column?.cell.kind === 'component'
+      ? 'component'
+      : column?.cell.kind === 'tag'
+        ? 'tag'
+        : 'source'
+    if (previousColumn === undefined && column?.id === tableDraft.value.columnId) {
+      return
+    }
+    tableDraft.value.columnId = column?.id ?? null
     if (column?.id !== previousColumn?.id) {
       pendingEditingColumnId.value = null
     }
@@ -556,11 +587,6 @@ watch(
     titleDraft.value = columnTitleText(column?.title)
     keyDraft.value = sourceValueText(column?.key)
     widthDraft.value = sourceValueText(column?.width)
-    cellEditorMode.value = column?.cell.kind === 'component'
-      ? 'component'
-      : column?.cell.kind === 'tag'
-        ? 'tag'
-        : 'source'
     sortPathDrafts.value = parseTableColumnSortPaths(sourceValueText(column?.sortBy))
     syncCellBindingDrafts(column)
   },
@@ -580,15 +606,13 @@ watch(
 )
 
 watch(
-  () => [
-    props.projection.pageSize,
-    props.projection.pageSizes,
-  ] as const,
-  ([pageSize, pageSizes]) => {
+  () => props.source,
+  (source) => {
+    const { pageSize, pageSizes } = props.projection
+    tableDraft.value.source = source
     pageSizeDraft.value = sourceValueText(pageSize)
     pageSizesDraft.value = sourceValueText(pageSizes)
   },
-  { immediate: true },
 )
 
 function sourceValueText(value: ComponentSFCVisualSourceValue | null | undefined): string {
@@ -948,6 +972,9 @@ function setCellBindingKind(name: string, valueKind: TableCellBindingValueKind):
   if (cellBindingKind(name) === valueKind) {
     return
   }
+  if (cellBindingKind(name) !== valueKind && cellBindingDrafts.value[name]?.trim()) {
+    pinTabOnEdit()
+  }
   cellBindingKinds.value[name] = valueKind
   if (cellBindingDrafts.value[name]?.trim()) {
     commitCellBinding(name)
@@ -1192,6 +1219,11 @@ function columnPinLabel(column: ComponentSFCTableColumnProjection): string {
 
 function canEdit(value: ComponentSFCVisualSourceValue | null | undefined): boolean {
   return value?.kind !== 'expression'
+}
+
+function updatePageSizeDraft(value: string | number): void {
+  pageSizeDraft.value = String(value)
+  pinTabOnEdit()
 }
 
 function applyPatch(patch: ComponentSFCTableSourcePatch): boolean {
@@ -1899,6 +1931,7 @@ function setSelectedCellEditingEnabled(enabled: boolean): void {
     return
   }
   if (enabled && !column.editing.enabled && !column.editing.editor) {
+    pinTabOnEdit()
     pendingEditingColumnId.value = column.id
     return
   }
@@ -2641,7 +2674,7 @@ onBeforeUnmount(() => {
                               class="editor-control"
                               placeholder="10"
                               :disabled="!canEdit(projection.pageSize)"
-                              @update:model-value="pageSizeDraft = String($event)"
+                              @update:model-value="updatePageSizeDraft"
                               @blur="commitPageSize"
                               @keydown.enter="blurInput"
                             />
@@ -2659,6 +2692,7 @@ onBeforeUnmount(() => {
                               spellcheck="false"
                               placeholder="10,25,50,100"
                               :disabled="!canEdit(projection.pageSizes)"
+                              @update:model-value="pinTabOnEdit"
                               @blur="commitPageSizes"
                               @keydown.enter="blurInput"
                             />
@@ -3347,6 +3381,7 @@ onBeforeUnmount(() => {
                           class="editor-control font-mono"
                           spellcheck="false"
                           :disabled="!canEdit(selectedColumn.key)"
+                          @update:model-value="pinTabOnEdit"
                           @blur="commitAttribute('key', keyDraft)"
                           @keydown.enter="blurInput"
                         />
@@ -3358,6 +3393,7 @@ onBeforeUnmount(() => {
                           v-model="titleDraft"
                           class="editor-control"
                           :disabled="!canEdit(selectedColumn.title)"
+                          @update:model-value="pinTabOnEdit"
                           @blur="commitAttribute('title', titleDraft)"
                           @keydown.enter="blurInput"
                         />
@@ -3370,6 +3406,7 @@ onBeforeUnmount(() => {
                           class="editor-control"
                           placeholder="auto"
                           :disabled="!canEdit(selectedColumn.width)"
+                          @update:model-value="pinTabOnEdit"
                           @blur="commitAttribute('width', widthDraft)"
                           @keydown.enter="blurInput"
                         />
@@ -3504,6 +3541,7 @@ onBeforeUnmount(() => {
                                   class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0"
                                   :placeholder="cellBindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'"
                                   spellcheck="false"
+                                  @update:model-value="pinTabOnEdit"
                                   @keydown.enter.prevent="commitCellBinding(field.name)"
                                   @keydown.esc.prevent="resetCellBinding(field.name)"
                                 />
@@ -3577,7 +3615,9 @@ onBeforeUnmount(() => {
 
                         <ComponentSFCEditableVariantEditor
                           v-if="selectedColumn.editing.enabled || selectedCellEditingPending"
+                          :key="selectedColumn.id"
                           ref="editableVariantEditorRef"
+                          :column-id="selectedColumn.id"
                           :editor="selectedColumn.editing.editor"
                           :implicit="selectedColumn.editing.editorImplicit"
                           :selecting="selectedCellEditingPending"
@@ -3652,7 +3692,9 @@ onBeforeUnmount(() => {
                             <code v-for="suffix in selectedColumn.editing.reaction.suffixes" :key="suffix" class="rounded bg-muted px-1.5 py-0.5">{{ $t('uiText.symbol3a52ce78') }}{{ suffix }}</code>
                           </div>
                           <ComponentSFCReactionEditor
+                            :key="selectedColumn.id"
                             ref="editedReactionEditorRef"
+                            :draft-key="`column.${selectedColumn.id}.edited`"
                             :model-value="selectedColumn.editing.reaction.source"
                             event-name="edited"
                             variant="section"
@@ -3683,7 +3725,9 @@ onBeforeUnmount(() => {
 
                   <div v-show="columnSection === 'events'">
                     <ComponentSFCCellInteractionsEditor
+                      :key="selectedColumn.id"
                       ref="cellInteractionsEditorRef"
+                      :column-id="selectedColumn.id"
                       :model-value="selectedColumn.interactions"
                       @update="updateSelectedCellInteractions"
                       @open-source="openSelectedColumnSource"
@@ -3727,6 +3771,7 @@ onBeforeUnmount(() => {
                                   placeholder="departureLeg.aircraft.tail"
                                   spellcheck="false"
                                   :disabled="Boolean(columnSortDetailsEditingHint(selectedColumn))"
+                                  @update:model-value="pinTabOnEdit"
                                   @blur="commitColumnSortPath(index)"
                                   @keydown.enter.prevent="commitColumnSortPath(index)"
                                   @keydown.esc.prevent="resetColumnSortPaths"
@@ -3916,7 +3961,9 @@ onBeforeUnmount(() => {
 
                   <section v-show="columnSection === 'cell-menu'" class="px-5 py-4">
                     <ComponentSFCTableMenuPreviewEditor
+                      :key="selectedColumn.id"
                       ref="columnMenuEditorRef"
+                      :column-id="selectedColumn.id"
                       kind="row"
                       :menu="selectedColumn.cellMenu"
                       :actions="projection.menuActions"

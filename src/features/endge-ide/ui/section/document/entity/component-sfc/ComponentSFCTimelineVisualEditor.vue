@@ -2,12 +2,16 @@
 import type { ComponentSFCTimelineVisualNode, ComponentSFCVisualAttribute } from '@endge/core'
 import { compileComponentSFC, Endge, parseComponentSFC, patchComponentSFCTimelineSource } from '@endge/core'
 import { listTimelinePresets } from '@endge/ui-vue'
-import { ArrowDown, ArrowUp, X } from 'lucide-vue-next'
-import { computed, onScopeDispose, ref } from 'vue'
+import { ArrowDown, ArrowUp, Columns3, Eye, Layers, Settings2, SlidersHorizontal, X } from 'lucide-vue-next'
+import { computed, onScopeDispose, ref, useId, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { resolveEndgeTypeDefinition } from '@/features/endge-ide/services/types/type-definition-resolver'
+import SettingsNavigationPanel from '@/features/endge-ide/ui/components/settings/SettingsNavigationPanel.vue'
 import EndgeAdapterRoot from '@/features/endge-ide/ui/runtime/EndgeAdapterRoot'
 
 interface Field {
@@ -28,10 +32,30 @@ interface Column {
 
 const props = defineProps<{ source: string, identity: string, projection: ComponentSFCTimelineVisualNode }>()
 const emit = defineEmits<{ 'update:source': [source: string], 'openSource': [offset: number] }>()
+const { t } = useI18n()
+const navigationSections = computed(() => [
+  { id: 'general', label: t('documentMetadata.general'), icon: SlidersHorizontal },
+  { id: 'columns', label: t('timelineEditor.columns'), icon: Columns3 },
+  { id: 'preset', label: t('timelineEditor.preset'), icon: Layers },
+  { id: 'options', label: t('timelineEditor.options'), icon: Settings2 },
+] as const)
+
+const activeSection = ref<typeof navigationSections.value[number]['id']>('general')
+const sidebarWidth = ref(216)
+const previewOpen = ref(false)
+const previewId = useId()
 const chartIndex = ref<number>()
 const error = ref('')
 const selected = computed(() => props.projection.charts[chartIndex.value ?? -1] ?? props.projection)
 const groupSelected = computed(() => selected.value.tag === 'TimelineGroup')
+const availableSections = computed(() => groupSelected.value ? navigationSections.value.slice(0, 1) : navigationSections.value)
+const sectionLabel = computed(() => navigationSections.value.find(section => section.id === activeSection.value)?.label ?? t('documentMetadata.general'))
+const chartSelection = computed({
+  get: () => groupSelected.value ? 'group' : chartIndex.value,
+  set: (value) => {
+    chartIndex.value = typeof value === 'number' ? value : undefined
+  },
+})
 const moduleRevision = ref(0)
 onScopeDispose(Endge.runtime.modules.subscribe(() => moduleRevision.value++))
 const moduleScope = computed(() => EndgeIDE.runtimePreview.selectedEntry.value?.selectedModuleScope(props.identity))
@@ -107,6 +131,12 @@ const presetFields = computed<Field[]>(() => Object.entries(preset.value?.fields
   values: 'values' in field ? field.values : undefined,
   fallback: field.default,
 })))
+
+watch(groupSelected, (isGroup) => {
+  if (isGroup) {
+    activeSection.value = 'general'
+  }
+})
 
 function attribute(name: string): ComponentSFCVisualAttribute | undefined {
   return selected.value.attributes.find(item => item.name === name)
@@ -185,11 +215,8 @@ function setSetting(key: string, value: unknown): void {
   set('settings', next)
 }
 
-function inputValue(event: Event, type: Field['type']): string | number | boolean | null {
+function inputValue(event: Event, type: Field['type']): string | number | null {
   const target = event.target as HTMLInputElement
-  if (type === 'boolean') {
-    return target.checked
-  }
   if (target.value === '') {
     return null
   }
@@ -226,174 +253,272 @@ function moveColumn(index: number, next: number): void {
 
 function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): string {
   const title = chart.attributes.find(item => item.name === 'title')?.value
-  return title?.kind === 'literal' && typeof title.value === 'string' ? title.value : `График ${index + 1}`
+  const label = title?.kind === 'literal' && typeof title.value === 'string' ? title.value : t('timelineEditor.chartTitle', { index: index + 1 })
+  return chart.attributes.some(item => item.name === 'for') ? [label, t('timelineEditor.templateSuffix')].join(' ') : label
 }
 </script>
 
 <template>
-  <div class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(290px,360px)] overflow-hidden">
-    <section class="flex min-h-0 min-w-0 flex-col">
-      <nav v-if="projection.tag === 'TimelineGroup'" class="flex shrink-0 items-center gap-1 overflow-x-auto border-b p-2" aria-label="Графики">
-        <Button size="sm" :variant="groupSelected ? 'secondary' : 'ghost'" @click="chartIndex = undefined">
-          {{ $t('timelineEditor.group') }}
-        </Button>
-        <Button v-for="(chart, index) in projection.charts" :key="index" size="sm" :variant="chartIndex === index ? 'secondary' : 'ghost'" @click="chartIndex = index">
-          {{ chartLabel(chart, index) }}
-          <template v-if="chart.attributes.some(item => item.name === 'for')">
-            {{ $t('timelineEditor.templateSuffix') }}
-          </template>
-        </Button>
-      </nav>
-      <div class="min-h-0 flex-1 overflow-auto p-3">
-        <p v-if="previewErrors.length" role="alert" class="text-sm text-destructive">
-          {{ previewErrors[0]?.message }}
-        </p>
-        <p v-else-if="runtimePreviewNeeded" class="text-sm text-muted-foreground">
-          {{ $t('timelineEditor.runtimePreview') }}
-        </p>
-        <EndgeAdapterRoot v-else-if="compilation.ir" root-key="sfc" :ir="compilation.ir" :props="previewData" :runtime-scope-id="moduleScope?.id" />
-      </div>
-    </section>
-    <aside class="min-h-0 space-y-4 overflow-auto border-l p-4">
-      <p v-if="error" role="alert" class="text-sm text-destructive">
-        {{ error }}
-      </p>
-      <div v-if="!groupSelected" class="grid gap-2">
-        <label class="text-sm font-medium" for="timeline-data">{{ $t('timelineEditor.data') }}</label>
-        <Button v-if="binding('data')" variant="outline" class="justify-start font-mono" @click="openBinding('data')">
-          {{ binding('data') }} {{ $t('timelineEditor.sourceSuffix') }}
-        </Button>
-        <select v-else-if="inputs.length" id="timeline-data" class="timeline-select" value="" @change="set('data', `props.${inputValue($event, 'text')}`, true)">
-          <option value="" disabled>
-            {{ literal('data') ? $t('timelineEditor.localData') : $t('timelineEditor.chooseInput') }}
-          </option>
-          <option v-for="name in inputs" :key="name" :value="name">
-            {{ name }}
-          </option>
-        </select>
-        <Button v-else variant="outline" @click="openBinding('data')">
-          {{ literal('data') ? $t('timelineEditor.localData') : $t('timelineEditor.setData') }} {{ $t('timelineEditor.sourceSuffix') }}
-        </Button>
-      </div>
+  <div class="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
+    <SettingsNavigationPanel
+      v-model="activeSection"
+      v-model:sidebar-width="sidebarWidth"
+      :default-sidebar-width="216"
+      class="h-full"
+      navigation-class="bg-muted/20"
+      :separator-label="$t('documentMetadata.resizeNavigation')"
+    >
+      <template #navigation>
+        <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
+          <TabsTrigger
+            v-for="section in availableSections"
+            :key="section.id"
+            :value="section.id"
+            class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+          >
+            <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+            <span class="truncate">{{ section.label }}</span>
+          </TabsTrigger>
+        </TabsList>
+      </template>
 
-      <div v-if="groupSelected && attribute('range')" class="grid gap-2">
-        <span class="text-sm font-medium">{{ $t('timelineEditor.groupRange') }}</span>
-        <Button variant="outline" class="justify-start" @click="openBinding('range')">
-          {{ binding('range') ?? $t('timelineEditor.initialRange') }} {{ $t('timelineEditor.sourceSuffix') }}
-        </Button>
-      </div>
-
-      <div v-for="field in groupSelected ? groupFields : chartFields" :key="field.key" class="grid gap-1">
-        <label :for="`timeline-${field.key}`" class="text-sm font-medium">{{ field.label }}</label>
-        <Button v-if="binding(field.key)" variant="outline" class="justify-start font-mono" @click="openBinding(field.key)">
-          {{ binding(field.key) }} {{ $t('timelineEditor.sourceSuffix') }}
-        </Button>
-        <select v-else-if="field.type === 'select'" :id="`timeline-${field.key}`" class="timeline-select" :value="literal(field.key) ?? field.fallback" @change="set(field.key, inputValue($event, field.type))">
-          <option v-for="value in field.values" :key="value" :value="value">
-            {{ value }}
-          </option>
-        </select>
-        <input v-else-if="field.type === 'boolean'" :id="`timeline-${field.key}`" class="h-4 w-4" type="checkbox" :checked="literal(field.key) === true" @change="set(field.key, inputValue($event, field.type))">
-        <Input v-else :id="`timeline-${field.key}`" :type="field.type" :model-value="scalar(literal(field.key) ?? field.fallback)" @change="set(field.key, inputValue($event, field.type))" />
-      </div>
-
-      <template v-if="!groupSelected">
-        <fieldset class="space-y-2 border-t pt-3">
-          <legend class="text-sm font-medium">
-            {{ $t('timelineEditor.columns') }}
-          </legend>
-          <Button v-if="binding('columns')" variant="outline" class="w-full justify-start font-mono" @click="openBinding('columns')">
-            {{ binding('columns') }} {{ $t('timelineEditor.sourceSuffix') }}
-          </Button>
-          <template v-else>
-            <div v-for="(column, index) in columns" :key="index" class="grid grid-cols-2 gap-2 rounded-md border p-2">
-              <label class="text-xs">{{ $t('timelineEditor.id') }}<Input :model-value="column.id" @change="changeColumn(index, { id: String(inputValue($event, 'text') ?? '') })" /></label>
-              <label class="text-xs">{{ $t('timelineEditor.field') }}<Input :model-value="column.field" @change="changeColumn(index, { field: String(inputValue($event, 'text') ?? '') })" /></label>
-              <label class="text-xs">{{ $t('timelineEditor.title') }}<Input :model-value="column.title" @change="changeColumn(index, { title: String(inputValue($event, 'text') ?? '') })" /></label>
-              <label class="text-xs">{{ $t('timelineEditor.width') }}<Input type="number" :model-value="column.width" @change="changeColumn(index, { width: Number(inputValue($event, 'number')) })" /></label>
-              <label class="flex items-center gap-2 text-xs"><input type="checkbox" :checked="column.sortable" @change="changeColumn(index, { sortable: inputValue($event, 'boolean') === true })">{{ $t('timelineEditor.sort') }}</label>
-              <div class="flex justify-end gap-1">
-                <Button size="sm" variant="ghost" aria-label="Выше" :disabled="index === 0" @click="moveColumn(index, index - 1)">
-                  <ArrowUp class="size-4" />
-                </Button>
-                <Button size="sm" variant="ghost" aria-label="Ниже" :disabled="index === columns.length - 1" @click="moveColumn(index, index + 1)">
-                  <ArrowDown class="size-4" />
-                </Button>
-                <Button size="sm" variant="ghost" aria-label="Удалить колонку" @click="set('columns', columns.filter((_, i) => i !== index))">
-                  <X class="size-4" />
-                </Button>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" @click="addColumn">
-              {{ $t('timelineEditor.addColumn') }}
-            </Button>
-          </template>
-        </fieldset>
-
-        <fieldset class="space-y-2 border-t pt-3">
-          <legend class="text-sm font-medium">
-            {{ $t('timelineEditor.preset') }}
-          </legend>
-          <Button v-if="binding('preset')" variant="outline" class="w-full justify-start font-mono" @click="openBinding('preset')">
-            {{ binding('preset') }} {{ $t('timelineEditor.sourceSuffix') }}
-          </Button>
-          <select v-else aria-label="Пресет Timeline" class="timeline-select" :value="literal('preset') ?? ''" @change="changePreset(inputValue($event, 'text'))">
-            <option value="">
-              {{ $t('timelineEditor.standard') }}
+      <header class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
+        <h2 class="hidden text-sm font-semibold lg:block">
+          {{ sectionLabel }}
+        </h2>
+        <div class="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
+          <select
+            v-if="projection.tag === 'TimelineGroup'"
+            v-model="chartSelection"
+            class="timeline-select min-w-0 max-w-64 flex-1 lg:flex-initial"
+            :aria-label="$t('timelineEditor.chart')"
+          >
+            <option value="group">
+              {{ $t('timelineEditor.group') }}
             </option>
-            <option v-if="literal('preset') && !preset" :value="literal('preset')">
-              {{ literal('preset') }}{{ ' (' }}{{ $t('timelineEditor.unavailable') }}{{ ')' }}
-            </option>
-            <option v-for="entry in presets" :key="entry.name" :value="entry.name">
-              {{ entry.label ?? entry.name }}
+            <option v-for="(chart, index) in projection.charts" :key="index" :value="index">
+              {{ chartLabel(chart, index) }}
             </option>
           </select>
-          <Button v-if="binding('settings')" variant="outline" class="w-full justify-start font-mono" @click="openBinding('settings')">
-            {{ binding('settings') }} {{ $t('timelineEditor.sourceSuffix') }}
+          <select v-model="activeSection" class="timeline-select min-w-0 max-w-48 flex-1 lg:hidden" :aria-label="$t('timelineEditor.settings')">
+            <option v-for="section in availableSections" :key="section.id" :value="section.id">
+              {{ section.label }}
+            </option>
+          </select>
+          <Button
+            size="sm"
+            :variant="previewOpen ? 'secondary' : 'outline'"
+            :aria-expanded="previewOpen"
+            :aria-controls="previewOpen ? previewId : undefined"
+            @click="previewOpen = !previewOpen"
+          >
+            <Eye class="size-4" />
+            {{ $t('runtimeWorkflow.preview') }}
           </Button>
-          <template v-else>
-            <div v-for="field in presetFields" :key="field.key" class="grid gap-1">
-              <label :for="`timeline-setting-${field.key}`" class="text-sm">{{ field.label }}</label>
-              <select v-if="field.type === 'select'" :id="`timeline-setting-${field.key}`" class="timeline-select" :value="settings[field.key] ?? field.fallback" @change="setSetting(field.key, inputValue($event, field.type))">
-                <option v-for="value in field.values" :key="value" :value="value">
-                  {{ value }}
-                </option>
-              </select>
-              <input v-else-if="field.type === 'boolean'" :id="`timeline-setting-${field.key}`" type="checkbox" class="h-4 w-4" :checked="Boolean(settings[field.key] ?? field.fallback)" @change="setSetting(field.key, inputValue($event, field.type))">
-              <Input v-else :id="`timeline-setting-${field.key}`" :type="field.type" :model-value="scalar(settings[field.key] ?? field.fallback)" @change="setSetting(field.key, inputValue($event, field.type))" />
-            </div>
-          </template>
-        </fieldset>
+        </div>
+      </header>
 
-        <Button v-if="binding('options')" variant="outline" class="w-full justify-start font-mono" @click="openBinding('options')">
-          {{ binding('options') }} {{ $t('timelineEditor.sourceSuffix') }}
-        </Button>
-        <template v-else>
-          <fieldset v-for="section in sections" :key="section.title" class="space-y-2 border-t pt-2">
-            <legend class="text-sm font-medium">
-              {{ section.title }}
-            </legend>
-            <div v-for="field in section.fields" :key="field.key" class="grid gap-1">
-              <label :for="`timeline-option-${section.path}-${field.key}`" class="text-sm">{{ field.label }}</label>
-              <select v-if="field.type === 'select'" :id="`timeline-option-${section.path}-${field.key}`" class="timeline-select" :value="record(options[section.path ?? ''])[field.key] ?? ''" @change="setOption(section.path, field.key, inputValue($event, field.type))">
-                <option value="">
-                  {{ $t('timelineEditor.default') }}
-                </option>
-                <option v-for="value in field.values" :key="value" :value="value">
-                  {{ value }}
-                </option>
-              </select>
-              <input v-else-if="field.type === 'boolean'" :id="`timeline-option-${section.path}-${field.key}`" type="checkbox" class="h-4 w-4" :checked="Boolean(record(options[section.path ?? ''])[field.key] ?? field.fallback)" @change="setOption(section.path, field.key, inputValue($event, field.type))">
-              <Input v-else :id="`timeline-option-${section.path}-${field.key}`" :type="field.type" :model-value="scalar((section.path ? record(options[section.path]) : options)[field.key])" @change="setOption(section.path, field.key, inputValue($event, field.type))" />
+      <p v-if="error" role="alert" class="shrink-0 border-b border-destructive/20 px-5 py-2 text-sm text-destructive">
+        {{ error }}
+      </p>
+
+      <div class="timeline-settings-body flex min-h-0 flex-1 flex-col">
+        <div class="timeline-settings-workspace flex min-h-0 min-w-0 flex-1">
+          <TabsContent value="general" class="timeline-settings-tab">
+            <div class="max-w-xl space-y-4">
+              <div v-if="!groupSelected" class="grid gap-2">
+                <label class="text-sm font-medium" for="timeline-data">{{ $t('timelineEditor.data') }}</label>
+                <Button v-if="binding('data')" variant="outline" class="min-w-0 justify-start font-mono" @click="openBinding('data')">
+                  <span class="truncate">{{ binding('data') }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+                </Button>
+                <select v-else-if="inputs.length" id="timeline-data" class="timeline-select" value="" @change="set('data', `props.${inputValue($event, 'text')}`, true)">
+                  <option value="" disabled>
+                    {{ literal('data') ? $t('timelineEditor.localData') : $t('timelineEditor.chooseInput') }}
+                  </option>
+                  <option v-for="name in inputs" :key="name" :value="name">
+                    {{ name }}
+                  </option>
+                </select>
+                <Button v-else variant="outline" @click="openBinding('data')">
+                  {{ literal('data') ? $t('timelineEditor.localData') : $t('timelineEditor.setData') }} {{ $t('timelineEditor.sourceSuffix') }}
+                </Button>
+              </div>
+
+              <div v-if="groupSelected && attribute('range')" class="grid gap-2">
+                <span class="text-sm font-medium">{{ $t('timelineEditor.groupRange') }}</span>
+                <Button variant="outline" class="justify-start" @click="openBinding('range')">
+                  {{ binding('range') ?? $t('timelineEditor.initialRange') }} {{ $t('timelineEditor.sourceSuffix') }}
+                </Button>
+              </div>
+
+              <div v-for="field in groupSelected ? groupFields : chartFields" :key="field.key" class="grid gap-1">
+                <label :for="`timeline-${field.key}`" class="text-sm font-medium">{{ field.label }}</label>
+                <Button v-if="binding(field.key)" variant="outline" class="min-w-0 justify-start font-mono" @click="openBinding(field.key)">
+                  <span class="truncate">{{ binding(field.key) }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+                </Button>
+                <select v-else-if="field.type === 'select'" :id="`timeline-${field.key}`" class="timeline-select" :value="literal(field.key) ?? field.fallback" @change="set(field.key, inputValue($event, field.type))">
+                  <option v-for="value in field.values" :key="value" :value="value">
+                    {{ value }}
+                  </option>
+                </select>
+                <Checkbox v-else-if="field.type === 'boolean'" :id="`timeline-${field.key}`" :model-value="literal(field.key) === true" @update:model-value="set(field.key, $event === true)" />
+                <Input v-else :id="`timeline-${field.key}`" :type="field.type" :model-value="scalar(literal(field.key) ?? field.fallback)" @change="set(field.key, inputValue($event, field.type))" />
+              </div>
             </div>
-          </fieldset>
-        </template>
-      </template>
-    </aside>
+          </TabsContent>
+
+          <TabsContent v-if="!groupSelected" value="columns" class="timeline-settings-tab">
+            <div class="max-w-2xl">
+              <Button v-if="binding('columns')" variant="outline" class="w-full min-w-0 justify-start font-mono" @click="openBinding('columns')">
+                <span class="truncate">{{ binding('columns') }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+              </Button>
+              <template v-else>
+                <div v-for="(column, index) in columns" :key="index" class="grid grid-cols-2 gap-2 rounded-md border p-2">
+                  <label class="text-xs">{{ $t('timelineEditor.id') }}<Input :model-value="column.id" @change="changeColumn(index, { id: String(inputValue($event, 'text') ?? '') })" /></label>
+                  <label class="text-xs">{{ $t('timelineEditor.field') }}<Input :model-value="column.field" @change="changeColumn(index, { field: String(inputValue($event, 'text') ?? '') })" /></label>
+                  <label class="text-xs">{{ $t('timelineEditor.title') }}<Input :model-value="column.title" @change="changeColumn(index, { title: String(inputValue($event, 'text') ?? '') })" /></label>
+                  <label class="text-xs">{{ $t('timelineEditor.width') }}<Input type="number" :model-value="column.width" @change="changeColumn(index, { width: Number(inputValue($event, 'number')) })" /></label>
+                  <label class="flex items-center gap-2 text-xs"><Checkbox :model-value="column.sortable ?? false" @update:model-value="changeColumn(index, { sortable: $event === true })" />{{ $t('timelineEditor.sort') }}</label>
+                  <div class="flex justify-end gap-1">
+                    <Button size="sm" variant="ghost" aria-label="Выше" :disabled="index === 0" @click="moveColumn(index, index - 1)">
+                      <ArrowUp class="size-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" aria-label="Ниже" :disabled="index === columns.length - 1" @click="moveColumn(index, index + 1)">
+                      <ArrowDown class="size-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" aria-label="Удалить колонку" @click="set('columns', columns.filter((_, i) => i !== index))">
+                      <X class="size-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" @click="addColumn">
+                  {{ $t('timelineEditor.addColumn') }}
+                </Button>
+              </template>
+            </div>
+          </TabsContent>
+
+          <TabsContent v-if="!groupSelected" value="preset" class="timeline-settings-tab">
+            <div class="max-w-xl">
+              <div class="space-y-3">
+                <Button v-if="binding('preset')" variant="outline" class="w-full min-w-0 justify-start font-mono" @click="openBinding('preset')">
+                  <span class="truncate">{{ binding('preset') }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+                </Button>
+                <select v-else aria-label="Пресет Timeline" class="timeline-select" :value="literal('preset') ?? ''" @change="changePreset(inputValue($event, 'text'))">
+                  <option value="">
+                    {{ $t('timelineEditor.standard') }}
+                  </option>
+                  <option v-if="literal('preset') && !preset" :value="literal('preset')">
+                    {{ literal('preset') }}{{ ' (' }}{{ $t('timelineEditor.unavailable') }}{{ ')' }}
+                  </option>
+                  <option v-for="entry in presets" :key="entry.name" :value="entry.name">
+                    {{ entry.label ?? entry.name }}
+                  </option>
+                </select>
+                <Button v-if="binding('settings')" variant="outline" class="w-full min-w-0 justify-start font-mono" @click="openBinding('settings')">
+                  <span class="truncate">{{ binding('settings') }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+                </Button>
+                <template v-else>
+                  <div v-for="field in presetFields" :key="field.key" class="grid gap-1">
+                    <label :for="`timeline-setting-${field.key}`" class="text-sm">{{ field.label }}</label>
+                    <select v-if="field.type === 'select'" :id="`timeline-setting-${field.key}`" class="timeline-select" :value="settings[field.key] ?? field.fallback" @change="setSetting(field.key, inputValue($event, field.type))">
+                      <option v-for="value in field.values" :key="value" :value="value">
+                        {{ value }}
+                      </option>
+                    </select>
+                    <Checkbox v-else-if="field.type === 'boolean'" :id="`timeline-setting-${field.key}`" :model-value="Boolean(settings[field.key] ?? field.fallback)" @update:model-value="setSetting(field.key, $event === true)" />
+                    <Input v-else :id="`timeline-setting-${field.key}`" :type="field.type" :model-value="scalar(settings[field.key] ?? field.fallback)" @change="setSetting(field.key, inputValue($event, field.type))" />
+                  </div>
+                </template>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent v-if="!groupSelected" value="options" class="timeline-settings-tab">
+            <div class="max-w-xl space-y-4">
+              <Button v-if="binding('options')" variant="outline" class="w-full min-w-0 justify-start font-mono" @click="openBinding('options')">
+                <span class="truncate">{{ binding('options') }} {{ $t('timelineEditor.sourceSuffix') }}</span>
+              </Button>
+              <template v-else>
+                <fieldset v-for="section in sections" :key="section.title" class="space-y-2 border-t pt-2">
+                  <legend class="text-sm font-medium">
+                    {{ section.title }}
+                  </legend>
+                  <div v-for="field in section.fields" :key="field.key" class="grid gap-1">
+                    <label :for="`timeline-option-${section.path}-${field.key}`" class="text-sm">{{ field.label }}</label>
+                    <select v-if="field.type === 'select'" :id="`timeline-option-${section.path}-${field.key}`" class="timeline-select" :value="record(options[section.path ?? ''])[field.key] ?? ''" @change="setOption(section.path, field.key, inputValue($event, field.type))">
+                      <option value="">
+                        {{ $t('timelineEditor.default') }}
+                      </option>
+                      <option v-for="value in field.values" :key="value" :value="value">
+                        {{ value }}
+                      </option>
+                    </select>
+                    <Checkbox v-else-if="field.type === 'boolean'" :id="`timeline-option-${section.path}-${field.key}`" :model-value="Boolean(record(options[section.path ?? ''])[field.key] ?? field.fallback)" @update:model-value="setOption(section.path, field.key, $event === true)" />
+                    <Input v-else :id="`timeline-option-${section.path}-${field.key}`" :type="field.type" :model-value="scalar((section.path ? record(options[section.path]) : options)[field.key])" @change="setOption(section.path, field.key, inputValue($event, field.type))" />
+                  </div>
+                </fieldset>
+              </template>
+            </div>
+          </TabsContent>
+
+          <aside v-if="previewOpen" :id="previewId" class="timeline-preview flex min-h-0 min-w-0 flex-col bg-card/60" :aria-label="$t('runtimeWorkflow.preview')">
+            <div class="min-h-0 flex-1 overflow-auto overscroll-contain p-3">
+              <p v-if="previewErrors.length" role="alert" class="text-sm text-destructive">
+                {{ previewErrors[0]?.message }}
+              </p>
+              <p v-else-if="runtimePreviewNeeded" class="text-sm text-muted-foreground">
+                {{ $t('timelineEditor.runtimePreview') }}
+              </p>
+              <EndgeAdapterRoot v-else-if="compilation.ir" root-key="sfc" :ir="compilation.ir" :props="previewData" :runtime-scope-id="moduleScope?.id" />
+            </div>
+          </aside>
+        </div>
+      </div>
+    </SettingsNavigationPanel>
   </div>
 </template>
 
 <style scoped>
+.timeline-settings-body {
+  container-type: inline-size;
+}
+
+.timeline-settings-workspace {
+  flex-direction: column;
+}
+
+.timeline-settings-tab {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.25rem;
+}
+
+.timeline-settings-tab[data-state='inactive'] {
+  display: none;
+}
+
+.timeline-preview {
+  flex: 0 0 min(38%, 18rem);
+  border-top: 1px solid var(--border);
+}
+
+@container (min-width: 36rem) {
+  .timeline-settings-workspace {
+    flex-direction: row;
+  }
+
+  .timeline-preview {
+    flex-basis: clamp(14rem, 36%, 25rem);
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+}
+
 .timeline-select {
   width: 100%;
   min-height: 2.25rem;

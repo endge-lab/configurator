@@ -266,6 +266,7 @@ watch(contextMenu, (v) => {
                   @drop="handleDrop($event, index)"
                   @dragend="handleDragEnd"
                   @contextmenu="openContextMenu($event, tab.id)"
+                  @dblclick="tabsApi.pinTab(tab.id)"
                 >
                   <span
                     v-if="getIconComponent(tab)"
@@ -291,13 +292,14 @@ watch(contextMenu, (v) => {
                     class="shrink-0"
                   />
 
-                  <span class="truncate text-sm text-center">
+                  <span class="truncate text-sm text-center" :class="{ italic: tab.preview }">
                     {{ tab.label }}
                   </span>
 
                   <button
                     class="opacity-0 group-hover:opacity-100 transition shrink-0"
                     @click.stop="close(tab.id)"
+                    @dblclick.stop
                   >
                     <X class="size-3.5 text-muted-foreground hover:text-foreground" />
                   </button>

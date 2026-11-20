@@ -15,18 +15,14 @@ import type {
 import type { ConfiguratorEvents_Module } from '@/app/modules/ConfiguratorEvents_Module'
 import type { EndgeBackendConfig } from '@/features/endge-ide/domain/types/endge-backend.type'
 
-import {
-  createContextCommandExecutor,
-  Endge,
-  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL,
-  ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION,
-  ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS,
-} from '@endge/core'
+import { createContextCommandExecutor, createEndgeBackendWorkspaceStateTransport, Endge, ENDGE_SFC_RENDER_ADAPTER_PROTOCOL, ENDGE_SFC_RENDER_ADAPTER_PROTOCOL_VERSION, ENDGE_SFC_RENDER_ADAPTER_REQUIRED_KEYS } from '@endge/core'
 
 import { createConfiguratorModuleLoader } from '@/features/endge-ide/bootstrap/create-configurator-module-loader'
 import { registerEndgeMockProviders } from '@/features/endge-ide/bootstrap/endge-mock-providers'
 import { getEndgeBackendConfig } from '@/features/endge-ide/config/endge-backend'
 import { configuratorDataModeRepository } from '@/features/endge-ide/services/context/configurator-data-mode-repository'
+
+import { name as appId } from '../../../package.json'
 
 const CONFIGURATOR_SFC_ADAPTER_FALLBACK_IDS = ['vue-native'] as const
 
@@ -45,6 +41,7 @@ export class ConfiguratorContext_Module {
   private _workspaceRole: 'viewer' | 'editor' | 'admin' | null = null
   private _workspaceIdentity: string | null = null
   private _userIdentity: string | null = null
+  private _backendUserId: string | null = null
   // Выбор фасетов по claims (VITE_ENDGE_FACET_CLAIMS), с которым выполнен текущий boot.
   private _claimSelectionsKey: string | null = null
   private _stopClaimWatch: (() => void) | null = null
@@ -73,6 +70,9 @@ export class ConfiguratorContext_Module {
 
     this._backendConfig = backendConfig
     this._domainProvider = domainProvider
+    if (options.backendUserId !== undefined) {
+      this._backendUserId = options.backendUserId
+    }
     this._workspaceRole = this._workspaceRole ?? options.workspaceRole ?? null
     this._workspaceIdentity = this._workspaceIdentity ?? options.workspaceIdentity ?? null
     if (options.userIdentity !== undefined) {
@@ -80,6 +80,7 @@ export class ConfiguratorContext_Module {
     }
     const ctx: EndgeBootContext = options.mode === 'debugger'
       ? {
+          appId,
           mode: 'debugger',
           vars: {},
           scope: {},
@@ -97,7 +98,7 @@ export class ConfiguratorContext_Module {
       if (options.mode !== 'debugger') {
         this._events.start()
         if (this._userIdentity) {
-          Endge.context.setCurrentUser(this._userIdentity)
+          Endge.context.setCurrentUser(this._userIdentity, backendConfig.serviceBackendURL)
         }
       }
       await Endge.boot(ctx)
@@ -110,6 +111,7 @@ export class ConfiguratorContext_Module {
             const selections = Endge.auth.facetClaimResolution().selections
             return {
               userId: this._userIdentity,
+              identityNamespace: backendConfig.serviceBackendURL,
               ...(Object.keys(selections).length > 0 ? { facetSelections: selections } : {}),
             }
           },
@@ -186,6 +188,7 @@ export class ConfiguratorContext_Module {
     }
     this._backendConfig = options.backendConfig
     this._domainProvider = null
+    this._backendUserId = null
     this._workspaceRole = null
     this._workspaceIdentity = null
     this._userIdentity = String(options.userIdentity ?? '').trim() || null
@@ -279,6 +282,7 @@ export class ConfiguratorContext_Module {
     const facetClaims = readFacetClaims(import.meta.env)
     const authVariables = readAuthVariableRecord(import.meta.env)
     const commonContext = {
+      appId,
       scope: workspaceIdentity ? { workspaceIdentity } : {},
       context: {
         ...(Object.keys(facetSelections).length > 0 ? { facets: facetSelections } : {}),
@@ -315,6 +319,14 @@ export class ConfiguratorContext_Module {
       commands: { local: this._createCommandExecutor() },
       dataProvider: 'default',
       domainProvider,
+      workspaceState: {
+        account: () => this._backendUserId,
+        backend: createEndgeBackendWorkspaceStateTransport({
+          baseUrl: backendConfig.serviceBackendURL,
+          getUserId: () => this._backendUserId,
+        }),
+        backendKeys: ['configurator.date-format'],
+      },
     }
   }
 

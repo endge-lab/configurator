@@ -15,7 +15,7 @@ import {
   getComponentSFCTagInputContract,
 } from '@endge/core'
 import { Blocks, ExternalLink, FileCode2, Tags } from 'lucide-vue-next'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, toRefs, watch } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,12 +29,14 @@ import {
 } from '@/components/ui/tooltip'
 import { TABLE_CELL_EDITOR_TAGS } from '@/features/endge-ide/services/component-sfc-editor/table-cell-binding.types'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import { usePinTabOnEdit, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 interface BindingField extends RComponentContractInput {
   sourceOnly?: boolean
 }
 
 const props = defineProps<{
+  columnId: string
   editor: ComponentSFCTableEditableElementProjection | null
   implicit: boolean
   selecting?: boolean
@@ -49,10 +51,29 @@ const emit = defineEmits<{
   (event: 'openSource'): void
 }>()
 
+const pinTabOnEdit = usePinTabOnEdit()
 const mode = ref<'component' | 'tag' | 'source'>('source')
-const drafts = ref<Record<string, string>>({})
-const kinds = ref<Record<string, TableCellBindingValueKind>>({})
-const errors = ref<Record<string, string>>({})
+const editorSource = computed(() => JSON.stringify(props.editor))
+const bindingDraft = useSmartTabVolatileViewState(`sfc.column.${props.columnId}.editable-bindings`, {
+  defaultValue: () => ({
+    source: editorSource.value,
+    ...sourceBindings(props.editor),
+  }),
+  validate: value => (value as { source?: unknown } | null)?.source === editorSource.value,
+})
+const { drafts, kinds, errors } = toRefs(bindingDraft.value)
+
+function sourceBindings(editor: ComponentSFCTableEditableElementProjection | null) {
+  const bindings = editor?.kind === 'component' || editor?.kind === 'tag' ? editor.bindings : []
+  return {
+    drafts: Object.fromEntries(bindings.map(binding => [binding.name, sourceValue(binding.value)])),
+    kinds: Object.fromEntries<TableCellBindingValueKind>(bindings.map(binding => [
+      binding.name,
+      binding.value.kind === 'expression' ? 'expression' : 'literal',
+    ])),
+    errors: {} as Record<string, string>,
+  }
+}
 
 const componentSelectOptions = computed<SearchableSelectOption[]>(() => (
   props.componentOptions.filter(option => option.editorEligible)
@@ -88,7 +109,7 @@ const fields = computed<BindingField[]>(() => {
 
 watch(
   () => props.editor,
-  (editor) => {
+  (editor, previousEditor) => {
     mode.value = editor?.kind === 'component'
       ? 'component'
       : editor?.kind === 'tag'
@@ -96,13 +117,9 @@ watch(
         : props.selecting
           ? 'tag'
           : 'source'
-    const nextBindings = editor?.kind === 'component' || editor?.kind === 'tag' ? editor.bindings : []
-    drafts.value = Object.fromEntries(nextBindings.map(binding => [binding.name, sourceValue(binding.value)]))
-    kinds.value = Object.fromEntries(nextBindings.map(binding => [
-      binding.name,
-      binding.value.kind === 'expression' ? 'expression' : 'literal',
-    ]))
-    errors.value = {}
+    if (previousEditor !== undefined) {
+      Object.assign(bindingDraft.value, { source: editorSource.value, ...sourceBindings(editor) })
+    }
   },
   { immediate: true },
 )
@@ -131,6 +148,9 @@ function bindingKind(name: string): TableCellBindingValueKind {
 }
 
 function setBindingKind(name: string, valueKind: TableCellBindingValueKind): void {
+  if (bindingKind(name) !== valueKind && drafts.value[name]?.trim()) {
+    pinTabOnEdit()
+  }
   kinds.value[name] = valueKind
   if (drafts.value[name]?.trim()) {
     commitBinding(name)
@@ -300,7 +320,7 @@ function sourceValue(value: { kind: 'boolean', value: boolean } | { kind: 'liter
                 <Button type="button" variant="ghost" size="sm" class="h-7 min-w-7 rounded-none border-r px-1.5 font-mono text-[10px]" :class="bindingKind(field.name) === 'literal' ? 'bg-primary/10 text-primary' : 'text-muted-foreground'" :disabled="implicit" @click="setBindingKind(field.name, 'literal')">
                   {{ $t('uiText.aa2c419ecc') }}
                 </Button>
-                <Input v-model="drafts[field.name]" class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0" :disabled="implicit" :placeholder="bindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'" spellcheck="false" @keydown.enter.prevent="commitBinding(field.name)" @keydown.esc.prevent="resetBinding(field.name)" />
+                <Input v-model="drafts[field.name]" class="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 font-mono text-xs shadow-none focus-visible:ring-0" :disabled="implicit" :placeholder="bindingKind(field.name) === 'expression' ? 'row.path.to.value' : 'Значение'" spellcheck="false" @update:model-value="pinTabOnEdit" @keydown.enter.prevent="commitBinding(field.name)" @keydown.esc.prevent="resetBinding(field.name)" />
               </div>
               <p v-if="errors[field.name]" class="mt-1 text-[10px] leading-tight text-destructive">
                 {{ errors[field.name] }}

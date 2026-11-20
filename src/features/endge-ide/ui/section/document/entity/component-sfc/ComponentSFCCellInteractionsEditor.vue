@@ -7,14 +7,16 @@ import type {
 
 import { getComponentSFCIntrinsicEventDefinitions } from '@endge/core'
 import { FileCode2, Plus, Trash2 } from 'lucide-vue-next'
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
+import { usePinTabOnEdit, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 import ComponentSFCInteractionBindingEditor from './ComponentSFCInteractionBindingEditor.vue'
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 
 const props = defineProps<{
+  columnId: string
   modelValue: ComponentSFCTableCellInteractionsProjection
 }>()
 
@@ -23,15 +25,24 @@ const emit = defineEmits<{
   (event: 'openSource'): void
 }>()
 
+const pinTabOnEdit = usePinTabOnEdit()
 const events = getComponentSFCIntrinsicEventDefinitions('Cell')
 const LEGACY_REACTION_PLACEHOLDER = `action({ identity: 'action.identity', input: { rowId: rowKey, row, rowIndex, columnKey, value, event: event() } })`
-const drafts = ref<ComponentSFCTableCellInteractionRuleProjection[]>([])
+type RuleDraft = ComponentSFCTableCellInteractionRuleProjection & { reactionDraft?: string }
+const interactionsSource = computed(() => JSON.stringify(props.modelValue.rules))
+const interactionsDraft = useSmartTabVolatileViewState(`sfc.column.${props.columnId}.interactions`, {
+  defaultValue: () => ({ source: interactionsSource.value, rules: props.modelValue.rules.map(cloneRule) }),
+  validate: value => (value as { source?: unknown } | null)?.source === interactionsSource.value,
+})
+const drafts = toRef(interactionsDraft.value, 'rules')
 const reactionEditorRefs = ref<Array<{ flushPendingEdits: () => boolean }>>([])
 
 watch(
-  () => props.modelValue,
-  value => drafts.value = value.rules.map(cloneRule),
-  { immediate: true, deep: true },
+  interactionsSource,
+  (source) => {
+    interactionsDraft.value.source = source
+    drafts.value = props.modelValue.rules.map(cloneRule)
+  },
 )
 
 function cloneTrigger(value: ComponentSFCInteractionTriggerProjection): ComponentSFCInteractionTriggerProjection {
@@ -45,14 +56,14 @@ function cloneTrigger(value: ComponentSFCInteractionTriggerProjection): Componen
   }
 }
 
-function cloneRule(rule: ComponentSFCTableCellInteractionRuleProjection): ComponentSFCTableCellInteractionRuleProjection {
+function cloneRule(rule: ComponentSFCTableCellInteractionRuleProjection): RuleDraft {
   return {
     ...cloneTrigger(rule),
     reactionSource: rule.reactionSource.trim() === LEGACY_REACTION_PLACEHOLDER ? '' : rule.reactionSource,
   }
 }
 
-function createRule(): ComponentSFCTableCellInteractionRuleProjection {
+function createRule(): RuleDraft {
   return {
     event: 'click',
     key: [],
@@ -68,6 +79,7 @@ function createRule(): ComponentSFCTableCellInteractionRuleProjection {
 }
 
 function addRule(): void {
+  pinTabOnEdit()
   drafts.value = [...drafts.value, createRule()]
 }
 
@@ -83,7 +95,8 @@ function updateTrigger(index: number, trigger: ComponentSFCInteractionTriggerPro
   if (!rule) {
     return
   }
-  drafts.value[index] = { ...cloneTrigger(trigger), reactionSource: rule.reactionSource }
+  pinTabOnEdit()
+  drafts.value[index] = { ...rule, ...cloneTrigger(trigger) }
   if (rule.reactionSource.trim()) {
     commit()
   }
@@ -232,6 +245,7 @@ function quote(value: string): string {
         <template #reaction>
           <ComponentSFCReactionEditor
             ref="reactionEditorRefs"
+            v-model:draft="rule.reactionDraft"
             :model-value="rule.reactionSource"
             :event-name="rule.event"
             @save="(value, complete) => updateReaction(index, value, complete)"

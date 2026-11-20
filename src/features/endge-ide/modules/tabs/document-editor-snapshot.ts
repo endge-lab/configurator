@@ -62,10 +62,10 @@ export function createDocumentEditorSnapshot(editor: unknown): string {
     return JSON.stringify(null)
   }
 
-  const rawEditor = toRaw(editor as object) as Record<string, unknown>
-  const editorName = rawEditor.constructor?.name ?? ''
+  const editorState = editor as Record<string, unknown>
+  const editorName = toRaw(editorState).constructor?.name ?? ''
   const adapter = DOCUMENT_EDITOR_SNAPSHOT_ADAPTERS.get(editorName) ?? captureDefaultEditorState
-  return JSON.stringify(canonicalize(adapter(rawEditor)))
+  return JSON.stringify(canonicalize(adapter(editorState)))
 }
 
 function canonicalize(value: unknown, ancestors = new WeakSet<object>()): unknown {
@@ -92,24 +92,25 @@ function canonicalize(value: unknown, ancestors = new WeakSet<object>()): unknow
 
   ancestors.add(raw as object)
   try {
-    if (Array.isArray(raw)) {
-      return raw.map(item => canonicalize(item, ancestors))
+    if (Array.isArray(value)) {
+      return value.map(item => canonicalize(item, ancestors))
     }
-    if (raw instanceof Map) {
-      return [...raw.entries()]
+    if (value instanceof Map) {
+      return [...value.entries()]
         .map(([key, item]) => [canonicalize(key, ancestors), canonicalize(item, ancestors)] as const)
         .sort(([left], [right]) => String(JSON.stringify(left)).localeCompare(String(JSON.stringify(right))))
     }
-    if (raw instanceof Set) {
-      return [...raw.values()]
+    if (value instanceof Set) {
+      return [...value.values()]
         .map(item => canonicalize(item, ancestors))
         .sort((left, right) => String(JSON.stringify(left)).localeCompare(String(JSON.stringify(right))))
     }
 
-    const entries = Object.entries(raw as Record<string, unknown>)
-      .filter(([key, item]) => !TRANSIENT_EDITOR_KEYS.has(key) && item !== undefined && typeof item !== 'function')
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, item]) => [key, canonicalize(item, ancestors)] as const)
+    const record = value as Record<string, unknown>
+    const entries = Object.keys(record)
+      .filter(key => !TRANSIENT_EDITOR_KEYS.has(key))
+      .sort((left, right) => left.localeCompare(right))
+      .map(key => [key, canonicalize(record[key], ancestors)])
     return Object.fromEntries(entries)
   }
   finally {

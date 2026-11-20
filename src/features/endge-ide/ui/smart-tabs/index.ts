@@ -14,4 +14,4 @@ export type {
 } from '@/features/endge-ide/ui/smart-tabs/types'
 
 export { useSmartTabs } from '@/features/endge-ide/ui/smart-tabs/useSmartTabs'
-export { useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState, useSmartTabViewStateFlush, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs/useSmartTabViewState'
+export { usePinTabOnEdit, useSmartTabSelection, useSmartTabSharedViewState, useSmartTabViewState, useSmartTabViewStateFlush, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs/useSmartTabViewState'

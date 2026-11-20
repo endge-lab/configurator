@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { ConfigurationSourceValueDefinition, EndgeJSONValue } from '@endge/core'
+import type { ConfigurationSourceValueDefinition, EndgeJSONValue, TypeSourceExpression } from '@endge/core'
 import type { RConfigurationEditor } from '@/features/endge-ide/domain/entities/RConfigurationEditor'
 
-import { Endge, inferConfigurationDefault } from '@endge/core'
-import { Code2, Eye, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } from 'lucide-vue-next'
+import { Endge, inferConfigurationDefault, validateConfigurationValue } from '@endge/core'
+import { Brackets, Code2, Eye, Loader2, Plus, Save, Settings2, Trash2, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -29,10 +31,12 @@ import TypeRegistrySelect from '@/features/endge-ide/ui/components/TypeRegistryS
 import { useSmartTabSelection } from '@/features/endge-ide/ui/smart-tabs'
 
 const props = defineProps<{ tabContext?: { editor?: RConfigurationEditor } }>()
+const { t } = useI18n()
 const editor = computed(() => props.tabContext?.editor ?? null)
 const activeTab = useSmartTabSelection('editor.configuration.active-tab', 'visual', ['general', 'visual', 'source', 'diagnostics'] as const)
 const diagnosticsEntityRef = computed(() => createEditorDiagnosticsEntityRef('configuration', editor.value))
 const sourceEditorRef = ref<{ formatDocument: () => Promise<void> } | null>(null)
+const pendingArrayChange = ref<{ key: string, kind: 'keepFirst' | 'clearNumberConstraints' } | null>(null)
 const configurationInlineTypeOptions = [
   { value: 'enum', label: 'Enum', group: 'Inline-типы' },
 ]
@@ -56,35 +60,14 @@ function updateValue(value: ConfigurationSourceValueDefinition, patch: Partial<C
 function updateDefault(value: ConfigurationSourceValueDefinition, defaultValue: EndgeJSONValue): void {
   updateValue(value, { defaultValue })
 }
-function updateType(value: ConfigurationSourceValueDefinition, identity: string): void {
-  if (identity === 'enum') {
-    if (value.type.kind === 'enum') {
-      return
-    }
-    const type = { kind: 'enum' as const, values: ['value'] }
-    updateValue(value, {
-      type,
-      defaultValue: 'value',
-      min: undefined,
-      max: undefined,
-      step: undefined,
-    })
-    return
-  }
-  const type = { kind: 'reference' as const, identity }
-  const inferred = inferConfigurationDefault(type, Endge.configurationSchema.typeCatalog)
-  const registeredType = Endge.configurationSchema.typeCatalog.find(item => item.identity === identity)
-  let defaultValue: EndgeJSONValue = null
-  if (inferred.ok) {
-    defaultValue = inferred.value
-  }
-  else if (registeredType?.category === 'reference') {
-    const current = value.defaultValue
-    const acceptsCurrent = registeredType.entityReference?.storage === 'identity'
-      ? typeof current === 'string'
-      : typeof current === 'string' || typeof current === 'number'
-    defaultValue = acceptsCurrent ? current : ''
-  }
+function editableType(value: ConfigurationSourceValueDefinition): TypeSourceExpression {
+  return value.type.kind === 'array' ? value.type.items : value.type
+}
+function selectedType(value: ConfigurationSourceValueDefinition): string {
+  const type = editableType(value)
+  return type.kind === 'reference' ? type.identity : type.kind
+}
+function replaceType(value: ConfigurationSourceValueDefinition, type: TypeSourceExpression, defaultValue: EndgeJSONValue): void {
   updateValue(value, {
     type,
     defaultValue,
@@ -93,11 +76,87 @@ function updateType(value: ConfigurationSourceValueDefinition, identity: string)
     step: undefined,
   })
 }
-function enumValueKind(value: ConfigurationSourceValueDefinition): EnumValueKind {
-  if (value.type.kind !== 'enum') {
-    return 'string'
+function updateType(value: ConfigurationSourceValueDefinition, identity: string): void {
+  if (!identity || identity === selectedType(value)) {
+    return
   }
-  const first = value.type.values[0]
+  const catalog = Endge.configurationSchema.typeCatalog
+  const itemType: TypeSourceExpression = identity === 'enum'
+    ? { kind: 'enum', values: ['value'] }
+    : { kind: 'reference', identity }
+  if (value.type.kind === 'array') {
+    const type = { kind: 'array' as const, items: itemType }
+    const defaultValue = validateConfigurationValue(type, value.defaultValue, catalog).ok ? value.defaultValue : []
+    replaceType(value, type, defaultValue)
+    return
+  }
+  const inferred = inferConfigurationDefault(itemType, catalog)
+  if (inferred.ok) {
+    replaceType(value, itemType, inferred.value)
+    return
+  }
+  const registeredType = catalog.find(item => item.identity === identity)
+  if (registeredType?.category === 'reference') {
+    const current = value.defaultValue
+    const acceptsCurrent = registeredType.entityReference?.storage === 'identity'
+      ? typeof current === 'string'
+      : typeof current === 'string' || typeof current === 'number'
+    replaceType(value, itemType, acceptsCurrent ? current : '')
+    return
+  }
+  replaceType(value, itemType, null)
+}
+function applyArrayToggle(value: ConfigurationSourceValueDefinition): void {
+  if (value.type.kind !== 'array') {
+    const emptyString = selectedType(value) === 'String' && value.defaultValue === ''
+    replaceType(value, { kind: 'array', items: value.type }, emptyString ? [] : [value.defaultValue])
+    return
+  }
+  const items = Array.isArray(value.defaultValue) ? value.defaultValue : []
+  if (items.length) {
+    replaceType(value, value.type.items, items[0]!)
+    return
+  }
+  const inferred = inferConfigurationDefault(value.type.items, Endge.configurationSchema.typeCatalog)
+  if (inferred.ok) {
+    replaceType(value, value.type.items, inferred.value)
+  }
+  else {
+    toast.warning(t('configurationEditor.arrayScalarDefaultRequired'))
+  }
+}
+function requestArrayToggle(value: ConfigurationSourceValueDefinition): void {
+  if (value.type.kind === 'array') {
+    if (Array.isArray(value.defaultValue) && value.defaultValue.length > 1) {
+      pendingArrayChange.value = { key: value.key, kind: 'keepFirst' }
+      return
+    }
+  }
+  else if (value.min !== undefined || value.max !== undefined || value.step !== undefined) {
+    pendingArrayChange.value = { key: value.key, kind: 'clearNumberConstraints' }
+    return
+  }
+  applyArrayToggle(value)
+}
+function confirmArrayToggle(): void {
+  const pending = pendingArrayChange.value
+  const value = editor.value?.values.find(value => value.key === pending?.key)
+  if (value) {
+    applyArrayToggle(value)
+  }
+  pendingArrayChange.value = null
+}
+function editableEnum(value: ConfigurationSourceValueDefinition) {
+  const type = editableType(value)
+  return type.kind === 'enum' ? type : null
+}
+function fieldSettingsLabel(value: ConfigurationSourceValueDefinition): string {
+  return editableEnum(value)
+    ? t('configurationEditor.allowedValues', { key: value.key })
+    : t('configurationEditor.fieldSettings', { key: value.key })
+}
+function enumValueKind(value: ConfigurationSourceValueDefinition): EnumValueKind {
+  const first = editableEnum(value)?.values[0]
   if (typeof first === 'number') {
     return 'number'
   }
@@ -106,20 +165,19 @@ function enumValueKind(value: ConfigurationSourceValueDefinition): EnumValueKind
   }
   return 'string'
 }
-function updateEnumValues(value: ConfigurationSourceValueDefinition, values: EnumValue[]): void {
+function updateEnumValues(value: ConfigurationSourceValueDefinition, values: EnumValue[], previous: EndgeJSONValue = value.defaultValue): void {
   if (!values.length) {
     return
   }
-  const defaultValue = values.some(item => Object.is(item, value.defaultValue))
-    ? value.defaultValue
-    : values[0]
-  updateValue(value, {
-    type: { kind: 'enum', values },
-    defaultValue,
-    min: undefined,
-    max: undefined,
-    step: undefined,
-  })
+  const type = { kind: 'enum' as const, values }
+  const isAllowed = (item: EndgeJSONValue) => values.some(allowed => Object.is(allowed, item))
+  if (value.type.kind === 'array') {
+    const items = Array.isArray(previous) ? previous : []
+    replaceType(value, { kind: 'array', items: type }, items.filter(isAllowed))
+  }
+  else {
+    replaceType(value, type, isAllowed(previous) ? previous : values[0]!)
+  }
 }
 function updateEnumValueKind(value: ConfigurationSourceValueDefinition, kind: EnumValueKind): void {
   updateEnumValues(value, kind === 'number'
@@ -129,10 +187,11 @@ function updateEnumValueKind(value: ConfigurationSourceValueDefinition, kind: En
       : ['value'])
 }
 function updateEnumValue(value: ConfigurationSourceValueDefinition, index: number, rawValue: unknown): void {
-  if (value.type.kind !== 'enum') {
+  const type = editableEnum(value)
+  if (!type) {
     return
   }
-  const values = [...value.type.values]
+  const values = [...type.values]
   const kind = enumValueKind(value)
   if (kind === 'number') {
     const numberValue = Number(rawValue)
@@ -147,17 +206,20 @@ function updateEnumValue(value: ConfigurationSourceValueDefinition, index: numbe
   else {
     values[index] = String(rawValue ?? '')
   }
-  updateEnumValues(value, values)
+  const replaceItem = (item: EndgeJSONValue) => Object.is(item, type.values[index]) ? values[index]! : item
+  const previous = value.defaultValue
+  updateEnumValues(value, values, Array.isArray(previous) ? previous.map(replaceItem) : replaceItem(previous))
 }
 function canAddEnumValue(value: ConfigurationSourceValueDefinition): boolean {
-  return value.type.kind === 'enum'
-    && (enumValueKind(value) !== 'boolean' || value.type.values.length < 2)
+  const type = editableEnum(value)
+  return type != null && (enumValueKind(value) !== 'boolean' || type.values.length < 2)
 }
 function addEnumValue(value: ConfigurationSourceValueDefinition): void {
-  if (value.type.kind !== 'enum' || !canAddEnumValue(value)) {
+  const type = editableEnum(value)
+  if (!type || !canAddEnumValue(value)) {
     return
   }
-  const values = [...value.type.values]
+  const values = [...type.values]
   const kind = enumValueKind(value)
   if (kind === 'number') {
     const numbers = values.filter((item): item is number => typeof item === 'number')
@@ -177,10 +239,11 @@ function addEnumValue(value: ConfigurationSourceValueDefinition): void {
   updateEnumValues(value, values)
 }
 function removeEnumValue(value: ConfigurationSourceValueDefinition, index: number): void {
-  if (value.type.kind !== 'enum' || value.type.values.length <= 1) {
+  const type = editableEnum(value)
+  if (!type || type.values.length <= 1) {
     return
   }
-  updateEnumValues(value, value.type.values.filter((_, itemIndex) => itemIndex !== index))
+  updateEnumValues(value, type.values.filter((_, itemIndex) => itemIndex !== index))
 }
 function addValue(): void {
   const values = editor.value?.values ?? []
@@ -323,7 +386,7 @@ async function save(): Promise<void> {
           <colgroup>
             <col class="w-[18%]">
             <col class="w-[20%]">
-            <col class="w-[14%]">
+            <col class="w-[17%]">
             <col class="w-[22%]">
             <col>
             <col class="w-24">
@@ -370,12 +433,27 @@ async function save(): Promise<void> {
                 />
               </td>
               <td>
-                <TypeRegistrySelect
-                  :model-value="value.type.kind === 'reference' ? value.type.identity : value.type.kind"
-                  :additional-options="configurationInlineTypeOptions"
-                  trigger-class="px-2"
-                  @update:model-value="updateType(value, $event)"
-                />
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
+                  <TypeRegistrySelect
+                    :model-value="selectedType(value)"
+                    :additional-options="configurationInlineTypeOptions"
+                    trigger-class="px-2"
+                    @update:model-value="updateType(value, $event)"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    :variant="value.type.kind === 'array' ? 'secondary' : 'outline'"
+                    class="size-9"
+                    :class="{ 'border border-primary/40 text-primary': value.type.kind === 'array' }"
+                    :aria-label="$t('configurationEditor.array')"
+                    :title="$t('configurationEditor.array')"
+                    :aria-pressed="value.type.kind === 'array'"
+                    @click="requestArrayToggle(value)"
+                  >
+                    <Brackets class="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
               </td>
               <td>
                 <ConfigValueEditor
@@ -399,19 +477,19 @@ async function save(): Promise<void> {
               </td>
               <td>
                 <div class="flex justify-end gap-1">
-                  <Dialog v-if="value.type.kind === 'enum' || (value.type.kind === 'reference' && value.type.identity === 'Number')">
+                  <Dialog v-if="editableEnum(value) || (value.type.kind === 'reference' && value.type.identity === 'Number')">
                     <DialogTrigger as-child>
-                      <Button size="icon" variant="ghost" class="text-muted-foreground" :aria-label="$t('configurationEditor.fieldSettings', { key: value.key })" :title="$t('configurationEditor.fieldSettings', { key: value.key })">
+                      <Button size="icon" variant="ghost" class="text-muted-foreground" :aria-label="fieldSettingsLabel(value)" :title="fieldSettingsLabel(value)">
                         <Settings2 class="size-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent class="max-h-[85dvh] overflow-auto" :aria-describedby="undefined">
                       <DialogHeader>
                         <DialogTitle class="pr-6 break-words">
-                          {{ $t('configurationEditor.fieldSettings', { key: value.key }) }}
+                          {{ fieldSettingsLabel(value) }}
                         </DialogTitle>
                       </DialogHeader>
-                      <template v-if="value.type.kind === 'enum'">
+                      <template v-if="editableEnum(value)">
                         <div class="flex flex-wrap items-end justify-between gap-3">
                           <div class="space-y-1.5">
                             <Label>{{ $t('uiText.valueTypeEnum40e5a11b') }}</Label>
@@ -431,7 +509,7 @@ async function save(): Promise<void> {
                           </Button>
                         </div>
                         <div class="space-y-2">
-                          <div v-for="(item, index) in value.type.values" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                          <div v-for="(item, index) in editableEnum(value)?.values" :key="index" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                             <Select v-if="typeof item === 'boolean'" :model-value="String(item)" @update:model-value="updateEnumValue(value, index, $event)">
                               <SelectTrigger><SelectValue /></SelectTrigger>
                               <SelectContent>
@@ -444,7 +522,7 @@ async function save(): Promise<void> {
                               </SelectContent>
                             </Select>
                             <Input v-else :model-value="String(item)" :type="typeof item === 'number' ? 'number' : 'text'" spellcheck="false" @change="updateEnumValue(value, index, ($event.target as HTMLInputElement).value)" />
-                            <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :aria-label="$t('uiText.delete86ea33ae')" :disabled="value.type.values.length <= 1" @click="removeEnumValue(value, index)">
+                            <Button size="icon" variant="ghost" class="text-muted-foreground hover:text-destructive" :aria-label="$t('uiText.delete86ea33ae')" :disabled="editableEnum(value)?.values.length === 1" @click="removeEnumValue(value, index)">
                               <Trash2 class="size-4" />
                             </Button>
                           </div>
@@ -475,6 +553,26 @@ async function save(): Promise<void> {
           </tbody>
         </table>
       </div>
+      <AlertDialog :open="pendingArrayChange !== null" @update:open="open => { if (!open) pendingArrayChange = null }">
+        <AlertDialogContent v-if="pendingArrayChange">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {{ pendingArrayChange.kind === 'keepFirst' ? $t('configurationEditor.keepFirstArrayItem') : $t('configurationEditor.clearNumberConstraints') }}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {{ pendingArrayChange.kind === 'keepFirst'
+                ? $t('configurationEditor.keepFirstArrayItemDescription', { key: pendingArrayChange.key })
+                : $t('configurationEditor.clearNumberConstraintsDescription', { key: pendingArrayChange.key }) }}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{{ $t('uiText.cancel0ec753be') }}</AlertDialogCancel>
+            <Button type="button" @click="confirmArrayToggle">
+              {{ pendingArrayChange.kind === 'keepFirst' ? $t('configurationEditor.keepFirst') : $t('configurationEditor.makeArray') }}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
     <div v-else-if="activeTab === 'source'" class="min-h-0 flex-1">

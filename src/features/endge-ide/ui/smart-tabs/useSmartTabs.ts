@@ -45,7 +45,7 @@ function sanitizeInitial(raw: SmartTabsPersistedState | null | undefined): Smart
         && typeof (t as SmartTabRef).id === 'string'
         && typeof (t as SmartTabRef).label === 'string'
         && typeof (t as SmartTabRef).viewId === 'string',
-      )
+      ).filter(tab => tab.preview !== true)
     : []
 
   const activeTabId = (typeof raw.activeTabId === 'string' && openTabs.some(t => t.id === raw.activeTabId))
@@ -98,7 +98,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     if (!persist || !persistence || Endge.mode === 'debugger') {
       return
     }
-    const openTabs = state.openTabs.filter(tab => tab.ephemeral !== true)
+    const openTabs = state.openTabs.filter(tab => tab.ephemeral !== true && tab.preview !== true)
     const persistedTabIds = new Set(openTabs.map(tab => tab.id))
     const stateToSave = {
       openTabs,
@@ -132,13 +132,16 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
 
   const activeTabId = computed(() => state.activeTabId)
 
-  function enforceMax(): void {
-    if (state.openTabs.length <= maxTabs) {
+  function enforceMax(keepId: SmartTabId): void {
+    const permanentTabs = state.openTabs.filter(tab => !tab.preview)
+    const overflow = permanentTabs.length - maxTabs
+    if (overflow <= 0) {
       return
     }
 
-    const overflow = state.openTabs.length - maxTabs
-    const removed = state.openTabs.splice(0, overflow)
+    const removed = permanentTabs.filter(tab => tab.id !== keepId).slice(0, overflow)
+    const removedIds = new Set(removed.map(tab => tab.id))
+    state.openTabs = state.openTabs.filter(tab => !removedIds.has(tab.id))
     removed.forEach((tab) => {
       clearClosedTabViewState(tab.id)
       options.onTabClosed?.(tab)
@@ -150,9 +153,8 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     }
   }
 
-  function openTab(tab: SmartTabRef, opts?: { activate?: boolean, replace?: boolean }): void {
+  function openTab(tab: SmartTabRef, opts?: Parameters<SmartTabsApi['openTab']>[1]): void {
     const activate = opts?.activate !== false
-    const replace = opts?.replace === true
 
     if (tab.singleton) {
       const existingIndex = state.openTabs.findIndex(t => t.viewId === tab.viewId)
@@ -176,18 +178,16 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       return
     }
 
-    if (replace && state.activeTabId) {
-      const idx = state.openTabs.findIndex(t => t.id === state.activeTabId)
+    if (opts?.replaceTabId) {
+      const idx = state.openTabs.findIndex(t => t.id === opts.replaceTabId && t.preview)
       if (idx !== -1) {
-        const replacedTabId = state.openTabs[idx]!.id
         const replacedTab = state.openTabs[idx]!
         state.openTabs.splice(idx, 1, tab)
-        if (replacedTabId !== tab.id) {
-          clearClosedTabViewState(replacedTabId)
-          options.onTabClosed?.(replacedTab)
+        clearClosedTabViewState(replacedTab.id)
+        options.onTabClosed?.(replacedTab)
+        if (activate || state.activeTabId === replacedTab.id) {
+          state.activeTabId = tab.id
         }
-        state.activeTabId = activate ? tab.id : state.activeTabId
-        enforceMax()
         return
       }
     }
@@ -197,7 +197,17 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
       state.activeTabId = tab.id
     }
 
-    enforceMax()
+    if (!tab.preview) {
+      enforceMax(tab.id)
+    }
+  }
+
+  function pinTab(id: SmartTabId): void {
+    const tab = state.openTabs.find(tab => tab.id === id)
+    if (tab?.preview) {
+      delete tab.preview
+      enforceMax(id)
+    }
   }
 
   function activateTab(id: SmartTabId): void {
@@ -422,6 +432,7 @@ export function useSmartTabs(options: SmartTabsOptions): SmartTabsApi {
     activeTab,
     activeTabId,
     openTab,
+    pinTab,
     activateTab,
     closeTab,
     closeAll,

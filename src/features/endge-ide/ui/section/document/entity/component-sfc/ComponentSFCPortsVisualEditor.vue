@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import DomainEntityDropTarget from '@/features/endge-ide/ui/components/DomainEntityDropTarget.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import { usePinTabOnEdit, useSmartTabVolatileViewState } from '@/features/endge-ide/ui/smart-tabs'
 
 import ComponentSFCReactionEditor from './ComponentSFCReactionEditor.vue'
 
@@ -42,8 +43,9 @@ const emit = defineEmits<{
   (event: 'openSource', offset: number): void
 }>()
 
-const expandedEvents = ref<Set<string>>(new Set())
+const expandedEvents = useSmartTabVolatileViewState('sfc.ports.expanded-events', { defaultValue: () => new Set<string>() })
 
+const pinTabOnEdit = usePinTabOnEdit()
 const projection = computed(() => inspectComponentSFCPortsSource(props.source, {
   resolveComponentPortManifest: (identity: string) => Endge.program.getArtifact<any>('component-sfc', identity)?.payload?.ir?.script.ports ?? null,
 }))
@@ -103,16 +105,23 @@ const requiredPorts = computed(() => [
 ])
 const providedPorts = computed(() => projection.value.manifest.provides.actions)
 
-const portRole = ref<ComponentSFCPortRole>('require')
-const portKind = ref<'action' | 'computation' | 'component' | 'query'>('action')
-const portName = ref('')
-const portIdentity = ref('')
-const forwardDraft = ref('')
+const portRole = useSmartTabVolatileViewState<ComponentSFCPortRole>('sfc.ports.role', { defaultValue: () => 'require' })
+const portKind = useSmartTabVolatileViewState<'action' | 'computation' | 'component' | 'query'>('sfc.ports.kind', { defaultValue: () => 'action' })
+const portName = useSmartTabVolatileViewState('sfc.ports.name', { defaultValue: () => '' })
+const portIdentity = useSmartTabVolatileViewState('sfc.ports.identity', { defaultValue: () => '' })
+const forwardSource = computed(() => serializeForwardRules(projection.value.manifest.forward.rules))
+const forwardState = useSmartTabVolatileViewState('sfc.ports.forward', {
+  defaultValue: () => ({ source: forwardSource.value, draft: forwardSource.value }),
+  validate: value => (value as { source?: unknown } | null)?.source === forwardSource.value,
+})
+const forwardDraft = computed({
+  get: () => forwardState.value.draft,
+  set: draft => forwardState.value = { source: forwardSource.value, draft },
+})
 const reactionEditorRefs = ref<Array<{ flushPendingEdits: () => boolean }>>([])
 watch(
-  () => projection.value.manifest.forward.rules,
-  rules => forwardDraft.value = serializeForwardRules(rules),
-  { immediate: true, deep: true },
+  forwardSource,
+  source => forwardDraft.value = source,
 )
 
 function reactionLabel(event: ComponentSFCEventPort): string {
@@ -472,6 +481,7 @@ function toPortName(identity: string): string {
           <div class="border-t p-3">
             <ComponentSFCReactionEditor
               ref="reactionEditorRefs"
+              :draft-key="`port.${item.name}`"
               :model-value="reactionSource(item.port)"
               :event-name="item.name"
               action-format="object"
@@ -516,14 +526,14 @@ function toPortName(identity: string): string {
 
       <DomainEntityDropTarget :accept-section-types="[DomainSectionType.Component, DomainSectionType.Action, DomainSectionType.Computation, DomainSectionType.Query]" hint-text="Перетащите Component, Action, Computation или Query из домена" @entity-drop="onEntityDrop">
         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm">
+          <select v-model="portRole" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" @change="pinTabOnEdit">
             <option value="require">
               {{ $t('uiText.requiredeed6bfb4') }}
             </option><option value="provides">
               {{ $t('uiText.providede93470b0') }}
             </option>
           </select>
-          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'">
+          <select v-model="portKind" class="editor-control h-9 rounded-md border bg-background px-2 text-sm" :disabled="portRole === 'provides'" @change="pinTabOnEdit">
             <option value="action">
               {{ $t('uiText.action97c89a4d') }}
             </option><option value="query">
@@ -534,8 +544,8 @@ function toPortName(identity: string): string {
               {{ $t('uiText.componentc92c529e') }}
             </option>
           </select>
-          <Input v-model="portName" placeholder="portName" />
-          <Input v-model="portIdentity" placeholder="domain.identity" :disabled="portRole === 'provides'" />
+          <Input v-model="portName" placeholder="portName" @update:model-value="pinTabOnEdit" />
+          <Input v-model="portIdentity" placeholder="domain.identity" :disabled="portRole === 'provides'" @update:model-value="pinTabOnEdit" />
           <Button :disabled="!projection.editable" @click="addPort">
             <Plus class="mr-1 size-4" />{{ $t('uiText.add559a87f7') }}
           </Button>
@@ -557,7 +567,7 @@ function toPortName(identity: string): string {
         <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Braces class="size-3.5" /> {{ $t('uiText.forwardingd735aafe') }}
         </h4>
-        <Textarea v-model="forwardDraft" class="min-h-28 font-mono text-xs" placeholder="{ from: 'table', ports: { emits: '*' } }" />
+        <Textarea v-model="forwardDraft" class="min-h-28 font-mono text-xs" placeholder="{ from: 'table', ports: { emits: '*' } }" @update:model-value="pinTabOnEdit" />
         <Button size="sm" :disabled="!projection.editable" @click="saveForward">
           <Zap class="mr-1 size-4" />{{ $t('uiText.saveForwarda8daa4f8') }}
         </Button>

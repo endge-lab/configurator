@@ -11,6 +11,7 @@ const props = defineProps<{
 }>()
 
 provide(SMART_TAB_VIEW_STATE_SCOPE, {
+  pin: () => props.api.pinTab(props.tabId),
   read: key => props.api.getTabViewState(props.tabId, key),
   write: (key, slice) => props.api.setTabViewState(props.tabId, key, slice),
   clear: key => props.api.clearTabViewState(props.tabId, key),

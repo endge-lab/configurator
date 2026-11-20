@@ -15,6 +15,7 @@ export interface ConfiguratorContextInitOptions {
   workspaceRole?: 'viewer' | 'editor' | 'admin'
   workspaceIdentity?: string
   userIdentity?: string
+  backendUserId?: string
 }
 
 export interface ConfiguratorDetachedContextInitOptions {

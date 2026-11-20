@@ -11,6 +11,7 @@ import type {
   EndgeDiagnosticsSnapshotContentConfiguration,
   EndgeJSONValue,
   EndgeTooltipConfiguration,
+  EndgeWorkspaceStateDriver,
 } from '@endge/core'
 import type { Component } from 'vue'
 import type { DocumentMetadataSession } from '@/features/endge-ide/services/document-metadata-session'
@@ -43,6 +44,7 @@ import {
 import { computed, provide, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { Configurator } from '@/app/Configurator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -139,6 +141,17 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const stateDrivers = computed(() => [
+  { value: 'local', label: t('userSettings.drivers.local') },
+  { value: 'indexeddb', label: t('userSettings.drivers.indexeddb') },
+  { value: 'backend', label: t('userSettings.drivers.backend') },
+  { value: 'disabled', label: t('userSettings.drivers.disabled') },
+])
+const canOpenUserSettings = computed(() =>
+  Configurator.session.state.status === 'authenticated' && (
+    Configurator.session.state.session.platformAdmin || Configurator.context.workspaceRole === 'admin'
+  ),
+)
 const contributionOnly = computed(() => props.contributionMode === 'contribution-only')
 const localPreviewUpstream = createDefaultEndgeConfiguration()
 const contributionUpstream = computed(() => contributionOnly.value ? localPreviewUpstream : props.upstream!)
@@ -500,6 +513,29 @@ const effective = computed(() => {
     props.modelValue as EndgeConfigurationContribution,
   )
 })
+
+const stateDriver = computed(() => {
+  if (patch.value) {
+    const override = patch.value.userStateDriver
+    return override?.op === 'set' ? override.value : 'inherit'
+  }
+  return editableConfiguration.value.userStateDriver ?? 'local'
+})
+
+function setStateDriver(value: EndgeWorkspaceStateDriver | 'inherit'): void {
+  if (patch.value) {
+    if (value === 'inherit') {
+      delete patch.value.userStateDriver
+    }
+    else {
+      patch.value.userStateDriver = { op: 'set', value }
+    }
+  }
+  else if (value !== 'inherit') {
+    editableConfiguration.value.userStateDriver = value
+  }
+  notifyRootMutation()
+}
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -1393,6 +1429,35 @@ function isEqual(left: unknown, right: unknown): boolean {
         <div v-show="activeSection !== 'metadata'" class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabsContent value="general" class="m-0 space-y-6 p-5 outline-none">
             <slot name="general" />
+            <section class="max-w-2xl space-y-3 rounded-md border p-4">
+              <Label>{{ t('userSettings.storage') }}</Label>
+              <div class="flex flex-wrap items-center gap-2">
+                <Select :model-value="stateDriver" :disabled="disabled" @update:model-value="setStateDriver($event as EndgeWorkspaceStateDriver | 'inherit')">
+                  <SelectTrigger class="w-52" :aria-label="t('userSettings.storage')">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-if="isInherit" value="inherit">
+                      {{ t('userSettings.inherit') }}
+                    </SelectItem>
+                    <SelectItem v-for="driver in stateDrivers" :key="driver.value" :value="driver.value">
+                      {{ driver.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  v-if="canOpenUserSettings"
+                  size="sm"
+                  variant="outline"
+                  @click="EndgeIDE.tabs.openUserSettings(t('userSettings.title'))"
+                >
+                  {{ t('userSettings.openStored') }}
+                </Button>
+              </div>
+              <p class="text-xs text-muted-foreground">
+                {{ t('userSettings.storageHelp', { driver: stateDrivers.find(driver => driver.value === (effective.userStateDriver ?? 'local'))?.label }) }}
+              </p>
+            </section>
           </TabsContent>
 
           <TabsContent
