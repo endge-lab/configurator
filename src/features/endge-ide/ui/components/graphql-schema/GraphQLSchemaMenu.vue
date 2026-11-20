@@ -99,8 +99,7 @@ function importTypes(): void {
   }
   EndgeIDE.documentImport.openSource('graphql', {
     source: current.text,
-    fileName: current.sourceName,
-    fileSize: current.text.length,
+    sourceName: current.sourceName,
   })
 }
 

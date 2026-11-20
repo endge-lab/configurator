@@ -320,6 +320,7 @@
       "apply": "Импортировать: {count}",
       "applying": "Импортируем…",
       "cancel": "Отмена",
+      "changeSource": "Изменить источник",
       "clearSelection": "Снять выбор",
       "close": "Закрыть",
       "completed": "Импорт завершён",
@@ -334,6 +335,10 @@
         "openapi": "OpenAPI 3.x в YAML или JSON"
       },
       "found": "Найдено типов: {count}",
+      "fromFile": "Из файла",
+      "fromUrl": "По URL",
+      "loadSource": "Загрузить схему",
+      "loadingSource": "Загружаем схему…",
       "selectAll": "Выбрать все доступные",
       "selected": "Выбрано: {count}",
       "skipped": "Пропущено конструкций: {count}",
@@ -351,7 +356,19 @@
         "result": "Создано: {imported}, пропущено: {skipped}, ошибок: {failed}",
         "successTitle": "Типы импортированы"
       },
-      "typeRoot": "Корень типов"
+      "typeRoot": "Корень типов",
+      "urlErrors": {
+        "html": "Сервер вернул HTML-страницу. Проверьте адрес схемы и доступ к ней.",
+        "http": "Сервер вернул HTTP {status}. Проверьте адрес схемы и доступ к ней.",
+        "invalid": "Введите полный HTTP(S)-адрес без логина и пароля.",
+        "network": "Не удалось получить ответ. Проверьте адрес, подключение и разрешения CORS.",
+        "timeout": "Сервер слишком долго отвечает. Попробуйте загрузить схему ещё раз."
+      },
+      "urlHint": {
+        "graphql": "Укажите адрес GraphQL API с включённой introspection.",
+        "openapi": "Укажите прямую ссылку на спецификацию OpenAPI в JSON или YAML."
+      },
+      "urlLabel": "URL схемы"
     },
     "graphqlSchema": {
       "actions": {

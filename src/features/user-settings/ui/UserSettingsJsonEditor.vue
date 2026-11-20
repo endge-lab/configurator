@@ -26,7 +26,7 @@ function applySchema(): void {
   const language = locale.value.startsWith('ru') ? 'ru' : 'en'
   const schema = {
     type: 'object',
-    additionalProperties: false,
+    additionalProperties: true,
     properties: Object.fromEntries(props.catalog.map(item => [item.key, {
       ...item.schema,
       description: item.description[language],

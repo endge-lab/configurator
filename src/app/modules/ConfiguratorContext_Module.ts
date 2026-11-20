@@ -326,6 +326,12 @@ export class ConfiguratorContext_Module {
           getUserId: () => this._backendUserId,
         }),
         backendKeys: ['configurator.date-format'],
+        localKeys: [
+          'configurator.playground.sfc.source',
+          'configurator.playground.sfc.context',
+          'configurator.runtime-preview.history',
+          'configurator.runtime-preview.tree-view',
+        ],
       },
     }
   }

@@ -18,8 +18,7 @@ export interface EndgeIDEDocumentImportState {
   open: boolean
   format: DocumentImportFormat | null
   status: EndgeIDEDocumentImportStatus
-  fileName: string
-  fileSize: number
+  sourceName: string
   plan: DocumentImportPlan | null
   selectedCandidateIds: string[]
   folderId: string | number | null
@@ -27,9 +26,8 @@ export interface EndgeIDEDocumentImportState {
   result: DocumentImportApplyResult | null
 }
 
-// Прочитанный UI-файл без передачи browser File API в Core.
+// Прочитанная схема из файла, URL или кеша редактора GraphQL.
 export interface EndgeIDEDocumentImportSource {
   source: string
-  fileName: string
-  fileSize: number
+  sourceName: string
 }
