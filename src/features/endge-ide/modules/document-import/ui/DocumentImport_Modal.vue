@@ -13,10 +13,11 @@ import {
   CheckCircle2,
   FileCode2,
   FolderTree,
+  Link2,
   Loader2,
   UploadCloud,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -31,8 +32,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import { buildDocumentImportFolderOptions } from '@/features/endge-ide/modules/document-import/tools/document-import-folders'
 
@@ -42,6 +45,18 @@ const { t } = useI18n()
 const state = EndgeIDE.documentImport.state
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
+const sourceMode = ref<string | number>('file')
+const schemaUrl = ref('')
+const urlInputId = useId()
+const urlHintId = useId()
+
+watch(() => state.open, (open) => {
+  if (!open) {
+    sourceMode.value = 'file'
+    schemaUrl.value = ''
+    isDragOver.value = false
+  }
+})
 
 const openModel = computed({
   get: () => state.open,
@@ -66,6 +81,9 @@ const acceptedFiles = computed(() => state.format === 'graphql'
 const fileHint = computed(() => state.format === 'graphql'
   ? t('endgeIde.documentImport.fileHint.graphql')
   : t('endgeIde.documentImport.fileHint.openapi'))
+const urlHint = computed(() => state.format === 'graphql'
+  ? t('endgeIde.documentImport.urlHint.graphql')
+  : t('endgeIde.documentImport.urlHint.openapi'))
 const folderOptions = computed(() => {
   void state.open
   return buildDocumentImportFolderOptions(Endge.domain.getFolders())
@@ -84,11 +102,11 @@ function chooseFile(): void {
 async function onFileChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement | null
   const file = input?.files?.[0]
-  if (file) {
-    await prepareFile(file)
-  }
   if (input) {
     input.value = ''
+  }
+  if (file) {
+    await EndgeIDE.documentImport.prepareFile(file)
   }
 }
 
@@ -114,16 +132,12 @@ async function onDrop(event: DragEvent): Promise<void> {
   }
   const file = event.dataTransfer?.files?.[0]
   if (file) {
-    await prepareFile(file)
+    await EndgeIDE.documentImport.prepareFile(file)
   }
 }
 
-async function prepareFile(file: File): Promise<void> {
-  EndgeIDE.documentImport.prepareSource({
-    source: await file.text(),
-    fileName: file.name,
-    fileSize: file.size,
-  })
+async function prepareUrl(): Promise<void> {
+  await EndgeIDE.documentImport.prepareUrl(schemaUrl.value)
 }
 
 function setCandidateSelected(candidate: DocumentImportCandidate, value: boolean | 'indeterminate'): void {
@@ -215,46 +229,91 @@ async function applyImport(): Promise<void> {
       <div class="min-h-0 space-y-5 overflow-y-auto px-6 py-5">
         <section class="space-y-2">
           <Label>{{ t('endgeIde.documentImport.sourceLabel') }}</Label>
-          <input
-            ref="fileInput"
-            type="file"
-            :accept="acceptedFiles"
-            class="hidden"
-            @change="onFileChange"
-          >
           <div
-            v-if="state.fileName"
+            v-if="state.sourceName"
             class="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-2.5"
           >
-            <Loader2 v-if="state.status === 'preparing'" class="size-5 shrink-0 animate-spin text-primary" />
+            <Link2 v-if="sourceMode === 'url'" class="size-5 shrink-0 text-primary" />
             <FileCode2 v-else class="size-5 shrink-0 text-primary" />
-            <div class="min-w-0 flex-1 truncate text-sm font-medium" :title="state.fileName">
-              {{ state.fileName }}
+            <div class="min-w-0 flex-1 truncate text-sm font-medium" :title="state.sourceName">
+              {{ state.sourceName }}
             </div>
+            <Button
+              v-if="state.status === 'ready' || state.status === 'error'"
+              type="button"
+              size="sm"
+              variant="ghost"
+              @click="EndgeIDE.documentImport.clearSource()"
+            >
+              {{ t('endgeIde.documentImport.changeSource') }}
+            </Button>
           </div>
-          <button
-            v-else
-            type="button"
-            class="group flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed px-5 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-            :class="isDragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/30 hover:bg-muted/35'"
-            :disabled="isBusy"
-            @click="chooseFile"
-            @dragenter="onDragEnter"
-            @dragover.prevent="onDragEnter"
-            @dragleave="onDragLeave"
-            @drop="onDrop"
-          >
-            <UploadCloud class="size-7 text-muted-foreground transition-colors group-hover:text-foreground" />
-            <div class="space-y-1">
-              <div class="text-sm font-medium">
-                {{ t('endgeIde.documentImport.dropzone') }}
-              </div>
-              <div class="text-xs text-muted-foreground">
-                {{ fileHint }}
-              </div>
-            </div>
-          </button>
+          <Tabs v-else v-model="sourceMode">
+            <TabsList :aria-label="t('endgeIde.documentImport.sourceLabel')">
+              <TabsTrigger value="file" :disabled="isBusy">
+                {{ t('endgeIde.documentImport.fromFile') }}
+              </TabsTrigger>
+              <TabsTrigger value="url" :disabled="isBusy">
+                {{ t('endgeIde.documentImport.fromUrl') }}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="file">
+              <input
+                ref="fileInput"
+                type="file"
+                :accept="acceptedFiles"
+                class="hidden"
+                @change="onFileChange"
+              >
+              <button
+                type="button"
+                class="group flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed px-5 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                :class="isDragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/30 hover:bg-muted/35'"
+                :disabled="isBusy"
+                @click="chooseFile"
+                @dragenter="onDragEnter"
+                @dragover.prevent="onDragEnter"
+                @dragleave="onDragLeave"
+                @drop="onDrop"
+              >
+                <Loader2 v-if="isBusy" class="size-7 animate-spin text-primary" />
+                <UploadCloud v-else class="size-7 text-muted-foreground transition-colors group-hover:text-foreground" />
+                <span class="space-y-1">
+                  <span class="block text-sm font-medium">
+                    {{ t('endgeIde.documentImport.dropzone') }}
+                  </span>
+                  <span class="block text-xs text-muted-foreground">{{ fileHint }}</span>
+                </span>
+              </button>
+            </TabsContent>
+            <TabsContent value="url">
+              <form class="space-y-2 rounded-md border p-4" novalidate @submit.prevent="prepareUrl">
+                <Label :for="urlInputId">{{ t('endgeIde.documentImport.urlLabel') }}</Label>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    :id="urlInputId"
+                    v-model="schemaUrl"
+                    type="url"
+                    :placeholder="state.format === 'graphql' ? 'https://example.com/graphql' : 'https://example.com/openapi.json'"
+                    :aria-describedby="urlHintId"
+                    :disabled="isBusy"
+                  />
+                  <Button type="submit" :disabled="isBusy || !schemaUrl.trim()">
+                    <Loader2 v-if="isBusy" class="size-4 animate-spin" />
+                    {{ isBusy ? t('endgeIde.documentImport.loadingSource') : t('endgeIde.documentImport.loadSource') }}
+                  </Button>
+                </div>
+                <p :id="urlHintId" class="text-xs text-muted-foreground">
+                  {{ urlHint }}
+                </p>
+              </form>
+            </TabsContent>
+          </Tabs>
         </section>
+
+        <div v-if="state.errorMessage" role="alert" class="rounded-md border border-destructive/30 bg-destructive/[0.06] px-4 py-3 text-sm text-destructive">
+          {{ t('endgeIde.documentImport.error') }} {{ state.errorMessage }}
+        </div>
 
         <section v-if="state.plan" class="space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -352,10 +411,6 @@ async function applyImport(): Promise<void> {
             </Select>
           </div>
         </section>
-
-        <div v-if="state.errorMessage" class="rounded-md border border-destructive/30 bg-destructive/[0.06] px-4 py-3 text-sm text-destructive">
-          {{ t('endgeIde.documentImport.error') }} {{ state.errorMessage }}
-        </div>
 
         <div v-if="state.result" class="flex items-start gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/[0.06] px-4 py-3 text-sm">
           <CheckCircle2 class="mt-0.5 size-4 shrink-0 text-emerald-600" />

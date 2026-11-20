@@ -266,23 +266,22 @@ function changes(): EndgeWorkspaceStateOperation[] {
   const operations: EndgeWorkspaceStateOperation[] = []
   for (const [key, value] of Object.entries(parsed)) {
     const definition = catalog.value.find(item => item.key === key)
-    if (!definition) {
-      throw new Error(t('userSettings.unknownKey', { key }))
-    }
-    const { schema } = definition
-    let valid: boolean
-    switch (schema.type) {
-      case 'integer':
-        valid = Number.isInteger(value) && value >= (schema.minimum ?? -Infinity) && value <= (schema.maximum ?? Infinity)
-        break
-      case 'object':
-        valid = value != null && typeof value === 'object' && !Array.isArray(value)
-        break
-      default:
-        valid = typeof value === 'string' && (!schema.enum || schema.enum.includes(value))
-    }
-    if (!valid) {
-      throw new Error(`${key} — ${definition.description[vocabulary.value]}`)
+    if (definition) {
+      const { schema } = definition
+      let valid: boolean
+      switch (schema.type) {
+        case 'integer':
+          valid = Number.isInteger(value) && value >= (schema.minimum ?? -Infinity) && value <= (schema.maximum ?? Infinity)
+          break
+        case 'object':
+          valid = value != null && typeof value === 'object' && !Array.isArray(value)
+          break
+        default:
+          valid = typeof value === 'string' && (!schema.enum || schema.enum.includes(value))
+      }
+      if (!valid) {
+        throw new Error(`${key} — ${definition.description[vocabulary.value]}`)
+      }
     }
     const entry = previous.get(key)
     if (entry?.deleted || JSON.stringify(entry?.value) !== JSON.stringify(value)) {

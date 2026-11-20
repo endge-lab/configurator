@@ -47,13 +47,28 @@ function selection(tag: EndgeSFCRendererTag): string {
   return reference ? selectionKey(reference) : 'adapter'
 }
 
+function findOption(tag: EndgeSFCRendererTag, value: unknown): RendererOption | undefined {
+  return options.value[tag]?.find(entry => selectionKey(entry.reference) === value)
+}
+
+function selectionLabel(tag: EndgeSFCRendererTag): string {
+  const value = selection(tag)
+  if (value === 'inherit') {
+    return t('moduleCatalog.inheritRenderer')
+  }
+  if (value === 'adapter') {
+    return t('moduleCatalog.adapterRenderer')
+  }
+  return findOption(tag, value)?.label ?? value
+}
+
 function isUnavailable(tag: EndgeSFCRendererTag): boolean {
   const value = selection(tag)
-  return value !== 'adapter' && value !== 'inherit' && !options.value[tag]?.some(entry => selectionKey(entry.reference) === value)
+  return value !== 'adapter' && value !== 'inherit' && !findOption(tag, value)
 }
 
 function select(tag: EndgeSFCRendererTag, value: unknown): void {
-  const chosen = options.value[tag]?.find(entry => selectionKey(entry.reference) === value)
+  const chosen = findOption(tag, value)
   if (props.facet) {
     const next = { ...overrides.value }
     if (value === 'inherit') {
@@ -138,7 +153,7 @@ watch(catalog.state, async (state, _previous, onCleanup) => {
         </div>
         <Select :model-value="selection(tag)" :disabled="disabled" @update:model-value="select(tag, $event)">
           <SelectTrigger :aria-label="tag" class="w-full">
-            <SelectValue />
+            <SelectValue>{{ selectionLabel(tag) }}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-if="facet" value="inherit">

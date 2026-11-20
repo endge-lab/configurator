@@ -14,11 +14,15 @@ const off = Endge.context.subscribe(() => {
   status.value = Endge.context.getWorkspaceStateSyncStatus()
 })
 onScopeDispose(off)
-const visible = computed(() => status.value.pending || status.value.error || status.value.conflicts.length)
+const conflicts = computed(() => [
+  ...status.value.conflicts.map(key => ({ key, scope: 'workspace' as const })),
+  ...(status.value.applicationConflicts ?? []).map(key => ({ key, scope: 'application' as const })),
+])
+const visible = computed(() => status.value.pending || status.value.error || conflicts.value.length)
 
-async function resolve(key: string, action: 'retry' | 'discard'): Promise<void> {
+async function resolve(conflict: typeof conflicts.value[number], action: 'retry' | 'discard'): Promise<void> {
   open.value = false
-  await Endge.context.resolveWorkspaceStateConflict(key, action).catch(() => {})
+  await Endge.context.resolveWorkspaceStateConflict(conflict.key, action, conflict.scope).catch(() => {})
 }
 </script>
 
@@ -26,7 +30,7 @@ async function resolve(key: string, action: 'retry' | 'discard'): Promise<void> 
   <Popover v-if="visible" v-model:open="open">
     <PopoverTrigger>
       <Button variant="ghost" size="icon" class="size-7" :aria-label="t('userSettings.syncTitle')" :title="t('userSettings.syncTitle')" :aria-expanded="open" @click="open = !open">
-        <CloudAlert v-if="status.error || status.conflicts.length" class="size-4 text-destructive" />
+        <CloudAlert v-if="status.error || conflicts.length" class="size-4 text-destructive" />
         <CloudUpload v-else class="size-4" />
       </Button>
     </PopoverTrigger>
@@ -46,17 +50,17 @@ async function resolve(key: string, action: 'retry' | 'discard'): Promise<void> 
       <p v-if="status.error === 'storage'" class="text-sm">
         {{ t('userSettings.syncStorage') }}
       </p>
-      <p v-if="status.conflicts.length" class="text-sm">
+      <p v-if="conflicts.length" class="text-sm">
         {{ t('userSettings.syncConflict') }}
       </p>
-      <ul v-if="status.conflicts.length" class="space-y-2">
-        <li v-for="key in status.conflicts" :key="key" class="space-y-2 border-t pt-2">
-          <code class="text-xs">{{ key }}</code>
+      <ul v-if="conflicts.length" class="space-y-2">
+        <li v-for="conflict in conflicts" :key="`${conflict.scope}:${conflict.key}`" class="space-y-2 border-t pt-2">
+          <code class="text-xs">{{ conflict.key }}</code>
           <div class="flex flex-wrap gap-1.5">
-            <Button variant="outline" size="sm" @click="resolve(key, 'retry')">
+            <Button variant="outline" size="sm" @click="resolve(conflict, 'retry')">
               {{ t('userSettings.syncRetry') }}
             </Button>
-            <Button variant="ghost" size="sm" @click="resolve(key, 'discard')">
+            <Button variant="ghost" size="sm" @click="resolve(conflict, 'discard')">
               {{ t('userSettings.syncDiscard') }}
             </Button>
           </div>

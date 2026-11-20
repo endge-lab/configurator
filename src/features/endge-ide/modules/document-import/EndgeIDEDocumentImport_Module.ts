@@ -7,12 +7,15 @@ import type {
 import { Endge } from '@endge/core'
 import { reactive, readonly } from 'vue'
 
+import { loadDocumentImportSource } from '@/features/endge-ide/modules/document-import/services/document-import-source'
+
 /**
  * Владеет состоянием пользовательского выбора поверх Core document import.
  */
 export class EndgeIDEDocumentImport_Module {
   // Единственный state import-dialog в рамках lifecycle EndgeIDE.
   private readonly _state = reactive<EndgeIDEDocumentImportState>(createInitialState())
+  private _sourceRequest: AbortController | null = null
 
   // ---------------------------------------------
   // PUBLIC API
@@ -30,7 +33,7 @@ export class EndgeIDEDocumentImport_Module {
    */
   public openSource(format: DocumentImportFormat, input: EndgeIDEDocumentImportSource): void {
     this.open(format)
-    this.prepareSource(input)
+    this._prepareSource(input)
   }
 
   /**
@@ -43,36 +46,24 @@ export class EndgeIDEDocumentImport_Module {
     this._replaceState(createInitialState())
   }
 
-  /**
-   * Передаёт текст файла в Core и выбирает все готовые кандидаты.
-   */
-  public prepareSource(input: EndgeIDEDocumentImportSource): void {
-    if (!this._state.format) {
-      throw new Error('Document import format is not selected.')
+  public async prepareFile(file: File): Promise<void> {
+    await this._readSource(async () => ({ source: await file.text(), sourceName: file.name }))
+  }
+
+  public async prepareUrl(url: string): Promise<void> {
+    await this._readSource((format, signal) => loadDocumentImportSource(format, url, signal))
+  }
+
+  public clearSource(): void {
+    if (!this._state.sourceName || (this._state.status !== 'ready' && this._state.status !== 'error')) {
+      return
     }
-    this._state.status = 'preparing'
-    this._state.fileName = input.fileName
-    this._state.fileSize = input.fileSize
-    this._state.plan = null
-    this._state.selectedCandidateIds = []
-    this._state.errorMessage = ''
-    this._state.result = null
-    try {
-      const plan = Endge.documentImport.prepare({
-        format: this._state.format,
-        source: input.source,
-        sourceName: input.fileName,
-      })
-      this._state.plan = plan
-      this._state.selectedCandidateIds = plan.candidates
-        .filter(candidate => candidate.status === 'ready')
-        .map(candidate => candidate.id)
-      this._state.status = 'ready'
-    }
-    catch (error) {
-      this._state.status = 'error'
-      this._state.errorMessage = errorText(error)
-    }
+    this._replaceState({
+      ...createInitialState(),
+      open: this._state.open,
+      format: this._state.format,
+      folderId: this._state.folderId,
+    })
   }
 
   /**
@@ -155,10 +146,68 @@ export class EndgeIDEDocumentImport_Module {
   // PRIVATE
   // ---------------------------------------------
 
+  private async _readSource(
+    read: (format: DocumentImportFormat, signal: AbortSignal) => Promise<EndgeIDEDocumentImportSource>,
+  ): Promise<void> {
+    const { format, status } = this._state
+    if (!format || (status !== 'idle' && status !== 'error')) {
+      return
+    }
+    const request = new AbortController()
+    this._sourceRequest = request
+    this._state.status = 'preparing'
+    this._state.errorMessage = ''
+    try {
+      const input = await read(format, request.signal)
+      if (!request.signal.aborted) {
+        this._prepareSource(input)
+      }
+    }
+    catch (error) {
+      if (!request.signal.aborted) {
+        this._state.status = 'error'
+        this._state.errorMessage = errorText(error)
+      }
+    }
+    finally {
+      if (this._sourceRequest === request) {
+        this._sourceRequest = null
+      }
+    }
+  }
+
+  /**
+   * Передаёт прочитанную схему в Core и выбирает все готовые кандидаты.
+   */
+  private _prepareSource(input: EndgeIDEDocumentImportSource): void {
+    if (!this._state.format) {
+      throw new Error('Document import format is not selected.')
+    }
+    this._state.sourceName = input.sourceName
+    try {
+      const plan = Endge.documentImport.prepare({
+        format: this._state.format,
+        source: input.source,
+        sourceName: input.sourceName,
+      })
+      this._state.plan = plan
+      this._state.selectedCandidateIds = plan.candidates
+        .filter(candidate => candidate.status === 'ready')
+        .map(candidate => candidate.id)
+      this._state.status = 'ready'
+    }
+    catch (error) {
+      this._state.status = 'error'
+      this._state.errorMessage = errorText(error)
+    }
+  }
+
   /**
    * Заменяет все поля reactive object без создания второго state owner.
    */
   private _replaceState(next: EndgeIDEDocumentImportState): void {
+    this._sourceRequest?.abort()
+    this._sourceRequest = null
     Object.assign(this._state, next)
   }
 
@@ -179,8 +228,7 @@ function createInitialState(): EndgeIDEDocumentImportState {
     open: false,
     format: null,
     status: 'idle',
-    fileName: '',
-    fileSize: 0,
+    sourceName: '',
     plan: null,
     selectedCandidateIds: [],
     folderId: null,

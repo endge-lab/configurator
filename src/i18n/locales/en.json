@@ -320,6 +320,7 @@
       "apply": "Import: {count}",
       "applying": "Importing…",
       "cancel": "Cancel",
+      "changeSource": "Change source",
       "clearSelection": "Clear selection",
       "close": "Close",
       "completed": "Import completed",
@@ -334,6 +335,10 @@
         "openapi": "OpenAPI 3.x in YAML or JSON"
       },
       "found": "Types found: {count}",
+      "fromFile": "From file",
+      "fromUrl": "From URL",
+      "loadSource": "Load schema",
+      "loadingSource": "Loading schema…",
       "selectAll": "Select all available",
       "selected": "Selected: {count}",
       "skipped": "Skipped constructs: {count}",
@@ -351,7 +356,19 @@
         "result": "Created: {imported}, skipped: {skipped}, failed: {failed}",
         "successTitle": "Types imported"
       },
-      "typeRoot": "Type root"
+      "typeRoot": "Type root",
+      "urlErrors": {
+        "html": "The server returned an HTML page. Check the schema URL and access permissions.",
+        "http": "The server returned HTTP {status}. Check the schema URL and access permissions.",
+        "invalid": "Enter a full HTTP(S) URL without a username or password.",
+        "network": "Could not get a response. Check the URL, your connection, and CORS permissions.",
+        "timeout": "The server took too long to respond. Try loading the schema again."
+      },
+      "urlHint": {
+        "graphql": "Enter the URL of a GraphQL endpoint with introspection enabled.",
+        "openapi": "Enter a direct link to an OpenAPI specification in JSON or YAML."
+      },
+      "urlLabel": "Schema URL"
     },
     "graphqlSchema": {
       "actions": {
