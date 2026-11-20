@@ -84,7 +84,14 @@ const activeLabel = computed(() => {
   )
   return [name.value, ...selections].filter(Boolean).join(' / ')
 })
-const writable = computed(() => active.value?.driver === 'backend')
+const workspaceRole = computed(() => {
+  void context.version.value
+  return Configurator.context.workspaceRole
+})
+const canEdit = computed(() => workspaceRole.value === 'editor' || workspaceRole.value === 'admin')
+const canReset = computed(() => workspaceRole.value === 'admin')
+const usesBackend = computed(() => active.value?.driver === 'backend')
+const writable = computed(() => canEdit.value && usesBackend.value)
 const dirty = computed(() => document.value !== original.value)
 let requests = new AbortController()
 let peopleRequest: AbortController | undefined
@@ -93,7 +100,10 @@ let debounce: ReturnType<typeof setTimeout> | undefined
 
 function describeError(cause: unknown): string {
   const code = cause instanceof Error ? cause.message : ''
-  return code === 'workspace_admin_required' || code === 'user_state_facet_forbidden'
+  if (code === 'user_state_operation_invalid') {
+    return t('userSettings.invalidSetting')
+  }
+  return ['workspace_admin_required', 'workspace_editor_required', 'workspace_forbidden', 'user_state_facet_forbidden'].includes(code)
     ? t('userSettings.forbidden')
     : t('userSettings.requestFailed')
 }
@@ -260,14 +270,22 @@ function changes(): EndgeWorkspaceStateOperation[] {
       throw new Error(t('userSettings.unknownKey', { key }))
     }
     const { schema } = definition
-    const valid = schema.type === 'integer'
-      ? Number.isInteger(value) && value >= (schema.minimum ?? -Infinity) && value <= (schema.maximum ?? Infinity)
-      : typeof value === 'string' && (!schema.enum || schema.enum.includes(value))
+    let valid: boolean
+    switch (schema.type) {
+      case 'integer':
+        valid = Number.isInteger(value) && value >= (schema.minimum ?? -Infinity) && value <= (schema.maximum ?? Infinity)
+        break
+      case 'object':
+        valid = value != null && typeof value === 'object' && !Array.isArray(value)
+        break
+      default:
+        valid = typeof value === 'string' && (!schema.enum || schema.enum.includes(value))
+    }
     if (!valid) {
       throw new Error(`${key} — ${definition.description[vocabulary.value]}`)
     }
     const entry = previous.get(key)
-    if (entry?.deleted || entry?.value !== value) {
+    if (entry?.deleted || JSON.stringify(entry?.value) !== JSON.stringify(value)) {
       operations.push({ key, value, id: crypto.randomUUID(), baseRevision: entry?.revision ?? 0 })
     }
   }
@@ -331,7 +349,7 @@ async function save(): Promise<void> {
 }
 
 function confirmReset(user: UserSettingsPerson | null): void {
-  if (active.value && writable.value) {
+  if (active.value && usesBackend.value && canReset.value) {
     confirm.value = { scope: active.value, user }
   }
 }
@@ -345,7 +363,7 @@ function onConfirmOpen(open: boolean): void {
 async function reset(): Promise<void> {
   const api = adapter.value
   const target = confirm.value
-  if (!api || !target || busy.value || target.scope !== active.value || !writable.value) {
+  if (!api || !target || busy.value || target.scope !== active.value || !usesBackend.value || !canReset.value) {
     return
   }
   const signal = requests.signal
@@ -413,7 +431,7 @@ onScopeDispose(() => {
             </TooltipTrigger>
             <TooltipContent>{{ t('userSettings.help') }}</TooltipContent>
           </Tooltip>
-          <Tooltip>
+          <Tooltip v-if="canReset">
             <TooltipTrigger as-child>
               <span class="inline-flex">
                 <Button
@@ -421,7 +439,7 @@ onScopeDispose(() => {
                   size="icon"
                   class="size-8 text-destructive"
                   :aria-label="t('userSettings.resetAll')"
-                  :disabled="!writable || busy"
+                  :disabled="!usesBackend || busy"
                   @click="confirmReset(null)"
                 >
                   <Trash2 class="size-4" />
@@ -444,7 +462,7 @@ onScopeDispose(() => {
     </p>
     <template v-else>
       <p v-if="!writable" class="border-b bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
-        {{ t('userSettings.history') }}
+        {{ usesBackend ? t('userSettings.readOnly') : t('userSettings.history') }}
       </p>
       <SplitterGroup direction="horizontal" class="min-h-0 flex-1 overflow-hidden">
         <SplitterPanel id="user-settings-main" :default-size="100 - helpSize" :min-size="46" class="min-w-0">
@@ -486,10 +504,10 @@ onScopeDispose(() => {
                     {{ selected.displayName || selected.username }}
                   </h3>
                   <div class="flex flex-wrap gap-2">
-                    <Button variant="ghost" class="text-destructive" size="sm" :disabled="!writable || busy" @click="confirmReset(selected)">
+                    <Button v-if="canReset" variant="ghost" class="text-destructive" size="sm" :disabled="!usesBackend || busy" @click="confirmReset(selected)">
                       <Trash2 class="size-4" /> {{ t('userSettings.resetUser') }}
                     </Button>
-                    <Button size="sm" :disabled="!writable || !dirty || busy" @click="save">
+                    <Button v-if="canEdit" size="sm" :disabled="!writable || !dirty || busy" @click="save">
                       <Loader2 v-if="busy" class="size-4 animate-spin" />{{ t('userSettings.save') }}
                     </Button>
                   </div>
@@ -529,7 +547,9 @@ onScopeDispose(() => {
                   </dt>
                   <dd class="mt-1 text-xs leading-5 text-muted-foreground">
                     {{ item.description[vocabulary] }}
-                    {{ t('userSettings.default', { value: item.default }) }}
+                    <template v-if="item.default != null">
+                      {{ t('userSettings.default', { value: item.default }) }}
+                    </template>
                   </dd>
                 </div>
               </dl>
@@ -550,7 +570,7 @@ onScopeDispose(() => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{{ t('userSettings.cancel') }}</AlertDialogCancel>
-          <Button variant="destructive" @click="reset">
+          <Button variant="destructive" :disabled="!canReset || !usesBackend || busy" @click="reset">
             {{ t('userSettings.deleteConfirm') }}
           </Button>
         </AlertDialogFooter>

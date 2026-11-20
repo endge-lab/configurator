@@ -929,7 +929,6 @@ export class EndgeIDETabs_Module {
       viewId: VIEW_ID_USER_SETTINGS,
       payload: {},
       closable: true,
-      ephemeral: true,
       meta: { icon: 'ti ti-users' },
     })
   }
