@@ -69,6 +69,12 @@ const canConfigureAI = computed(() => {
   return Configurator.session.state.session.platformAdmin
     || ['viewer', 'editor', 'admin'].includes(Configurator.context.workspaceRole ?? '')
 })
+const canOpenUserSettings = computed(() => {
+  void context.version.value
+  return Configurator.session.state.status === 'authenticated'
+    && Configurator.context.workspaceRole !== null
+    && Endge.workspace.isLoaded
+})
 const canManageAccess = computed(() => {
   const state = Configurator.session.state
   return canManageAccessPolicy(
@@ -284,7 +290,7 @@ async function runIntegrationMenuAction(entry: RegisteredConfiguratorMenuItem): 
             {{ t('endgeIde.headerMenu.settings.access') }}
           </DropdownMenuItem>
           <DropdownMenuItem
-            v-if="canManageAccess && Endge.workspace.isLoaded"
+            v-if="canOpenUserSettings"
             @click="tabs.openUserSettings(t('userSettings.title'))"
           >
             <UsersRound class="size-3.5" />

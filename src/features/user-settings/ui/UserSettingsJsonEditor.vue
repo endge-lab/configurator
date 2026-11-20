@@ -30,7 +30,7 @@ function applySchema(): void {
     properties: Object.fromEntries(props.catalog.map(item => [item.key, {
       ...item.schema,
       description: item.description[language],
-      default: item.default,
+      ...(item.default != null ? { default: item.default } : {}),
     }])),
   }
   defaults.setDiagnosticsOptions({

@@ -148,9 +148,7 @@ const stateDrivers = computed(() => [
   { value: 'disabled', label: t('userSettings.drivers.disabled') },
 ])
 const canOpenUserSettings = computed(() =>
-  Configurator.session.state.status === 'authenticated' && (
-    Configurator.session.state.session.platformAdmin || Configurator.context.workspaceRole === 'admin'
-  ),
+  Configurator.session.state.status === 'authenticated' && Configurator.context.workspaceRole !== null,
 )
 const contributionOnly = computed(() => props.contributionMode === 'contribution-only')
 const localPreviewUpstream = createDefaultEndgeConfiguration()

@@ -14,8 +14,8 @@ export interface UserSettingsContext {
 export interface UserSettingDefinition {
   key: string
   description: { ru: string, en: string }
-  schema: { type: 'integer' | 'string', minimum?: number, maximum?: number, enum?: string[] }
-  default: number | string
+  schema: { type: 'integer' | 'string' | 'object', minimum?: number, maximum?: number, enum?: string[], properties?: Record<string, unknown>, required?: string[] }
+  default: number | string | null
 }
 
 export interface UserSettingsPerson {
