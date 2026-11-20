@@ -25,12 +25,21 @@ import {
 } from '@endge/core'
 import { useSubscribableRefAuto } from '@endge/ui-vue'
 import { getKeyboardStateSnapshot } from '@endge/utils'
-import { CircleHelp, Download, Plus, Trash2 } from 'lucide-vue-next'
+import { CircleHelp, Download, Plus, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -142,6 +151,19 @@ const legacyCustomAction = computed(() =>
     ? shortcut.value.action?.identity
     : undefined,
 )
+const advancedShortcutDraft = ref<ComponentSFCInteractionTriggerActivation>([])
+const canSaveAdvancedShortcut = computed(() => {
+  const activation = advancedShortcutDraft.value
+  const triggerSets = Array.isArray(activation)
+    ? [activation]
+    : activation.steps.map(step => step.triggerSet)
+  if (!Array.isArray(activation) && (triggerSets.length < 2 || triggerSets.some(set => set.length === 0))) {
+    return false
+  }
+  return triggerSets.every(set => set.every(trigger =>
+    trigger.code?.some(code => code.trim()) || trigger.key?.some(key => key.trim()),
+  ))
+})
 
 function shortcutActivation(operation: DiagnosticsShortcutOperation): ComponentSFCInteractionTriggerActivation {
   return shortcut.value.bindings?.[operation]
@@ -150,6 +172,12 @@ function shortcutActivation(operation: DiagnosticsShortcutOperation): ComponentS
 
 function setShortcut(operation: DiagnosticsShortcutOperation, activation: ComponentSFCInteractionTriggerActivation): void {
   shortcut.value.bindings = { ...shortcut.value.bindings, [operation]: clone(activation) }
+}
+
+function onAdvancedShortcutOpen(operation: DiagnosticsShortcutOperation, open: boolean): void {
+  if (open) {
+    advancedShortcutDraft.value = clone(shortcutActivation(operation))
+  }
 }
 
 function clearLegacyShortcut(): void {
@@ -863,14 +891,60 @@ function setRoutePhase(route: EndgeDiagnosticsRoute, value: unknown): void {
               class="settings-row settings-toggle"
             >
               <span class="text-sm font-medium">{{ shortcutLabels[operation] }}</span>
-              <SFCInteractionTriggerActivationEditor
-                :model-value="shortcutActivation(operation)"
-                kind="shortcut"
-                :compact-label="shortcutLabels[operation]"
-                :disabled="disabled"
-                :is-shortcut-available="event => isShortcutAvailable(operation, event)"
-                @update:model-value="setShortcut(operation, $event)"
-              />
+              <div class="flex min-w-0 items-center justify-end gap-1.5">
+                <SFCInteractionTriggerActivationEditor
+                  :model-value="shortcutActivation(operation)"
+                  kind="shortcut"
+                  :compact-label="shortcutLabels[operation]"
+                  :disabled="disabled"
+                  :is-shortcut-available="event => isShortcutAvailable(operation, event)"
+                  @update:model-value="setShortcut(operation, $event)"
+                />
+                <Dialog @update:open="onAdvancedShortcutOpen(operation, $event)">
+                  <DialogTrigger as-child>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      class="size-8 shrink-0"
+                      :disabled="disabled"
+                      :aria-label="`${shortcutLabels[operation]}: ${$t('diagnostics.hotkeys.advanced')}`"
+                      :title="$t('diagnostics.hotkeys.advanced')"
+                    >
+                      <SlidersHorizontal class="size-3.5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent class="max-h-[85dvh] overflow-auto sm:max-w-3xl" :aria-describedby="undefined">
+                    <DialogHeader class="pr-6">
+                      <DialogTitle>{{ shortcutLabels[operation] }}</DialogTitle>
+                    </DialogHeader>
+                    <SFCInteractionTriggerActivationEditor
+                      v-model="advancedShortcutDraft"
+                      kind="shortcut"
+                      :disabled="disabled"
+                    />
+                    <p v-if="!canSaveAdvancedShortcut" class="text-sm text-muted-foreground">
+                      {{ $t('diagnostics.hotkeys.keyRequired') }}
+                    </p>
+                    <DialogFooter>
+                      <DialogClose as-child>
+                        <Button type="button" variant="outline">
+                          {{ $t('diagnostics.snapshot.activation.cancel') }}
+                        </Button>
+                      </DialogClose>
+                      <DialogClose as-child>
+                        <Button
+                          type="button"
+                          :disabled="disabled || !canSaveAdvancedShortcut"
+                          @click="setShortcut(operation, advancedShortcutDraft)"
+                        >
+                          {{ $t('diagnostics.hotkeys.save') }}
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </section>
           <div v-if="legacyCustomAction" class="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2">

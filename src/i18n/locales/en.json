@@ -180,6 +180,9 @@
       },
       "record": "Record",
       "clear": "Clear",
+      "advanced": "Edit shortcut",
+      "keyRequired": "Specify a key for every alternative and sequence step.",
+      "save": "Save shortcut",
       "press": "Press a shortcut",
       "conflict": "Shortcut already assigned",
       "legacy": "Previously saved shortcut for Action “{action}”"

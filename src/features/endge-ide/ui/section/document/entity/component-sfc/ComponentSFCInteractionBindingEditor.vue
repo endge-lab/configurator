@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { captureInteractionModifiers } from '@/features/endge-ide/services/component-sfc-editor/capture-interaction-modifiers'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
 
 type BindingMode = 'trigger' | 'condition'
@@ -363,7 +364,7 @@ function recordedKeyboardGesture(event: KeyboardEvent): RecordedGesture {
     code: [triggerCode],
     heldKey: props.recordingMode === 'portable-shortcut' ? [] : held.map(([, key]) => key),
     heldCode: held.map(([code]) => code).filter(code => !code.startsWith('key:')),
-    modifiers: capturedModifiers(event),
+    modifiers: captureInteractionModifiers(event, props.recordingMode === 'portable-shortcut'),
     button: null,
   }
 }
@@ -383,7 +384,7 @@ function capturePointerGesture(event: Event): void {
     code: [],
     heldKey: [...pressedKeys.values()],
     heldCode: [...pressedKeys.keys()].filter(code => !code.startsWith('key:')),
-    modifiers: capturedModifiers(pointerEvent),
+    modifiers: captureInteractionModifiers(pointerEvent, props.recordingMode === 'portable-shortcut'),
     button: typeof pointerEvent.button === 'number' ? pointerEvent.button : null,
   })
 }
@@ -416,31 +417,6 @@ function applyRecordedGesture(gesture: RecordedGesture): void {
     publishCondition()
   }
   cancelRecording()
-}
-
-function capturedModifiers(event: MouseEvent | KeyboardEvent): ComponentSFCInteractionTriggerProjection['modifiers'] {
-  const modifiers: ComponentSFCInteractionTriggerProjection['modifiers'] = { exact: true }
-  if (event.shiftKey) {
-    modifiers.shift = true
-  }
-  if (event.altKey) {
-    modifiers.alt = true
-  }
-  if (props.recordingMode === 'portable-shortcut' && event.ctrlKey !== event.metaKey) {
-    modifiers.mod = true
-  }
-  else {
-    if (event.ctrlKey) {
-      modifiers.ctrl = true
-    }
-    if (event.metaKey) {
-      modifiers.meta = true
-    }
-  }
-  if (event.getModifierState?.('AltGraph')) {
-    modifiers.altGraph = true
-  }
-  return modifiers
 }
 
 function recordedModifiers(): ComponentSFCInteractionTriggerProjection['modifiers'] {

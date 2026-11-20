@@ -2,7 +2,6 @@
 import type {
   ComponentSFCInteractionTrigger,
   ComponentSFCInteractionTriggerActivation,
-  ComponentSFCInteractionTriggerModifiers,
   ComponentSFCInteractionTriggerSequenceStep,
 } from '@endge/core'
 
@@ -12,6 +11,7 @@ import { computed, nextTick, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { captureInteractionModifiers } from '@/features/endge-ide/services/component-sfc-editor/capture-interaction-modifiers'
 import SFCEditingTriggerListEditor from '@/features/endge-ide/ui/components/configuration/SFCEditingTriggerListEditor.vue'
 
 const props = defineProps<{
@@ -161,23 +161,21 @@ function recordKey(event: KeyboardEvent): void {
     cancelRecording()
     return
   }
-  if (event.repeat || isModifierKey(event)) {
+  if (event.repeat || isModifierKey(event)
+    || (props.kind === 'shortcut' && (event.isComposing || !event.code))) {
     return
   }
 
   const trigger: ComponentSFCInteractionTrigger = {
     event: 'keydown',
     code: [event.code || event.key],
-    modifiers: capturePortableModifiers(event),
+    modifiers: captureInteractionModifiers(event, true),
     repeat: false,
     composing: false,
     prevent: true,
     stop: true,
   }
   if (props.compactLabel) {
-    if (event.isComposing || !event.code) {
-      return
-    }
     compactConflict.value = props.isShortcutAvailable?.(event) === false
     if (!compactConflict.value) {
       emit('update:modelValue', [trigger])
@@ -195,31 +193,6 @@ function recordKey(event: KeyboardEvent): void {
     ...(interval != null ? { maxIntervalMs: interval } : {}),
   })
   lastRecordedAt = now
-}
-
-function capturePortableModifiers(event: KeyboardEvent): ComponentSFCInteractionTriggerModifiers {
-  const modifiers: ComponentSFCInteractionTriggerModifiers = { exact: true }
-  if (event.shiftKey) {
-    modifiers.shift = true
-  }
-  if (event.altKey) {
-    modifiers.alt = true
-  }
-  if (event.ctrlKey !== event.metaKey) {
-    modifiers.mod = true
-  }
-  else {
-    if (event.ctrlKey) {
-      modifiers.ctrl = true
-    }
-    if (event.metaKey) {
-      modifiers.meta = true
-    }
-  }
-  if (event.getModifierState('AltGraph')) {
-    modifiers.altGraph = true
-  }
-  return modifiers
 }
 
 function createDefaultTrigger(): ComponentSFCInteractionTrigger {

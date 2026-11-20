@@ -19,7 +19,8 @@ export class RTypeEditor {
    */
   updateSource(source: RType): void {
     source.identity = this.identity
-    source.name = this.name
+    source.name = this.name.trim() || source.identity
+    source.displayName = source.name
     source.description = this.description.trim() || null
     source.isPrimitive = this.isPrimitive
     source.source = this.source
@@ -32,7 +33,7 @@ export class RTypeEditor {
   fillFromSource(source: RType): void {
     this.id = source.id
     this.identity = String(source.identity ?? '').trim()
-    this.name = source.name
+    this.name = source.displayName ?? source.name ?? this.identity
     this.description = String(source.description ?? '')
     this.isPrimitive = source.isPrimitive
     this.source = String(source.source ?? '')
