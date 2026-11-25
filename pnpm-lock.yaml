@@ -18,8 +18,8 @@ importers:
         specifier: 0.2.1
         version: 0.2.1(vue@3.5.43(typescript@6.0.3))
       '@endge/ui-vue':
-        specifier: 2.5.0-dev.33
-        version: 2.5.0-dev.33(@endge/core@1.10.0-dev.34(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.9)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))
+        specifier: 2.5.0-dev.34
+        version: 2.5.0-dev.34(@endge/core@1.10.0-dev.34(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.9)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))
       '@endge/utils':
         specifier: 1.0.0-dev.9
         version: 1.0.0-dev.9
@@ -498,8 +498,8 @@ packages:
       vue:
         optional: true
 
-  '@endge/ui-vue@2.5.0-dev.33':
-    resolution: {integrity: sha512-jEUdQqN9dvsIdcYojKSMkyRLLmZ2ht+5OLIZWSMauFI+xlGB4uGqmvrbHYQMBu9+6YpTjuflOpZoqOPAG3asEA==}
+  '@endge/ui-vue@2.5.0-dev.34':
+    resolution: {integrity: sha512-RMymkULdgQ7uJinAd24+iZZTpD/3nbkgSKXMRP6E69mI4ebxwhof2rhJvxKUEcQToqraFBiUZv7CgpZ4T1nZmA==}
     peerDependencies:
       '@endge/core': ^1.10.0-dev.34
       '@endge/utils': '>=1.0.0-dev <2'
@@ -4843,7 +4843,7 @@ snapshots:
     optionalDependencies:
       vue: 3.5.43(typescript@6.0.3)
 
-  '@endge/ui-vue@2.5.0-dev.33(@endge/core@1.10.0-dev.34(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.9)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))':
+  '@endge/ui-vue@2.5.0-dev.34(@endge/core@1.10.0-dev.34(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2))(@endge/utils@1.0.0-dev.9)(@raphy-js/raph@1.0.1-dev.55)(vue@3.5.43(typescript@6.0.3))':
     dependencies:
       '@endge/core': 1.10.0-dev.34(@raphy-js/raph@1.0.1-dev.55)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@endge/utils': 1.0.0-dev.9
