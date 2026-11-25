@@ -7,6 +7,7 @@ const ERROR_KEYS = {
   access_token_expiry_too_long: 'agentAccess.errors.expiryTooLong',
   access_token_flags_require_write: 'agentAccess.errors.flagsRequireWrite',
   access_token_scope_invalid: 'agentAccess.errors.scopeInvalid',
+  access_token_workspace_scope_invalid: 'agentAccess.errors.workspaceScopeInvalid',
   access_token_name_invalid: 'agentAccess.errors.nameInvalid',
   access_token_description_invalid: 'agentAccess.errors.descriptionInvalid',
   access_token_scope_exceeds_role: 'agentAccess.errors.scopeExceedsRole',

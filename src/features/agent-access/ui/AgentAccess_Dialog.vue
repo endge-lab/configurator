@@ -49,10 +49,12 @@ const fieldId = useId()
 
 const activeTab = ref<'create' | 'tokens'>('create')
 const name = ref('')
+const workspaceScope = ref<'' | 'current' | 'all'>('')
 const scope = ref<AgentAccessScope>('read')
 const allowCommit = ref(false)
 const allowDelete = ref(false)
-const preset = ref<AgentTokenExpiryPreset>('1d')
+const allowWorkspaceManagement = ref(false)
+const selectedPreset = ref<AgentTokenExpiryPreset | null>(null)
 const customExpiry = ref('')
 const isCreating = ref(false)
 const submitErrorKey = ref<AgentAccessErrorKey | null>(null)
@@ -71,9 +73,17 @@ const workspaceIdentity = computed(() => Configurator.context.activeWorkspaceIde
 const workspaceDisplayName = computed(() =>
   session.value?.workspaces.find(workspace => workspace.identity === workspaceIdentity.value)?.displayName,
 )
-const canWrite = computed(() => isPlatformAdmin.value || ['editor', 'admin'].includes(Configurator.context.workspaceRole ?? ''))
-const canCommit = computed(() => canIssueAgentCommit(Configurator.context.workspaceRole, isPlatformAdmin.value))
+const allWorkspaces = computed(() => workspaceScope.value === 'all')
+const canWrite = computed(() => allWorkspaces.value || isPlatformAdmin.value || ['editor', 'admin'].includes(Configurator.context.workspaceRole ?? ''))
+const canCommit = computed(() => allWorkspaces.value || canIssueAgentCommit(Configurator.context.workspaceRole, isPlatformAdmin.value))
 const maxTtlSeconds = computed(() => agentAccess.maxTtlSeconds.value)
+const preset = computed(() => {
+  if (selectedPreset.value) {
+    return selectedPreset.value
+  }
+  const defaults = isPlatformAdmin.value ? (['1y', '7d', '1d'] as const) : (['1d'] as const)
+  return defaults.find(value => isExpiryPresetAvailable(value, maxTtlSeconds.value)) ?? '1h'
+})
 const maxTtlLabel = computed(() => {
   const seconds = maxTtlSeconds.value
   if (seconds == null) {
@@ -100,7 +110,8 @@ const expiryHint = computed(() => {
   return { error: !result.ok, text: [text, maxTtlLabel.value].filter(Boolean).join(' · ') }
 })
 const canSubmit = computed(() =>
-  !isCreating.value && Boolean(workspaceIdentity.value) && name.value.trim().length > 0 && expiry.value.ok,
+  !isCreating.value && (allWorkspaces.value || (workspaceScope.value === 'current' && Boolean(workspaceIdentity.value)))
+  && name.value.trim().length > 0 && expiry.value.ok,
 )
 const ownerFilter = computed(() => agentAccess.owner.value)
 const tokens = computed(() => agentAccess.tokens.value)
@@ -129,6 +140,7 @@ function errorText(key: AgentAccessErrorKey): string {
     case 'agentAccess.errors.expiryTooLong': return t('agentAccess.errors.expiryTooLong')
     case 'agentAccess.errors.flagsRequireWrite': return t('agentAccess.errors.flagsRequireWrite')
     case 'agentAccess.errors.scopeInvalid': return t('agentAccess.errors.scopeInvalid')
+    case 'agentAccess.errors.workspaceScopeInvalid': return t('agentAccess.errors.workspaceScopeInvalid')
     case 'agentAccess.errors.nameInvalid': return t('agentAccess.errors.nameInvalid')
     case 'agentAccess.errors.descriptionInvalid': return t('agentAccess.errors.descriptionInvalid')
     case 'agentAccess.errors.scopeExceedsRole': return t('agentAccess.errors.scopeExceedsRole')
@@ -151,6 +163,7 @@ function presetLabel(value: AgentTokenExpiryPreset): string {
     case '1h': return t('agentAccess.form.preset1h')
     case '1d': return t('agentAccess.form.preset1d')
     case '7d': return t('agentAccess.form.preset7d')
+    case '1y': return t('agentAccess.form.preset1y')
     default: return t('agentAccess.form.presetCustom')
   }
 }
@@ -171,6 +184,7 @@ function rightsLabel(token: AgentAccessToken): string {
     t('agentAccess.list.rightsWrite'),
     token.commit ? t('agentAccess.list.rightsCommit') : '',
     token.delete ? t('agentAccess.list.rightsDelete') : '',
+    token.manageWorkspaces ? t('agentAccess.list.rightsManageWorkspaces') : '',
   ].filter(Boolean).join(' · ')
 }
 
@@ -193,6 +207,8 @@ function renderPrompt(value: CreatedAgentAccessToken, token: string): string {
     backendURL: Configurator.connections.activeBackendURL,
     workspaceIdentity: value.accessToken.workspaceIdentity,
     workspaceDisplayName: value.accessToken.workspaceDisplayName ?? workspaceDisplayName.value,
+    allWorkspaces: value.accessToken.allWorkspaces,
+    manageWorkspaces: value.accessToken.manageWorkspaces,
     tokenName: value.accessToken.name,
     token,
     scope: value.accessToken.scope,
@@ -203,12 +219,18 @@ function renderPrompt(value: CreatedAgentAccessToken, token: string): string {
   })
 }
 
+const defaultWorkspaceTokenName = computed(() => t('agentAccess.form.defaultName', { workspace: workspaceDisplayName.value || workspaceIdentity.value }))
+
 function resetForm(): void {
-  name.value = t('agentAccess.form.defaultName', { workspace: workspaceDisplayName.value || workspaceIdentity.value })
-  scope.value = 'read'
-  allowCommit.value = false
-  allowDelete.value = false
-  preset.value = '1d'
+  if (isPlatformAdmin.value) {
+    workspaceScope.value = 'all'
+  }
+  else {
+    workspaceScope.value = workspaceIdentity.value ? 'current' : ''
+  }
+  name.value = workspaceScope.value === 'current' ? defaultWorkspaceTokenName.value : t('agentAccess.form.defaultNameAll')
+  setScope('read')
+  selectedPreset.value = null
   customExpiry.value = ''
   submitErrorKey.value = null
   created.value = null
@@ -240,11 +262,20 @@ function setScope(value: AgentAccessScope): void {
   if (value === 'read') {
     allowCommit.value = false
     allowDelete.value = false
+    allowWorkspaceManagement.value = false
   }
 }
 
+function onWorkspaceScopeChange(): void {
+  const allName = t('agentAccess.form.defaultNameAll')
+  if (name.value === allName || name.value === defaultWorkspaceTokenName.value) {
+    name.value = allWorkspaces.value ? allName : defaultWorkspaceTokenName.value
+  }
+  setScope('read')
+}
+
 async function createToken(): Promise<void> {
-  const resolved = expiry.value
+  const resolved = resolveAgentTokenExpiry(preset.value, customExpiry.value, new Date(), maxTtlSeconds.value)
   if (!canSubmit.value || !resolved.ok) {
     return
   }
@@ -252,7 +283,9 @@ async function createToken(): Promise<void> {
   submitErrorKey.value = null
   try {
     created.value = await agentAccess.create({
-      workspaceIdentity: workspaceIdentity.value,
+      ...(allWorkspaces.value
+        ? { allWorkspaces: true, manageWorkspaces: scope.value === 'write' && allowWorkspaceManagement.value }
+        : { workspaceIdentity: workspaceIdentity.value }),
       name: name.value.trim(),
       scope: scope.value,
       commit: scope.value === 'write' && canCommit.value && allowCommit.value,
@@ -351,11 +384,25 @@ async function revoke(token: AgentAccessToken): Promise<void> {
               </div>
               <div class="space-y-2">
                 <Label :for="`${fieldId}-workspace`">{{ t('agentAccess.form.workspace') }}</Label>
-                <Input
+                <select
                   :id="`${fieldId}-workspace`"
-                  :model-value="workspaceDisplayName ? `${workspaceDisplayName} · ${workspaceIdentity}` : workspaceIdentity"
-                  disabled
-                />
+                  v-model="workspaceScope"
+                  class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  @change="onWorkspaceScopeChange"
+                >
+                  <option v-if="!workspaceIdentity && !isPlatformAdmin" value="" disabled>
+                    {{ t('agentAccess.form.workspacePlaceholder') }}
+                  </option>
+                  <option v-if="workspaceIdentity" value="current">
+                    {{ workspaceDisplayName ? `${workspaceDisplayName} · ${workspaceIdentity}` : workspaceIdentity }}
+                  </option>
+                  <option value="all">
+                    {{ t('agentAccess.form.allWorkspaces') }}
+                  </option>
+                </select>
+                <p v-if="allWorkspaces" class="text-xs text-muted-foreground">
+                  {{ t('agentAccess.form.allWorkspacesHint') }}
+                </p>
               </div>
             </div>
 
@@ -419,6 +466,18 @@ async function revoke(token: AgentAccessToken): Promise<void> {
                     <span class="text-xs text-muted-foreground">{{ t('agentAccess.form.deleteHint') }}</span>
                   </span>
                 </label>
+                <label v-if="allWorkspaces" class="flex items-start gap-2 text-sm" :class="scope !== 'write' ? 'opacity-50' : ''">
+                  <Checkbox
+                    :model-value="allowWorkspaceManagement"
+                    :disabled="scope !== 'write'"
+                    class="mt-0.5"
+                    @update:model-value="value => allowWorkspaceManagement = value === true"
+                  />
+                  <span>
+                    <span class="block font-medium">{{ t('agentAccess.form.manageWorkspaces') }}</span>
+                    <span class="text-xs text-muted-foreground">{{ t('agentAccess.form.manageWorkspacesHint') }}</span>
+                  </span>
+                </label>
               </div>
             </fieldset>
 
@@ -436,7 +495,7 @@ async function revoke(token: AgentAccessToken): Promise<void> {
                   :disabled="!isExpiryPresetAvailable(item, maxTtlSeconds)"
                   class="rounded-md border px-3 py-1 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   :class="preset === item ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent'"
-                  @click="preset = item"
+                  @click="selectedPreset = item"
                 >
                   {{ presetLabel(item) }}
                 </button>
@@ -602,7 +661,7 @@ async function revoke(token: AgentAccessToken): Promise<void> {
                     {{ prefixLabel(token) }}
                   </dd>
                   <dt>{{ t('agentAccess.list.workspace') }}</dt>
-                  <dd>{{ token.workspaceDisplayName || token.workspaceIdentity }}</dd>
+                  <dd>{{ token.allWorkspaces ? t('agentAccess.form.allWorkspaces') : token.workspaceDisplayName || token.workspaceIdentity }}</dd>
                   <dt>{{ t('agentAccess.list.rights') }}</dt>
                   <dd>{{ rightsLabel(token) }}</dd>
                   <dt>{{ t('agentAccess.list.expires') }}</dt>

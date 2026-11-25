@@ -31,6 +31,7 @@ test.describe('кнопка «Для агента»', () => {
     const name = uniqueName(testInfo, 'W12b read')
     await openConfigurator(page)
     const dialog = await openAgentDialog(page)
+    await dialog.getByLabel('Workspace', { exact: true }).selectOption('current')
     await dialog.getByLabel('Имя токена').fill(name)
     await expect(dialog.getByRole('radio', { name: 'Чтение' })).toHaveAttribute('aria-checked', 'true')
     // Коммиты недоступны без права записи.
@@ -72,13 +73,30 @@ test.describe('кнопка «Для агента»', () => {
     expect(afterRevoke.status()).toBe(401)
   })
 
-  test('Admin: запись открывает флажок «Коммиты и релизы»', async ({ page }) => {
+  test('Platform Admin: все workspace по умолчанию и флаги записи', async ({ page }) => {
     await openConfigurator(page)
     const dialog = await openAgentDialog(page)
+    await expect(dialog.getByLabel('Workspace', { exact: true })).toHaveValue('all')
+    await expect(dialog.getByRole('radio', { name: '1 год' })).toHaveAttribute('aria-checked', 'true')
     await dialog.getByRole('radio', { name: 'Запись' }).click()
+    const management = dialog.getByRole('checkbox', { name: /Управление workspace через MCP/ })
+    await expect(management).toBeEnabled()
+    await management.check()
     const commit = dialog.getByTestId('agent-access-commit')
     await expect(commit.getByRole('checkbox')).toBeEnabled()
-    await expect(commit).toContainText('Разрешает создавать коммиты')
+    await expect(commit).toContainText('Разрешает создавать и восстанавливать коммиты')
+
+    const issued = page.waitForResponse(response =>
+      response.url() === `${BACKEND_URL}/api/v1/access-tokens` && response.request().method() === 'POST',
+    )
+    await dialog.getByRole('button', { name: 'Создать токен' }).click()
+    const response = await issued
+    expect(response.status()).toBe(201)
+    const { accessToken } = await response.json()
+    expect(accessToken.allWorkspaces).toBe(true)
+    expect(accessToken.manageWorkspaces).toBe(true)
+    expect(Date.parse(accessToken.expiresAt) - Date.parse(accessToken.createdAt)).toBeGreaterThan(365 * 86400_000 - 60_000)
+    await expect(dialog.getByText('Токен создан')).toBeVisible()
   })
 
   test('не-Admin (Editor): флажок «Коммиты и релизы» неактивен', async ({ page, request }) => {

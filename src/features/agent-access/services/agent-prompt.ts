@@ -9,6 +9,8 @@ export interface AgentPromptInput {
   backendURL: string
   workspaceIdentity: string
   workspaceDisplayName?: string
+  allWorkspaces?: boolean
+  manageWorkspaces?: boolean
   tokenName: string
   // Полный токен для копирования или замаскированный для предпросмотра.
   token: string
@@ -52,12 +54,15 @@ export function buildAgentPrompt(input: AgentPromptInput): string {
   const canWrite = input.scope === 'write'
 
   const lines: string[] = [
-    `Ты работаешь с Endge от имени пользователя через HTTP API backend. Токен «${input.tokenName}».`,
+    `Ты работаешь с Endge от имени пользователя через MCP или HTTP API backend. Токен «${input.tokenName}».`,
     '',
     '## Подключение',
     `- Backend: ${backendURL}`,
     `- API: ${apiURL}`,
-    `- Workspace: ${workspace}. Передавай его в каждом запросе заголовком \`X-Endge-Workspace: ${input.workspaceIdentity}\`.`,
+    `- MCP (Streamable HTTP): ${backendURL}/mcp`,
+    input.allWorkspaces
+      ? '- Workspace: все пространства, доступные владельцу. Получи их через `endge_list_workspaces` и явно передавай identity в параметре `workspace` MCP или в заголовке `X-Endge-Workspace` HTTP API.'
+      : `- Workspace: ${workspace}. Передавай его в HTTP-запросах заголовком \`X-Endge-Workspace: ${input.workspaceIdentity}\`. В MCP можно опустить параметр \`workspace\`.`,
     `- Токен: ${input.token}`,
     '  Передавай его заголовком `Authorization: Bearer <токен>`. Не записывай токен в файлы репозитория, логи, коммиты и ответы.',
     `- Права: ${describeRights(input)}.`,
@@ -85,6 +90,12 @@ export function buildAgentPrompt(input: AgentPromptInput): string {
     '## Правила',
     `1. Документы читай через \`GET ${apiURL}/<коллекция>/<identity>\` (например, \`${apiURL}/queries/<identity>\`), номер ревизии бери из поля \`revision\` или заголовка \`ETag\`.`,
   )
+  if (input.manageWorkspaces) {
+    lines.push(
+      'Для управления рабочими пространствами используй инструменты MCP. Редактируй и архивируй workspace с текущей revision из `endge_list_workspaces`, восстанавливай с revision из `endge_list_workspace_archive`. Для создания нужна роль Platform Admin владельца, для остальных изменений — роль Admin соответствующего workspace.',
+      'Архивируй workspace только по просьбе пользователя.',
+    )
+  }
   if (canWrite) {
     lines.push(
       '2. Изменяй документ только через `PATCH` с заголовком `If-Match: "<revision>"` прочитанной ревизии.',
@@ -110,7 +121,8 @@ function describeRights(input: AgentPromptInput): string {
   }
   const commit = input.commit ? 'разрешены' : 'запрещены'
   const remove = input.delete ? 'разрешено' : 'запрещено'
-  return `чтение и запись (не выше Editor); коммиты и релизы ${commit}; удаление ${remove}`
+  const management = input.manageWorkspaces ? '; управление workspace через MCP в пределах текущей роли владельца' : ''
+  return `чтение и запись (не выше Editor); коммиты и релизы ${commit}; удаление документов ${remove}${management}`
 }
 
 function formatExpiry(value: string): string {

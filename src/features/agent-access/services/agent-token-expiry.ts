@@ -7,9 +7,10 @@ const PRESET_TTL_SECONDS: Record<Exclude<AgentTokenExpiryPreset, 'custom'>, numb
   '1h': 60 * 60,
   '1d': 24 * 60 * 60,
   '7d': 7 * 24 * 60 * 60,
+  '1y': 365 * 24 * 60 * 60,
 }
 
-export const AGENT_TOKEN_EXPIRY_PRESETS: readonly AgentTokenExpiryPreset[] = ['1h', '1d', '7d', 'custom']
+export const AGENT_TOKEN_EXPIRY_PRESETS: readonly AgentTokenExpiryPreset[] = ['1h', '1d', '7d', '1y', 'custom']
 
 export type AgentTokenExpiryResult
   = | { ok: true, expiresAt: Date }

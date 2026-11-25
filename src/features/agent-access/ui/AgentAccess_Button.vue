@@ -14,7 +14,7 @@ defineProps<{
 const { t } = useI18n()
 const dialog = ref<InstanceType<typeof AgentAccess_Dialog> | null>(null)
 const available = computed(() =>
-  Configurator.session.state.status === 'authenticated' && Configurator.context.hasActiveWorkspace,
+  Configurator.session.state.status === 'authenticated',
 )
 </script>
 

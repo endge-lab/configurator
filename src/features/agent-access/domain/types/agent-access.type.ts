@@ -8,7 +8,7 @@ export type AgentAccessTokenStatus = 'active' | 'expired' | 'revoked'
 export type AgentAccessOwnerFilter = 'me' | 'all'
 
 // Пресет срока действия токена в диалоге.
-export type AgentTokenExpiryPreset = '1h' | '1d' | '7d' | 'custom'
+export type AgentTokenExpiryPreset = '1h' | '1d' | '7d' | '1y' | 'custom'
 
 export interface AgentAccessActor {
   id: string
@@ -22,6 +22,8 @@ export interface AgentAccessToken {
   owner: AgentAccessActor
   workspaceIdentity: string
   workspaceDisplayName?: string
+  allWorkspaces?: boolean
+  manageWorkspaces?: boolean
   name: string
   description?: string
   scope: AgentAccessScope
@@ -41,7 +43,9 @@ export interface AgentAccessTokenList {
 }
 
 export interface CreateAgentAccessTokenInput {
-  workspaceIdentity: string
+  workspaceIdentity?: string
+  allWorkspaces?: boolean
+  manageWorkspaces?: boolean
   name: string
   description?: string
   scope: AgentAccessScope

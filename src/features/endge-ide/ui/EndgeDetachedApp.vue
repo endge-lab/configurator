@@ -10,7 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import AgentAccess_Button from '@/features/agent-access/ui/AgentAccess_Button.vue'
 import BackendConnections_Modal from '@/features/backend-connections/ui/BackendConnections_Modal.vue'
+import { ENDGE_IDE_DOCUMENTATION_URL } from '@/features/endge-ide/config/documentation.config'
 import { EndgeIDE } from '@/features/endge-ide/EndgeIDE'
 import CreateDocument_Modal from '@/features/endge-ide/ui/modals/CreateDocument_Modal.vue'
 
@@ -45,6 +47,10 @@ useLayout({ title: computed(() => 'Endge') })
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  </Teleport>
+
+  <Teleport to="[data-target='grid-layout-header-actions']" defer>
+    <AgentAccess_Button :documentation-url="ENDGE_IDE_DOCUMENTATION_URL" />
   </Teleport>
 
   <main class="flex h-full min-h-0 flex-1 items-center justify-center p-6 text-muted-foreground">
