@@ -20,15 +20,16 @@ const BASE_INPUT = {
 
 describe('шаблон промпта агента', () => {
   it('собирает полный промпт записи: адрес с префиксом, workspace, токен, права, срок, ссылки llms и правила', () => {
-    expect(buildAgentPrompt(BASE_INPUT)).toBe(`Ты работаешь с Endge от имени пользователя через HTTP API backend. Токен «Codex: инспектор рейса».
+    expect(buildAgentPrompt(BASE_INPUT)).toBe(`Ты работаешь с Endge от имени пользователя через MCP или HTTP API backend. Токен «Codex: инспектор рейса».
 
 ## Подключение
 - Backend: https://endge.example.test/backend
 - API: https://endge.example.test/backend/api/v1
-- Workspace: afl (АФЛ). Передавай его в каждом запросе заголовком \`X-Endge-Workspace: afl\`.
+- MCP (Streamable HTTP): https://endge.example.test/backend/mcp
+- Workspace: afl (АФЛ). Передавай его в HTTP-запросах заголовком \`X-Endge-Workspace: afl\`. В MCP можно опустить параметр \`workspace\`.
 - Токен: ${FAKE_TOKEN}
   Передавай его заголовком \`Authorization: Bearer <токен>\`. Не записывай токен в файлы репозитория, логи, коммиты и ответы.
-- Права: чтение и запись (не выше Editor); коммиты и релизы запрещены; удаление запрещено.
+- Права: чтение и запись (не выше Editor); коммиты и релизы запрещены; удаление документов запрещено.
 - Срок действия: до 2026-11-02 10:00 UTC. После истечения (401 \`access_token_expired\`) попроси у пользователя новый токен.
 
 ## Документация
@@ -51,7 +52,7 @@ describe('шаблон промпта агента', () => {
   it('для токена с флагами сохраняет правило «не без просьбы», но не пишет, что токен запрещает', () => {
     const prompt = buildAgentPrompt({ ...BASE_INPUT, commit: true, delete: true })
 
-    expect(prompt).toContain('- Права: чтение и запись (не выше Editor); коммиты и релизы разрешены; удаление разрешено.')
+    expect(prompt).toContain('- Права: чтение и запись (не выше Editor); коммиты и релизы разрешены; удаление документов разрешено.')
     expect(prompt).toContain('4. Не создавай коммиты и релизы и не удаляй документы без явной просьбы пользователя.')
   })
 

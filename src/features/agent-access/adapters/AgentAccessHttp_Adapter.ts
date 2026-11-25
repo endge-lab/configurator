@@ -145,6 +145,8 @@ function normalizeToken(value: unknown): AgentAccessToken[] {
     owner: normalizeActor(value.owner),
     workspaceIdentity: stringValue(value.workspaceIdentity),
     workspaceDisplayName: optionalString(value.workspaceDisplayName),
+    allWorkspaces: value.allWorkspaces === true,
+    manageWorkspaces: value.manageWorkspaces === true,
     name: stringValue(value.name),
     description: optionalString(value.description),
     scope,
