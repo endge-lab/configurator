@@ -263,6 +263,7 @@ onUnmounted(() => {
                 size="icon"
                 class="size-7"
                 :disabled="isActionDisabled(action)"
+                :aria-label="action.title"
                 @mousedown.stop
                 @click="action.onClick?.()"
               >

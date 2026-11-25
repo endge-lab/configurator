@@ -224,7 +224,8 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
       triggerCharacters: syntax.triggerCharacters,
       provideCompletionItems(model, position) {
         const offset = model.getOffsetAt(position)
-        if (options.extensions?.some(extension => extension.suppressesSourceCompletions?.(model, offset))) {
+        if (model !== editor.value?.getModel()
+          || options.extensions?.some(extension => extension.suppressesSourceCompletions?.(model, offset))) {
           return { suggestions: [] }
         }
         const word = model.getWordUntilPosition(position)
@@ -241,7 +242,9 @@ export function useEndgeSourceMonaco(options: UseEndgeSourceMonacoOptions) {
             : undefined,
           detail: item.detail,
           documentation: item.documentation,
-          range,
+          range: item.replace
+            ? monaco.Range.fromPositions(model.getPositionAt(item.replace.start), model.getPositionAt(item.replace.end))
+            : range,
         }))
         return { suggestions }
       },

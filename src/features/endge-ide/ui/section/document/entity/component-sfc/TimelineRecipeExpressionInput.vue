@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import ComponentSFCExpressionInput from './ComponentSFCExpressionInput.vue'
 
-const props = defineProps<{ modelValue: string, bindings: Readonly<Record<string, unknown>> }>()
+const props = defineProps<{ modelValue: string, bindings: Readonly<Record<string, unknown>>, label: string, placeholder?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string], 'commit': [] }>()
 const editor = ref<InstanceType<typeof ComponentSFCExpressionInput>>()
 const open = ref(false)
@@ -73,6 +73,22 @@ function restoreFocus(event: Event) {
   }
 }
 
+function capturePosition() {
+  position = editor.value?.selectionRange()
+  if (!position || position.start !== position.end) {
+    return
+  }
+  try {
+    const literal: unknown = JSON.parse(props.modelValue)
+    if (literal === null || typeof literal !== 'object') {
+      position = { start: 0, end: props.modelValue.length }
+    }
+  }
+  catch {
+    // Keep the caret when editing an expression rather than a default literal.
+  }
+}
+
 function choose(reference: unknown) {
   if (typeof reference !== 'string' || !reference) {
     return
@@ -91,9 +107,9 @@ function choose(reference: unknown) {
         :model-value="modelValue"
         scope="timeline-recipe"
         :bindings="bindings"
-        :aria-label="$t('timelineEditor.recipes.condition')"
+        :aria-label="label"
         input-class="h-9 w-full font-mono text-xs md:text-xs"
-        placeholder="$task.delayMs > 0"
+        :placeholder="placeholder"
         @update:model-value="emit('update:modelValue', $event)"
         @commit="emit('commit')"
       />
@@ -107,7 +123,7 @@ function choose(reference: unknown) {
           class="size-9 text-muted-foreground aria-expanded:bg-accent aria-expanded:text-accent-foreground"
           :aria-label="$t('timelineEditor.recipes.referencePicker')"
           :title="$t('timelineEditor.recipes.referencePicker')"
-          @click="position = editor?.selectionRange()"
+          @click="capturePosition"
         >
           <Braces class="size-4" aria-hidden="true" />
         </Button>

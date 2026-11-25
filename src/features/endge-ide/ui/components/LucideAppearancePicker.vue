@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-import { CircleHelp, icons, Palette, Search } from 'lucide-vue-next'
+import { CircleHelp, icons, Palette, Plus, Search } from 'lucide-vue-next'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
@@ -12,10 +12,13 @@ const props = defineProps<{
   icon: string
   color: string
   disabled?: boolean
+  iconOnly?: boolean
+  triggerLabel?: string
 }>()
 const emit = defineEmits<{
   'update:icon': [value: string]
   'update:color': [value: string]
+  'choose': [name: string, icon: Component]
 }>()
 
 const query = ref('')
@@ -54,6 +57,13 @@ watch(open, (isOpen) => {
 
 function chooseIcon(name: string): void {
   emit('update:icon', name)
+  const icon = iconMap.get(name)
+  if (icon) {
+    emit('choose', name, icon)
+  }
+  if (props.iconOnly) {
+    open.value = false
+  }
 }
 
 function updateHue(next: number): void {
@@ -135,15 +145,21 @@ function hexToHsv(value: string): { h: number, s: number, v: number } | null {
 <template>
   <PopoverRoot v-model:open="open">
     <PopoverTrigger as-child>
-      <Button type="button" variant="outline" class="h-10 w-full justify-start gap-2" :disabled="disabled">
-        <component :is="selectedIcon" class="size-4" :style="{ color }" />
-        <span class="truncate font-mono text-xs">{{ icon }}</span>
-        <span v-if="!iconKnown" class="ml-auto text-[10px] text-amber-600">{{ $t('facets.fallback') }}</span>
+      <Button type="button" variant="outline" class="justify-start gap-2" :class="triggerLabel ? 'h-7' : 'h-10 w-full'" :disabled="disabled">
+        <template v-if="triggerLabel">
+          <Plus class="size-3.5" aria-hidden="true" />
+          <span class="text-xs">{{ triggerLabel }}</span>
+        </template>
+        <template v-else>
+          <component :is="selectedIcon" class="size-4" :style="{ color }" />
+          <span class="truncate font-mono text-xs">{{ icon }}</span>
+          <span v-if="!iconKnown" class="ml-auto text-[10px] text-amber-600">{{ $t('facets.fallback') }}</span>
+        </template>
       </Button>
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent align="start" :side-offset="8" class="z-[9999] w-[min(38rem,calc(100vw-2rem))] rounded-lg border bg-background p-3 shadow-md outline-none">
-        <div class="grid min-h-80 grid-cols-[minmax(0,1fr)_2.75rem] gap-3">
+        <div class="grid gap-3" :class="iconOnly ? 'grid-cols-1' : 'min-h-80 grid-cols-[minmax(0,1fr)_2.75rem]'">
           <div class="flex min-w-0 flex-col gap-2">
             <div class="relative">
               <Search class="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -163,7 +179,7 @@ function hexToHsv(value: string): { h: number, s: number, v: number } | null {
               </button>
             </div>
           </div>
-          <div class="flex min-h-0 flex-col items-center gap-2">
+          <div v-if="!iconOnly" class="flex min-h-0 flex-col items-center gap-2">
             <input
               :value="hue"
               type="range"

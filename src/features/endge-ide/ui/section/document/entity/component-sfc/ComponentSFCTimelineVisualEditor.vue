@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { ComponentSFCTimelineColumnSource, ComponentSFCTimelineRecipeSource, ComponentSFCTimelineVisualNode, ComponentSFCVisualAttribute } from '@endge/core'
 import type { TimelineRecipeChartPreview } from '@endge/ui-vue'
-import { compileComponentSFC, Endge, parseComponentSFC, patchComponentSFCTimelineColumns, patchComponentSFCTimelineRecipe, patchComponentSFCTimelineSource, readComponentSFCTranslationFallback } from '@endge/core'
+import { compileComponentSFC, createTimelineRecipeLayout, Endge, parseComponentSFC, patchComponentSFCTimelineColumns, patchComponentSFCTimelineRecipe, patchComponentSFCTimelineSource, readComponentSFCTranslationFallback } from '@endge/core'
 import { listTimelinePresets, timelinePreviewGroupsHiddenKey, timelineRecipePreviewKey } from '@endge/ui-vue'
 import { useElementSize } from '@vueuse/core'
-import { Clock3, CodeXml, Columns3, Eye, Globe2, GripVertical, List, MoveHorizontal, PanelBottom, PanelLeft, PanelsTopLeft, SlidersHorizontal, X } from 'lucide-vue-next'
+import { ChevronRight, Clock3, CodeXml, Columns3, Eye, Globe2, GripVertical, List, MoveHorizontal, PanelBottom, PanelLeft, Plus, SlidersHorizontal, X } from 'lucide-vue-next'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { computed, nextTick, onScopeDispose, provide, ref, shallowReactive, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -42,10 +42,16 @@ interface Column {
   authored?: ComponentSFCTimelineColumnSource['attributes']
 }
 
-const props = defineProps<{ source: string, identity: string, projection: ComponentSFCTimelineVisualNode }>()
+const props = defineProps<{
+  source: string
+  identity: string
+  projection: ComponentSFCTimelineVisualNode
+  recipeToolbarHost?: HTMLElement | null
+}>()
 const emit = defineEmits<{ 'update:source': [source: string], 'openSource': [offset: number] }>()
 const { t } = useI18n()
 const activeSection = ref('general')
+const recipesExpanded = ref(false)
 const sidebarWidth = ref(216)
 const previewOpen = ref(false)
 const previewGroupsHidden = ref(false)
@@ -64,6 +70,7 @@ const splitterStorage = {
   setItem: (key: string, value: string) => { storedLayout.value = { ...storedLayout.value, [key]: value } },
 }
 const previewId = useId()
+const recipesNavId = useId()
 const chartIndex = ref<number>()
 const error = ref('')
 const selected = computed(() => props.projection.charts[chartIndex.value ?? -1] ?? props.projection)
@@ -89,13 +96,20 @@ const compileOptions = {
 }
 const compilation = computed(() => compileComponentSFC(props.source, compileOptions))
 const previewErrors = computed(() => compilation.value.diagnostics.filter(item => item.severity === 'error'))
-const recipeOpen = computed(() => activeSection.value === 'recipes' && !groupSelected.value)
+const recipeSections = computed(() => selected.value.recipes.map((recipe, index) => ({
+  id: `recipe-${index}`,
+  label: recipe.name || recipe.id || t('timelineEditor.recipes.unnamed'),
+  kind: recipe.kind,
+})))
+const recipeIndex = computed(() => recipeSections.value.findIndex(section => section.id === activeSection.value))
+const recipeOpen = computed(() => !groupSelected.value && recipeIndex.value !== -1)
+const recipeSectionOpen = computed(() => recipeOpen.value || (!groupSelected.value && activeSection.value === 'recipes'))
 const settingsOpen = computed(() => !recipeOpen.value || constructorOpen.value)
 const showJson = computed(() => recipeOpen.value && jsonOpen.value)
 const panelCount = computed(() => Number(settingsOpen.value) + Number(showJson.value) + Number(previewOpen.value))
 const splitDirection = computed(() => settingsWidth.value >= (panelCount.value === 3 ? 1_030 : 740) ? 'horizontal' : 'vertical')
 const freezePane = computed(() => recipeOpen.value && panelCount.value === 1)
-const previewEnabled = computed(() => previewOpen.value || recipeOpen.value || activeSection.value === 'columns')
+const previewEnabled = computed(() => previewOpen.value || recipeSectionOpen.value || activeSection.value === 'columns')
 const {
   data: previewData,
   status: previewStatus,
@@ -108,6 +122,7 @@ const {
 )
 const previewCharts = shallowReactive(new Map<string, TimelineRecipeChartPreview>())
 const chartPreviews = computed(() => [...previewCharts.values()].filter(chart => chart.sourceStart === selected.value.sourceRange.start))
+const recipePresetName = computed(() => preset.value?.label ?? preset.value?.name ?? (String(literal('preset') ?? '') || chartPreviews.value[0]?.presetName || ''))
 const programRevision = ref(0)
 onScopeDispose(Endge.program.subscribe(() => programRevision.value++))
 const previewTranslate = computed(() => {
@@ -152,6 +167,58 @@ function patchRecipe(start: number | undefined, value: ComponentSFCTimelineRecip
   catch (cause) {
     return cause instanceof Error ? cause.message : String(cause)
   }
+}
+
+function openRecipe(index: number): void {
+  recipesExpanded.value = true
+  activeSection.value = recipeSections.value[index]?.id ?? 'recipes'
+}
+
+function toggleRecipes(): void {
+  recipesExpanded.value = !recipesExpanded.value
+  if (recipesExpanded.value && !recipeSectionOpen.value) {
+    openRecipe(0)
+  }
+}
+
+function createRecipe(inherited?: Omit<ComponentSFCTimelineRecipeSource, 'id'>): string | null {
+  const recipes = selected.value.recipes
+  const ids = new Set(recipes.map(recipe => recipe.id))
+  const names = new Set(recipes.map(recipe => recipe.name))
+  let index = 1
+  while (ids.has(`recipe-${index}`) || names.has(t('timelineEditor.recipes.newName', { index }))) {
+    index++
+  }
+  const tasks = chartPreviews.value[0]?.data.tasks ?? []
+  const kind = tasks.find(task => task.kind === recipes[recipeIndex.value]?.kind)?.kind ?? tasks[0]?.kind ?? ''
+  const result = patchRecipe(undefined, {
+    id: `recipe-${index}`,
+    ...(inherited ?? {
+      name: t('timelineEditor.recipes.newName', { index }),
+      kind,
+      when: kind ? '' : 'true',
+      recipe: createTimelineRecipeLayout(),
+    }),
+  })
+  if (!result) {
+    recipesExpanded.value = true
+    constructorOpen.value = true
+    activeSection.value = `recipe-${recipes.length}`
+  }
+  return result
+}
+
+function removeActiveRecipe(): string | null {
+  const index = recipeIndex.value
+  const recipe = selected.value.recipes[index]
+  if (!recipe) {
+    return null
+  }
+  const result = patchRecipe(recipe.sourceRange.start, null)
+  if (!result) {
+    openRecipe(selected.value.recipes.length > 1 ? Math.max(0, index - 1) : -1)
+  }
+  return result
 }
 
 const useContextTimezone = computed(() => binding('timezone')?.trim() === '$context.timezone')
@@ -236,9 +303,11 @@ const availableSections = computed(() => {
     return [general]
   }
   const diagramSections = binding('options') ? [] : optionSections.value
-  return [general, { id: 'columns', label: t('timelineEditor.columns'), icon: Columns3 }, { id: 'recipes', label: t('timelineEditor.recipes.title'), icon: PanelsTopLeft }, ...diagramSections, { id: 'regional', label: t('timelineEditor.sections.regional'), icon: Globe2 }]
+  return [general, { id: 'columns', label: t('timelineEditor.columns'), icon: Columns3 }, { id: 'recipes', label: t('timelineEditor.recipes.title'), icon: ChevronRight }, ...diagramSections, { id: 'regional', label: t('timelineEditor.sections.regional'), icon: Globe2 }]
 })
-const sectionLabel = computed(() => availableSections.value.find(section => section.id === activeSection.value)?.label ?? t('documentMetadata.general'))
+const sectionLabel = computed(() => recipeSections.value[recipeIndex.value]?.label
+  ?? availableSections.value.find(section => section.id === activeSection.value)?.label
+  ?? t('documentMetadata.general'))
 const presetFields = computed<Field[]>(() => Object.entries(preset.value?.fields ?? {}).map(([key, field]) => ({
   key,
   label: field.label,
@@ -247,13 +316,21 @@ const presetFields = computed<Field[]>(() => Object.entries(preset.value?.fields
   fallback: field.default,
 })))
 
-watch(availableSections, (sections) => {
-  if (!sections.some(section => section.id === activeSection.value)) {
-    activeSection.value = 'general'
+watch([availableSections, recipeSections], ([sections, recipes]) => {
+  if (!sections.some(section => section.id === activeSection.value) && !recipes.some(section => section.id === activeSection.value)) {
+    if (!groupSelected.value && activeSection.value.startsWith('recipe-')) {
+      openRecipe(0)
+    }
+    else {
+      activeSection.value = 'general'
+    }
   }
 })
 watch([activeSection, chartIndex], resetColumnDrag)
-watch(recipeOpen, (open) => {
+watch(recipeSectionOpen, (open) => {
+  if (open) {
+    recipesExpanded.value = true
+  }
   if (open && !recipesVisited) {
     recipesVisited = true
     previewOpen.value = true
@@ -291,13 +368,6 @@ function set(name: string, value: unknown, bound = false): void {
   try {
     const index = groupSelected.value || selected.value === props.projection ? undefined : chartIndex.value
     const source = patchComponentSFCTimelineSource(props.source, { chartIndex: index, name, value, binding: bound }, compileOptions)
-    if (name === 'title' && bound) {
-      const diagnostic = compileComponentSFC(source, compileOptions).diagnostics.find(item => item.severity === 'error')
-      if (diagnostic) {
-        error.value = diagnostic.message
-        return
-      }
-    }
     if (source !== props.source) {
       emit('update:source', source)
     }
@@ -445,13 +515,6 @@ function readTextLiteral(source: string): string | undefined {
   }
 }
 
-function toggleChartTitle(): void {
-  const expression = binding('title')
-  set('title', expression === undefined
-    ? JSON.stringify(String(literal('title') ?? ''))
-    : readComponentSFCTranslationFallback(expression) ?? readTextLiteral(expression) ?? '', expression === undefined)
-}
-
 function addColumn(): void {
   const ids = new Set(columns.value.map(column => column.id))
   let index = 1
@@ -539,20 +602,59 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
     >
       <template #navigation>
         <TabsList class="flex h-auto w-full flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2">
-          <TabsTrigger
-            v-for="section in availableSections"
-            :key="section.id"
-            :value="section.id"
-            class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
-          >
-            <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
-            <span class="truncate">{{ section.label }}</span>
-          </TabsTrigger>
+          <template v-for="section in availableSections" :key="section.id">
+            <div v-if="section.id === 'recipes'">
+              <div class="flex min-w-0 items-center gap-0.5 rounded-md" :class="{ 'bg-background/70 text-foreground': recipeSectionOpen }">
+                <Button
+                  type="button" size="sm" variant="ghost" class="h-9 min-w-0 flex-1 justify-start gap-1.5 px-2.5 text-sm"
+                  :aria-expanded="recipesExpanded" :aria-controls="recipesNavId" @click="toggleRecipes"
+                >
+                  <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-90': recipesExpanded }" aria-hidden="true" />
+                  <span class="truncate">{{ section.label }}</span>
+                </Button>
+                <Button
+                  type="button" size="icon" variant="ghost" class="mr-1 size-7 shrink-0"
+                  :aria-label="$t('timelineEditor.recipes.add')" :title="$t('timelineEditor.recipes.add')"
+                  @click="error = createRecipe() ?? ''"
+                >
+                  <Plus class="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+              <div :id="recipesNavId">
+                <div v-if="recipesExpanded && (recipeSections.length || recipePresetName)" class="ml-4 mt-1 space-y-0.5 border-l border-border/70 pl-1.5">
+                  <TabsTrigger
+                    v-for="recipe in recipeSections" :key="recipe.id" :value="recipe.id"
+                    class="h-8 w-full min-w-0 justify-start gap-1.5 rounded-md border-0 border-l-2 border-l-transparent px-2 text-left text-xs shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                    :title="recipe.label"
+                  >
+                    <span class="min-w-0 flex-1 truncate">{{ recipe.label }}</span>
+                    <code v-if="recipe.kind" class="max-w-16 shrink-0 truncate text-[10px] text-muted-foreground">{{ recipe.kind }}</code>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    v-if="recipePresetName" value="recipes"
+                    class="h-8 w-full justify-start rounded-md border-0 border-l-2 border-l-transparent px-2 text-left text-xs shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground"
+                  >
+                    <span class="truncate">{{ $t('timelineEditor.recipes.presetNavigation') }}</span>
+                  </TabsTrigger>
+                </div>
+              </div>
+            </div>
+            <TabsTrigger
+              v-else :value="section.id"
+              class="group h-9 w-full justify-start gap-2 rounded-md border-0 border-l-2 border-l-transparent px-2.5 text-left text-sm font-medium shadow-none data-[state=active]:border-l-primary data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+            >
+              <component :is="section.icon" class="size-3.5 shrink-0 text-muted-foreground group-data-[state=active]:text-primary" />
+              <span class="truncate">{{ section.label }}</span>
+            </TabsTrigger>
+          </template>
         </TabsList>
       </template>
 
-      <header class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
-        <h2 class="hidden text-sm font-semibold lg:block">
+      <header
+        class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/70 px-4 py-2.5 sm:px-5"
+        :class="{ 'lg:hidden': recipeOpen && recipeToolbarHost && projection.tag !== 'TimelineGroup' }"
+      >
+        <h2 v-if="!recipeOpen" class="hidden text-sm font-semibold lg:block">
           {{ sectionLabel }}
         </h2>
         <div class="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
@@ -570,38 +672,56 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
             </option>
           </select>
           <select v-model="activeSection" class="timeline-select min-w-0 max-w-48 flex-1 lg:hidden" :aria-label="$t('timelineEditor.settings')">
-            <option v-for="section in availableSections" :key="section.id" :value="section.id">
-              {{ section.label }}
-            </option>
+            <template v-for="section in availableSections" :key="section.id">
+              <optgroup v-if="section.id === 'recipes' && recipeSections.length" :label="section.label">
+                <option v-for="recipe in recipeSections" :key="recipe.id" :value="recipe.id">
+                  {{ recipe.label }}
+                </option>
+                <option v-if="recipePresetName" value="recipes">
+                  {{ $t('timelineEditor.recipes.presetNavigation') }}
+                </option>
+              </optgroup>
+              <option v-else :value="section.id">
+                {{ section.label }}
+              </option>
+            </template>
           </select>
-          <TooltipProvider :delay-duration="350">
-            <div class="flex items-center gap-1">
-              <Tooltip v-if="recipeOpen">
-                <TooltipTrigger as-child>
-                  <Button size="icon" class="size-8" :variant="constructorOpen ? 'secondary' : 'ghost'" :aria-label="$t('timelineEditor.recipes.constructor')" :aria-pressed="constructorOpen" :aria-disabled="freezePane && constructorOpen" @click="!(freezePane && constructorOpen) && (constructorOpen = !constructorOpen)">
-                    <PanelLeft class="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ $t('timelineEditor.recipes.constructor') }}</TooltipContent>
-              </Tooltip>
-              <Tooltip v-if="recipeOpen">
-                <TooltipTrigger as-child>
-                  <Button size="icon" class="size-8" :variant="jsonOpen ? 'secondary' : 'ghost'" :aria-label="$t('timelineEditor.recipes.jsonPanel')" :aria-pressed="jsonOpen" :aria-disabled="freezePane && jsonOpen" @click="!(freezePane && jsonOpen) && (jsonOpen = !jsonOpen)">
-                    <CodeXml class="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ $t('timelineEditor.recipes.jsonPanel') }}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button size="icon" class="size-8" :variant="previewOpen ? 'secondary' : 'ghost'" :aria-label="$t('runtimeWorkflow.preview')" :aria-pressed="previewOpen" :aria-controls="previewOpen ? previewId : undefined" :aria-disabled="freezePane && previewOpen" @click="!(freezePane && previewOpen) && (previewOpen = !previewOpen)">
-                    <Eye class="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ $t('runtimeWorkflow.preview') }}</TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
+          <Button
+            v-if="recipeSectionOpen" type="button" size="icon" variant="ghost" class="size-8 lg:hidden"
+            :aria-label="$t('timelineEditor.recipes.add')" :title="$t('timelineEditor.recipes.add')" @click="error = createRecipe() ?? ''"
+          >
+            <Plus class="size-4" aria-hidden="true" />
+          </Button>
+          <Teleport :to="recipeToolbarHost ?? undefined" :disabled="!recipeOpen || !recipeToolbarHost">
+            <TooltipProvider :delay-duration="350">
+              <div class="flex items-center gap-1" :class="{ 'shrink-0 rounded-md border bg-muted/40 p-0.5': recipeOpen && recipeToolbarHost }">
+                <Tooltip v-if="recipeOpen">
+                  <TooltipTrigger as-child>
+                    <Button size="icon" class="size-8" :variant="constructorOpen ? 'secondary' : 'ghost'" :aria-label="$t('timelineEditor.recipes.constructor')" :aria-pressed="constructorOpen" :aria-disabled="freezePane && constructorOpen" @click="!(freezePane && constructorOpen) && (constructorOpen = !constructorOpen)">
+                      <PanelLeft class="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ $t('timelineEditor.recipes.constructor') }}</TooltipContent>
+                </Tooltip>
+                <Tooltip v-if="recipeOpen">
+                  <TooltipTrigger as-child>
+                    <Button size="icon" class="size-8" :variant="jsonOpen ? 'secondary' : 'ghost'" :aria-label="$t('timelineEditor.recipes.jsonPanel')" :aria-pressed="jsonOpen" :aria-disabled="freezePane && jsonOpen" @click="!(freezePane && jsonOpen) && (jsonOpen = !jsonOpen)">
+                      <CodeXml class="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ $t('timelineEditor.recipes.jsonPanel') }}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Button size="icon" class="size-8" :variant="previewOpen ? 'secondary' : 'ghost'" :aria-label="$t('runtimeWorkflow.preview')" :aria-pressed="previewOpen" :aria-controls="previewOpen ? previewId : undefined" :aria-disabled="freezePane && previewOpen" @click="!(freezePane && previewOpen) && (previewOpen = !previewOpen)">
+                      <Eye class="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ $t('runtimeWorkflow.preview') }}</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          </Teleport>
         </div>
       </header>
 
@@ -630,20 +750,6 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
                   <Button v-else variant="outline" @click="openBinding('data')">
                     {{ literal('data') ? $t('timelineEditor.localData') : $t('timelineEditor.setData') }} {{ $t('timelineEditor.sourceSuffix') }}
                   </Button>
-                </div>
-
-                <div v-if="!groupSelected" class="grid gap-1">
-                  <span class="text-sm font-medium">{{ $t('timelineEditor.chartHeading') }}</span>
-                  <TimelineBindingInput
-                    :value="binding('title') ?? String(literal('title') ?? '')"
-                    :binding="binding('title') !== undefined"
-                    :label="$t('timelineEditor.chartHeading')"
-                    :bindings="expressionBindings"
-                    expression-example="t('timeline:chart.title', 'Ресурсы')"
-                    scope="timeline-title"
-                    @change="(value, bound) => set('title', value, bound)"
-                    @toggle="toggleChartTitle"
-                  />
                 </div>
 
                 <div v-if="groupSelected && attribute('range')" class="grid gap-2">
@@ -825,7 +931,7 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
               </div>
             </TabsContent>
 
-            <TabsContent v-if="recipeOpen" value="recipes" class="timeline-settings-tab">
+            <TabsContent v-if="recipeSectionOpen" :value="activeSection" :aria-label="sectionLabel" class="timeline-settings-tab">
               <div ref="recipeHost" />
             </TabsContent>
 
@@ -896,16 +1002,20 @@ function chartLabel(chart: ComponentSFCTimelineVisualNode, index: number): strin
         </SplitterGroup>
 
         <TimelineRecipesEditor
-          v-if="recipeOpen"
+          v-if="recipeSectionOpen"
           :key="chartSelection"
           :configuration-host="recipeHost"
           :json-host="jsonHost"
           :recipes="selected.recipes"
+          :recipe-index="recipeIndex"
           :previews="chartPreviews"
-          :preset-name="preset?.label ?? preset?.name ?? String(literal('preset') ?? '')"
+          :preset-name="recipePresetName"
           :preview-error="previewError || previewErrors[0]?.message"
           :prop-names="inputs"
           :patch="patchRecipe"
+          :create-recipe="createRecipe"
+          :remove-recipe="removeActiveRecipe"
+          @select-recipe="openRecipe"
           @open-source="emit('openSource', $event)"
         />
 

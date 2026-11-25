@@ -139,6 +139,11 @@ function onKeydown(event: KeyboardEvent): void {
     if (!suggestion) {
       return
     }
+    if (props.modelValue.slice(suggestion.replace.start, suggestion.replace.end) === suggestion.insertText) {
+      open.value = false
+      emit('commit')
+      return
+    }
     event.preventDefault()
     event.stopPropagation()
     applySuggestion(suggestion)
