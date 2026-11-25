@@ -2,7 +2,8 @@ export const TIMELINE_CHART_CREATE_KIND = 'timeline-chart' as const
 export const TIMELINE_GROUP_CREATE_KIND = 'timeline-group' as const
 
 const start = Date.UTC(2026, 10, 18, 8)
-const hour = 3_600_000
+const minute = 60_000
+const hour = 60 * minute
 const range = { start, end: start + hour * 4 }
 const options = {
   timezone: 'Europe/Moscow',
@@ -11,12 +12,27 @@ const options = {
   scroll: { horizontalBarEnabled: true, mainVerticalBarEnabled: true },
 }
 
+function workTask(id: string, groupId: string, title: string, startTime: number, endTime: number, delayMs: number) {
+  return {
+    id,
+    groupId,
+    title,
+    kind: 'work',
+    startTime,
+    endTime,
+    workStartTime: startTime + 8 * minute,
+    workEndTime: endTime - 5 * minute,
+    delayMs,
+  }
+}
+
 function dataset(id: string, label: string) {
   return {
     groups: [{ id, title: label }],
     tasks: [
-      { id: `${id}-1`, groupId: id, title: 'FV 6011', startTime: start + hour * 0.4, endTime: start + hour * 1.4 },
-      { id: `${id}-2`, groupId: id, title: 'SU 1250', startTime: start + hour * 2.2, endTime: start + hour * 3.5 },
+      workTask(`${id}-1`, id, 'FV 6011', start + hour * 0.4, start + hour * 1.4, 5 * minute),
+      workTask(`${id}-2`, id, 'SU 1250', start + hour * 2.2, start + hour * 3.5, 0),
+      { id: `${id}-break`, groupId: id, kind: 'break', title: 'Перерыв', startTime: start + hour * 1.6, endTime: start + hour * 1.9 },
     ],
   }
 }
@@ -51,8 +67,7 @@ definePreviewProps({ flights: ${JSON.stringify(chart)}, resources: ${JSON.string
     <TimelineChart key="flights" title="Рейсы" :data="props.flights" :columns='${JSON.stringify(columns)}'
                    :options='${JSON.stringify(options)}' :height="180" :min-height="100" />
     <TimelineChart for="resource in props.resources" :key="resource.id"
-                   :title="resource.title" :data="resource.data" preset="demo-resource-load"
-                   :settings="{ color: '#478ACF', labels: true }"
+                   :title="resource.title" :data="resource.data" :columns='${JSON.stringify(columns)}'
                    :options='${JSON.stringify({ ...options, timeScale: { enabled: false } })}'
                    :height="92" :min-height="64" :max-height="280" />
   </TimelineGroup>

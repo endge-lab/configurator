@@ -10,7 +10,7 @@ import {
   Endge,
   inspectComponentSFCVisual,
 } from '@endge/core'
-import { useDomainStore } from '@endge/ui-vue'
+import { listTimelinePresets, useDomainStore } from '@endge/ui-vue'
 import { AlertCircle, ChartGantt, Code2, Columns3, Layers3, Loader2, Play, Save, Settings2, Table2, TriangleAlert } from 'lucide-vue-next'
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
 
@@ -171,6 +171,10 @@ function resolveUserComponentAttributeContracts(tag: string): readonly Component
 
 const sourceEditorExtensions = [
   createSFCLanguageContribution({
+    resolveTimelinePresets: () => {
+      const identity = editor.value?.identity
+      return listTimelinePresets(identity ? EndgeIDE.runtimePreview.selectedEntry.value?.selectedModuleScope(identity) : null)
+    },
     resolveTagAttributeContracts: resolveUserComponentAttributeContracts,
   }),
   createTypeRegistryContribution(),
@@ -584,6 +588,7 @@ async function launchPreview(): Promise<void> {
         view-state-key="component-sfc.source"
         :extensions="sourceEditorExtensions"
         language="html"
+        word-based-suggestions="off"
         format-language="vue"
         class="min-h-0 flex-1"
         min-height="420px"

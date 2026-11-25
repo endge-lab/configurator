@@ -8,6 +8,7 @@ interface ModuleUse {
   reference: ModuleReference
   sourcePath: string
   renderer?: { tag: string, id: string }
+  timelinePreset?: string
 }
 
 export async function checkWorkspaceModules(
@@ -21,7 +22,7 @@ export async function checkWorkspaceModules(
   for (let offset = 0; offset < uses.length; offset += 8) {
     signal.throwIfAborted()
     const problems = await Promise.all(uses.slice(offset, offset + 8).map(async (use) => {
-      const { reference, entityRef, sourcePath, renderer } = use
+      const { reference, entityRef, sourcePath, renderer, timelinePreset } = use
       const label = `${reference.identity}@${reference.version}`
       function problem(code: string, message: string, severity: 'error' | 'warning' = 'error') {
         return { entityRef, problem: { code, message, severity, sourcePath } }
@@ -51,6 +52,9 @@ export async function checkWorkspaceModules(
         }
         if (renderer && !version.manifest.contributes?.renderers?.some(item => item.id === renderer.id && item.primitive === renderer.tag)) {
           findings.push(problem('module-renderer-missing', `Модуль "${label}" не объявляет renderer "${renderer.id}" для "${renderer.tag}".`))
+        }
+        if (timelinePreset && !version.manifest.contributes?.timelinePresets?.some(preset => preset.name === timelinePreset)) {
+          findings.push(problem('module-timeline-preset-missing', `Модуль "${label}" не объявляет пресет Timeline "${timelinePreset}".`))
         }
         return findings
       }
@@ -123,6 +127,7 @@ function collectModuleUses(): ModuleUse[] {
     const identity = workspace.identity
     const workspaceRef = { entityType: 'workspace', id: identity, identity }
     addRenderers(workspaceRef, workspace.configuration.defaultRenderers)
+    addTimelinePresets(workspaceRef, workspace.configuration.timelinePresets)
     for (const facet of Endge.domain.getFacets().filter(item => item.active !== false && !item.deletedAt)) {
       for (const document of Endge.domain.getFacetDocuments(facet.identity)) {
         if (document.deletedAt || document.active === false) {
@@ -133,7 +138,11 @@ function collectModuleUses(): ModuleUse[] {
           ? contribution.value.defaultRenderers
           : Object.fromEntries(Object.entries(contribution.patch.defaultRenderers ?? {})
               .flatMap(([tag, override]) => override.op === 'set' ? [[tag, override.value]] : []))
-        addRenderers({ entityType: 'facet-document', id: document.id, identity: document.identity }, renderers)
+        const ref: DiagnosticsEntityRef = { entityType: 'facet-document', id: document.id, identity: document.identity }
+        addRenderers(ref, renderers)
+        if (contribution.mode === 'replace') {
+          addTimelinePresets(ref, contribution.value.timelinePresets)
+        }
       }
     }
   }
@@ -146,6 +155,17 @@ function collectModuleUses(): ModuleUse[] {
         reference: renderer,
         sourcePath: `configuration.defaultRenderers.${tag}`,
         renderer: { tag, id: renderer.rendererId },
+      })
+    }
+  }
+
+  function addTimelinePresets(entityRef: DiagnosticsEntityRef, presets: EndgeConfiguration['timelinePresets']): void {
+    for (const [index, reference] of (presets ?? []).entries()) {
+      uses.push({
+        entityRef,
+        reference,
+        sourcePath: `configuration.timelinePresets.${index}`,
+        timelinePreset: reference.name,
       })
     }
   }

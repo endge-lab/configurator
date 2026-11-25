@@ -2,6 +2,7 @@ import type {
   ComponentSFCAttributeAnalysisOptions,
   ComponentSFCTagAttributeContract,
   ComponentSFCTagAttributeLiteral,
+  ModuleTimelinePresetDescriptor,
   RComponentSFC_AST_Attribute,
   RComponentSFC_AST_TemplateNode,
 } from '@endge/core'
@@ -41,7 +42,9 @@ interface SFCEditableCompletionSpec {
   insertText: string
 }
 
-export interface SFCLanguageContributionOptions extends ComponentSFCAttributeAnalysisOptions {}
+export interface SFCLanguageContributionOptions extends ComponentSFCAttributeAnalysisOptions {
+  resolveTimelinePresets?: () => readonly ModuleTimelinePresetDescriptor[]
+}
 
 interface SFCAttributeCompletionContext {
   tag: string
@@ -63,10 +66,17 @@ const TIMELINE_COMPLETIONS: Record<string, SFCEditableCompletionSpec[]> = {
     { label: ':data', detail: 'Timeline data from an SFC input', insertText: `:data="\${1:props.data}"` },
     { label: ':columns', detail: 'Timeline group columns', insertText: `:columns="\${1:props.columns}"` },
     { label: ':options', detail: 'Timeline options', insertText: `:options="\${1:props.options}"` },
-    { label: 'preset', detail: 'Timeline preset registered by the application', insertText: `preset="\${1:name}"` },
+    { label: 'preset', detail: 'Timeline preset available in the workspace or runtime scope', insertText: `preset="\${1:name}"` },
     { label: ':settings', detail: 'Timeline preset parameters', insertText: `:settings="\${1:props.settings}"` },
     { label: ':height', detail: 'Timeline height in pixels', insertText: `:height="\${1:320}"` },
     { label: '@taskSelected', detail: 'TimelineTaskSelectedEvent', insertText: `@taskSelected="\${1:emit(&apos;taskSelected&apos;, event())}"` },
+  ],
+  TimelineTaskRecipe: [
+    { label: 'id', detail: 'Recipe ID, unique within its chart', insertText: `id="\${1:task-recipe}"` },
+    { label: 'name', detail: 'Name displayed in Timeline settings', insertText: `name="\${1:Task}"` },
+    { label: 'kind', detail: 'Kind of task to match', insertText: `kind="\${1:work}"` },
+    { label: ':when', detail: 'Match condition with $task, $group and props', insertText: `:when="\${1:props.enabled}"` },
+    { label: ':recipe', detail: 'JSON layout of the task bar', insertText: `:recipe='{"layout":{"id":"body","type":"rect","fill":"#478acf"}}'` },
   ],
   TimelineGroup: [
     { label: ':label-width', detail: 'Shared group column width in pixels', insertText: `:label-width="\${1:160}"` },
@@ -76,6 +86,7 @@ const TIMELINE_COMPLETIONS: Record<string, SFCEditableCompletionSpec[]> = {
   ],
 }
 const TIMELINE_TAG_COMPLETIONS: SFCEditableCompletionSpec[] = [
+  { label: 'TimelineTaskRecipe', detail: 'Local task recipe inside TimelineChart', insertText: `<TimelineTaskRecipe id="\${1:task-recipe}" name="\${2:Task}" kind="\${3:work}" :recipe='{"layout":{"id":"body","type":"rect","fill":"#478acf"}}' />` },
   { label: 'TimelineChart', detail: 'Render a standalone chart', insertText: `<TimelineChart :data="\${1:props.data}" />` },
   { label: 'TimelineGroup', detail: 'Link the time axis of multiple charts', insertText: `<TimelineGroup sync="time" splitter>\n  \${1}\n</TimelineGroup>` },
 ]
@@ -280,6 +291,17 @@ export function createSFCLanguageContribution(
               model.getPositionAt(attributeContext.replaceEnd),
             )
             if (attributeContext.kind === 'value' && attributeContext.attributeName) {
+              if (attributeContext.tag === 'TimelineChart' && attributeContext.attributeName === 'preset' && !attributeContext.dynamic) {
+                return {
+                  suggestions: (options.resolveTimelinePresets?.() ?? []).map(({ name, label }) => ({
+                    label: name,
+                    detail: label ?? 'TimelineChart preset',
+                    insertText: name.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('\'', '&#39;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'),
+                    range,
+                    kind: monaco.languages.CompletionItemKind.Value,
+                  })),
+                }
+              }
               const contract = findAttributeContract(contracts, attributeContext.attributeName)
               return {
                 suggestions: (contract?.values ?? []).map(value => ({
@@ -562,11 +584,13 @@ function resolveAttributeCompletionContext(
       dynamic: Boolean(valueMatch[1]),
       existingAttributes,
       replaceStart: offset - valueMatch[4].length,
-      replaceEnd: offset,
+      replaceEnd: tag === 'TimelineChart' && valueMatch[2] === 'preset' && !valueMatch[1]
+        ? offset + (/^[^"'<>]*/.exec(source.slice(offset))?.[0].length ?? 0)
+        : offset,
     }
   }
 
-  const nameMatch = afterTag.match(tag === 'TimelineChart' || tag === 'TimelineGroup'
+  const nameMatch = afterTag.match(tag in TIMELINE_COMPLETIONS
     ? /(?:^|\s)([:@]?[A-Z_][\w.-]*|[:@])$/i
     : /(?:^|\s)([A-Z_][\w.-]*)$/i)
   const emptyName = /\s$/.test(afterTag)
