@@ -22,6 +22,7 @@ const props = withDefaults(
     modelValue?: string | string[] | null
     multiple?: boolean
     placeholder?: string
+    ariaLabel?: string
     triggerClass?: HTMLAttributes['class']
     contentMaxHeight?: string
     size?: 'default' | 'compact'
@@ -166,6 +167,7 @@ const triggerCls = computed(() =>
         :class="triggerCls"
         role="combobox"
         :aria-expanded="open"
+        :aria-label="ariaLabel"
         :disabled="disabled"
         @click="open = !open"
       >

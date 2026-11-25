@@ -87,6 +87,21 @@ const { t } = useI18n()
             {{ t('moduleCatalog.noManifestRenderers') }}
           </p>
         </section>
+
+        <section class="space-y-2">
+          <h3 class="text-sm font-medium">
+            {{ t('moduleCatalog.manifestTimelinePresets') }}
+          </h3>
+          <ul v-if="manifest.contributes?.timelinePresets?.length" class="divide-y rounded-md border text-sm">
+            <li v-for="preset in manifest.contributes.timelinePresets" :key="preset.name" class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
+              <span v-if="preset.label" class="break-words">{{ preset.label }}</span>
+              <code class="break-all">{{ preset.name }}</code>
+            </li>
+          </ul>
+          <p v-else class="text-sm text-muted-foreground">
+            {{ t('moduleCatalog.noManifestTimelinePresets') }}
+          </p>
+        </section>
       </div>
 
       <DialogFooter class="flex-row justify-end">

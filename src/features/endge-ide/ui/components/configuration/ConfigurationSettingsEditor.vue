@@ -361,6 +361,19 @@ const defaultRenderers = computed<EndgeConfiguration['defaultRenderers']>({
   },
 })
 
+const timelinePresets = computed<EndgeConfiguration['timelinePresets']>({
+  get: () => editableConfiguration.value.timelinePresets,
+  set: (value) => {
+    if (value?.length) {
+      editableConfiguration.value.timelinePresets = value
+    }
+    else {
+      delete editableConfiguration.value.timelinePresets
+    }
+    notifyRootMutation()
+  },
+})
+
 const rendererOverrides = computed({
   get: () => patch.value?.defaultRenderers,
   set: (value) => {
@@ -1644,6 +1657,7 @@ function isEqual(left: unknown, right: unknown): boolean {
             <WorkspaceRendererSettings
               v-if="variant === 'root' && activeSection === 'ui'"
               v-model="defaultRenderers"
+              v-model:timeline-presets="timelinePresets"
               :disabled="disabled"
             />
             <WorkspaceRendererSettings

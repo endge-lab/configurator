@@ -15,11 +15,14 @@ const props = defineProps<{
   modelValue: string
   scope: ComponentSFCExpressionCompletionScope
   placeholder?: string
+  bindings?: Readonly<Record<string, unknown>>
+  ariaLabel?: string
   inputClass?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void
+  (event: 'commit'): void
 }>()
 
 const inputRoot = ref<HTMLElement | null>(null)
@@ -56,6 +59,7 @@ function refreshSuggestions(source = props.modelValue): void {
     scope: props.scope,
     context: Endge.context.runtimeSnapshot(),
     configurations: Endge.configurationSchema.list(),
+    bindings: props.bindings,
   })
   suggestions.value = next
   activeIndex.value = next.length ? Math.min(activeIndex.value, next.length - 1) : 0
@@ -84,6 +88,30 @@ function applySuggestion(suggestion: ComponentSFCExpressionCompletion): void {
   })
 }
 
+function insertReference(reference: string, position?: { start: number, end: number }): void {
+  const source = props.modelValue
+  const cursor = position?.start ?? source.length
+  const token = source.slice(0, cursor).match(/[$A-Z_][\w$]*(?:\.[\w$]*)*$/i)?.[0]
+  const start = position && position.start !== position.end ? position.start : cursor - (token?.length ?? 0)
+  const end = position && position.start !== position.end
+    ? position.end
+    : cursor + (source.slice(cursor).match(/^[\w$.]*/)?.[0].length ?? 0)
+  applySuggestion({
+    label: reference,
+    detail: '',
+    kind: 'property',
+    insertText: reference,
+    replace: { start, end },
+  })
+}
+
+function selectionRange(): { start: number, end: number } {
+  const input = inputElement()
+  return { start: input?.selectionStart ?? props.modelValue.length, end: input?.selectionEnd ?? props.modelValue.length }
+}
+
+defineExpose({ insertReference, selectionRange })
+
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape' && open.value) {
     event.preventDefault()
@@ -102,6 +130,9 @@ function onKeydown(event: KeyboardEvent): void {
     event.stopPropagation()
     moveActive(event.key === 'ArrowDown' ? 1 : -1)
     return
+  }
+  if (event.key === 'Enter' && !open.value) {
+    emit('commit')
   }
   if ((event.key === 'Enter' || event.key === 'Tab') && open.value) {
     const suggestion = suggestions.value[activeIndex.value]
@@ -125,6 +156,7 @@ function onKeydown(event: KeyboardEvent): void {
           :placeholder="placeholder"
           role="combobox"
           aria-autocomplete="list"
+          :aria-label="ariaLabel"
           :aria-expanded="open"
           :aria-controls="listboxId"
           :aria-activedescendant="activeOptionId"
@@ -133,7 +165,7 @@ function onKeydown(event: KeyboardEvent): void {
           @update:model-value="updateValue"
           @click="refreshSuggestions()"
           @keydown="onKeydown"
-          @blur="open = false"
+          @blur="open = false; emit('commit')"
         />
       </div>
     </PopoverTrigger>
@@ -158,7 +190,7 @@ function onKeydown(event: KeyboardEvent): void {
         >
           <code class="min-w-24 shrink-0 pt-0.5 text-xs font-medium text-foreground">{{ suggestion.label }}</code>
           <span class="min-w-0 flex-1 text-[10px] leading-4 text-muted-foreground">
-            {{ suggestion.detail }}
+            {{ suggestion.documentation || suggestion.detail }}
           </span>
         </button>
       </div>

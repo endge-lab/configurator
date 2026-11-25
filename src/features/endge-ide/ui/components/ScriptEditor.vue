@@ -20,6 +20,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: string
     language?: EditorLanguage
+    wordBasedSuggestions?: monaco.editor.IGlobalEditorOptions['wordBasedSuggestions']
     formatLanguage?: SourceFormatLanguage
     minHeight?: number | string
     showToolbar?: boolean
@@ -114,6 +115,7 @@ onMounted(() => {
       scrollbar: ENDGE_MONACO_SCROLLBAR_OPTIONS,
       automaticLayout: true,
       ...ENDGE_MONACO_TEXT_OPTIONS,
+      ...(props.wordBasedSuggestions === undefined ? {} : { wordBasedSuggestions: props.wordBasedSuggestions }),
       readOnly: Endge.mode === 'debugger' || props.readOnly,
       formatOnPaste: true,
       formatOnType: true,
