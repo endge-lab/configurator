@@ -55,6 +55,7 @@ const domainStore = useDomainStore()
 const editor = computed<any>(() => tabs.documentEditorModel.value ?? null)
 const documentModel = computed<any>(() => tabs.documentModel.value ?? null)
 const launchLoading = ref(false)
+const timelineToolbarHost = ref<HTMLElement | null>(null)
 const activeTab = useSmartTabSelection(
   'editor.active-tab',
   'visual',
@@ -171,6 +172,7 @@ function resolveUserComponentAttributeContracts(tag: string): readonly Component
 
 const sourceEditorExtensions = [
   createSFCLanguageContribution({
+    ownerIdentity: () => editor.value?.identity,
     resolveTimelinePresets: () => {
       const identity = editor.value?.identity
       return listTimelinePresets(identity ? EndgeIDE.runtimePreview.selectedEntry.value?.selectedModuleScope(identity) : null)
@@ -444,6 +446,7 @@ async function launchPreview(): Promise<void> {
     </template>
 
     <template #right>
+      <div v-if="activeTab === 'visual' && timelineProjection" ref="timelineToolbarHost" class="timeline-toolbar-host" />
       <TooltipProvider>
         <div v-if="activeTab === 'visual' && hasTableVisual" class="flex items-center gap-2">
           <Badge variant="outline" class="gap-1 font-normal">
@@ -516,6 +519,7 @@ async function launchPreview(): Promise<void> {
       :source="editor.source"
       :identity="editor.identity"
       :projection="timelineProjection"
+      :recipe-toolbar-host="timelineToolbarHost"
       @update:source="updateVisualSource"
       @open-source="openSourceAt"
     />
@@ -603,3 +607,17 @@ async function launchPreview(): Promise<void> {
     />
   </SourceDocumentEditorShell>
 </template>
+
+<style scoped>
+/* The document toolbar has no left action when the recipe controls occupy its right slot. */
+@media (max-width: 640px) {
+  :deep(.source-document-editor-shell__header:has(.timeline-toolbar-host > *)) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .25rem;
+  }
+
+  :deep(.source-document-editor-shell__header:has(.timeline-toolbar-host > *) > .source-document-editor-shell__left) {
+    display: none;
+  }
+}
+</style>

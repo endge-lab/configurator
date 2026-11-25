@@ -17,6 +17,7 @@ import {
   validateComponentSFCAttributeValues,
 } from '@endge/core'
 import ts from 'typescript'
+import { createSFCMemberCompletions } from './member-completions'
 
 const SCRIPT_PATTERN = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
 const TEMPLATE_OPEN_PATTERN = /<template\b[^>]*>/i
@@ -43,6 +44,7 @@ interface SFCEditableCompletionSpec {
 }
 
 export interface SFCLanguageContributionOptions extends ComponentSFCAttributeAnalysisOptions {
+  ownerIdentity?: () => string | undefined
   resolveTimelinePresets?: () => readonly ModuleTimelinePresetDescriptor[]
 }
 
@@ -218,6 +220,7 @@ export function createSFCLanguageContribution(
   return {
     id: 'component-sfc:language',
     install({ monaco, editor, model }) {
+      const memberCompletions = createSFCMemberCompletions()
       const highlights = editor.createDecorationsCollection()
       let diagnosticsTimer: ReturnType<typeof setTimeout> | null = null
       const refreshHighlights = () => {
@@ -270,9 +273,15 @@ export function createSFCLanguageContribution(
           if (currentModel !== model) {
             return { suggestions: [] }
           }
-          const template = findTemplateContentRange(model.getValue())
+          const source = model.getValue()
+          const template = findTemplateContentRange(source)
           const offset = model.getOffsetAt(position)
-          if (!template || offset < template.start || offset > template.end) {
+          const inTemplate = template && offset >= template.start && offset <= template.end
+          if (!inTemplate) {
+            const members = memberCompletions.complete(monaco, model, offset, undefined, options.ownerIdentity?.())
+            if (members) {
+              return members
+            }
             return { suggestions: [] }
           }
           const configCompletion = contextConfigurationCompletions(monaco, model, offset)
@@ -282,6 +291,13 @@ export function createSFCLanguageContribution(
           const dataMetaCompletion = dataMetaCompletions(monaco, model, offset)
           if (dataMetaCompletion) {
             return dataMetaCompletion
+          }
+          const expression = collectTemplateExpressions(source).find(expression =>
+            offset >= expression.start && offset <= expression.start + expression.source.length,
+          )
+          const members = expression && memberCompletions.complete(monaco, model, offset, expression, options.ownerIdentity?.())
+          if (members) {
+            return members
           }
           const attributeContext = resolveAttributeCompletionContext(model.getValue(), offset)
           if (attributeContext) {
@@ -438,6 +454,7 @@ export function createSFCLanguageContribution(
 
       return {
         dispose() {
+          memberCompletions.dispose()
           if (diagnosticsTimer) {
             clearTimeout(diagnosticsTimer)
           }

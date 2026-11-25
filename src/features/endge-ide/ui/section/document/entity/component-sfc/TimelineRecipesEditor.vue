@@ -5,27 +5,41 @@ import type {
   TimelineRecipeBoundary,
   TimelineRecipeBounds,
   TimelineRecipeContent,
+  TimelineRecipeElement,
   TimelineRecipeGeometry,
   TimelineRecipeLayout,
   TimelineRecipeNode,
   TimelineRecipeOverlay,
   TimelineRecipeRect,
+  TimelineRecipeShape,
   TimelineRecipeSplit,
+  TimelineRecipeStyle,
 } from '@endge/core'
 import type { TimelineRecipeChartPreview } from '@endge/ui-vue'
+import type { Component, CSSProperties } from 'vue'
 import type { WidgetInstanceComponent } from '@/components/layouts/grid/types'
-import { createTimelineRecipeLayout, measureTimelineRecipe, timelineRecipeField, timelineRecipeRects, validateTimelineRecipeLayout } from '@endge/core'
+import { applyTimelineRecipeStyle, compileComponentSFCExpression, createTimelineRecipeLayout, Endge, evaluateComponentSFCExpression, isTimelineRecipeContentVisible, measureTimelineRecipe, readTimelineRecipeText, resolveTimelineRecipeStyle, timelineRecipeExpressions, timelineRecipeField, timelineRecipeIconSvg, timelineRecipeRects, validateTimelineRecipeLayout } from '@endge/core'
+import { timelineRecipeElementAsset } from '@endge/ui-vue'
 import { useElementSize } from '@vueuse/core'
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronRight, Columns2, ExternalLink, FileJson, Plus, Rows2, Scan, Smile, Trash2, Type } from 'lucide-vue-next'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronRight, Columns2, ExternalLink, FileJson, Image, Rows2, Scan, Smile, Trash2, Type, X } from 'lucide-vue-next'
 import { computed, markRaw, onScopeDispose, reactive, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createWidgetInstance, destroyWidgetInstance, getWidget, getWidgetInstance, getWidgetInstances, registerWidget, setWidgetInstanceTitle, showWidget, unregisterWidget } from '@/components/layouts/grid/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import LucideAppearancePicker from '@/features/endge-ide/ui/components/LucideAppearancePicker.vue'
 import { SearchableSelect } from '@/features/endge-ide/ui/components/searchable-select'
+import { colorInputValue, readTimelineLucideShapes, timelineRecipeFillStyle } from './timeline-recipe-appearance'
 import { collectTimelineRecipeFields } from './timeline-recipe-sample'
+import TimelineRecipeAppearance from './TimelineRecipeAppearance.vue'
 import TimelineRecipeBoundaryEditor from './TimelineRecipeBoundaryEditor.vue'
-import TimelineRecipeConditionInput from './TimelineRecipeConditionInput.vue'
+import TimelineRecipeElementPosition from './TimelineRecipeElementPosition.vue'
+import TimelineRecipeExpressionInput from './TimelineRecipeExpressionInput.vue'
+import TimelineRecipePrimitiveTools from './TimelineRecipePrimitiveTools.vue'
+import TimelineRecipeStyleEditor from './TimelineRecipeStyleEditor.vue'
+import TimelineRecipeTextEditor from './TimelineRecipeTextEditor.vue'
+import TimelineRecipeToolButton from './TimelineRecipeToolButton.vue'
 import TimelineSampleTaskWidget from './TimelineSampleTaskWidget.vue'
 
 const props = defineProps<{
@@ -33,12 +47,15 @@ const props = defineProps<{
   jsonHost: HTMLElement | null
   propNames: string[]
   recipes: readonly ComponentSFCTimelineRecipeVisualNode[]
+  recipeIndex: number
   previews: readonly TimelineRecipeChartPreview[]
   presetName: string
   previewError?: string
   patch: (start: number | undefined, value: ComponentSFCTimelineRecipeSource | null) => string | null
+  createRecipe: (recipe: Omit<ComponentSFCTimelineRecipeSource, 'id'>) => string | null
+  removeRecipe: () => string | null
 }>()
-const emit = defineEmits<{ openSource: [offset: number] }>()
+const emit = defineEmits<{ openSource: [offset: number], selectRecipe: [index: number] }>()
 const { t } = useI18n()
 const idPrefix = useId()
 const blockPalette = ['#478acf', '#297e6f', '#a3652e', '#7254a1']
@@ -59,28 +76,22 @@ const sideLabels = computed(() => ({
   top: t('timelineEditor.recipes.addTop'),
   bottom: t('timelineEditor.recipes.addBottom'),
 }))
-const iconChoices = ['✓', '!', '●', '◆', '→', '★']
 const alignments = computed(() => [
   { value: 'left', label: t('timelineEditor.recipes.left') },
   { value: 'center', label: t('timelineEditor.recipes.center') },
   { value: 'right', label: t('timelineEditor.recipes.right') },
 ])
-const selectedRecipe = ref(0)
 const selection = ref<string | null>('')
 const chartKey = ref('')
 const taskId = ref('')
 const canvas = ref<HTMLElement>()
-const { width: canvasWidth } = useElementSize(canvas)
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvas)
 const error = ref('')
 const jsonDirty = ref(false)
 const json = ref('')
 const layout = ref<TimelineRecipeLayout>()
 const fields = ref({ id: '', name: '', kind: '', when: '' })
-const recipeChoices = computed(() => props.recipes.map((recipe, index) => ({
-  value: String(index),
-  label: recipe.name || recipe.id || t('timelineEditor.recipes.unnamed'),
-})))
-const current = computed(() => props.recipes[selectedRecipe.value])
+const current = computed(() => props.recipes[props.recipeIndex])
 const chart = computed(() => props.previews.find(item => item.chartKey === chartKey.value) ?? props.previews[0])
 const selectedPreset = computed(() => props.presetName || chart.value?.presetName)
 const tasks = computed(() => chart.value?.data.tasks ?? [])
@@ -110,27 +121,64 @@ const conditionBindings = computed(() => {
   }
 })
 const acceptedFields = computed(() => collectTimelineRecipeFields(tasks.value))
-const textFields = computed(() => Object.values(acceptedFields.value).flat())
 const taskHeight = computed(() => chart.value?.taskHeight ?? 24)
 const start = computed(() => sample.value?.startTime ?? 0)
 const end = computed(() => sample.value?.endTime ?? 3_600_000)
 const domain = computed(() => Math.max(1, end.value - start.value))
 const sampleTask = computed(() => sample.value ?? { startTime: start.value, endTime: end.value })
-const geometry = computed(() => layout.value ? measureLayout(layout.value) : undefined)
+const previewExpressionSources = computed(() => JSON.stringify(layout.value ? timelineRecipeExpressions(layout.value) : []))
+const previewExpressions = computed(() => new Map((JSON.parse(previewExpressionSources.value) as string[])
+  .map(source => [source, compileComponentSFCExpression(source, { props: props.propNames, locals: ['$task', '$group'] }).value])))
+const positionDraft = ref<{ id: string, position: TimelineRecipeElement['position'] }>()
+const geometry = computed(() => {
+  const recipe = layout.value
+  if (!recipe) {
+    return
+  }
+  const draft = positionDraft.value
+  return measureLayout(draft
+    ? {
+        ...recipe,
+        elements: recipe.elements?.map(item => item.id === draft.id ? { ...item, position: draft.position } : item),
+      }
+    : recipe)
+})
 const rectangles = computed(() => layout.value ? timelineRecipeRects(layout.value) : [])
+const sampleStyles = computed<Record<string, ReturnType<typeof resolveTimelineRecipeStyle>>>(() => {
+  const values = Object.create(null)
+  for (const rect of rectangles.value) {
+    if (rect.appearance) {
+      values[rect.id] = resolveTimelineRecipeStyle(rect.appearance, evaluateSampleExpression)
+    }
+  }
+  return values
+})
+const sampleRectangles = computed(() => rectangles.value.map((rect) => {
+  const appearance = sampleStyles.value[rect.id]
+  return appearance ? applyTimelineRecipeStyle(rect, appearance) : rect
+}))
+const sampleRectanglesById = computed(() => new Map(sampleRectangles.value.map(rect => [rect.id, rect])))
 const overlay = computed(() => layout.value?.overlays?.find(item => item.id === selection.value))
-const selectedNode = computed(() => overlay.value ?? (layout.value && selection.value ? findNode(layout.value.layout, selection.value) : undefined))
+const elementsById = computed(() => new Map(layout.value?.elements?.map(item => [item.id, item])))
+const element = computed(() => selection.value ? elementsById.value.get(selection.value) : undefined)
+const layoutBlocks = computed(() => layout.value ? timelineRecipeRects({ layout: layout.value.layout }).map(item => item.id) : [])
+const selectedNode = computed(() => element.value ?? overlay.value ?? (layout.value && selection.value ? findNode(layout.value.layout, selection.value) : undefined))
 const selectedRect = computed(() => selectedNode.value?.type === 'rect' ? selectedNode.value : undefined)
-const insertTarget = computed(() => selection.value === null ? layout.value?.layout : !overlay.value ? selectedNode.value : undefined)
-const removableBlock = computed(() => Boolean(overlay.value || (layout.value && selection.value && parentSplit(layout.value.layout, selection.value))))
-const movableIds = computed(() => new Set(layout.value?.layout.type === 'split'
-  ? rectangles.value.filter(rect => !layout.value?.overlays?.some(item => item.id === rect.id)).map(rect => rect.id)
-  : []))
+const contentWhen = ref('')
+const insertTarget = computed(() => selection.value === null ? layout.value?.layout : !overlay.value && !element.value ? selectedNode.value : undefined)
+const removableBlock = computed(() => Boolean(element.value || overlay.value || (layout.value && selection.value && parentSplit(layout.value.layout, selection.value))))
+const movableIds = computed(() => new Set(layout.value?.layout.type === 'split' ? layoutBlocks.value : []))
 const movingBlock = ref('')
 const dropTarget = ref<BlockDrop>()
 const dropBounds = computed(() => dropTarget.value && nodeBounds(dropTarget.value.id, geometry.value))
 let blockPointer: { id: string, pointer: number, x: number, y: number } | undefined
 let drag: { pointer: number, id: string } | undefined
+
+watch(
+  [() => selectedRect.value?.id, () => selectedRect.value?.content?.when],
+  ([, when]) => { contentWhen.value = when ?? '' },
+  { immediate: true },
+)
 
 watch(sampleWidgetTitle, (title) => {
   if (sampleWidgetInstanceId.value) {
@@ -192,21 +240,25 @@ function showSampleTaskJson() {
   sampleWidgetInstanceId.value = createWidgetInstance(sampleWidgetId, instance)
 }
 
-watch(current, (recipe, previous) => {
+watch([() => props.recipeIndex, current], ([index, recipe], [previousIndex, previous]) => {
   error.value = ''
+  if (index !== previousIndex) {
+    selection.value = ''
+    clearBlockDrag()
+  }
+  const keepJson = jsonDirty.value && index === previousIndex && recipe?.id === previous?.id
+  jsonDirty.value = keepJson
   if (!recipe) {
     layout.value = undefined
     return
   }
   fields.value = { id: recipe.id, name: recipe.name, kind: recipe.kind, when: recipe.when }
-  const keepJson = jsonDirty.value && recipe.id === previous?.id
-  jsonDirty.value = keepJson
   try {
     layout.value = parseLayout(recipe.json)
     if (!keepJson) {
       json.value = JSON.stringify(layout.value, null, 2)
     }
-    if (selection.value && !findNode(layout.value.layout, selection.value) && !layout.value.overlays?.some(item => item.id === selection.value)) {
+    if (selection.value && !selectedNode.value) {
       selection.value = ''
     }
   }
@@ -241,44 +293,26 @@ function nextId(prefix: string, existing: ReadonlySet<string>): string {
   return `${prefix}-${index}`
 }
 
-function addRecipe(profile?: string) {
-  const inherited = profile ? chart.value?.editableRecipes?.[profile] : undefined
-  const matched = profile && tasks.value.find(task => chart.value?.profileByTask.get(task.id) === profile)
+function overrideRecipe(profile: string) {
+  const inherited = chart.value?.editableRecipes?.[profile]
+  const matched = tasks.value.find(task => chart.value?.profileByTask.get(task.id) === profile)
   const kind = inherited
     ? inherited.kind ?? ''
-    : (matched ? matched.kind : profile ?? sample.value?.kind ?? kinds.value[0]) ?? ''
+    : (matched ? matched.kind : profile) ?? ''
   const when = inherited?.when ?? (kind ? '' : 'true')
   if (inherited) {
     const existing = props.recipes.findIndex(item => item.kind === kind && item.when === when)
     if (existing >= 0) {
-      selectedRecipe.value = existing
+      emit('selectRecipe', existing)
       if (matched) {
         taskId.value = matched.id
       }
       return
     }
   }
-  const ids = new Set(props.recipes.map(item => item.id))
-  const id = nextId('recipe', ids)
-  const name = inherited?.name || profile || t('timelineEditor.recipes.newName', { index: props.recipes.length + 1 })
-  const recipe = inherited?.recipe ?? createTimelineRecipeLayout()
-  const result = props.patch(undefined, { id, name, kind, when, recipe })
-  if (!result) {
-    selectedRecipe.value = props.recipes.length
-    if (matched) {
-      taskId.value = matched.id
-    }
-  }
-  error.value = result ?? ''
-}
-
-function removeRecipe() {
-  if (!current.value) {
-    return
-  }
-  const result = props.patch(current.value.sourceRange.start, null)
-  if (!result) {
-    selectedRecipe.value = Math.max(0, selectedRecipe.value - 1)
+  const result = props.createRecipe({ name: inherited?.name || profile, kind, when, recipe: inherited?.recipe ?? createTimelineRecipeLayout() })
+  if (!result && matched) {
+    taskId.value = matched.id
   }
   error.value = result ?? ''
 }
@@ -350,22 +384,26 @@ function blockIds(): Set<string> {
   if (layout.value) {
     visit(layout.value.layout)
   }
-  for (const item of layout.value?.overlays ?? []) {
+  for (const item of [...(layout.value?.overlays ?? []), ...(layout.value?.elements ?? [])]) {
     ids.add(item.id)
   }
   return ids
 }
 
-function replaceBlock(id: string, node: TimelineRecipeNode, commit = true) {
-  if (!layout.value || jsonDirty.value) {
+function replaceBlock(id: string, node: TimelineRecipeNode | TimelineRecipeElement, commit = true) {
+  const recipe = layout.value
+  if (!recipe || jsonDirty.value) {
     return
   }
-  const previousOverlays = layout.value.overlays
-  const overlays = previousOverlays?.map(item => item.id === id ? { ...item, ...node } as TimelineRecipeOverlay : item)
-  layout.value = {
-    layout: replaceNode(layout.value.layout, id, node),
-    ...(overlays ? { overlays } : {}),
-  }
+  const root = replaceNode(recipe.layout, id, node)
+  const overlays = recipe.overlays?.map(item => item.id === id && node.type === 'rect' ? { ...item, ...node } : item)
+  const elements = recipe.elements?.flatMap((item) => {
+    if (item.id === id && node.type === 'rect') {
+      return [{ ...item, ...node }]
+    }
+    return !item.position.blockId || findNode(root, item.position.blockId)?.type === 'rect' ? [item] : []
+  })
+  layout.value = { ...recipe, layout: root, overlays, elements }
   json.value = JSON.stringify(layout.value, null, 2)
   if (commit) {
     apply()
@@ -392,6 +430,24 @@ function measureLayout(recipe: TimelineRecipeLayout): TimelineRecipeGeometry {
     bounds: { x: 0, y: 0, width: canvasWidth.value, height: taskHeight.value },
     task: sampleTask.value,
     timeToPx: time => (time - start.value) / domain.value * canvasWidth.value,
+    evaluate: evaluateSampleExpression,
+    styles: sampleStyles.value,
+  })
+}
+
+function evaluateSampleExpression(source: string): unknown {
+  const value = previewExpressions.value.get(source)
+  if (!value || value.kind === 'literal') {
+    return value?.value
+  }
+  const context = chart.value?.expressionContext
+  return evaluateComponentSFCExpression(value.expression, {
+    props: context?.props ?? conditionBindings.value.props,
+    locals: { ...context?.locals, $task: sampleTask.value, $group: conditionBindings.value.$group },
+    context: context?.context ?? Endge.context.runtimeSnapshot(),
+    host: context?.host ?? null,
+    dataScope: context?.dataScope ?? null,
+    translate: context?.translate,
   })
 }
 
@@ -445,6 +501,42 @@ function insertAdjacent(side: Side) {
   commitTree(replaceNode(recipe.layout, target.id, withAdjacentBlock(target, block, side, bounds)), block.id)
 }
 
+function addPrimitive(type: TimelineRecipeShape | 'icon' | 'text') {
+  const recipe = layout.value
+  if (!recipe || jsonDirty.value) {
+    return
+  }
+  const id = nextId('primitive', blockIds())
+  const item: TimelineRecipeElement = {
+    id,
+    type: 'rect',
+    shape: type === 'icon' || type === 'text' ? 'rect' : type,
+    fill: type === 'icon' || type === 'text' ? 'transparent' : '#facc15',
+    position: {
+      x: { mode: 'ratio', offset: 0.5 },
+      y: { mode: 'ratio', offset: 0.5 },
+      width: type === 'text' ? 72 : type === 'rect' ? 24 : 14,
+      height: 14,
+    },
+    content: type === 'icon'
+      ? { type, align: 'center', value: 'Smile', iconSource: 'lucide', iconShapes: readTimelineLucideShapes(Smile) }
+      : type === 'text' ? { type, align: 'center', value: t('timelineEditor.recipes.text') } : undefined,
+  }
+  const next = { ...recipe, elements: [...(recipe.elements ?? []), item] }
+  if (apply(next)) {
+    layout.value = next
+    json.value = JSON.stringify(next, null, 2)
+    selection.value = id
+  }
+}
+
+function setElementPosition(position: TimelineRecipeElement['position']) {
+  const item = element.value
+  if (item) {
+    replaceBlock(item.id, { ...item, position })
+  }
+}
+
 function moveBlock(id: string, drop: BlockDrop) {
   const recipe = layout.value
   if (!recipe || id === drop.id) {
@@ -487,15 +579,18 @@ function parentSplit(node: TimelineRecipeNode, id: string): TimelineRecipeSplit 
   }
 }
 
-function chooseRecipe(index: number) {
-  if (Number.isInteger(index) && index !== selectedRecipe.value) {
-    selection.value = ''
-    selectedRecipe.value = index
-  }
-}
-
 function removeBlock(rect: TimelineRecipeRect) {
   if (!layout.value) {
+    return
+  }
+  if (element.value?.id === rect.id) {
+    const blockId = element.value.position.blockId
+    const next = { ...layout.value, elements: layout.value.elements?.filter(item => item.id !== rect.id) }
+    if (apply(next)) {
+      layout.value = next
+      json.value = JSON.stringify(next, null, 2)
+      selection.value = blockId ?? null
+    }
     return
   }
   if (overlay.value?.id === rect.id) {
@@ -511,17 +606,64 @@ function removeBlock(rect: TimelineRecipeRect) {
 }
 
 function toggleContent(rect: TimelineRecipeRect, type: TimelineRecipeContent['type']) {
-  setContent(rect, rect.content?.type === type
-    ? undefined
-    : {
-        type,
-        value: type === 'icon' ? iconChoices[0] : '',
-        field: undefined,
-      })
+  if (rect.content?.type === type) {
+    setContent(rect)
+  }
+  else if (type === 'icon') {
+    selectLucideIcon('Check', Check, rect)
+  }
+  else {
+    setContent(rect, {
+      type: 'text',
+      value: '',
+      iconSource: undefined,
+      iconShapes: undefined,
+      iconVariants: undefined,
+      iconColor: undefined,
+    })
+  }
 }
 
-function colorValue(fill: string) {
-  return /^#[0-9a-f]{6}$/i.test(fill) ? fill : '#478acf'
+function selectLucideIcon(name: string, icon: Component, rect = selectedRect.value, variant = false) {
+  if (!rect) {
+    return
+  }
+  try {
+    const iconShapes = readTimelineLucideShapes(icon)
+    if (!iconShapes.length) {
+      throw new Error(t('timelineEditor.recipes.iconUnavailable'))
+    }
+    timelineRecipeIconSvg(iconShapes)
+    const variants = rect.content?.iconVariants ?? []
+    if (variant) {
+      if (name !== rect.content?.value && !variants.some(item => item.name === name) && variants.length < 32) {
+        setContent(rect, { iconVariants: [...variants, { name, shapes: iconShapes }] })
+      }
+      return
+    }
+    setContent(rect, {
+      type: 'icon',
+      value: name,
+      field: undefined,
+      expression: undefined,
+      textStyle: undefined,
+      iconSource: 'lucide',
+      iconShapes,
+      iconVariants: variants.length ? variants.filter(item => item.name !== name) : undefined,
+    })
+  }
+  catch (cause) {
+    error.value = String(cause instanceof Error ? cause.message : cause)
+  }
+}
+
+function setIconSource(rect: TimelineRecipeRect, source: string) {
+  if (source === 'lucide') {
+    selectLucideIcon('Check', Check, rect)
+  }
+  else if (source === 'asset') {
+    setContent(rect, { iconSource: 'asset', value: '', iconShapes: undefined, iconVariants: undefined, iconColor: undefined })
+  }
 }
 
 function removeOverlay(id: string) {
@@ -547,6 +689,21 @@ function setContent(node: TimelineRecipeRect, update?: Partial<TimelineRecipeCon
         }
       : undefined,
   })
+}
+
+function commitContentWhen(): void {
+  const rect = selectedRect.value
+  const when = contentWhen.value.trim() || undefined
+  if (rect?.content && rect.content.when !== when) {
+    setContent(rect, { when })
+  }
+}
+
+function updateAppearance(appearance?: TimelineRecipeStyle): void {
+  const rect = selectedRect.value
+  if (rect) {
+    replaceBlock(rect.id, { ...rect, appearance })
+  }
 }
 
 function updateLayer(item: TimelineRecipeOverlay, key: 'top' | 'height', event: Event) {
@@ -610,7 +767,7 @@ function locateBlockDrop(event: PointerEvent): BlockDrop | undefined {
 }
 
 function startBlockDrag(event: PointerEvent, id: string) {
-  if (!event.isPrimary || event.button !== 0 || jsonDirty.value || !movableIds.value.has(id)) {
+  if (!event.isPrimary || event.button !== 0 || jsonDirty.value || (!movableIds.value.has(id) && !elementsById.value.has(id))) {
     return
   }
   blockPointer = { id, pointer: event.pointerId, x: event.clientX, y: event.clientY }
@@ -627,13 +784,43 @@ function dragBlock(event: PointerEvent) {
     return
   }
   movingBlock.value = pointer.id
+  const item = elementsById.value.get(pointer.id)
+  if (item) {
+    const rect = canvas.value?.getBoundingClientRect()
+    const base = item.position.blockId ? geometry.value?.rectangles[item.position.blockId] : undefined
+    if (rect?.width && rect.height) {
+      positionDraft.value = {
+        id: item.id,
+        position: {
+          ...item.position,
+          x: shiftAnchor(item.position.x, event.clientX - pointer.x, base?.width ?? rect.width, domain.value / rect.width),
+          y: shiftAnchor(item.position.y, (event.clientY - pointer.y) * taskHeight.value / rect.height, base?.height ?? taskHeight.value, 0),
+        },
+      }
+    }
+    return
+  }
   dropTarget.value = locateBlockDrop(event)
+}
+
+function shiftAnchor<T extends TimelineRecipeBoundary>(anchor: T, delta: number, size: number, msPerPixel: number): T {
+  if (anchor.offsetExpression || size <= 0) {
+    return anchor
+  }
+  if (anchor.mode === 'ratio') {
+    return { ...anchor, offset: Math.min(1, Math.max(0, anchor.offset + delta / size)) }
+  }
+  if (anchor.mode === 'time') {
+    return { ...anchor, offset: anchor.offset + Math.round(delta * msPerPixel) }
+  }
+  return { ...anchor, offset: anchor.offset + Math.round(anchor.edge === 'start' ? delta : -delta) }
 }
 
 function clearBlockDrag() {
   blockPointer = undefined
   movingBlock.value = ''
   dropTarget.value = undefined
+  positionDraft.value = undefined
 }
 
 function finishBlockDrag(event: PointerEvent) {
@@ -641,6 +828,16 @@ function finishBlockDrag(event: PointerEvent) {
     return
   }
   const id = movingBlock.value
+  const draft = positionDraft.value
+  if (draft) {
+    const item = elementsById.value.get(draft.id)
+    clearBlockDrag()
+    if (item) {
+      selection.value = item.id
+      replaceBlock(item.id, { ...item, position: draft.position })
+    }
+    return
+  }
   const drop = id ? locateBlockDrop(event) : undefined
   clearBlockDrag()
   if (drop) {
@@ -649,7 +846,7 @@ function finishBlockDrag(event: PointerEvent) {
 }
 
 function startDrag(event: PointerEvent, id: string) {
-  if (event.button !== 0 || jsonDirty.value) {
+  if (event.button !== 0 || jsonDirty.value || dividerUsesExpression(id)) {
     return
   }
   selection.value = id
@@ -658,13 +855,18 @@ function startDrag(event: PointerEvent, id: string) {
   boundary.setPointerCapture(event.pointerId)
 }
 
+function dividerUsesExpression(id: string): boolean {
+  const node = layout.value && findNode(layout.value.layout, id)
+  return node?.type === 'split' && Boolean(node.at.offsetExpression || (node.at.mode === 'time' && node.at.offsetField))
+}
+
 function moveDivider(id: string, point: number, commit: boolean) {
   if (!layout.value) {
     return
   }
   const divider = geometry.value?.dividers[id]
   const node = findNode(layout.value.layout, id)
-  if (!divider || node?.type !== 'split') {
+  if (!divider || node?.type !== 'split' || dividerUsesExpression(id)) {
     return
   }
   const { bounds } = divider
@@ -725,7 +927,81 @@ function previewContent(item: TimelineRecipeRect): string {
   if (!content) {
     return ''
   }
-  return String((content.type === 'text' && content.field ? timelineRecipeField(sampleTask.value, content.field) : null) ?? content.value)
+  return content.type === 'text' ? readTimelineRecipeText(content, sampleTask.value, evaluateSampleExpression) : content.value
+}
+
+function textFaceStyle(item: TimelineRecipeRect): CSSProperties {
+  const content = item.content
+  if (content?.type !== 'text') {
+    return { textAlign: content?.align ?? 'left', color: content?.iconColor ?? '#fff' }
+  }
+  const style = content.textStyle
+  return {
+    textAlign: content.align,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: style?.vertical === 'top' ? 'flex-start' : style?.vertical === 'bottom' ? 'flex-end' : 'center',
+    paddingInline: `${style?.paddingX ?? 3}px`,
+    overflow: style?.clip === false ? 'visible' : 'hidden',
+    fontFamily: style?.family ?? 'sans-serif',
+    fontSize: `${style?.size ?? 11}px`,
+    fontWeight: style?.bold ? 'bold' : 'normal',
+    fontStyle: style?.italic ? 'italic' : 'normal',
+    color: style?.color ?? '#fff',
+    lineHeight: style?.lineHeight === undefined ? undefined : `${style.lineHeight}px`,
+  }
+}
+
+function textFits(item: TimelineRecipeRect): boolean {
+  const bounds = displayBounds(item.id)
+  const style = item.content?.textStyle
+  return Boolean(bounds && bounds.width >= (style?.minWidth ?? 12) && bounds.height >= (style?.minHeight ?? 0))
+}
+
+function displayBounds(id: string): TimelineRecipeBounds | undefined {
+  return geometry.value?.elementClips?.[id] ?? geometry.value?.rectangles[id]
+}
+
+function displayStyle(id: string): CSSProperties {
+  const bounds = displayBounds(id)
+  if (!bounds) {
+    return {}
+  }
+  const box = style(bounds)
+  if (!elementsById.value.has(id)) {
+    return box
+  }
+  // The editing stage stretches lanes on Y. Free primitives keep their pixel proportions.
+  const center = (bounds.y + bounds.height / 2) / taskHeight.value * 100
+  const height = Math.min(bounds.height, bounds.height * canvasHeight.value / taskHeight.value)
+  return { ...box, top: `calc(${center}% - ${height / 2}px)`, height: `${height}px` }
+}
+
+const shapeImages = new WeakMap<HTMLCanvasElement, string>()
+function previewPrimitive(item: TimelineRecipeRect): string | undefined {
+  const primitive = elementsById.value.get(item.id)
+  const bounds = geometry.value?.rectangles[item.id]
+  const clip = geometry.value?.elementClips?.[item.id]
+  if (primitive && bounds && clip) {
+    const canvas = timelineRecipeElementAsset(primitive.shape, item, bounds, clip)
+    if (canvas) {
+      const source = shapeImages.get(canvas) ?? canvas.toDataURL()
+      shapeImages.set(canvas, source)
+      return source
+    }
+  }
+}
+
+function iconSize(id: string): number {
+  const bounds = displayBounds(id)
+  return bounds ? Math.max(0, Math.min(elementsById.value.has(id) ? Infinity : 12, bounds.width - 2, bounds.height - 2)) : 0
+}
+
+function previewIcon(item: TimelineRecipeRect): string | undefined {
+  const shapes = item.content?.iconShapes
+  if (item.content?.iconSource === 'lucide' && shapes) {
+    return `data:image/svg+xml,${encodeURIComponent(timelineRecipeIconSvg(shapes, item.content.iconColor))}`
+  }
 }
 
 function taskLabel(task: typeof tasks.value[number]): string {
@@ -737,7 +1013,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
 <template>
   <Teleport v-if="configurationHost" :to="configurationHost">
     <div class="grid min-w-0 gap-4">
-      <section v-if="selectedPreset" class="grid gap-2 rounded-md border bg-muted/20 p-3">
+      <section v-if="!current && selectedPreset" class="grid gap-2 rounded-md border bg-muted/20 p-3">
         <h3 class="text-xs font-medium">
           {{ $t('timelineEditor.recipes.fromPreset', { preset: selectedPreset }) }}
         </h3>
@@ -753,7 +1029,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
               {{ kinds.filter(kind => tasks.some(task => task.kind === kind && chart?.profileByTask.get(task.id) === profile)).join(', ') }}
             </span>
           </div>
-          <Button size="sm" variant="ghost" class="h-7" @click="addRecipe(profile)">
+          <Button size="sm" variant="ghost" class="h-7" @click="overrideRecipe(profile)">
             {{ $t('timelineEditor.recipes.override') }}
           </Button>
         </div>
@@ -762,20 +1038,9 @@ function taskLabel(task: typeof tasks.value[number]): string {
         </p>
       </section>
 
-      <div class="grid gap-1.5">
-        <button
-          v-for="(recipe, index) in recipes" :key="recipe.sourceRange.start" type="button"
-          class="flex items-center gap-2 rounded-md border px-3 py-2 text-left text-sm hover:bg-muted"
-          :class="{ 'border-primary bg-primary/5': selectedRecipe === index }"
-          :aria-pressed="selectedRecipe === index" @click="chooseRecipe(index)"
-        >
-          <span class="flex-1 truncate font-medium">{{ recipe.name || recipe.id || $t('timelineEditor.recipes.unnamed') }}</span>
-          <code v-if="recipe.kind" class="text-xs text-muted-foreground">{{ recipe.kind }}</code>
-        </button>
-        <Button size="sm" variant="outline" class="justify-self-start" @click="addRecipe()">
-          <Plus class="size-4" /> {{ $t('timelineEditor.recipes.add') }}
-        </Button>
-      </div>
+      <p v-if="!current && !recipes.length" class="text-sm text-muted-foreground">
+        {{ $t('timelineEditor.recipes.emptyNavigation') }}
+      </p>
 
       <p v-if="previewError" class="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground" role="status">
         {{ previewError }}
@@ -802,7 +1067,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
             {{ $t('timelineEditor.recipes.condition') }}
           </summary>
           <div class="mt-1 grid min-w-0 gap-1.5">
-            <TimelineRecipeConditionInput v-model="fields.when" :bindings="conditionBindings" @commit="apply()" />
+            <TimelineRecipeExpressionInput v-model="fields.when" :bindings="conditionBindings" :label="$t('timelineEditor.recipes.condition')" placeholder="$task.delayMs > 0" @commit="apply()" />
             <p class="text-xs leading-5 text-muted-foreground">
               {{ $t('timelineEditor.recipes.whenHint') }}
             </p>
@@ -848,33 +1113,34 @@ function taskLabel(task: typeof tasks.value[number]): string {
                 {{ $t('timelineEditor.recipes.selectLayout') }}
               </Button>
               <div v-if="selectedRect || insertTarget" class="recipe-tools" role="group" :aria-label="$t('timelineEditor.recipes.blockActions')">
-                <template v-if="selectedRect">
-                  <label class="recipe-fill" :style="{ backgroundColor: selectedRect.fill }" :title="$t('timelineEditor.recipes.fill')">
-                    <input type="color" :aria-label="$t('timelineEditor.recipes.fill')" :value="colorValue(selectedRect.fill)" @change="replaceBlock(selectedRect.id, { ...selectedRect, fill: read($event) })">
-                  </label>
-                  <template v-if="!overlay">
-                    <button type="button" :title="$t('timelineEditor.recipes.splitX')" :aria-label="$t('timelineEditor.recipes.splitX')" @click="split(selectedRect, 'x')">
-                      <Columns2 class="size-4" />
-                    </button>
-                    <button type="button" :title="$t('timelineEditor.recipes.splitY')" :aria-label="$t('timelineEditor.recipes.splitY')" @click="split(selectedRect, 'y')">
-                      <Rows2 class="size-4" />
-                    </button>
+                <TooltipProvider :delay-duration="0" disable-hoverable-content>
+                  <template v-if="selectedRect">
+                    <TimelineRecipeAppearance :block="selectedRect" :rendered-fill="sampleRectanglesById.get(selectedRect.id)?.fill" :bindings="conditionBindings" :overlay="Boolean(overlay)" :shape="element?.shape" @update="block => replaceBlock(block.id, block)" />
+                    <template v-if="!overlay && !element">
+                      <TimelineRecipeToolButton :label="$t('timelineEditor.recipes.splitX')" @click="split(selectedRect, 'x')">
+                        <Columns2 class="size-4" />
+                      </TimelineRecipeToolButton>
+                      <TimelineRecipeToolButton :label="$t('timelineEditor.recipes.splitY')" @click="split(selectedRect, 'y')">
+                        <Rows2 class="size-4" />
+                      </TimelineRecipeToolButton>
+                    </template>
+                    <TimelineRecipeToolButton :label="$t('timelineEditor.recipes.text')" :aria-pressed="selectedRect.content?.type === 'text'" @click="toggleContent(selectedRect, 'text')">
+                      <Type class="size-4" />
+                    </TimelineRecipeToolButton>
+                    <TimelineRecipeToolButton :label="$t('timelineEditor.recipes.icon')" :aria-pressed="selectedRect.content?.type === 'icon'" @click="toggleContent(selectedRect, 'icon')">
+                      <Smile class="size-4" />
+                    </TimelineRecipeToolButton>
+                    <TimelineRecipeToolButton v-if="removableBlock" :label="$t('timelineEditor.recipes.removeBlock')" @click="removeBlock(selectedRect)">
+                      <Trash2 class="size-4" />
+                    </TimelineRecipeToolButton>
                   </template>
-                  <button type="button" :title="$t('timelineEditor.recipes.text')" :aria-label="$t('timelineEditor.recipes.text')" :aria-pressed="selectedRect.content?.type === 'text'" @click="toggleContent(selectedRect, 'text')">
-                    <Type class="size-4" />
-                  </button>
-                  <button type="button" :title="$t('timelineEditor.recipes.icon')" :aria-label="$t('timelineEditor.recipes.icon')" :aria-pressed="selectedRect.content?.type === 'icon'" @click="toggleContent(selectedRect, 'icon')">
-                    <Smile class="size-4" />
-                  </button>
-                  <button v-if="removableBlock" type="button" :title="$t('timelineEditor.recipes.removeBlock')" :aria-label="$t('timelineEditor.recipes.removeBlock')" @click="removeBlock(selectedRect)">
-                    <Trash2 class="size-4" />
-                  </button>
-                </template>
-                <div v-if="insertTarget" class="recipe-add-tools" :class="{ 'recipe-add-tools-bordered': selectedRect }">
-                  <button v-for="side in sides" :key="side.id" type="button" :title="sideLabels[side.id]" :aria-label="sideLabels[side.id]" @click="insertAdjacent(side)">
-                    <component :is="side.icon" class="size-4" aria-hidden="true" />
-                  </button>
-                </div>
+                  <div v-if="insertTarget" class="recipe-add-tools" :class="{ 'recipe-add-tools-bordered': selectedRect }">
+                    <TimelineRecipeToolButton v-for="side in sides" :key="side.id" :label="sideLabels[side.id]" @click="insertAdjacent(side)">
+                      <component :is="side.icon" class="size-4" aria-hidden="true" />
+                    </TimelineRecipeToolButton>
+                  </div>
+                  <TimelineRecipePrimitiveTools v-if="selection === null" class="recipe-add-tools-bordered" @choose="addPrimitive" />
+                </TooltipProvider>
               </div>
             </div>
             <div
@@ -883,18 +1149,24 @@ function taskLabel(task: typeof tasks.value[number]): string {
               @click.self="selection = ''"
               @keydown.esc.stop="clearBlockDrag"
             >
-              <template v-for="rect in rectangles" :key="rect.id">
+              <template v-for="rect in sampleRectangles" :key="rect.id">
                 <div
-                  v-if="geometry?.rectangles[rect.id]?.width && geometry.rectangles[rect.id]?.height"
-                  class="recipe-rect" :class="{ 'recipe-selected': selection === rect.id, 'recipe-moving': movingBlock === rect.id }"
-                  :style="{ ...style(geometry.rectangles[rect.id]!), backgroundColor: rect.fill }"
+                  v-if="displayBounds(rect.id)?.width && displayBounds(rect.id)?.height"
+                  class="recipe-rect" :class="{ 'recipe-selected': selection === rect.id, 'recipe-moving': movingBlock === rect.id, 'recipe-primitive': elementsById.has(rect.id) }"
+                  :style="displayStyle(rect.id)"
                 >
+                  <img
+                    v-if="elementsById.has(rect.id) && sampleStyles[rect.id]?.visible !== false"
+                    :src="previewPrimitive(rect)" alt="" class="pointer-events-none absolute inset-0 size-full object-contain"
+                    :class="{ invisible: rect.fill === 'transparent' && !rect.border }"
+                  >
+                  <div v-else-if="!elementsById.has(rect.id) && sampleStyles[rect.id]?.visible !== false" class="pointer-events-none absolute inset-0" :style="{ ...timelineRecipeFillStyle(rect.fill), opacity: rect.opacity, borderRadius: `${rect.radius ?? 0}px` }" />
                   <button
-                    type="button" class="recipe-face" :style="{ textAlign: rect.content?.align ?? 'left' }"
-                    :class="{ 'recipe-movable': movableIds.has(rect.id) }"
+                    type="button" class="recipe-face" :style="textFaceStyle(rect)"
+                    :class="{ 'recipe-movable': movableIds.has(rect.id) || elementsById.has(rect.id) }"
                     :aria-label="$t('timelineEditor.recipes.selectBlock', { id: rect.id })"
                     :aria-pressed="selection === rect.id"
-                    :title="movableIds.has(rect.id) ? $t('timelineEditor.recipes.dragBlockHint') : undefined"
+                    :title="elementsById.has(rect.id) ? $t('timelineEditor.recipes.dragPrimitiveHint') : movableIds.has(rect.id) ? $t('timelineEditor.recipes.dragBlockHint') : undefined"
                     @click="selection = rect.id"
                     @pointerdown="startBlockDrag($event, rect.id)"
                     @pointermove="dragBlock"
@@ -902,13 +1174,22 @@ function taskLabel(task: typeof tasks.value[number]): string {
                     @pointercancel="clearBlockDrag"
                     @lostpointercapture="clearBlockDrag"
                   >
-                    {{ previewContent(rect) }}
+                    <template v-if="sampleStyles[rect.id]?.visible === false || (rect.content && !isTimelineRecipeContentVisible(rect.content, evaluateSampleExpression))" />
+                    <img v-else-if="rect.content?.iconSource === 'lucide' && rect.content.iconShapes?.length" :src="previewIcon(rect)" alt="" class="inline-block max-h-full max-w-full object-contain" :style="{ width: `${iconSize(rect.id)}px`, height: `${iconSize(rect.id)}px` }">
+                    <Image v-else-if="rect.content?.iconSource === 'asset'" class="inline-block" :style="{ width: `${iconSize(rect.id)}px`, height: `${iconSize(rect.id)}px` }" aria-hidden="true" />
+                    <span v-else-if="rect.content?.type === 'text' && textFits(rect)" class="pointer-events-none block w-full" :class="{ truncate: rect.content.textStyle?.ellipsis !== false }">
+                      {{ previewContent(rect) }}
+                    </span>
+                    <template v-else-if="rect.content?.type !== 'text'">
+                      {{ previewContent(rect) }}
+                    </template>
                   </button>
+                  <div v-if="!elementsById.has(rect.id) && rect.border && sampleStyles[rect.id]?.visible !== false" class="pointer-events-none absolute inset-0" :style="{ border: `${rect.border.width}px ${rect.border.style} ${rect.border.color}`, borderRadius: `${rect.radius ?? 0}px` }" />
                 </div>
               </template>
               <button
                 v-for="(divider, id) in geometry?.dividers" :key="id" type="button"
-                class="recipe-divider" :class="[`recipe-divider-${divider.axis}`, { 'recipe-divider-active': id === selection, 'recipe-divider-invalid': divider.invalid }]"
+                class="recipe-divider" :class="[`recipe-divider-${divider.axis}`, { 'recipe-divider-active': id === selection, 'recipe-divider-invalid': divider.invalid, 'recipe-divider-expression': dividerUsesExpression(id) }]"
                 :style="dividerStyle(divider)" :aria-label="$t('timelineEditor.recipes.selectDivider', { id })"
                 @click="selection = id" @pointerdown="startDrag($event, id)" @pointermove="dragDivider"
                 @lostpointercapture="stopDrag" @keydown="moveWithKey($event, id)"
@@ -927,70 +1208,124 @@ function taskLabel(task: typeof tasks.value[number]): string {
           </p>
           <div v-if="selectedNode?.type === 'split'" class="grid gap-3 rounded-md border p-3">
             <TimelineRecipeBoundaryEditor
-              :boundary="selectedNode.at" :time="selectedNode.axis === 'x'" :instants="acceptedFields.instant" :durations="acceptedFields.duration"
+              :boundary="selectedNode.at" :time="selectedNode.axis === 'x'" :instants="acceptedFields.instant" :bindings="conditionBindings"
               @update:boundary="value => { if (value && selectedNode?.type === 'split') replaceBlock(selectedNode.id, { ...selectedNode, at: value }) }"
             />
-            <Button size="sm" variant="ghost" class="justify-self-start" @click="replaceBlock(selectedNode.id, selectedNode.first); selection = selectedNode.first.id">
-              {{ $t('timelineEditor.recipes.collapseSplit') }}
-            </Button>
           </div>
 
-          <div v-if="selectedNode?.type === 'rect' && (selectedNode.content || overlay)" class="grid gap-3 rounded-md border bg-muted/15 p-3">
+          <div v-if="selectedNode?.type === 'rect' && (selectedNode.content || overlay || element)" class="grid gap-3 rounded-md border bg-muted/15 p-3">
             <div v-if="selectedNode.content" class="grid gap-2 sm:grid-cols-2">
               <h3 class="col-span-full text-xs font-semibold">
                 {{ $t('timelineEditor.recipes.content') }}
               </h3>
               <template v-if="selectedNode.content">
-                <label class="grid min-w-0 gap-1 text-xs">
-                  {{ $t('timelineEditor.recipes.align') }}
-                  <select class="recipe-select" :value="selectedNode.content.align" @change="setContent(selectedNode, { align: read($event) as TimelineRecipeContent['align'] })">
-                    <option v-for="align in alignments" :key="align.value" :value="align.value">{{ align.label }}</option>
-                  </select>
-                </label>
-                <label v-if="selectedNode.content.type === 'icon'" class="grid min-w-0 gap-1 text-xs">
-                  {{ $t('timelineEditor.recipes.icon') }}
-                  <select class="recipe-select" :value="selectedNode.content.value" @change="setContent(selectedNode, { value: read($event) })">
-                    <option v-if="!iconChoices.includes(selectedNode.content.value)" :value="selectedNode.content.value">{{ selectedNode.content.value }}</option>
-                    <option v-for="icon in iconChoices" :key="icon" :value="icon">{{ icon }}</option>
-                  </select>
-                </label>
-                <template v-else>
+                <div v-if="selectedNode.content.type === 'icon'" class="grid min-w-0 grid-cols-[1fr_auto] items-end gap-1">
                   <label class="grid min-w-0 gap-1 text-xs">
-                    {{ $t('timelineEditor.recipes.textField') }}
-                    <select class="recipe-select" :value="selectedNode.content.field ?? ''" @change="setContent(selectedNode, { field: read($event) || undefined })">
-                      <option value="">{{ $t('timelineEditor.recipes.staticText') }}</option>
-                      <option v-if="selectedNode.content.field && !textFields.includes(selectedNode.content.field)" :value="selectedNode.content.field">{{ selectedNode.content.field }}</option>
-                      <option v-for="field in textFields" :key="field" :value="field">{{ field }}</option>
+                    {{ $t('timelineEditor.recipes.align') }}
+                    <select class="recipe-select" :value="selectedNode.content.align" @change="setContent(selectedNode, { align: read($event) as TimelineRecipeContent['align'] })">
+                      <option v-for="align in alignments" :key="align.value" :value="align.value">{{ align.label }}</option>
                     </select>
                   </label>
-                  <label class="col-span-full grid gap-1 text-xs">
-                    {{ selectedNode.content.field ? $t('timelineEditor.recipes.fallbackText') : $t('timelineEditor.recipes.text') }}
-                    <Input :model-value="selectedNode.content.value" @change="setContent(selectedNode, { value: read($event) })" />
+                  <TimelineRecipeStyleEditor field="align" :label="$t('timelineEditor.recipes.align')" :base="selectedNode.content.align" :bindings="conditionBindings" :appearance="selectedNode.appearance" @update="updateAppearance" />
+                </div>
+                <template v-if="selectedNode.content.type === 'icon'">
+                  <label class="grid min-w-0 gap-1 text-xs">
+                    {{ $t('timelineEditor.recipes.iconSource') }}
+                    <select class="recipe-select" :value="selectedNode.content.iconSource ?? ''" @change="setIconSource(selectedNode, read($event))">
+                      <option v-if="!selectedNode.content.iconSource" value="" disabled hidden>{{ $t('timelineEditor.recipes.iconChooseSource') }}</option>
+                      <option value="asset">{{ $t('timelineEditor.recipes.iconAsset') }}</option>
+                      <option value="lucide">{{ $t('timelineEditor.recipes.iconLucide') }}</option>
+                    </select>
                   </label>
+                  <div v-if="selectedNode.content.iconSource === 'lucide'" class="col-span-full grid min-w-0 grid-cols-[1fr_auto] items-end gap-1">
+                    <LucideAppearancePicker
+                      icon-only color="currentColor" :icon="selectedNode.content.value" @choose="selectLucideIcon"
+                    />
+                    <TimelineRecipeStyleEditor
+                      field="iconName" :label="$t('timelineEditor.recipes.icon')" :base="selectedNode.content.value"
+                      :bindings="conditionBindings" :appearance="selectedNode.appearance" @update="updateAppearance"
+                    />
+                    <div v-if="selectedNode.appearance?.expressions?.iconName || selectedNode.content.iconVariants?.length" class="col-span-full flex flex-wrap items-center gap-1.5">
+                      <span v-for="variant in selectedNode.content.iconVariants" :key="variant.name" class="inline-flex items-center gap-1 rounded border px-1.5 text-xs">
+                        <code>{{ variant.name }}</code>
+                        <TimelineRecipeToolButton
+                          :label="$t('timelineEditor.recipes.removeIconVariant', { name: variant.name })"
+                          @click="setContent(selectedNode, { iconVariants: selectedNode.content.iconVariants?.filter(item => item.name !== variant.name) })"
+                        >
+                          <X class="size-3" />
+                        </TimelineRecipeToolButton>
+                      </span>
+                      <LucideAppearancePicker
+                        icon="" icon-only color="currentColor" :trigger-label="$t('timelineEditor.recipes.addIconVariant')"
+                        :disabled="(selectedNode.content.iconVariants?.length ?? 0) >= 32"
+                        @choose="(name, icon) => selectLucideIcon(name, icon, selectedRect, true)"
+                      />
+                    </div>
+                  </div>
+                  <div v-else-if="selectedNode.content.iconSource === 'asset'" class="col-span-full grid min-w-0 grid-cols-[1fr_auto] items-end gap-1">
+                    <label class="grid min-w-0 gap-1 text-xs">
+                      {{ $t('timelineEditor.recipes.iconAsset') }}
+                      <Input placeholder="my-preset/icons/warning" :model-value="selectedNode.content.value" @change="setContent(selectedNode, { value: read($event) })" />
+                    </label>
+                    <TimelineRecipeStyleEditor field="assetId" :label="$t('timelineEditor.recipes.iconAsset')" :base="selectedNode.content.value" :bindings="conditionBindings" :appearance="selectedNode.appearance" @update="updateAppearance" />
+                  </div>
+                  <div v-if="selectedNode.content.iconSource !== 'asset'" class="flex items-end gap-1">
+                    <label class="grid gap-1 text-xs">
+                      {{ $t('timelineEditor.recipes.iconColor') }}
+                      <Input
+                        type="color" class="h-7 w-12 p-0.5" :model-value="colorInputValue(selectedNode.content.iconColor ?? '#ffffff')"
+                        @change="setContent(selectedNode, { iconColor: read($event) })"
+                      />
+                    </label>
+                    <TimelineRecipeStyleEditor
+                      field="iconColor" color :label="$t('timelineEditor.recipes.iconColor')" :base="selectedNode.content.iconColor ?? '#ffffff'"
+                      :bindings="conditionBindings" :appearance="selectedNode.appearance" @update="updateAppearance"
+                    />
+                  </div>
                 </template>
+                <TimelineRecipeTextEditor v-else class="col-span-full" :content="selectedNode.content" :bindings="conditionBindings" :appearance="selectedNode.appearance" @update="patch => { if (selectedNode?.type === 'rect') setContent(selectedNode, patch) }" @appearance="updateAppearance" />
               </template>
+              <div class="col-span-full grid min-w-0 gap-1">
+                <span class="text-xs font-medium">{{ $t('timelineEditor.recipes.contentWhen') }}</span>
+                <TimelineRecipeExpressionInput
+                  :key="selectedNode.id" v-model="contentWhen"
+                  :bindings="conditionBindings" :label="$t('timelineEditor.recipes.contentWhen')"
+                  placeholder="$task.takeoffDurationMinutes >= 20"
+                  @commit="commitContentWhen"
+                />
+              </div>
             </div>
 
-            <template v-if="overlay">
+            <TimelineRecipeElementPosition
+              v-if="element" :element="element" :blocks="layoutBlocks" :instants="acceptedFields.instant" :bindings="conditionBindings"
+              @position="setElementPosition" @appearance="updateAppearance"
+            />
+            <template v-else-if="overlay">
               <div class="grid gap-2 sm:grid-cols-2">
-                <label class="grid min-w-0 gap-1 text-xs">{{ $t('timelineEditor.recipes.layerTop') }}
-                  <Input type="number" min="0" :model-value="overlay.top" @change="updateLayer(overlay, 'top', $event)" />
-                </label>
-                <label class="grid min-w-0 gap-1 text-xs">{{ $t('timelineEditor.recipes.layerHeight') }}
-                  <Input type="number" min="1" :model-value="overlay.height" @change="updateLayer(overlay, 'height', $event)" />
-                </label>
+                <div class="grid min-w-0 grid-cols-[1fr_auto] items-end gap-1">
+                  <label class="grid min-w-0 gap-1 text-xs">{{ $t('timelineEditor.recipes.layerTop') }}
+                    <Input type="number" min="0" :model-value="overlay.top" @change="updateLayer(overlay, 'top', $event)" />
+                  </label>
+                  <TimelineRecipeStyleEditor field="layerTop" :label="$t('timelineEditor.recipes.layerTop')" :base="overlay.top" :bindings="conditionBindings" :appearance="overlay.appearance" @update="updateAppearance" />
+                </div>
+                <div class="grid min-w-0 grid-cols-[1fr_auto] items-end gap-1">
+                  <label class="grid min-w-0 gap-1 text-xs">{{ $t('timelineEditor.recipes.layerHeight') }}
+                    <Input type="number" min="1" :model-value="overlay.height" @change="updateLayer(overlay, 'height', $event)" />
+                  </label>
+                  <TimelineRecipeStyleEditor field="layerHeight" :label="$t('timelineEditor.recipes.layerHeight')" :base="overlay.height" :bindings="conditionBindings" :appearance="overlay.appearance" @update="updateAppearance" />
+                </div>
               </div>
               <fieldset class="min-w-0 rounded border p-2">
                 <legend class="px-1 text-xs">
                   {{ $t('timelineEditor.recipes.layerStart') }}
                 </legend>
-                <TimelineRecipeBoundaryEditor :boundary="overlay.from" :instants="acceptedFields.instant" :durations="acceptedFields.duration" optional time @update:boundary="setLayerBoundary(overlay, 'from', $event)" />
+                <TimelineRecipeBoundaryEditor :boundary="overlay.from" :instants="acceptedFields.instant" :bindings="conditionBindings" optional time @update:boundary="setLayerBoundary(overlay, 'from', $event)" />
               </fieldset>
               <fieldset class="min-w-0 rounded border p-2">
                 <legend class="px-1 text-xs">
                   {{ $t('timelineEditor.recipes.layerEnd') }}
                 </legend>
-                <TimelineRecipeBoundaryEditor :boundary="overlay.to" :instants="acceptedFields.instant" :durations="acceptedFields.duration" optional time default-edge="end" @update:boundary="setLayerBoundary(overlay, 'to', $event)" />
+                <TimelineRecipeBoundaryEditor :boundary="overlay.to" :instants="acceptedFields.instant" :bindings="conditionBindings" optional time default-edge="end" @update:boundary="setLayerBoundary(overlay, 'to', $event)" />
               </fieldset>
             </template>
           </div>
@@ -1000,7 +1335,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
           <Button size="sm" variant="ghost" @click="emit('openSource', current.sourceRange.start)">
             <ExternalLink class="size-4" /> {{ $t('uiText.sourceda13add2') }}
           </Button>
-          <Button size="sm" variant="ghost" class="text-destructive" @click="removeRecipe">
+          <Button size="sm" variant="ghost" class="text-destructive" @click="error = removeRecipe() ?? ''">
             <Trash2 class="size-4" /> {{ $t('timelineEditor.recipes.remove') }}
           </Button>
         </div>
@@ -1017,12 +1352,6 @@ function taskLabel(task: typeof tasks.value[number]): string {
         <h2 class="text-sm font-semibold">
           {{ $t('timelineEditor.recipes.jsonPanel') }}
         </h2>
-        <div v-if="current" class="min-w-0 flex-1">
-          <SearchableSelect size="compact" :options="recipeChoices" :model-value="String(selectedRecipe)" :aria-label="$t('timelineEditor.recipes.title')" @update:model-value="value => chooseRecipe(Number(value))" />
-        </div>
-        <Button v-else size="sm" variant="outline" @click="addRecipe()">
-          <Plus class="size-4" /> {{ $t('timelineEditor.recipes.add') }}
-        </Button>
       </header>
       <template v-if="current">
         <textarea
@@ -1078,6 +1407,8 @@ function taskLabel(task: typeof tasks.value[number]): string {
 
 .recipe-rect { position: absolute; }
 .recipe-face {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   padding-inline: 3px;
@@ -1088,6 +1419,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
   font-size: .6875rem;
   cursor: pointer;
 }
+.recipe-primitive .recipe-face { z-index: 3; }
 
 .recipe-face:hover,
 .recipe-face:focus-visible,
@@ -1131,8 +1463,7 @@ function taskLabel(task: typeof tasks.value[number]): string {
   padding-inline-start: 3px;
 }
 
-.recipe-tools button,
-.recipe-fill {
+.recipe-tools :deep(button) {
   display: grid;
   width: 26px;
   height: 26px;
@@ -1173,31 +1504,17 @@ function taskLabel(task: typeof tasks.value[number]): string {
 .recipe-drop-bottom { --drop-inset: auto 0 0; }
 .recipe-drop-top::after, .recipe-drop-bottom::after { height: 3px; }
 
-.recipe-tools button:hover,
-.recipe-tools button[aria-pressed='true'] { background: var(--accent); }
-.recipe-fill {
-  position: relative;
-  border: 2px solid var(--background);
-  outline: 1px solid var(--border);
-  outline-offset: -1px;
-}
-.recipe-fill:focus-within { outline: 2px solid var(--ring); }
-.recipe-fill input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  opacity: 0;
-}
+.recipe-tools :deep(button:hover),
+.recipe-tools :deep(button[aria-pressed='true']) { background: var(--accent); }
 
 .recipe-divider {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   touch-action: none;
 }
 .recipe-divider-x { padding: 0 5px; transform: translateX(-5px); cursor: col-resize; }
 .recipe-divider-y { padding: 5px 0; transform: translateY(-5px); cursor: row-resize; }
+.recipe-divider-expression { cursor: pointer; }
 .recipe-divider span { display: block; background: white; opacity: .65; }
 .recipe-divider-x span { width: 1px; height: 100%; }
 .recipe-divider-y span { width: 100%; height: 1px; }
